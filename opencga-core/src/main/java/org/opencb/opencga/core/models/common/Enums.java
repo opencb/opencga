@@ -112,6 +112,7 @@ public final class Enums {
         GENERATE,
         CLEAR,
         UPDATE,
+        UPDATE_INTERNAL,
         MERGE,
         INFO,
         SEARCH,

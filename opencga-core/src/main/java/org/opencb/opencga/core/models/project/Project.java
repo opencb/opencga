@@ -51,19 +51,22 @@ public class Project extends PrivateFields {
     }
 
     public Project(String id, String name, String description, ProjectOrganism organism, int currentRelease, ProjectInternal internal) {
-        this(id, name, TimeUtils.getTime(), description, organism, new LinkedList<>(), currentRelease, internal, new HashMap<>());
+        this(id, name, TimeUtils.getTime(), TimeUtils.getTime(), description, organism, new LinkedList<>(), currentRelease, internal,
+                new HashMap<>());
     }
 
-    public Project(String id, String name, String creationDate, String description, ProjectOrganism organism, int currentRelease,
-                   ProjectInternal internal) {
-        this(id, name, creationDate, description, organism, new LinkedList<>(), currentRelease, internal, new HashMap<>());
+    public Project(String id, String name, String creationDate, String modificationDate, String description, ProjectOrganism organism,
+                   int currentRelease, ProjectInternal internal) {
+        this(id, name, creationDate, modificationDate, description, organism, new LinkedList<>(), currentRelease, internal,
+                new HashMap<>());
     }
 
-    public Project(String id, String name, String creationDate, String description, ProjectOrganism organism, List<Study> studies,
-                   int currentRelease, ProjectInternal internal, Map<String, Object> attributes) {
+    public Project(String id, String name, String creationDate, String modificationDate, String description, ProjectOrganism organism,
+                   List<Study> studies, int currentRelease, ProjectInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.description = description;
         this.organism = organism;
         this.studies = studies;

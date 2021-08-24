@@ -4,7 +4,7 @@ Since OpenCGA v2.1.x, the OpenCGA users with administration roles are offered th
 
 Templates are defined at a study level and could be provided in different formats accordingly to the user's needs. The file format and some common use cases are illustrated in the following section.
 
-Remember that OpenCGA is highly configurable, and the use of templates constitutes a useful resource to reduce some common artifacts on the ingestion of metadata, but you can always use the OpenCGA clients \([Client Libraries](../../using-opencga/client-libraries/)\), command line \([Command Line](../../using-opencga/command-line/)\) or [REST Web Service API](../../using-opencga/restful-web-service-api.md) to perform different operations in OpenCGA.
+Remember that OpenCGA is highly configurable, and the use of templates constitutes a useful resource to reduce some common artifacts on the ingestion of metadata, but you can always use the OpenCGA clients \([Client Libraries](../using-opencga/client-libraries/)\), command line \([Command Line](../using-opencga/command-line/)\) or [REST Web Service API](../using-opencga/restful-web-service-api.md) to perform different operations in OpenCGA.
 
 ## How it Works
 
@@ -69,4 +69,6 @@ NA001           s1
 NA001           s2
 NA002           s3
 ```
+
+
 

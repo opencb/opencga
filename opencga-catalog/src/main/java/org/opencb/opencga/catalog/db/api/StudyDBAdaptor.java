@@ -430,6 +430,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         INTERNAL_CONFIGURATION("internal.configuration", OBJECT, ""),
         INTERNAL_CONFIGURATION_CLINICAL("internal.configuration.clinical", OBJECT, ""),
+        INTERNAL_INDEX_RECESSIVE_GENE("internal.index.recessiveGene", OBJECT, ""),
         INTERNAL_VARIANT_ENGINE_CONFIGURATION("internal.configuration.variantEngineConfiguration", Type.OBJECT, ""),
         INTERNAL_VARIANT_ENGINE_CONFIGURATION_OPTIONS("internal.configuration.variantEngineConfiguration.options", Type.OBJECT, ""),
         INTERNAL_VARIANT_ENGINE_CONFIGURATION_SAMPLE_INDEX("internal.configuration.variantEngineConfiguration.sampleIndex", Type.OBJECT,

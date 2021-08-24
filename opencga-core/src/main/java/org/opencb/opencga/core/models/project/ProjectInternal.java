@@ -29,14 +29,15 @@ public class ProjectInternal extends Internal {
     public ProjectInternal() {
     }
 
-    public ProjectInternal(Status status, String registrationDate, Datastores datastores, CellBaseConfiguration cellbase) {
-        super(status, registrationDate);
+    public ProjectInternal(Status status, String registrationDate, String modificationDate, Datastores datastores,
+                           CellBaseConfiguration cellbase) {
+        super(status, registrationDate, modificationDate);
         this.datastores = datastores;
         this.cellbase = cellbase;
     }
 
     public static ProjectInternal init() {
-        return new ProjectInternal(new Status(), TimeUtils.getTime(), new Datastores(), new CellBaseConfiguration());
+        return new ProjectInternal(new Status(), TimeUtils.getTime(), TimeUtils.getTime(), new Datastores(), new CellBaseConfiguration());
     }
 
     @Override
@@ -44,6 +45,7 @@ public class ProjectInternal extends Internal {
         final StringBuilder sb = new StringBuilder("ProjectInternal{");
         sb.append("status=").append(status);
         sb.append(", registrationDate='").append(registrationDate).append('\'');
+        sb.append(", modificationDate='").append(lastModified).append('\'');
         sb.append(", datastores=").append(datastores);
         sb.append(", cellbase=").append(cellbase);
         sb.append('}');
@@ -81,8 +83,17 @@ public class ProjectInternal extends Internal {
         return registrationDate;
     }
 
-    public Internal setRegistrationDate(String registrationDate) {
+    public ProjectInternal setRegistrationDate(String registrationDate) {
         this.registrationDate = registrationDate;
+        return this;
+    }
+
+    public String getLastModified() {
+        return lastModified;
+    }
+
+    public ProjectInternal setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 }

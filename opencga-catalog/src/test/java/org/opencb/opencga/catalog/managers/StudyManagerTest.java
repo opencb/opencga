@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -139,6 +140,29 @@ public class StudyManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("exists");
         catalogManager.getStudyManager().createVariableSet(study.getId(), variableSet, token);
+    }
+
+    @Test
+    public void updateInternalRecessiveGene() throws CatalogException {
+        Study study = catalogManager.getStudyManager().create(project1, "newStudy", "newStudy", "newStudy", null, null,
+                null, null, null, new QueryOptions(), token).first();
+        assertEquals(RecessiveGeneSummaryIndex.Status.NOT_INDEXED, study.getInternal().getIndex().getRecessiveGene().getStatus());
+
+        String date = TimeUtils.getTime();
+        catalogManager.getStudyManager().updateSummaryIndex("newStudy",
+                new RecessiveGeneSummaryIndex(RecessiveGeneSummaryIndex.Status.INDEXED, date), token);
+        study = catalogManager.getStudyManager().get("newStudy", QueryOptions.empty(), token).first();
+
+        assertEquals(RecessiveGeneSummaryIndex.Status.INDEXED, study.getInternal().getIndex().getRecessiveGene().getStatus());
+        assertEquals(date, study.getInternal().getIndex().getRecessiveGene().getModificationDate());
+
+        catalogManager.getStudyManager().updateGroup("newStudy", "members", ParamUtils.BasicUpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("user2")), token);
+
+        thrown.expect(CatalogAuthorizationException.class);
+        thrown.expectMessage("admin");
+        catalogManager.getStudyManager().updateSummaryIndex("newStudy",
+                new RecessiveGeneSummaryIndex(RecessiveGeneSummaryIndex.Status.INDEXED, date), sessionIdUser2);
     }
 
     @Test

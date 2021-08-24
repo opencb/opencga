@@ -310,7 +310,10 @@ public class StudyManager extends AbstractManager {
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
             study.setInternal(StudyInternal.init());
             study.setStatus(ParamUtils.defaultObject(study.getStatus(), CustomStatus::new));
-            study.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(study.getCreationDate()));
+            study.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(study.getCreationDate(),
+                    StudyDBAdaptor.QueryParams.CREATION_DATE.key()));
+            study.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(study.getModificationDate(),
+                    StudyDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
             study.setRelease(project.getCurrentRelease());
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
             study.setPermissionRules(ParamUtils.defaultObject(study.getPermissionRules(), HashMap::new));
@@ -630,7 +633,10 @@ public class StudyManager extends AbstractManager {
             }
 
             if (StringUtils.isNotEmpty(parameters.getCreationDate())) {
-                ParamUtils.checkCreationDateFormat(parameters.getCreationDate());
+                ParamUtils.checkDateFormat(parameters.getCreationDate(), StudyDBAdaptor.QueryParams.CREATION_DATE.key());
+            }
+            if (StringUtils.isNotEmpty(parameters.getModificationDate())) {
+                ParamUtils.checkDateFormat(parameters.getModificationDate(), StudyDBAdaptor.QueryParams.MODIFICATION_DATE.key());
             }
 
             ObjectMap update;
@@ -1092,6 +1098,45 @@ public class StudyManager extends AbstractManager {
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
+    }
+
+    public OpenCGAResult<?> updateSummaryIndex(String studyStr, RecessiveGeneSummaryIndex summaryIndex,
+                                                                       String token) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyStr)
+                .append("recessiveGeneSummaryIndex", summaryIndex)
+                .append("token", token);
+        try {
+            authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+
+            ParamUtils.checkObj(summaryIndex, "RecessiveGeneSummaryIndex");
+            summaryIndex.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(summaryIndex.getModificationDate(), "creationDate"));
+
+            ObjectMap update;
+            try {
+                update = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_INDEX_RECESSIVE_GENE.key(),
+                        new ObjectMap(getUpdateObjectMapper().writeValueAsString(summaryIndex)));
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Jackson casting error: " + e.getMessage(), e);
+            }
+
+            OpenCGAResult<Study> result = studyDBAdaptor.update(study.getUid(), update, QueryOptions.empty());
+
+            auditManager.audit(userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.STUDY, study.getId(),
+                    study.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return result;
+        } catch (CatalogException e) {
+            auditManager.audit(userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.STUDY, study.getId(),
+                    study.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
     }
 
 //    public OpenCGAResult<Group> syncGroupWith(String studyStr, String groupId, Group.Sync syncedFrom, String sessionId)

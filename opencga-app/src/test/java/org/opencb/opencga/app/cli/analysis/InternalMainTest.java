@@ -231,10 +231,10 @@ public class InternalMainTest {
                 "-o", opencga.createTmpOutdir(studyId, "stats_all", sessionId));
         assertEquals(CohortStatus.READY, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getName());
 
-        catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh1", Enums.CohortType.CONTROL_SET, "", null,
+        catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh1", Enums.CohortType.CONTROL_SET, "", null, null,
                 file1.getSampleIds().stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()), null, null, null),
                 null, null, null, sessionId);
-        catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh2", Enums.CohortType.CONTROL_SET, "", null,
+        catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh2", Enums.CohortType.CONTROL_SET, "", null, null,
                 file2.getSampleIds().stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()), null, null, null),
                 null, null, null, sessionId);
 
@@ -261,16 +261,16 @@ public class InternalMainTest {
         List<String> sampleIds = allSamples.getResults().stream().map(Sample::getId).collect(Collectors.toList());
 
         String c1 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C1", Enums.CohortType.CONTROL_SET, "", null,
-                sampleIds.subList(0, allSamples.getResults().size() / 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()),
+                null, sampleIds.subList(0, allSamples.getResults().size() / 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()),
                 null, null, null), null, null, null, sessionId).first().getId();
         String c2 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C2", Enums.CohortType.CONTROL_SET, "", null,
-                sampleIds.subList(sampleIds.size() / 2 + 1, allSamples.getResults().size()).stream()
+                null, sampleIds.subList(sampleIds.size() / 2 + 1, allSamples.getResults().size()).stream()
                         .map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()), null, null, null), null, null, null, sessionId).first().getId();
         String c3 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C3", Enums.CohortType.CONTROL_SET, "", null,
-                sampleIds.subList(0, 1).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()), null, null, null), null, null, null, sessionId).first().getId();
+                null, sampleIds.subList(0, 1).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()), null, null, null), null, null, null, sessionId).first().getId();
         Sample sample = catalogManager.getSampleManager().create(studyId, new Sample().setId("Sample"), null, sessionId).first();
         String c4 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C4", Enums.CohortType.CONTROL_SET, "", null,
-                Collections.singletonList(new SampleReferenceParam().setId(sample.getId())), null, null, null), null, null, null, sessionId).first().getId();
+                null, Collections.singletonList(new SampleReferenceParam().setId(sample.getId())), null, null, null), null, null, null, sessionId).first().getId();
 
         // Index file1
         execute("variant", "index",

@@ -75,16 +75,16 @@ public class Individual extends Annotable {
                       List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, List<Disorder> disorders,
                       Map<String, Object> attributes) {
         this(id, name, father, mother, Collections.emptyList(), location, null, sex, karyotypicSex, ethnicity, population, dateOfBirth,
-                release, 1, TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples,
+                release, 1, TimeUtils.getTime(), TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples,
                 parentalConsanguinity, annotationSets, new CustomStatus(), null, attributes);
     }
 
     public Individual(String id, String name, Individual father, Individual mother, List<String> familyIds, Location location,
                       IndividualQualityControl qualityControl, Sex sex, KaryotypicSex karyotypicSex, String ethnicity,
                       IndividualPopulation population, String dateOfBirth, int release, int version, String creationDate,
-                      LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders, List<Sample> samples,
-                      boolean parentalConsanguinity, List<AnnotationSet> annotationSets, CustomStatus status, IndividualInternal internal,
-                      Map<String, Object> attributes) {
+                      String modificationDate,  LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders,
+                      List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets, CustomStatus status,
+                      IndividualInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = ObjectUtils.defaultIfNull(father, new Individual());
@@ -100,6 +100,7 @@ public class Individual extends Annotable {
         this.release = release;
         this.version = version;
         this.creationDate = ObjectUtils.defaultIfNull(creationDate, TimeUtils.getTime());
+        this.modificationDate = modificationDate;
         this.lifeStatus = lifeStatus;
         this.phenotypes = ObjectUtils.defaultIfNull(phenotypes, new ArrayList<>());
         this.disorders = ObjectUtils.defaultIfNull(disorders, new ArrayList<>());
