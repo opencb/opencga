@@ -922,11 +922,44 @@ public class SampleIndexQueryParserTest {
         assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(query.isEmpty()); // Index not complete
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.MATURE_MIRNA_VARIANT));
+//        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.MATURE_MIRNA_VARIANT));
+//        indexQuery = parseAnnotationIndexQuery(query, true);
+//        assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
+//        assertFalse(query.isEmpty()); // Imprecise CT value
+    }
+
+    @Test
+    public void testCoveredQuery_ct_tf() {
+        Query query;
+        SampleAnnotationIndexQuery indexQuery;
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationConstants.MISSENSE_VARIANT).append(ANNOT_TRANSCRIPT_FLAG.key(), "basic");
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
-        assertFalse(query.isEmpty()); // Imprecise CT value
+        assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
+        assertFalse(indexQuery.getCtTfFilter().isNoOp());
+        assertTrue(query.isEmpty());
+    }
 
+    @Test
+    public void testCoveredQuery_tf() {
+        Query query;
+        SampleAnnotationIndexQuery indexQuery;
+        query = new Query().append(ANNOT_TRANSCRIPT_FLAG.key(), "basic");
+        indexQuery = parseAnnotationIndexQuery(query, true);
+        assertTrue(indexQuery.getConsequenceTypeFilter().isNoOp());
+        assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
+        assertTrue(indexQuery.getTranscriptFlagFilter().isExactFilter());
+        assertTrue(indexQuery.getCtTfFilter().isNoOp());
+        assertTrue(query.isEmpty());
+
+        // Imprecise query
+        query = new Query().append(ANNOT_TRANSCRIPT_FLAG.key(), "seleno");
+        indexQuery = parseAnnotationIndexQuery(query, true);
+        assertTrue(indexQuery.getConsequenceTypeFilter().isNoOp());
+        assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
+        assertFalse(indexQuery.getTranscriptFlagFilter().isExactFilter());
+        assertTrue(indexQuery.getCtTfFilter().isNoOp());
+        assertFalse(query.isEmpty());
     }
 
 

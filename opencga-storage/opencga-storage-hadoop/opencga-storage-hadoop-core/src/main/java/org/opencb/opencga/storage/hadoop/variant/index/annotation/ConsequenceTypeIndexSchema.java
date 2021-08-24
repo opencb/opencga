@@ -11,4 +11,9 @@ public class ConsequenceTypeIndexSchema extends SingleFieldIndexSchema<List<Stri
     public ConsequenceTypeIndexSchema(IndexFieldConfiguration ctConfiguration) {
         super(new CategoricalMultiValuedIndexField<>(ctConfiguration, 0, ctConfiguration.getValues(), ctConfiguration.getValuesMapping()));
     }
+
+    @Override
+    public CategoricalMultiValuedIndexField<String> getField() {
+        return (CategoricalMultiValuedIndexField<String>) super.getField();
+    }
 }

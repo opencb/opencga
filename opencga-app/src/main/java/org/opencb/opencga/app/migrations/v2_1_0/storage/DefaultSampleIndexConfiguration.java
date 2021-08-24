@@ -23,8 +23,8 @@ import java.util.Date;
 @Migration(id="default_sample_index_configuration", description = "Add a default backward compatible sample index configuration", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
-        patch = 2,
-        rank = 10)
+        patch = 3,
+        rank = 16) // Needs to run after StudyClinicalConfigurationRelocation
 public class DefaultSampleIndexConfiguration extends MigrationTool {
 
     @Override
