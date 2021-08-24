@@ -47,22 +47,25 @@ public class Cohort extends Annotable {
     public Cohort() {
     }
 
-    public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples, int release,
-                  Map<String, Object> attributes) {
-        this(id, type, creationDate, description, samples, 0, Collections.emptyList(), release, new CustomStatus(), null, attributes);
+    public Cohort(String id, Enums.CohortType type, String creationDate, String modificationDate, String description, List<Sample> samples,
+                  int release, Map<String, Object> attributes) {
+        this(id, type, creationDate, modificationDate, description, samples, 0, Collections.emptyList(), release, new CustomStatus(), null,
+                attributes);
     }
 
-    public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples,
+    public Cohort(String id, Enums.CohortType type, String creationDate, String modificationDate, String description, List<Sample> samples,
                   List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
-        this(id, type, creationDate, description, samples, 0, annotationSetList, release, new CustomStatus(), null, attributes);
+        this(id, type, creationDate, modificationDate, description, samples, 0, annotationSetList, release, new CustomStatus(), null,
+                attributes);
     }
 
-    public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples,
+    public Cohort(String id, Enums.CohortType type, String creationDate, String modificationDate, String description, List<Sample> samples,
                   int numSamples, List<AnnotationSet> annotationSets, int release, CustomStatus status, CohortInternal internal,
                   Map<String, Object> attributes) {
         this.id = id;
         this.type = type;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.description = description;
         this.samples = samples;
         this.numSamples = numSamples;

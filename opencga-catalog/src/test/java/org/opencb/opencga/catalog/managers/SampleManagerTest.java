@@ -183,6 +183,36 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testCustomModificationDate() throws CatalogException {
+        Date date = TimeUtils.toDate(TimeUtils.getTime());
+
+        Sample s1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("s1").setModificationDate("20140101120000"),
+                QueryOptions.empty(), token).first();
+        assertEquals("20140101120000", s1.getModificationDate());
+        Date date1 = TimeUtils.toDate(s1.getInternal().getLastModified());
+        assertTrue(date1.after(date) || date1.equals(date));
+
+        OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.MODIFICATION_DATE.key(), "<2015"), QueryOptions.empty(), token);
+        assertEquals(1, search.getNumResults());
+        assertEquals("s1", search.first().getId());
+
+        catalogManager.getSampleManager().update(studyFqn, "s1", new SampleUpdateParams().setModificationDate("20160101120000"), QueryOptions.empty(), token);
+        search = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.MODIFICATION_DATE.key(), "<2015"), QueryOptions.empty(), token);
+        assertEquals(0, search.getNumResults());
+
+        search = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.MODIFICATION_DATE.key(), "<201602"), QueryOptions.empty(), token);
+        assertEquals(1, search.getNumResults());
+        assertEquals("s1", search.first().getId());
+
+        Date date2 = TimeUtils.toDate(search.first().getInternal().getLastModified());
+        assertTrue(date2.after(date) || date2.equals(date));
+        assertTrue(date2.after(date1) || date2.equals(date1));
+    }
+
+    @Test
     public void testSampleVersioningWithWeirdId() throws CatalogException {
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
         String projectId = catalogManager.getProjectManager().get(query, null, token).first().getId();

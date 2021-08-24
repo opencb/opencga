@@ -26,19 +26,20 @@ public class FamilyInternal extends Internal {
     public FamilyInternal() {
     }
 
-    public FamilyInternal(String registrationDate, FamilyStatus status) {
-        super(null, registrationDate);
+    public FamilyInternal(String registrationDate, String modificationDate, FamilyStatus status) {
+        super(null, registrationDate, modificationDate);
         this.status = status;
     }
 
     public static FamilyInternal init() {
-        return new FamilyInternal(TimeUtils.getTime(), new FamilyStatus());
+        return new FamilyInternal(TimeUtils.getTime(), TimeUtils.getTime(), new FamilyStatus());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilyInternal{");
         sb.append("registrationDate='").append(registrationDate).append('\'');
+        sb.append(", modificationDate='").append(lastModified).append('\'');
         sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
@@ -57,8 +58,17 @@ public class FamilyInternal extends Internal {
         return registrationDate;
     }
 
-    public Internal setRegistrationDate(String registrationDate) {
+    public FamilyInternal setRegistrationDate(String registrationDate) {
         this.registrationDate = registrationDate;
+        return this;
+    }
+
+    public String getLastModified() {
+        return lastModified;
+    }
+
+    public FamilyInternal setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 }

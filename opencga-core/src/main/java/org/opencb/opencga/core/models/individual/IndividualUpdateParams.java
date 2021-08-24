@@ -43,6 +43,7 @@ public class IndividualUpdateParams {
     private IndividualReferenceParam father;
     private IndividualReferenceParam mother;
     private String creationDate;
+    private String modificationDate;
     private Boolean parentalConsanguinity;
     private Location location;
     private IndividualProperty.Sex sex;
@@ -63,8 +64,8 @@ public class IndividualUpdateParams {
     }
 
     public IndividualUpdateParams(String id, String name, IndividualReferenceParam father, IndividualReferenceParam mother,
-                                  String creationDate, Boolean parentalConsanguinity, Location location, IndividualProperty.Sex sex,
-                                  String ethnicity, IndividualPopulation population, String dateOfBirth,
+                                  String creationDate, String modificationDate, Boolean parentalConsanguinity, Location location,
+                                  IndividualProperty.Sex sex, String ethnicity, IndividualPopulation population, String dateOfBirth,
                                   IndividualProperty.KaryotypicSex karyotypicSex, IndividualProperty.LifeStatus lifeStatus,
                                   List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
                                   List<Disorder> disorders, CustomStatusParams status, IndividualQualityControl qualityControl,
@@ -74,6 +75,7 @@ public class IndividualUpdateParams {
         this.father = father;
         this.mother = mother;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.parentalConsanguinity = parentalConsanguinity;
         this.location = location;
         this.sex = sex;
@@ -113,7 +115,7 @@ public class IndividualUpdateParams {
                 father != null ? new Individual().setId(father.getId()).setUuid(father.getUuid()) : null,
                 mother != null ? new Individual().setId(mother.getId()).setUuid(mother.getUuid()) : null,
                 Collections.emptyList(), location, qualityControl, sex, karyotypicSex, ethnicity, population, dateOfBirth, 1, 1,
-                creationDate, lifeStatus, phenotypes, disorders,
+                creationDate, modificationDate, lifeStatus, phenotypes, disorders,
                 samples != null
                         ? samples.stream().map(s -> new Sample().setId(s.getId()).setUuid(s.getUuid())).collect(Collectors.toList())
                         : null, parentalConsanguinity, annotationSets, status != null ? status.toCustomStatus() : null,
@@ -128,6 +130,7 @@ public class IndividualUpdateParams {
         sb.append(", father=").append(father);
         sb.append(", mother=").append(mother);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
         sb.append(", location=").append(location);
         sb.append(", sex=").append(sex);
@@ -189,6 +192,15 @@ public class IndividualUpdateParams {
 
     public IndividualUpdateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public IndividualUpdateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 
