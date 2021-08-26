@@ -149,7 +149,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/distinct")
-    @ApiOperation(value = "Family distinct method")
+    @ApiOperation(value = "Family distinct method", response = Object.class)
     public Response distinct(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias.")
             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,

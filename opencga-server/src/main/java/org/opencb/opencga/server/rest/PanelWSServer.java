@@ -195,7 +195,7 @@ public class PanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/distinct")
-    @ApiOperation(value = "Panel distinct method")
+    @ApiOperation(value = "Panel distinct method", response = Object.class)
     public Response distinct(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Panel name") @QueryParam("name") String name,

@@ -358,7 +358,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/distinct")
-    @ApiOperation(value = "File distinct method")
+    @ApiOperation(value = "File distinct method", response = Object.class)
     public Response distinct(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.FILE_NAMES_DESCRIPTION) @DefaultValue("") @QueryParam("name") String name,
