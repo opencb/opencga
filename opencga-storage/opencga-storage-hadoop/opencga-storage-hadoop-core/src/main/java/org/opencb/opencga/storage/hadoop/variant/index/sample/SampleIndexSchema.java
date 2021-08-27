@@ -9,7 +9,9 @@ import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -63,6 +65,26 @@ public final class SampleIndexSchema {
                     .thenComparing(Variant::getReference)
                     .thenComparing(Variant::getAlternate)
                     .thenComparing(Variant::toString);
+
+    public static final Set<String> CUSTOM_LOF = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            VariantAnnotationConstants.FRAMESHIFT_VARIANT,
+            VariantAnnotationConstants.INFRAME_DELETION,
+            VariantAnnotationConstants.INFRAME_INSERTION,
+            VariantAnnotationConstants.START_LOST,
+            VariantAnnotationConstants.STOP_GAINED,
+            VariantAnnotationConstants.STOP_LOST,
+            VariantAnnotationConstants.SPLICE_ACCEPTOR_VARIANT,
+            VariantAnnotationConstants.SPLICE_DONOR_VARIANT,
+            VariantAnnotationConstants.TRANSCRIPT_ABLATION,
+            VariantAnnotationConstants.TRANSCRIPT_AMPLIFICATION,
+            VariantAnnotationConstants.INITIATOR_CODON_VARIANT,
+            VariantAnnotationConstants.SPLICE_REGION_VARIANT,
+            VariantAnnotationConstants.INCOMPLETE_TERMINAL_CODON_VARIANT
+    )));
+    public static final Set<String> CUSTOM_LOFE = Collections.unmodifiableSet(new HashSet<>(
+            ListUtils.concat(
+                    new ArrayList<>(CUSTOM_LOF),
+                    Arrays.asList(VariantAnnotationConstants.MISSENSE_VARIANT))));
 
     static final String MENDELIAN_ERROR_COLUMN = "ME";
     static final byte[] MENDELIAN_ERROR_COLUMN_BYTES = Bytes.toBytes(MENDELIAN_ERROR_COLUMN);

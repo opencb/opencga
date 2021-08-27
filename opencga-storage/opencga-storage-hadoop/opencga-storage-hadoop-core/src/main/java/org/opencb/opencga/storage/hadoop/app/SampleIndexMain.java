@@ -7,6 +7,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -166,9 +167,6 @@ public class SampleIndexMain extends AbstractMain {
     }
 
     private void indexStats(SampleIndexDBAdaptor dbAdaptor, ObjectMap argsMap) throws Exception {
-
-
-
         SampleIndexQuery sampleIndexQuery = dbAdaptor.parseSampleIndexQuery(new Query(argsMap));
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
         int studyId = metadataManager.getStudyId(sampleIndexQuery.getStudy());
@@ -183,32 +181,47 @@ public class SampleIndexMain extends AbstractMain {
                 : null;
 
         Map<String, Integer> counts = new TreeMap<>();
+        Map<String, Map<String, Integer>> countsByGt = new TreeMap<>();
         try (CloseableIterator<SampleIndexEntry> iterator = dbAdaptor.rawIterator(studyId, sampleId, region)) {
             while (iterator.hasNext()) {
                 SampleIndexEntry entry = iterator.next();
                 for (SampleIndexEntry.SampleIndexGtEntry gtEntry : entry.getGts().values()) {
                     String gt = gtEntry.getGt();
-
-                    counts.merge("Variants_bytes", gtEntry.getVariantsLength(), Integer::sum);
-                    addLength(gt, counts, "FileIndex", gtEntry.getFileIndexStream());
-                    addLength(gt, counts, "PopulationFrequencyIndex", gtEntry.getPopulationFrequencyIndexStream());
-                    addLength(gt, counts, "CtBtTfIndex", gtEntry.getCtBtTfIndexStream());
-                    addLength(gt, counts, "biotypeIndex", gtEntry.getBiotypeIndexStream());
-                    addLength(gt, counts, "ctIndex", gtEntry.getConsequenceTypeIndexStream());
-                    addLength(gt, counts, "clinicalIndex", gtEntry.getClinicalIndexStream());
-                    addLength(gt, counts, "transcriptFlagIndex", gtEntry.getTranscriptFlagIndexStream());
+                    addLength(gt, counts, countsByGt, "variants", new BitInputStream(
+                            gtEntry.getVariants(), gtEntry.getVariantsOffset(), gtEntry.getVariantsLength()));
+                    addLength(gt, counts, countsByGt, "fileIndex", gtEntry.getFileIndexStream());
+                    addLength(gt, counts, countsByGt, "populationFrequencyIndex", gtEntry.getPopulationFrequencyIndexStream());
+                    addLength(gt, counts, countsByGt, "ctBtTfIndex", gtEntry.getCtBtTfIndexStream());
+                    addLength(gt, counts, countsByGt, "biotypeIndex", gtEntry.getBiotypeIndexStream());
+                    addLength(gt, counts, countsByGt, "ctIndex", gtEntry.getConsequenceTypeIndexStream());
+                    addLength(gt, counts, countsByGt, "clinicalIndex", gtEntry.getClinicalIndexStream());
+                    addLength(gt, counts, countsByGt, "transcriptFlagIndex", gtEntry.getTranscriptFlagIndexStream());
                 }
             }
         }
-        print(counts);
+
+        int bytes = 0;
+        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+            if (entry.getKey().endsWith("_bytes")) {
+                bytes += entry.getValue();
+            }
+        }
+        print(new ObjectMap()
+                .append("total_bytes", bytes)
+                .append("total_size", IOUtils.humanReadableByteCount(bytes, true))
+                .append("counts", counts)
+                .append("countsByGt", countsByGt));
     }
 
-    private void addLength(String gt, Map<String, Integer> counts, String key, BitInputStream stream) {
+    private void addLength(String gt, Map<String, Integer> counts, Map<String, Map<String, Integer>> countsByGt,
+                           String key, BitInputStream stream) {
         if (stream != null) {
             counts.merge(key + "_bytes", stream.getByteLength(), Integer::sum);
+            counts.merge(key + "_bytes_max", stream.getByteLength(), Math::max);
             counts.merge(key + "_count", 1, Integer::sum);
-            counts.merge(gt + "_" + key + "_bytes", stream.getByteLength(), Integer::sum);
-            counts.merge(gt + "_" + key + "_count", 1, Integer::sum);
+            Map<String, Integer> gtCounts = countsByGt.computeIfAbsent(gt, k -> new TreeMap<>());
+            gtCounts.merge(gt + "_" + key + "_bytes", stream.getByteLength(), Integer::sum);
+            gtCounts.merge(gt + "_" + key + "_count", 1, Integer::sum);
         }
     }
 

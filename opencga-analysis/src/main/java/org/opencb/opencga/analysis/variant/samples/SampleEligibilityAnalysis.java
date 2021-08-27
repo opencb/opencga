@@ -323,9 +323,9 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                 if (VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_CONSEQUENCE_TYPE)) {
                     List<String> cts = VariantQueryUtils
                             .parseConsequenceTypes(query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key()));
-                    if (VariantQueryUtils.LOF_SET.containsAll(cts)) {
+                    if (VariantQueryUtils.LOSS_OF_FUNCTION_SET.containsAll(cts)) {
                         v -= 500;
-                    } else if (VariantQueryUtils.LOF_EXTENDED_SET.containsAll(cts)) {
+                    } else if (VariantQueryUtils.PROTEIN_ALTERING_SET.containsAll(cts)) {
                         v -= 250;
                     }
                 }

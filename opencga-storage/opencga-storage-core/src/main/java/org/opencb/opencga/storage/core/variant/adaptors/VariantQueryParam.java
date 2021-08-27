@@ -226,7 +226,8 @@ public final class VariantQueryParam implements QueryParam {
     public static final VariantQueryParam ANNOT_BIOTYPE = new VariantQueryParam("biotype", TEXT_ARRAY, ANNOT_BIOTYPE_DESCR);
 
     public static final String ANNOT_CONSEQUENCE_TYPE_DESCR
-            = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578";
+            = "List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. "
+            + "Accepts aliases 'loss_of_function' and 'protein_altering'";
     public static final VariantQueryParam ANNOT_CONSEQUENCE_TYPE = new VariantQueryParam("ct", TEXT_ARRAY, ANNOT_CONSEQUENCE_TYPE_DESCR);
 
     @Deprecated
