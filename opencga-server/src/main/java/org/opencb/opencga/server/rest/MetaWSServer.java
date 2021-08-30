@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.common.GitRepositoryState;

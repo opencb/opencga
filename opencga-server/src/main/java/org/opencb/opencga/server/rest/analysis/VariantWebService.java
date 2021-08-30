@@ -688,11 +688,10 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "clinicalConfirmedStatus", value = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR, dataType = "boolean", paramType = "query"),
     })
     @ApiOperation(value = "Obtain sample variant stats from a sample.", response = SampleVariantStats.class)
-    public Response sampleStatsQuery(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                     @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION, required = true) @QueryParam("sample") String sample) {
+    public Response sampleStatsQuery(@ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION, required = true) @QueryParam("sample") String sample) {
         return run(() -> {
             Query query = getVariantQuery();
-            return variantManager.getSampleStats(studyStr, sample, query, token);
+            return variantManager.getSampleStats(this.query.getString("study"), sample, query, token);
         });
     }
 

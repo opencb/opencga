@@ -210,7 +210,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/distinct")
-    @ApiOperation(value = "Job distinct method")
+    @ApiOperation(value = "Job distinct method", response = Object.class)
     public Response distinct(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.OTHER_STUDIES_FLAG_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.OTHER_STUDIES_FLAG) boolean others,

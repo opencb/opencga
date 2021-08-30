@@ -196,7 +196,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/distinct")
-    @ApiOperation(value = "Individual distinct method")
+    @ApiOperation(value = "Individual distinct method", response = Object.class)
     public Response distinct(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                     + "alias") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
