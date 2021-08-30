@@ -2,9 +2,10 @@
 # importing date class from datetime module
 import os
 import re
-import sys
 # importing date class from datetime module
 from datetime import date
+
+import sys
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -18,9 +19,13 @@ class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
 
     def __init__(self):
         super().__init__()
-        self.normalized_objects_map = {
-            'Map': 'ObjectMap'}
 
+        self.emptyQueryParams = ['login', 'updateConfigs', 'updateFilters', 'genotypesFamily', 'updateGroups', 'updateUsers',
+                                 'uploadTemplates', 'updatePermissionRules', 'updateVariableSets', 'updateVariables']
+        self.normalized_objects_map = {
+            'Map': 'ObjectMap',
+            'Object': 'ObjectMap'
+        }
         self.java_types = set()
         self.type_imports = {
             'java.util.Map;': 'org.opencb.commons.datastore.core.ObjectMap;'
@@ -28,6 +33,7 @@ class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
         self.param_types = {
             'string': 'String',
             'object': 'Object',
+            'Object': 'Object',
             'integer': 'int',
             'int': 'int',
             'map': 'ObjectMap',
@@ -70,6 +76,7 @@ class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
 
         imports = set()
         imports.add("org.opencb.opencga.client.exceptions.ClientException;")
+        imports.add("org.opencb.commons.datastore.core.ObjectMap;")
         for java_type in self.java_types:
             if java_type.replace(';', "") not in self.ignore_types:
                 if '$' in java_type:
@@ -134,9 +141,10 @@ class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
 
         for endpoint in category["endpoints"]:
             method_name = self.get_method_name(endpoint, category)
-            text.append('{}case "{}":'.format((' ' * 12), method_name))
-            text.append('{}queryResponse = {}();'.format((' ' * 16), method_name))
-            text.append('{}break;'.format((' ' * 16)))
+            if self.check_not_ignored_command(category["name"], method_name):
+                text.append('{}case "{}":'.format((' ' * 12), method_name))
+                text.append('{}queryResponse = {}();'.format((' ' * 16), method_name))
+                text.append('{}break;'.format((' ' * 16)))
 
         '''
          String subCommandString = getParsedSubCommand(familyCommandOptions.jCommander);
@@ -199,21 +207,44 @@ class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
                                                                                           self.normalize_names(parameter["name"]),
                                                                                           self.normalize_names(parameter["name"])))
                 text.append('')
-            body_params, object_name = self.get_body_params(endpoint)
-            exists_body_params = False
 
-            if body_params:
-                exists_body_params = True
-                text.append('{}{} {} = new {}()'.format((' ' * 8), object_name, self.get_as_variable_name(object_name), object_name))
-                for parameter in body_params:
-                    if parameter == body_params[-1]:
+
+            elif method_name in self.emptyQueryParams:
+                text.append('{}ObjectMap queryParams = new ObjectMap();'.format((' ' * 8)))
+                exists_query_params = True
+            exists_body_params, body_params, object_name = self.get_body_params(endpoint)
+
+            if body_params or exists_body_params:
+                if method_name == 'updateAnnotations' and 'amil' in category['name']:
+                    print(str(body_params) + "-> " + str(self.isBodyParamsEmpty(body_params)))
+                    print('{}{} {} = new {}();'.format((' ' * 8), object_name, self.get_as_variable_name(object_name), object_name))
+                if self.isBodyParamsEmpty(body_params):
+                    if object_name == "Map":
                         text.append(
-                            '{}.set{}(commandOptions.{});'.format((' ' * 16), parameter["name"][0].title() + '' + parameter["name"][1:],
-                                                                  parameter["name"]))
+                            '{}{} {} = new {}();'.format((' ' * 8), "ObjectMap", self.get_as_variable_name(object_name), "ObjectMap"))
                     else:
                         text.append(
-                            '{}.set{}(commandOptions.{})'.format((' ' * 16), parameter["name"][0].title() + '' + parameter["name"][1:],
-                                                                 parameter["name"]))
+                            '{}{} {} = new {}();'.format((' ' * 8), object_name, self.get_as_variable_name(object_name), object_name))
+                else:
+                    text.append('{}{} {} = new {}()'.format((' ' * 8), object_name, self.get_as_variable_name(object_name), object_name))
+
+                new_body_params = []
+                for parameter in body_params:
+                    if parameter["name"] not in self.excluded_parameters:
+                        new_body_params.append(parameter)
+
+                for parameter in new_body_params:
+                    if parameter["name"] not in self.excluded_parameters:
+                        if parameter == new_body_params[-1]:
+                            text.append(
+                                '{}.set{}(commandOptions.{});'.format((' ' * 16),
+                                                                      self.get_as_class_name(self.replace_names(parameter["name"])),
+                                                                      self.replace_names(parameter["name"])))
+                        else:
+                            text.append(
+                                '{}.set{}(commandOptions.{})'.format((' ' * 16),
+                                                                     self.get_as_class_name(self.replace_names(parameter["name"])),
+                                                                     self.replace_names(parameter["name"])))
                     self.java_types.add(parameter["typeClass"])
 
                 text.append('')
@@ -236,6 +267,19 @@ class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
             text.append('    }')
         text.append(' ' * 4)
         return '\n'.join(text)
+
+    def isBodyParamsEmpty(self, parameters):
+        count = 0
+        for excluded in self.excluded_parameters:
+            for parameter in parameters:
+                if excluded == parameter["name"]:
+                    count = count + 1
+        return (len(parameters) - count) == 0
+
+    def replace_names(self, parameter):
+        if parameter in self.normalized_objects_map.keys():
+            return self.normalized_objects_map[parameter]
+        return parameter
 
     def get_parameter_option(self, parameter, text, name, category):
         if self.check_ignore_subcommand(category, name):
@@ -319,33 +363,43 @@ class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
     def get_query_params(self, endpoint, mandatory):
         query_params_no_mandatory = []
         for parameter in endpoint["parameters"]:
-            if parameter["param"] == "query" and parameter["required"] == mandatory:
+            if (parameter["param"] == "query") and parameter["required"] == mandatory:
                 if str(parameter['type']) in self.param_types.values() or str(parameter['type']) == 'string' or str(
-                        parameter['typeClass']) == 'org.opencb.opencga.catalog.utils.ParamUtils$AclAction;':
+                        parameter['typeClass']) == 'org.opencb.opencga.catalog.utils.ParamUtils$AclAction;' or str(
+                    parameter['type']) == 'enum':
                     query_params_no_mandatory.append(parameter)
         return query_params_no_mandatory
 
     def normalize_object(self, param, category):
         if param in self.normalized_objects_map.keys():
-            return self.normalized_objects_map[param]
+            param = self.normalized_objects_map[param]
         elif param == "":
-            param = self.get_as_class_name(category);
-        return param
+            if category.lower == "clinical":
+                param = self.get_as_class_name("clinicalAnalysis");
+            elif category == "DiseasePanel":
+                param = self.get_as_class_name("panel");
+            else:
+                param = "ObjectMap";
+        return param.replace("$", ".")
 
     def get_body_params(self, endpoint):
         parameters = self.get_method_parameters(endpoint)
         body_params = []
         object_name = ''
+        exists_body_params = False
         for param in parameters:
             name = self.normalize_names(param["name"])
             if name == 'body':
+                exists_body_params = True
                 object_name = self.get_object_name(param['typeClass'])
                 if "data" in param.keys():
+
                     data = param["data"]
                     for item in data:
                         if str(item['type']) in self.param_types.values():
                             body_params.append(item)
-        return body_params, object_name
+
+        return exists_body_params, body_params, object_name
 
     def get_object_name(self, typeClass):
         return typeClass[typeClass.rindex('.') + 1: len(typeClass) - 1:]
@@ -362,14 +416,10 @@ class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
         res = []
         query_params = self.get_query_params(endpoint, True)
         if query_params:
-            if method == "distinct" and self.categories[category['name']] == "Job":
-                print("self.get_query_params(endpoint, True)" + str(self.get_query_params(endpoint, True)))
-                print("self.get_path_params(endpoint)" + str(self.get_path_params(endpoint)))
-
-            if self.get_path_params(endpoint) and query_params:
+            if self.get_path_params(endpoint):
                 res.append(" ")
             for param in query_params:
-                res.append("commandOptions.{}.name()".format(param["name"]))
+                res.append("commandOptions.{}".format(param["name"]))
         return res
 
     def get_return_body_params(self, exists_body_params, object_name, endpoint):

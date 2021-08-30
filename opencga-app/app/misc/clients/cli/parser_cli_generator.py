@@ -2,9 +2,10 @@
 # importing date class from datetime module
 import os
 import re
-import sys
 # importing date class from datetime module
 from datetime import date
+
+import sys
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -20,7 +21,7 @@ class ParserCliGenerator(rest_client_generator.RestClientGenerator):
         super().__init__()
         self.normalized_objects_map = {
             'Map': 'ObjectMap'}
-
+        
         self.java_types = set()
         self.type_imports = {
             'java.util.Map;': 'org.opencb.commons.datastore.core.ObjectMap;'
@@ -133,12 +134,23 @@ class ParserCliGenerator(rest_client_generator.RestClientGenerator):
                                                                                                       self.get_category_path(
                                                                                                           category)))
                 for endpoint in category["endpoints"]:
-                    text.append(
-                        '{}{}SubCommands.addCommand("{}", {}CommandOptions.{}CommandOptions);'.format((' ' * 8), self.get_as_variable_name(
-                            self.categories[self.get_category_name(category)]), self.to_kebab_case(
-                            self.get_method_name(endpoint, category)), self.get_as_variable_name(
-                            self.categories[self.get_category_name(category)]), self.get_as_class_name(
-                            self.get_method_name(endpoint, category))))
+                    if self.check_not_ignored_command(category["name"], self.get_method_name(endpoint, category)):
+                        text.append(
+                            '{}{}SubCommands.addCommand("{}", {}CommandOptions.{}CommandOptions);'.format((' ' * 8),
+                                                                                                          self.get_as_variable_name(
+                                                                                                              self.categories[
+                                                                                                                  self.get_category_name(
+                                                                                                                      category)]),
+                                                                                                          self.to_kebab_case(
+                                                                                                              self.get_method_name(endpoint,
+                                                                                                                                   category)),
+                                                                                                          self.get_as_variable_name(
+                                                                                                              self.categories[
+                                                                                                                  self.get_category_name(
+                                                                                                                      category)]),
+                                                                                                          self.get_as_variable_name(
+                                                                                                              self.get_method_name(endpoint,
+                                                                                                                                   category))))
 
         text.append('    }')
 
@@ -178,12 +190,6 @@ class ParserCliGenerator(rest_client_generator.RestClientGenerator):
             text.append('{}'.format(' ' * 4))
         else:
             text.append('// Exclusion ' + name)
-
-    def check_not_ignored_command(self, param, method_name):
-        res = True
-        if param in self.exclude_commands.keys() and method_name in self.exclude_commands[param]:
-            res = False
-        return res
 
     def to_kebab_case(self, name):
         name = re.sub('(.)([A-Z][a-z]+)', r'\1-\2', name)

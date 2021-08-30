@@ -13,7 +13,6 @@ import org.opencb.opencga.analysis.clinical.tiering.TieringInterpretationAnalysi
 import org.opencb.opencga.analysis.clinical.zetta.ZettaInterpretationAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
-import org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.BasicVariantQueryOptions;
 
@@ -21,9 +20,6 @@ import java.util.List;
 
 import static org.opencb.opencga.analysis.clinical.InterpretationAnalysis.*;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
-import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationZettaCommandOptions.ZETTA_RUN_COMMAND;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 @Parameters(commandNames = {"clinical"}, commandDescription = "Clinical analysis commands")
@@ -45,19 +41,19 @@ public class ClinicalCommandOptions {
     public ClinicalCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
-        this.internalJobOptions = new InternalCliOptionsParser.JobOptions();
+        internalJobOptions = new InternalCliOptionsParser.JobOptions();
         this.jCommander = jCommander;
 
-
-        this.tieringCommandOptions = new TieringCommandOptions();
-        this.teamCommandOptions = new TeamCommandOptions();
-        this.zettaCommandOptions = new ZettaCommandOptions();
-        this.cancerTieringCommandOptions = new CancerTieringCommandOptions();
-        this.rgaSecondaryIndexCommandOptions = new RgaSecondaryIndexCommandOptions();
-        this.rgaAuxiliarSecondaryIndexCommandOptions = new RgaAuxiliarSecondaryIndexCommandOptions();
+        tieringCommandOptions = new TieringCommandOptions();
+        teamCommandOptions = new TeamCommandOptions();
+        zettaCommandOptions = new ZettaCommandOptions();
+        cancerTieringCommandOptions = new CancerTieringCommandOptions();
+        rgaSecondaryIndexCommandOptions = new RgaSecondaryIndexCommandOptions();
+        rgaAuxiliarSecondaryIndexCommandOptions = new RgaAuxiliarSecondaryIndexCommandOptions();
     }
 
-    @Parameters(commandNames = {InterpretationTieringCommandOptions.TIERING_RUN_COMMAND}, commandDescription = TieringInterpretationAnalysis.DESCRIPTION)
+    @Parameters(commandNames = {"run-interpreter-tiering"}, commandDescription =
+            TieringInterpretationAnalysis.DESCRIPTION)
     public class TieringCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
@@ -69,7 +65,8 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
         public String clinicalAnalysis;
 
-        @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", required = true, arity = 1)
+        @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", required = true, arity
+                = 1)
         public List<String> panels;
 
         @Parameter(names = {"--" + PENETRANCE_PARAM_NAME}, description = "Penetrance. Accepted values: COMPLETE, INCOMPLETE", arity = 1)
@@ -85,7 +82,7 @@ public class ClinicalCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {TEAM_RUN_COMMAND}, commandDescription = TeamInterpretationAnalysis.DESCRIPTION)
+    @Parameters(commandNames = {"run-interpreter-team"}, commandDescription = TeamInterpretationAnalysis.DESCRIPTION)
     public class TeamCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
@@ -97,7 +94,8 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
         public String clinicalAnalysis;
 
-        @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", required = true, arity = 1)
+        @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", required = true, arity
+                = 1)
         public List<String> panels;
 
         @Parameter(names = {"--" + FAMILY_SEGREGATION_PARAM_NAME}, description = "Family segregation", arity = 1)
@@ -113,7 +111,7 @@ public class ClinicalCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {ZETTA_RUN_COMMAND}, commandDescription = ZettaInterpretationAnalysis.DESCRIPTION)
+    @Parameters(commandNames = {"run-interpreter-zetta"}, commandDescription = ZettaInterpretationAnalysis.DESCRIPTION)
     public class ZettaCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
@@ -183,6 +181,7 @@ public class ClinicalCommandOptions {
         void setTrait(String trait) {
             this.trait = this.trait == null ? trait : this.trait + ',' + trait;
         }
+
         public String trait;
 
         @Parameter(names = {"--cohort"}, description = COHORT_DESCR)
@@ -244,7 +243,7 @@ public class ClinicalCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {CANCER_TIERING_RUN_COMMAND}, commandDescription = CancerTieringInterpretationAnalysis.DESCRIPTION)
+    @Parameters(commandNames = {""}, commandDescription = CancerTieringInterpretationAnalysis.DESCRIPTION)
     public class CancerTieringCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
@@ -256,7 +255,8 @@ public class ClinicalCommandOptions {
         @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical analysis", required = true, arity = 1)
         public String clinicalAnalysis;
 
-        @Parameter(names = {"--" + DISCARDED_VARIANTS_PARAM_NAME}, description = "Comma separated list of variant IDs to discard", arity = 1)
+        @Parameter(names = {"--" + DISCARDED_VARIANTS_PARAM_NAME}, description = "Comma separated list of variant IDs to discard", arity
+                = 1)
         public List<String> discardedVariants;
 
         @Parameter(names = {"--" + PRIMARY_INTERPRETATION_PARAM_NAME}, description = "Primary interpretation", arity = 0)
@@ -277,14 +277,16 @@ public class ClinicalCommandOptions {
         @ParametersDelegate
         public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
-        @Parameter(names = {"--" + RgaAnalysisParams.FILE}, description = "Json file containing the KnockoutByIndividual information", required = true, arity = 1)
+        @Parameter(names = {"--" + RgaAnalysisParams.FILE}, description = "Json file containing the KnockoutByIndividual information",
+                required = true, arity = 1)
         public String file;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
         public String outdir;
     }
 
-    @Parameters(commandNames = {RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND}, commandDescription = AuxiliarRgaAnalysis.DESCRIPTION)
+    @Parameters(commandNames = {RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND}, commandDescription =
+            AuxiliarRgaAnalysis.DESCRIPTION)
     public class RgaAuxiliarSecondaryIndexCommandOptions extends GeneralCliOptions.StudyOption {
 
         public static final String RGA_AUX_INDEX_RUN_COMMAND = AuxiliarRgaAnalysis.ID + "-run";

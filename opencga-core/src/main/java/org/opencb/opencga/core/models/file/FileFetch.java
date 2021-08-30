@@ -49,15 +49,17 @@ public class FileFetch {
         return url;
     }
 
-    public void setUrl(String url) {
+    public FileFetch setUrl(String url) {
         this.url = url;
+        return this;
     }
 
     public String getPath() {
         return path;
     }
 
-    public void setPath(String path) {
+    public FileFetch setPath(String path) {
         this.path = path;
+        return this;
     }
 }

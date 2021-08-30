@@ -1,10 +1,10 @@
 options:
-  server_url: http://localhost:8080/opencga
+  server_url: http://localhost:8080/opencga-2.2.0-dev
   version: 1.0
   cli_output_dir: opencga-client/src/main/java/org/opencb/opencga/client/rest/clients
   options_output_dir: ../../../../src/main/java/org/opencb/opencga/app/cli/main/options
-  executors_output_dir: ../../../../src/main/java/org/opencb/opencga/app/cli/main/executors/catalog
-  executors_package: org.opencb.opencga.app.cli.main.executors.catalog
+  executors_output_dir: ../../../../src/main/java/org/opencb/opencga/app/cli/main/executors
+  executors_package: org.opencb.opencga.app.cli.main.executors
   options_package: org.opencb.opencga.app.cli.main.options
   parser_package: org.opencb.opencga.app.cli.main
   ignore_types:
@@ -71,7 +71,7 @@ api:
     key: Variant
   Analysis - Clinical:
     ignore: False
-    key: Clinical
+    key: ClinicalAnalysis
   Operations - Variant Storage:
     ignore: False
     key: VariantOperation

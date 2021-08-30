@@ -58,7 +58,8 @@ public class VariantFamilyIndexParams extends ToolParams {
         return skipIncompleteFamilies;
     }
 
-    public void setSkipIncompleteFamilies(boolean skipIncompleteFamilies) {
+    public VariantFamilyIndexParams setSkipIncompleteFamilies(boolean skipIncompleteFamilies) {
         this.skipIncompleteFamilies = skipIncompleteFamilies;
+        return this;
     }
 }

@@ -80,8 +80,9 @@ public class VariantExportParams extends VariantQueryParams {
         return this;
     }
 
-    public void setVariantsFile(String variantsFile) {
+    public VariantExportParams setVariantsFile(String variantsFile) {
         this.variantsFile = variantsFile;
+        return this;
     }
 
     public String getVariantsFile() {

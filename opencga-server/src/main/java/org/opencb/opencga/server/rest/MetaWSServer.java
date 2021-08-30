@@ -39,6 +39,7 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.time.Duration;
 import java.time.LocalTime;
@@ -341,19 +342,19 @@ public class MetaWSServer extends OpenCGAWSServer {
                                     try {
                                         Class<?> aClass = Class.forName(typeClass);
                                         for (Field declaredField : aClass.getDeclaredFields()) {
-                                            //  if (declaredField != null && isPrimitive(declaredField)) {
-                                            Map<String, Object> innerparams = new LinkedHashMap<>();
-                                            innerparams.put("name", declaredField.getName());
-                                            innerparams.put("param", "typeClass");
-                                            innerparams.put("type", declaredField.getType().getSimpleName());
-                                            innerparams.put("typeClass", declaredField.getType().getName() + ";");
-                                            innerparams.put("allowedValues", "");
-                                            innerparams.put("required", "false");
-                                            innerparams.put("defaultValue", "");
-                                            innerparams.put("description", "The body web service " + declaredField.getName() + " " +
-                                                    "parameter");
-                                            bodyParams.add(innerparams);
-                                            // }
+                                            if (isPrivateField(declaredField)) {
+                                                Map<String, Object> innerparams = new LinkedHashMap<>();
+                                                innerparams.put("name", declaredField.getName());
+                                                innerparams.put("param", "typeClass");
+                                                innerparams.put("type", declaredField.getType().getSimpleName());
+                                                innerparams.put("typeClass", declaredField.getType().getName() + ";");
+                                                innerparams.put("allowedValues", "");
+                                                innerparams.put("required", "false");
+                                                innerparams.put("defaultValue", "");
+                                                innerparams.put("description", "The body web service " + declaredField.getName() + " " +
+                                                        "parameter");
+                                                bodyParams.add(innerparams);
+                                            }
                                         }
                                     } catch (ClassNotFoundException e) {
                                         System.err.println("Error procesando " + typeClass);
@@ -381,6 +382,11 @@ public class MetaWSServer extends OpenCGAWSServer {
         Collections.sort(endpoints, Comparator.comparing(endpoint -> (String) endpoint.get("path")));
         map.put("endpoints", endpoints);
         return map;
+    }
+
+    private boolean isPrivateField(Field declaredField) {
+
+        return declaredField != null && Modifier.isPrivate(declaredField.getModifiers());
     }
 
     private boolean isPrimitive(Field declaredField) {

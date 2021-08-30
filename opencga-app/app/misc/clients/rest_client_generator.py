@@ -1,10 +1,10 @@
 import os
 import re
-import sys
 from abc import ABC, abstractmethod
 from datetime import datetime
 
 import requests
+import sys
 import yaml
 
 
@@ -35,6 +35,15 @@ class RestClientGenerator(ABC):
         self.exclude_command_params = {}
         self.read_yaml()
         self.json_resource = requests.get(self.server_url + '/webservices/rest/v2/meta/api').json()['responses'][0]['results'][0]
+
+        '''
+        TODO Remove in json when variable is not private 
+        '''
+        self.excluded_parameters = [
+            'DESCRIPTION', 'CELLBASE_VERSION', 'FILE', 'CELLBASE_HOST', 'DEFAULT_FILE_POSITION_SIZE_BITS', 'RESUME', 'INPUT_COLUMNS',
+            'COHORT2', 'COHORT1', 'SCORE_NAME', 'STATS_SKIP_VALUE', 'FLAGSTATS_SKIP_VALUE', 'FASTQC_METRICS_SKIP_VALUE',
+            'HS_METRICS_SKIP_VALUE'
+        ]
 
     def read_yaml(self):
         yaml_file = open("cli_config.yaml", 'r')
@@ -88,6 +97,12 @@ class RestClientGenerator(ABC):
 
     def get_as_variable_name(self, attribute):
         return attribute[0].lower() + attribute[1:]
+
+    def check_not_ignored_command(self, param, method_name):
+        res = True
+        if param in self.exclude_commands.keys() and method_name in self.exclude_commands[param]:
+            res = False
+        return res
 
     @staticmethod
     def get_category_name(category):

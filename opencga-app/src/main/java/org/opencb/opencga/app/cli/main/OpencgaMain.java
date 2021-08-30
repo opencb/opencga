@@ -19,12 +19,7 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.ParameterException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.analysis.AlignmentCommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.analysis.ClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.analysis.VariantCommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.catalog.*;
-import org.opencb.opencga.app.cli.main.executors.operations.OperationsCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.OperationsCommandOptions;
+import org.opencb.opencga.app.cli.main.executors.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +90,7 @@ public class OpencgaMain {
                 } else {
                     switch (parsedCommand) {
                         case "users":
-                            commandExecutor = new UserCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            commandExecutor = new UserCommandExecutor(cliOptionsParser.getUserCommandOptions());
                             break;
                         case "projects":
                             commandExecutor = new ProjectCommandExecutor(cliOptionsParser.getProjectCommandOptions());
@@ -104,37 +99,37 @@ public class OpencgaMain {
                             commandExecutor = new StudyCommandExecutor(cliOptionsParser.getStudyCommandOptions());
                             break;
                         case "files":
-                            commandExecutor = new FileCommandExecutor(cliOptionsParser.getFileCommands());
+                            commandExecutor = new FileCommandExecutor(cliOptionsParser.getFileCommandOptions());
                             break;
                         case "jobs":
-                            commandExecutor = new JobCommandExecutor(cliOptionsParser.getJobsCommands());
+                            commandExecutor = new JobCommandExecutor(cliOptionsParser.getJobCommandOptions());
                             break;
                         case "individuals":
-                            commandExecutor = new IndividualCommandExecutor(cliOptionsParser.getIndividualsCommands());
+                            commandExecutor = new IndividualCommandExecutor(cliOptionsParser.getIndividualCommandOptions());
                             break;
                         case "samples":
-                            commandExecutor = new SampleCommandExecutor(cliOptionsParser.getSampleCommands());
+                            commandExecutor = new SampleCommandExecutor(cliOptionsParser.getSampleCommandOptions());
                             break;
                         case "cohorts":
-                            commandExecutor = new CohortCommandExecutor(cliOptionsParser.getCohortCommands());
+                            commandExecutor = new CohortCommandExecutor(cliOptionsParser.getCohortCommandOptions());
                             break;
                         case "panels":
-                            commandExecutor = new PanelCommandExecutor(cliOptionsParser.getPanelCommands());
+                            commandExecutor = new DiseasePanelCommandExecutor(cliOptionsParser.getDiseasePanelCommandOptions());
                             break;
                         case "families":
-                            commandExecutor = new FamilyCommandExecutor(cliOptionsParser.getFamilyCommands());
+                            commandExecutor = new FamilyCommandExecutor(cliOptionsParser.getFamilyCommandOptions());
                             break;
                         case "alignments":
-                            commandExecutor = new AlignmentCommandExecutor(cliOptionsParser.getAlignmentCommands());
+                            commandExecutor = new AlignmentCommandExecutor(cliOptionsParser.getAlignmentCommandOptions());
                             break;
                         case "variant":
-                            commandExecutor = new VariantCommandExecutor(cliOptionsParser.getVariantCommands());
+                            commandExecutor = new VariantCommandExecutor(cliOptionsParser.getVariantCommandOptions());
                             break;
                         case "clinical":
-                            commandExecutor = new ClinicalCommandExecutor(cliOptionsParser.getClinicalCommandOptions());
+                            commandExecutor = new ClinicalAnalysisCommandExecutor(cliOptionsParser.getClinicalAnalysisCommandOptions());
                             break;
-                        case OperationsCommandOptions.OPERATIONS_COMMAND:
-                            commandExecutor = new OperationsCommandExecutor(cliOptionsParser.getOperationsCommands());
+                        case "variantoperation":
+                            commandExecutor = new VariantOperationCommandExecutor(cliOptionsParser.getVariantOperationCommandOptions());
                             break;
                         case "meta":
                             commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
@@ -159,5 +154,4 @@ public class OpencgaMain {
             }
         }
     }
-
 }
