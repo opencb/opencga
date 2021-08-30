@@ -342,7 +342,8 @@ public class MetaWSServer extends OpenCGAWSServer {
                                         Class<?> aClass = Class.forName(typeClass);
                                         for (Field declaredField : aClass.getDeclaredFields()) {
                                             //  if (declaredField != null && isPrimitive(declaredField)) {
-                                            if (!StringUtils.isAllUpperCase(declaredField.getName())) {
+                                            // Ignore all CONSTANTS_VARIABLES by checking the case
+                                            if (!StringUtils.isAllUpperCase(declaredField.getName().replace("_", ""))) {
                                                 Map<String, Object> innerparams = new LinkedHashMap<>();
                                                 innerparams.put("name", declaredField.getName());
                                                 innerparams.put("param", "typeClass");
