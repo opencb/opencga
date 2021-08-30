@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -37,6 +38,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.time.Duration;
@@ -275,7 +277,8 @@ public class MetaWSServer extends OpenCGAWSServer {
                 LinkedHashMap<String, Object> endpoint = new LinkedHashMap<>();
                 endpoint.put("path", map.get("path") + pathAnnotation.value());
                 endpoint.put("method", httpMethod);
-                endpoint.put("response", StringUtils.substringAfterLast(apiOperationAnnotation.response().getName().replace("Void", ""), "."));
+                endpoint.put("response", StringUtils.substringAfterLast(apiOperationAnnotation.response().getName().replace("Void", ""),
+                        "."));
 
                 String responseClass = apiOperationAnnotation.response().getName().replace("Void", "");
                 endpoint.put("responseClass", responseClass.endsWith(";") ? responseClass : responseClass + ";");
@@ -304,6 +307,8 @@ public class MetaWSServer extends OpenCGAWSServer {
                     for (Parameter methodParameter : methodParameters) {
                         ApiParam apiParam = methodParameter.getAnnotation(ApiParam.class);
                         if (apiParam != null && !apiParam.hidden()) {
+
+                            List<Map> bodyParams = new ArrayList<>();
                             LinkedHashMap<String, Object> parameter = new LinkedHashMap<>();
                             if (methodParameter.getAnnotation(PathParam.class) != null) {
                                 parameter.put("name", methodParameter.getAnnotation(PathParam.class).value());
@@ -333,6 +338,28 @@ public class MetaWSServer extends OpenCGAWSServer {
                                     }
                                 } else {
                                     type = "object";
+                                    try {
+                                        Class<?> aClass = Class.forName(typeClass);
+                                        for (Field declaredField : aClass.getDeclaredFields()) {
+                                            //  if (declaredField != null && isPrimitive(declaredField)) {
+                                            if (!StringUtils.isAllUpperCase(declaredField.getName())) {
+                                                Map<String, Object> innerparams = new LinkedHashMap<>();
+                                                innerparams.put("name", declaredField.getName());
+                                                innerparams.put("param", "typeClass");
+                                                innerparams.put("type", declaredField.getType().getSimpleName());
+                                                innerparams.put("typeClass", declaredField.getType().getName() + ";");
+                                                innerparams.put("allowedValues", "");
+                                                innerparams.put("required", "false");
+                                                innerparams.put("defaultValue", "");
+                                                innerparams.put("description", "The body web service " + declaredField.getName() + " " +
+                                                        "parameter");
+                                                bodyParams.add(innerparams);
+                                            }
+                                            // }
+                                        }
+                                    } catch (ClassNotFoundException e) {
+                                        System.err.println("Error procesando " + typeClass);
+                                    }
                                 }
                             }
                             parameter.put("type", type);
@@ -341,6 +368,9 @@ public class MetaWSServer extends OpenCGAWSServer {
                             parameter.put("required", apiParam.required());
                             parameter.put("defaultValue", apiParam.defaultValue());
                             parameter.put("description", apiParam.value());
+                            if (!bodyParams.isEmpty()) {
+                                parameter.put("data", bodyParams);
+                            }
                             parameters.add(parameter);
                         }
                     }
