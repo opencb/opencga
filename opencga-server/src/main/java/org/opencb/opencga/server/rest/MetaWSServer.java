@@ -308,8 +308,7 @@ public class MetaWSServer extends OpenCGAWSServer {
                     for (Parameter methodParameter : methodParameters) {
                         ApiParam apiParam = methodParameter.getAnnotation(ApiParam.class);
                         if (apiParam != null && !apiParam.hidden()) {
-
-                            List<Map> bodyParams = new ArrayList<>();
+                            List<Map<String, Object>> bodyParams = new ArrayList<>();
                             LinkedHashMap<String, Object> parameter = new LinkedHashMap<>();
                             if (methodParameter.getAnnotation(PathParam.class) != null) {
                                 parameter.put("name", methodParameter.getAnnotation(PathParam.class).value());
@@ -342,22 +341,24 @@ public class MetaWSServer extends OpenCGAWSServer {
                                     try {
                                         Class<?> aClass = Class.forName(typeClass);
                                         for (Field declaredField : aClass.getDeclaredFields()) {
-                                            if (isPrivateField(declaredField)) {
-                                                Map<String, Object> innerparams = new LinkedHashMap<>();
-                                                innerparams.put("name", declaredField.getName());
-                                                innerparams.put("param", "typeClass");
-                                                innerparams.put("type", declaredField.getType().getSimpleName());
-                                                innerparams.put("typeClass", declaredField.getType().getName() + ";");
-                                                innerparams.put("allowedValues", "");
-                                                innerparams.put("required", "false");
-                                                innerparams.put("defaultValue", "");
-                                                innerparams.put("description", "The body web service " + declaredField.getName() + " " +
+                                            int modifiers = declaredField.getModifiers();
+                                            // Ignore non-private or static fields
+                                            if (Modifier.isPrivate(modifiers) && !Modifier.isStatic(modifiers)) {
+                                                Map<String, Object> innerParams = new LinkedHashMap<>();
+                                                innerParams.put("name", declaredField.getName());
+                                                innerParams.put("param", "typeClass");
+                                                innerParams.put("type", declaredField.getType().getSimpleName());
+                                                innerParams.put("typeClass", declaredField.getType().getName() + ";");
+                                                innerParams.put("allowedValues", "");
+                                                innerParams.put("required", "false");
+                                                innerParams.put("defaultValue", "");
+                                                innerParams.put("description", "The body web service " + declaredField.getName() + " " +
                                                         "parameter");
-                                                bodyParams.add(innerparams);
+                                                bodyParams.add(innerParams);
                                             }
                                         }
                                     } catch (ClassNotFoundException e) {
-                                        System.err.println("Error procesando " + typeClass);
+                                        logger.error("Error processing: " + typeClass);
                                     }
                                 }
                             }
@@ -379,27 +380,9 @@ public class MetaWSServer extends OpenCGAWSServer {
             }
         }
 
-        Collections.sort(endpoints, Comparator.comparing(endpoint -> (String) endpoint.get("path")));
+        endpoints.sort(Comparator.comparing(endpoint -> (String) endpoint.get("path")));
         map.put("endpoints", endpoints);
         return map;
-    }
-
-    private boolean isPrivateField(Field declaredField) {
-
-        return declaredField != null && Modifier.isPrivate(declaredField.getModifiers());
-    }
-
-    private boolean isPrimitive(Field declaredField) {
-        List<String> primitiveTypes = new ArrayList<>();
-        primitiveTypes.add("java.lang.String");
-        primitiveTypes.add("java.lang.Boolean");
-        primitiveTypes.add("java.lang.Integer");
-        primitiveTypes.add("java.lang.Long");
-        primitiveTypes.add("java.lang.Short");
-        primitiveTypes.add("java.lang.Double");
-        primitiveTypes.add("java.lang.Float");
-
-        return declaredField.getType().isPrimitive() || primitiveTypes.contains(declaredField.getType().getName());
     }
 
     private boolean isHealthy() {
