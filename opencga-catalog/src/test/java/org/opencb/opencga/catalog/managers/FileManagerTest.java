@@ -1507,6 +1507,62 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void removeFileReferencesFromSamplesOnFileDeleteTest() throws CatalogException {
+        String fileId = "data:test:folder:test_0.1K.png";
+        File file = fileManager.get(studyFqn, fileId, QueryOptions.empty(), token).first();
+        assertFalse(file.getSampleIds().isEmpty());
+        assertEquals(5, file.getSampleIds().size());
+
+        List<Sample> samples = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), fileId), QueryOptions.empty(), token).getResults();
+        assertEquals(5, samples.size());
+
+        for (Sample sample : samples) {
+            assertEquals(1, sample.getFileIds().size());
+            assertEquals(fileId, sample.getFileIds().get(0));
+        }
+
+        // Send to TRASH BIN
+        setToPendingDelete(studyFqn, new Query(FileDBAdaptor.QueryParams.ID.key(), fileId));
+        fileManager.delete(studyFqn, Collections.singletonList(fileId), QueryOptions.empty(), token);
+
+        file = fileManager.get(studyFqn, fileId, QueryOptions.empty(), token).first();
+        assertFalse(file.getSampleIds().isEmpty());
+        assertEquals(5, file.getSampleIds().size());
+        assertEquals(FileStatus.TRASHED, file.getInternal().getStatus().getName());
+
+        samples = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), fileId), QueryOptions.empty(), token).getResults();
+        assertEquals(5, samples.size());
+
+        for (Sample sample : samples) {
+            assertEquals(1, sample.getFileIds().size());
+            assertEquals(fileId, sample.getFileIds().get(0));
+        }
+
+        // Delete permanently
+        setToPendingDelete(studyFqn, new Query(FileDBAdaptor.QueryParams.ID.key(), fileId));
+        fileManager.delete(studyFqn, Collections.singletonList(fileId), new QueryOptions(Constants.SKIP_TRASH, true), token);
+
+        List<Sample> noResults = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.FILE_IDS.key(), fileId), QueryOptions.empty(), token).getResults();
+        assertEquals(0, noResults.size());
+
+        samples = catalogManager.getSampleManager().get(studyFqn, samples.stream().map(Sample::getId).collect(Collectors.toList()),
+                QueryOptions.empty(), token).getResults();
+        assertEquals(5, samples.size());
+
+        for (Sample sample : samples) {
+            assertEquals(0, sample.getFileIds().size());
+        }
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Missing");
+        fileManager.get(studyFqn, fileId, QueryOptions.empty(), token).first();
+    }
+
+
+    @Test
     public void testDeleteLeafFolder() throws CatalogException, IOException {
         File deletable = fileManager.get(studyFqn, "/data/test/folder/", QueryOptions.empty(), token).first();
         deleteFolderAndCheck(deletable);
