@@ -833,6 +833,25 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         individualDBAdaptor.removeSampleReferences(clientSession, studyUid, sample.getUid());
     }
 
+    void removeFileReferences(ClientSession clientSession, long studyUid, String fileId)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        UpdateDocument document = new UpdateDocument();
+
+        document.getPull().put(QueryParams.FILE_IDS.key(), fileId);
+        Document updateDocument = document.toFinalUpdateDocument();
+
+        Query query = new Query()
+            .append(QueryParams.STUDY_UID.key(), studyUid)
+            .append(QueryParams.FILE_IDS.key(), fileId);
+        Bson bsonQuery = parseQuery(query);
+
+        logger.debug("Removing file from sample '{}' field. Query: {}, Update: {}", QueryParams.FILE_IDS.key(),
+                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        DataResult result = sampleCollection.update(clientSession, bsonQuery, updateDocument, new QueryOptions("multi", true));
+        logger.debug("File '{}' removed from {} samples", fileId, result.getNumUpdated());
+    }
+
     // TODO: Check clean
     public OpenCGAResult<Sample> clean(long id) throws CatalogDBException {
         throw new UnsupportedOperationException("Clean is not yet implemented.");
