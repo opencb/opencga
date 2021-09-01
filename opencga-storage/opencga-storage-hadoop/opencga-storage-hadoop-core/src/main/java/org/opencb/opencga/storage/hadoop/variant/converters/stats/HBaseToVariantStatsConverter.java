@@ -159,6 +159,7 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
         stats.setMissingGenotypeCount(protoStats.getMissingGenotypeCount());
         stats.setQualityAvg(protoStats.getQualityAvg());
         stats.setQualityCount(protoStats.getQualityCount());
+        stats.setSampleCount(protoStats.getSampleCount());
 
         stats.setGenotypeCount(protoStats.getGenotypeCountMap());
         stats.setGenotypeFreq(protoStats.getGenotypeFreqMap());

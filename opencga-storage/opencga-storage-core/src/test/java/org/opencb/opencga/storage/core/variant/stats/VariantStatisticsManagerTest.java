@@ -57,7 +57,8 @@ import static org.junit.Assert.assertTrue;
 @Ignore
 public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTest {
 
-    public static final String VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
+//    public static final String VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
+    public static final String VCF_TEST_FILE_NAME = "variant-test-somatic.vcf";
     protected StudyMetadata studyMetadata;
     protected VariantDBAdaptor dbAdaptor;
 
@@ -79,7 +80,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         studyMetadata = newStudyMetadata();
         clearDB(DB_NAME);
         runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata,
-                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false).append(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), true));
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
     }
 
