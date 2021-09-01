@@ -789,6 +789,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         long fileUid = fileDocument.getLong(PRIVATE_UID);
         long studyUid = fileDocument.getLong(PRIVATE_STUDY_UID);
+        String fileId = fileDocument.getString(QueryParams.ID.key());
         String path = fileDocument.getString(QueryParams.PATH.key());
 
         Query query = new Query(QueryParams.STUDY_UID.key(), studyUid);
@@ -804,6 +805,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
             return endWrite(tmpStartTime, fileCollection.update(parseQuery(query), update, multi));
         } else {
+            // Delete file references from all referenced samples
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().removeFileReferences(clientSession, studyUid, fileId);
+
             // DELETED AND REMOVED status
             QueryOptions options = new QueryOptions()
                     .append(QueryOptions.SORT, QueryParams.PATH.key())
