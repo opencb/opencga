@@ -84,8 +84,8 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -176,9 +176,10 @@ public class VariantWebService extends AnalysisWebService {
         return createErrorResponse(new UnsupportedOperationException("Deprecated endpoint. Please, use via POST"));
     }
 
+    @Deprecated
     @POST
     @Path("/index/run")
-    @ApiOperation(value = VariantIndexOperationTool.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = DEPRECATED + "Use operation/variant/index", response = Job.class)
     public Response variantFileIndex(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
@@ -189,9 +190,10 @@ public class VariantWebService extends AnalysisWebService {
         return submitJob(VariantIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
+    @Deprecated
     @DELETE
     @Path("/file/delete")
-    @ApiOperation(value = VariantFileDeleteOperationTool.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = DEPRECATED + "Use operation/variant/delete", response = Job.class)
     public Response variantFileDelete(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -682,16 +684,22 @@ public class VariantWebService extends AnalysisWebService {
             // Annotation filters
             @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "biotype", value = ANNOT_BIOTYPE_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transcriptFlag", value = ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "clinical", value = ANNOT_CLINICAL_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "clinicalSignificance", value = ANNOT_CLINICAL_SIGNIFICANCE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "clinicalConfirmedStatus", value = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR, dataType = "boolean", paramType = "query"),
     })
     @ApiOperation(value = "Obtain sample variant stats from a sample.", response = SampleVariantStats.class)
-    public Response sampleStatsQuery(@ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION, required = true) @QueryParam("sample") String sample) {
+    public Response sampleStatsQuery(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+                                     @ApiParam(value = "Do filter transcripts when obtaining transcript counts") @QueryParam("filterTranscript") boolean filterTranscript,
+                                     @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION, required = true) @QueryParam("sample") String sample) {
         return run(() -> {
             Query query = getVariantQuery();
-            return variantManager.getSampleStats(this.query.getString("study"), sample, query, token);
+            queryOptions.put("filterTranscript", filterTranscript);
+//            logger.info("Filter transcript = {} (raw: '{}')",
+//                    queryOptions.getBoolean("filterTranscript", false), queryOptions.get("filterTranscript"));
+            return variantManager.getSampleStats(studyStr, sample, query, queryOptions, token);
         });
     }
 

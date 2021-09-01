@@ -21,12 +21,16 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.query.executors.accumulators.*;
+import org.opencb.opencga.storage.hadoop.variant.index.core.CategoricalMultiValuedIndexField;
+import org.opencb.opencga.storage.hadoop.variant.index.core.CombinationTripleIndexSchema.CombinationTriple;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleVariantIndexEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +45,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
     private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
     private VariantStorageMetadataManager metadataManager;
     private static final Pattern CATEGORICAL_PATTERN = Pattern.compile("^([a-zA-Z][a-zA-Z0-9_.:]+)(\\[[a-zA-Z0-9\\-,:*]+])?(:\\*|:\\d+)?$");
+    private Logger logger = LoggerFactory.getLogger(SampleIndexVariantAggregationExecutor.class);
 
     public static final Set<String> VALID_FACETS = new HashSet<>(Arrays.asList(
             CHROM_DENSITY,
@@ -50,6 +55,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
             "consequenceType", "ct",
             "biotype", "bt",
             "clinicalSignificance",
+            "transcriptFlag",
             "mendelianError", "me",
             "length",
             "titv"
@@ -103,9 +109,11 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
     @Override
     protected VariantQueryResult<FacetField> aggregation(Query query, QueryOptions options, String facet) throws Exception {
         StopWatch stopWatch = StopWatch.createStarted();
-
-        List<FacetFieldAccumulator<SampleVariantIndexEntry>> accumulators = createAccumulators(query, facet);
+        boolean filterTranscript = options.getBoolean("filterTranscript", false);
+        List<FacetFieldAccumulator<SampleVariantIndexEntry>> accumulators = createAccumulators(query, facet, filterTranscript);
         List<FacetField> fields = new ArrayList<>();
+
+        logger.info("Filter transcript = {}", filterTranscript);
 
         try (CloseableIterator<SampleVariantIndexEntry> sampleVariantIndexEntryIterator = sampleIndexDBAdaptor.rawIterator(query)) {
             // Init top level fields
@@ -139,19 +147,24 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
         }
     }
 
-    private List<FacetFieldAccumulator<SampleVariantIndexEntry>> createAccumulators(Query query, String facet) {
+    private List<FacetFieldAccumulator<SampleVariantIndexEntry>> createAccumulators(Query query, String facet, boolean filterTranscript) {
         List<FacetFieldAccumulator<SampleVariantIndexEntry>> list = new ArrayList<>();
         for (String f : facet.split(FACET_SEPARATOR)) {
-            list.add(createAccumulator(query, f));
+            list.add(createAccumulator(query, f, filterTranscript));
         }
         return list;
     }
 
-    private FacetFieldAccumulator<SampleVariantIndexEntry> createAccumulator(Query query, String facet) {
+    private FacetFieldAccumulator<SampleVariantIndexEntry> createAccumulator(Query query, String facet, boolean filterTranscript) {
         String[] split = facet.split(NESTED_FACET_SEPARATOR);
         FacetFieldAccumulator<SampleVariantIndexEntry> accumulator = null;
         StudyMetadata defaultStudy = VariantQueryParser.getDefaultStudy(query, metadataManager);
         SampleIndexSchema schema = sampleIndexDBAdaptor.getSchema(defaultStudy.getId());
+
+        Set<String> ctFilter = new HashSet<>(VariantQueryUtils
+                .parseConsequenceTypes(query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())));
+        Set<String> biotypeFilter = new HashSet<>(query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key()));
+        Set<String> transcriptFlagFilter = new HashSet<>(query.getAsStringList(VariantQueryParam.ANNOT_TRANSCRIPT_FLAG.key()));
 
         // Reverse traverse
         for (int i = split.length - 1; i >= 0; i--) {
@@ -238,34 +251,139 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                 case "consequenceType":
                 case "ct": {
                     IndexField<List<String>> field = schema.getCtIndex().getField();
-                    thisAccumulator = new CategoricalAccumulator<>(
-                            s -> s.getAnnotationIndexEntry() == null
-                                    ? Collections.emptyList()
-                                    : field.decode(s.getAnnotationIndexEntry().getCtIndex()),
-                            fieldKey);
+                    if (filterTranscript) {
+                        thisAccumulator = new CategoricalAccumulator<>(
+                                s -> {
+                                    if (s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasCtIndex()) {
+                                        return Collections.emptyList();
+                                    }
+                                    Set<String> cts = new HashSet<>(field.decode(s.getAnnotationIndexEntry().getCtIndex()));
+                                    if (!ctFilter.isEmpty()) {
+                                        cts.removeIf(ct -> !ctFilter.contains(ct));
+                                    }
+                                    if (!biotypeFilter.isEmpty() || !transcriptFlagFilter.isEmpty()) {
+                                        Set<String> ctBt = new HashSet<>();
+                                        Set<String> ctTf = new HashSet<>();
+                                        schema.getCtBtTfIndex().getField()
+                                                .getTriples(
+                                                        s.getAnnotationIndexEntry().getCtBtTfCombination(),
+                                                        s.getAnnotationIndexEntry().getCtIndex(),
+                                                        s.getAnnotationIndexEntry().getBtIndex(),
+                                                        s.getAnnotationIndexEntry().getTfIndex())
+                                                .forEach(triple -> {
+                                                    if (biotypeFilter.contains(triple.getMiddle())) {
+                                                        ctBt.add(triple.getLeft());
+                                                    }
+                                                    if (transcriptFlagFilter.contains(triple.getRight())) {
+                                                        ctTf.add(triple.getLeft());
+                                                    }
+                                                });
+                                        if (!biotypeFilter.isEmpty()) {
+                                            cts.removeIf(ct -> !ctBt.contains(ct));
+                                        }
+                                        if (!transcriptFlagFilter.isEmpty()) {
+                                            cts.removeIf(ct -> !ctTf.contains(ct));
+                                        }
+                                    }
+                                    return cts;
+                                },
+                                fieldKey);
+                    } else {
+                        thisAccumulator = new CategoricalAccumulator<>(
+                                s -> s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasCtIndex()
+                                        ? Collections.emptyList()
+                                        : field.decode(s.getAnnotationIndexEntry().getCtIndex()),
+                                fieldKey);
+                    }
                     break;
                 }
                 case "bt":
                 case "biotype": {
                     IndexField<List<String>> field = schema.getBiotypeIndex().getField();
-                    thisAccumulator = new CategoricalAccumulator<>(
-                            s -> s.getAnnotationIndexEntry() == null
-                                    ? Collections.emptyList()
-                                    : field.decode(s.getAnnotationIndexEntry().getBtIndex()),
-                            fieldKey);
+                    if (filterTranscript) {
+                        thisAccumulator = new CategoricalAccumulator<>(
+                                s -> {
+                                    if (s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasBtIndex()) {
+                                        return Collections.emptyList();
+                                    }
+                                    Set<String> bts = new HashSet<>(field.decode(s.getAnnotationIndexEntry().getBtIndex()));
+                                    if (!biotypeFilter.isEmpty()) {
+                                        bts.removeIf(bt -> !biotypeFilter.contains(bt));
+                                    }
+                                    if (!ctFilter.isEmpty() || !transcriptFlagFilter.isEmpty()) {
+                                        Set<String> btCt = new HashSet<>();
+                                        Set<String> btTf = new HashSet<>();
+                                        CombinationTriple ctBtTfCombination = s.getAnnotationIndexEntry().getCtBtTfCombination();
+                                        schema.getCtBtTfIndex().getField()
+                                                .getTriples(
+                                                        ctBtTfCombination,
+                                                        s.getAnnotationIndexEntry().getCtIndex(),
+                                                        s.getAnnotationIndexEntry().getBtIndex(),
+                                                        s.getAnnotationIndexEntry().getTfIndex())
+                                                .forEach(pair -> {
+                                                    if (ctFilter.contains(pair.getLeft())) {
+                                                        btCt.add(pair.getMiddle());
+                                                    }
+                                                    if (transcriptFlagFilter.contains(pair.getRight())) {
+                                                        btTf.add(pair.getMiddle());
+                                                    }
+                                                });
+                                        if (!ctFilter.isEmpty()) {
+                                            bts.removeIf(ct -> !btCt.contains(ct));
+                                        }
+                                        if (!transcriptFlagFilter.isEmpty()) {
+                                            bts.removeIf(ct -> !btTf.contains(ct));
+                                        }
+                                    }
+                                    return bts;
+                                },
+                                fieldKey);
+                    } else {
+                        thisAccumulator = new CategoricalAccumulator<>(
+                                s -> s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasBtIndex()
+                                        ? Collections.emptyList()
+                                        : field.decode(s.getAnnotationIndexEntry().getBtIndex()),
+                                fieldKey);
+                    }
                     break;
                 }
-                case "clinicalSignificance":
+                case "transcriptFlag": {
+                    CategoricalMultiValuedIndexField<String> field = schema.getTranscriptFlagIndexSchema().getField();
+                    thisAccumulator = new CategoricalAccumulator<>(
+                            s -> {
+                                if (s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasTfIndex()) {
+                                    return Collections.emptyList();
+                                }
+                                return field.decode(s.getAnnotationIndexEntry().getTfIndex());
+                            },
+                            "transcriptFlag");
+                    break;
+                }
+                case "clinicalSignificance": {
+                    CategoricalMultiValuedIndexField<String> field = schema.getClinicalIndexSchema().getClinicalSignificanceField();
                     thisAccumulator = new CategoricalAccumulator<>(
                             s -> {
                                 if (s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasClinical()) {
                                     return Collections.emptyList();
                                 }
-                                return schema.getClinicalIndexSchema().getClinicalSignificanceField()
-                                        .readAndDecode(s.getAnnotationIndexEntry().getClinicalIndex());
+                                List<String> values = field.readAndDecode(s.getAnnotationIndexEntry().getClinicalIndex());
+                                Set<String> clinicalSignificance = new HashSet<>();
+                                for (String value : values) {
+                                    if (value.startsWith("cosmic_")) {
+                                        value = value.substring("cosmic_".length());
+                                    } else if (value.startsWith("clinvar_")) {
+                                        value = value.substring("clinvar_".length());
+                                    }
+                                    if (value.endsWith("_confirmed")) {
+                                        value = value.substring(0, value.length() - "_confirmed".length());
+                                    }
+                                    clinicalSignificance.add(value);
+                                }
+                                return clinicalSignificance;
                             },
                             "clinicalSignificance");
                     break;
+                }
                 case "mendelianError":
                 case "me":
                     thisAccumulator = new CategoricalAccumulator<>(

@@ -270,7 +270,7 @@ public final class VariantQueryParam implements QueryParam {
             = new VariantQueryParam("populationFrequencyMaf", TEXT_ARRAY, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR);
 
     public static final String ANNOT_TRANSCRIPT_FLAG_DESCR
-            = "List of transcript annotation flags. e.g. CCDS, basic, cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno";
+            = "List of transcript flags. e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500";
     public static final VariantQueryParam ANNOT_TRANSCRIPT_FLAG
             = new VariantQueryParam("transcriptFlag", TEXT_ARRAY, ANNOT_TRANSCRIPT_FLAG_DESCR);
 

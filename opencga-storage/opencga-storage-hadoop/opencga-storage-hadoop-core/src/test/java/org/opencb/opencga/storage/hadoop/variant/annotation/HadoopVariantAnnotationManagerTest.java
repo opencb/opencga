@@ -49,7 +49,7 @@ public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManager
             // Update pending variants
             new TestMRExecutor().run(DiscoverPendingVariantsDriver.class,
                     DiscoverPendingVariantsDriver.buildArgs(engine.getDBAdaptor().getVariantTable(), AnnotationPendingVariantsDescriptor.class, new ObjectMap()),
-                    new ObjectMap(), "Prepare variants to annotate");
+                    "Prepare variants to annotate");
 
             long pendingVariantsCount = new PendingVariantsReader(new Query(), new AnnotationPendingVariantsDescriptor(), engine.getDBAdaptor()).stream().count();
             System.out.println("pendingVariants = " + pendingVariantsCount);

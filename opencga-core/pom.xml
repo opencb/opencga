@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.1.0-rc2-SNAPSHOT</version>
+        <version>2.1.0-rc3-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -121,6 +121,7 @@
                 <groupId>pl.project13.maven</groupId>
                 <artifactId>git-commit-id-plugin</artifactId>
                 <version>2.2.0</version>
+
                 <executions>
                     <execution>
                         <goals>
@@ -181,6 +182,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <version>3.3.0</version>
+
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
@@ -197,6 +199,7 @@
                                 <artifactId>commons-lib</artifactId>
                                 <version>${java-common-libs.version}</version>
                             </docletArtifact>
+                            <useStandardDocletOptions>true</useStandardDocletOptions>
                             <docletPath>${project.build.directory}/classes</docletPath>
                             <sourcepath>${project.basedir}/src/main/java</sourcepath>
                             <additionalOptions>
@@ -206,25 +209,54 @@
                                 <additionalOption>${project.basedir}/src/main/java</additionalOption>
                                 <additionalOption>-classes2Markdown</additionalOption>
                                 <additionalOption>
-                                    org.opencb.opencga.core.models.sample.Sample;org.opencb.opencga.core.models.sample.SampleCollection
+                                    org.opencb.opencga.core.models.cohort.Cohort;org.opencb.opencga.core.models.sample.Sample;org.opencb.opencga.core.models.clinical.ClinicalAnalysis;org.opencb.opencga.core.models.family.Family;org.opencb.opencga.core.models.file.File;org.opencb.opencga.core.models.individual.Individual;org.opencb.opencga.core.models.study.Study;org.opencb.opencga.core.models.project.Project;org.opencb.opencga.core.models.user.User;org.opencb.opencga.core.models.job.Job
                                 </additionalOption>
                                 <additionalOption>-tableTagsClasses</additionalOption>
                                 <additionalOption>
-                                    org.opencb.opencga.core.models.sample.Sample;org.opencb.opencga.core.models.sample.SampleCollection
+                                    org.opencb.opencga.core.models.cohort.Cohort;org.opencb.opencga.core.models.sample.Sample;org.opencb.opencga.core.models.clinical.ClinicalAnalysis;org.opencb.opencga.core.models.family.Family;org.opencb.opencga.core.models.file.File;org.opencb.opencga.core.models.individual.Individual;org.opencb.opencga.core.models.study.Study;org.opencb.opencga.core.models.project.Project;org.opencb.opencga.core.models.user.User;org.opencb.opencga.core.models.job.Job
                                 </additionalOption>
                                 <additionalOption>-jsondir</additionalOption>
                                 <additionalOption>${project.basedir}/src/main/resources/doc/json</additionalOption>
-                                <!--<additionalOption>-noPrintableRelatedClasses</additionalOption>
-                                <additionalOption>org.opencb.opencga.core.models.sample.SampleInternal</additionalOption>-->
                             </additionalOptions>
-                            <!-- <groups>
-                                 <group>
-                                     <title>Sample DataModel Packages</title>
-                                     <packages>org.opencb.opencga.core.models;org.opencb.biodata.models</packages>
-                                 </group>
-                             </groups>-->
+                            <groups>
+                                <group>
+                                    <title>Sample</title>
+                                    <packages>o org.opencb.opencga.core.models.sample</packages>
+                                </group>
+                                <group>
+                                    <title>ClinicalAnalysis</title>
+                                    <packages>org.opencb.opencga.core.models.clinical</packages>
+                                </group>
+                                <group>
+                                    <title>Family</title>
+                                    <packages>org.opencb.opencga.core.models.family</packages>
+                                </group>
+                                <group>
+                                    <title>File</title>
+                                    <packages>org.opencb.opencga.core.models.file</packages>
+                                </group>
+                                <group>
+                                    <title>Individual</title>
+                                    <packages>org.opencb.opencga.core.models.individual</packages>
+                                </group>
+                                <group>
+                                    <title>Study</title>
+                                    <packages>org.opencb.opencga.core.models.study</packages>
+                                </group>
+                                <group>
+                                    <title>Project</title>
+                                    <packages>org.opencb.opencga.core.models.project</packages>
+                                </group>
+                                <group>
+                                    <title>User</title>
+                                    <packages>org.opencb.opencga.core.models.user</packages>
+                                </group>
+                                <group>
+                                    <title>Cohort</title>
+                                    <packages>org.opencb.opencga.core.models.cohort</packages>
+                                </group>
+                            </groups>
                         </configuration>
-
                     </plugin>
                 </plugins>
             </build>

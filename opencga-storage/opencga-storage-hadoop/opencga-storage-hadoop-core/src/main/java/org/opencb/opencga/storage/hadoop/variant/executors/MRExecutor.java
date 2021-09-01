@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.hadoop.variant.executors;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.util.Tool;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.slf4j.Logger;
@@ -39,6 +40,7 @@ public abstract class MRExecutor {
 
     private ObjectMap options;
     private List<String> env;
+    private static Logger logger = LoggerFactory.getLogger(MRExecutor.class);
 
     public MRExecutor init(ObjectMap options) {
         this.options = options;
@@ -49,8 +51,8 @@ public abstract class MRExecutor {
     public static String getJarWithDependencies(ObjectMap options) throws StorageEngineException {
         String jar = options.getString(MR_JAR_WITH_DEPENDENCIES.key(), null);
         if (jar == null) {
-            throw new StorageEngineException("Missing option "
-                    + MR_JAR_WITH_DEPENDENCIES);
+            jar = "opencga-storage-hadoop-core-" + GitRepositoryState.get().getBuildVersion() + "-jar-with-dependencies.jar";
+//            throw new StorageEngineException("Missing option " + MR_JAR_WITH_DEPENDENCIES);
         }
         if (!Paths.get(jar).isAbsolute()) {
             jar = getOpencgaHome() + "/" + jar;
@@ -64,19 +66,12 @@ public abstract class MRExecutor {
 
     public <T extends Tool> void run(Class<T> execClass, String[] args, String taskDescription)
             throws StorageEngineException {
-        run(execClass, args, options, taskDescription);
-    }
-
-    @Deprecated
-    public <T extends Tool> void run(Class<T> execClass, String[] args, ObjectMap options, String taskDescription)
-            throws StorageEngineException {
-        Logger logger = LoggerFactory.getLogger(MRExecutor.class);
 
         StopWatch stopWatch = StopWatch.createStarted();
         logger.info("------------------------------------------------------");
         logger.info(taskDescription);
         logger.info("------------------------------------------------------");
-        int exitValue = run(execClass, args, options);
+        int exitValue = run(execClass, args);
         logger.info("------------------------------------------------------");
         logger.info("Exit value: {}", exitValue);
         logger.info("Total time: {}", TimeUtils.durationToString(stopWatch));
@@ -86,8 +81,7 @@ public abstract class MRExecutor {
         }
     }
 
-    @Deprecated
-    public <T extends Tool> int run(Class<T> execClass, String[] args, ObjectMap options) throws StorageEngineException {
+    public <T extends Tool> int run(Class<T> execClass, String[] args) throws StorageEngineException {
         String hadoopRoute = options.getString(MR_HADOOP_BIN.key(), MR_HADOOP_BIN.defaultValue());
         String jar = getJarWithDependencies(options);
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();

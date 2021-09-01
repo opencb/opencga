@@ -32,8 +32,8 @@ import java.util.*;
 public class Sample extends Annotable {
 
     /**
-     * Unique Sample ID in the study, this can be repeated across different studies. This is a mandatory parameter in the creation and
-     * cannot be changed at the moment.
+     * Sample ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter
+     * when creating a new sample, this ID cannot be changed at the moment.
      *
      * @apiNote Required, Immutable, Unique
      */
@@ -46,14 +46,32 @@ public class Sample extends Annotable {
      */
     private String uuid;
 
+    /**
+     * Describes how the sample was processed in the lab.
+     */
     private SampleProcessing processing;
+
+    /**
+     * Describes how the sample was collected.
+     *
+     * @apiNote
+     * @implNote The sample collection is a list of samples
+     * @since 2.1
+     */
     private SampleCollection collection;
 
+    /**
+     * Contains different metrics to evaluate the quality of the sample.
+     *
+     * @apiNote
+     * @implNote The sample collection is a list of samples
+     * @see [ZetaGenomics] (https://www.zettagenomics.com)
+     * @since 2.1
+     */
     private SampleQualityControl qualityControl;
 
     /**
-     * Generic: Release when the entry was registered in OpenCGA. This matches with the currentRelease value of the project this entry
-     * belongs to.
+     * An integer describing the current data release.
      *
      * @apiNote Immutable
      */
@@ -85,6 +103,12 @@ public class Sample extends Annotable {
      * Generic: Users may provide a description for the entry.
      */
     private String description;
+
+    /**
+     * Indicates if the sample is somatic or germline (default)
+     *
+     * @apiNote
+     */
     private boolean somatic;
     private List<Phenotype> phenotypes;
 

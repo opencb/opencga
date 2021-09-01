@@ -364,6 +364,9 @@ public class VariantQueryUtilsTest extends GenericTest {
         checkParseFileData(new Query(FILE_DATA.key(), "f1.vcf : DP < 10 , FILTER = \"LowGQX;LowMQ\""),
                 null,
                 "f1.vcf", "DP<10,FILTER=\"LowGQX;LowMQ\"");
+        checkParseFileData(new Query(FILE_DATA.key(), "f1.vcf : Key = v1 , v2"),
+                null,
+                "f1.vcf", "Key=v1,v2");
     }
 
     protected void checkParseFileData(Query query, QueryOperation expectedOperation, String ...expected) {

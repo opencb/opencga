@@ -125,7 +125,7 @@ The loading performance always depend on the number of variants and concurrent f
 
 #### Saturation Study
 
-As part of the data loading process we decided to study the number of unique variants added in each batch of 500 samples. We generated this saturation plot for RD38:
+As part of the data loading process we decided to study the number of unique variants added in each batch of 500 samples. We generated this saturation plot for RD38:  
 
 ![](http://docs.opencb.org/download/attachments/15598206/image.png?version=1&modificationDate=1560250247113&api=v2)
 
@@ -249,7 +249,7 @@ To study the performance we used **RD38** which the largest study with 438 milli
   </tbody>
 </table>
 
-As can be observed most queries run below 1 second, you can combine as many filters as wanted.
+As can be observed most queries run below 1 second, you can combine as many filters as wanted. 
 
 ### Clinical Analysis
 
@@ -306,7 +306,7 @@ We also use here **RD38** which is the largest study. Clinical queries, or sampl
     </tr>
     <tr>
       <td style="text-align:left">
-        <p><em><b>de novo</b></em>  <b>Analysis</b>
+        <p><em><b>de novo</b></em><b> Analysis</b>
         </p>
         <p><b>filter</b> = PASS</p>
         <p><b>consequence type</b> = LoF + missense_variant</p>
@@ -338,7 +338,7 @@ Several user interfaces have been developed to query and analyse data from OpenC
 
 ### IVA
 
-[IVA](http://docs.opencb.org/display/iva/Welcome+to+IVA) v1.0.3 was installed to provide a friendly web-based analysis tool to browse variants and execute clinical analysis.
+[IVA](http://docs.opencb.org/display/iva/Welcome+to+IVA) v1.0.3 was installed to provide a friendly web-based analysis tool to browse variants and execute clinical analysis.   
 
 ![](http://docs.opencb.org/download/attachments/15598206/GEL_IVA_RD38_grid.png?version=1&modificationDate=1560259726188&api=v2)
 

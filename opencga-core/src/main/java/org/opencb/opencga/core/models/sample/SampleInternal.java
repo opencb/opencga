@@ -34,6 +34,7 @@ public class SampleInternal extends Internal {
      * @apiNote Internal, Unique, Immutable
      * @deprecated
      */
+    private Status status;
     private RgaIndex rga;
 
     public SampleInternal() {

@@ -50,6 +50,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleQcCommandOptions.SAMPLE_QC_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantExportCommandOptions.EXPORT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantIndexCommandOptions.INDEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
@@ -287,6 +288,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(SAMPLE_QUERY_COMMAND, variantCommandOptions.sampleQueryCommandOptions);
         variantSubCommands.addCommand(SAMPLE_RUN_COMMAND, variantCommandOptions.samplesFilterCommandOptions);
         variantSubCommands.addCommand(SAMPLE_VARIANT_STATS_RUN_COMMAND, variantCommandOptions.sampleVariantStatsCommandOptions);
+        variantSubCommands.addCommand(SAMPLE_VARIANT_STATS_QUERY_COMMAND, variantCommandOptions.sampleVariantStatsQueryCommandOptions);
         variantSubCommands.addCommand(COHORT_VARIANT_STATS_RUN_COMMAND, variantCommandOptions.cohortVariantStatsCommandOptions);
         variantSubCommands.addCommand(GWAS_RUN_COMMAND, variantCommandOptions.gwasCommandOptions);
         variantSubCommands.addCommand(KNOCKOUT_RUN_COMMAND, variantCommandOptions.knockoutCommandOptions);
@@ -320,7 +322,10 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         operationsCommandOptions = new OperationsCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand(OPERATIONS_COMMAND, operationsCommandOptions);
         JCommander operationsSubCommands = jCommander.getCommands().get(OPERATIONS_COMMAND);
+        operationsSubCommands.addCommand(CELLBASE_CONFIGURE, operationsCommandOptions.cellbaseConfigure);
         operationsSubCommands.addCommand(VARIANT_CONFIGURE, operationsCommandOptions.variantConfigure);
+        operationsSubCommands.addCommand(VARIANT_INDEX, operationsCommandOptions.variantIndex);
+        operationsSubCommands.addCommand(VARIANT_DELETE, operationsCommandOptions.variantFileDelete);
         operationsSubCommands.addCommand(VARIANT_INDEX_LAUNCHER, operationsCommandOptions.variantIndexLauncher);
         operationsSubCommands.addCommand(VARIANT_STATS_INDEX, operationsCommandOptions.variantStatsIndex);
         operationsSubCommands.addCommand(VARIANT_SECONDARY_INDEX, operationsCommandOptions.variantSecondaryIndex);

@@ -1,14 +1,14 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.core.CombinationIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.core.CombinationTripleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
@@ -83,11 +83,9 @@ public class AnnotationIndexConverter {
         boolean intergenic = false;
         boolean clinical = false;
 
-        CombinationIndexSchema.Combination ctBtCombination = null;
-        CombinationIndexSchema.Combination ctTfCombination = null;
+        CombinationTripleIndexSchema.CombinationTriple ctBtTfCombination = null;
         if (variantAnnotation.getConsequenceTypes() != null) {
-            List<Pair<String, String>> ctBtPair = new LinkedList<>();
-            List<Pair<String, String>> ctTfPair = new LinkedList<>();
+            List<Triple<String, String, String>> ctBtTfTriples = new LinkedList<>();
             Set<String> biotypes = new HashSet<>();
             Set<String> cts = new HashSet<>();
             Set<String> flags = new HashSet<>();
@@ -102,7 +100,7 @@ public class AnnotationIndexConverter {
                 if (ctTranscriptFlags == null) {
                     ctTranscriptFlags = ct.getTranscriptAnnotationFlags();
                     if (ctTranscriptFlags == null) {
-                        ctTranscriptFlags = Collections.emptyList();
+                        ctTranscriptFlags = Collections.singletonList("OTHER");
                     }
                 }
                 flags.addAll(ctTranscriptFlags);
@@ -115,10 +113,9 @@ public class AnnotationIndexConverter {
                     }
 
                     cts.add(soName);
-                    ctBtPair.add(Pair.of(soName, biotype));
 
                     for (String transcriptFlag : ctTranscriptFlags) {
-                        ctTfPair.add(Pair.of(soName, transcriptFlag));
+                        ctBtTfTriples.add(Triple.of(soName, biotype, transcriptFlag));
                     }
 
                     if (VariantQueryUtils.LOF_SET.contains(soName)) {
@@ -136,11 +133,12 @@ public class AnnotationIndexConverter {
                     }
                 }
             }
-            schema.getBiotypeIndex().getField().write(new ArrayList<>(biotypes), btIndex);
-            schema.getCtIndex().getField().write(new ArrayList<>(cts), ctIndex);
-            schema.getTranscriptFlagIndexSchema().getField().write(new ArrayList<>(flags), tfIndex);
-            ctBtCombination = schema.getCtBtIndex().getField().getCombination(ctBtPair, ctIndex, btIndex);
-            ctTfCombination = schema.getCtTfIndex().getField().getCombination(ctTfPair, ctIndex, tfIndex);
+            if (!intergenic) {
+                schema.getBiotypeIndex().getField().write(new ArrayList<>(biotypes), btIndex);
+                schema.getCtIndex().getField().write(new ArrayList<>(cts), ctIndex);
+                schema.getTranscriptFlagIndexSchema().getField().write(new ArrayList<>(flags), tfIndex);
+                ctBtTfCombination = schema.getCtBtTfIndex().getField().getCombination(ctBtTfTriples, ctIndex, btIndex, tfIndex);
+            }
         }
         if (intergenic) {
             b |= INTERGENIC_MASK;
@@ -199,7 +197,7 @@ public class AnnotationIndexConverter {
             schema.getClinicalIndexSchema().getClinicalSignificanceField().write(combinations, clinicalIndex);
         }
         return new AnnotationIndexEntry(b, intergenic, ctIndex.toInt(), btIndex.toInt(), tfIndex.toInt(),
-                ctBtCombination, ctTfCombination, popFreq, clinical, clinicalIndex);
+                ctBtTfCombination, popFreq, clinical, clinicalIndex);
     }
     protected void addPopFreqIndex(BitBuffer bitBuffer, PopulationFrequency populationFrequency) {
         IndexField<Double> field = schema.getPopFreqIndex()

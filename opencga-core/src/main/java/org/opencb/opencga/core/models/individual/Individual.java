@@ -35,9 +35,21 @@ import java.util.*;
  */
 public class Individual extends Annotable {
 
+    /**
+     * Individual ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter
+     * when creating a new Individual, this ID cannot be changed at the moment.
+     *
+     * @apiNote Required, Immutable, Unique
+     */
     private String id;
-    private String name;
+
+    /**
+     * Global unique ID at the whole OpenCGA installation. This is automatically created during the sample creation and cannot be changed.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private String uuid;
+    private String name;
 
     private Individual father;
     private Individual mother;
@@ -51,19 +63,69 @@ public class Individual extends Annotable {
     private String ethnicity;
     private IndividualPopulation population;
     private String dateOfBirth;
+
+    /**
+     * An integer describing the current data release.
+     *
+     * @apiNote Internal
+     */
     private int release;
+
+    /**
+     * An integer describing the current version.
+     *
+     * @apiNote Internal
+     */
     private int version;
+
+    /**
+     * String representing when the sample was created, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String creationDate;
+
+    /**
+     * String representing when was the last time the sample was modified, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String modificationDate;
+
     private LifeStatus lifeStatus;
+
+    /**
+     * A List with related phenotypes.
+     *
+     * @apiNote
+     */
     private List<Phenotype> phenotypes;
+
+    /**
+     * A List with related disorders.
+     *
+     * @apiNote
+     */
     private List<Disorder> disorders;
+
+    /**
+     * A List with related samples.
+     *
+     * @apiNote
+     */
     private List<Sample> samples;
+
     private boolean parentalConsanguinity;
 
     private CustomStatus status;
 
     private IndividualInternal internal;
+
+    /**
+     * You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.
+     *
+     * @apiNote
+     */
     private Map<String, Object> attributes;
 
     public Individual() {
@@ -151,7 +213,7 @@ public class Individual extends Annotable {
             return true;
         }
 
-        if (!(o instanceof Individual)){
+        if (!(o instanceof Individual)) {
             return false;
         }
 
@@ -196,6 +258,7 @@ public class Individual extends Annotable {
         return this;
     }
 
+    @Override
     public String getUuid() {
         return uuid;
     }
@@ -205,10 +268,12 @@ public class Individual extends Annotable {
         return this;
     }
 
+    @Override
     public String getId() {
         return id;
     }
 
+    @Override
     public Individual setId(String id) {
         this.id = id;
         return this;
@@ -420,5 +485,4 @@ public class Individual extends Annotable {
         this.attributes = attributes;
         return this;
     }
-
 }

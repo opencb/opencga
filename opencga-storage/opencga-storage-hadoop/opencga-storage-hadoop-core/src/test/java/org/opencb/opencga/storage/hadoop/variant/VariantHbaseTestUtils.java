@@ -439,30 +439,15 @@ public class VariantHbaseTestUtils {
             for (Integer sampleId : dbAdaptor.getMetadataManager().getIndexedSamples(studyId)) {
                 String sampleName = dbAdaptor.getMetadataManager().getSampleName(studyId, sampleId);
                 RawSingleSampleIndexVariantDBIterator it = sampleIndexDBAdaptor.rawIterator(dbAdaptor.getMetadataManager().getStudyName(studyId), sampleName);
-                Map<String, String> map = new TreeMap<>();
 
                 out.println("");
                 out.println("");
                 out.println("");
                 out.println("SAMPLE: " + sampleName + " , " + sampleId);
                 while (it.hasNext()) {
-                    map.clear();
                     SampleVariantIndexEntry entry = it.next();
-
                     out.println("_______________________");
-                    out.println(entry.getVariant());
-                    out.println("gt: " + entry.getGenotype());
-                    out.println("file: " + entry.getFileIndex());
-                    out.println("ct: " + IndexUtils.binaryToString(entry.getAnnotationIndexEntry().getCtIndex(), schema.getCtIndex().getField().getBitLength()) + " : " + schema.getCtIndex().getField().decode(entry.getAnnotationIndexEntry().getCtIndex()));
-                    out.println("bt: " + IndexUtils.binaryToString(entry.getAnnotationIndexEntry().getBtIndex(), schema.getBiotypeIndex().getField().getBitLength()) + " : " + schema.getBiotypeIndex().getField().decode(entry.getAnnotationIndexEntry().getBtIndex()));
-                    out.println("tf: " + IndexUtils.binaryToString(entry.getAnnotationIndexEntry().getTfIndex(), schema.getTranscriptFlagIndexSchema().getField().getBitLength()) + " : " + schema.getTranscriptFlagIndexSchema().getField().decode(entry.getAnnotationIndexEntry().getTfIndex()));
-                    out.println("ct_bt: " + schema.getCtBtIndex().getField().encode(entry.getAnnotationIndexEntry().getCtBtCombination()) + " : " + entry.getAnnotationIndexEntry().getCtBtCombination() + " : " + schema.getCtBtIndex().getField().getPairs(entry.getAnnotationIndexEntry().getCtBtCombination(), entry.getAnnotationIndexEntry().getCtIndex(), entry.getAnnotationIndexEntry().getBtIndex()));
-                    out.println("ct_tf: " + schema.getCtTfIndex().getField().encode(entry.getAnnotationIndexEntry().getCtTfCombination()) + " : " + entry.getAnnotationIndexEntry().getCtTfCombination() + " : " + schema.getCtTfIndex().getField().getPairs(entry.getAnnotationIndexEntry().getCtTfCombination(), entry.getAnnotationIndexEntry().getCtIndex(), entry.getAnnotationIndexEntry().getTfIndex()));
-
-
-                    for (Map.Entry<String, ?> e : map.entrySet()) {
-                        out.println("\t" + e.getKey() + " = " + e.getValue());
-                    }
+                    out.println(entry.toString(schema));
                 }
             }
         }

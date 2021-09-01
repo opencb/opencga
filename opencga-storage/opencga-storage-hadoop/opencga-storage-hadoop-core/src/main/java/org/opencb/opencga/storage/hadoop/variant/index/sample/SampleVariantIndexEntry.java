@@ -89,6 +89,23 @@ public class SampleVariantIndexEntry {
         return Objects.hash(variant, fileIndex);
     }
 
+    public String toString(SampleIndexSchema schema) {
+        return toString(schema, "\n");
+    }
+
+    public String toString(SampleIndexSchema schema, String separator) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(this.getVariant());
+        sb.append(separator).append("gt: ")
+                .append(this.getGenotype());
+        sb.append(separator).append("file: ")
+                .append(this.getFileIndex());
+        if (annotationIndexEntry != null) {
+            annotationIndexEntry.toString(schema, separator, sb);
+        }
+        return sb.toString();
+    }
+
     public static class SampleVariantIndexEntryComparator implements Comparator<SampleVariantIndexEntry> {
 
         private final SampleIndexSchema schema;

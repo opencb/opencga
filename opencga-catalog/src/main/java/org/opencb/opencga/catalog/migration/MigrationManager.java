@@ -54,11 +54,29 @@ public class MigrationManager {
         this.logger = LoggerFactory.getLogger(MigrationManager.class);
     }
 
-    public MigrationRun runManualMigration(String id, Path appHome, ObjectMap params, String token) throws CatalogException {
+    public MigrationRun runManualMigration(String version, String id, Path appHome, ObjectMap params, String token)
+            throws CatalogException {
+        return runManualMigration(version, id, appHome, false, params, token);
+    }
+
+    public MigrationRun runManualMigration(String version, String id, Path appHome, boolean force, ObjectMap params, String token)
+            throws CatalogException {
         validateAdmin(token);
         for (Class<? extends MigrationTool> c : getAvailableMigrations()) {
-            Migration migrationAnnotation = getMigrationAnnotation(c);
-            if (migrationAnnotation.id().equals(id)) {
+            Migration migration = getMigrationAnnotation(c);
+            if (migration.id().equals(id) && migration.version().equals(version)) {
+                MigrationRun migrationRun = updateMigrationRun(migration, token);
+                if (!force) {
+                    if (migrationRun.getStatus().equals(MigrationRun.MigrationStatus.DONE)) {
+                        throw new MigrationException("Migration '" + id + "' already executed. Force migration run to continue.");
+                    }
+                    if (migrationRun.getStatus().equals(MigrationRun.MigrationStatus.ON_HOLD)) {
+                        throw new MigrationException("Migration '" + id + "' holding jobs to finish. Force migration run to continue.");
+                    }
+                    if (migrationRun.getStatus().equals(MigrationRun.MigrationStatus.REDUNDANT)) {
+                        throw new MigrationException("Migration '" + id + "' is not needed. Force migration run to continue.");
+                    }
+                }
                 return run(c, appHome, params, token);
             }
         }
@@ -213,7 +231,7 @@ public class MigrationManager {
 
     }
 
-    private void updateMigrationRun(Migration migration, String token) throws CatalogException {
+    private MigrationRun updateMigrationRun(Migration migration, String token) throws CatalogException {
         MigrationRun migrationRun = migrationDBAdaptor.get(migration.id()).first();
         boolean updated = false;
 
@@ -231,6 +249,10 @@ public class MigrationManager {
                     // Check patch
                     if (migrationRun.getPatch() != migration.patch()) {
                         migrationRun.setStatus(MigrationRun.MigrationStatus.OUTDATED);
+                        updated = true;
+                    }
+                    if (migrationRun.getException() != null) {
+                        migrationRun.setException(null);
                         updated = true;
                     }
                     break;
@@ -254,6 +276,7 @@ public class MigrationManager {
         if (updated) {
             migrationDBAdaptor.upsert(migrationRun);
         }
+        return migrationRun;
     }
 
     private MigrationRun.MigrationStatus getOnHoldMigrationRunStatus(Migration migration, MigrationRun migrationRun, String token)
@@ -264,7 +287,8 @@ public class MigrationManager {
             Job job = catalogManager.getJobManager()
                     .get(jobR.getStudyId(), jobR.getId(), new QueryOptions(QueryOptions.INCLUDE, "id,internal"), token).first();
             String jobStatus = job.getInternal().getStatus().getName();
-            if (jobStatus.equals(Enums.ExecutionStatus.ERROR)) {
+            if (jobStatus.equals(Enums.ExecutionStatus.ERROR)
+                    || jobStatus.equals(Enums.ExecutionStatus.ABORTED)) {
                 anyError = true;
             }
             if (!jobStatus.equals(Enums.ExecutionStatus.DONE)) {
@@ -337,19 +361,13 @@ public class MigrationManager {
         );
 
         Set<Class<? extends MigrationTool>> migrations = reflections.getSubTypesOf(MigrationTool.class);
-        // Final migrations will contain all migrations that are not abstract classes
-        Set<Class<? extends MigrationTool>> finalMigrations = new HashSet<>();
+        migrations.removeIf(c -> Modifier.isAbstract(c.getModifiers()));
 
         // Validate unique ids and rank
         Map<String, Set<String>> versionIdMap = new HashMap<>();
         Map<String, Set<Integer>> versionRankMap = new HashMap<>();
 
         for (Class<? extends MigrationTool> migration : migrations) {
-            if (Modifier.isAbstract(migration.getModifiers())) {
-                continue;
-            }
-            finalMigrations.add(migration);
-
             Migration annotation = getMigrationAnnotation(migration);
 
             if (!versionIdMap.containsKey(annotation.version())) {
@@ -372,7 +390,7 @@ public class MigrationManager {
             versionIdMap.get(annotation.version()).add(annotation.id());
         }
 
-        return finalMigrations;
+        return migrations;
     }
 
     private static Collection<URL> getUrls() {
@@ -420,36 +438,27 @@ public class MigrationManager {
     }
 
     protected static int compareVersion(String version1, String version2) {
-        String[] m1VersionSplit = version1.toUpperCase().split("\\.");
-        String[] m2VersionSplit = version2.toUpperCase().split("\\.");
+        int[] m1VersionSplit = Arrays.stream(version1.split("\\.")).mapToInt(Integer::parseInt).toArray();
+        int[] m2VersionSplit = Arrays.stream(version2.split("\\.")).mapToInt(Integer::parseInt).toArray();
 
         // 1. Check version
         // Check first version number
-        if (Integer.parseInt(m1VersionSplit[0]) > Integer.parseInt(m2VersionSplit[0])) {
+        if (m1VersionSplit[0] > m2VersionSplit[0]) {
             return 1;
-        } else if (Integer.parseInt(m1VersionSplit[0]) < Integer.parseInt(m2VersionSplit[0])) {
+        } else if (m1VersionSplit[0] < m2VersionSplit[0]) {
             return -1;
         }
         // Check second version number
-        if (Integer.parseInt(m1VersionSplit[1]) > Integer.parseInt(m2VersionSplit[1])) {
+        if (m1VersionSplit[1] > m2VersionSplit[1]) {
             return 1;
-        } else if (Integer.parseInt(m1VersionSplit[1]) < Integer.parseInt(m2VersionSplit[1])) {
+        } else if (m1VersionSplit[1] < m2VersionSplit[1]) {
             return -1;
         }
-        m1VersionSplit = m1VersionSplit[2].split("-RC");
-        m2VersionSplit = m2VersionSplit[2].split("-RC");
+
         // Check third version number
-        if (Integer.parseInt(m1VersionSplit[0]) > Integer.parseInt(m2VersionSplit[0])) {
+        if (m1VersionSplit[2] > m2VersionSplit[2]) {
             return 1;
-        } else if (Integer.parseInt(m1VersionSplit[0]) < Integer.parseInt(m2VersionSplit[0])) {
-            return -1;
-        }
-        // Check for RC's
-        int rcM1 = m1VersionSplit.length == 2 ? Integer.parseInt(m1VersionSplit[1]) : 0;
-        int rcM2 = m2VersionSplit.length == 2 ? Integer.parseInt(m2VersionSplit[1]) : 0;
-        if (rcM1 > rcM2) {
-            return 1;
-        } else if (rcM1 < rcM2) {
+        } else if (m1VersionSplit[2] < m2VersionSplit[2]) {
             return -1;
         }
 
@@ -473,7 +482,7 @@ public class MigrationManager {
         for (Class<? extends MigrationTool> migration : allMigrations) {
             Migration annotation = getMigrationAnnotation(migration);
 
-            if (StringUtils.isNotEmpty(version) && compareVersion(annotation.version(), version) == 0) {
+            if (StringUtils.isNotEmpty(version) && compareVersion(annotation.version(), version) != 0) {
                 continue;
             }
             if (!domainFilter.isEmpty() && !domainFilter.contains(annotation.domain())) {
@@ -532,6 +541,8 @@ public class MigrationManager {
             } else {
                 status = getOnHoldMigrationRunStatus(migrationTool.getAnnotation(), migrationRun, token);
             }
+            // Clear exception
+            migrationRun.setException(null);
             migrationRun.setStatus(status);
             if (status == MigrationRun.MigrationStatus.DONE) {
                 logger.info("Migration '{}' succeeded : {}", annotation.id(), TimeUtils.durationToString(stopWatch));

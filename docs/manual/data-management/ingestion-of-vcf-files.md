@@ -1,73 +1,38 @@
-# Data Ingestion Process
+---
+description: >-
+  This page describes the process that an operator follows to load their VCF
+  files into an OpenCGA Variant Store.
+---
+
+# Loading of VCF files
 
 ## **Introduction**
 
-The first stage in discovery and analysis of variants using OpenCGA is to load the source data, typically VCF files, into the system.
+This page describes the typical process that an operator will follow to load their VCF files into an OpenCGA using the OpenCGA command line tools. Loading of VCF files can be done either before \(normally\) or after the loading of sample and clinical metadata. This document assumes OpenCGA version 2.0 or later
 
-The data load process is divided into 5 steps: 
+It typically takes a few minutes to load a VCF from a single exome but it can take several days \(or even weeks\) to load many thousands of whole genomes. For more information on data load times see \[Data Load Benchmarks\].
 
-1. Register files into OpenCGA Catalog metadata file register
-2. Index Variant Data- including transform and load
-3. Annotate the new-indexed Variants \(Variant Annotation\) - as part of the database enrichment
-4. Calculate the Statistics - as part of the database enrichment
-5. Build/Update the Secondary Index 
+The process is divided into 5 steps: 
+
+1. "Register" the source VCF files with OpenCGA; this creates basic File, Sample and Individual entries in Catalog. 
+2. "Index" each VCF file; this loads data into the Variant Store
+3. "Annotate" all newly-created variants against the CellBase knowledge base.
+4. "Summarise"; re-calculate all variant statistics.
+5. "Secondary Index" to include annotations and summaries. 
+
+\[TODO: update the figure below to follow the process described above\]
 
 ![](https://lh4.googleusercontent.com/O1IDTz7z5AGUjYe0wuugmEIJNlle5gkO-wt9wc2xjTJKmlfVbBE3HWNLTQglVlGSPXGN1NlHGEfC5TtZbtRHIuFMOE93QnZTU_Z34l4n9jrAQ2mPC99ltfZJ5b7hu2D2w0sO6ih6)
 
 ## **Prerequisites**
 
-This document assumes the following:
+This document assumes that:
 
-* A workstation with network access to the web services on an OpenCGA server; this document assumes version 2.0 or later.
-* OpenCGA client software installed on the workstation. Find [here]() the instructions on how to build OpenCGA from source.
-* OpenCGA credentials with appropriate permissions. The owner user is the owner of the data; it’s the user who creates the project/study where the new data will be loaded. The users with permission to perform data ingestion into a concrete study in OpenCGA are the owner user, and other users with admin privileges for the specific study \(provided by the owner\).
-* Sample Genomic \(e.g. VCF\) data and associated sample and phenotypic metadata
-
-## **Project and Study organisation**
-
-The project/study organisation is a key in order to optimise the data usability.
-
-Projects provide physical separation of data into different database tables.  
-Studies provide logical separation of data within a Project.
-
-* You MUST store your data in different  projects when they are on different genome assemblies \(e.g you should create a project for data from GRCh37 and other for data from GRCh38\)
-* You CAN store your data in different projects when there is no foreseeable  need to process them jointly.
-* You may divide your data in studies corresponding to different independent datasets that may be used together in some analysis, with the aim of having homogeneous datasets for each study.
-
-After deciding structure, the new projects and studies may need to be created. This step must be performed by the owner of the new created elements. 
-
-#### **Creating new projects**
-
-Once logged in to OpenCGA as the owner, a Project can be created with this command:
-
-```text
-$ ./opencga.sh projects create --id <short-project-id> 
-                                -n <full-project-name> 
-                                --organism-scientific-name hsapiens 
-                                --organism-assembly <GRCh37|GRCh38>
-```
-
-Optionally, you can add other parameters like `--description` . You can get the full list of parameters by adding  to the command.
-
-#### **Creating new studies**
-
-Similar to the project creation, studies are created with this command:
-
-```text
-$ ./opencga.sh studies create --project <project-id> 
-                              --id <short-study-id> 
-                              -n <full-study-name>
-```
-
-{% hint style="info" %}
-You don’t need to provide the organism assembly again, as it’s inherited from the project. Remember that all studies from the same project will share the same assembly.
-{% endhint %}
-
-To get the list of all projects and studies belonging to one specific user, run:
-
-```text
-$ ./opencga.sh users info
-```
+* The source VCF files are accessible \(e.g. via shared filesystem\) on the target OpenCGA server. 
+* The operator has access to a workstation with network access to the web services on the OpenCGA server.
+* Compatible OpenCGA client software is installed on the workstation. Find [here]() the instructions on how to install the client software.
+* The destination Study has been created on the OpenCGA server. Find [here](projects-and-studies.md) instructions for creating Projects and Studies. 
+* The operator has login credentials on the OpenCGA server with appropriate permissions; i.e. write access to the destination Study. 
 
 ### **Catalog file register**
 
@@ -140,7 +105,7 @@ Contrary to the Catalog File Register step, only one file should be provided as 
 Use this command to launch a variant index job:
 
 ```text
-$ ./opencga.sh variant index-run --study <study>
+$ ./opencga.sh operations variant-index --study <study>
                                  --file <catalog-logical-path>
 ```
 
@@ -188,28 +153,20 @@ Similar to the variant-index process, this command line will queue an asynchrono
 The second enrichment operation is the Variant Statistics Calculation. After defining a cohort, you might decide to compute the Variant Stats for that cohort. These statistics include the most typical values like allele and genotype frequencies, MAF, QUAL average, FILTER count...
 
 ```text
-$ ./opencga.sh variant stats-run --study <study> 
-                                 --index --cohort <coh1>,..,<cohN>
+$ ./opencga.sh operations variant-stats-index --study <study> 
+                                  --cohort <coh1>,..,<cohN>
 ```
 
 For updating the stats of all the cohorts, or when there are no cohorts in the study apart from the default `ALL cohort`:
 
 ```text
-$ ./opencga.sh variant stats-run --study <study> --index --cohort ALL
-```
-
-**Special scenario:** when loading new files split by chromosome/region to a study that already contains data the annotation step can be performed as usual. However, when calculating the variant stats you need to add the param --update-stats. E.g:
-
-```text
-$ ./opencga.sh variant stats-run --study <study> 
-                                 --index --cohort <ALL> 
-                                 --update-stats
+$ ./opencga.sh operations variant-stats-index --study <study> --cohort ALL
 ```
 
 #### **Aggregated VCFs** 
 
-{% hint style="danger" %}
-**This section is a draft.**
+{% hint style="warning" %}
+**This section is under current development.**
 {% endhint %}
 
 In case of having computed stats codified in the INFO column of a VCF using standard or non-standard keys, these values can be converted into `VariantStats` models, and be used for filtering.
@@ -262,8 +219,8 @@ custom\_mapping.properties**
 </table>
 
 ```text
-$ ./opencga.sh variant stats-run --study <study> 
-                                 --index --cohort <ALL>
+$ ./opencga.sh operations variant-stats-index --study <study> 
+                                 --cohort <ALL>
                                  --aggregation EXAC
                                  --aggregation-mapping-file custom_mapping.properties
 ```
@@ -320,13 +277,15 @@ $ ./opencga.sh variant sample-stats-run --study <STUDY>
                                         --index-id ALL
 ```
 
-### **Cohort Variant Stats**
+### **Cohort Variant Stats** 
+
+{% hint style="warning" %}
+**This section is under current development.**
+{% endhint %}
 
 ### **Family Index**
 
-
-
-\*\*\*\*
-
-##  
+{% hint style="warning" %}
+**This section is under current development.**
+{% endhint %}
 

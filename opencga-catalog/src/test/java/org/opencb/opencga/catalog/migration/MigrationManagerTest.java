@@ -214,10 +214,10 @@ public class MigrationManagerTest extends AbstractManagerTest {
     public void testManualMigrations() throws CatalogException, IOException {
         String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
 
-        MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration("test4-1-manual", Paths.get(""), new ObjectMap("key", "OtherValue"), token);
+        MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "OtherValue"), token);
         assertEquals(MigrationRun.MigrationStatus.ERROR, migrationRun.getStatus());
 
-        migrationRun= catalogManager.getMigrationManager().runManualMigration("test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
+        migrationRun= catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
         assertEquals(MigrationRun.MigrationStatus.DONE, migrationRun.getStatus());
     }
 
@@ -225,7 +225,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     public void testMigrationsWithJobs() throws CatalogException, IOException {
         String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
 
-        catalogManager.getMigrationManager().runManualMigration("test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
+        catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
 
         // RUN. New status ON_HOLD
         catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), "", token);
@@ -269,11 +269,9 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testMigrationVersionOrder() {
-        List<String> expected = Arrays.asList("0.0.0", "0.0.1", "0.0.10", "0.1.0", "0.1.10", "1.1.0", "2.0.0",
+        List<String> expected = Arrays.asList("0.0.0", "0.0.1", "0.0.10", "0.1.0", "0.1.10", "1.1.0",
+                "2.0.0",
                 "2.0.1",
-                "2.0.1-RC1",
-                "2.0.1-RC2",
-                "2.0.1-RC3",
                 "2.1.0");
 
         ArrayList<String> actual = new ArrayList<>(expected);

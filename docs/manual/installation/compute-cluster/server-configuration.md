@@ -22,11 +22,11 @@ Then you have to uncompress it, move it to an installation folder such as _/opt,
 ```bash
 ## You can uncompress from the Download directory
 tar -zxvf jdk-8u91-linux-x64.tar.gz
-
+ 
 ## You need root permissions for the following
 sudo mv jdk1.8.0_91 /opt
 sudo ln -s /opt/jdk1.8.0_91 java
-
+ 
 ## Then you should have something like this:
 lrwxrwxrwx  1 root    root      11 Jun 13  2016 java -> jdk1.8.0_91/
 drwxr-xr-x  8 imedina imedina 4.0K Jan  6 13:31 jdk1.8.0_91/
@@ -40,7 +40,7 @@ export JAVA_HOME="/opt/java"
 PATH="$JAVA_HOME/bin:$M2:$PATH"
 ```
 
-Independently of the installation procedure followed above you can check is Java properly installed by executing _java -version_, you should get something like this:
+Independently of the installation procedure followed above you can check is Java properly installed by executing _java -version_,  you should get something like this:
 
 ```bash
 java version "1.8.0_91"
@@ -57,19 +57,19 @@ Installing _**via package manager**_ can be more or less easy to do depending on
 ```bash
 ## You need root permissions
 sudo apt-get install tomcat8
-
+ 
 ## You can check that Tomcat is running by executing
 sudo service tomcat8 status
-
+ 
 ## Run the following to set Tomcat to run with user opencga
 cd /var/lib/tomcat8/
 sudo service tomcat8 stop
 sudo chown -RL opencga:opencga ./*
-
+ 
 ## Edit the files /etc/init.d/tomcat8 and /etc/default/tomcat8
 TOMCAT8_USER=opencga
 TOMCAT8_GROUP=opencga
-
+ 
 ## Then reload the service and restart
 sudo systemctl daemon-reload
 sudo service tomcat8 start
@@ -82,11 +82,11 @@ We recommend to make same changes in the Tomcat configuration:
 ```bash
 ## You can uncompress from the Download directory
 tar -zxvf apache-tomcat-8.5.3.tar.gz
-
+ 
 ## You need root permissions to move to /opt and create a symbolic link
 sudo mv apache-tomcat-8.5.3 /opt
 sudo ln -s /opt/apache-tomcat-8.5.3 tomcat
-
+ 
 ## You can start and stop Tomcat executing
 /opt/tomcat/bin/startup.sh
 /opt/tomcat/bin/shutdown.sh
@@ -149,7 +149,7 @@ Maven can be easily installed in Linux **via the package manager**, you can exec
 ```bash
 ## Ubuntu 16.04
 sudo apt-get install maven
-
+ 
 ## CentOS 7.x
 sudo yum install maven
 ```
@@ -164,6 +164,7 @@ Maven home: /opt/maven
 Java version: 1.8.0_231, vendor: Oracle Corporation, runtime: /opt/jdk1.8.0_231/jre
 Default locale: en_GB, platform encoding: UTF-8
 OS name: "linux", version: "5.4.0-54-generic", arch: "amd64", family: "unix"
+
 ```
 
 You need to add a Maven Profile to set up some variables that will be injected during the building, you can learn more about this at [**Installation Guide &gt; Building from Source Code**](http://docs.opencb.org/display/opencga/Building+from+Source+Code).
@@ -181,7 +182,7 @@ OpenCGA uses **HAProxy 1.5+** in the cluster installation to balance all REST we
 ```bash
 ## Ubuntu 16.04
 sudo apt-get install haproxy
-
+ 
 ## CentOS 7.x
 sudo yum install haproxy
 ```
@@ -195,8 +196,8 @@ frontend http-in
         acl webservices         path_beg                -i      /opencga
         ## Redirect ACL 'webservices' to backend 'tomcat_prod'
         use_backend             tomcat_prod             if      webservices
-
-
+ 
+ 
 ## backend definition balancing two Tomcat instances
 backend tomcat_prod
         cookie SERVERID insert nocache indirect

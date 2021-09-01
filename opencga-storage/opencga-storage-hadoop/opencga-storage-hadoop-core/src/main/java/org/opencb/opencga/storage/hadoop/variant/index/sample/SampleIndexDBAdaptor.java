@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import com.google.common.collect.Iterators;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
@@ -292,16 +292,26 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         });
     }
 
-    public Iterator<SampleIndexEntry> rawIterator(int study, int sample) throws IOException {
+    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample) throws IOException {
+        return rawIterator(study, sample, null);
+    }
+
+    public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region) throws IOException {
         String tableName = getSampleIndexTableName(study);
 
         return hBaseManager.act(tableName, table -> {
             Scan scan = new Scan();
-            scan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
+            if (region != null) {
+                scan.setStartRow(SampleIndexSchema.toRowKey(sample, region.getChromosome(), region.getStart()));
+                scan.setStopRow(SampleIndexSchema.toRowKey(sample, region.getChromosome(),
+                        region.getEnd() + (region.getEnd() == Integer.MAX_VALUE ? 0 : SampleIndexSchema.BATCH_SIZE)));
+            } else {
+                scan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
+            }
             HBaseToSampleIndexConverter converter = newConverter(study);
             ResultScanner scanner = table.getScanner(scan);
             Iterator<Result> resultIterator = scanner.iterator();
-            return Iterators.transform(resultIterator, converter::convert);
+            return CloseableIterator.wrap(Iterators.transform(resultIterator, converter::convert), scanner);
         });
     }
 
@@ -638,6 +648,13 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt));
                     scan.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt));
                 }
+                if (includeAll || !query.getAnnotationIndexQuery().getCtBtTfFilter().isNoOp()) {
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationCtBtTfIndexColumn(gt));
+                    // All independent indexes are required to parse CtBtTf
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt));
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationTranscriptFlagIndexColumn(gt));
+                }
                 if (includeAll || !query.getAnnotationIndexQuery().getBiotypeFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt));
                 }
@@ -646,12 +663,6 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 }
                 if (includeAll || !query.getAnnotationIndexQuery().getTranscriptFlagFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationTranscriptFlagIndexColumn(gt));
-                }
-                if (includeAll || !query.getAnnotationIndexQuery().getCtBtFilter().isNoOp()) {
-                    scan.addColumn(family, SampleIndexSchema.toAnnotationCtBtIndexColumn(gt));
-                }
-                if (includeAll || !query.getAnnotationIndexQuery().getCtTfFilter().isNoOp()) {
-                    scan.addColumn(family, SampleIndexSchema.toAnnotationCtTfIndexColumn(gt));
                 }
                 if (includeAll || !query.getAnnotationIndexQuery().getPopulationFrequencyFilter().isNoOp()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));
@@ -709,11 +720,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         if (!annotationIndexQuery.getTranscriptFlagFilter().isNoOp()) {
             logger.info("Tf filter       = " + annotationIndexQuery.getTranscriptFlagFilter().toString());
         }
-        if (!annotationIndexQuery.getCtBtFilter().isNoOp()) {
-            logger.info("CtBt filter     = " + annotationIndexQuery.getCtBtFilter().toString());
-        }
-        if (!annotationIndexQuery.getCtTfFilter().isNoOp()) {
-            logger.info("CtTf filter     = " + annotationIndexQuery.getCtTfFilter().toString());
+        if (!annotationIndexQuery.getCtBtTfFilter().isNoOp()) {
+            logger.info("CtBtTf filter     = " + annotationIndexQuery.getCtBtTfFilter().toString());
         }
         if (!annotationIndexQuery.getClinicalFilter().isNoOp()) {
             logger.info("Clinical filter = " + annotationIndexQuery.getClinicalFilter());

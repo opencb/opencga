@@ -41,7 +41,8 @@ public class HadoopVariantScoreRemover extends VariantScoreRemover {
                 Collections.singletonList(Bytes.toString(GenomeHelper.COLUMN_FAMILY_BYTES) + ":" + column.column()),
                 options);
 
-        mrExecutor.run(DeleteHBaseColumnDriver.class, args, options);
+        mrExecutor.run(DeleteHBaseColumnDriver.class, args,
+                "Remove score " + scoreMetadata.getName() + " : " + scoreMetadata.getDescription());
     }
 
     @Override

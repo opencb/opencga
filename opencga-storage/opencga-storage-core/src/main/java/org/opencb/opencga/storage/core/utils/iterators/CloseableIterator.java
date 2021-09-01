@@ -54,4 +54,23 @@ public abstract class CloseableIterator<T> implements Iterator<T>, AutoCloseable
             throw new NoSuchElementException("empty iterator");
         }
     }
+
+    public static <T> CloseableIterator<T> wrap(Iterator<T> iterator, AutoCloseable... closeables) {
+        return new CloseableIterator<T>() {
+            {
+                for (AutoCloseable closeable : closeables) {
+                    addCloseable(closeable);
+                }
+            }
+            @Override
+            public boolean hasNext() {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public T next() {
+                return iterator.next();
+            }
+        };
+    }
 }

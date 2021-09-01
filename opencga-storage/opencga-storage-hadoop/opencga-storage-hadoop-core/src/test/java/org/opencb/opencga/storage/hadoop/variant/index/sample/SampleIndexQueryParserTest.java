@@ -13,10 +13,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
@@ -37,9 +37,9 @@ import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.ANTISENSE;
 import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.PROTEIN_CODING;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
@@ -936,7 +936,20 @@ public class SampleIndexQueryParserTest {
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
-        assertFalse(indexQuery.getCtTfFilter().isNoOp());
+        assertFalse(indexQuery.getCtBtTfFilter().isNoOp());
+        assertTrue(query.isEmpty());
+    }
+
+    @Test
+    public void testCoveredQuery_bt_tf() {
+        Query query;
+        SampleAnnotationIndexQuery indexQuery;
+        query = new Query().append(ANNOT_BIOTYPE.key(), PROTEIN_CODING).append(ANNOT_TRANSCRIPT_FLAG.key(), "canonical");
+        indexQuery = parseAnnotationIndexQuery(query, true);
+        assertTrue(indexQuery.getConsequenceTypeFilter().isNoOp());
+        assertFalse(indexQuery.getBiotypeFilter().isNoOp());
+        assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
+        assertFalse(indexQuery.getCtBtTfFilter().isNoOp());
         assertTrue(query.isEmpty());
     }
 
@@ -949,7 +962,7 @@ public class SampleIndexQueryParserTest {
         assertTrue(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
         assertTrue(indexQuery.getTranscriptFlagFilter().isExactFilter());
-        assertTrue(indexQuery.getCtTfFilter().isNoOp());
+        assertTrue(indexQuery.getCtBtTfFilter().isNoOp());
         assertTrue(query.isEmpty());
 
         // Imprecise query
@@ -958,7 +971,7 @@ public class SampleIndexQueryParserTest {
         assertTrue(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
         assertFalse(indexQuery.getTranscriptFlagFilter().isExactFilter());
-        assertTrue(indexQuery.getCtTfFilter().isNoOp());
+        assertTrue(indexQuery.getCtBtTfFilter().isNoOp());
         assertFalse(query.isEmpty());
     }
 

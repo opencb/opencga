@@ -8,7 +8,7 @@ description: Understanding REST web service API
 
 ### Understanding the URL
 
-The general format of the REST API web services is:
+The general format of the REST API web services is: 
 
 ```http
 https://HOST_URL/APPLICATION/webservices/rest/{apiVersion}/{resource}/{ids}/{endpoint}?{options}
@@ -25,7 +25,7 @@ http://bioinfo.hpc.cam.ac.uk/opencga-prod/webservices/rest/v1/samples/HG01879,HG
 As it is explained later in this documentation, this RESTful web service will return the information stored in OpenCGA of the user _**demo**_.
 
 * **apiVersion \(**v2**\):** indicates OpenCGA version to retrieve information from, data models and API may change between versions. 
-* **resource:** specifies the data type of what the user wants to query by, in this example the resources are _samples_. This is one of the different _resources_ listed below. \_\_
+* **resource:** specifies the data type of what the user wants to query by, in this example the resources are _samples_. This is one of the different _resources_ listed below. __
 * **id:** the ID of the resources we want to query by_._ In this example are HG01879 and HG01880. Path parameters are limited to 100 IDs.
 * **endpoint \(**info**\):** these parameters must be specified depending on the nature of your input data. For instance, info is used to fetch the information stored in the database regarding the id's passed.
 * **options \(**study=1000g**\) :** variables in key-value pair form, passed as query parameters. 
@@ -58,7 +58,7 @@ These query parameters can modify the behavior of the query \(_exclude_, _includ
 Note that the **Response** object has changed in OpenCGA 2.0
 {% endhint %}
 
-REST web services return the response wrapped in a _**RestResponse**_ object \([view data model](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/response/RestResponse.java)\). This consists of some _metadata_ and a list of _**OpenCGAResult**_ objects \([view data model](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/response/OpenCGAResult.java)\) called _**responses**_ containing the data _**results**_ and _metadata_ requested. The first response of the list will always contain the response of the OpenCGA federation being directly queried. Any additional response in the list will belong to other federated servers that could be connected. Each federated response will contain a list of _**results**_ **\*\*\(\_**OpenCGAResult\*\*\_\) containing the data that has been queried.
+REST web services return the response wrapped in a _**RestResponse**_ object \([view data model](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/response/RestResponse.java)\). This consists of some _metadata_ and a list of _**OpenCGAResult**_ objects \([view data model](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/response/OpenCGAResult.java)\) called _**responses**_ containing the data _**results**_ and _metadata_ requested. The first response of the list will always contain the response of the OpenCGA federation being directly queried. Any additional response in the list will belong to other federated servers that could be connected. Each federated response will contain a list of _**results**_ ****\(_**OpenCGAResult**_\) containing the data that has been queried. 
 
 ```javascript
 {
@@ -109,7 +109,7 @@ where:
 * **Line 9-14:** show an events array where _info, warning_ and _error_ messages will be shown: For instance, when having network issues you could get "Catalog database not accessible".
 * **Line 15**: list of _DataResults_ called _**responses**_. In this example, because federation is disabled, it only contains a single _DataResult._
 * **Line 17**: database duration time \(ms\) for each _DataResult._
-* **Line 18**: list of _events_ where _info, warning_ and _error_ messages will be shown. For instance, it can show messages such as "Permission denied to access sample xxx". \_\_
+* **Line 18**: list of _events_ where _info, warning_ and _error_ messages will be shown. For instance, it can show messages such as "Permission denied to access sample xxx". __
 * **Line 19**: number of elements returned in the _**results**_ list. 
 * **Line 20-30**: List of _**results**_ for this query.
 * **Line 31**: resource type of _**results**_.
@@ -118,7 +118,7 @@ where:
 
 ### OpenCGA 1.x
 
-Most web services return the results encapsulated in a single _**QueryResponse**_ object \([view data model](https://github.com/opencb/java-common-libs/blob/develop/commons-datastore/commons-datastore-core/src/main/java/org/opencb/commons/datastore/core/QueryResponse.java)\) consisting of some metadata and a list of _**QueryResult**_ objects \([view data model](https://github.com/opencb/java-common-libs/blob/develop/commons-datastore/commons-datastore-core/src/main/java/org/opencb/commons/datastore/core/QueryResult.java)\) called _**response**_ containing the data and metadata requested. The reason for this two-level response is that some REST web services allow to pass multiple IDs as input parameter, this improves significantly the performance by reducing the number of calls, for instance a calling _**/info**_ method with three sample IDs will return a _**QueryResponse**_ object with three **QueryResults**_**.**_ Then, each _**QueryResult**_ can contain multiple _**results,**_ for instance when getting all samples from an individual or when fetching all variants from a gene.
+Most web services return the results encapsulated in a single _**QueryResponse**_ object \([view data model](https://github.com/opencb/java-common-libs/blob/develop/commons-datastore/commons-datastore-core/src/main/java/org/opencb/commons/datastore/core/QueryResponse.java)\) consisting of some metadata and a list of _**QueryResult**_ objects \([view data model](https://github.com/opencb/java-common-libs/blob/develop/commons-datastore/commons-datastore-core/src/main/java/org/opencb/commons/datastore/core/QueryResult.java)\) called _**response**_ containing the data and metadata requested. The reason for this two-level response is that some REST web services allow to pass multiple IDs as input parameter, this improves significantly the performance by reducing the number of calls, for instance a calling _**/info**_ method with three sample IDs will return a _**QueryResponse**_ object with three **QueryResults**_**.**_ Then, each _**QueryResult**_ can contain multiple _**results,**_ for instance when getting all samples from an individual or when fetching all variants from a gene. 
 
 However, most of the web services will return a _**QueryResponse**_ with one single _**QueryResult**_ with one or more _**result.**_ In general the response object looks like:
 
@@ -213,7 +213,7 @@ OpenCGA has been documented using [Swagger](http://swagger.io/) project. Detaile
 
 ## Client Libraries
 
-Currently OpenCGA implements the following four client libraries:
+Currently OpenCGA implements the following four client libraries: 
 
 1. [Java](http://docs.opencb.org/display/opencga/Java)
 2. [Python](http://docs.opencb.org/display/opencga/Python)

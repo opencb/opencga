@@ -1117,7 +1117,7 @@ public class VariantCommandOptions {
         public boolean indexOverwrite;
     }
 
-    @Parameters(commandNames = SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND, commandDescription = "Read precomputed sample variant stats")
+    @Parameters(commandNames = SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND, commandDescription = "Obtain sample variant stats from a sample.")
     public class SampleVariantStatsQueryCommandOptions {
         public static final String SAMPLE_VARIANT_STATS_QUERY_COMMAND = "sample-stats-query";
 
@@ -1126,9 +1126,6 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
-
-        @ParametersDelegate
-        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;

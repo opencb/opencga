@@ -87,7 +87,7 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
 
         ObjectMap params = new ObjectMap(SampleVariantStatsDriver.SAMPLES, father);
 
-        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params), params);
+        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params));
 
         List<SampleVariantStats> actualStats = readStatsFromMeta();
 
@@ -105,7 +105,7 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
         URI localOutputUri = newOutputUri();
         ObjectMap params = new ObjectMap().append(SampleVariantStatsDriver.SAMPLES, "auto")
                 .append(SampleVariantStatsDriver.OUTPUT, localOutputUri);
-        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params), params);
+        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params));
 
 
         List<SampleVariantStats> actualStats = readStatsFromMeta();
@@ -128,7 +128,7 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
         URI localOutputUri = newOutputUri();
         ObjectMap params = new ObjectMap().append(SampleVariantStatsDriver.SAMPLES, mother)
                 .append(SampleVariantStatsDriver.OUTPUT, localOutputUri.resolve("mother_stats.json"));
-        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params), params);
+        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params));
 
 
         List<SampleVariantStats> actualStats = readStatsFromMeta();
@@ -143,7 +143,7 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
         URI localOutputUri = newOutputUri();
         ObjectMap params = new ObjectMap().append(SampleVariantStatsDriver.SAMPLES, child)
                 .append(SampleVariantStatsDriver.OUTPUT, localOutputUri.resolve("child_stats.json"));
-        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params), params);
+        getMrExecutor().run(SampleVariantStatsDriver.class, SampleVariantStatsDriver.buildArgs(null, engine.getVariantTableName(), 1, null, params));
 
 
         List<SampleVariantStats> actualStats = readStatsFromMeta();

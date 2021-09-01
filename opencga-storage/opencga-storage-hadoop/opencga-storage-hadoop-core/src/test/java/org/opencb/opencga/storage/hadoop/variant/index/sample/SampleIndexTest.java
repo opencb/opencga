@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -46,6 +47,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggrega
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.core.CategoricalMultiValuedIndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 
 import java.nio.file.Paths;
@@ -132,6 +134,10 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         engine.familyIndex(STUDY_NAME_2, trios, new ObjectMap());
 
         // Study 3 - platinum
+        metadataManager.addSampleIndexConfiguration(STUDY_NAME_3, SampleIndexConfiguration.defaultConfiguration()
+                .addFileIndexField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.FILE, "culprit",
+                        IndexFieldConfiguration.Type.CATEGORICAL, "DP", "FS", "MQ", "QD").setNullable(true)));
+
         params = new ObjectMap()
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_3)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
@@ -205,13 +211,13 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     dbAdaptor.getArchiveTableName(studyId),
                     dbAdaptor.getVariantTable(),
                     studyId,
-                    Collections.emptySet(), options), options);
+                    Collections.emptySet(), options));
 
             new TestMRExecutor().run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
                     dbAdaptor.getArchiveTableName(studyId),
                     dbAdaptor.getVariantTable(),
                     studyId,
-                    Collections.emptySet(), options), options);
+                    Collections.emptySet(), options));
 
             if (sampleNames.get(study).containsAll(trios.get(0))) {
                 options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
@@ -220,7 +226,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                         dbAdaptor.getArchiveTableName(studyId),
                         dbAdaptor.getVariantTable(),
                         studyId,
-                        Collections.emptySet(), options), options);
+                        Collections.emptySet(), options));
             } else if (study.equals(STUDY_NAME_3)) {
                 options.put(FamilyIndexDriver.TRIOS, triosPlatinum.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
                 options.put(FamilyIndexDriver.OVERWRITE, true);
@@ -228,7 +234,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                         dbAdaptor.getArchiveTableName(studyId),
                         dbAdaptor.getVariantTable(),
                         studyId,
-                        Collections.emptySet(), options), options);
+                        Collections.emptySet(), options));
             }
 
             Connection c = dbAdaptor.getHBaseManager().getConnection();
@@ -291,6 +297,9 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         testQueryIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"), new Query(STUDY.key(), STUDY_NAME).append(SAMPLE.key(), "NA19600,NA19661"));
         testQueryIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"), new Query(STUDY.key(), STUDY_NAME).append(GENOTYPE.key(), "NA19660:0/1;NA19661:0/0,0|0"));
         testQueryIndex(new Query(QUAL.key(), ">=10").append(FILTER.key(), "PASS"), new Query(STUDY.key(), STUDY_NAME).append(GENOTYPE.key(), "NA19600:0/1;NA19661:0/0,0|0"));
+        testQueryIndex(new Query(FILE_DATA.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:culprit=DP"), new Query(STUDY.key(), STUDY_NAME_3).append(GENOTYPE.key(), "NA12877:0/1"));
+        testQueryIndex(new Query(FILE_DATA.key(), "1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz:culprit=DP,QD"),
+                new Query(STUDY.key(), STUDY_NAME_3).append(GENOTYPE.key(), "NA12877:1/1,0/1"));
 
         testQueryIndex(new Query(FILE.key(), "chr22_1-2-DUP.variant-test-file.vcf.gz").append(FILTER.key(), "PASS"),
                 new Query()
@@ -405,6 +414,20 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     @Test
     public void testQueryAnnotationIndex_CtBt() throws Exception {
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant").append(ANNOT_BIOTYPE.key(), "nonsense_mediated_decay"));
+    }
+
+    @Test
+    public void testQueryAnnotationIndex_CtBtTf() throws Exception {
+        testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant")
+                .append(ANNOT_BIOTYPE.key(), "protein_coding")
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic"));
+    }
+
+    @Test
+    public void testQueryAnnotationIndex_BtTf() throws Exception {
+        testQueryAnnotationIndex(new Query()
+                .append(ANNOT_BIOTYPE.key(), "protein_coding")
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic"));
     }
 
     @Test
@@ -529,11 +552,21 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         System.out.println("dbAdaptorQuery     = " + sampleIndexVariantQuery.toJson());
         System.out.println("Native dbAdaptor   = " + VariantHBaseQueryParser.isSupportedQuery(sampleIndexVariantQuery) + " -> " + VariantHBaseQueryParser.unsupportedParamsFromQuery(sampleIndexVariantQuery));
         System.out.println("annotationIndex    = " + IndexUtils.maskToString(indexQuery.getAnnotationIndexMask(), indexQuery.getAnnotationIndex()));
+        for (Map.Entry<String, Values<SampleFileIndexQuery>> entry : indexQuery.getSampleFileIndexQueryMap().entrySet()) {
+            String sample = entry.getKey();
+            System.out.println("sample             = " + sample);
+            for (SampleFileIndexQuery fileIndexQuery : entry.getValue()) {
+                if (entry.getValue().getOperation() == null) {
+                    System.out.println("                   = " + fileIndexQuery.getFilters());
+                } else {
+                    System.out.println("             " + entry.getValue().getOperation() + "    = " + fileIndexQuery.getFilters());
+                }
+            }
+        }
         System.out.println("biotype            = " + indexQuery.getAnnotationIndexQuery().getBiotypeFilter());
         System.out.println("ct                 = " + indexQuery.getAnnotationIndexQuery().getConsequenceTypeFilter());
         System.out.println("transcriptFlag     = " + indexQuery.getAnnotationIndexQuery().getTranscriptFlagFilter());
-        System.out.println("ctBt               = " + indexQuery.getAnnotationIndexQuery().getCtBtFilter());
-        System.out.println("ctTf               = " + indexQuery.getAnnotationIndexQuery().getCtTfFilter());
+        System.out.println("ctBtTf             = " + indexQuery.getAnnotationIndexQuery().getCtBtTfFilter());
         System.out.println("clinical           = " + indexQuery.getAnnotationIndexQuery().getClinicalFilter());
         System.out.println("popFreq            = " + indexQuery.getAnnotationIndexQuery().getPopulationFrequencyFilter());
         for (String sample : indexQuery.getSamplesMap().keySet()) {
@@ -667,6 +700,49 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         }
     }
 
+
+    @Test
+    public void testAggregationCorrectnessFilterTranscript() throws Exception {
+        SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
+        SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, sampleIndexDBAdaptor);
+
+        String ct = "missense_variant";
+        String flag = "basic";
+
+        Query query = new Query(STUDY.key(), STUDY_NAME_3)
+                .append(SAMPLE.key(), "NA12877")
+                .append(ANNOT_CONSEQUENCE_TYPE.key(), ct)
+                .append(ANNOT_TRANSCRIPT_FLAG.key(), flag);
+        assertTrue(executor.canUseThisExecutor(query, new QueryOptions(QueryOptions.FACET, "consequenceType>>transcriptFlag")));
+
+        AtomicInteger count = new AtomicInteger(0);
+        sampleIndexDBAdaptor.iterator(new Query(query), new QueryOptions()).forEachRemaining(v -> count.incrementAndGet());
+        FacetField facet = executor.aggregation(query, new QueryOptions(QueryOptions.FACET, "consequenceType>>transcriptFlag")
+                .append("filterTranscript", true)).first();
+        FacetField facetAll = executor.aggregation(query, new QueryOptions(QueryOptions.FACET, "consequenceType>>transcriptFlag")
+                .append("filterTranscript", false)).first();
+
+        String msg = "aggregation for ct:" + ct + " expected count " + count.get() + " : "
+                + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet);
+        assertEquals(msg, count.get(), facet.getCount());
+        FacetField.Bucket bucket = facet.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
+        FacetField.Bucket bucketAll = facetAll.getBuckets().stream().filter(b -> b.getValue().equals(ct)).findFirst().orElse(null);
+        System.out.println("ct = " + ct + " : " + count.get());
+        System.out.println("facet    = " + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
+        System.out.println("facetAll = " + JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facetAll));
+        if (count.get() == 0) {
+            // Count be null if no counts
+            if (bucket != null) {
+                assertEquals(msg, 0, bucket.getCount());
+            }
+        } else {
+            assertNotNull(msg, bucket);
+            assertEquals(msg, count.get(), bucket.getCount());
+            // There should be only one filter
+            assertEquals(1, facet.getBuckets().size());
+        }
+    }
+
     @Test
     public void testAggregationCorrectnessCt() throws Exception {
         SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
@@ -780,7 +856,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         for (String study : studies) {
             for (String sample : sampleNames.get(study)) {
-                DataResult<SampleVariantStats> result = variantStorageEngine.sampleStatsQuery(study, sample, null);
+                DataResult<SampleVariantStats> result = variantStorageEngine.sampleStatsQuery(study, sample, null, null);
                 System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
             }
         }
@@ -793,7 +869,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         for (String study : studies) {
             for (String sample : sampleNames.get(study)) {
                 DataResult<SampleVariantStats> result = variantStorageEngine.sampleStatsQuery(study, sample, new Query()
-                        .append(ANNOT_CONSEQUENCE_TYPE.key(), NON_CODING_TRANSCRIPT_EXON_VARIANT));
+                        .append(ANNOT_CONSEQUENCE_TYPE.key(), NON_CODING_TRANSCRIPT_EXON_VARIANT), null);
                 System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result.first()));
             }
         }

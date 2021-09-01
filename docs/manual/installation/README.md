@@ -6,7 +6,15 @@ OpenCGA has been designed and implemented to run natively in both _cloud environ
 
 ### Cloud Environment
 
+
+
 ### HPC Cluster on-prem
 
+
+
 ### Docker
+
+
+
+
 

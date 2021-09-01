@@ -119,6 +119,17 @@ public final class VariantQueryUtils {
                     new ArrayList<>(LOF_SET),
                     Arrays.asList(VariantAnnotationConstants.MISSENSE_VARIANT))));
 
+    public static final Set<String> IMPORTANT_TRANSCRIPT_FLAGS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "canonical",
+            "MANE Select",
+            "MANE Plus Clinical",
+            "CCDS",
+            "basic",
+            "LRG",
+            "EGLH_HaemOnc",
+            "TSO500"
+    )));
+
     public static final Set<VariantQueryParam> MODIFIER_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             INCLUDE_STUDY,
             INCLUDE_FILE,
@@ -193,10 +204,10 @@ public final class VariantQueryUtils {
         }
 
         public static BiotypeConsquenceTypeFlagCombination fromQuery(Query query) {
-            return fromQuery(query, Arrays.asList("basic", "CCDS"));
+            return fromQuery(query, IMPORTANT_TRANSCRIPT_FLAGS);
         }
 
-        public static BiotypeConsquenceTypeFlagCombination fromQuery(Query query, List<String> knownFlags) {
+        public static BiotypeConsquenceTypeFlagCombination fromQuery(Query query, Collection<String> knownFlags) {
             // Do not change the order of the following lines, it must match the Enum values!
             String combination = isValidParam(query, ANNOT_BIOTYPE) ? "BIOTYPE_" : "";
             combination += isValidParam(query, ANNOT_CONSEQUENCE_TYPE) ? "CT_" : "";

@@ -1,5 +1,7 @@
 # Sharing and Permissions
 
+
+
 ## Overview
 
 OpenCGA provides a powerful mechanism of custom-built and secure permission system defined by a mechanism of **Access Control Lists \(ACLs\).  Catalog** is the OpenCGA component that implements the permission mechanism.   

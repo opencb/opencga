@@ -35,20 +35,14 @@ public class MigrationMongoDBAdaptor extends MongoDBAdaptor implements Migration
     @Override
     public void upsert(MigrationRun migrationRun) throws CatalogDBException {
         Document migrationDocument = migrationConverter.convertToStorageType(migrationRun);
-        if (get(migrationRun.getId()).getNumResults() == 0) {
-            DataResult insert = migrationCollection.insert(migrationDocument, QueryOptions.empty());
-            if (insert.getNumUpdated() == 0) {
-                throw new CatalogDBException("Could not insert MigrationRun");
-            }
-        } else {
-            Query query = new Query()
-                    .append(QueryParams.ID.key(), migrationRun.getId())
-                    .append(QueryParams.VERSION.key(), migrationRun.getVersion());
-            Bson bsonQuery = parseQuery(query);
-            DataResult update = migrationCollection.update(bsonQuery, new Document("$set", migrationDocument), QueryOptions.empty());
-            if (update.getNumUpdated() == 0) {
-                throw new CatalogDBException("Could not update MigrationRun");
-            }
+        Query query = new Query()
+                .append(QueryParams.ID.key(), migrationRun.getId())
+                .append(QueryParams.VERSION.key(), migrationRun.getVersion());
+        Bson bsonQuery = parseQuery(query);
+        DataResult update = migrationCollection.update(bsonQuery, new Document("$set", migrationDocument),
+                new QueryOptions(MongoDBCollection.UPSERT, true));
+        if (update.getNumUpdated() == 0 && update.getNumInserted() == 0) {
+            throw new CatalogDBException("Could not update MigrationRun");
         }
     }
 
