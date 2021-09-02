@@ -10,11 +10,11 @@ import yaml
 
 class RestClientGenerator(ABC):
 
-    def __init__(self):
+    def __init__(self, output_dir):
 
         self.server_url = None
         self.options_output_dir = None
-        self.output_dir = None
+        self.output_dir = output_dir
         self.executors_output_dir = None
         self.parameters = {}
         self.category = None
@@ -23,6 +23,9 @@ class RestClientGenerator(ABC):
         self.id1 = None
         self.id2 = None
         self.json_response = None
+        self.shortcuts = {}
+        self.extended_classes = []
+        self.command_names = {}
         self.endpoints = {
             'users/{user}/filters/{filterId}/update': {'method_name': 'update_filter'},
             'ga4gh/reads/{study}/{file}': {'method_name': 'fetch_reads'},
@@ -30,6 +33,9 @@ class RestClientGenerator(ABC):
             'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/update': {'method_name': 'update_interpretation'},
             'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete': {'method_name': 'delete_interpretation'}
         }
+        self.extended_methods = []
+        self.analysis_commands = []
+        self.operations_commands = []
         self.categories = {}
         self.exclude_commands = {}
         self.exclude_command_params = {}
@@ -46,41 +52,73 @@ class RestClientGenerator(ABC):
         ]
 
     def read_yaml(self):
-        yaml_file = open("cli_config.yaml", 'r')
+        yaml_file = open("config.yaml", 'r')
         yaml_content = yaml.load(yaml_file, Loader=yaml.FullLoader)
         options = yaml_content["options"]
-
-        self.ignore_types = options["ignore_types"]
-        self.parser_package = options["parser_package"]
-        self.server_url = options["server_url"]
+        if "ignore_types" in options.keys():
+            self.ignore_types = options["ignore_types"]
+        if "parser_package" in options.keys():
+            self.parser_package = options["parser_package"]
+        if "server_url" in options.keys():
+            self.server_url = options["server_url"]
         self.version = requests.get(
             self.server_url + '/webservices/rest/v2/meta/about'
         ).json()['responses'][0]['results'][0]['Version'].split('-')[0]
-        self.output_dir = options["cli_output_dir"]
-        self.options_output_dir = options["options_output_dir"]
-        self.executors_output_dir = options["executors_output_dir"]
-        self.executors_package = options["executors_package"]
-        self.options_package = options["options_package"]
-        for categories in yaml_content["api"].items():
-            category, data = categories
-            if not data["ignore"]:
-                self.categories[category] = data["key"]
-            if "commands" in data.keys():
-                command_exclusions = []
-                subcommand_exclusions = []
-                for commands in data["commands"].items():
-                    command, command_data = commands
-                    if command_data["ignore"]:
-                        command_exclusions.append(command)
-                    if "subcommands" in command_data.keys():
-                        for subcommands in command_data["subcommands"].items():
-                            subcommand, subcommand_data = subcommands
-                            if subcommand_data["ignore"]:
-                                subcommand_exclusions.append(subcommand)
-                        if len(subcommand_exclusions) > 0:
-                            self.exclude_command_params[category + "#" + command] = subcommand_exclusions
-                if len(command_exclusions) > 0:
-                    self.exclude_commands[category] = command_exclusions
+
+        if "cli_output_dir" in options.keys():
+            self.output_dir = options["cli_output_dir"]
+        if "options_output_dir" in options.keys():
+            self.options_output_dir = options["options_output_dir"]
+        if "executors_output_dir" in options.keys():
+            self.executors_output_dir = options["executors_output_dir"]
+        if "executors_package" in options.keys():
+            self.executors_package = options["executors_package"]
+        if "options_package" in options.keys():
+            self.options_package = options["options_package"]
+        if "api" in yaml_content.keys():
+            for categories in yaml_content["api"].items():
+                category, data = categories
+                if "command_name" in data.keys():
+                    self.command_names[category] = data["command_name"]
+                else:
+                    self.command_names[category] = category.lower()
+                if "shortcuts" in data.keys():
+                    self.shortcuts = data["shortcuts"]
+                if "extended" in data.keys() and data["extended"] == True:
+                    self.extended_classes.append(data["key"])
+                if not data["ignore"]:
+                    self.categories[category] = data["key"]
+                if "analysis" in data.keys() and data["analysis"]:
+                    if "command_name" in data.keys():
+                        self.analysis_commands.append('"' + data["command_name"].lower() + '"')
+                    else:
+                        self.analysis_commands.append('"' + category.lower() + '"')
+
+                if "operations" in data.keys() and data["operations"]:
+                    if "command_name" in data.keys():
+                        self.operations_commands.append('"' + data["command_name"].lower() + '"')
+                    else:
+                        self.operations_commands.append('"' + category.lower() + '"')
+
+                if "commands" in data.keys():
+                    command_exclusions = []
+                    subcommand_exclusions = []
+                    for commands in data["commands"].items():
+                        command, command_data = commands
+                        if "extended" in command_data.keys() and command_data["extended"]:
+                            self.extended_methods.append(command)
+                        if "ignore" in command_data.keys() and command_data["ignore"]:
+                            command_exclusions.append(command)
+                        if "subcommands" in command_data.keys():
+                            for subcommands in command_data["subcommands"].items():
+                                subcommand, subcommand_data = subcommands
+                                if subcommand_data["ignore"]:
+                                    subcommand_exclusions.append(subcommand)
+                            if len(subcommand_exclusions) > 0:
+                                self.exclude_command_params[category + "#" + command] = subcommand_exclusions
+                    if len(command_exclusions) > 0:
+                        self.exclude_commands[category] = command_exclusions
+        print(self.categories)
 
     @staticmethod
     def get_autogenerated_message():

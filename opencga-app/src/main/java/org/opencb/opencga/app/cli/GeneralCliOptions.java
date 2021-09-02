@@ -55,7 +55,7 @@ public class GeneralCliOptions {
      * This class contains all those common parameters available for all 'subcommands'
      */
     public static class CommonCommandOptions {
-        @Parameter(names = {"--of", "--output-format"}, description = "Output format. one of {JSON, JSON_PRETTY, TEXT, YAML}", arity = 1)
+        @Parameter(names = {"--out-format"}, description = "Output format. one of {JSON, JSON_PRETTY, TEXT, YAML}", arity = 1)
         public String outputFormat = "TEXT";
 
         @Parameter(names = {"-h", "--help"}, description = "Print this help", help = true)
@@ -74,7 +74,8 @@ public class GeneralCliOptions {
         @Parameter(names = {"-M", "--metadata"}, description = "Include metadata information", required = false, arity = 0)
         public boolean metadata = false;
 
-        @Parameter(names = {"--no-header"}, description = "Not include headers in the output (not applicable to json output-format)", arity = 0)
+        @Parameter(names = {"--no-header"}, description = "Not include headers in the output (not applicable to json output-format)",
+                arity = 0)
         public boolean noHeader = false;
 
         @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb" +
@@ -86,7 +87,6 @@ public class GeneralCliOptions {
 
         @Parameter(names = {"-s", "--study"}, description = ParamConstants.STUDY_DESCRIPTION, arity = 1)
         public String study;
-
     }
 
     public static class StudyListOption {
@@ -94,7 +94,6 @@ public class GeneralCliOptions {
         @Parameter(names = {"-s", "--study"}, description = "Study list [[user@]project:]study where study and project can be either the id"
                 + " or alias.", arity = 1)
         public String study;
-
     }
 
     public static class DataModelOptions {
@@ -104,7 +103,6 @@ public class GeneralCliOptions {
 
         @Parameter(names = {"-E", "--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
         public String exclude;
-
     }
 
     public static class NumericOptions {
@@ -117,7 +115,6 @@ public class GeneralCliOptions {
 
         @Parameter(names = {"--count"}, description = "Total number of results. Default = false", arity = 0)
         public boolean count;
-
     }
 
     public static class JobOptions {
@@ -133,5 +130,4 @@ public class GeneralCliOptions {
         @Parameter(names = {"--job-tags"}, description = ParamConstants.JOB_TAGS_DESCRIPTION, arity = 1)
         public List<String> jobTags;
     }
-
 }

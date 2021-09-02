@@ -1,10 +1,10 @@
 import os
 import re
-import sys
 from abc import ABC, abstractmethod
 from datetime import datetime
 
 import requests
+import sys
 import yaml
 
 
@@ -39,7 +39,7 @@ class RestClientGenerator(ABC):
         self.read_yaml()
 
     def read_yaml(self):
-        yaml_file = open("cli/cli_config.yaml", 'r')
+        yaml_file = open("cli/config.yaml", 'r')
         yaml_content = yaml.load(yaml_file, Loader=yaml.FullLoader)
 
         options = yaml_content["options"]

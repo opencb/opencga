@@ -48,8 +48,8 @@
 
     @Override
     protected void printMainUsage() {
-        Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant", "clinical"));
-        Set<String> operationsCommands = new HashSet<>(Collections.singletonList("operations"));
+        Set<String> analysisCommands = new HashSet<>(Arrays.asList(##@@ANALYSIS@@##));
+        Set<String> operationsCommands = new HashSet<>(Collections.singletonList(##@@OPERATIONS@@##));
 
         System.err.println("Catalog commands:");
         for (String command : jCommander.getCommands().keySet()) {

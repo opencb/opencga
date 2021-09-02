@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import argparse
 import os
 import re
 # importing date class from datetime module
@@ -17,8 +17,8 @@ import rest_client_generator
 
 class OptionCliGenerator(rest_client_generator.RestClientGenerator):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, output_dir):
+        super().__init__(output_dir)
 
         self.java_types = set()
         self.type_imports = {
@@ -112,6 +112,7 @@ class OptionCliGenerator(rest_client_generator.RestClientGenerator):
         text.append(' *{}Command line version: {}'.format(' ' * 4, self.version))
         text.append(' *{}PATH: {}'.format(' ' * 4, self.get_category_path(category)))
         text.append(' */')
+        text.append('')
         text.append(
             '@Parameters(commandNames = {{"{}"}}, commandDescription = "{} commands")'.format(self.get_category_name(
                 category).lower(), self.categories[self.get_category_name(category)]))
@@ -155,7 +156,8 @@ class OptionCliGenerator(rest_client_generator.RestClientGenerator):
         if self.check_not_ignored_command(category["name"], method_name):
             parameters = self.get_method_parameters(endpoint)
             text = []
-            self.append_command(text, self.to_kebab_case(self.get_method_name(endpoint, category)),
+            command_name = self.to_kebab_case(self.get_method_name(endpoint, category))
+            self.append_command(text, command_name,
                                 self.get_endpoint_description(endpoint))
             append_text(text, '{}public class {}CommandOptions {{'.format((' ' * 4), self.get_as_class_name(self.get_method_name(endpoint,
                                                                                                                                  category))),
@@ -167,8 +169,6 @@ class OptionCliGenerator(rest_client_generator.RestClientGenerator):
             addedParameters = set()
             for parameter in parameters:
                 name = self.normalize_names(parameter["name"])
-                if self.get_as_class_name(self.get_method_name(endpoint, category)) == "RunMutationalSignature":
-                    print(name)
                 if parameter["name"] not in self.excluded_parameters:
                     if name not in addedParameters:
                         addedParameters.add(name)
@@ -180,7 +180,12 @@ class OptionCliGenerator(rest_client_generator.RestClientGenerator):
                                     if item["name"] not in self.excluded_parameters:
                                         if name not in addedParameters:
                                             addedParameters.add(name)
-                                            if str(item['type']) in self.param_types.keys():
+                                            if name == "password" and command_name == "login":
+                                                text.append(
+                                                    (' ' * 8) + '@Parameter(names = {"-p", "--password"}, description = "User password", ' \
+                                                                'required = true, password = true, hidden = true, arity = 1)\n' + (
+                                                            ' ' * 8) + 'public String password;\n')
+                                            elif str(item['type']) in self.param_types.keys():
                                                 self.get_parameter_option(item, text, name, category["name"] + "#" + method_name)
                         else:
                             if parameter["name"] not in self.excluded_parameters:
@@ -251,18 +256,25 @@ class OptionCliGenerator(rest_client_generator.RestClientGenerator):
                     res += word + ' '
             array.append(res[:-1] + '")')
 
+    def check_shortcuts(self, name):
+        if name in self.shortcuts:
+            name = '"-' + self.shortcuts[name] + '","--' + name + '"'
+        else:
+            name = '"--' + name + '"'
+        return name
+
     def append_parameter(self, array, name, description, required):
         if '"' in description:
             description = description.replace('"', '\\"')
-
+        name = self.check_shortcuts(name);
         res = (
-                      ' ' * 8) + '@Parameter(names = {"--' + name + '"}, description = "' + description + '", required = ' + required + \
+                      ' ' * 8) + '@Parameter(names = {' + name + '}, description = "' + description + '", required = ' + required + \
               ', arity = 1)'
         if len(res) <= 140:
             array.append(res)
         else:
-            res = (' ' * 8) + '@Parameter(names = {"--' + name + '"}, description = "'
-            aux = (' ' * 8) + '@Parameter(names = {"--' + name + '"}, description = "'
+            res = (' ' * 8) + '@Parameter(names = {' + name + '}, description = "'
+            aux = (' ' * 8) + '@Parameter(names = {' + name + '}, description = "'
             for word in description.split(' '):
                 aux += word + ' '
                 if len(aux) > 137:
@@ -352,10 +364,19 @@ def _append_text(array, string, sep, sep2, comment):
         array.append(res)
 
 
+def _setup_argparse():
+    desc = 'This script creates automatically all RestClients files'
+    parser = argparse.ArgumentParser(description=desc)
+
+    parser.add_argument('output_dir', help='output directory')
+    args = parser.parse_args()
+    return args
+
+
 def main():
     # Getting arg parameters
-    client_generator = OptionCliGenerator()
-
+    args = _setup_argparse()
+    client_generator = OptionCliGenerator(args.output_dir)
     # client_generator = JavaClientGenerator(args.server_url, args.output_dir)
     client_generator.create_rest_clients()
 

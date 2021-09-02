@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # importing date class from datetime module
+import argparse
 import os
 import re
 # importing date class from datetime module
@@ -17,11 +18,11 @@ import rest_client_generator
 
 class ParserCliGenerator(rest_client_generator.RestClientGenerator):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, output_dir):
+        super().__init__(output_dir)
         self.normalized_objects_map = {
             'Map': 'ObjectMap'}
-        
+
         self.java_types = set()
         self.type_imports = {
             'java.util.Map;': 'org.opencb.commons.datastore.core.ObjectMap;'
@@ -113,6 +114,7 @@ class ParserCliGenerator(rest_client_generator.RestClientGenerator):
 
         for category in self.json_resource:
             if category["name"] in cats:
+                print(category["name"])
                 text.append('')
                 text.append('{}{}CommandOptions = new {}CommandOptions(commonCommandOptions, jCommander);'.format((' ' * 8),
                                                                                                                   self.get_as_variable_name(
@@ -122,17 +124,18 @@ class ParserCliGenerator(rest_client_generator.RestClientGenerator):
                                                                                                                   self.categories[
                                                                                                                       self.get_category_name(
                                                                                                                           category)]))
-                text.append('{}jCommander.addCommand("{}", {}CommandOptions);'.format(' ' * 8, self.get_category_path(category),
-                                                                                      self.get_as_variable_name(self.categories[
-                                                                                                                    self.get_category_name(
-                                                                                                                        category)])))
+                text.append(
+                    '{}jCommander.addCommand("{}", {}CommandOptions);'.format(' ' * 8, self.command_names[category["name"]].lower(),
+                                                                              self.get_as_variable_name(self.categories[
+                                                                                                            self.get_category_name(
+                                                                                                                category)])))
                 text.append('{}JCommander {}SubCommands = jCommander.getCommands().get("{}");'.format(' ' * 8,
                                                                                                       self.get_as_variable_name(
                                                                                                           self.categories[
                                                                                                               self.get_category_name(
                                                                                                                   category)]),
-                                                                                                      self.get_category_path(
-                                                                                                          category)))
+                                                                                                      self.command_names[
+                                                                                                          category["name"]].lower()))
                 for endpoint in category["endpoints"]:
                     if self.check_not_ignored_command(category["name"], self.get_method_name(endpoint, category)):
                         text.append(
@@ -324,7 +327,10 @@ class ParserCliGenerator(rest_client_generator.RestClientGenerator):
 
         # Add the abstract methods implementation
         with open("parser_abstract_methods.template", 'r') as handler:
-            text.append(handler.read())
+            text.append(
+                str(handler.read()).replace("##@@ANALYSIS@@##", ','.join(self.analysis_commands).strip()).replace("##@@OPERATIONS@@##",
+                                                                                                                  ','.join(
+                                                                                                                      self.operations_commands).strip()))
 
         text.append(self.get_method_definition("", ""))
 
@@ -377,9 +383,19 @@ def _append_text(array, string, sep, sep2, comment):
         array.append(res)
 
 
+def _setup_argparse():
+    desc = 'This script creates automatically all RestClients files'
+    parser = argparse.ArgumentParser(description=desc)
+
+    parser.add_argument('output_dir', help='output directory')
+    args = parser.parse_args()
+    return args
+
+
 def main():
     # Getting arg parameters
-    client_generator = ParserCliGenerator()
+    args = _setup_argparse()
+    client_generator = ParserCliGenerator(args.output_dir)
 
     # client_generator = JavaClientGenerator(args.server_url, args.output_dir)
     client_generator.create_parser()

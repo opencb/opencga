@@ -1,15 +1,23 @@
 #!/usr/bin/env python3
 
 import argparse
+import os
 import re
+
 import sys
-from rest_client_generator import RestClientGenerator
+
+currentdir = os.path.dirname(os.path.realpath(__file__))
+parentdir = os.path.dirname(currentdir)
+print(parentdir)
+sys.path.insert(0, parentdir)
+
+import rest_client_generator
 
 
-class JavaClientGenerator(RestClientGenerator):
+class JavaClientGenerator(rest_client_generator.RestClientGenerator):
 
-    def __init__(self, server_url, output_dir):
-        super().__init__(server_url, output_dir)
+    def __init__(self, output_dir):
+        super().__init__(output_dir)
 
         self.java_types = set()
         self.type_imports = {
@@ -88,7 +96,8 @@ class JavaClientGenerator(RestClientGenerator):
         text.append(' */')
         text.append('public class {}Client extends AbstractParentClient {{'.format(self.categories[self.get_category_name(category)]))
         text.append('')
-        text.append('{}public {}Client(String token, ClientConfiguration configuration) {{'.format(' ' * 4, self.categories[self.get_category_name(category)]))
+        text.append('{}public {}Client(String token, ClientConfiguration configuration) {{'.format(' ' * 4, self.categories[
+            self.get_category_name(category)]))
         text.append('{}super(token, configuration);'.format(' ' * 8))
         text.append('{}}}'.format(' ' * 4))
         return '\n'.join(text)
@@ -115,7 +124,7 @@ class JavaClientGenerator(RestClientGenerator):
             if parameter == 'params':
                 for parameter in self.get_optional_parameters(endpoint):
                     append_comment_text(text, '{}* {} {}: {}'.format(' ' * 5, ' ' * 5, parameter,
-                                                                        self.get_parameter_description(parameter)), 5, 12)
+                                                                     self.get_parameter_description(parameter)), 5, 12)
 
         append_comment_text(text, '{}* @return a RestResponse object.'.format(' ' * 5), 5)
         append_comment_text(text, '{}* @throws ClientException ClientException if there is any server error.'.format(' ' * 5), 5)
@@ -138,13 +147,13 @@ class JavaClientGenerator(RestClientGenerator):
             append_text(text, '{}params.put("body", data);'.format(' ' * 8), 8)
 
         append_text(text, '{}return execute("{}", {}, {}, {}, {}, params, {}, {}.class);'.format((' ' * 8),
-            self.get_endpoint_category(),
-            self.get_endpoint_id1() if self.get_endpoint_id1() else 'null',
-            '"' + self.get_endpoint_subcategory() + '"' if self.get_endpoint_subcategory() else 'null',
-            self.get_endpoint_id2() if self.get_endpoint_id2() else 'null',
-            '"' + self.get_endpoint_action() + '"' if self.get_endpoint_action() else 'null',
-            self.get_endpoint_method(endpoint),
-            response_type), 8)
+                                                                                                 self.get_endpoint_category(),
+                                                                                                 self.get_endpoint_id1() if self.get_endpoint_id1() else 'null',
+                                                                                                 '"' + self.get_endpoint_subcategory() + '"' if self.get_endpoint_subcategory() else 'null',
+                                                                                                 self.get_endpoint_id2() if self.get_endpoint_id2() else 'null',
+                                                                                                 '"' + self.get_endpoint_action() + '"' if self.get_endpoint_action() else 'null',
+                                                                                                 self.get_endpoint_method(endpoint),
+                                                                                                 response_type), 8)
 
         text.append('{}}}'.format(' ' * 4))
         return '\n'.join(text)
@@ -272,7 +281,6 @@ def _setup_argparse():
     desc = 'This script creates automatically all RestClients files'
     parser = argparse.ArgumentParser(description=desc)
 
-    parser.add_argument('server_url', help='server URL')
     parser.add_argument('output_dir', help='output directory')
     args = parser.parse_args()
     return args
@@ -282,7 +290,7 @@ def main():
     # Getting arg parameters
     args = _setup_argparse()
 
-    client_generator = JavaClientGenerator(args.server_url, args.output_dir)
+    client_generator = JavaClientGenerator(args.output_dir)
     client_generator.create_rest_clients()
 
 

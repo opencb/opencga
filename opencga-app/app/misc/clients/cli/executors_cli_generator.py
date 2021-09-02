@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # importing date class from datetime module
+import argparse
 import os
 import re
 # importing date class from datetime module
@@ -17,8 +18,8 @@ import rest_client_generator
 
 class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, output_dir):
+        super().__init__(output_dir)
 
         self.emptyQueryParams = ['login', 'updateConfigs', 'updateFilters', 'genotypesFamily', 'updateGroups', 'updateUsers',
                                  'uploadTemplates', 'updatePermissionRules', 'updateVariableSets', 'updateVariables']
@@ -72,6 +73,7 @@ class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
         headers.append('package ' + self.executors_package + ';')
         headers.append('')
         headers.append('import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;')
+        headers.append('import org.opencb.opencga.app.cli.main.*;')
         headers.append('import org.opencb.opencga.core.response.RestResponse;')
 
         imports = set()
@@ -107,23 +109,40 @@ class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
 
         text = []
         text.append('')
-        text.append('public class {}CommandExecutor extends OpencgaCommandExecutor {{'.format(self.categories[category['name']]))
+        text.append('public class {}CommandExecutor extends {} {{'.format(self.categories[category['name']],
+                                                                          self.get_extended_class(self.categories[category['name']])))
         text.append('')
         text.append('    private {}CommandOptions {}CommandOptions;'.format(self.categories[category['name']], self.categories[category[
             'name']].lower()))
-        text.append('')
-        text.append('    public {}CommandExecutor({}CommandOptions {}CommandOptions) {{'.format(self.categories[category['name']],
-                                                                                                self.categories[category['name']],
-                                                                                                self.categories[category['name']].lower()))
-        text.append('        super({}CommandOptions.commonCommandOptions);'.format(self.categories[category['name']].lower()))
-        text.append('        this.{}CommandOptions = {}CommandOptions;'.format(self.categories[category['name']].lower(),
-                                                                               self.categories[category['name']].lower()))
-        text.append('    }')
+        if str(self.categories[category['name']]).lower() == 'user':
+            text.append('')
+            text.append('    public UserCommandExecutor(UserCommandOptions userCommandOptions) {')
+            text.append(
+                '        super(userCommandOptions.commonCommandOptions, getParsedSubCommand(userCommandOptions.jCommander).startsWith("log"),')
+            text.append('                userCommandOptions);')
+            text.append('        this.userCommandOptions = userCommandOptions;')
+            text.append('    }')
+        else:
+            text.append('')
+            text.append('    public {}CommandExecutor({}CommandOptions {}CommandOptions) {{'.format(self.categories[category['name']],
+                                                                                                    self.categories[category['name']],
+                                                                                                    self.categories[
+                                                                                                        category['name']].lower()))
+            text.append('        super({}CommandOptions.commonCommandOptions);'.format(self.categories[category['name']].lower()))
+            text.append('        this.{}CommandOptions = {}CommandOptions;'.format(self.categories[category['name']].lower(),
+                                                                                   self.categories[category['name']].lower()))
+            text.append('    }')
         text.append('')
         text.append(self.get_method_execute(category))
         text.append('')
 
         return '\n'.join(text)
+
+    def get_extended_class(self, category):
+        res = 'OpencgaCommandExecutor'
+        if category in self.extended_classes:
+            res = 'Parent' + category + 'CommandExecutor'
+        return res
 
     def get_class_end(self):
         return '}\n'
@@ -138,11 +157,10 @@ class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
             category["name"]].lower()))
         text.append('{}RestResponse queryResponse = null;'.format((' ' * 8), category["name"]))
         text.append('{}switch (subCommandString) {{'.format((' ' * 8)))
-
         for endpoint in category["endpoints"]:
             method_name = self.get_method_name(endpoint, category)
             if self.check_not_ignored_command(category["name"], method_name):
-                text.append('{}case "{}":'.format((' ' * 12), method_name))
+                text.append('{}case "{}":'.format((' ' * 12), self.to_kebab_case(method_name)))
                 text.append('{}queryResponse = {}();'.format((' ' * 16), method_name))
                 text.append('{}break;'.format((' ' * 16)))
 
@@ -169,102 +187,114 @@ class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
     def get_method_definition(self, category, endpoint):
         method_name = self.get_method_name(endpoint, category)
         text = []
-        self.java_types.add(self.options_package + '.{}CommandOptions;'.format(self.categories[self.get_category_name(category)]))
-
-        if self.check_not_ignored_command(category["name"], method_name):
-
-            parameters = self.get_method_parameters(endpoint)
-            for parameter in parameters:
-                self.java_types.add(parameter["typeClass"])
-            self.java_types.add(endpoint["responseClass"])
-            text.append('{}private RestResponse<{}> {}() throws ClientException {{'.format((' ' * 4),
-                                                                                           self.normalize_object(endpoint['response'],
-                                                                                                                 self.categories[category[
+        if method_name in self.extended_methods:
+            text.append('{}protected RestResponse<{}> {}() throws Exception {{'.format((' ' * 4),
+                                                                                       self.normalize_object(endpoint['response'],
+                                                                                                             self.categories[
+                                                                                                                 category[
                                                                                                                      'name']]),
-                                                                                           method_name))
-            text.append('        logger.debug("Executing {} in {} command line");'.format(method_name, self.categories[category['name']]))
-            text.append('')
-            text.append('        {}CommandOptions.{}CommandOptions commandOptions = {}CommandOptions.{}CommandOptions;'.format(
-                self.categories[self.get_category_name(category)], self.get_as_class_name(self.get_method_name(endpoint, category)),
-                self.categories[category['name']].lower(),
-                method_name))
-            query_params_no_mandatory = self.get_query_params(endpoint, False)
-            exists_query_params = False
-            if query_params_no_mandatory:
-                exists_query_params = True
+                                                                                       method_name))
+
+            text.append('{}return super.{}();'.format((' ' * 8), method_name))
+            text.append('{}}}'.format((' ' * 4)))
+            self.java_types.add(endpoint["responseClass"])
+        else:
+            self.java_types.add(self.options_package + '.{}CommandOptions;'.format(self.categories[self.get_category_name(category)]))
+
+            if self.check_not_ignored_command(category["name"], method_name):
+
+                parameters = self.get_method_parameters(endpoint)
+                for parameter in parameters:
+                    self.java_types.add(parameter["typeClass"])
+                self.java_types.add(endpoint["responseClass"])
+                text.append('{}private RestResponse<{}> {}() throws ClientException {{'.format((' ' * 4),
+                                                                                               self.normalize_object(endpoint['response'],
+                                                                                                                     self.categories[
+                                                                                                                         category[
+                                                                                                                             'name']]),
+                                                                                               method_name))
+                text.append(
+                    '        logger.debug("Executing {} in {} command line");'.format(method_name, self.categories[category['name']]))
                 text.append('')
-                text.append('{}ObjectMap queryParams = new ObjectMap();'.format((' ' * 8)))
-                for parameter in query_params_no_mandatory:
-                    if parameter["type"] == "string":
-                        text.append(
-                            '{}queryParams.putIfNotEmpty("{}", commandOptions.{});'.format((' ' * 8),
-                                                                                           self.normalize_names(parameter["name"]),
-                                                                                           self.normalize_names(parameter["name"])))
-                    else:
-                        self.java_types.add(parameter["typeClass"])
-                        text.append(
-                            '{}queryParams.putIfNotNull("{}", commandOptions.{});'.format((' ' * 8),
-                                                                                          self.normalize_names(parameter["name"]),
-                                                                                          self.normalize_names(parameter["name"])))
-                text.append('')
-
-
-            elif method_name in self.emptyQueryParams:
-                text.append('{}ObjectMap queryParams = new ObjectMap();'.format((' ' * 8)))
-                exists_query_params = True
-            exists_body_params, body_params, object_name = self.get_body_params(endpoint)
-
-            if body_params or exists_body_params:
-                if method_name == 'updateAnnotations' and 'amil' in category['name']:
-                    print(str(body_params) + "-> " + str(self.isBodyParamsEmpty(body_params)))
-                    print('{}{} {} = new {}();'.format((' ' * 8), object_name, self.get_as_variable_name(object_name), object_name))
-                if self.isBodyParamsEmpty(body_params):
-                    if object_name == "Map":
-                        text.append(
-                            '{}{} {} = new {}();'.format((' ' * 8), "ObjectMap", self.get_as_variable_name(object_name), "ObjectMap"))
-                    else:
-                        text.append(
-                            '{}{} {} = new {}();'.format((' ' * 8), object_name, self.get_as_variable_name(object_name), object_name))
-                else:
-                    text.append('{}{} {} = new {}()'.format((' ' * 8), object_name, self.get_as_variable_name(object_name), object_name))
-
-                new_body_params = []
-                for parameter in body_params:
-                    if parameter["name"] not in self.excluded_parameters:
-                        new_body_params.append(parameter)
-
-                for parameter in new_body_params:
-                    if parameter["name"] not in self.excluded_parameters:
-                        if parameter == new_body_params[-1]:
+                text.append('        {}CommandOptions.{}CommandOptions commandOptions = {}CommandOptions.{}CommandOptions;'.format(
+                    self.categories[self.get_category_name(category)], self.get_as_class_name(self.get_method_name(endpoint, category)),
+                    self.categories[category['name']].lower(),
+                    method_name))
+                query_params_no_mandatory = self.get_query_params(endpoint, False)
+                exists_query_params = False
+                if query_params_no_mandatory:
+                    exists_query_params = True
+                    text.append('')
+                    text.append('{}ObjectMap queryParams = new ObjectMap();'.format((' ' * 8)))
+                    for parameter in query_params_no_mandatory:
+                        if parameter["type"] == "string":
                             text.append(
-                                '{}.set{}(commandOptions.{});'.format((' ' * 16),
-                                                                      self.get_as_class_name(self.replace_names(parameter["name"])),
-                                                                      self.replace_names(parameter["name"])))
+                                '{}queryParams.putIfNotEmpty("{}", commandOptions.{});'.format((' ' * 8),
+                                                                                               self.normalize_names(parameter["name"]),
+                                                                                               self.normalize_names(parameter["name"])))
+                        else:
+                            self.java_types.add(parameter["typeClass"])
+                            text.append(
+                                '{}queryParams.putIfNotNull("{}", commandOptions.{});'.format((' ' * 8),
+                                                                                              self.normalize_names(parameter["name"]),
+                                                                                              self.normalize_names(parameter["name"])))
+                    text.append('')
+
+
+                elif method_name in self.emptyQueryParams:
+                    text.append('{}ObjectMap queryParams = new ObjectMap();'.format((' ' * 8)))
+                    exists_query_params = True
+                exists_body_params, body_params, object_name = self.get_body_params(endpoint)
+
+                if body_params or exists_body_params:
+                    if self.isBodyParamsEmpty(body_params):
+                        if object_name == "Map":
+                            text.append(
+                                '{}{} {} = new {}();'.format((' ' * 8), "ObjectMap", self.get_as_variable_name(object_name), "ObjectMap"))
                         else:
                             text.append(
-                                '{}.set{}(commandOptions.{})'.format((' ' * 16),
-                                                                     self.get_as_class_name(self.replace_names(parameter["name"])),
-                                                                     self.replace_names(parameter["name"])))
-                    self.java_types.add(parameter["typeClass"])
+                                '{}{} {} = new {}();'.format((' ' * 8), object_name, self.get_as_variable_name(object_name), object_name))
+                    else:
+                        text.append(
+                            '{}{} {} = new {}()'.format((' ' * 8), object_name, self.get_as_variable_name(object_name), object_name))
 
-                text.append('')
-            text.append(
-                '{}return openCGAClient.get{}Client().{}({}{}{}{});'.format((' ' * 8), self.categories[category['name']],
-                                                                            method_name,
-                                                                            ','.join(
-                                                                                self.get_command_options_path_params(endpoint)).strip(),
-                                                                            str(','.join(self.get_return_query_params(endpoint,
-                                                                                                                      method_name,
-                                                                                                                      category))).strip(
+                    new_body_params = []
+                    for parameter in body_params:
+                        if parameter["name"] not in self.excluded_parameters:
+                            new_body_params.append(parameter)
 
-                                                                            ), self.get_return_body_params(exists_body_params,
-                                                                                                           object_name, endpoint
-                                                                                                           )
-                                                                            ,
-                                                                            self.get_return_query_params_no_mandatory(
-                                                                                exists_query_params, exists_body_params, endpoint
-                                                                            )))
-            text.append('    }')
+                    for parameter in new_body_params:
+                        if parameter["name"] not in self.excluded_parameters:
+                            if parameter == new_body_params[-1]:
+                                text.append(
+                                    '{}.set{}(commandOptions.{});'.format((' ' * 16),
+                                                                          self.get_as_class_name(self.replace_names(parameter["name"])),
+                                                                          self.replace_names(parameter["name"])))
+                            else:
+                                text.append(
+                                    '{}.set{}(commandOptions.{})'.format((' ' * 16),
+                                                                         self.get_as_class_name(self.replace_names(parameter["name"])),
+                                                                         self.replace_names(parameter["name"])))
+                        self.java_types.add(parameter["typeClass"])
+
+                    text.append('')
+                text.append(
+                    '{}return openCGAClient.get{}Client().{}({}{}{}{});'.format((' ' * 8), self.categories[category['name']],
+                                                                                method_name,
+                                                                                ','.join(
+                                                                                    self.get_command_options_path_params(endpoint)).strip(),
+                                                                                str(','.join(self.get_return_query_params(endpoint,
+                                                                                                                          method_name,
+                                                                                                                          category))).strip(
+
+                                                                                ), self.get_return_body_params(exists_body_params,
+                                                                                                               object_name, endpoint
+                                                                                                               )
+                                                                                ,
+                                                                                self.get_return_query_params_no_mandatory(
+                                                                                    exists_query_params, exists_body_params, endpoint
+                                                                                )))
+                text.append('    }')
         text.append(' ' * 4)
         return '\n'.join(text)
 
@@ -376,8 +406,6 @@ class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
         elif param == "":
             if category.lower == "clinical":
                 param = self.get_as_class_name("clinicalAnalysis");
-            elif category == "DiseasePanel":
-                param = self.get_as_class_name("panel");
             else:
                 param = "ObjectMap";
         return param.replace("$", ".")
@@ -479,10 +507,19 @@ def _append_text(array, string, sep, sep2, comment):
         array.append(res)
 
 
+def _setup_argparse():
+    desc = 'This script creates automatically all RestClients files'
+    parser = argparse.ArgumentParser(description=desc)
+
+    parser.add_argument('output_dir', help='output directory')
+    args = parser.parse_args()
+    return args
+
+
 def main():
     # Getting arg parameters
-    client_generator = ExecutorCliGenerator()
-
+    args = _setup_argparse()
+    client_generator = ExecutorCliGenerator(args.output_dir)
     # client_generator = JavaClientGenerator(args.server_url, args.output_dir)
     client_generator.create_rest_clients()
 

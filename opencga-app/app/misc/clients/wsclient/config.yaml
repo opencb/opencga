@@ -1,36 +1,23 @@
 options:
-  server_url: http://localhost:8080/opencga-2.2.0-dev
-  version: 1.0
-  cli_output_dir: opencga-client/src/main/java/org/opencb/opencga/client/rest/clients
-  options_output_dir: ../../../../src/main/java/org/opencb/opencga/app/cli/main/options
-  executors_output_dir: ../../../../src/main/java/org/opencb/opencga/app/cli/main/executors
-  executors_package: org.opencb.opencga.app.cli.main.executors
-  options_package: org.opencb.opencga.app.cli.main.options
-  parser_package: org.opencb.opencga.app.cli.main
-  ignore_types:
-    - string
-    - object
-    - integer
-    - int
-    - map
-    - boolean
-    - enum
-    - long
-    - java.lang.String
-    - java.lang.Boolean
-    - java.lang.Integer
-    - java.lang.Long
-    - java.lang.Short
-    - java.lang.Double
-    - java.lang.Float
-    - java.lang.
+  server_url: http://localhost:8080/opencga
 api:
   Users:
     ignore: False
     key: User
+    extended: True
+    shortcuts:
+      user: u
+      password: p
+      study: s
+    commands:
+      login:
+        ignore: False
+        extended: True
   Projects:
     ignore: False
     key: Project
+    shortcuts:
+      study: s
   Studies:
     ignore: False
     key: Study
@@ -45,42 +32,68 @@ api:
             ignore: True
           serialVersionUID:
             ignore: True
+    shortcuts:
+      study: s
   Jobs:
     ignore: False
     key: Job
+    shortcuts:
+      study: s
   Samples:
     ignore: False
     key: Sample
+    shortcuts:
+      study: s
   Individuals:
     ignore: False
     key: Individual
+    shortcuts:
+      study: s
   Families:
     ignore: False
     key: Family
   Cohorts:
     ignore: False
     key: Cohort
+    shortcuts:
+      study: s
   Disease Panels:
     ignore: False
     key: DiseasePanel
+    shortcuts:
+      study: s
   Analysis - Alignment:
     ignore: False
     key: Alignment
+    shortcuts:
+      study: s
   Analysis - Variant:
     ignore: False
     key: Variant
+    shortcuts:
+      study: s
   Analysis - Clinical:
     ignore: False
     key: ClinicalAnalysis
+    shortcuts:
+      study: s
   Operations - Variant Storage:
     ignore: False
     key: VariantOperation
+    shortcuts:
+      study: s
   Meta:
     ignore: False
     key: Meta
+    shortcuts:
+      study: s
   GA4GH:
-    ignore: True
+    ignore: False
     key: GA4GH
+    shortcuts:
+      study: s
   Admin:
-    ignore: True
+    ignore: False
     key: Admin
+    shortcuts:
+      study: s

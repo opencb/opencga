@@ -1,14 +1,21 @@
 import argparse
-import sys
+import os
 import textwrap
 
-from rest_client_generator import RestClientGenerator
+import sys
+
+currentdir = os.path.dirname(os.path.realpath(__file__))
+parentdir = os.path.dirname(currentdir)
+print(parentdir)
+sys.path.insert(0, parentdir)
+
+import rest_client_generator
 
 
-class JavaScriptClientGenerator(RestClientGenerator):
+class JavaScriptClientGenerator(rest_client_generator.RestClientGenerator):
 
-    def __init__(self, server_url, output_dir):
-        super().__init__(server_url, output_dir)
+    def __init__(self, output_dir):
+        super().__init__(output_dir)
 
         self.text_wrap_limit = 140  # 140 columns max
 
@@ -71,10 +78,12 @@ class JavaScriptClientGenerator(RestClientGenerator):
 
         for name, param in self.parameters.items():
             param_name = name + " = \"" + param["defaultValue"] + "\"" if param["defaultValue"] else name
-            param_type = "|".join([f'"{p}"' for p in param["allowedValues"].split(",")]) if param["allowedValues"] else self.param_types[param["type"]]
+            param_type = "|".join([f'"{p}"' for p in param["allowedValues"].split(",")]) if param["allowedValues"] else self.param_types[
+                param["type"]]
             param_description = f'{self.get_parameter_description(name)} {"The default value is " + param["defaultValue"] + "." if param["defaultValue"] else ""}'
             if name in _path_params or name == "data":
-                path_params.append(f'@param {{{param_type}}} {"[" + param_name + "]" if not self.is_required(name) else param_name} - {param_description}')
+                path_params.append(
+                    f'@param {{{param_type}}} {"[" + param_name + "]" if not self.is_required(name) else param_name} - {param_description}')
             elif name in _mandatory_query_params:
                 mandatory_params.append(f'@param {{{param_type}}} {param_name} - {param_description}')
             else:
@@ -108,7 +117,7 @@ class JavaScriptClientGenerator(RestClientGenerator):
                 query_string_params = f'params'
         else:
             if len(mandatory_params) > 0:
-                query_string_params = f'{ "{{" + ", ".join(mandatory_params) + "}}" if len(mandatory_params) > 1 else mandatory_params[0]}'
+                query_string_params = f'{"{{" + ", ".join(mandatory_params) + "}}" if len(mandatory_params) > 1 else mandatory_params[0]}'
 
         endpoint_method_args = ", ".join(s for s in [
             f'"{self.get_endpoint_category()}"',
@@ -128,7 +137,8 @@ class JavaScriptClientGenerator(RestClientGenerator):
         return self.categories[self.get_category_name(category)] + ".js"
 
     def text_wrap(self, string, separator):
-        w = textwrap.TextWrapper(width=self.text_wrap_limit - 6, break_long_words=True, replace_whitespace=False) # text_wrap_limit - 6 (6 cols for indentation)
+        w = textwrap.TextWrapper(width=self.text_wrap_limit - 6, break_long_words=True,
+                                 replace_whitespace=False)  # text_wrap_limit - 6 (6 cols for indentation)
         return separator.join(w.wrap(string))
 
     def camelCase(self, st):
@@ -139,7 +149,7 @@ class JavaScriptClientGenerator(RestClientGenerator):
 def _setup_argparse():
     desc = 'This script creates automatically all RestClients files'
     parser = argparse.ArgumentParser(description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('server_url', help='server URL')
+
     parser.add_argument('output_dir', help='output directory')
     args = parser.parse_args()
     return args
@@ -147,7 +157,7 @@ def _setup_argparse():
 
 def main():
     args = _setup_argparse()
-    JavaScriptClientGenerator(args.server_url, args.output_dir).create_rest_clients()
+    JavaScriptClientGenerator(args.output_dir).create_rest_clients()
 
 
 if __name__ == '__main__':

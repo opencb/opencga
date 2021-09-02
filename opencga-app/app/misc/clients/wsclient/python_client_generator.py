@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
 
 import argparse
-import sys
+import os
 import re
 
-from rest_client_generator import RestClientGenerator
+import sys
+
+currentdir = os.path.dirname(os.path.realpath(__file__))
+parentdir = os.path.dirname(currentdir)
+print(parentdir)
+sys.path.insert(0, parentdir)
+
+import rest_client_generator
 
 
-class PythonClientGenerator(RestClientGenerator):
+class PythonClientGenerator(rest_client_generator.RestClientGenerator):
 
-    def __init__(self, server_url, output_dir):
-        super().__init__(server_url, output_dir)
+    def __init__(self, output_dir):
+        super().__init__(output_dir)
 
         self.param_types = {
             'string': 'str',
@@ -46,7 +53,7 @@ class PythonClientGenerator(RestClientGenerator):
                 len_line += len(word) + 1
             else:
                 new_lines.append(' '.join(new_line))
-                new_line = [' '*(indent + 4) + word]
+                new_line = [' ' * (indent + 4) + word]
                 len_line = len(new_line[0])
         new_lines.append(' '.join(new_line))
         return '\n'.join(new_lines)
@@ -96,11 +103,11 @@ class PythonClientGenerator(RestClientGenerator):
                     self.get_parameter_allowed_values(param).split(',')
                 )
             line = '{}:param {} {}: {}'.format(
-                        ' ' * 8,
-                        self.param_types[self.get_parameter_type(param)],
-                        self.to_snake_case(param),
-                        desc
-                )
+                ' ' * 8,
+                self.param_types[self.get_parameter_type(param)],
+                self.to_snake_case(param),
+                desc
+            )
             if self.is_required(param):
                 line += ' (REQUIRED)'
                 params_descriptions.insert(0, self.format_line(line))
@@ -165,7 +172,6 @@ def _setup_argparse():
     desc = 'This script creates automatically all Python RestClients files'
     parser = argparse.ArgumentParser(description=desc)
 
-    parser.add_argument('server_url', help='server URL')
     parser.add_argument('output_dir', help='output directory')
     args = parser.parse_args()
     return args
@@ -175,7 +181,7 @@ def main():
     # Getting arg parameters
     args = _setup_argparse()
 
-    client_generator = PythonClientGenerator(args.server_url, args.output_dir)
+    client_generator = PythonClientGenerator(args.output_dir)
     client_generator.create_rest_clients()
 
 
