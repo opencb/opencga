@@ -151,6 +151,11 @@ public abstract class MigrationTool {
         void accept(Document document, List<WriteModel<Document>> bulk);
     }
 
+    @FunctionalInterface
+    protected interface QueryCollectionFunc {
+        void accept(Document document);
+    }
+
     protected final void migrateCollection(String collection, Bson query, Bson projection,
                                            MigrateCollectionFunc migrateFunc) {
         migrateCollection(collection, collection, query, projection, migrateFunc);
@@ -192,6 +197,17 @@ public abstract class MigrationTool {
             privateLogger.info("Nothing to do!");
         } else {
             privateLogger.info("Updated {} documents from collection {}", count, outputCollection.getNamespace().getFullName());
+        }
+    }
+
+    protected final void queryMongo(String inputCollectionStr, Bson query, Bson projection, QueryCollectionFunc queryCollectionFunc) {
+        MongoCollection<Document> inputCollection = getMongoCollection(inputCollectionStr);
+
+        try (MongoCursor<Document> it = inputCollection.find(query).projection(projection).cursor()) {
+            while (it.hasNext()) {
+                Document document = it.next();
+                queryCollectionFunc.accept(document);
+            }
         }
     }
 
