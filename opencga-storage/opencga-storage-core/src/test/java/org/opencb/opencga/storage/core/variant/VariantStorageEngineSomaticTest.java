@@ -11,6 +11,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -135,8 +136,8 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
     @Test
     public void indexExcludeGenotype() throws Exception {
         VariantStorageEngine engine = getVariantStorageEngine();
-        runETL(engine, getPlatinumFile(0), STUDY_NAME, new ObjectMap(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), true));
-        runETL(engine, getPlatinumFile(1), STUDY_NAME, new ObjectMap(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), false)
+        runETL(engine, getPlatinumFile(0), STUDY_NAME, new ObjectMap(VariantStorageOptions.INCLUDE_GENOTYPE.key(), YesNoAuto.NO));
+        runETL(engine, getPlatinumFile(1), STUDY_NAME, new ObjectMap(VariantStorageOptions.INCLUDE_GENOTYPE.key(), YesNoAuto.YES)
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), true));
 
         VariantDBIterator iterator = engine.iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.")
@@ -177,7 +178,16 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
 
     @Test
     public void indexWithOtherFieldsExcludeGT() throws Exception {
-        indexWithOtherFieldsExcludeGT(new ObjectMap(), new ObjectMap());
+        indexWithOtherFieldsExcludeGT(
+                new ObjectMap(VariantStorageOptions.INCLUDE_GENOTYPE.key(), YesNoAuto.NO),
+                new ObjectMap(VariantStorageOptions.INCLUDE_GENOTYPE.key(), YesNoAuto.YES));
+    }
+
+    @Test
+    public void indexWithOtherFieldsExcludeGTAuto() throws Exception {
+        indexWithOtherFieldsExcludeGT(
+                new ObjectMap(VariantStorageOptions.INCLUDE_GENOTYPE.key(), YesNoAuto.AUTO),
+                new ObjectMap(VariantStorageOptions.INCLUDE_GENOTYPE.key(), YesNoAuto.AUTO));
     }
 
     protected void indexWithOtherFieldsExcludeGT(ObjectMap params1, ObjectMap params2) throws Exception {
@@ -186,23 +196,26 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
         List<String> extraFields = Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU");
         VariantStorageEngine engine = getVariantStorageEngine();
         runDefaultETL(getResourceUri("variant-test-somatic.vcf"), engine, studyMetadata,
-                new ObjectMap(params1)
+                new ObjectMap()
                         .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), extraFields)
-                        .append(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), true)
+                        .append(VariantStorageOptions.INCLUDE_GENOTYPE.key(), YesNoAuto.NO)
                         .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
 //                        .append(VariantStorageEngine.Options.FILE_ID.key(), 2)
                         .append(VariantStorageOptions.ANNOTATE.key(), false)
+                        .appendAll(params1)
         );
         runDefaultETL(getResourceUri("variant-test-somatic_2.vcf"), engine, studyMetadata,
-                new ObjectMap(params2)
+                new ObjectMap()
                         .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), extraFields)
-                        .append(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), false)
+                        .append(VariantStorageOptions.INCLUDE_GENOTYPE.key(), YesNoAuto.YES)
                         .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
 //                        .append(VariantStorageEngine.Options.FILE_ID.key(), 3)
                         .append(VariantStorageOptions.ANNOTATE.key(), false)
+                        .appendAll(params2)
         );
         studyMetadata = engine.getMetadataManager().getStudyMetadata(studyMetadata.getId());
-        assertFalse(studyMetadata.getAttributes().containsKey(VariantStorageOptions.EXCLUDE_GENOTYPES.key()));
+//        assertFalse(studyMetadata.getAttributes().containsKey(VariantStorageOptions.EXCLUDE_GENOTYPES.key()));
+        assertFalse(studyMetadata.getAttributes().containsKey(VariantStorageOptions.INCLUDE_GENOTYPE.key()));
         assertEquals(extraFields, studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key()));
 
         for (Variant variant : engine.iterable(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL), new QueryOptions())) {

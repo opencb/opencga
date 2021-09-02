@@ -126,10 +126,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                     .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
             params.putAll(getOtherParams());
             FORMAT = new HashSet<>();
-            if (!params.getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
-                    VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue())) {
-                FORMAT.add("GT");
-            }
+            FORMAT.add("GT");
             FORMAT.addAll(params.getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key()));
 
             StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata, params);

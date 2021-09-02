@@ -154,7 +154,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                         cliOptions.genericVariantIndexOptions.loadArchive,
                         cliOptions.genericVariantIndexOptions.loadHomRef,
                         cliOptions.genericVariantIndexOptions.postLoadCheck,
-                        cliOptions.genericVariantIndexOptions.excludeGenotype,
+                        cliOptions.genericVariantIndexOptions.includeGenotype,
                         cliOptions.genericVariantIndexOptions.includeSampleData,
                         cliOptions.genericVariantIndexOptions.merge,
                         cliOptions.genericVariantIndexOptions.deduplicationPolicy,

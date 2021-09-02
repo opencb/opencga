@@ -46,6 +46,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_GENOTYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
