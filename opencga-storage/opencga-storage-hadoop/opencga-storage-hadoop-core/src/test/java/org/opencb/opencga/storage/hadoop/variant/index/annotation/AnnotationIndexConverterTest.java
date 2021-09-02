@@ -53,38 +53,38 @@ public class AnnotationIndexConverterTest {
 
     @Test
     public void testLof() {
-        assertEquals(LOF_MASK | LOF_EXTENDED_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(CUSTOM_LOF_MASK | CUSTOM_LOFE_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("stop_lost"))).getSummaryIndex());
     }
 
     @Test
     public void testLofe() {
-        assertEquals(LOF_EXTENDED_MASK | MISSENSE_VARIANT_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(CUSTOM_LOFE_MASK | MISSENSE_VARIANT_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("missense_variant"))).getSummaryIndex());
     }
 
     @Test
     public void testLofProtein() {
-        assertEquals(LOF_MASK | LOF_EXTENDED_MASK | LOFE_PROTEIN_CODING_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(CUSTOM_LOF_MASK | CUSTOM_LOFE_MASK | CUSTOM_LOFE_PROTEIN_CODING_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("stop_lost", "protein_coding"))).getSummaryIndex());
     }
 
     @Test
     public void testLofeProtein() {
-        assertEquals(LOF_EXTENDED_MASK | MISSENSE_VARIANT_MASK | LOFE_PROTEIN_CODING_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(CUSTOM_LOFE_MASK | MISSENSE_VARIANT_MASK | CUSTOM_LOFE_PROTEIN_CODING_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("missense_variant", "protein_coding"))).getSummaryIndex());
     }
 
     @Test
     public void testLofProteinDifferentTranscript() {
-        assertEquals(LOF_MASK | LOF_EXTENDED_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(CUSTOM_LOF_MASK | CUSTOM_LOFE_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("stop_lost", "other"), ct("other", "protein_coding"))).getSummaryIndex());
 
     }
 
     @Test
     public void testLofeProteinDifferentTranscript() {
-        assertEquals(LOF_EXTENDED_MASK | MISSENSE_VARIANT_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(CUSTOM_LOFE_MASK | MISSENSE_VARIANT_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("missense_variant", "other"), ct("other", "protein_coding"))).getSummaryIndex());
     }
 
@@ -145,7 +145,7 @@ public class AnnotationIndexConverterTest {
         assertEquals(POP_FREQ_ANY_001_MASK | INTERGENIC_MASK,
                 b = converter.convert(annot(ct("intergenic_variant"), ct("regulatory_region_variant"))).getSummaryIndex());
 
-        assertEquals(POP_FREQ_ANY_001_MASK | MISSENSE_VARIANT_MASK | LOF_EXTENDED_MASK | INTERGENIC_MASK,
+        assertEquals(POP_FREQ_ANY_001_MASK | MISSENSE_VARIANT_MASK | CUSTOM_LOFE_MASK | INTERGENIC_MASK,
                 b = converter.convert(annot(ct("intergenic_variant"), ct("missense_variant"))).getSummaryIndex());
     }
 

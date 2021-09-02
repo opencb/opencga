@@ -98,26 +98,33 @@ public final class VariantQueryUtils {
             NUM_TOTAL_SAMPLES);
 
     public static final String LOF = "lof";
-    // LOF does not include missense_variant
-    public static final Set<String> LOF_SET = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+    public static final String LOSS_OF_FUNCTION = "loss_of_function";
+    public static final String PA = "pa";
+    public static final String PROTEIN_ALTERING = "protein_altering";
+
+    public static final Set<String> LOSS_OF_FUNCTION_SET = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             VariantAnnotationConstants.FRAMESHIFT_VARIANT,
-            VariantAnnotationConstants.INFRAME_DELETION,
-            VariantAnnotationConstants.INFRAME_INSERTION,
+            VariantAnnotationConstants.INCOMPLETE_TERMINAL_CODON_VARIANT,
             VariantAnnotationConstants.START_LOST,
             VariantAnnotationConstants.STOP_GAINED,
             VariantAnnotationConstants.STOP_LOST,
             VariantAnnotationConstants.SPLICE_ACCEPTOR_VARIANT,
             VariantAnnotationConstants.SPLICE_DONOR_VARIANT,
-            VariantAnnotationConstants.TRANSCRIPT_ABLATION,
-            VariantAnnotationConstants.TRANSCRIPT_AMPLIFICATION,
-            VariantAnnotationConstants.INITIATOR_CODON_VARIANT,
-            VariantAnnotationConstants.SPLICE_REGION_VARIANT,
-            VariantAnnotationConstants.INCOMPLETE_TERMINAL_CODON_VARIANT
+            VariantAnnotationConstants.FEATURE_TRUNCATION,
+            VariantAnnotationConstants.TRANSCRIPT_ABLATION
     )));
-    public static final Set<String> LOF_EXTENDED_SET = Collections.unmodifiableSet(new HashSet<>(
+
+    public static final Set<String> PROTEIN_ALTERING_SET = Collections.unmodifiableSet(new HashSet<>(
             ListUtils.concat(
-                    new ArrayList<>(LOF_SET),
-                    Arrays.asList(VariantAnnotationConstants.MISSENSE_VARIANT))));
+                    new ArrayList<>(LOSS_OF_FUNCTION_SET),
+                    Arrays.asList(
+                            VariantAnnotationConstants.INFRAME_DELETION,
+                            VariantAnnotationConstants.INFRAME_INSERTION,
+                            VariantAnnotationConstants.MISSENSE_VARIANT
+//            VariantAnnotationConstants.TRANSCRIPT_AMPLIFICATION,
+//            VariantAnnotationConstants.INITIATOR_CODON_VARIANT,
+//            VariantAnnotationConstants.SPLICE_REGION_VARIANT,
+                    ))));
 
     public static final Set<String> IMPORTANT_TRANSCRIPT_FLAGS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             "canonical",
@@ -962,8 +969,10 @@ public final class VariantQueryUtils {
     public static List<String> parseConsequenceTypes(List<String> cts) {
         Set<String> parsedCts = new LinkedHashSet<>(cts.size());
         for (String ct : cts) {
-            if (ct.equalsIgnoreCase(LOF)) {
-                parsedCts.addAll(VariantQueryUtils.LOF_SET);
+            if (ct.equalsIgnoreCase(LOF) || ct.equalsIgnoreCase(LOSS_OF_FUNCTION)) {
+                parsedCts.addAll(VariantQueryUtils.LOSS_OF_FUNCTION_SET);
+            } else if (ct.equalsIgnoreCase(PA) || ct.equalsIgnoreCase(PROTEIN_ALTERING)) {
+                parsedCts.addAll(VariantQueryUtils.PROTEIN_ALTERING_SET);
             } else {
                 parsedCts.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
             }

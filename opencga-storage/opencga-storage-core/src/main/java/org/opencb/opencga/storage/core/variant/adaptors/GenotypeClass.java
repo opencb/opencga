@@ -269,7 +269,7 @@ public enum GenotypeClass implements Predicate<String> {
     /**
      * Indicate that the genotype value was not available in the input variant file.
      */
-    public static final String NA_GT_VALUE = "NA";
+    public static final String NA_GT_VALUE = Genotype.NA;
     /**
      * Indicate that none genotype should match with this value.
      */

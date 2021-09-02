@@ -31,10 +31,10 @@ public class AnnotationIndexConverter {
     public static final Set<String> POP_FREQ_ANY_001_FILTERS = new HashSet<>();
 
     public static final byte PROTEIN_CODING_MASK =               (byte) (1 << 0);
-    public static final byte LOF_MASK =                          (byte) (1 << 1);
+    public static final byte CUSTOM_LOF_MASK =                   (byte) (1 << 1);
     public static final byte MISSENSE_VARIANT_MASK =             (byte) (1 << 2);
-    public static final byte LOFE_PROTEIN_CODING_MASK =          (byte) (1 << 3);
-    public static final byte LOF_EXTENDED_MASK =                 (byte) (1 << 4);
+    public static final byte CUSTOM_LOFE_PROTEIN_CODING_MASK =   (byte) (1 << 3);
+    public static final byte CUSTOM_LOFE_MASK =                  (byte) (1 << 4);
     public static final byte POP_FREQ_ANY_001_MASK =             (byte) (1 << 5);
     public static final byte CLINICAL_MASK =                     (byte) (1 << 6);
     public static final byte INTERGENIC_MASK =                   (byte) (1 << 7);  // INTERGENIC (and maybe regulatory)
@@ -118,17 +118,17 @@ public class AnnotationIndexConverter {
                         ctBtTfTriples.add(Triple.of(soName, biotype, transcriptFlag));
                     }
 
-                    if (VariantQueryUtils.LOF_SET.contains(soName)) {
-                        b |= LOF_MASK;
-                        b |= LOF_EXTENDED_MASK;
+                    if (SampleIndexSchema.CUSTOM_LOF.contains(soName)) {
+                        b |= CUSTOM_LOF_MASK;
+                        b |= CUSTOM_LOFE_MASK;
                         if (proteinCoding) {
-                            b |= LOFE_PROTEIN_CODING_MASK;
+                            b |= CUSTOM_LOFE_PROTEIN_CODING_MASK;
                         }
                     } else if (MISSENSE_VARIANT.equals(soName)) {
                         b |= MISSENSE_VARIANT_MASK;
-                        b |= LOF_EXTENDED_MASK;
+                        b |= CUSTOM_LOFE_MASK;
                         if (proteinCoding) {
-                            b |= LOFE_PROTEIN_CODING_MASK;
+                            b |= CUSTOM_LOFE_PROTEIN_CODING_MASK;
                         }
                     }
                 }

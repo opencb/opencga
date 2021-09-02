@@ -614,24 +614,24 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         VariantQueryResult<Variant> result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
         assertEquals("sample_index_table", result.getSource());
 
-        query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(VariantQueryUtils.LOF_SET)));
+        query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(VariantQueryUtils.LOSS_OF_FUNCTION_SET)));
         result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
         assertEquals("sample_index_table", result.getSource());
 
-        query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET))).append(TYPE.key(), VariantType.INDEL);
+        query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(SampleIndexSchema.CUSTOM_LOFE))).append(TYPE.key(), VariantType.INDEL);
         result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
         assertEquals("sample_index_table", result.getSource());
 
-        query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET).subList(2, 4)));
+        query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(SampleIndexSchema.CUSTOM_LOFE).subList(2, 4)));
         result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
         assertEquals("sample_index_table", result.getSource());
 
-        query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET).subList(2, 4)))
+        query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(SampleIndexSchema.CUSTOM_LOFE).subList(2, 4)))
                 .append(ANNOT_BIOTYPE.key(), VariantAnnotationConstants.PROTEIN_CODING);
         result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
         assertEquals("sample_index_table", result.getSource());
 
-        query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET).subList(2, 4)) + "," + THREE_PRIME_UTR_VARIANT)
+        query.append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), String.join(",", new ArrayList<>(SampleIndexSchema.CUSTOM_LOFE).subList(2, 4)) + "," + THREE_PRIME_UTR_VARIANT)
                 .append(ANNOT_BIOTYPE.key(), VariantAnnotationConstants.PROTEIN_CODING);
         result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.INCLUDE, VariantField.ID).append(QueryOptions.LIMIT, 1));
         assertEquals("sample_index_table", result.getSource());
