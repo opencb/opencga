@@ -42,7 +42,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.JobResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -431,7 +431,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         VariantIndexParams params = new VariantIndexParams();
         params.setFile(create("variant-test-file-corrupted.vcf").getName());
 
-        ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
+        JobResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
                         .append(ParamConstants.STUDY_PARAM, studyId)
                         .append(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false)
                 , outDir, null, sessionId);
@@ -449,7 +449,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         VariantIndexParams params = new VariantIndexParams();
         params.setFile(create("variant-test-duplicated.vcf").getName());
 
-        ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
+        JobResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
                         .append(ParamConstants.STUDY_PARAM, studyId)
                         .append(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false)
                 , outDir, null, sessionId);

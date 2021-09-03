@@ -19,7 +19,7 @@ package org.opencb.opencga.core.models.job;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.JobResult;
 
 import java.util.Collections;
 import java.util.List;
@@ -47,7 +47,7 @@ public class JobCreateParams {
     private List<TinyFile> output;   // output files of this job
     private List<String> tags;
 
-    private ExecutionResult result;
+    private JobResult result;
 
     private TinyFile stdout;
     private TinyFile stderr;
@@ -59,7 +59,7 @@ public class JobCreateParams {
 
     public JobCreateParams(String id, String description, ToolInfo tool, Enums.Priority priority, String commandLine,
                            Map<String, Object> params, String creationDate, JobInternal internal, TinyFile outDir,
-                           List<TinyFile> input, List<TinyFile> output, List<String> tags, ExecutionResult result, TinyFile stdout,
+                           List<TinyFile> input, List<TinyFile> output, List<String> tags, JobResult result, TinyFile stdout,
                            TinyFile stderr, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
@@ -220,11 +220,11 @@ public class JobCreateParams {
         return this;
     }
 
-    public ExecutionResult getResult() {
+    public JobResult getResult() {
         return result;
     }
 
-    public JobCreateParams setResult(ExecutionResult result) {
+    public JobCreateParams setResult(JobResult result) {
         this.result = result;
         return this;
     }

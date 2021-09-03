@@ -40,8 +40,8 @@ import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.StudyNotification;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
+import org.opencb.opencga.core.tools.result.JobResult;
 import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.master.monitor.executors.BatchExecutor;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
@@ -481,8 +481,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         return catalogManager.getJobManager().get(studyFqn, jobId, new QueryOptions(), token).first();
     }
 
-    private void createAnalysisResult(String jobId, String analysisId, Consumer<ExecutionResult> c) throws CatalogException, IOException {
-        ExecutionResult ar = new ExecutionResult();
+    private void createAnalysisResult(String jobId, String analysisId, Consumer<JobResult> c) throws CatalogException, IOException {
+        JobResult ar = new JobResult();
         c.accept(ar);
         File resultFile = Paths.get(getJob(jobId).getOutDir().getUri()).resolve(analysisId + ExecutionResultManager.FILE_EXTENSION).toFile();
         JacksonUtils.getDefaultObjectMapper().writeValue(resultFile, ar);

@@ -24,7 +24,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
-public class ExecutionResult {
+public class JobResult {
 
     @Deprecated
     private String id;
@@ -38,7 +38,7 @@ public class ExecutionResult {
 
     private ObjectMap attributes;
 
-    public ExecutionResult() {
+    public JobResult() {
         executor = new ExecutorInfo();
         status = new Status();
         events = new LinkedList<>();
@@ -49,7 +49,7 @@ public class ExecutionResult {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ExecutionResult{");
+        final StringBuilder sb = new StringBuilder("JobResult{");
         sb.append("executor=").append(executor);
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
@@ -66,7 +66,7 @@ public class ExecutionResult {
         return id;
     }
 
-    public ExecutionResult setId(String id) {
+    public JobResult setId(String id) {
         this.id = id;
         return this;
     }
@@ -75,7 +75,7 @@ public class ExecutionResult {
         return executor;
     }
 
-    public ExecutionResult setExecutor(ExecutorInfo executor) {
+    public JobResult setExecutor(ExecutorInfo executor) {
         this.executor = executor;
         return this;
     }
@@ -84,7 +84,7 @@ public class ExecutionResult {
         return start;
     }
 
-    public ExecutionResult setStart(Date start) {
+    public JobResult setStart(Date start) {
         this.start = start;
         return this;
     }
@@ -93,7 +93,7 @@ public class ExecutionResult {
         return end;
     }
 
-    public ExecutionResult setEnd(Date end) {
+    public JobResult setEnd(Date end) {
         this.end = end;
         return this;
     }
@@ -102,7 +102,7 @@ public class ExecutionResult {
         return status;
     }
 
-    public ExecutionResult setStatus(Status status) {
+    public JobResult setStatus(Status status) {
         this.status = status;
         return this;
     }
@@ -111,7 +111,7 @@ public class ExecutionResult {
         return events;
     }
 
-    public ExecutionResult setEvents(List<Event> events) {
+    public JobResult setEvents(List<Event> events) {
         this.events = events;
         return this;
     }
@@ -120,7 +120,7 @@ public class ExecutionResult {
         return externalFiles;
     }
 
-    public ExecutionResult setExternalFiles(List<URI> externalFiles) {
+    public JobResult setExternalFiles(List<URI> externalFiles) {
         this.externalFiles = externalFiles;
         return this;
     }
@@ -129,7 +129,7 @@ public class ExecutionResult {
         return steps;
     }
 
-    public ExecutionResult setSteps(List<ToolStep> steps) {
+    public JobResult setSteps(List<ToolStep> steps) {
         this.steps = steps;
         return this;
     }
@@ -138,7 +138,7 @@ public class ExecutionResult {
         return attributes;
     }
 
-    public ExecutionResult setAttributes(ObjectMap attributes) {
+    public JobResult setAttributes(ObjectMap attributes) {
         this.attributes = attributes;
         return this;
     }

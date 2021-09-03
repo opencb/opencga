@@ -21,7 +21,7 @@ import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobStudyParam;
 import org.opencb.opencga.core.models.job.JobUpdateParams;
 import org.opencb.opencga.core.models.job.ToolInfo;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.JobResult;
 
 import java.util.List;
 import java.util.Map;
@@ -39,7 +39,7 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
     private List<File> input;    // input files to this job
     private List<File> output;   // output files of this job
 
-    private ExecutionResult execution;
+    private JobResult execution;
     private JobStudyParam study;
 
     private File stdout;
@@ -139,11 +139,11 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
         return this;
     }
 
-    public ExecutionResult getExecution() {
+    public JobResult getExecution() {
         return execution;
     }
 
-    public PrivateJobUpdateParams setExecution(ExecutionResult execution) {
+    public PrivateJobUpdateParams setExecution(JobResult execution) {
         this.execution = execution;
         return this;
     }

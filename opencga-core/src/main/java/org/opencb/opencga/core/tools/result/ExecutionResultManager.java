@@ -63,8 +63,8 @@ public class ExecutionResultManager {
         this.outDir = outDir.toAbsolutePath();
         ObjectMapper objectMapper = new ObjectMapper();
 //        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        objectWriter = objectMapper.writerFor(ExecutionResult.class).withDefaultPrettyPrinter();
-        objectReader = objectMapper.readerFor(ExecutionResult.class);
+        objectWriter = objectMapper.writerFor(JobResult.class).withDefaultPrettyPrinter();
+        objectReader = objectMapper.readerFor(JobResult.class);
         initialized = false;
         closed = false;
 
@@ -94,7 +94,7 @@ public class ExecutionResultManager {
         initialized = true;
 
         Date now = now();
-        ExecutionResult execution = new ExecutionResult()
+        JobResult execution = new JobResult()
                 .setExecutor(new ExecutorInfo()
                         .setId(executorParams.getString(OpenCgaToolExecutor.EXECUTOR_ID))
                         .setParams(removeTokenFromParams(executorParams)))
@@ -127,17 +127,17 @@ public class ExecutionResultManager {
         return closed;
     }
 
-    public synchronized ExecutionResult close() throws ToolException {
+    public synchronized JobResult close() throws ToolException {
         return close(null);
     }
 
-    public synchronized ExecutionResult close(Exception exception) throws ToolException {
+    public synchronized JobResult close(Exception exception) throws ToolException {
         if (closed) {
             throw new ToolException(getClass().getName() + " already closed!");
         }
         thread.interrupt();
 
-        ExecutionResult execution = read();
+        JobResult execution = read();
 
         Date now = now();
         execution.setEnd(now);
@@ -213,7 +213,7 @@ public class ExecutionResultManager {
         updateResult(result -> addError(exception, result));
     }
 
-    private boolean addError(Exception exception, ExecutionResult execution) {
+    private boolean addError(Exception exception, JobResult execution) {
         return execution.getEvents().add(new Event(Event.Type.ERROR, exception.getMessage()));
     }
 
@@ -263,7 +263,7 @@ public class ExecutionResultManager {
         });
     }
 
-    private ToolStep getStep(ExecutionResult execution, String stepId) throws ToolException {
+    private ToolStep getStep(JobResult execution, String stepId) throws ToolException {
         for (ToolStep step : execution.getSteps()) {
             if (step.getId().equals(stepId)) {
                 return step;
@@ -288,17 +288,17 @@ public class ExecutionResultManager {
 
     @FunctionalInterface
     public interface ExecutionResultFunction<R> {
-        R apply(ExecutionResult execution) throws ToolException;
+        R apply(JobResult execution) throws ToolException;
     }
 
     private synchronized <R> R updateResult(ExecutionResultFunction<R> update) throws ToolException {
-        ExecutionResult execution = read();
+        JobResult execution = read();
         R apply = update.apply(execution);
         write(execution);
         return apply;
     }
 
-    public ExecutionResult read() throws ToolException {
+    public JobResult read() throws ToolException {
         try {
             return objectReader.readValue(file);
         } catch (IOException e) {
@@ -314,7 +314,7 @@ public class ExecutionResultManager {
 
     }
 
-    private synchronized void write(ExecutionResult execution) throws ToolException {
+    private synchronized void write(JobResult execution) throws ToolException {
         int maxAttempts = 3;
         int attempts = 0;
         while (attempts < maxAttempts) {

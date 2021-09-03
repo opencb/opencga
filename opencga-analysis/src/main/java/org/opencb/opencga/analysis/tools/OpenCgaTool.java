@@ -30,6 +30,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -38,11 +39,10 @@ import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.ExecutorInfo;
+import org.opencb.opencga.core.tools.result.JobResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,7 +169,7 @@ public abstract class OpenCgaTool {
      * @return ExecutionResult
      * @throws ToolException on error
      */
-    public final ExecutionResult start() throws ToolException {
+    public final JobResult start() throws ToolException {
         if (this.getClass().getAnnotation(Tool.class) == null) {
             throw new ToolException("Missing @" + Tool.class.getSimpleName() + " annotation in " + this.getClass());
         }
@@ -194,7 +194,7 @@ public abstract class OpenCgaTool {
                     if (exception == null) {
                         exception = new RuntimeException("Unexpected system shutdown");
                     }
-                    ExecutionResult result = erm.close(exception);
+                    JobResult result = erm.close(exception);
                     privateLogger.info("------- Tool '" + getId() + "' executed in "
                             + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
                 } catch (ToolException e) {
@@ -204,7 +204,7 @@ public abstract class OpenCgaTool {
         });
         Runtime.getRuntime().addShutdownHook(hook);
         Exception exception = null;
-        ExecutionResult result;
+        JobResult result;
         try {
             if (scratchDir == null) {
                 Path baseScratchDir = this.outDir;

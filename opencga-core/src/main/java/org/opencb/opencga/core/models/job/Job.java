@@ -19,7 +19,7 @@ package org.opencb.opencga.core.models.job;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.JobResult;
 
 import java.util.List;
 import java.util.Map;
@@ -52,7 +52,7 @@ public class Job extends PrivateStudyUid {
     private List<String> tags;
     private List<Job> dependsOn;
 
-    private ExecutionResult execution;
+    private JobResult execution;
 
     private File stdout;
     private File stderr;
@@ -70,7 +70,7 @@ public class Job extends PrivateStudyUid {
 
     public Job(String id, String uuid, String description, ToolInfo tool, String userId, String commandLine, Map<String, Object> params,
                String creationDate, String modificationDate, Enums.Priority priority, JobInternal internal, File outDir,
-               List<File> input, List<File> output, List<Job> dependsOn, List<String> tags, ExecutionResult execution, boolean visited,
+               List<File> input, List<File> output, List<Job> dependsOn, List<String> tags, JobResult execution, boolean visited,
                File stdout, File stderr, int release, JobStudyParam study, Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
@@ -295,11 +295,11 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public ExecutionResult getExecution() {
+    public JobResult getExecution() {
         return execution;
     }
 
-    public Job setExecution(ExecutionResult execution) {
+    public Job setExecution(JobResult execution) {
         this.execution = execution;
         return this;
     }

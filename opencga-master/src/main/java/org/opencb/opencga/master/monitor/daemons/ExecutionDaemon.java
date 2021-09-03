@@ -98,8 +98,8 @@ import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
+import org.opencb.opencga.core.tools.result.JobResult;
 import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
 
@@ -345,7 +345,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         switch (jobStatus.getName()) {
             case Enums.ExecutionStatus.RUNNING:
-                ExecutionResult result = readExecutionResult(job);
+                JobResult result = readExecutionResult(job);
                 if (result != null) {
                     if (result.getExecutor() != null
                             && result.getExecutor().getParams() != null
@@ -894,7 +894,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // Check if analysis result file is there
         if (resultJson != null && Files.exists(resultJson)) {
-            ExecutionResult execution = readExecutionResult(resultJson);
+            JobResult execution = readExecutionResult(resultJson);
             if (execution != null) {
                 Instant lastStatusUpdate = execution.getStatus().getDate().toInstant();
                 if (lastStatusUpdate.until(Instant.now(), ChronoUnit.MINUTES) > EXECUTION_RESULT_FILE_EXPIRATION_MINUTES) {
@@ -951,7 +951,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return resultJson;
     }
 
-    private ExecutionResult readExecutionResult(Job job) {
+    private JobResult readExecutionResult(Job job) {
         Path resultJson = getExecutionResultPath(job);
         if (resultJson != null) {
             return readExecutionResult(resultJson);
@@ -959,7 +959,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return null;
     }
 
-    private ExecutionResult readExecutionResult(Path file) {
+    private JobResult readExecutionResult(Path file) {
         if (file == null) {
             return null;
         }
@@ -969,7 +969,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             attempts++;
             try {
                 try (InputStream is = new BufferedInputStream(new FileInputStream(file.toFile()))) {
-                    return JacksonUtils.getDefaultObjectMapper().readValue(is, ExecutionResult.class);
+                    return JacksonUtils.getDefaultObjectMapper().readValue(is, JobResult.class);
                 }
             } catch (IOException e) {
                 if (attempts == maxAttempts) {
@@ -1000,7 +1000,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         logger.info("[{}] - Registering job results from '{}'", job.getId(), outDirUri);
 
-        ExecutionResult execution;
+        JobResult execution;
         if (analysisResultPath != null) {
             execution = readExecutionResult(analysisResultPath);
             if (execution != null) {

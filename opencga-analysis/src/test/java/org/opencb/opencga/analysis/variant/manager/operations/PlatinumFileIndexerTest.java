@@ -28,7 +28,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.JobResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -93,7 +93,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantOperationManagerTest
         params.setFile(inputFiles.stream().map(File::getName).collect(Collectors.joining(",")));
         params.setFamily(true);
 
-        ExecutionResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
+        JobResult er = toolRunner.execute(VariantIndexOperationTool.class, params.toObjectMap()
                 .append(ParamConstants.STUDY_PARAM, studyId), outDir, null, sessionId);
 
         assertEquals(2, er.getSteps().size());

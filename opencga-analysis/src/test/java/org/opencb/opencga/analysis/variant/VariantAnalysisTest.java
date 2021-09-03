@@ -65,14 +65,13 @@ import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.variant.*;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
+import org.opencb.opencga.core.tools.result.JobResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -256,7 +255,7 @@ public class VariantAnalysisTest {
                 .setSamples(samples.subList(1, 3));
         variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
 
-        ExecutionResult ar = variantStatsAnalysis.start();
+        JobResult ar = variantStatsAnalysis.start();
         checkExecutionResult(ar);
 
         MutableInt count = new MutableInt();
@@ -281,7 +280,7 @@ public class VariantAnalysisTest {
                 .setCohort(Arrays.asList("c1", "c2"));
         variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
 
-        ExecutionResult ar = variantStatsAnalysis.start();
+        JobResult ar = variantStatsAnalysis.start();
         checkExecutionResult(ar);
 
         MutableInt count = new MutableInt();
@@ -309,7 +308,7 @@ public class VariantAnalysisTest {
                 .setRegion(region);
         variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, "", token);
 
-        ExecutionResult ar = variantStatsAnalysis.start();
+        JobResult ar = variantStatsAnalysis.start();
         checkExecutionResult(ar);
 
         MutableInt count = new MutableInt();
@@ -368,24 +367,24 @@ public class VariantAnalysisTest {
         }
     }
 
-    private ExecutionResult sampleVariantStats(String region, String indexId, boolean indexOverwrite, int expectedStats, List<String> samples)
+    private JobResult sampleVariantStats(String region, String indexId, boolean indexOverwrite, int expectedStats, List<String> samples)
             throws Exception {
         return sampleVariantStats(region, indexId, indexOverwrite, expectedStats, samples, false);
     }
 
-    private ExecutionResult sampleVariantStats(String region, String indexId, boolean indexOverwrite, int expectedStats, List<String> samples, boolean nothingToDo)
+    private JobResult sampleVariantStats(String region, String indexId, boolean indexOverwrite, int expectedStats, List<String> samples, boolean nothingToDo)
             throws Exception {
         return sampleVariantStats(region, indexId, indexOverwrite, expectedStats, samples, nothingToDo, new Query(), true);
     }
 
-    private ExecutionResult sampleVariantStats(String region, String indexId, boolean indexOverwrite, int expectedStats, List<String> samples, boolean nothingToDo,
-                                               Query query)
+    private JobResult sampleVariantStats(String region, String indexId, boolean indexOverwrite, int expectedStats, List<String> samples, boolean nothingToDo,
+                                         Query query)
             throws Exception {
         return sampleVariantStats(region, indexId, indexOverwrite, expectedStats, samples, nothingToDo, query, false);
     }
 
-    private ExecutionResult sampleVariantStats(String region, String indexId, boolean indexOverwrite, int expectedStats, List<String> samples, boolean nothingToDo,
-                                               Query query, boolean checkRegions)
+    private JobResult sampleVariantStats(String region, String indexId, boolean indexOverwrite, int expectedStats, List<String> samples, boolean nothingToDo,
+                                         Query query, boolean checkRegions)
             throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_sample_stats_" + indexId));
         System.out.println("output = " + outDir.toAbsolutePath());
@@ -398,7 +397,7 @@ public class VariantAnalysisTest {
         params.getVariantQuery()
                 .appendQuery(query)
                 .setRegion(region);
-        ExecutionResult result = toolRunner.execute(SampleVariantStatsAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
+        JobResult result = toolRunner.execute(SampleVariantStatsAnalysis.class, params, new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
 
         if (nothingToDo) {
             assertEquals("All samples stats indexed. Nothing to do!", result.getEvents().get(0).getMessage());
@@ -450,7 +449,7 @@ public class VariantAnalysisTest {
                 .setCohort(StudyEntry.DEFAULT_COHORT)
                 .setIndex(true);
 
-        ExecutionResult result = toolRunner.execute(CohortVariantStatsAnalysis.class, toolParams,
+        JobResult result = toolRunner.execute(CohortVariantStatsAnalysis.class, toolParams,
                 new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
         checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
@@ -567,7 +566,7 @@ public class VariantAnalysisTest {
         KnockoutAnalysisParams params = new KnockoutAnalysisParams();
         params.setSample(file.getSampleIds());
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
+        JobResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
         checkExecutionResult(er, false);
     }
 
@@ -579,7 +578,7 @@ public class VariantAnalysisTest {
         params.setSample(file.getSampleIds());
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap().append("executionMethod", "byGene"), outDir, null, token);
+        JobResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap().append("executionMethod", "byGene"), outDir, null, token);
         checkExecutionResult(er, false);
         assertEquals(4, er.getAttributes().get("otherGenesCount"));
         assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
@@ -594,7 +593,7 @@ public class VariantAnalysisTest {
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
         params.setBiotype(VariantAnnotationConstants.PROTEIN_CODING);
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
+        JobResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
         checkExecutionResult(er, false);
         assertEquals(0, er.getAttributes().get("otherGenesCount"));
         assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
@@ -609,7 +608,7 @@ public class VariantAnalysisTest {
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
         params.setBiotype("nonsense_mediated_decay");
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
+        JobResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
         checkExecutionResult(er, false);
         assertEquals(3, er.getAttributes().get("otherGenesCount")); // MIR1909 only has miRNA biotype
         assertEquals(0, er.getAttributes().get("proteinCodingGenesCount"));
@@ -645,7 +644,7 @@ public class VariantAnalysisTest {
 //                + "," + "non_stop_decay"
 //                + "," + "TR_V_gene");
 
-        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
+        JobResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, null, token);
         checkExecutionResult(er, false);
     }
 
@@ -656,15 +655,15 @@ public class VariantAnalysisTest {
         SampleEligibilityAnalysisParams params = new SampleEligibilityAnalysisParams();
         params.setQuery("(biotype=protein_coding AND ct=missense_variant AND gene=BRCA2) OR (gene=BTN3A2)");
 
-        ExecutionResult er = toolRunner.execute(SampleEligibilityAnalysis.class, params.toObjectMap(), outDir, null, token);
+        JobResult er = toolRunner.execute(SampleEligibilityAnalysis.class, params.toObjectMap(), outDir, null, token);
 //        checkExecutionResult(er, false);
     }
 
-    public void checkExecutionResult(ExecutionResult er) {
+    public void checkExecutionResult(JobResult er) {
         checkExecutionResult(er, true);
     }
 
-    public void checkExecutionResult(ExecutionResult er, boolean customExecutor) {
+    public void checkExecutionResult(JobResult er, boolean customExecutor) {
         if (customExecutor) {
             if (storageEngine.equals("hadoop")) {
                 assertEquals("hbase-mapreduce", er.getExecutor().getId());
