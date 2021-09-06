@@ -185,7 +185,7 @@ public class ClinicalAnalysisCreateParams {
             }
         }
 
-        Interpretation primaryInterpretation = interpretation != null ? new Interpretation().setId(interpretation.getId()) : null;
+        Interpretation primaryInterpretation = interpretation != null ? interpretation.toClinicalInterpretation() : null;
 
         String assignee = analyst != null ? analyst.getId() : "";
 
