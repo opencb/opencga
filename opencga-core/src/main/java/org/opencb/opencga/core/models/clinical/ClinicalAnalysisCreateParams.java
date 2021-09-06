@@ -18,7 +18,6 @@ package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.common.EntryParam;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -49,7 +48,7 @@ public class ClinicalAnalysisCreateParams {
     private Boolean panelLock;
 
     private ClinicalAnalystParam analyst;
-    private EntryParam interpretation;
+    private InterpretationCreateParams interpretation;
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
     private ClinicalConsentAnnotationParam consent;
@@ -70,8 +69,8 @@ public class ClinicalAnalysisCreateParams {
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
                                         List<PanelReferenceParam> panels, Boolean panelLock, ClinicalAnalystParam analyst,
-                                        EntryParam interpretation, ClinicalConsentAnnotationParam consent, String creationDate,
-                                        String modificationDate, String dueDate, List<ClinicalCommentParam> comments,
+                                        InterpretationCreateParams interpretation, ClinicalConsentAnnotationParam consent,
+                                        String creationDate, String modificationDate, String dueDate, List<ClinicalCommentParam> comments,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl, PriorityParam priority,
                                         List<FlagValueParam> flags, Map<String, Object> attributes, StatusParam status) {
         this.id = id;
@@ -111,7 +110,7 @@ public class ClinicalAnalysisCreateParams {
                 clinicalAnalysis.isPanelLock(),
                 clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
                 clinicalAnalysis.getInterpretation() != null
-                        ? new EntryParam(clinicalAnalysis.getInterpretation().getId())
+                        ? InterpretationCreateParams.of(clinicalAnalysis.getInterpretation())
                         : null,
                 ClinicalConsentAnnotationParam.of(clinicalAnalysis.getConsent()), clinicalAnalysis.getCreationDate(),
                 clinicalAnalysis.getModificationDate(), clinicalAnalysis.getDueDate(),
@@ -306,11 +305,11 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public EntryParam getInterpretation() {
+    public InterpretationCreateParams getInterpretation() {
         return interpretation;
     }
 
-    public ClinicalAnalysisCreateParams setInterpretation(EntryParam interpretation) {
+    public ClinicalAnalysisCreateParams setInterpretation(InterpretationCreateParams interpretation) {
         this.interpretation = interpretation;
         return this;
     }
