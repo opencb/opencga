@@ -4,6 +4,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.InterpretationFindingStats;
 import org.opencb.opencga.core.models.clinical.InterpretationStats;
@@ -29,27 +30,45 @@ public class InterpretationUtils {
         stats.setNumVariants(clinicalVariantList.size());
 
         for (ClinicalVariant clinicalVariant : clinicalVariantList) {
+            // Populate variant status
             if (clinicalVariant.getStatus() != null) {
                 int count = stats.getVariantStatusCount().get(clinicalVariant.getStatus()) + 1;
                 stats.getVariantStatusCount().put(clinicalVariant.getStatus(), count);
             }
+
+            // Populate tierCount
             if (CollectionUtils.isNotEmpty(clinicalVariant.getEvidences())) {
                 Set<String> tierSet = new HashSet<>();
                 for (ClinicalVariantEvidence evidence : clinicalVariant.getEvidences()) {
                     if (evidence.getClassification() != null) {
                         if (StringUtils.isNotEmpty(evidence.getClassification().getTier())) {
-                            tierSet.add(evidence.getClassification().getTier().toLowerCase());
+                            tierSet.add(evidence.getClassification().getTier());
                         }
                     }
                 }
-                if (tierSet.contains("tier1")) {
-                    stats.getTierCount().setTier1(stats.getTierCount().getTier1() + 1);
-                } else if (tierSet.contains("tier2")) {
-                    stats.getTierCount().setTier2(stats.getTierCount().getTier2() + 1);
-                } else if (tierSet.contains("tier3")) {
-                    stats.getTierCount().setTier3(stats.getTierCount().getTier3() + 1);
-                } else {
-                    stats.getTierCount().setUntiered(stats.getTierCount().getUntiered() + 1);
+                for (String tierKey : tierSet) {
+                    if (!stats.getTierCount().containsKey(tierKey)) {
+                        stats.getTierCount().put(tierKey, 0);
+                    }
+                    stats.getTierCount().put(tierKey, stats.getTierCount().get(tierKey));
+                }
+            }
+
+            // Populate geneCount
+            if (clinicalVariant.getAnnotation() != null) {
+                if (CollectionUtils.isNotEmpty(clinicalVariant.getAnnotation().getConsequenceTypes())) {
+                    Set<String> geneSet = new HashSet<>();
+                    for (ConsequenceType consequenceType : clinicalVariant.getAnnotation().getConsequenceTypes()) {
+                        if (StringUtils.isNotEmpty(consequenceType.getGeneName())) {
+                            geneSet.add(consequenceType.getGeneName());
+                        }
+                    }
+                    for (String geneKey : geneSet) {
+                        if (!stats.getGeneCount().containsKey(geneKey)) {
+                            stats.getGeneCount().put(geneKey, 0);
+                        }
+                        stats.getGeneCount().put(geneKey, stats.getGeneCount().get(geneKey));
+                    }
                 }
             }
         }
