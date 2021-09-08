@@ -142,7 +142,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             throw new IllegalArgumentIOException("Missing output table");
         }
 
-        secondaryOnly = Boolean.valueOf(getParam(SECONDARY_ONLY, "false"));
+        secondaryOnly = Boolean.parseBoolean(getParam(SECONDARY_ONLY, "false"));
 //        mainOnly = Boolean.valueOf(getParam(MAIN_ONLY, "false"));
 
         if (secondaryOnly && mainOnly) {
