@@ -50,6 +50,7 @@ public interface InterpretationDBAdaptor extends CoreDBAdaptor<Interpretation> {
         ANALYST_ID("analyst.id", TEXT, ""),
         METHODS("methods", TEXT_ARRAY, ""),
         METHODS_NAME("methods.name", TEXT_ARRAY, ""),
+        STATS("stats", TEXT_ARRAY, ""),
         PRIMARY_FINDINGS("primaryFindings", TEXT_ARRAY, ""),
         PRIMARY_FINDINGS_ID("primaryFindings.id", TEXT_ARRAY, ""),
         SECONDARY_FINDINGS("secondaryFindings", TEXT_ARRAY, ""),

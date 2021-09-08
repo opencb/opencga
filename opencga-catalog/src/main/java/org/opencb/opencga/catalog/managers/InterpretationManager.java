@@ -269,6 +269,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretation.setVersion(1);
         interpretation.setAttributes(ParamUtils.defaultObject(interpretation.getAttributes(), Collections.emptyMap()));
         interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
+        interpretation.setStats(InterpretationStats.init());  // stats are calculated in the dbadaptor to allow transactional operations
 
         if (CollectionUtils.isEmpty(interpretation.getPanels())) {
             interpretation.setPanels(clinicalAnalysis.getPanels());

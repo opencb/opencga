@@ -2,6 +2,7 @@ package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class InterpretationFindingStats {
@@ -17,6 +18,15 @@ public class InterpretationFindingStats {
         this.numVariants = numVariants;
         this.tierCount = tierCount;
         this.variantStatusCount = variantStatusCount;
+    }
+
+    public static InterpretationFindingStats init() {
+        Map<ClinicalVariant.Status, Integer> variantStatusCount = new HashMap<>();
+        for (ClinicalVariant.Status value : ClinicalVariant.Status.values()) {
+            variantStatusCount.put(value, 0);
+        }
+
+        return new InterpretationFindingStats(0, TierCountStats.init(), variantStatusCount);
     }
 
     @Override
@@ -69,6 +79,10 @@ public class InterpretationFindingStats {
             this.tier1 = tier1;
             this.tier2 = tier2;
             this.tier3 = tier3;
+        }
+
+        public static TierCountStats init() {
+            return new TierCountStats(0, 0, 0);
         }
 
         @Override

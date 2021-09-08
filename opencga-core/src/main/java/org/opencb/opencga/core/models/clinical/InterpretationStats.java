@@ -13,6 +13,10 @@ public class InterpretationStats {
         this.secondaryFindings = secondaryFindings;
     }
 
+    public static InterpretationStats init() {
+        return new InterpretationStats(InterpretationFindingStats.init(), InterpretationFindingStats.init());
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("InterpretationStats{");
