@@ -71,18 +71,20 @@ public class InterpretationFindingStats {
         private int tier1;
         private int tier2;
         private int tier3;
+        private int untiered;
 
         public TierCountStats() {
         }
 
-        public TierCountStats(int tier1, int tier2, int tier3) {
+        public TierCountStats(int tier1, int tier2, int tier3, int untiered) {
             this.tier1 = tier1;
             this.tier2 = tier2;
             this.tier3 = tier3;
+            this.untiered = untiered;
         }
 
         public static TierCountStats init() {
-            return new TierCountStats(0, 0, 0);
+            return new TierCountStats(0, 0, 0, 0);
         }
 
         @Override
@@ -91,6 +93,7 @@ public class InterpretationFindingStats {
             sb.append("tier1=").append(tier1);
             sb.append(", tier2=").append(tier2);
             sb.append(", tier3=").append(tier3);
+            sb.append(", untiered=").append(untiered);
             sb.append('}');
             return sb.toString();
         }
@@ -119,6 +122,15 @@ public class InterpretationFindingStats {
 
         public TierCountStats setTier3(int tier3) {
             this.tier3 = tier3;
+            return this;
+        }
+
+        public int getUntiered() {
+            return untiered;
+        }
+
+        public TierCountStats setUntiered(int untiered) {
+            this.untiered = untiered;
             return this;
         }
     }

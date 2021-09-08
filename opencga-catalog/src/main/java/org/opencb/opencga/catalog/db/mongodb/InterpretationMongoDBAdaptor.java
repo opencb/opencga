@@ -20,7 +20,6 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -28,7 +27,6 @@ import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -44,11 +42,15 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.InterpretationUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.clinical.*;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.clinical.InterpretationStats;
+import org.opencb.opencga.core.models.clinical.InterpretationStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.panel.Panel;
@@ -221,7 +223,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         // Calculate stats
-        InterpretationStats interpretationStats = calculateStats(interpretation);
+        InterpretationStats interpretationStats = InterpretationUtils.calculateStats(interpretation);
         interpretation.setStats(interpretationStats);
 
         Document interpretationObject = interpretationConverter.convertToStorageType(interpretation);
@@ -856,7 +858,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                             .append(QueryParams.UID.key(), interpretationUid)
                             .append(QueryParams.STUDY_UID.key(), studyUid);
                     Interpretation updatedInterpretation = get(clientSession, iQuery, QueryOptions.empty()).first();
-                    InterpretationStats stats = calculateStats(updatedInterpretation);
+                    InterpretationStats stats = InterpretationUtils.calculateStats(updatedInterpretation);
 
                     Bson bsonQuery = parseQuery(new Query(QueryParams.UID.key(), interpretation.getUid()));
                     UpdateDocument updateStatsDocument = parseAndValidateUpdateParams(clientSession,
@@ -1177,45 +1179,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         try (DBIterator<Interpretation> catalogDBIterator = iterator(query, options)) {
             while (catalogDBIterator.hasNext()) {
                 action.accept(catalogDBIterator.next());
-            }
-        }
-    }
-
-    private InterpretationStats calculateStats(Interpretation interpretation) {
-        InterpretationStats stats = InterpretationStats.init();
-        if (CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
-            updateInterpretationFindingStats(interpretation.getPrimaryFindings(), stats.getPrimaryFindings());
-        }
-        if (CollectionUtils.isNotEmpty(interpretation.getSecondaryFindings())) {
-            updateInterpretationFindingStats(interpretation.getSecondaryFindings(), stats.getSecondaryFindings());
-        }
-        return stats;
-    }
-
-    private void updateInterpretationFindingStats(List<ClinicalVariant> clinicalVariantList, InterpretationFindingStats stats) {
-        stats.setNumVariants(clinicalVariantList.size());
-
-        for (ClinicalVariant clinicalVariant : clinicalVariantList) {
-            if (clinicalVariant.getStatus() != null) {
-                int count = stats.getVariantStatusCount().get(clinicalVariant.getStatus()) + 1;
-                stats.getVariantStatusCount().put(clinicalVariant.getStatus(), count);
-            }
-            if (CollectionUtils.isNotEmpty(clinicalVariant.getEvidences())) {
-                Set<String> tierSet = new HashSet<>();
-                for (ClinicalVariantEvidence evidence : clinicalVariant.getEvidences()) {
-                    if (evidence.getClassification() != null) {
-                        if (StringUtils.isNotEmpty(evidence.getClassification().getTier())) {
-                            tierSet.add(evidence.getClassification().getTier().toLowerCase());
-                        }
-                    }
-                }
-                if (tierSet.contains("tier1")) {
-                    stats.getTierCount().setTier1(stats.getTierCount().getTier1() + 1);
-                } else if (tierSet.contains("tier2")) {
-                    stats.getTierCount().setTier2(stats.getTierCount().getTier2() + 1);
-                } else if (tierSet.contains("tier3")) {
-                    stats.getTierCount().setTier3(stats.getTierCount().getTier3() + 1);
-                }
             }
         }
     }
