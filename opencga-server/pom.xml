@@ -252,7 +252,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.0.0</version>
                 <configuration>
-                    <mainClass>org.opencb.opencga.server.rest.json.MainClientGenerator</mainClass>
+                    <mainClass>org.opencb.opencga.server.json.MainClientGenerator</mainClass>
                 </configuration>
             </plugin>
         </plugins>

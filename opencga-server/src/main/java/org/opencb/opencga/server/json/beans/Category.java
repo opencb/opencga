@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.rest.json.beans;
+package org.opencb.opencga.server.json.beans;
 
 import java.util.List;
 

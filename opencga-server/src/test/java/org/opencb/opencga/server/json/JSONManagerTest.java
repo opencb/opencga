@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.rest.json;
+package org.opencb.opencga.server.json;
 
 import junit.framework.TestCase;
 import org.opencb.opencga.server.rest.SampleWSServer;
@@ -12,6 +12,6 @@ public class JSONManagerTest extends TestCase {
         System.out.println("EMPEZANDO!!!!!! ");
         List<Class> classes = new ArrayList<>();
         classes.add(SampleWSServer.class);
-        JSONManager.getHelp(classes);
+        RestApiParser.getHelp(classes);
     }
 }
