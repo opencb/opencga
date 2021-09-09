@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.rest.json.config;
+package org.opencb.opencga.server.json.config;
 
 import java.util.List;
 
