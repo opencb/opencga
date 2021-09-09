@@ -14,18 +14,8 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.rest.json.clients;
+package org.opencb.opencga.server.json.beans;
 
-import org.opencb.opencga.server.rest.json.beans.RestApi;
-
-public abstract class ParentClientRestApiWriter {
-
-    protected RestApi restApi;
-
-    public ParentClientRestApiWriter(RestApi restApi) {
-        this.restApi = restApi;
-    }
-
-    public abstract void write();
-
+public class RestApi {
+    
 }

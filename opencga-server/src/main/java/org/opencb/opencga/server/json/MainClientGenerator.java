@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.rest.json;
+package org.opencb.opencga.server.json;
 
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
@@ -6,7 +6,7 @@ import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.server.rest.analysis.VariantWebService;
 import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
-import org.opencb.opencga.server.rest.json.beans.Category;
+import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 
 import java.util.ArrayList;

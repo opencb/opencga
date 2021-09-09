@@ -1,10 +1,10 @@
-package org.opencb.opencga.server.rest.json;
+package org.opencb.opencga.server.json;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.server.rest.json.beans.Category;
-import org.opencb.opencga.server.rest.json.beans.Endpoint;
-import org.opencb.opencga.server.rest.json.beans.Parameter;
+import org.opencb.opencga.server.json.beans.Category;
+import org.opencb.opencga.server.json.beans.Endpoint;
+import org.opencb.opencga.server.json.beans.Parameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

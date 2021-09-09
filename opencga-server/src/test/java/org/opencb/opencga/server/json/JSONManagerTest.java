@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.rest.json;
+package org.opencb.opencga.server.json;
 
 import junit.framework.TestCase;
 import org.opencb.opencga.server.rest.SampleWSServer;

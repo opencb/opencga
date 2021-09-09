@@ -30,8 +30,8 @@ import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.server.rest.analysis.VariantWebService;
 import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
-import org.opencb.opencga.server.rest.json.RestApiParser;
-import org.opencb.opencga.server.rest.json.beans.Category;
+import org.opencb.opencga.server.json.RestApiParser;
+import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 
 import javax.servlet.http.HttpServletRequest;
