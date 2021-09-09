@@ -30,7 +30,7 @@ import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.server.rest.analysis.VariantWebService;
 import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
-import org.opencb.opencga.server.rest.json.JSONManager;
+import org.opencb.opencga.server.rest.json.RestApiParser;
 import org.opencb.opencga.server.rest.json.beans.Category;
 import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 
@@ -256,7 +256,7 @@ public class MetaWSServer extends OpenCGAWSServer {
             }
         }
         //List<LinkedHashMap<String, Object>> api = JSONManager.getHelp(JSONClasses);
-        List<Category> api = JSONManager.getCategories(JSONClasses);
+        List<Category> api = RestApiParser.getCategories(JSONClasses);
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(api), 1));
     }
 

@@ -14,9 +14,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
-public class JSONManager {
+public class RestApiParser {
 
-    private static Logger logger = LoggerFactory.getLogger(JSONManager.class);
+    private static Logger logger = LoggerFactory.getLogger(RestApiParser.class);
 
     public static List<LinkedHashMap<String, Object>> getHelp(List<Class> classes) {
         List<LinkedHashMap<String, Object>> res = new ArrayList<>();

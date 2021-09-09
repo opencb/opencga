@@ -12,6 +12,6 @@ public class JSONManagerTest extends TestCase {
         System.out.println("EMPEZANDO!!!!!! ");
         List<Class> classes = new ArrayList<>();
         classes.add(SampleWSServer.class);
-        JSONManager.getHelp(classes);
+        RestApiParser.getHelp(classes);
     }
 }
