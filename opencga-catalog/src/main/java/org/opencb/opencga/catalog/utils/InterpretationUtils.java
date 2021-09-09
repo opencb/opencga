@@ -50,7 +50,7 @@ public class InterpretationUtils {
                     if (!stats.getTierCount().containsKey(tierKey)) {
                         stats.getTierCount().put(tierKey, 0);
                     }
-                    stats.getTierCount().put(tierKey, stats.getTierCount().get(tierKey));
+                    stats.getTierCount().put(tierKey, stats.getTierCount().get(tierKey) + 1);
                 }
             }
 
@@ -67,7 +67,7 @@ public class InterpretationUtils {
                         if (!stats.getGeneCount().containsKey(geneKey)) {
                             stats.getGeneCount().put(geneKey, 0);
                         }
-                        stats.getGeneCount().put(geneKey, stats.getGeneCount().get(geneKey));
+                        stats.getGeneCount().put(geneKey, stats.getGeneCount().get(geneKey) + 1);
                     }
                 }
             }
