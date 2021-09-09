@@ -19,9 +19,14 @@ import static com.mongodb.client.model.Filters.eq;
         description = "Add interpretation stats #1819", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        patch = 1,
+        patch = 2,
         rank = 4)
 public class addInterpretationStats extends MigrationTool {
+
+    public addInterpretationStats() {
+        // Batch size in this case will be 50
+        super(50);
+    }
 
     @Override
     protected void run() throws Exception {
