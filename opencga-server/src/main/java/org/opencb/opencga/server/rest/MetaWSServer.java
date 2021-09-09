@@ -16,9 +16,10 @@
 
 package org.opencb.opencga.server.rest;
 
-import io.swagger.annotations.*;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -30,19 +31,19 @@ import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.server.rest.analysis.VariantWebService;
 import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
 import org.opencb.opencga.server.rest.json.JSONManager;
+import org.opencb.opencga.server.rest.json.beans.Category;
 import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Parameter;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -254,7 +255,8 @@ public class MetaWSServer extends OpenCGAWSServer {
                 JSONClasses.add(classes.get(category));
             }
         }
-        List<LinkedHashMap<String, Object>> api = JSONManager.getHelp(JSONClasses);
+        //List<LinkedHashMap<String, Object>> api = JSONManager.getHelp(JSONClasses);
+        List<Category> api = JSONManager.getCategories(JSONClasses);
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(api), 1));
     }
 

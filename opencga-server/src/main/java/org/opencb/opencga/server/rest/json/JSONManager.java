@@ -2,6 +2,9 @@ package org.opencb.opencga.server.rest.json;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.server.rest.json.beans.Category;
+import org.opencb.opencga.server.rest.json.beans.Endpoint;
+import org.opencb.opencga.server.rest.json.beans.Parameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,7 +12,6 @@ import javax.ws.rs.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Parameter;
 import java.util.*;
 
 public class JSONManager {
@@ -24,12 +26,178 @@ public class JSONManager {
         return res;
     }
 
+    public static List<Category> getCategories(List<Class> classes) {
+        List<Category> res = new ArrayList<>();
+        for (Class clazz : classes) {
+            res.add(getCategory(clazz));
+        }
+        return res;
+    }
+
+    private static Category getCategory(Class clazz) {
+        Category category = new Category();
+
+        Map<String, String> fieldNames = new HashMap<>();
+        category.setName(((Api) clazz.getAnnotation(Api.class)).value());
+        category.setPath(((Path) clazz.getAnnotation(Path.class)).value());
+        //System.out.println("CATEGORY : " + map.get("name"));
+
+        String category_name = category.getName().toUpperCase() + "_";
+        List<Endpoint> endpoints = new ArrayList<>();
+        for (Method method : clazz.getMethods()) {
+            Path pathAnnotation = method.getAnnotation(Path.class);
+            String httpMethod = "GET";
+            if (method.getAnnotation(POST.class) != null) {
+                httpMethod = "POST";
+            } else {
+                if (method.getAnnotation(DELETE.class) != null) {
+                    httpMethod = "DELETE";
+                }
+            }
+
+            ApiOperation apiOperationAnnotation = method.getAnnotation(ApiOperation.class);
+            if (pathAnnotation != null && apiOperationAnnotation != null && !apiOperationAnnotation.hidden()) {
+                String path = pathAnnotation.value();
+                String variablePrefix = category_name + getMethodName(path).toUpperCase() + "_";
+                Endpoint endpoint = new Endpoint();
+                endpoint.setMethod(httpMethod);
+                endpoint.setPath(category.getPath() + pathAnnotation.value());
+                endpoint.setResponse(StringUtils.substringAfterLast(apiOperationAnnotation.response().getName().replace("Void", ""),
+                        "."));
+                String responseClass = apiOperationAnnotation.response().getName().replace("Void", "");
+                endpoint.setResponseClass(responseClass.endsWith(";") ? responseClass : responseClass + ";");
+                endpoint.setNotes(apiOperationAnnotation.notes());
+                endpoint.setDescription(apiOperationAnnotation.value());
+
+                ApiImplicitParams apiImplicitParams = method.getAnnotation(ApiImplicitParams.class);
+                List<Parameter> parameters = new ArrayList<>();
+                if (apiImplicitParams != null) {
+                    for (ApiImplicitParam apiImplicitParam : apiImplicitParams.value()) {
+                        Parameter parameter = new Parameter();
+                        parameter.setName(apiImplicitParam.name());
+                        parameter.setParam(apiImplicitParam.paramType());
+                        parameter.setType(apiImplicitParam.dataType());
+                        parameter.setTypeClass("java.lang." + StringUtils.capitalize(apiImplicitParam.dataType()));
+                        parameter.setAllowedValues(apiImplicitParam.allowableValues());
+                        parameter.setRequired(apiImplicitParam.required());
+                        parameter.setDefaultValue(apiImplicitParam.defaultValue());
+                        parameter.setDescription(apiImplicitParam.value());
+                        parameters.add(parameter);
+                    }
+                }
+
+                java.lang.reflect.Parameter[] methodParameters = method.getParameters();
+                if (methodParameters != null) {
+                    for (java.lang.reflect.Parameter methodParameter : methodParameters) {
+                        ApiParam apiParam = methodParameter.getAnnotation(ApiParam.class);
+                        if (apiParam != null && !apiParam.hidden()) {
+                            List<Parameter> bodyParams = new ArrayList<>();
+                            Parameter parameter = new Parameter();
+                            if (methodParameter.getAnnotation(PathParam.class) != null) {
+                                parameter.setName(methodParameter.getAnnotation(PathParam.class).value());
+                                parameter.setParam("path");
+                            } else {
+                                if (methodParameter.getAnnotation(QueryParam.class) != null) {
+                                    parameter.setName(methodParameter.getAnnotation(QueryParam.class).value());
+                                    parameter.setParam("query");
+                                } else {
+                                    parameter.setName("body");
+                                    parameter.setParam("body");
+                                }
+                            }
+
+                            // Get type in lower case except for 'body' param
+                            String type = methodParameter.getType().getName();
+                            String typeClass = type;
+                            if (typeClass.contains(".")) {
+                                String[] split = typeClass.split("\\.");
+                                type = split[split.length - 1];
+                                if (!parameter.getParam().equals("body")) {
+                                    type = type.toLowerCase();
+
+                                    // Complex type different from body are enums
+                                    if (type.contains("$")) {
+                                        type = "enum";
+                                    }
+                                } else {
+                                    type = "object";
+                                    try {
+                                        Class<?> aClass = Class.forName(typeClass);
+                                        for (Field declaredField : aClass.getDeclaredFields()) {
+                                            int modifiers = declaredField.getModifiers();
+                                            // Ignore non-private or static fields
+                                            if (Modifier.isPrivate(modifiers) && !Modifier.isStatic(modifiers)) {
+                                                Parameter innerParam = new Parameter();
+                                                innerParam.setName(declaredField.getName());
+                                                innerParam.setParam("typeClass");
+                                                innerParam.setType(declaredField.getType().getSimpleName());
+                                                innerParam.setTypeClass(declaredField.getType().getName() + ";");
+                                                innerParam.setAllowedValues("");
+                                                innerParam.setRequired(false);
+                                                innerParam.setDefaultValue("");
+                                                String fieldName = variablePrefix
+                                                        + declaredField.getName().toUpperCase();
+                                                fieldName = normalize(fieldName);
+                                                String des = getDescriptionField(fieldName);
+                                                if (StringUtils.isNotEmpty(des)) {
+                                                    innerParam.setDescription(des);
+                                                } else {
+                                                    innerParam.setDescription(
+                                                            "The body web service " + declaredField.getName() + " "
+                                                                    + "parameter");
+                                                }
+
+                                               /* if (!fieldNames.keySet().contains(fieldName)) {
+                                                    fieldNames.put(fieldName, path);
+                                                    System.out.println(" public static final String " + fieldName + "=\"The body web " +
+                                                            "service " +
+                                                            declaredField.getName() + " parameter\";");
+                                                } else {
+                                                    // System.out.println("=============" + fieldName + "=================");
+                                                    // System.out.println("variable " + fieldName + " con path " + path);
+                                                    // System.out.println("variable " + fieldName + " con path " + fieldNames.get
+                                                    // (fieldName));
+                                                    // System.out.println("=============" + fieldName + "=================\n\n");
+                                                }
+                                                */
+                                                bodyParams.add(innerParam);
+                                            }
+                                        }
+                                    } catch (ClassNotFoundException e) {
+                                        logger.error("Error processing: " + typeClass);
+                                    }
+                                }
+                            }
+                            parameter.setType(type);
+                            parameter.setTypeClass(typeClass.endsWith(";") ? typeClass : typeClass + ";");
+                            parameter.setAllowedValues(apiParam.allowableValues());
+                            parameter.setRequired(apiParam.required());
+                            parameter.setDefaultValue(apiParam.defaultValue());
+                            parameter.setDescription(apiParam.value());
+                            if (!bodyParams.isEmpty()) {
+                                parameter.setData(bodyParams);
+                            }
+                            parameters.add(parameter);
+                        }
+                    }
+                }
+                endpoint.setParameters(parameters);
+                endpoints.add(endpoint);
+            }
+        }
+
+        endpoints.sort(Comparator.comparing(endpoint -> (String) endpoint.getPath()));
+        category.setEndpoints(endpoints);
+        return category;
+    }
+
     private static LinkedHashMap<String, Object> getHelp(Class clazz) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
 
+        Map<String, String> fieldNames = new HashMap<>();
         map.put("name", ((Api) clazz.getAnnotation(Api.class)).value());
         map.put("path", ((Path) clazz.getAnnotation(Path.class)).value());
-        System.out.println("CATEGORY : " + map.get("name"));
+        //System.out.println("CATEGORY : " + map.get("name"));
 
         String category = String.valueOf(map.get("name")).toUpperCase() + "_";
         List<LinkedHashMap<String, Object>> endpoints = new ArrayList<>(20);
@@ -43,10 +211,11 @@ public class JSONManager {
                     httpMethod = "DELETE";
                 }
             }
-            String variablePrefix = category + getMethodName(String.valueOf(pathAnnotation.value())).toUpperCase() + "_";
-            System.out.println("VARIABLE_PREFIX => " + variablePrefix);
+
             ApiOperation apiOperationAnnotation = method.getAnnotation(ApiOperation.class);
             if (pathAnnotation != null && apiOperationAnnotation != null && !apiOperationAnnotation.hidden()) {
+                String path = pathAnnotation.value();
+                String variablePrefix = category + getMethodName(path).toUpperCase() + "_";
                 LinkedHashMap<String, Object> endpoint = new LinkedHashMap<>();
                 endpoint.put("path", map.get("path") + pathAnnotation.value());
                 endpoint.put("method", httpMethod);
@@ -75,9 +244,9 @@ public class JSONManager {
                     }
                 }
 
-                Parameter[] methodParameters = method.getParameters();
+                java.lang.reflect.Parameter[] methodParameters = method.getParameters();
                 if (methodParameters != null) {
-                    for (Parameter methodParameter : methodParameters) {
+                    for (java.lang.reflect.Parameter methodParameter : methodParameters) {
                         ApiParam apiParam = methodParameter.getAnnotation(ApiParam.class);
                         if (apiParam != null && !apiParam.hidden()) {
                             List<Map<String, Object>> bodyParams = new ArrayList<>();
@@ -124,8 +293,31 @@ public class JSONManager {
                                                 innerParams.put("allowedValues", "");
                                                 innerParams.put("required", "false");
                                                 innerParams.put("defaultValue", "");
-                                                innerParams.put("description", "The body web service " + declaredField.getName() + " "
-                                                        + "parameter");
+                                                String fieldName = variablePrefix
+                                                        + declaredField.getName().toUpperCase();
+                                                fieldName = normalize(fieldName);
+                                                String des = getDescriptionField(fieldName);
+                                                if (StringUtils.isNotEmpty(des)) {
+                                                    innerParams.put("description", des);
+                                                } else {
+                                                    innerParams.put("description",
+                                                            "The body web service " + declaredField.getName() + " "
+                                                                    + "parameter");
+                                                }
+
+                                               /* if (!fieldNames.keySet().contains(fieldName)) {
+                                                    fieldNames.put(fieldName, path);
+                                                    System.out.println(" public static final String " + fieldName + "=\"The body web " +
+                                                            "service " +
+                                                            declaredField.getName() + " parameter\";");
+                                                } else {
+                                                    // System.out.println("=============" + fieldName + "=================");
+                                                    // System.out.println("variable " + fieldName + " con path " + path);
+                                                    // System.out.println("variable " + fieldName + " con path " + fieldNames.get
+                                                    // (fieldName));
+                                                    // System.out.println("=============" + fieldName + "=================\n\n");
+                                                }
+                                                */
                                                 bodyParams.add(innerParams);
                                             }
                                         }
@@ -157,20 +349,45 @@ public class JSONManager {
         return map;
     }
 
-    private static String getMethodName(String valueOf) {
+    private static String normalize(String s) {
+        String res = s.replaceAll(" ", "_").replaceAll("-",
+                "_");
+        while (res.contains("__")) {
+            res = res.replaceAll("__", "_");
+        }
+        return res;
+    }
+
+    private static String getMethodName(String inputPath) {
         String res = "";
-        String[] array = valueOf.split("}/");
+        String prefix = "";
+        String[] array = inputPath.split("}/");
+        if (array.length > 2) {
+            prefix = array[1].substring(array[1].lastIndexOf("{") + 1) + "_";
+        }
         if (array != null && array.length > 0) {
             String path = array[array.length - 1];
             if (path.startsWith("/")) {
-                path = path.substring(1, path.length());
+                path = path.substring(1);
             }
             if (path != null && path.contains("/")) {
-                res = path.replaceAll("/", "_");
-                res = res.replaceAll("__", "_");
+                res = prefix + path.replaceAll("/", "_");
             } else {
-                res = path;
+                res = prefix + path;
             }
+        }
+
+        return res;
+    }
+
+    public static String getDescriptionField(String fieldName) {
+        String res = null;
+        try {
+            Field barField = org.opencb.opencga.core.api.ParamConstants.class.getDeclaredField(fieldName);
+            barField.setAccessible(true);
+            res = (String) barField.get(null);
+        } catch (Exception e) {
+
         }
         return res;
     }
