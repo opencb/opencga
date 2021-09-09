@@ -1,13 +1,13 @@
-configuration:
-  server_url: http://localhost:8080/opencga
+options:
+  serverUrl: http://localhost:8080/opencga
   version: 1.0
-  cli_output_dir: opencga-client/src/main/java/org/opencb/opencga/client/rest/clients
-  options_output_dir: ../../../../src/main/java/org/opencb/opencga/app/cli/main/options
-  executors_output_dir: ../../../../src/main/java/org/opencb/opencga/app/cli/main/executors
-  executors_package: org.opencb.opencga.app.cli.main.executors
-  options_package: org.opencb.opencga.app.cli.main.options
-  parser_package: org.opencb.opencga.app.cli.main
-  ignore_types:
+  parserOutputDir: opencga-client/src/main/java/org/opencb/opencga/client/rest/clients
+  optionsOutputDir: ../../../../src/main/java/org/opencb/opencga/app/cli/main/options
+  executorsOutputDir: ../../../../src/main/java/org/opencb/opencga/app/cli/main/executors
+  executorsPackage: org.opencb.opencga.app.cli.main.executors
+  optionsPackage: org.opencb.opencga.app.cli.main.options
+  parserPackage: org.opencb.opencga.app.cli.main
+  ignoreTypes:
     - string
     - object
     - integer
@@ -24,7 +24,7 @@ configuration:
     - java.lang.Double
     - java.lang.Float
     - java.lang.
-api:
+ApiConfig:
   Users:
     ignore: False
     key: User
