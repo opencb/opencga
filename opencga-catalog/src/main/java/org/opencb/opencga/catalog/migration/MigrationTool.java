@@ -37,11 +37,17 @@ public abstract class MigrationTool {
 
     protected final Logger logger;
     private final Logger privateLogger;
+    private final int BATCH_SIZE;
 
     public MigrationTool() {
+        this(1000);
+    }
+
+    public MigrationTool(int batchSize) {
         this.logger = LoggerFactory.getLogger(this.getClass());
         // Internal logger
         this.privateLogger = LoggerFactory.getLogger(MigrationTool.class);
+        this.BATCH_SIZE = batchSize;
     }
 
     public final Migration getAnnotation() {
@@ -151,6 +157,11 @@ public abstract class MigrationTool {
         void accept(Document document, List<WriteModel<Document>> bulk);
     }
 
+    @FunctionalInterface
+    protected interface QueryCollectionFunc {
+        void accept(Document document);
+    }
+
     protected final void migrateCollection(String collection, Bson query, Bson projection,
                                            MigrateCollectionFunc migrateFunc) {
         migrateCollection(collection, collection, query, projection, migrateFunc);
@@ -164,17 +175,16 @@ public abstract class MigrationTool {
     protected final void migrateCollection(MongoCollection<Document> inputCollection, MongoCollection<Document> outputCollection,
                                            Bson query, Bson projection,
                                            MigrateCollectionFunc migrateFunc) {
-        int batchSize = 1000;
         int count = 0;
-        List<WriteModel<Document>> list = new ArrayList<>(batchSize);
+        List<WriteModel<Document>> list = new ArrayList<>(BATCH_SIZE);
 
-        ProgressLogger progressLogger = new ProgressLogger("Execute bulk update").setBatchSize(batchSize);
+        ProgressLogger progressLogger = new ProgressLogger("Execute bulk update").setBatchSize(BATCH_SIZE);
         try (MongoCursor<Document> it = inputCollection.find(query).projection(projection).cursor()) {
             while (it.hasNext()) {
                 Document document = it.next();
                 migrateFunc.accept(document, list);
 
-                if (list.size() >= batchSize) {
+                if (list.size() >= BATCH_SIZE) {
                     count += list.size();
                     progressLogger.increment(list.size());
                     outputCollection.bulkWrite(list);
@@ -192,6 +202,17 @@ public abstract class MigrationTool {
             privateLogger.info("Nothing to do!");
         } else {
             privateLogger.info("Updated {} documents from collection {}", count, outputCollection.getNamespace().getFullName());
+        }
+    }
+
+    protected final void queryMongo(String inputCollectionStr, Bson query, Bson projection, QueryCollectionFunc queryCollectionFunc) {
+        MongoCollection<Document> inputCollection = getMongoCollection(inputCollectionStr);
+
+        try (MongoCursor<Document> it = inputCollection.find(query).projection(projection).cursor()) {
+            while (it.hasNext()) {
+                Document document = it.next();
+                queryCollectionFunc.accept(document);
+            }
         }
     }
 

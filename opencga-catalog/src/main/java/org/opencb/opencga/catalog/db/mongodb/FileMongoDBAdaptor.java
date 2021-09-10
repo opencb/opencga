@@ -63,6 +63,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -208,7 +209,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         fileDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         fileDocument.put(PRIVATE_CREATION_DATE,
                 StringUtils.isNotEmpty(file.getCreationDate()) ? TimeUtils.toDate(file.getCreationDate()) : TimeUtils.getDate());
-        fileDocument.put(PRIVATE_MODIFICATION_DATE, fileDocument.get(PRIVATE_CREATION_DATE));
+        fileDocument.put(PRIVATE_MODIFICATION_DATE,
+                StringUtils.isNotEmpty(file.getModificationDate()) ? TimeUtils.toDate(file.getModificationDate()) : TimeUtils.getDate());
 
         fileCollection.insert(clientSession, fileDocument, null);
 
@@ -532,6 +534,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             document.getSet().put(QueryParams.CREATION_DATE.key(), time);
             document.getSet().put(PRIVATE_CREATION_DATE, date);
         }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
 
         if (parameters.containsKey(QueryParams.PATH.key())) {
             checkOnlyOneFileMatches(clientSession, query);
@@ -681,12 +689,14 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
-            // Update modificationDate param
             String time = TimeUtils.getTime();
-            Date date = TimeUtils.toDate(time);
-
-            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
-            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
         }
 
         return document;
@@ -794,6 +804,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         long fileUid = fileDocument.getLong(PRIVATE_UID);
         long studyUid = fileDocument.getLong(PRIVATE_STUDY_UID);
+        String fileId = fileDocument.getString(QueryParams.ID.key());
         String path = fileDocument.getString(QueryParams.PATH.key());
 
         Query query = new Query(QueryParams.STUDY_UID.key(), studyUid);
@@ -809,6 +820,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
             return endWrite(tmpStartTime, fileCollection.update(parseQuery(query), update, multi));
         } else {
+            // Delete file references from all referenced samples
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().removeFileReferences(clientSession, studyUid, fileId);
+
             // DELETED AND REMOVED status
             QueryOptions options = new QueryOptions()
                     .append(QueryOptions.SORT, QueryParams.PATH.key())

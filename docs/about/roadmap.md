@@ -5,7 +5,7 @@ In this section, you can find only the main top-level features planned for major
 ## OpenCGA 2.x Releases
 
 {% hint style="info" %}
-From OpenCGA version 2.0.0 we follow **time-based releases**, two minor releases a year will be scheduled in April and October.
+From OpenCGA version 2.0.0 we follow **time-based releases**, two minor releases a year will be scheduled in April and October. 
 {% endhint %}
 
 ### 2.1.0 \(Apr 2021\)
@@ -14,32 +14,27 @@ You can track GitHub issues at [GitHub Issues 2.1.0](https://github.com/opencb/o
 
 #### General
 
-* Implement a **Centralised Log** analytic solution
-* Migrate **CI/CD** to GitHub Actions
+* Implement a **Centralised Log** analytic solution, we are planning to use Kibana ****
 
 #### Catalog
 
-* Implement a new **Action** system to reduce human interaction
-* Allow the definition and execution of **Pipelines**
+* Implement a new **Action** system, Catalog will notify to a message queue _\(RabbitMQ, Apache Kafka\),_ this will allow other applications to know what's going on
 * Improve **RESTful** web services by adding standardise **error codes** to the response, this will improve debugging
 
 **Variant Storage Engine**
 
-* Allow the implementation of **extension** in the Variant Index pipeline. Implement a first **variant index extension** to parse VAF, DEPTH and SVTYPE from several callers not following the VCF specification
-* Make some **sample genotype indexes configurable**, such as population frequency filter
-* Improve some **sample genotype indexes**
+* Extend consequence type and population frequency filter in the sample genotype index
+* Improve sample genotype index for clinical and cancer by filtering by cosmic or VAF
+* Allow the index of custom INFO or FORMAT fields 
 * Implement a new **Cache** functionality, some sample and family-based variant queries and analysis can take up to few seconds, since this data is read-only this could be easily cached
 
 #### Clinical
 
-* Implement a new component **Recessive Gene Analyse** to analyze knockout genes
-* Implement a **pathogenic variant database** for all the reported variants
-* Implement a **case re-analysis** to automatically check clinical cases
+
 
 #### Analysis Framework
 
-* Improve the **queue configuration** allowing the definition of different queues
-* Improve the **Job execution** daemon
+
 
 #### Others
 

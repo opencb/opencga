@@ -34,18 +34,19 @@ public class SampleInternal extends Internal {
      * @apiNote Internal, Unique, Immutable
      * @deprecated
      */
+    private Status status;
     private RgaIndex rga;
 
     public SampleInternal() {
     }
 
-    public SampleInternal(String registrationDate, Status status, RgaIndex rga) {
-        super(status, registrationDate);
+    public SampleInternal(String registrationDate, String modificationDate, Status status, RgaIndex rga) {
+        super(status, registrationDate, modificationDate);
         this.rga = rga;
     }
 
     public static SampleInternal init() {
-        return new SampleInternal(TimeUtils.getTime(), new Status(Status.READY), RgaIndex.init());
+        return new SampleInternal(TimeUtils.getTime(), TimeUtils.getTime(), new Status(Status.READY), RgaIndex.init());
     }
 
     @Override
@@ -79,8 +80,17 @@ public class SampleInternal extends Internal {
         return registrationDate;
     }
 
-    public Internal setRegistrationDate(String registrationDate) {
+    public SampleInternal setRegistrationDate(String registrationDate) {
         this.registrationDate = registrationDate;
+        return this;
+    }
+
+    public String getLastModified() {
+        return lastModified;
+    }
+
+    public SampleInternal setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 }

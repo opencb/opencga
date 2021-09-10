@@ -28,13 +28,13 @@ public class CohortInternal extends Internal {
     public CohortInternal() {
     }
 
-    public CohortInternal(String registrationDate, CohortStatus status) {
-        super(null, registrationDate);
+    public CohortInternal(String registrationDate, String modificationDate, CohortStatus status) {
+        super(null, registrationDate, modificationDate);
         this.status = status;
     }
 
     public static CohortInternal init() {
-        return new CohortInternal(TimeUtils.getTime(), new CohortStatus());
+        return new CohortInternal(TimeUtils.getTime(), TimeUtils.getTime(), new CohortStatus());
     }
 
     @Override

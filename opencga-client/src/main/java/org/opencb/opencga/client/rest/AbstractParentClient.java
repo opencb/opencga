@@ -259,14 +259,24 @@ public abstract class AbstractParentClient {
 
             if (finalRestResponse == null) {
                 finalRestResponse = batchRestResponse;
+                if (finalRestResponse.getEvents() == null) {
+                    finalRestResponse.setEvents(new ArrayList<>());
+                }
+                if (finalRestResponse.first().getEvents() == null) {
+                    finalRestResponse.first().setEvents(new ArrayList<>());
+                }
             } else {
                 // Merge results
                 if (batchNumResults > 0) {
                     finalRestResponse.first().getResults().addAll(batchRestResponse.getResponses().get(0).getResults());
                     finalRestResponse.first().setNumResults(finalRestResponse.first().getResults().size());
                 }
-                finalRestResponse.getEvents().addAll(batchRestResponse.getEvents());
-                finalRestResponse.first().getEvents().addAll(batchRestResponse.first().getEvents());
+                if (batchRestResponse.getEvents() != null) {
+                    finalRestResponse.getEvents().addAll(batchRestResponse.getEvents());
+                }
+                if (batchRestResponse.first().getEvents() != null) {
+                    finalRestResponse.first().getEvents().addAll(batchRestResponse.first().getEvents());
+                }
             }
 
             skip += batchNumResults;
@@ -470,7 +480,11 @@ public abstract class AbstractParentClient {
         if (!Response.Status.Family.SUCCESSFUL.equals(status.getFamily())) {
             String message = "Unsuccessful HTTP status " + status.getFamily() + ":" + status.getStatusCode()
                     + " '" + status.getReasonPhrase() + "'";
-            throw new ClientException(message);
+            if (throwExceptionOnError) {
+                throw new ClientException(message);
+            } else {
+                logger.debug(message);
+            }
         }
     }
 

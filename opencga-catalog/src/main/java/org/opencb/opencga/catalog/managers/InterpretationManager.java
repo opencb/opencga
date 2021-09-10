@@ -254,8 +254,10 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());
 
-        interpretation.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(interpretation.getCreationDate()));
-        interpretation.setModificationDate(TimeUtils.getTime());
+        interpretation.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(interpretation.getCreationDate(),
+                InterpretationDBAdaptor.QueryParams.CREATION_DATE.key()));
+        interpretation.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(interpretation.getModificationDate(),
+                InterpretationDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         interpretation.setDescription(ParamUtils.defaultString(interpretation.getDescription(), ""));
         interpretation.setInternal(InterpretationInternal.init());
         interpretation.setMethods(ParamUtils.defaultObject(interpretation.getMethods(), Collections.emptyList()));
@@ -267,6 +269,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretation.setVersion(1);
         interpretation.setAttributes(ParamUtils.defaultObject(interpretation.getAttributes(), Collections.emptyMap()));
         interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
+        interpretation.setStats(InterpretationStats.init());  // stats are calculated in the dbadaptor to allow transactional operations
 
         if (CollectionUtils.isEmpty(interpretation.getPanels())) {
             interpretation.setPanels(clinicalAnalysis.getPanels());
@@ -424,7 +427,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 InterpretationUpdateParams params = new InterpretationUpdateParams("", new ClinicalAnalystParam(),
-                        Collections.emptyList(), TimeUtils.getTime(), Collections.emptyList(), Collections.emptyList(),
+                        Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList(),
                         clinicalAnalysis.getPanels() != null
                                 ? clinicalAnalysis.getPanels().stream()
                                     .map(p -> new PanelReferenceParam().setId(p.getId())).collect(Collectors.toList())
@@ -865,7 +868,10 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
 
         if (updateParams != null && StringUtils.isNotEmpty(updateParams.getCreationDate())) {
-            ParamUtils.checkCreationDateFormat(updateParams.getCreationDate());
+            ParamUtils.checkDateFormat(updateParams.getCreationDate(), InterpretationDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (updateParams != null && StringUtils.isNotEmpty(updateParams.getModificationDate())) {
+            ParamUtils.checkDateFormat(updateParams.getModificationDate(), InterpretationDBAdaptor.QueryParams.MODIFICATION_DATE.key());
         }
 
         ObjectMap parameters = new ObjectMap();

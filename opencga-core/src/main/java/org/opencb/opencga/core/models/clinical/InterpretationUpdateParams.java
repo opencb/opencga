@@ -36,6 +36,7 @@ public class InterpretationUpdateParams {
     private ClinicalAnalystParam analyst;
     private List<InterpretationMethod> methods;
     private String creationDate;
+    private String modificationDate;
     private List<ClinicalVariant> primaryFindings;
     private List<ClinicalVariant> secondaryFindings;
     private List<PanelReferenceParam> panels;
@@ -47,21 +48,23 @@ public class InterpretationUpdateParams {
     }
 
     public InterpretationUpdateParams(String description, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
-                                      String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
-                                      List<PanelReferenceParam> panels, List<ClinicalCommentParam> comments, Map<String, Object> attributes,
-                                      StatusParam status) {
-        this(null, description, analyst, methods, creationDate, primaryFindings, secondaryFindings, panels, comments, attributes, status);
+                                      String creationDate, String modificationDate, List<ClinicalVariant> primaryFindings,
+                                      List<ClinicalVariant> secondaryFindings, List<PanelReferenceParam> panels,
+                                      List<ClinicalCommentParam> comments, Map<String, Object> attributes, StatusParam status) {
+        this(null, description, analyst, methods, creationDate, modificationDate, primaryFindings, secondaryFindings, panels, comments,
+                attributes, status);
     }
 
     public InterpretationUpdateParams(String id, String description, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
-                                      String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
-                                      List<PanelReferenceParam> panels, List<ClinicalCommentParam> comments, Map<String, Object> attributes,
-                                      StatusParam status) {
+                                      String creationDate, String modificationDate, List<ClinicalVariant> primaryFindings,
+                                      List<ClinicalVariant> secondaryFindings, List<PanelReferenceParam> panels,
+                                      List<ClinicalCommentParam> comments, Map<String, Object> attributes, StatusParam status) {
         this.id = id;
         this.description = description;
         this.analyst = analyst;
         this.methods = methods;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.primaryFindings = primaryFindings;
         this.secondaryFindings = secondaryFindings;
         this.panels = panels;
@@ -83,6 +86,7 @@ public class InterpretationUpdateParams {
         sb.append(", analyst=").append(analyst);
         sb.append(", methods=").append(methods);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", primaryFindings=").append(primaryFindings);
         sb.append(", secondaryFindings=").append(secondaryFindings);
         sb.append(", panels=").append(panels);
@@ -135,6 +139,15 @@ public class InterpretationUpdateParams {
 
     public InterpretationUpdateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public InterpretationUpdateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

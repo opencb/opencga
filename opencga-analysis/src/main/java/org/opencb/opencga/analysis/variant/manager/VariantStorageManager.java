@@ -480,12 +480,14 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
      * Modify SampleIndex configuration. Automatically submit a job to rebuild the sample index.
      * @param studyStr  Study identifier
      * @param sampleIndexConfiguration New sample index configuration
+     * @param skipRebuild Do not launch rebuild jobs
      * @param token User's token
      * @return Result with VariantSampleIndexOperationTool job
      * @throws CatalogException on catalog errors
      * @throws StorageEngineException on storage engine errors
      */
-    public OpenCGAResult<Job> configureSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration, String token)
+    public OpenCGAResult<Job> configureSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration,
+                                                   boolean skipRebuild, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
             sampleIndexConfiguration.validate();
@@ -494,11 +496,15 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
             catalogManager.getStudyManager()
                     .setVariantEngineConfigurationSampleIndex(studyStr, sampleIndexConfiguration, token);
-            // If changes, launch sample-index-run
-            VariantSampleIndexParams params =
-                    new VariantSampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, false);
-            return catalogManager.getJobManager().submit(studyFqn, VariantSampleIndexOperationTool.ID, null,
-                    params.toParams(STUDY_PARAM, studyFqn), token);
+            if (skipRebuild) {
+                return new OpenCGAResult<>(0, new ArrayList<>(), 0, new ArrayList<>(), 0);
+            } else {
+                // If changes, launch sample-index-run
+                VariantSampleIndexParams params =
+                        new VariantSampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, false);
+                return catalogManager.getJobManager().submit(studyFqn, VariantSampleIndexOperationTool.ID, null,
+                        params.toParams(STUDY_PARAM, studyFqn), token);
+            }
         });
     }
 
@@ -519,6 +525,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         StopWatch stopwatch = StopWatch.createStarted();
         return secureOperationByProject("configureCellbase", project, new ObjectMap(), token, engine -> {
             OpenCGAResult<Job> result = new OpenCGAResult<>();
+            result.setResultType(Job.class.getCanonicalName());
             result.setResults(new ArrayList<>());
             result.setEvents(new ArrayList<>());
 
@@ -526,7 +533,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             engine.reloadCellbaseConfiguration();
             CellBaseDataResponse<SpeciesProperties> species = engine.getCellBaseUtils().getCellBaseClient().getMetaClient().species();
             if (species == null || species.firstResult() == null) {
-                throw new IllegalArgumentException("Unable to access cellbase url '" + cellbaseConfiguration.getUrl() + "'");
+                throw new IllegalArgumentException("Unable to access cellbase url '" + cellbaseConfiguration.getUrl() + "'"
+                        + " version '" + cellbaseConfiguration.getVersion() + "'");
             }
 
             if (engine.getMetadataManager().exists()) {
@@ -689,7 +697,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return get(intersectQuery, queryOptions, token);
     }
 
-    public DataResult<SampleVariantStats> getSampleStats(String studyStr, String sample, Query inputQuery, String token)
+    public DataResult<SampleVariantStats> getSampleStats(String studyStr, String sample, Query inputQuery,
+                                                         QueryOptions options, String token)
             throws CatalogException, IOException, StorageEngineException {
         Query query = inputQuery == null ? new Query() : new Query(inputQuery);
         String study = getStudyFqn(studyStr, token);
@@ -698,7 +707,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
        return secure(query, new QueryOptions(), token, Enums.Action.FACET, engine -> {
             logger.debug("getSampleStats {}", query);
-            DataResult<SampleVariantStats> result = engine.sampleStatsQuery(study, sample, query);
+//            logger.info("Filter transcript = {} (raw: '{}')",
+//                    options.getBoolean("filterTranscript", false), options.get("filterTranscript"));
+            DataResult<SampleVariantStats> result = engine.sampleStatsQuery(study, sample, query, options);
             logger.debug("getFacets in {}ms", result.getTime());
             return result;
         });

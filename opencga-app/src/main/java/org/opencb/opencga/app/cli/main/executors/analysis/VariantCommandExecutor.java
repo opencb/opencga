@@ -37,6 +37,7 @@ import org.opencb.opencga.app.cli.internal.executors.VariantQueryCommandUtils;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
+import org.opencb.opencga.app.cli.main.options.OperationsCommandOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -501,48 +502,11 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> index() throws ClientException {
-        VariantCommandOptions.VariantIndexCommandOptions variantIndex = variantCommandOptions.indexVariantCommandOptions;
-        return openCGAClient.getVariantClient().runIndex(
-                new VariantIndexParams(
-                        variantIndex.fileId,
-                        variantIndex.genericVariantIndexOptions.resume,
-                        variantIndex.outdir,
-                        variantIndex.genericVariantIndexOptions.transform,
-                        variantIndex.genericVariantIndexOptions.gvcf,
-                        variantIndex.genericVariantIndexOptions.normalizationSkip,
-                        variantIndex.genericVariantIndexOptions.referenceGenome,
-                        variantIndex.genericVariantIndexOptions.family,
-                        variantIndex.genericVariantIndexOptions.somatic,
-                        variantIndex.genericVariantIndexOptions.load,
-                        variantIndex.genericVariantIndexOptions.loadSplitData,
-                        variantIndex.genericVariantIndexOptions.loadMultiFileData,
-                        variantIndex.genericVariantIndexOptions.loadSampleIndex,
-                        variantIndex.genericVariantIndexOptions.loadArchive,
-                        variantIndex.genericVariantIndexOptions.loadHomRef,
-                        variantIndex.genericVariantIndexOptions.postLoadCheck,
-                        variantIndex.genericVariantIndexOptions.excludeGenotype,
-                        variantIndex.genericVariantIndexOptions.includeSampleData,
-                        variantIndex.genericVariantIndexOptions.merge,
-                        variantIndex.genericVariantIndexOptions.deduplicationPolicy,
-                        variantIndex.genericVariantIndexOptions.calculateStats,
-                        variantIndex.genericVariantIndexOptions.aggregated,
-                        variantIndex.genericVariantIndexOptions.aggregationMappingFile,
-                        variantIndex.genericVariantIndexOptions.annotate,
-                        variantIndex.genericVariantIndexOptions.annotator,
-                        variantIndex.genericVariantIndexOptions.overwriteAnnotations,
-                        variantIndex.genericVariantIndexOptions.indexSearch,
-                        variantIndex.skipIndexedFiles),
-                getParams(variantIndex.study));
+        throw new ClientException("Deprecated. Use '" + OperationsCommandOptions.OPERATIONS_COMMAND + " " + OperationsCommandOptions.VARIANT_INDEX + "'");
     }
 
     private RestResponse<Job> fileDelete() throws ClientException {
-        VariantCommandOptions.VariantDeleteCommandOptions cliOptions = variantCommandOptions.variantDeleteCommandOptions;
-
-        return openCGAClient.getVariantClient().deleteFile(
-                new VariantFileDeleteParams(
-                        cliOptions.genericVariantDeleteOptions.file,
-                        cliOptions.genericVariantDeleteOptions.resume).toObjectMap()
-                        .appendAll(getParams(cliOptions.study)));
+        throw new ClientException("Deprecated. Use '" + OperationsCommandOptions.OPERATIONS_COMMAND + " " + OperationsCommandOptions.VARIANT_DELETE + "'");
     }
 
     private RestResponse query() throws CatalogException, ClientException, InterruptedException, IOException {

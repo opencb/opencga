@@ -46,7 +46,7 @@ import java.util.function.Function;
  */
 public abstract class AbstractManager {
 
-    protected static Logger logger;
+    protected final Logger logger;
     protected final AuthorizationManager authorizationManager;
     protected final AuditManager auditManager;
     protected final CatalogManager catalogManager;

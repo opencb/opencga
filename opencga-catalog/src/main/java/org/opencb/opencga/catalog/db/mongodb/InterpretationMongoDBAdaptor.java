@@ -42,12 +42,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.InterpretationUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.clinical.InterpretationStats;
 import org.opencb.opencga.core.models.clinical.InterpretationStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
@@ -59,6 +61,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor.QueryParams.STATUS_ID;
 import static org.opencb.opencga.catalog.db.mongodb.ClinicalAnalysisMongoDBAdaptor.fixCommentsForRemoval;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -219,13 +222,18 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
         }
 
+        // Calculate stats
+        InterpretationStats interpretationStats = InterpretationUtils.calculateStats(interpretation);
+        interpretation.setStats(interpretationStats);
+
         Document interpretationObject = interpretationConverter.convertToStorageType(interpretation);
         if (StringUtils.isNotEmpty(interpretation.getCreationDate())) {
             interpretationObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(interpretation.getCreationDate()));
         } else {
             interpretationObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }
-        interpretationObject.put(PRIVATE_MODIFICATION_DATE, interpretationObject.get(PRIVATE_CREATION_DATE));
+        interpretationObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(interpretation.getModificationDate())
+                ? TimeUtils.toDate(interpretation.getModificationDate()) : TimeUtils.getDate());
 
         // Versioning private parameters
         interpretationObject.put(RELEASE_FROM_VERSION, Arrays.asList(interpretation.getRelease()));
@@ -385,6 +393,12 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             document.getSet().put(QueryParams.CREATION_DATE.key(), time);
             document.getSet().put(PRIVATE_CREATION_DATE, date);
         }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
 
         if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
             document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
@@ -394,7 +408,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] objectAcceptedParams = {QueryParams.ANALYST.key(), QueryParams.STATUS.key()};
+        String[] objectAcceptedParams = {QueryParams.ANALYST.key(), QueryParams.STATUS.key(), QueryParams.STATS.key()};
         filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
 
         objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
@@ -511,11 +525,14 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
-            // Update modificationDate param
             String time = TimeUtils.getTime();
-            Date date = TimeUtils.toDate(time);
-            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
-            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
         }
 
         return document;
@@ -819,6 +836,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     }
                 }
 
+                // Added to allow replacing a single comment
                 if (!updateDocument.getNestedUpdateList().isEmpty()) {
                     for (NestedArrayUpdateDocument nestedDocument : updateDocument.getNestedUpdateList()) {
 
@@ -831,6 +849,28 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                         if (update.getNumMatches() == 0) {
                             throw CatalogDBException.uidNotFound("Interpretation", interpretationUid);
                         }
+                    }
+                }
+
+                if (!updateOperation.isEmpty() || !updateDocument.getNestedUpdateList().isEmpty()) {
+                    // If something was updated, we will calculate the stats of the interpretation again
+                    Query iQuery = new Query()
+                            .append(QueryParams.UID.key(), interpretationUid)
+                            .append(QueryParams.STUDY_UID.key(), studyUid);
+                    Interpretation updatedInterpretation = get(clientSession, iQuery, QueryOptions.empty()).first();
+                    InterpretationStats stats = InterpretationUtils.calculateStats(updatedInterpretation);
+
+                    Bson bsonQuery = parseQuery(new Query(QueryParams.UID.key(), interpretation.getUid()));
+                    UpdateDocument updateStatsDocument = parseAndValidateUpdateParams(clientSession,
+                            new ObjectMap(QueryParams.STATS.key(), stats), iQuery, QueryOptions.empty());
+                    logger.debug("Update interpretation stats. Query: {}, Update: {}",
+                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                            updateStatsDocument.toFinalUpdateDocument());
+
+                    DataResult statsUpdate = interpretationCollection.update(clientSession, bsonQuery,
+                            updateStatsDocument.toFinalUpdateDocument(), null);
+                    if (statsUpdate.getNumMatches() == 0) {
+                        throw CatalogDBException.uidNotFound("Interpretation", interpretationUid);
                     }
                 }
 

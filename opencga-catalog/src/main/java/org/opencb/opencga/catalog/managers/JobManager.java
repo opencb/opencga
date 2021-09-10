@@ -254,7 +254,10 @@ public class JobManager extends ResourceManager<Job> {
             ParamUtils.checkIdentifier(job.getId(), "job id");
             job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
             job.setCommandLine(ParamUtils.defaultString(job.getCommandLine(), ""));
-            job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
+            job.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(job.getCreationDate(),
+                    JobDBAdaptor.QueryParams.CREATION_DATE.key()));
+            job.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(job.getModificationDate(),
+                    JobDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
             job.setInternal(ParamUtils.defaultObject(job.getInternal(), new JobInternal()));
             job.getInternal().setStatus(ParamUtils.defaultObject(job.getInternal().getStatus(),
                     new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE)));
@@ -326,7 +329,9 @@ public class JobManager extends ResourceManager<Job> {
         }
         job.setPriority(ParamUtils.defaultObject(job.getPriority(), Enums.Priority.MEDIUM));
         job.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.JOB));
-        job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
+        job.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(job.getCreationDate(), JobDBAdaptor.QueryParams.CREATION_DATE.key()));
+        job.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(job.getModificationDate(),
+                JobDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
 
         // Set default internal
@@ -498,7 +503,8 @@ public class JobManager extends ResourceManager<Job> {
             if (job.getInternal() != null) {
                 job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
             } else {
-                job.setInternal(new JobInternal(TimeUtils.getTime(), new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
+                job.setInternal(new JobInternal(TimeUtils.getTime(), TimeUtils.getTime(),
+                        new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
                         new JobInternalWebhook(null, new HashMap<>()), Collections.emptyList()));
             }
             job.getInternal().getStatus().setDescription(e.toString());

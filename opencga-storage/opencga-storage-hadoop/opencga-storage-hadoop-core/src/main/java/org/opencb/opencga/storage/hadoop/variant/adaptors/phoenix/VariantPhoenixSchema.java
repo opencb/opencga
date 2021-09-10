@@ -701,8 +701,8 @@ public final class VariantPhoenixSchema {
         return buildStudyColumnsPrefix(studyId, stringBuilder).append(fileId).append(FILE_SUFIX);
     }
 
-    public static Column getFileColumn(int studyId, int sampleId) {
-        return Column.build(buildFileColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
+    public static Column getFileColumn(int studyId, int fileId) {
+        return Column.build(buildFileColumnKey(studyId, fileId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
     }
 
     public static byte[] buildReleaseColumnKey(int release) {

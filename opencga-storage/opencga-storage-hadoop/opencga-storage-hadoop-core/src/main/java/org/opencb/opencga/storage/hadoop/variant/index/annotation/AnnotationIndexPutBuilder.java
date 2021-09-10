@@ -11,22 +11,25 @@ public class AnnotationIndexPutBuilder {
 
     private final ByteArrayOutputStream annotation;
     private final BitOutputStream biotype;
+    private final BitOutputStream transcriptFlag;
     private final BitOutputStream ct;
-    private final BitOutputStream ctBt;
+    private final BitOutputStream ctBtTf;
     private final BitOutputStream popFreq;
     private final BitOutputStream clinical;
-    private final SampleIndexSchema indexSchema = SampleIndexSchema.defaultSampleIndexSchema();
+    private final SampleIndexSchema indexSchema;
     private int numVariants;
 
-    public AnnotationIndexPutBuilder() {
-        this(50);
+    public AnnotationIndexPutBuilder(SampleIndexSchema indexSchema) {
+        this(indexSchema, 50);
     }
 
-    public AnnotationIndexPutBuilder(int size) {
+    public AnnotationIndexPutBuilder(SampleIndexSchema indexSchema, int size) {
+        this.indexSchema = indexSchema;
         this.annotation = new ByteArrayOutputStream(size);
         this.biotype = new BitOutputStream(size / 4);
         this.ct = new BitOutputStream(size / 2);
-        this.ctBt = new BitOutputStream(size / 4);
+        this.transcriptFlag = new BitOutputStream(size / 2);
+        this.ctBtTf = new BitOutputStream(size / 4);
         this.popFreq = new BitOutputStream(size / 2);
         this.clinical = new BitOutputStream(size / 5);
         numVariants = 0;
@@ -39,14 +42,11 @@ public class AnnotationIndexPutBuilder {
         if (!indexEntry.isIntergenic()) {
             ct.write(indexEntry.getCtIndex(), indexSchema.getCtIndex().getBitsLength());
             biotype.write(indexEntry.getBtIndex(), indexSchema.getBiotypeIndex().getBitsLength());
+            transcriptFlag.write(indexEntry.getTfIndex(), indexSchema.getTranscriptFlagIndexSchema().getBitsLength());
+            ctBtTf.write(indexSchema.getCtBtTfIndex().getField().encode(indexEntry.getCtBtTfCombination()));
         }
         popFreq.write(indexEntry.getPopFreqIndex());
 
-        ctBt.write(indexSchema.getCtBtIndex().getField().encode(indexEntry.getCtBtCombination()));
-//        byte[] ctBtMatrix = ctBtCombination.getCtBtMatrix();
-//        for (int i = 0; i < ctBtCombination.getNumCt(); i++) {
-//            ctBt.write(ctBtMatrix[i], ctBtCombination.getNumBt());
-//        }
         if (indexEntry.hasClinical()) {
             clinical.write(indexEntry.getClinicalIndex());
         }
@@ -67,8 +67,9 @@ public class AnnotationIndexPutBuilder {
         if (!ct.isEmpty()) {
             put.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt), ct.toByteArray());
             put.addColumn(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt), biotype.toByteArray());
+            put.addColumn(family, SampleIndexSchema.toAnnotationTranscriptFlagIndexColumn(gt), transcriptFlag.toByteArray());
+            put.addColumn(family, SampleIndexSchema.toAnnotationCtBtTfIndexColumn(gt), ctBtTf.toByteArray());
         }
-        put.addColumn(family, SampleIndexSchema.toAnnotationCtBtIndexColumn(gt), ctBt.toByteArray());
 
         put.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt), popFreq.toByteArray());
 
@@ -83,7 +84,8 @@ public class AnnotationIndexPutBuilder {
         annotation.reset();
         biotype.reset();
         ct.reset();
-        ctBt.reset();
+        transcriptFlag.reset();
+        ctBtTf.reset();
         popFreq.reset();
         clinical.reset();
         numVariants = 0;

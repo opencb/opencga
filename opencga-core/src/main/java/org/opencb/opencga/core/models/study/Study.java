@@ -38,35 +38,142 @@ import java.util.*;
  */
 public class Study extends PrivateFields {
 
+    /**
+     * Study ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.
+     *
+     * @apiNote Required, Immutable, Unique
+     */
     private String id;
-    private String name;
+
+    /**
+     * Global unique ID at the whole OpenCGA installation. This is automatically created during the study creation and cannot be changed.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private String uuid;
+
+    private String name;
     private String alias;
+
+    /**
+     * String representing when the sample was created, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String creationDate;
+
+    /**
+     * String representing when was the last time the sample was modified, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String modificationDate;
+
+    /**
+     * An string to describe the properties of the sample.
+     *
+     * @apiNote
+     */
     private String description;
+
     private long size;
     private String fqn;
 
     private StudyNotification notification;
+
+    /**
+     * A List with related groups.
+     *
+     * @apiNote
+     */
     private List<Group> groups;
+
+    /**
+     * A List with related files.
+     *
+     * @apiNote
+     */
     private List<File> files;
+
+    /**
+     * A List with related jobs.
+     *
+     * @apiNote
+     */
     private List<Job> jobs;
+
+    /**
+     * A List with related individuals.
+     *
+     * @apiNote
+     */
     private List<Individual> individuals;
+
+    /**
+     * A List with related families.
+     *
+     * @apiNote
+     */
     private List<Family> families;
+
+    /**
+     * A List with related samples.
+     *
+     * @apiNote
+     */
     private List<Sample> samples;
+
+    /**
+     * A List with related cohorts.
+     *
+     * @apiNote
+     */
     private List<Cohort> cohorts;
+
+    /**
+     * A List with related panels.
+     *
+     * @apiNote
+     */
     private List<org.opencb.opencga.core.models.panel.Panel> panels;
+
+    /**
+     * A List with related clinicalAnalyses.
+     *
+     * @apiNote
+     */
     private List<ClinicalAnalysis> clinicalAnalyses;
+
+    /**
+     * A List with related variableSets.
+     *
+     * @apiNote
+     */
     private List<VariableSet> variableSets;
 
     private Map<Enums.Entity, List<PermissionRule>> permissionRules;
     private URI uri;
     private int release;
 
+    /**
+     * An object describing the status of the Sample.
+     *
+     * @apiNote
+     */
     private CustomStatus status;
 
+    /**
+     * An object describing the internal information of the Sample. This is managed by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private StudyInternal internal;
+
+    /**
+     * You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.
+     *
+     * @apiNote
+     */
     private Map<String, Object> attributes;
 
     public Study() {
@@ -80,7 +187,8 @@ public class Study extends PrivateFields {
 
     public Study(String id, String name, String alias, String creationDate, String description, StudyNotification notification, long size,
                  List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals, List<Family> families,
-                 List<Sample> samples, List<Cohort> cohorts, List<org.opencb.opencga.core.models.panel.Panel> panels, List<ClinicalAnalysis> clinicalAnalyses,
+                 List<Sample> samples, List<Cohort> cohorts, List<org.opencb.opencga.core.models.panel.Panel> panels,
+                 List<ClinicalAnalysis> clinicalAnalyses,
                  List<VariableSet> variableSets, Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri, int release,
                  CustomStatus status, StudyInternal internal, Map<String, Object> attributes) {
         this.id = id;
@@ -380,5 +488,4 @@ public class Study extends PrivateFields {
         this.attributes = attributes;
         return this;
     }
-
 }

@@ -32,10 +32,7 @@ import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
-import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
-import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
-import org.opencb.opencga.core.models.variant.VariantStatsIndexParams;
-import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
+import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
@@ -99,6 +96,32 @@ public class VariantOperationWebService extends OpenCGAWSServer {
                     .setNumResults(1)
                     .setTime(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)));
         });
+    }
+
+    @POST
+    @Path("/variant/index")
+    @ApiOperation(value = VariantIndexOperationTool.DESCRIPTION, response = Job.class)
+    public Response variantIndex(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = VariantIndexParams.DESCRIPTION) VariantIndexParams params) {
+        return submitOperation(VariantIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
+    @Path("/variant/delete")
+    @ApiOperation(value = VariantFileDeleteOperationTool.DESCRIPTION, response = Job.class)
+    public Response variantDelete(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = VariantFileDeleteParams.DESCRIPTION) VariantFileDeleteParams params) {
+        return submitOperation(VariantFileDeleteOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -265,8 +288,9 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     @ApiOperation(value = "Update SampleIndex configuration", response = Job.class)
     public Response sampleIndexConfigure(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "Skip sample index re-build") @QueryParam("skipRebuild") boolean skipRebuild,
             @ApiParam(value = "New SampleIndexConfiguration") SampleIndexConfiguration sampleIndexConfiguration) {
-        return run(() -> variantManager.configureSampleIndex(study, sampleIndexConfiguration, token));
+        return run(() -> variantManager.configureSampleIndex(study, sampleIndexConfiguration, skipRebuild, token));
     }
 
     @POST

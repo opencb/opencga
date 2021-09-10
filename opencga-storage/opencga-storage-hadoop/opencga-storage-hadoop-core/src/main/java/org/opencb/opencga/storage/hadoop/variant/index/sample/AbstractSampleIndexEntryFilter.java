@@ -223,7 +223,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
             // Test other annotation index and popFreq (if any)
             if (annotationIndexEntry == null
                     || filterClinicalFields(annotationIndexEntry)
-                    && filterBtCtFields(annotationIndexEntry)
+                    && filterBtCtTfFields(annotationIndexEntry)
                     && filterPopFreq(annotationIndexEntry)) {
 
                 // Test file index (if any)
@@ -342,7 +342,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         return query.getAnnotationIndexQuery().getClinicalFilter().test(annotationIndexEntry.getClinicalIndex());
     }
 
-    private boolean filterBtCtFields(AnnotationIndexEntry annotationIndexEntry) {
+    private boolean filterBtCtTfFields(AnnotationIndexEntry annotationIndexEntry) {
         if (annotationIndexEntry == null || !annotationIndexEntry.hasSummaryIndex()) {
             return true;
         }
@@ -350,22 +350,30 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
             // unable to filter by this field
             return true;
         }
-        if (!annotationIndexEntry.hasBtIndex()
-                || query.getAnnotationIndexQuery().getBiotypeFilter().test(annotationIndexEntry.getBtIndex())) {
-
-            if (!annotationIndexEntry.hasCtIndex()
-                    || query.getAnnotationIndexQuery().getConsequenceTypeFilter().test(annotationIndexEntry.getCtIndex())) {
-
-                if (annotationIndexEntry.getCtBtCombination().getCtBtMatrix() == null
-                        || query.getAnnotationIndexQuery().getConsequenceTypeFilter().isNoOp()
-                        || query.getAnnotationIndexQuery().getBiotypeFilter().isNoOp()) {
-                    return true;
-                } else {
-                    return query.getAnnotationIndexQuery().getCtBtFilter().test(annotationIndexEntry);
-                }
-            }
+        if (annotationIndexEntry.hasBtIndex()
+                && !query.getAnnotationIndexQuery().getBiotypeFilter().test(annotationIndexEntry.getBtIndex())) {
+            return false;
         }
-        return false;
+
+        if (annotationIndexEntry.hasCtIndex()
+                && !query.getAnnotationIndexQuery().getConsequenceTypeFilter().test(annotationIndexEntry.getCtIndex())) {
+            return false;
+        }
+
+        if (annotationIndexEntry.hasTfIndex()
+                && !query.getAnnotationIndexQuery().getTranscriptFlagFilter().test(annotationIndexEntry.getTfIndex())) {
+            return false;
+        }
+
+        if (annotationIndexEntry.getCtBtTfCombination().getMatrix() != null
+                && !query.getAnnotationIndexQuery().getCtBtTfFilter().test(annotationIndexEntry.getCtBtTfCombination(),
+                annotationIndexEntry.getCtIndex(),
+                annotationIndexEntry.getBtIndex(),
+                annotationIndexEntry.getTfIndex())) {
+            return false;
+        }
+
+        return true;
     }
 
     private T filter(T v) {

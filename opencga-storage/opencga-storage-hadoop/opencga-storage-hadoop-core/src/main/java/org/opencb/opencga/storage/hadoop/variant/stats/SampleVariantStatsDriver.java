@@ -444,6 +444,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
                 if (gt == null || gt.isEmpty()) {
                     // This is a really weird situation, most likely due to errors in the input files
                     logger.error("Empty genotype at sample " + sampleId + " in variant " + row.getVariant());
+                    gts.set(sampleIdsPosition[sampleId], GenotypeClass.NA_GT_VALUE);
                 } else if (gt.equals(GenotypeClass.UNKNOWN_GENOTYPE)) {
                     // skip unknown genotypes
                     context.getCounter(COUNTER_GROUP_NAME, "unknownGt").increment(1);

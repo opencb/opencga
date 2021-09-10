@@ -9,6 +9,7 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -606,6 +607,18 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                         withFileId(file12878,
                                 withAttribute("DP", asNumber(gt(100)))
                         )
+                )
+        ))));
+
+        query = new Query(STUDY.key(), study1)
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA12877,NA12878")
+                .append(VariantQueryParam.INCLUDE_FILE.key(), file12877 + "," + file12878)
+                .append(FILE_DATA.key(), file12877 + ":culprit=DP,FS");
+        queryResult = query(query, new QueryOptions());
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study1, allOf(
+                withFileId(file12877,
+                        withAttribute("culprit", anyOf(is("DP"), is("FS")))
                 )
         ))));
     }

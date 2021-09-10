@@ -639,6 +639,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         Interpretation interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(2, interpretation.getSecondaryFindings().size());
+        assertNotNull(interpretation.getStats());
+        assertEquals(2, interpretation.getStats().getSecondaryFindings().getNumVariants());
+        assertEquals(2, (int) interpretation.getStats().getSecondaryFindings().getVariantStatusCount().get(ClinicalVariant.Status.NOT_REVIEWED));
 
         // Add new finding
         findingList = new ArrayList<>();
@@ -657,6 +660,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(3, interpretation.getSecondaryFindings().size());
         assertEquals("method2", interpretation.getSecondaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
         assertEquals("id3", interpretation.getSecondaryFindings().get(2).getId());
+        assertNotNull(interpretation.getStats());
+        assertEquals(3, interpretation.getStats().getSecondaryFindings().getNumVariants());
+        assertEquals(3, (int) interpretation.getStats().getSecondaryFindings().getVariantStatusCount().get(ClinicalVariant.Status.NOT_REVIEWED));
 
         // Add existing finding
         try {
@@ -677,6 +683,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, interpretation.getSecondaryFindings().size());
         assertEquals("method", interpretation.getSecondaryFindings().get(0).getEvidences().get(0).getInterpretationMethodName());
         assertEquals("id2", interpretation.getSecondaryFindings().get(0).getId());
+        assertNotNull(interpretation.getStats());
+        assertEquals(1, interpretation.getStats().getSecondaryFindings().getNumVariants());
+        assertEquals(1, (int) interpretation.getStats().getSecondaryFindings().getVariantStatusCount().get(ClinicalVariant.Status.NOT_REVIEWED));
 
         // Set findings
         updateParams = new InterpretationUpdateParams()
@@ -693,6 +702,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("id2", interpretation.getSecondaryFindings().get(1).getId());
         assertEquals("method2", interpretation.getSecondaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
         assertEquals("id3", interpretation.getSecondaryFindings().get(2).getId());
+        assertNotNull(interpretation.getStats());
+        assertEquals(3, interpretation.getStats().getSecondaryFindings().getNumVariants());
+        assertEquals(3, (int) interpretation.getStats().getSecondaryFindings().getVariantStatusCount().get(ClinicalVariant.Status.NOT_REVIEWED));
 
         // Replace findings
         cv2.setEvidences(Collections.singletonList(new ClinicalVariantEvidence().setInterpretationMethodName("AnotherMethodName")));
@@ -712,6 +724,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("id2", interpretation.getSecondaryFindings().get(1).getId());
         assertEquals("YetAnotherMethodName", interpretation.getSecondaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
         assertEquals("id3", interpretation.getSecondaryFindings().get(2).getId());
+        assertNotNull(interpretation.getStats());
+        assertEquals(3, interpretation.getStats().getSecondaryFindings().getNumVariants());
+        assertEquals(3, (int) interpretation.getStats().getSecondaryFindings().getVariantStatusCount().get(ClinicalVariant.Status.NOT_REVIEWED));
 
         // Remove finding with missing id
         variantAvro = new VariantAvro("", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);

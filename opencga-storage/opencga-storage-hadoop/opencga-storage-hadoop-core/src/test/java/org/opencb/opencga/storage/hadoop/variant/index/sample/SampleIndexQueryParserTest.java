@@ -13,10 +13,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
@@ -37,9 +37,9 @@ import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.ANTISENSE;
 import static org.opencb.opencga.core.models.variant.VariantAnnotationConstants.PROTEIN_CODING;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
@@ -538,14 +538,14 @@ public class SampleIndexQueryParserTest {
         assertEquals(INTERGENIC_MASK | PROTEIN_CODING_MASK, parseAnnotationMask(new Query(ANNOT_BIOTYPE.key(), "protein_coding")));
         assertEquals(INTERGENIC_MASK, parseAnnotationMask(new Query(ANNOT_BIOTYPE.key(), "protein_coding,miRNA"))); // Do not use PROTEIN_CODING_MASK when filtering by other biotypes
         assertEquals(INTERGENIC_MASK, parseAnnotationMask(new Query(ANNOT_BIOTYPE.key(), "other_than_protein_coding")));
-        assertEquals(LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.1")));
+        assertEquals(CUSTOM_LOFE_MASK, parseAnnotationMask(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<0.1")));
         assertEquals(EMPTY_MASK, parseAnnotationMask(new Query(ANNOT_PROTEIN_SUBSTITUTION.key(), "sift<<0.1")));
 
-        assertEquals(INTERGENIC_MASK | MISSENSE_VARIANT_MASK | LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant")));
-        assertEquals(INTERGENIC_MASK | LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,missense_variant"))); // Do not use MISSENSE_VARIANT_MASK when filtering by other CTs
+        assertEquals(INTERGENIC_MASK | MISSENSE_VARIANT_MASK | CUSTOM_LOFE_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant")));
+        assertEquals(INTERGENIC_MASK | CUSTOM_LOFE_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,missense_variant"))); // Do not use MISSENSE_VARIANT_MASK when filtering by other CTs
         assertEquals(INTERGENIC_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,missense_variant,3_prime_UTR_variant"))); // Do not use LOF_MASK  nor LOF_EXTENDED_MASK when filtering by other CTs
-        assertEquals(INTERGENIC_MASK | LOF_MASK | LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost")));
-        assertEquals(INTERGENIC_MASK | LOF_MASK | LOF_EXTENDED_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,stop_gained")));
+        assertEquals(INTERGENIC_MASK | CUSTOM_LOF_MASK | CUSTOM_LOFE_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost")));
+        assertEquals(INTERGENIC_MASK | CUSTOM_LOF_MASK | CUSTOM_LOFE_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "stop_lost,stop_gained")));
 
 //        assertEquals(INTERGENIC_MASK | LOF_EXTENDED_MASK | LOF_EXTENDED_BASIC_MASK, parseAnnotationMask(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_lost,stop_gained")
 //                .append(ANNOT_TRANSCRIPT_FLAG.key(), "basic")));
@@ -895,15 +895,15 @@ public class SampleIndexQueryParserTest {
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_SET));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOSS_OF_FUNCTION_SET));
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, SampleIndexSchema.CUSTOM_LOFE));
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, SampleIndexSchema.CUSTOM_LOFE));
         parseAnnotationIndexQuery(query, false);
         assertFalse(query.isEmpty()); // Not all samples annotated
 
@@ -912,7 +912,7 @@ public class SampleIndexQueryParserTest {
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET).subList(2, 4)));
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, new ArrayList<>(SampleIndexSchema.CUSTOM_LOFE).subList(2, 4)));
         parseAnnotationIndexQuery(query, true);
         assertTrue(query.isEmpty());
 
@@ -922,11 +922,57 @@ public class SampleIndexQueryParserTest {
         assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(query.isEmpty()); // Index not complete
 
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.MATURE_MIRNA_VARIANT));
+//        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantAnnotationConstants.MATURE_MIRNA_VARIANT));
+//        indexQuery = parseAnnotationIndexQuery(query, true);
+//        assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
+//        assertFalse(query.isEmpty()); // Imprecise CT value
+    }
+
+    @Test
+    public void testCoveredQuery_ct_tf() {
+        Query query;
+        SampleAnnotationIndexQuery indexQuery;
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), VariantAnnotationConstants.MISSENSE_VARIANT).append(ANNOT_TRANSCRIPT_FLAG.key(), "basic");
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
-        assertFalse(query.isEmpty()); // Imprecise CT value
+        assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
+        assertFalse(indexQuery.getCtBtTfFilter().isNoOp());
+        assertTrue(query.isEmpty());
+    }
 
+    @Test
+    public void testCoveredQuery_bt_tf() {
+        Query query;
+        SampleAnnotationIndexQuery indexQuery;
+        query = new Query().append(ANNOT_BIOTYPE.key(), PROTEIN_CODING).append(ANNOT_TRANSCRIPT_FLAG.key(), "canonical");
+        indexQuery = parseAnnotationIndexQuery(query, true);
+        assertTrue(indexQuery.getConsequenceTypeFilter().isNoOp());
+        assertFalse(indexQuery.getBiotypeFilter().isNoOp());
+        assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
+        assertFalse(indexQuery.getCtBtTfFilter().isNoOp());
+        assertTrue(query.isEmpty());
+    }
+
+    @Test
+    public void testCoveredQuery_tf() {
+        Query query;
+        SampleAnnotationIndexQuery indexQuery;
+        query = new Query().append(ANNOT_TRANSCRIPT_FLAG.key(), "basic");
+        indexQuery = parseAnnotationIndexQuery(query, true);
+        assertTrue(indexQuery.getConsequenceTypeFilter().isNoOp());
+        assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
+        assertTrue(indexQuery.getTranscriptFlagFilter().isExactFilter());
+        assertTrue(indexQuery.getCtBtTfFilter().isNoOp());
+        assertTrue(query.isEmpty());
+
+        // Imprecise query
+        query = new Query().append(ANNOT_TRANSCRIPT_FLAG.key(), "seleno");
+        indexQuery = parseAnnotationIndexQuery(query, true);
+        assertTrue(indexQuery.getConsequenceTypeFilter().isNoOp());
+        assertFalse(indexQuery.getTranscriptFlagFilter().isNoOp());
+        assertFalse(indexQuery.getTranscriptFlagFilter().isExactFilter());
+        assertTrue(indexQuery.getCtBtTfFilter().isNoOp());
+        assertFalse(query.isEmpty());
     }
 
 
@@ -1062,27 +1108,27 @@ public class SampleIndexQueryParserTest {
         SampleAnnotationIndexQuery indexQuery;
 
         //  LoFE + gene -> Use LOFE mask. Do not clear query, as it's using genes
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, SampleIndexSchema.CUSTOM_LOFE))
                 .append(GENE.key(), "BRCA2");
         indexQuery = parseAnnotationIndexQuery(query, true);
-        assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndex() & LOFE_PROTEIN_CODING_MASK);
+        assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndex() & CUSTOM_LOFE_PROTEIN_CODING_MASK);
         assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
         assertTrue(VariantQueryUtils.isValidParam(query, GENE));
 
         // LoFE + protein_coding -> Use summary mask. Fully covered (clear query)
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, SampleIndexSchema.CUSTOM_LOFE))
                 .append(ANNOT_BIOTYPE.key(), "protein_coding");
         indexQuery = parseAnnotationIndexQuery(query, true);
-        assertEquals(LOFE_PROTEIN_CODING_MASK, indexQuery.getAnnotationIndex() & LOFE_PROTEIN_CODING_MASK);
+        assertEquals(CUSTOM_LOFE_PROTEIN_CODING_MASK, indexQuery.getAnnotationIndex() & CUSTOM_LOFE_PROTEIN_CODING_MASK);
         assertFalse(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
         assertFalse(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
 
         //  LoFE + protein_coding + gene -> Use summary mask. Do not clear query, as it's using genes
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, SampleIndexSchema.CUSTOM_LOFE))
                 .append(ANNOT_BIOTYPE.key(), "protein_coding")
                 .append(GENE.key(), "BRCA2");
         indexQuery = parseAnnotationIndexQuery(query, true);
-        assertEquals(LOFE_PROTEIN_CODING_MASK, indexQuery.getAnnotationIndex() & LOFE_PROTEIN_CODING_MASK);
+        assertEquals(CUSTOM_LOFE_PROTEIN_CODING_MASK, indexQuery.getAnnotationIndex() & CUSTOM_LOFE_PROTEIN_CODING_MASK);
         assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
         assertTrue(VariantQueryUtils.isValidParam(query, ANNOT_BIOTYPE));
         assertTrue(VariantQueryUtils.isValidParam(query, GENE));
@@ -1090,10 +1136,10 @@ public class SampleIndexQueryParserTest {
         // LoFE subset + protein_coding -> Use summary mask.
         // Not fully covered by Summary, still has to use both CT and BT indices
         // The combination is covered, so the params should be removed from the query
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, new ArrayList<>(VariantQueryUtils.LOF_EXTENDED_SET).subList(0, 5)))
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, new ArrayList<>(SampleIndexSchema.CUSTOM_LOFE).subList(0, 5)))
                 .append(ANNOT_BIOTYPE.key(), "protein_coding");
         indexQuery = parseAnnotationIndexQuery(query, true);
-        assertEquals(LOFE_PROTEIN_CODING_MASK, indexQuery.getAnnotationIndex() & LOFE_PROTEIN_CODING_MASK);
+        assertEquals(CUSTOM_LOFE_PROTEIN_CODING_MASK, indexQuery.getAnnotationIndex() & CUSTOM_LOFE_PROTEIN_CODING_MASK);
         assertFalse(indexQuery.getBiotypeFilter().isNoOp());
         assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
@@ -1102,10 +1148,10 @@ public class SampleIndexQueryParserTest {
         // LoFE + protein_coding + others -> Can not use summary mask
         // Not fully covered by Summary, still has to use both CT and BT indices
         // The combination is covered, so the params should be removed from the query
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, SampleIndexSchema.CUSTOM_LOFE))
                 .append(ANNOT_BIOTYPE.key(), "protein_coding,miRNA");
         indexQuery = parseAnnotationIndexQuery(query, true);
-        assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndex() & LOFE_PROTEIN_CODING_MASK);
+        assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndex() & CUSTOM_LOFE_PROTEIN_CODING_MASK);
         assertFalse(indexQuery.getBiotypeFilter().isNoOp());
         assertFalse(indexQuery.getConsequenceTypeFilter().isNoOp());
         assertFalse(VariantQueryUtils.isValidParam(query, ANNOT_CONSEQUENCE_TYPE));
@@ -1131,7 +1177,7 @@ public class SampleIndexQueryParserTest {
         // The combination is covered
         // The params can not be removed from the query, as the BT is filter is only an approximation.
         // CT has to remain to check the combination.
-        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, VariantQueryUtils.LOF_EXTENDED_SET))
+        query = new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), String.join(OR, SampleIndexSchema.CUSTOM_LOFE))
                 .append(ANNOT_BIOTYPE.key(), ANTISENSE + "," + PROTEIN_CODING);
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertFalse(indexQuery.getBiotypeFilter().isNoOp());

@@ -1102,6 +1102,7 @@ public class VariantSqlQueryParser {
 
                 Pair<Integer, Integer> fileIdPair = metadataManager
                         .getFileIdPair(fileDataValues.getKey(), false, defaultStudyMetadata);
+                Column fileColumn = getFileColumn(fileIdPair.getKey(), fileIdPair.getValue());
 
                 boolean firstSubElement = true;
                 for (KeyOpValue<String, String> keyOpValue : fileDataValues.getValues()) {
@@ -1133,33 +1134,41 @@ public class VariantSqlQueryParser {
                             VariantFileHeaderComplexLine infoLine = defaultStudyMetadata.getVariantHeaderLines("INFO").get(fileDataKey);
                             toNumber = infoLine.getType().equals("Float") || infoLine.getType().equals("Integer");
                         }
+
                         // Arrays in SQL are 1-based.
                         arrayIdx++;
-
                         if (toNumber) {
                             sb.append("TO_NUMBER(");
-                        }
-                        sb.append('"');
-                        buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
-                        sb.append('"');
-
-                        sb.append('[').append(arrayIdx).append(']');
-
-                        if (toNumber) {
+                            sb.append('"');
+                            sb.append(fileColumn.column());
+                            sb.append('"');
+                            sb.append('[').append(arrayIdx).append(']');
                             sb.append(')');
+
                             double parsedValue = parseDouble(filterValue, FILE_DATA, keyOpValue.toQuery());
                             sb.append(parseNumericOperator(op)).append(' ').append(parsedValue);
 
                             if (op.startsWith(">>") || op.startsWith("<<")) {
                                 sb.append(" OR \"");
-                                buildFileColumnKey(fileIdPair.getKey(), fileIdPair.getValue(), sb);
+                                sb.append(fileColumn.column());
                                 sb.append('"');
-
                                 sb.append('[').append(arrayIdx).append("] IS NULL");
                             }
                         } else {
-                            checkStringValue(filterValue);
-                            sb.append(parseOperator(op)).append(" '").append(filterValue).append('\'');
+                            Values<String> values = splitValues(keyOpValue.getValue());
+                            List<String> subFilters = new ArrayList<>(values.size());
+                            for (String value : values) {
+                                subFilters.add(buildFilter(fileColumn, op, value, "", null, arrayIdx, FILE_DATA, null));
+                            }
+                            if (subFilters.size() == 1) {
+                                sb.append(subFilters.get(0));
+                            } else {
+                                appendFilters(sb, subFilters, values.getOperation());
+                            }
+                            sb.append(" AND \"");
+                            sb.append(fileColumn.column());
+                            sb.append('"');
+                            sb.append('[').append(arrayIdx).append("] IS NOT NULL");
                         }
                     }
                     sb.append(" ) ");

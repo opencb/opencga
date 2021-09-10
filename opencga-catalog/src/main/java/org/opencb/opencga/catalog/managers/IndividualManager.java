@@ -222,7 +222,10 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setQualityControl(ParamUtils.defaultObject(individual.getQualityControl(), IndividualQualityControl::new));
 
         individual.setInternal(IndividualInternal.init());
-        individual.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(individual.getCreationDate()));
+        individual.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(individual.getCreationDate(),
+                IndividualDBAdaptor.QueryParams.CREATION_DATE.key()));
+        individual.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(individual.getModificationDate(),
+                IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         individual.setModificationDate(TimeUtils.getTime());
         individual.setRelease(studyManager.getCurrentRelease(study));
         individual.setVersion(1);
@@ -1290,7 +1293,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.CREATION_DATE.key()))) {
-            ParamUtils.checkCreationDateFormat(parameters.getString(IndividualDBAdaptor.QueryParams.CREATION_DATE.key()));
+            ParamUtils.checkDateFormat(parameters.getString(IndividualDBAdaptor.QueryParams.CREATION_DATE.key()),
+                    IndividualDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key()))) {
+            ParamUtils.checkDateFormat(parameters.getString(IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
+                    IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key());
         }
 
         if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {

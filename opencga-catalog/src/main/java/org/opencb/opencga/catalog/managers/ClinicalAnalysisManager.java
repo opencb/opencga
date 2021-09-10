@@ -510,8 +510,10 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 obtainFiles(study, clinicalAnalysis, userId);
             }
 
-            clinicalAnalysis.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(clinicalAnalysis.getCreationDate()));
-            clinicalAnalysis.setModificationDate(TimeUtils.getTime());
+            clinicalAnalysis.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(clinicalAnalysis.getCreationDate(),
+                    ClinicalAnalysisDBAdaptor.QueryParams.CREATION_DATE.key()));
+            clinicalAnalysis.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(clinicalAnalysis.getModificationDate(),
+                    ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
             clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
             clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
@@ -1158,7 +1160,11 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
 
         if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
-            ParamUtils.checkCreationDateFormat(clinicalAnalysis.getCreationDate());
+            ParamUtils.checkDateFormat(clinicalAnalysis.getCreationDate(), ClinicalAnalysisDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (StringUtils.isNotEmpty(clinicalAnalysis.getModificationDate())) {
+            ParamUtils.checkDateFormat(clinicalAnalysis.getModificationDate(),
+                    ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE.key());
         }
 
         ObjectMap parameters;

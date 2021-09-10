@@ -38,7 +38,7 @@ public class NewClinicalSignificanceFields extends StorageMigrationTool {
             if (job != null) {
                 int patch = Integer.parseInt(job.getParams().get("patch").toString());
                 String status = job.getInternal().getStatus().getName();
-                if (status.equals(Enums.ExecutionStatus.READY)) {
+                if (status.equals(Enums.ExecutionStatus.DONE)) {
                     if (patch == getAnnotation().patch()) {
                         // Skip this project. Already migrated
                         logger.info("Project {} already migrated", project);
@@ -46,10 +46,10 @@ public class NewClinicalSignificanceFields extends StorageMigrationTool {
                     } else {
                         logger.info("Rerun job, as the patch has changed.");
                     }
-                } else if (status.equals(Enums.ExecutionStatus.ERROR)) {
+                } else if (status.equals(Enums.ExecutionStatus.ERROR) || status.equals(Enums.ExecutionStatus.ABORTED)) {
                     logger.info("Retry migration job for project {}", project);
                 } else {
-                    logger.info("Job {} for migrating project {} in status {}. Wait for completition", job.getId(), project, status);
+                    logger.info("Job {} for migrating project {} in status {}. Wait for completion", job.getId(), project, status);
                     continue;
                 }
                 getMigrationRun().removeJob(job);
