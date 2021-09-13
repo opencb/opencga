@@ -14,7 +14,6 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLockManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -173,16 +172,8 @@ public class VariantPhoenixSchemaManager {
             columns.add(getFileColumn(studyId, fileId));
         }
         for (Integer sampleId : newSamples) {
-            columns.add(getSampleColumn(studyId, sampleId));
-        }
-        for (Integer sampleId : newSamples) {
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
-            if (VariantStorageEngine.SplitData.MULTI.equals(sampleMetadata.getSplitData())) {
-                // If multi file load, register all secondary sample columns
-                for (Integer fileId : sampleMetadata.getFiles().subList(1, sampleMetadata.getFiles().size())) {
-                    columns.add(getSampleColumn(studyId, sampleId, fileId));
-                }
-            }
+            columns.addAll(getSampleColumns(sampleMetadata));
         }
         return columns;
     }

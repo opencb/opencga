@@ -862,7 +862,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         runDefaultETL(getResourceUri("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
                 variantStorageEngine, studyMetadata2, options);
 
-        variantStorageEngine.removeFile(studyMetadata1.getName(), 2);
+        variantStorageEngine.removeFile(studyMetadata1.getName(), "501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
 
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
             assertFalse(variant.getStudies().isEmpty());

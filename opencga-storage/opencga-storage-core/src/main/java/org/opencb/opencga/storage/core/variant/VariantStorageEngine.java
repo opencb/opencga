@@ -760,11 +760,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * Removes a file from the Variant Storage.
      *
      * @param study  StudyName or StudyId
-     * @param fileId FileId
+     * @param file   FileName
      * @throws StorageEngineException If the file can not be removed or there was some problem deleting it.
      */
-    public void removeFile(String study, int fileId) throws StorageEngineException {
-        removeFiles(study, Collections.singletonList(String.valueOf(fileId)));
+    public void removeFile(String study, String file) throws StorageEngineException {
+        removeFiles(study, Collections.singletonList(file));
     }
 
     /**
@@ -1006,6 +1006,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
+        query = VariantQueryUtils.copy(query);
+        options = VariantQueryUtils.copy(options);
         query = preProcessQuery(query, options);
         return getVariantQueryExecutor(query, options).iterator(query, options);
     }
