@@ -146,6 +146,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             FAMILY_PROBAND,
             FAMILY_SEGREGATION,
             PANEL,
+            PANEL_MODE_OF_INHERITANCE,
+            PANEL_CONFIDENCE,
+            PANEL_ROLE_IN_CANCER,
             SAVED_FILTER
             );
 
