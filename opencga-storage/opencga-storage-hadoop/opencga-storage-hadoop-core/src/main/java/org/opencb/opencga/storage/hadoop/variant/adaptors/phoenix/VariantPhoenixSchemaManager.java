@@ -1,9 +1,9 @@
 package org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.NamespaceExistException;
+import org.apache.hadoop.util.StopWatch;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.util.SchemaUtil;
@@ -224,17 +224,18 @@ public class VariantPhoenixSchemaManager {
                 pendingColumns = updatePendingColumns(columns);
             }
 
+            stopWatch.stop();
             String msg;
             if (pendingColumns.isEmpty()) {
-                msg = "Columns already in phoenix. Nothing to do! Had to wait " + TimeUtils.durationToString(stopWatch);
+                msg = "Columns already in phoenix. Nothing to do! Had to wait " + TimeUtils.durationToString(stopWatch.now());
             } else {
                 phoenixHelper
                         .addMissingColumns(con, variantsTableName, pendingColumns, DEFAULT_TABLE_TYPE, Collections.emptySet());
                 // Final update to remove new added columns
                 removeAddedColumnsFromPending(pendingColumns);
-                msg = "Added new columns to Phoenix in " + TimeUtils.durationToString(stopWatch);
+                msg = "Added new columns to Phoenix in " + TimeUtils.durationToString(stopWatch.now());
             }
-            if (stopWatch.getTime(TimeUnit.SECONDS) < 10) {
+            if (stopWatch.now(TimeUnit.SECONDS) < 10) {
                 logger.info(msg);
             } else {
                 logger.warn("Slow phoenix response");
