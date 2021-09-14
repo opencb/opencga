@@ -32,10 +32,7 @@ import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
@@ -52,7 +49,7 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
 
     public ExecutionMongoDBAdaptor(MongoDBCollection executionCollection, MongoDBCollection deletedExecutionCollection,
                                    Configuration configuration, MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(configuration, LoggerFactory.getLogger(JobMongoDBAdaptor.class));
+        super(configuration, LoggerFactory.getLogger(ExecutionMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.executionCollection = executionCollection;
         this.deletedExecutionCollection = deletedExecutionCollection;
@@ -209,7 +206,7 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
     public OpenCGAResult<Long> count(Query query, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, QueryOptions.empty(), user);
-        logger.debug("Execution count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Execution count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(executionCollection.count(bson));
     }
 
@@ -296,7 +293,12 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
     @Override
     public void forEach(Query query, Consumer<? super Object> action, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-
+        Objects.requireNonNull(action);
+        try (DBIterator<Execution> catalogDBIterator = iterator(query, options)) {
+            while (catalogDBIterator.hasNext()) {
+                action.accept(catalogDBIterator.next());
+            }
+        }
     }
 
     @Override

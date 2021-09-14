@@ -34,6 +34,7 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.Pipeline;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -225,6 +226,60 @@ public class StudyWSServer extends OpenCGAWSServer {
 
             return createOkResponse(catalogManager.getStudyManager().updateGroup(studyStr, groupId, action, updateParams, token));
 
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{study}/pipelines")
+    @ApiOperation(value = "Return the pipelines available for the study.", response = Pipeline.class)
+    public Response getPipelines(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Pipeline id. If provided, it will only fetch the requested pipeline.") @QueryParam("pipelineId") String pipelineId) {
+        try {
+//            return createOkResponse(catalogManager.getStudyManager().getCustomGroups(studyStr, pipelineId, token));
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/pipelines/update")
+    @ApiOperation(value = "Add or remove a pipeline", response = Pipeline.class)
+    public Response addRemovePipeline(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
+                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @ApiParam(value = "JSON containing the parameters", required = true) Pipeline pipeline) {
+        try {
+            if (action == null) {
+                action = ParamUtils.AddRemoveAction.ADD;
+            }
+            OpenCGAResult<Pipeline> pipelineResult = null;
+//            if (action == ParamUtils.AddRemoveAction.ADD) {
+//                pipelineResult = catalogManager.getStudyManager().createPipeline(studyStr, pipeline, token);
+//            } else {
+//                pipelineResult = catalogManager.getStudyManager().deletePipeline(studyStr, pipeline.getId(), token);
+//            }
+            return createOkResponse(pipelineResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/pipelines/{pipeline}/update")
+    @ApiOperation(value = "Update a specific pipeline", response = Pipeline.class)
+    public Response updatePipeline(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Pipeline id") @PathParam("pipeline") String pipelineId,
+            @ApiParam(value = "JSON containing the parameters", required = true) Pipeline pipeline) {
+        try {
+            OpenCGAResult<Pipeline> pipelineResult = null;
+//                pipelineResult = catalogManager.getStudyManager().createPipeline(studyStr, pipeline, token);
+            return createOkResponse(pipelineResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

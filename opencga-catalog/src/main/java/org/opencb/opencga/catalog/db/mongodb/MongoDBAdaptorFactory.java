@@ -47,6 +47,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             USER_COLLECTION,
             STUDY_COLLECTION,
             FILE_COLLECTION,
+            EXECUTION_COLLECTION,
             JOB_COLLECTION,
             SAMPLE_COLLECTION,
             INDIVIDUAL_COLLECTION,
@@ -55,10 +56,12 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             FAMILY_COLLECTION,
             CLINICAL_ANALYSIS_COLLECTION,
             INTERPRETATION_COLLECTION,
+            PIPELINE_COLLECTION,
 
             DELETED_USER_COLLECTION,
             DELETED_STUDY_COLLECTION,
             DELETED_FILE_COLLECTION,
+            DELETED_EXECUTION_COLLECTION,
             DELETED_JOB_COLLECTION,
             DELETED_SAMPLE_COLLECTION,
             DELETED_INDIVIDUAL_COLLECTION,
@@ -67,6 +70,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             DELETED_FAMILY_COLLECTION,
             DELETED_CLINICAL_ANALYSIS_COLLECTION,
             DELETED_INTERPRETATION_COLLECTION,
+            DELETED_PIPELINE_COLLECTION,
 
             MIGRATION_COLLECTION,
             METADATA_COLLECTION,
@@ -85,6 +89,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String PANEL_COLLECTION = "panel";
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String INTERPRETATION_COLLECTION = "interpretation";
+    public static final String PIPELINE_COLLECTION = "study_pipeline";
 
     public static final String DELETED_USER_COLLECTION = "deleted_user";
     public static final String DELETED_STUDY_COLLECTION = "deleted_study";
@@ -98,6 +103,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String DELETED_PANEL_COLLECTION = "deleted_panel";
     public static final String DELETED_CLINICAL_ANALYSIS_COLLECTION = "deleted_clinical";
     public static final String DELETED_INTERPRETATION_COLLECTION = "deleted_interpretation";
+    public static final String DELETED_PIPELINE_COLLECTION = "deleted_study_pipeline";
 
     public static final String METADATA_COLLECTION = "metadata";
     public static final String MIGRATION_COLLECTION = "migration";
@@ -322,6 +328,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         MongoDBCollection individualCollection = mongoDataStore.getCollection(INDIVIDUAL_COLLECTION);
         MongoDBCollection executionCollection = mongoDataStore.getCollection(EXECUTION_COLLECTION);
         MongoDBCollection jobCollection = mongoDataStore.getCollection(JOB_COLLECTION);
+        MongoDBCollection pipelineCollection = mongoDataStore.getCollection(PIPELINE_COLLECTION);
         MongoDBCollection cohortCollection = mongoDataStore.getCollection(COHORT_COLLECTION);
         MongoDBCollection panelCollection = mongoDataStore.getCollection(PANEL_COLLECTION);
         MongoDBCollection familyCollection = mongoDataStore.getCollection(FAMILY_COLLECTION);
@@ -335,6 +342,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         MongoDBCollection deletedIndividualCollection = mongoDataStore.getCollection(DELETED_INDIVIDUAL_COLLECTION);
         MongoDBCollection deletedExecutionCollection = mongoDataStore.getCollection(DELETED_EXECUTION_COLLECTION);
         MongoDBCollection deletedJobCollection = mongoDataStore.getCollection(DELETED_JOB_COLLECTION);
+        MongoDBCollection deletedPipelineCollection = mongoDataStore.getCollection(DELETED_PIPELINE_COLLECTION);
         MongoDBCollection deletedCohortCollection = mongoDataStore.getCollection(DELETED_COHORT_COLLECTION);
         MongoDBCollection deletedPanelCollection = mongoDataStore.getCollection(DELETED_PANEL_COLLECTION);
         MongoDBCollection deletedFamilyCollection = mongoDataStore.getCollection(DELETED_FAMILY_COLLECTION);
@@ -354,6 +362,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(INDIVIDUAL_COLLECTION, individualCollection);
         collections.put(EXECUTION_COLLECTION, executionCollection);
         collections.put(JOB_COLLECTION, jobCollection);
+        collections.put(PIPELINE_COLLECTION, pipelineCollection);
         collections.put(COHORT_COLLECTION, cohortCollection);
         collections.put(PANEL_COLLECTION, panelCollection);
         collections.put(FAMILY_COLLECTION, familyCollection);
@@ -367,6 +376,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(DELETED_INDIVIDUAL_COLLECTION, deletedIndividualCollection);
         collections.put(DELETED_EXECUTION_COLLECTION, deletedExecutionCollection);
         collections.put(DELETED_JOB_COLLECTION, deletedJobCollection);
+        collections.put(DELETED_PIPELINE_COLLECTION, deletedPipelineCollection);
         collections.put(DELETED_COHORT_COLLECTION, deletedCohortCollection);
         collections.put(DELETED_PANEL_COLLECTION, deletedPanelCollection);
         collections.put(DELETED_FAMILY_COLLECTION, deletedFamilyCollection);

@@ -3,30 +3,38 @@ package org.opencb.opencga.core.models.job;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.models.PrivateStudyUid;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-public class Pipeline {
+public class Pipeline extends PrivateStudyUid {
 
     private String id;
+    private String uuid;
     private String description;
 
     private boolean disabled;
+    private int version;
+
+    private String creationDate;
+    private String modificationDate;
 
     private Options options;
-    private List<Job> jobs;
+    private List<JobDefinition> jobs;
 
     private static final String DEFAULT_PIPELINE_FORMAT = "yaml";
 
     public Pipeline() {
     }
 
-    public Pipeline(String id, String description, boolean disabled, Options options, List<Job> jobs) {
+    public Pipeline(String id, String uuid, String description, boolean disabled, int version, Options options, List<JobDefinition> jobs) {
         this.id = id;
+        this.uuid = uuid;
         this.description = description;
         this.disabled = disabled;
+        this.version = version;
         this.options = options;
         this.jobs = jobs;
     }
@@ -58,16 +66,26 @@ public class Pipeline {
             throw new IOException("Pipeline file could not be parsed: " + e.getMessage(), e);
         }
 
+        if (pipeline.getStudyUid() > 0) {
+            throw new IllegalStateException("'studyUid' should be undefined");
+        }
+        if (pipeline.getUid() > 0) {
+            throw new IllegalStateException("'uid' should be undefined");
+        }
+
         return pipeline;
     }
-
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Pipeline{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", disabled=").append(disabled);
+        sb.append(", version=").append(version);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", options=").append(options);
         sb.append(", jobs=").append(jobs);
         sb.append('}');
@@ -80,6 +98,16 @@ public class Pipeline {
 
     public Pipeline setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    @Override
+    public String getUuid() {
+        return uuid;
+    }
+
+    public Pipeline setUuid(String uuid) {
+        this.uuid = uuid;
         return this;
     }
 
@@ -101,6 +129,15 @@ public class Pipeline {
         return this;
     }
 
+    public int getVersion() {
+        return version;
+    }
+
+    public Pipeline setVersion(int version) {
+        this.version = version;
+        return this;
+    }
+
     public Options getOptions() {
         return options;
     }
@@ -110,12 +147,30 @@ public class Pipeline {
         return this;
     }
 
-    public List<Job> getJobs() {
+    public List<JobDefinition> getJobs() {
         return jobs;
     }
 
-    public Pipeline setJobs(List<Job> jobs) {
+    public Pipeline setJobs(List<JobDefinition> jobs) {
         this.jobs = jobs;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public Pipeline setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public Pipeline setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 
@@ -164,7 +219,7 @@ public class Pipeline {
         }
     }
 
-    public static class Job {
+    public static class JobDefinition {
 
         private String id;
         private String toolId;
@@ -173,10 +228,10 @@ public class Pipeline {
         private List<String> output;
         private List<String> dependsOn;
 
-        public Job() {
+        public JobDefinition() {
         }
 
-        public Job(String id, String toolId, ObjectMap params, List<String> input, List<String> output, List<String> dependsOn) {
+        public JobDefinition(String id, String toolId, ObjectMap params, List<String> input, List<String> output, List<String> dependsOn) {
             this.id = id;
             this.toolId = toolId;
             this.params = params;
@@ -202,7 +257,7 @@ public class Pipeline {
             return id;
         }
 
-        public Job setId(String id) {
+        public JobDefinition setId(String id) {
             this.id = id;
             return this;
         }
@@ -211,7 +266,7 @@ public class Pipeline {
             return toolId;
         }
 
-        public Job setToolId(String toolId) {
+        public JobDefinition setToolId(String toolId) {
             this.toolId = toolId;
             return this;
         }
@@ -220,7 +275,7 @@ public class Pipeline {
             return params;
         }
 
-        public Job setParams(ObjectMap params) {
+        public JobDefinition setParams(ObjectMap params) {
             this.params = params;
             return this;
         }
@@ -229,7 +284,7 @@ public class Pipeline {
             return input;
         }
 
-        public Job setInput(List<String> input) {
+        public JobDefinition setInput(List<String> input) {
             this.input = input;
             return this;
         }
@@ -238,7 +293,7 @@ public class Pipeline {
             return output;
         }
 
-        public Job setOutput(List<String> output) {
+        public JobDefinition setOutput(List<String> output) {
             this.output = output;
             return this;
         }
@@ -247,7 +302,7 @@ public class Pipeline {
             return dependsOn;
         }
 
-        public Job setDependsOn(List<String> dependsOn) {
+        public JobDefinition setDependsOn(List<String> dependsOn) {
             this.dependsOn = dependsOn;
             return this;
         }
