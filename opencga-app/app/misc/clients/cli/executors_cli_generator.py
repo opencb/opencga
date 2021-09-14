@@ -3,10 +3,9 @@
 import argparse
 import os
 import re
+import sys
 # importing date class from datetime module
 from datetime import date
-
-import sys
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -421,7 +420,6 @@ class ExecutorCliGenerator(rest_client_generator.RestClientGenerator):
                 exists_body_params = True
                 object_name = self.get_object_name(param['typeClass'])
                 if "data" in param.keys():
-
                     data = param["data"]
                     for item in data:
                         if str(item['type']) in self.param_types.values():

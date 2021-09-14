@@ -2,31 +2,31 @@ package org.opencb.opencga.server.json.config;
 
 public class Shortcut {
 
-    private String command;
-    private char shortcut;
+    private String name;
+    private String shortcut;
 
     public Shortcut() {
     }
 
-    public Shortcut(String command, char shortcut) {
-        this.command = command;
+    public Shortcut(String name, String shortcut) {
+        this.name = name;
         this.shortcut = shortcut;
     }
 
-    public String getCommand() {
-        return command;
+    public String getName() {
+        return name;
     }
 
-    public Shortcut setCommand(String command) {
-        this.command = command;
+    public Shortcut setName(String name) {
+        this.name = name;
         return this;
     }
 
-    public char getShortcut() {
+    public String getShortcut() {
         return shortcut;
     }
 
-    public Shortcut setShortcut(char shortcut) {
+    public Shortcut setShortcut(String shortcut) {
         this.shortcut = shortcut;
         return this;
     }

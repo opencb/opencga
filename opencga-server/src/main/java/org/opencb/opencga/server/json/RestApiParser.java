@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.Parameter;
+import org.opencb.opencga.server.json.beans.RestApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +18,12 @@ import java.util.*;
 public class RestApiParser {
 
     private static Logger logger = LoggerFactory.getLogger(RestApiParser.class);
+
+    public static RestApi getApi(List<Class> classes) {
+        RestApi res = new RestApi();
+        res.setCategories(getCategories(classes));
+        return res;
+    }
 
     public static List<LinkedHashMap<String, Object>> getHelp(List<Class> classes) {
         List<LinkedHashMap<String, Object>> res = new ArrayList<>();

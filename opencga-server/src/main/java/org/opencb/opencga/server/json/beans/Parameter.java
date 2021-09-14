@@ -1,5 +1,6 @@
 package org.opencb.opencga.server.json.beans;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Parameter {
@@ -117,5 +118,14 @@ public class Parameter {
                 ", description='" + description + '\'' +
                 ", data=" + data +
                 "}\n";
+    }
+
+    public List<Parameter> getAvailableData() {
+        List<Parameter> res = new ArrayList<>();
+        if (data != null && data.size() > 0) {
+            for (Parameter p : data) {
+            }
+        }
+        return res;
     }
 }

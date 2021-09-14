@@ -5,6 +5,7 @@ import java.util.List;
 public class Options {
 
     private String serverUrl;
+    private String version;
     private String parserOutputDir;
     private String optionsOutputDir;
     private String executorsOutputDir;
@@ -34,6 +35,15 @@ public class Options {
 
     public Options setServerUrl(String serverUrl) {
         this.serverUrl = serverUrl;
+        return this;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public Options setVersion(String version) {
+        this.version = version;
         return this;
     }
 

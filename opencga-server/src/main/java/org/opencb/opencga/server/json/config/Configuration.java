@@ -1,5 +1,8 @@
 package org.opencb.opencga.server.json.config;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Configuration {
     private Options options;
     private ApiConfig apiConfig;
@@ -28,5 +31,15 @@ public class Configuration {
     public Configuration setOptions(Options options) {
         this.options = options;
         return this;
+    }
+
+    public void initialize() {
+        List<String> aux = new ArrayList<>();
+        for (String type : getOptions().getIgnoreTypes()) {
+            if (!type.endsWith(";")) {
+                aux.add(type + ";");
+            }
+        }
+        getOptions().getIgnoreTypes().addAll(aux);
     }
 }

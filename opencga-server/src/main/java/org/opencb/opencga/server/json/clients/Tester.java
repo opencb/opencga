@@ -1,11 +1,10 @@
-package org.opencb.opencga.server.json;
+package org.opencb.opencga.server.json.clients;
 
+import org.opencb.opencga.server.json.RestApiParser;
 import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.Parameter;
 import org.opencb.opencga.server.json.beans.RestApi;
-import org.opencb.opencga.server.json.clients.ExecutorsCliRestApiWriter;
-import org.opencb.opencga.server.json.clients.OptionsCliRestApiWriter;
 import org.opencb.opencga.server.json.config.Configuration;
 import org.opencb.opencga.server.json.config.ConfigurationManager;
 import org.opencb.opencga.server.rest.*;
@@ -17,14 +16,26 @@ import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
 import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
-public class MainClientGenerator {
+public class Tester {
 
     private static RestApi restApi;
     private static Configuration config;
+    private static ExecutorsCliRestApiWriter ex;
 
     public static void main(String[] args) {
+       init();
+
+        Category category= ex.getAvailableCategories().get("samples");
+        for (Endpoint endpoint : category.getEndpoints()) {
+            System.out.println(""+endpoint.getBodyParamsObject());
+        }
+
+    }
+    public static void init(){
         List<Class> classes = new ArrayList<>();
         classes.add(UserWSServer.class);
         classes.add(ProjectWSServer.class);
@@ -43,7 +54,7 @@ public class MainClientGenerator {
         classes.add(MetaWSServer.class);
         classes.add(Ga4ghWSServer.class);
         classes.add(AdminWSServer.class);
-        restApi = prepare(RestApiParser.getApi(classes));
+        restApi = RestApiParser.getApi(classes);
 
         try {
             config = ConfigurationManager.setUp(restApi);
@@ -51,37 +62,18 @@ public class MainClientGenerator {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        cli();
-    }
-
-    private static RestApi prepare(RestApi api) {
-        //To process endpoints the parameter for each one must have a different name
-        //Sometimes body parameter has the same name of a query parameter
-        for (Category category : api.getCategories()) {
-            for (Endpoint endpoint : category.getEndpoints()) {
-                List<String> aux = new ArrayList<>();
-                for (Parameter parameter : endpoint.getParameters()) {
-                    aux.add(parameter.getName());
-                }
-                for (Parameter parameter : endpoint.getParameters()) {
-                    if (parameter.getData() != null) {
-                        for (Parameter body_parameter : parameter.getData()) {
-                            if (aux.contains(body_parameter.getName())) {
-                                body_parameter.setName("body_" + body_parameter.getName());
-                            }
-                        }
-                    }
+        ex=new ExecutorsCliRestApiWriter(restApi, config);
+        Category category= ex.getAvailableCategories().get("samples");
+        Set<String> imports = new HashSet<>();
+        for (Endpoint endpoint : category.getEndpoints()) {
+            imports.add(endpoint.getResponseClass());
+            for (Parameter parameter : endpoint.getParameters()) {
+                if (ex.isValidImport(parameter.getTypeClass())) {
+                    imports.add(parameter.getTypeClass());
                 }
             }
         }
 
-        return api;
     }
 
-    private static void cli() {
-        OptionsCliRestApiWriter optionsCliRestApiWriter = new OptionsCliRestApiWriter(restApi, config);
-        optionsCliRestApiWriter.write();
-        ExecutorsCliRestApiWriter executorsCliRestApiWriter = new ExecutorsCliRestApiWriter(restApi, config);
-        executorsCliRestApiWriter.write();
-    }
 }

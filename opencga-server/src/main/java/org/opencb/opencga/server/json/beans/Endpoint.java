@@ -1,5 +1,8 @@
 package org.opencb.opencga.server.json.beans;
 
+import org.opencb.opencga.server.json.config.CategoryConfig;
+import org.opencb.opencga.server.json.utils.CLIUtils;
+
 import java.util.List;
 
 public class Endpoint {
@@ -86,5 +89,72 @@ public class Endpoint {
                 ", description='" + description + '\'' +
                 ", parameters=" + parameters +
                 "}\n";
+    }
+
+    public boolean hasPrimitiveBodyParams(CategoryConfig config) {
+
+        for (Parameter parameter : getParameters()) {
+            if (parameter.getData() != null && !parameter.getData().isEmpty()) {
+                for (Parameter body_param : parameter.getData()) {
+                    if (config.isAvailableSubCommand(body_param.getName()) && CLIUtils.isPrimitive(body_param.getType())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean hasQueryParams() {
+        for (Parameter parameter : getParameters()) {
+            if ("query".equals(parameter.getParam()) && !parameter.isRequired() && CLIUtils.isPrimitive(parameter.getType())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String getBodyParamsObject() {
+        for (Parameter parameter : getParameters()) {
+            if (parameter.getData() != null) {
+
+                return parameter.getTypeClass().substring(parameter.getTypeClass().lastIndexOf('.') + 1).replaceAll(";", "").trim();
+            }
+        }
+        return "";
+    }
+
+    public String getPathParams() {
+        StringBuilder sb = new StringBuilder();
+        String endpointPath = path.substring(path.lastIndexOf("/{apiVersion}/") + 1);
+        String[] saux = endpointPath.split("\\{");
+        for (String aux : saux) {
+            if (aux.contains("}") && !aux.contains("apiVersion")) {
+                sb.append("commandOptions." + aux.substring(0, aux.lastIndexOf("}")) + ", ");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    public String getMandatoryQueryParams(CategoryConfig config) {
+        StringBuilder sb = new StringBuilder();
+        for (Parameter parameter : getParameters()) {
+            if (parameter.getParam().equals("query")) {
+
+                  /*  if (body_param.getName().equals("action")) {
+                        System.out.println("action :::: config.isAvailableSubCommand(body_param.getName()) " + config
+                        .isAvailableSubCommand(body_param.getName()));
+                        System.out.println("action :::: CLIUtils.isPrimitive(body_param.getType()) " + CLIUtils.isPrimitive(body_param
+                        .getType()));
+                        System.out.println("action :::: body_param.isRequired() " + body_param.isRequired());
+                    }
+*/
+                if (config.isAvailableSubCommand(parameter.getName()) && CLIUtils.isPrimitive(parameter.getType()) && parameter.isRequired()) {
+                    sb.append("commandOptions." + CLIUtils.getAsVariableName(parameter.getName()) + ", ");
+                }
+            }
+        }
+        return sb.toString();
     }
 }

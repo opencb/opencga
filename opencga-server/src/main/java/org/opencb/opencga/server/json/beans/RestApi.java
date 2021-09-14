@@ -16,6 +16,17 @@
 
 package org.opencb.opencga.server.json.beans;
 
+import java.util.List;
+
 public class RestApi {
-    
+    private List<Category> categories;
+
+    public List<Category> getCategories() {
+        return categories;
+    }
+
+    public RestApi setCategories(List<Category> categories) {
+        this.categories = categories;
+        return this;
+    }
 }
