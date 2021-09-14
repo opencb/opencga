@@ -7,7 +7,7 @@ OpenCGA provides the most advanced and complete genomic data platform. The perfo
 ### Main Features
 
 * **Authenticated** and **secure** platform to query and visualise data. An advanced **permission** system has been implemented to ensure data privacy.
-* A **metadata database** to keep track of registered users, projects, studies, files, samples, families, jobs, ...
+* A **metadata database** to keep track of registered users, projects, studies, files, samples, families, jobs and other entities.
 * **Advanced Clinical Data** database implemented, users can define their data models for samples, patients or families.
 * **Alignment storage** allows to index BAM/CRAM, calculate index and query data and coverage
 * The most advanced, high-performance and scalable **Variant Storage Engine** solution today. Variant Storage Engine can normalise, load, index, aggregate, annotate and precompute variant stats for hundreds of thousands of whole genomes.
@@ -17,7 +17,18 @@ OpenCGA provides the most advanced and complete genomic data platform. The perfo
 * Rich and comprehensive [**RESTful Web Services API**](http://docs.opencb.org/display/opencga/RESTful+Web+Services) with more than 160 endpoints to manage, query and analyse metadata, variants, alignments and clinical data.
 * Easy **programmatic access** and **pipeline integration** thanks to the four different **client libraries** developed in **Java,** [**Python**](http://docs.opencb.org/display/opencga/Python)**,** [**R**](http://docs.opencb.org/display/opencga/R) and **Javascript**
 * Interactive **web-based application** to query, analyse and visualise variants, alignments and clinical data
-* **Zetta Genomics** start-up is being launched in 2019 to offer official support and customisation. **OpenCB Enterprise** will be launched in 2020 with many new features!  
+
+{% hint style="info" %}
+**Zetta Genomics** is a start-up  launched in 2019 to offer official support and customisation of your OpenCB applications. 
+
+Zetta offers advanced data management systems for precision medicine based on the OpenCB applications. Find more information about this consolidated and demanding initiative at [https://zettagenomics.com/](https://zettagenomics.com/)
+{% endhint %}
+
+
+
+\*\*\*\*
+
+\*\*\*\*
 
 
 

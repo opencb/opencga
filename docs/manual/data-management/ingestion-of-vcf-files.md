@@ -12,7 +12,7 @@ This page describes the typical process that an operator will follow to load the
 
 It typically takes a few minutes to load a VCF from a single exome but it can take several days \(or even weeks\) to load many thousands of whole genomes. For more information on data load times see \[Data Load Benchmarks\].
 
-The process is divided into 5 steps: 
+The process is divided into 5 steps:
 
 1. "Register" the source VCF files with OpenCGA; this creates basic File, Sample and Individual entries in Catalog. 
 2. "Index" each VCF file; this loads data into the Variant Store
@@ -30,7 +30,7 @@ This document assumes that:
 
 * The source VCF files are accessible \(e.g. via shared filesystem\) on the target OpenCGA server. 
 * The operator has access to a workstation with network access to the web services on the OpenCGA server.
-* Compatible OpenCGA client software is installed on the workstation. Find [here]() the instructions on how to install the client software.
+* Compatible OpenCGA client software is installed on the workstation. Find [here](ingestion-of-vcf-files.md) the instructions on how to install the client software.
 * The destination Study has been created on the OpenCGA server. Find [here](projects-and-studies.md) instructions for creating Projects and Studies. 
 * The operator has login credentials on the OpenCGA server with appropriate permissions; i.e. write access to the destination Study. 
 
@@ -38,7 +38,7 @@ This document assumes that:
 
 This step presents the data to OpenCGA and registers the new files into the system. Samples will be created automatically after linking the file, by reading the VCF Header. This step can be further extended with extra annotations, defining individuals, creating cohorts or even families.
 
-It is important to note that this step is a synchronous operation that does not upload the genomic data \(e.g:VCFs\)  into OpenCGA, instead, the files will only be “linked” \(registered\) with OpenCGA. Therefore, the files to link must be in a location that is accessible  by the OpenCGA server \(REST servers and the Master service\).
+It is important to note that this step is a synchronous operation that does not upload the genomic data \(e.g:VCFs\) into OpenCGA, instead, the files will only be “linked” \(registered\) with OpenCGA. Therefore, the files to link must be in a location that is accessible by the OpenCGA server \(REST servers and the Master service\).
 
 #### **Catalog Path Structure**
 
@@ -98,7 +98,7 @@ $ ./opencga.sh files link  --study <owner@project:myStudy>
 
 This operation will read the content of the file, run some simple validations to detect possible errors or data corruptions, and ingest the variants into the Hadoop system, building some high performance indexes.
 
-Each file index operation will be run by an asynchronous job, to be executed by the OpenCGA Master service. 
+Each file index operation will be run by an asynchronous job, to be executed by the OpenCGA Master service.
 
 Contrary to the Catalog File Register step, only one file should be provided as input in the Variant storage index command line. This will create separate asynchronous indexing jobs for each one of the files. This is important in order to avoid failure of the jobs.
 
@@ -109,7 +109,7 @@ $ ./opencga.sh operations variant-index --study <study>
                                  --file <catalog-logical-path>
 ```
 
-All the jobs along with their current status can be  either inspected  from IVA, or running this command line:
+All the jobs along with their current status can be either inspected from IVA, or running this command line:
 
 ```text
 $ ./opencga.sh jobs top ---study <study>
@@ -119,11 +119,11 @@ $ ./opencga.sh jobs top ---study <study>
 
 * **Samples data split by chromosome or region**
 
-By default, OpenCGA doesn’t allow you to index a VCF file if any of its samples is already indexed as part of another VCF file. This restriction is to avoid accidental data duplications. In case of having one dataset split by chromosome or region, this restriction can be bypassed by adding the param `--load-split-data <chromosome|region>` to the variant index command line. 
+By default, OpenCGA doesn’t allow you to index a VCF file if any of its samples is already indexed as part of another VCF file. This restriction is to avoid accidental data duplications. In case of having one dataset split by chromosome or region, this restriction can be bypassed by adding the param `--load-split-data <chromosome|region>` to the variant index command line.
 
 * **Multiple files for the same samples**
 
-Similarly to the previous scenario, a dataset may contain multiple files from the same set of samples that may want to be indexed together, for example, when using multiple VCF callers for the same sample. In this case, you can bypass the restriction by adding the param  `--load-multi-file-data.`
+Similarly to the previous scenario, a dataset may contain multiple files from the same set of samples that may want to be indexed together, for example, when using multiple VCF callers for the same sample. In this case, you can bypass the restriction by adding the param `--load-multi-file-data.`
 
 * **Family or Somatic callers**
 
@@ -135,9 +135,9 @@ Note: Be aware that the misuse of this parameters may lead to data corruption.
 
 ### **Variant Annotation**
 
-Once all the data is loaded, we need to run the Variant Annotation. This is a key  enrichment operation that will attach CellBase Variant Annotations with the loaded data, allowing filtering by a large number of fields.
+Once all the data is loaded, we need to run the Variant Annotation. This is a key enrichment operation that will attach CellBase Variant Annotations with the loaded data, allowing filtering by a large number of fields.
 
-Find more information at**:**  [**http://docs.opencb.org/display/cellbase/Variant+Annotation**](http://docs.opencb.org/display/cellbase/Variant+Annotation)
+Find more information at**:** [**http://docs.opencb.org/display/cellbase/Variant+Annotation**](http://docs.opencb.org/display/cellbase/Variant+Annotation)
 
 The Variant Storage Engine will run the annotation just for the new variants, being able to reuse the existing annotations to save time and disk usage. This operation is executed at the project level, so shared variants between studies won’t need to be annotated twice.
 
@@ -163,7 +163,7 @@ For updating the stats of all the cohorts, or when there are no cohorts in the s
 $ ./opencga.sh operations variant-stats-index --study <study> --cohort ALL
 ```
 
-#### **Aggregated VCFs** 
+#### **Aggregated VCFs**
 
 {% hint style="warning" %}
 **This section is under current development.**
@@ -242,7 +242,7 @@ This steps are optional operations, that can be indexed to enrich the data displ
 
 ### **Sample Variant Stats**
 
-Sample Variant Stats will contain a set of aggregated statistics values for each sample. 
+Sample Variant Stats will contain a set of aggregated statistics values for each sample.
 
 ```text
 $ ./opencga.sh variant sample-stats-run --study <STUDY> --sample all
@@ -257,7 +257,7 @@ $ ./opencga.sh variant sample-stats-run --study <STUDY>
                                         --variant-query biotype=protein_coding
 ```
 
-By default, this analysis will produce a file, and optionally, the result can be indexed in the catalog metadata store, given an ID. 
+By default, this analysis will produce a file, and optionally, the result can be indexed in the catalog metadata store, given an ID.
 
 ```text
 ./opencga.sh variant sample-stats-run --study <STUDY>
@@ -277,7 +277,7 @@ $ ./opencga.sh variant sample-stats-run --study <STUDY>
                                         --index-id ALL
 ```
 
-### **Cohort Variant Stats** 
+### **Cohort Variant Stats**
 
 {% hint style="warning" %}
 **This section is under current development.**
