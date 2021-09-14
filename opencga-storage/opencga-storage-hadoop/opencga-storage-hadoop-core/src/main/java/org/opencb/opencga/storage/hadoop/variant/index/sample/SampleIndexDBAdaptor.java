@@ -68,10 +68,6 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     private final VariantStorageMetadataManager metadataManager;
     private final byte[] family;
     private static Logger logger = LoggerFactory.getLogger(SampleIndexDBAdaptor.class);
-//    private SampleIndexQueryParser parser;
-//    private final SampleIndexSchema schema;
-    private final Map<Integer, SampleIndexSchema> schemas;
-//    private final HBaseToSampleIndexConverter converter;
 
     public SampleIndexDBAdaptor(HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator,
                                 VariantStorageMetadataManager metadataManager) {
@@ -79,7 +75,6 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         this.tableNameGenerator = tableNameGenerator;
         this.metadataManager = metadataManager;
         family = GenomeHelper.COLUMN_FAMILY_BYTES;
-        schemas = new HashMap<>();
     }
 
     public static TaskMetadata.Status getSampleIndexAnnotationStatus(SampleMetadata sampleMetadata, int latestSampleIndexVersion) {
@@ -144,6 +139,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         if (samples.isEmpty()) {
             throw new VariantQueryException("At least one sample expected to query SampleIndex!");
         }
+        SampleIndexSchema schema = getSchema(query.getStudy());
         QueryOperation operation = query.getQueryOperation();
 
         if (samples.size() == 1) {
@@ -155,7 +151,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 return VariantDBIterator.emptyIterator();
             } else {
                 logger.info("Single sample indexes iterator : " + sample);
-                SingleSampleIndexVariantDBIterator iterator = internalIterator(query.forSample(sample, gts));
+                SingleSampleIndexVariantDBIterator iterator = internalIterator(query.forSample(sample, gts), schema);
                 return applyLimitSkip(iterator, options);
             }
         }
@@ -169,7 +165,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
             if (query.isNegated(sample)) {
                 if (!gts.isEmpty()) {
-                    negatedIterators.add(internalIterator(query.forSample(sample, gts)));
+                    negatedIterators.add(internalIterator(query.forSample(sample, gts), schema));
                 }
                 // Skip if GTs to query is empty!
                 // Otherwise, it will return ALL genotypes instead of none
@@ -178,7 +174,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                     // If empty, should find none. Add empty iterator for this sample
                     iterators.add(VariantDBIterator.emptyIterator());
                 } else {
-                    iterators.add(internalIterator(query.forSample(sample, gts)));
+                    iterators.add(internalIterator(query.forSample(sample, gts), schema));
                 }
             }
         }
@@ -213,26 +209,27 @@ public class SampleIndexDBAdaptor implements VariantIterable {
      * Partially processed iterator. Internal usage only.
      *
      * @param query SingleSampleIndexQuery
+     * @param schema Sample index schema
      * @return SingleSampleIndexVariantDBIterator
      */
-    private SingleSampleIndexVariantDBIterator internalIterator(SingleSampleIndexQuery query) {
+    private SingleSampleIndexVariantDBIterator internalIterator(SingleSampleIndexQuery query, SampleIndexSchema schema) {
         String tableName = getSampleIndexTableName(toStudyId(query.getStudy()));
 
         try {
             return hBaseManager.act(tableName, table -> {
-                return new SingleSampleIndexVariantDBIterator(table, query, this);
+                return new SingleSampleIndexVariantDBIterator(table, query, schema, this);
             });
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
         }
     }
 
-    private RawSingleSampleIndexVariantDBIterator rawInternalIterator(SingleSampleIndexQuery query) {
+    private RawSingleSampleIndexVariantDBIterator rawInternalIterator(SingleSampleIndexQuery query, SampleIndexSchema schema) {
         String tableName = getSampleIndexTableName(toStudyId(query.getStudy()));
 
         try {
             return hBaseManager.act(tableName, table -> {
-                return new RawSingleSampleIndexVariantDBIterator(table, query, this);
+                return new RawSingleSampleIndexVariantDBIterator(table, query, schema, this);
             });
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);
@@ -255,14 +252,14 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     protected Map<String, List<Variant>> queryByGt(int study, int sample, String chromosome, int position)
             throws IOException {
         Result result = queryByGtInternal(study, sample, chromosome, position);
-        return newConverter(study).convertToMap(result);
+        return newConverter(getSchema(study)).convertToMap(result);
     }
 
-    protected SampleIndexEntryPutBuilder queryByGtBuilder(int study, int sample, String chromosome, int position)
+    protected SampleIndexEntryPutBuilder queryByGtBuilder(int study, int sample, String chromosome, int position, SampleIndexSchema schema)
             throws IOException {
         Result result = queryByGtInternal(study, sample, chromosome, position);
-        return new SampleIndexEntryPutBuilder(sample, chromosome, position, getSchema(study),
-                newConverter(study).convertToMapSampleVariantIndex(result));
+        return new SampleIndexEntryPutBuilder(sample, chromosome, position, schema,
+                newConverter(schema).convertToMapSampleVariantIndex(result));
     }
 
     private Result queryByGtInternal(int study, int sample, String chromosome, int position) throws IOException {
@@ -276,12 +273,10 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
     public Iterator<Map<String, List<Variant>>> iteratorByGt(int study, int sample) throws IOException {
         String tableName = getSampleIndexTableName(study);
-
+        HBaseToSampleIndexConverter converter = newConverter(getSchema(study));
         return hBaseManager.act(tableName, table -> {
-
             Scan scan = new Scan();
             scan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
-            HBaseToSampleIndexConverter converter = newConverter(study);
             try {
                 ResultScanner scanner = table.getScanner(scan);
                 Iterator<Result> resultIterator = scanner.iterator();
@@ -308,7 +303,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             } else {
                 scan.setRowPrefixFilter(SampleIndexSchema.toRowKey(sample));
             }
-            HBaseToSampleIndexConverter converter = newConverter(study);
+            HBaseToSampleIndexConverter converter = newConverter(getSchema(study));
             ResultScanner scanner = table.getScanner(scan);
             Iterator<Result> resultIterator = scanner.iterator();
             return CloseableIterator.wrap(Iterators.transform(resultIterator, converter::convert), scanner);
@@ -324,7 +319,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
      */
     public RawSingleSampleIndexVariantDBIterator rawIterator(String study, String sample) {
         Query query = new Query(VariantQueryParam.STUDY.key(), study).append(VariantQueryParam.SAMPLE.key(), sample);
-        return rawInternalIterator(parseSampleIndexQuery(query).forSample(sample));
+        return rawInternalIterator(parseSampleIndexQuery(query).forSample(sample), getSchema(study));
     }
 
     public CloseableIterator<SampleVariantIndexEntry> rawIterator(Query query) throws IOException {
@@ -337,6 +332,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         if (samples.isEmpty()) {
             throw new VariantQueryException("At least one sample expected to query SampleIndex!");
         }
+        SampleIndexSchema schema = getSchema(query.getStudy());
         QueryOperation operation = query.getQueryOperation();
 
         if (samples.size() == 1) {
@@ -348,7 +344,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 return CloseableIterator.emptyIterator();
             } else {
                 logger.info("Single sample indexes iterator");
-                return rawInternalIterator(query.forSample(sample, gts));
+                return rawInternalIterator(query.forSample(sample, gts), schema);
             }
         }
 
@@ -361,7 +357,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
             if (query.isNegated(sample)) {
                 if (!gts.isEmpty()) {
-                    negatedIterators.add(rawInternalIterator(query.forSample(sample, gts)));
+                    negatedIterators.add(rawInternalIterator(query.forSample(sample, gts), schema));
                 }
                 // Skip if GTs to query is empty!
                 // Otherwise, it will return ALL genotypes instead of none
@@ -370,7 +366,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                     // If empty, should find none. Add empty iterator for this sample
                     iterators.add(RawSingleSampleIndexVariantDBIterator.emptyIterator());
                 } else {
-                    iterators.add(rawInternalIterator(query.forSample(sample, gts)));
+                    iterators.add(rawInternalIterator(query.forSample(sample, gts), schema));
                 }
             }
         }
@@ -418,7 +414,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
         String tableName = getSampleIndexTableName(toStudyId(query.getStudy()));
 
-        HBaseToSampleIndexConverter converter = newConverter(toStudyId(query.getStudy()));
+        HBaseToSampleIndexConverter converter = newConverter(getSchema(query.getStudy()));
         try {
             return hBaseManager.act(tableName, table -> {
                 long count = 0;
@@ -477,8 +473,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         }
     }
 
-    protected HBaseToSampleIndexConverter newConverter(int studyId) {
-        return new HBaseToSampleIndexConverter(getSchema(studyId));
+    protected HBaseToSampleIndexConverter newConverter(SampleIndexSchema schema) {
+        return new HBaseToSampleIndexConverter(schema);
     }
 
     public SampleIndexSchema getSchema(String study) {
@@ -487,14 +483,8 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public SampleIndexSchema getSchema(int studyId) {
-        SampleIndexSchema sampleIndexSchema = schemas.get(studyId);
-        if (sampleIndexSchema == null) {
-            SampleIndexConfiguration configuration = getSampleIndexConfiguration(studyId)
-                    .getConfiguration();
-            sampleIndexSchema = new SampleIndexSchema(configuration);
-            schemas.put(studyId, sampleIndexSchema);
-        }
-        return sampleIndexSchema;
+        SampleIndexConfiguration configuration = getSampleIndexConfiguration(studyId).getConfiguration();
+        return new SampleIndexSchema(configuration);
     }
 
     public StudyMetadata.SampleIndexConfigurationVersioned getSampleIndexConfiguration(int studyId) {
