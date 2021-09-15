@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.json.clients;
+package org.opencb.opencga.server.json.writers.cli;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.server.json.beans.Category;
@@ -22,15 +22,16 @@ import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.Parameter;
 import org.opencb.opencga.server.json.beans.RestApi;
 import org.opencb.opencga.server.json.config.CategoryConfig;
-import org.opencb.opencga.server.json.config.Configuration;
-import org.opencb.opencga.server.json.utils.CLIUtils;
+import org.opencb.opencga.server.json.config.CommandLineConfiguration;
+import org.opencb.opencga.server.json.utils.CommandLineUtils;
+import org.opencb.opencga.server.json.writers.ParentClientRestApiWriter;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
 
-    public ExecutorsCliRestApiWriter(RestApi restApi, Configuration config) {
+    public ExecutorsCliRestApiWriter(RestApi restApi, CommandLineConfiguration config) {
         super(restApi, config);
     }
 
@@ -89,7 +90,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         if (string.endsWith(";")) {
             string = string.substring(0, string.length() - 1);
         }
-        if (CLIUtils.isPrimitive(string)) {
+        if (CommandLineUtils.isPrimitive(string)) {
             return false;
         }
         String[] excluded = new String[]{"java.lang.Object", "java.lang."};
@@ -192,7 +193,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                                 + "CommandOptions commandOptions = " + getAsVariableName(getAsCamelCase(category.getName())) +
                                 "CommandOptions."
                                 + getAsCamelCase(commandName) + "CommandOptions;\n");
-                        sb.append(getQueryParams(endpoint, config));
+                        sb.append(getQueryParams(endpoint));
                         sb.append(getBodyParams(endpoint, config));
                         sb.append(getReturn(category, endpoint, config, commandName));
                     }
@@ -231,7 +232,9 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             for (Parameter parameter : endpoint.getParameters()) {
                 if (parameter.getData() != null && !parameter.getData().isEmpty()) {
                     for (Parameter body_param : parameter.getData()) {
-                        if (config.isAvailableSubCommand(body_param.getName()) && CLIUtils.isPrimitive(body_param.getType())) {
+                        if (config.isAvailableSubCommand(body_param.getName()) && CommandLineUtils.isPrimitive(body_param.getType())) {
+                            //sometimes the name of the parameter has the prefix "body" so as not to coincide with another parameter
+                            // with the same name, but the setter does not have this prefix, so it must be removed
                             sb.append("\n            .set" + getAsClassName(body_param.getName().replaceAll("body_", "")) +
                                     "(commandOptions."
                                     + normaliceNames(getAsCamelCase(body_param.getName())) + ")");
@@ -244,11 +247,11 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         return sb.toString();
     }
 
-    private String getQueryParams(Endpoint endpoint, CategoryConfig config) {
+    private String getQueryParams(Endpoint endpoint) {
         String res = "\n        ObjectMap queryParams = new ObjectMap();\n";
         boolean enc = false;
         for (Parameter parameter : endpoint.getParameters()) {
-            if ("query".equals(parameter.getParam()) && !parameter.isRequired() && CLIUtils.isPrimitive(parameter.getType())) {
+            if ("query".equals(parameter.getParam()) && !parameter.isRequired() && CommandLineUtils.isPrimitive(parameter.getType())) {
                 enc = true;
                 if (StringUtils.isNotEmpty(parameter.getType()) && "string".equalsIgnoreCase(parameter.getType())) {
                     res += "        queryParams.putIfNotEmpty(\"" + normaliceNames(parameter.getName()) + "\", commandOptions."
@@ -271,9 +274,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         validResponse.put("Map", "ObjectMap");
         validResponse.put("Object", "ObjectMap");
         validResponse.put("", "ObjectMap");
-        if (responseClass.contains("$")) {
-            System.out.println("RESPONSECLASS ::: " + responseClass);
-        }
+
         responseClass = responseClass.replace('$', '.');
         if (validResponse.containsKey(responseClass)) {
             return validResponse.get(responseClass);
@@ -287,10 +288,6 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             name = invalidNames.get(name);
         }
         return name;
-    }
-
-    private String getShortCuts(Parameter parameter, CategoryConfig config) {
-        return "--" + getKebabCase(parameter.getName() + config.getStringShortcuts(parameter));
     }
 
     @Override

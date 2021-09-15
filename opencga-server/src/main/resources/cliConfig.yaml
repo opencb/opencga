@@ -27,18 +27,18 @@ options:
     - java.lang.Float
     - java.lang.
 apiConfig:
+  shortcuts:
+    - name: user
+      shortcut: u
+    - name: password
+      shortcut: p
+    - name: study
+      shortcut: s
   categoryConfigList:
     - name: users
       ignore: False
       key: User
       extended: True
-      shortcuts:
-        - name: user
-          shortcut: u
-        - name: password
-          shortcut: p
-        - name: study
-          shortcut: s
       commands:
         - name: update-filters
           ignore: True
@@ -47,9 +47,6 @@ apiConfig:
     - name: projects
       ignore: False
       key: Project
-      shortcuts:
-        - name: study
-          shortcut: s
     - name: studies
       ignore: False
       key: Study
@@ -64,90 +61,51 @@ apiConfig:
               ignore: True
             - name: serialVersionUID
               ignore: True
-      shortcuts:
-        - name: study
-          shortcut: s
     - name: jobs
       ignore: False
       key: Job
-      shortcuts:
-        - name: study
-          shortcut: s
     - name: samples
       ignore: False
       key: Sample
-      shortcuts:
-        - name: study
-          shortcut: s
     - name: individuals
       ignore: False
       key: Individual
-      shortcuts:
-        - name: study
-          shortcut: s
     - name: families
       ignore: False
       key: Family
     - name: cohorts
       ignore: False
       key: Cohort
-      shortcuts:
-        - name: study
-          shortcut: s
     - name: panels
       commandName: panels
       ignore: False
       key: DiseasePanel
-      shortcuts:
-        - name: study
-          shortcut: s
     - name: analysisAlignment
       commandName: alignments
       ignore: False
       key: Alignment
-      shortcuts:
-        - name: study
-          shortcut: s
       analysis: True
     - name: analysisVariant
       commandName: variant
       ignore: False
       key: Variant
-      shortcuts:
-        - name: study
-          shortcut: s
       analysis: True
     - name: analysisClinical
       commandName: clinical
       ignore: False
       key: ClinicalAnalysis
-      shortcuts:
-        - name: study
-          shortcut: s
       analysis: True
     - name: operation
       commandName: operations
       ignore: False
       key: VariantOperation
-      shortcuts:
-        - name: study
-          shortcut: s
       operations: True
     - name: meta
       ignore: False
       key: Meta
-      shortcuts:
-        - name: study
-          shortcut: s
     - name: ga4gh
       ignore: True
       key: GA4GH
-      shortcuts:
-        - name: study
-          shortcut: s
     - name: admin
       ignore: True
       key: Admin
-      shortcuts:
-        - name: study
-          shortcut: s

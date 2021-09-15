@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.json.clients;
+package org.opencb.opencga.server.json.writers;
 
 import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.RestApi;
 import org.opencb.opencga.server.json.config.CategoryConfig;
-import org.opencb.opencga.server.json.config.Configuration;
-import org.opencb.opencga.server.json.utils.CLIUtils;
+import org.opencb.opencga.server.json.config.CommandLineConfiguration;
+import org.opencb.opencga.server.json.utils.CommandLineUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -33,12 +33,12 @@ public abstract class ParentClientRestApiWriter {
 
     public Map<String, String> validTypes;
     protected RestApi restApi;
-    protected Configuration config;
+    protected CommandLineConfiguration config;
     protected Map<String, Category> availableCategories = new HashMap<>();
     protected Map<String, CategoryConfig> availableCategoryConfigs = new HashMap<>();
     protected Map<String, String> invalidNames = new HashMap<>();
 
-    public ParentClientRestApiWriter(RestApi restApi, Configuration config) {
+    public ParentClientRestApiWriter(RestApi restApi, CommandLineConfiguration config) {
         this.restApi = restApi;
         this.config = config;
         init();
@@ -60,10 +60,6 @@ public abstract class ParentClientRestApiWriter {
             sb.append(getClassMethods(key));
             sb.append("}");
 
-           /* if (key.equals("analysisClinical")) {
-                //if (key.equals("users")) {
-                System.out.println("" + sb);
-            }*/
             File file = new File(getClassFileName(key));
             try {
                 writeToFile(file, sb);
@@ -127,13 +123,13 @@ public abstract class ParentClientRestApiWriter {
         return res;
     }
 
-    private String getIdCategory(Category cat) {
+    public String getIdCategory(Category cat) {
         String res = getCleanPath(cat.getPath());
         return getAsCamelCase(res, "_");
     }
 
     public String getAsVariableName(String path) {
-        return CLIUtils.getAsVariableName(path);
+        return CommandLineUtils.getAsVariableName(path);
     }
 
     public String getAsClassName(String name) {
@@ -198,9 +194,6 @@ public abstract class ParentClientRestApiWriter {
 
     public String getAsCamelCase(String s) {
 
-        if (s.contains("permission")) {
-            System.out.println("CADENA :::: " + s);
-        }
         if (s.contains("-")) {
             s = s.replaceAll("-", "_");
         }

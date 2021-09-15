@@ -1,12 +1,13 @@
-package org.opencb.opencga.server.json.clients;
+package org.opencb.opencga.server.json.writers;
 
 import org.opencb.opencga.server.json.RestApiParser;
 import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.Parameter;
 import org.opencb.opencga.server.json.beans.RestApi;
-import org.opencb.opencga.server.json.config.Configuration;
+import org.opencb.opencga.server.json.config.CommandLineConfiguration;
 import org.opencb.opencga.server.json.config.ConfigurationManager;
+import org.opencb.opencga.server.json.writers.cli.ExecutorsCliRestApiWriter;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
@@ -23,7 +24,7 @@ import java.util.Set;
 public class Tester {
 
     private static RestApi restApi;
-    private static Configuration config;
+    private static CommandLineConfiguration config;
     private static ExecutorsCliRestApiWriter ex;
 
     public static void main(String[] args) {

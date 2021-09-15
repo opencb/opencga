@@ -4,10 +4,11 @@ import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.Parameter;
 import org.opencb.opencga.server.json.beans.RestApi;
-import org.opencb.opencga.server.json.clients.ExecutorsCliRestApiWriter;
-import org.opencb.opencga.server.json.clients.OptionsCliRestApiWriter;
-import org.opencb.opencga.server.json.config.Configuration;
+import org.opencb.opencga.server.json.config.CommandLineConfiguration;
 import org.opencb.opencga.server.json.config.ConfigurationManager;
+import org.opencb.opencga.server.json.writers.cli.ExecutorsCliRestApiWriter;
+import org.opencb.opencga.server.json.writers.cli.OptionsCliRestApiWriter;
+import org.opencb.opencga.server.json.writers.cli.ParserCliRestApiWriter;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
@@ -22,7 +23,7 @@ import java.util.List;
 public class MainClientGenerator {
 
     private static RestApi restApi;
-    private static Configuration config;
+    private static CommandLineConfiguration config;
 
     public static void main(String[] args) {
         List<Class> classes = new ArrayList<>();
@@ -54,6 +55,15 @@ public class MainClientGenerator {
         cli();
     }
 
+    private static void cli() {
+        OptionsCliRestApiWriter optionsCliRestApiWriter = new OptionsCliRestApiWriter(restApi, config);
+        optionsCliRestApiWriter.write();
+        ExecutorsCliRestApiWriter executorsCliRestApiWriter = new ExecutorsCliRestApiWriter(restApi, config);
+        executorsCliRestApiWriter.write();
+        ParserCliRestApiWriter parserCliRestApiWriter = new ParserCliRestApiWriter(restApi, config);
+        parserCliRestApiWriter.write();
+    }
+
     private static RestApi prepare(RestApi api) {
         //To process endpoints the parameter for each one must have a different name
         //Sometimes body parameter has the same name of a query parameter
@@ -76,12 +86,5 @@ public class MainClientGenerator {
         }
 
         return api;
-    }
-
-    private static void cli() {
-        OptionsCliRestApiWriter optionsCliRestApiWriter = new OptionsCliRestApiWriter(restApi, config);
-        optionsCliRestApiWriter.write();
-        ExecutorsCliRestApiWriter executorsCliRestApiWriter = new ExecutorsCliRestApiWriter(restApi, config);
-        executorsCliRestApiWriter.write();
     }
 }

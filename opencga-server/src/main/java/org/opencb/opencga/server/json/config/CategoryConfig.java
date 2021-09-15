@@ -1,7 +1,5 @@
 package org.opencb.opencga.server.json.config;
 
-import org.opencb.opencga.server.json.beans.Parameter;
-
 import java.util.List;
 
 public class CategoryConfig {
@@ -133,18 +131,6 @@ public class CategoryConfig {
             }
         }
         return true;
-    }
-
-    public String getStringShortcuts(Parameter parameter) {
-        String res = "";
-        if (getShortcuts() != null) {
-            for (Shortcut sc : getShortcuts()) {
-                if (parameter.getName().equals(sc.getName())) {
-                    res += " -" + sc.getShortcut();
-                }
-            }
-        }
-        return res;
     }
 
     public boolean isExtendedCommand(String commandName) {

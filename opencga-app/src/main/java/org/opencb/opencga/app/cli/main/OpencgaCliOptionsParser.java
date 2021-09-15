@@ -21,11 +21,10 @@ import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.app.cli.main.options.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.*;
-
-import org.opencb.opencga.app.cli.main.options.*;
 
 
 /*
@@ -57,300 +56,206 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
     private final VariantOperationCommandOptions variantOperationCommandOptions;
     private final MetaCommandOptions metaCommandOptions;
 
-    enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
-
     public OpencgaCliOptionsParser() {
 
         jCommander.setExpandAtSign(false);
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
 
-        userCommandOptions = new UserCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("users", userCommandOptions);
-        JCommander userSubCommands = jCommander.getCommands().get("users");
-        userSubCommands.addCommand("create", userCommandOptions.createCommandOptions);
-        userSubCommands.addCommand("login", userCommandOptions.loginCommandOptions);
-        userSubCommands.addCommand("password", userCommandOptions.passwordCommandOptions);
-        userSubCommands.addCommand("info", userCommandOptions.infoCommandOptions);
-        userSubCommands.addCommand("configs", userCommandOptions.configsCommandOptions);
-        userSubCommands.addCommand("update-configs", userCommandOptions.updateConfigsCommandOptions);
-        userSubCommands.addCommand("filters", userCommandOptions.filtersCommandOptions);
-        userSubCommands.addCommand("update-filters", userCommandOptions.updateFiltersCommandOptions);
-        userSubCommands.addCommand("update-filter", userCommandOptions.updateFilterCommandOptions);
-        userSubCommands.addCommand("projects", userCommandOptions.projectsCommandOptions);
-        userSubCommands.addCommand("update", userCommandOptions.updateCommandOptions);
+        analysisVariantCommandOptions = new AnalysisVariantCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("variant", analysisVariantCommandOptions);
+        JCommander analysisVariantSubCommands = jCommander.getCommands().get("variant");
+        analysisVariantSubCommands.addCommand("aggregationStats", analysisVariantCommandOptions.aggregationStatsCommandOptions);
+        analysisVariantSubCommands.addCommand("metadata-annotation", analysisVariantCommandOptions.metadataAnnotationCommandOptions);
+        analysisVariantSubCommands.addCommand("query-annotation", analysisVariantCommandOptions.queryAnnotationCommandOptions);
+        analysisVariantSubCommands.addCommand("run-circos", analysisVariantCommandOptions.runCircosCommandOptions);
+        analysisVariantSubCommands.addCommand("delete-cohort-stats", analysisVariantCommandOptions.deleteCohortStatsCommandOptions);
+        analysisVariantSubCommands.addCommand("info-cohort-stats", analysisVariantCommandOptions.infoCohortStatsCommandOptions);
+        analysisVariantSubCommands.addCommand("run-cohort-stats", analysisVariantCommandOptions.runCohortStatsCommandOptions);
+        analysisVariantSubCommands.addCommand("run-export", analysisVariantCommandOptions.runExportCommandOptions);
+        analysisVariantSubCommands.addCommand("genotypes-family", analysisVariantCommandOptions.genotypesFamilyCommandOptions);
+        analysisVariantSubCommands.addCommand("run-family-qc", analysisVariantCommandOptions.runFamilyQcCommandOptions);
+        analysisVariantSubCommands.addCommand("delete-file", analysisVariantCommandOptions.deleteFileCommandOptions);
+        analysisVariantSubCommands.addCommand("run-gatk", analysisVariantCommandOptions.runGatkCommandOptions);
+        analysisVariantSubCommands.addCommand("run-genomePlot", analysisVariantCommandOptions.runGenomePlotCommandOptions);
+        analysisVariantSubCommands.addCommand("run-gwas", analysisVariantCommandOptions.runGwasCommandOptions);
+        analysisVariantSubCommands.addCommand("run-index", analysisVariantCommandOptions.runIndexCommandOptions);
+        analysisVariantSubCommands.addCommand("run-individual-qc", analysisVariantCommandOptions.runIndividualQcCommandOptions);
+        analysisVariantSubCommands.addCommand("run-inferredSex", analysisVariantCommandOptions.runInferredSexCommandOptions);
+        analysisVariantSubCommands.addCommand("query-knockout-gene", analysisVariantCommandOptions.queryKnockoutGeneCommandOptions);
+        analysisVariantSubCommands.addCommand("query-knockout-individual",
+                analysisVariantCommandOptions.queryKnockoutIndividualCommandOptions);
+        analysisVariantSubCommands.addCommand("run-knockout", analysisVariantCommandOptions.runKnockoutCommandOptions);
+        analysisVariantSubCommands.addCommand("run-mendelianError", analysisVariantCommandOptions.runMendelianErrorCommandOptions);
+        analysisVariantSubCommands.addCommand("metadata", analysisVariantCommandOptions.metadataCommandOptions);
+        analysisVariantSubCommands.addCommand("query-mutationalSignature",
+                analysisVariantCommandOptions.queryMutationalSignatureCommandOptions);
+        analysisVariantSubCommands.addCommand("run-mutationalSignature",
+                analysisVariantCommandOptions.runMutationalSignatureCommandOptions);
+        analysisVariantSubCommands.addCommand("run-plink", analysisVariantCommandOptions.runPlinkCommandOptions);
+        analysisVariantSubCommands.addCommand("query", analysisVariantCommandOptions.queryCommandOptions);
+        analysisVariantSubCommands.addCommand("run-relatedness", analysisVariantCommandOptions.runRelatednessCommandOptions);
+        analysisVariantSubCommands.addCommand("run-rvtests", analysisVariantCommandOptions.runRvtestsCommandOptions);
+        analysisVariantSubCommands.addCommand("aggregationStats-sample",
+                analysisVariantCommandOptions.aggregationStatsSampleCommandOptions);
+        analysisVariantSubCommands.addCommand("run-sample-eligibility", analysisVariantCommandOptions.runSampleEligibilityCommandOptions);
+        analysisVariantSubCommands.addCommand("run-sample-qc", analysisVariantCommandOptions.runSampleQcCommandOptions);
+        analysisVariantSubCommands.addCommand("query-sample", analysisVariantCommandOptions.querySampleCommandOptions);
+        analysisVariantSubCommands.addCommand("run-sample", analysisVariantCommandOptions.runSampleCommandOptions);
+        analysisVariantSubCommands.addCommand("query-sample-stats", analysisVariantCommandOptions.querySampleStatsCommandOptions);
+        analysisVariantSubCommands.addCommand("run-sample-stats", analysisVariantCommandOptions.runSampleStatsCommandOptions);
+        analysisVariantSubCommands.addCommand("run-stats-export", analysisVariantCommandOptions.runStatsExportCommandOptions);
+        analysisVariantSubCommands.addCommand("run-stats", analysisVariantCommandOptions.runStatsCommandOptions);
 
-        projectCommandOptions = new ProjectCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("projects", projectCommandOptions);
-        JCommander projectSubCommands = jCommander.getCommands().get("projects");
-        projectSubCommands.addCommand("create", projectCommandOptions.createCommandOptions);
-        projectSubCommands.addCommand("search", projectCommandOptions.searchCommandOptions);
-        projectSubCommands.addCommand("aggregation-stats", projectCommandOptions.aggregationStatsCommandOptions);
-        projectSubCommands.addCommand("info", projectCommandOptions.infoCommandOptions);
-        projectSubCommands.addCommand("inc-release", projectCommandOptions.incReleaseCommandOptions);
-        projectSubCommands.addCommand("studies", projectCommandOptions.studiesCommandOptions);
-        projectSubCommands.addCommand("update", projectCommandOptions.updateCommandOptions);
+        projectsCommandOptions = new ProjectsCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("project", projectsCommandOptions);
+        JCommander projectsSubCommands = jCommander.getCommands().get("project");
+        projectsSubCommands.addCommand("create", projectsCommandOptions.createCommandOptions);
+        projectsSubCommands.addCommand("search", projectsCommandOptions.searchCommandOptions);
+        projectsSubCommands.addCommand("aggregationStats", projectsCommandOptions.aggregationStatsCommandOptions);
+        projectsSubCommands.addCommand("info", projectsCommandOptions.infoCommandOptions);
+        projectsSubCommands.addCommand("studies", projectsCommandOptions.studiesCommandOptions);
+        projectsSubCommands.addCommand("update", projectsCommandOptions.updateCommandOptions);
 
-        studyCommandOptions = new StudyCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("studies", studyCommandOptions);
-        JCommander studySubCommands = jCommander.getCommands().get("studies");
-        studySubCommands.addCommand("update-acl", studyCommandOptions.updateAclCommandOptions);
-        studySubCommands.addCommand("create", studyCommandOptions.createCommandOptions);
-        studySubCommands.addCommand("search", studyCommandOptions.searchCommandOptions);
-        studySubCommands.addCommand("acl", studyCommandOptions.aclCommandOptions);
-        studySubCommands.addCommand("aggregation-stats", studyCommandOptions.aggregationStatsCommandOptions);
-        studySubCommands.addCommand("info", studyCommandOptions.infoCommandOptions);
-        studySubCommands.addCommand("search-audit", studyCommandOptions.searchAuditCommandOptions);
-        studySubCommands.addCommand("groups", studyCommandOptions.groupsCommandOptions);
-        studySubCommands.addCommand("update-groups", studyCommandOptions.updateGroupsCommandOptions);
-        studySubCommands.addCommand("update-users", studyCommandOptions.updateUsersCommandOptions);
-        studySubCommands.addCommand("permission-rules", studyCommandOptions.permissionRulesCommandOptions);
-        studySubCommands.addCommand("update-permission-rules", studyCommandOptions.updatePermissionRulesCommandOptions);
-        studySubCommands.addCommand("run-templates", studyCommandOptions.runTemplatesCommandOptions);
-        studySubCommands.addCommand("upload-templates", studyCommandOptions.uploadTemplatesCommandOptions);
-        studySubCommands.addCommand("delete-templates", studyCommandOptions.deleteTemplatesCommandOptions);
-        studySubCommands.addCommand("update", studyCommandOptions.updateCommandOptions);
-        studySubCommands.addCommand("variable-sets", studyCommandOptions.variableSetsCommandOptions);
-        studySubCommands.addCommand("update-variable-sets", studyCommandOptions.updateVariableSetsCommandOptions);
-        studySubCommands.addCommand("update-variables", studyCommandOptions.updateVariablesCommandOptions);
+        diseasePanelsCommandOptions = new DiseasePanelsCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("diseasepanel", diseasePanelsCommandOptions);
+        JCommander diseasePanelsSubCommands = jCommander.getCommands().get("diseasepanel");
+        diseasePanelsSubCommands.addCommand("update-acl", diseasePanelsCommandOptions.updateAclCommandOptions);
+        diseasePanelsSubCommands.addCommand("create", diseasePanelsCommandOptions.createCommandOptions);
+        diseasePanelsSubCommands.addCommand("distinct", diseasePanelsCommandOptions.distinctCommandOptions);
+        diseasePanelsSubCommands.addCommand("search", diseasePanelsCommandOptions.searchCommandOptions);
+        diseasePanelsSubCommands.addCommand("acl", diseasePanelsCommandOptions.aclCommandOptions);
+        diseasePanelsSubCommands.addCommand("delete", diseasePanelsCommandOptions.deleteCommandOptions);
+        diseasePanelsSubCommands.addCommand("info", diseasePanelsCommandOptions.infoCommandOptions);
+        diseasePanelsSubCommands.addCommand("update", diseasePanelsCommandOptions.updateCommandOptions);
 
-        fileCommandOptions = new FileCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("files", fileCommandOptions);
-        JCommander fileSubCommands = jCommander.getCommands().get("files");
-        fileSubCommands.addCommand("update-acl", fileCommandOptions.updateAclCommandOptions);
-        fileSubCommands.addCommand("aggregation-stats", fileCommandOptions.aggregationStatsCommandOptions);
-        fileSubCommands.addCommand("load-annotation-sets", fileCommandOptions.loadAnnotationSetsCommandOptions);
-        fileSubCommands.addCommand("bioformats", fileCommandOptions.bioformatsCommandOptions);
-        fileSubCommands.addCommand("create", fileCommandOptions.createCommandOptions);
-        fileSubCommands.addCommand("distinct", fileCommandOptions.distinctCommandOptions);
-        fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
-        fileSubCommands.addCommand("formats", fileCommandOptions.formatsCommandOptions);
-        fileSubCommands.addCommand("link", fileCommandOptions.linkCommandOptions);
-        fileSubCommands.addCommand("run-link", fileCommandOptions.runLinkCommandOptions);
-        fileSubCommands.addCommand("run-postlink", fileCommandOptions.runPostlinkCommandOptions);
-        fileSubCommands.addCommand("search", fileCommandOptions.searchCommandOptions);
-        fileSubCommands.addCommand("acl", fileCommandOptions.aclCommandOptions);
-        fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
-        fileSubCommands.addCommand("info", fileCommandOptions.infoCommandOptions);
-        fileSubCommands.addCommand("unlink", fileCommandOptions.unlinkCommandOptions);
-        fileSubCommands.addCommand("update", fileCommandOptions.updateCommandOptions);
-        fileSubCommands.addCommand("update-annotations", fileCommandOptions.updateAnnotationsCommandOptions);
-        fileSubCommands.addCommand("download", fileCommandOptions.downloadCommandOptions);
-        fileSubCommands.addCommand("grep", fileCommandOptions.grepCommandOptions);
-        fileSubCommands.addCommand("head", fileCommandOptions.headCommandOptions);
-        fileSubCommands.addCommand("image", fileCommandOptions.imageCommandOptions);
-        fileSubCommands.addCommand("refresh", fileCommandOptions.refreshCommandOptions);
-        fileSubCommands.addCommand("tail", fileCommandOptions.tailCommandOptions);
-        fileSubCommands.addCommand("list", fileCommandOptions.listCommandOptions);
-        fileSubCommands.addCommand("tree", fileCommandOptions.treeCommandOptions);
+        analysisClinicalCommandOptions = new AnalysisClinicalCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("clinicalanalysis", analysisClinicalCommandOptions);
+        JCommander analysisClinicalSubCommands = jCommander.getCommands().get("clinicalanalysis");
+        analysisClinicalSubCommands.addCommand("update-acl", analysisClinicalCommandOptions.updateAclCommandOptions);
+        analysisClinicalSubCommands.addCommand("create", analysisClinicalCommandOptions.createCommandOptions);
+        analysisClinicalSubCommands.addCommand("distinct", analysisClinicalCommandOptions.distinctCommandOptions);
+        analysisClinicalSubCommands.addCommand("distinct-interpretation",
+                analysisClinicalCommandOptions.distinctInterpretationCommandOptions);
+        analysisClinicalSubCommands.addCommand("search-interpretation", analysisClinicalCommandOptions.searchInterpretationCommandOptions);
+        analysisClinicalSubCommands.addCommand("info-interpretation", analysisClinicalCommandOptions.infoInterpretationCommandOptions);
+        analysisClinicalSubCommands.addCommand("run-interpreter-cancerTiering",
+                analysisClinicalCommandOptions.runInterpreterCancerTieringCommandOptions);
+        analysisClinicalSubCommands.addCommand("run-interpreter-team", analysisClinicalCommandOptions.runInterpreterTeamCommandOptions);
+        analysisClinicalSubCommands.addCommand("run-interpreter-tiering",
+                analysisClinicalCommandOptions.runInterpreterTieringCommandOptions);
+        analysisClinicalSubCommands.addCommand("run-interpreter-zetta", analysisClinicalCommandOptions.runInterpreterZettaCommandOptions);
+        analysisClinicalSubCommands.addCommand("aggregationStats-rga", analysisClinicalCommandOptions.aggregationStatsRgaCommandOptions);
+        analysisClinicalSubCommands.addCommand("query-rga-gene", analysisClinicalCommandOptions.queryRgaGeneCommandOptions);
+        analysisClinicalSubCommands.addCommand("summary-rga-gene", analysisClinicalCommandOptions.summaryRgaGeneCommandOptions);
+        analysisClinicalSubCommands.addCommand("run-rga-index", analysisClinicalCommandOptions.runRgaIndexCommandOptions);
+        analysisClinicalSubCommands.addCommand("query-rga-individual", analysisClinicalCommandOptions.queryRgaIndividualCommandOptions);
+        analysisClinicalSubCommands.addCommand("summary-rga-individual", analysisClinicalCommandOptions.summaryRgaIndividualCommandOptions);
+        analysisClinicalSubCommands.addCommand("query-rga-variant", analysisClinicalCommandOptions.queryRgaVariantCommandOptions);
+        analysisClinicalSubCommands.addCommand("summary-rga-variant", analysisClinicalCommandOptions.summaryRgaVariantCommandOptions);
+        analysisClinicalSubCommands.addCommand("search", analysisClinicalCommandOptions.searchCommandOptions);
+        analysisClinicalSubCommands.addCommand("actionable-variant", analysisClinicalCommandOptions.actionableVariantCommandOptions);
+        analysisClinicalSubCommands.addCommand("query-variant", analysisClinicalCommandOptions.queryVariantCommandOptions);
+        analysisClinicalSubCommands.addCommand("acl", analysisClinicalCommandOptions.aclCommandOptions);
+        analysisClinicalSubCommands.addCommand("delete", analysisClinicalCommandOptions.deleteCommandOptions);
+        analysisClinicalSubCommands.addCommand("update", analysisClinicalCommandOptions.updateCommandOptions);
+        analysisClinicalSubCommands.addCommand("info", analysisClinicalCommandOptions.infoCommandOptions);
+        analysisClinicalSubCommands.addCommand("create-interpretation", analysisClinicalCommandOptions.createInterpretationCommandOptions);
+        analysisClinicalSubCommands.addCommand("delete-interpretation", analysisClinicalCommandOptions.deleteInterpretationCommandOptions);
+        analysisClinicalSubCommands.addCommand("update-interpretation", analysisClinicalCommandOptions.updateInterpretationCommandOptions);
 
-        jobCommandOptions = new JobCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("jobs", jobCommandOptions);
-        JCommander jobSubCommands = jCommander.getCommands().get("jobs");
-        jobSubCommands.addCommand("update-acl", jobCommandOptions.updateAclCommandOptions);
-        jobSubCommands.addCommand("aggregation-stats", jobCommandOptions.aggregationStatsCommandOptions);
-        jobSubCommands.addCommand("create", jobCommandOptions.createCommandOptions);
-        jobSubCommands.addCommand("distinct", jobCommandOptions.distinctCommandOptions);
-        jobSubCommands.addCommand("retry", jobCommandOptions.retryCommandOptions);
-        jobSubCommands.addCommand("search", jobCommandOptions.searchCommandOptions);
-        jobSubCommands.addCommand("top", jobCommandOptions.topCommandOptions);
-        jobSubCommands.addCommand("acl", jobCommandOptions.aclCommandOptions);
-        jobSubCommands.addCommand("delete", jobCommandOptions.deleteCommandOptions);
-        jobSubCommands.addCommand("info", jobCommandOptions.infoCommandOptions);
-        jobSubCommands.addCommand("update", jobCommandOptions.updateCommandOptions);
-        jobSubCommands.addCommand("head-log", jobCommandOptions.headLogCommandOptions);
-        jobSubCommands.addCommand("tail-log", jobCommandOptions.tailLogCommandOptions);
+        jobsCommandOptions = new JobsCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("job", jobsCommandOptions);
+        JCommander jobsSubCommands = jCommander.getCommands().get("job");
+        jobsSubCommands.addCommand("update-acl", jobsCommandOptions.updateAclCommandOptions);
+        jobsSubCommands.addCommand("aggregationStats", jobsCommandOptions.aggregationStatsCommandOptions);
+        jobsSubCommands.addCommand("create", jobsCommandOptions.createCommandOptions);
+        jobsSubCommands.addCommand("distinct", jobsCommandOptions.distinctCommandOptions);
+        jobsSubCommands.addCommand("retry", jobsCommandOptions.retryCommandOptions);
+        jobsSubCommands.addCommand("search", jobsCommandOptions.searchCommandOptions);
+        jobsSubCommands.addCommand("top", jobsCommandOptions.topCommandOptions);
+        jobsSubCommands.addCommand("acl", jobsCommandOptions.aclCommandOptions);
+        jobsSubCommands.addCommand("delete", jobsCommandOptions.deleteCommandOptions);
+        jobsSubCommands.addCommand("info", jobsCommandOptions.infoCommandOptions);
+        jobsSubCommands.addCommand("update", jobsCommandOptions.updateCommandOptions);
+        jobsSubCommands.addCommand("head-log", jobsCommandOptions.headLogCommandOptions);
+        jobsSubCommands.addCommand("tail-log", jobsCommandOptions.tailLogCommandOptions);
 
-        sampleCommandOptions = new SampleCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("samples", sampleCommandOptions);
-        JCommander sampleSubCommands = jCommander.getCommands().get("samples");
-        sampleSubCommands.addCommand("update-acl", sampleCommandOptions.updateAclCommandOptions);
-        sampleSubCommands.addCommand("aggregation-stats", sampleCommandOptions.aggregationStatsCommandOptions);
-        sampleSubCommands.addCommand("load-annotation-sets", sampleCommandOptions.loadAnnotationSetsCommandOptions);
-        sampleSubCommands.addCommand("create", sampleCommandOptions.createCommandOptions);
-        sampleSubCommands.addCommand("distinct", sampleCommandOptions.distinctCommandOptions);
-        sampleSubCommands.addCommand("load", sampleCommandOptions.loadCommandOptions);
-        sampleSubCommands.addCommand("search", sampleCommandOptions.searchCommandOptions);
-        sampleSubCommands.addCommand("acl", sampleCommandOptions.aclCommandOptions);
-        sampleSubCommands.addCommand("delete", sampleCommandOptions.deleteCommandOptions);
-        sampleSubCommands.addCommand("info", sampleCommandOptions.infoCommandOptions);
-        sampleSubCommands.addCommand("update", sampleCommandOptions.updateCommandOptions);
-        sampleSubCommands.addCommand("update-annotations", sampleCommandOptions.updateAnnotationsCommandOptions);
+        individualsCommandOptions = new IndividualsCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("individual", individualsCommandOptions);
+        JCommander individualsSubCommands = jCommander.getCommands().get("individual");
+        individualsSubCommands.addCommand("update-acl", individualsCommandOptions.updateAclCommandOptions);
+        individualsSubCommands.addCommand("aggregationStats", individualsCommandOptions.aggregationStatsCommandOptions);
+        individualsSubCommands.addCommand("load-annotationSets", individualsCommandOptions.loadAnnotationSetsCommandOptions);
+        individualsSubCommands.addCommand("create", individualsCommandOptions.createCommandOptions);
+        individualsSubCommands.addCommand("distinct", individualsCommandOptions.distinctCommandOptions);
+        individualsSubCommands.addCommand("search", individualsCommandOptions.searchCommandOptions);
+        individualsSubCommands.addCommand("acl", individualsCommandOptions.aclCommandOptions);
+        individualsSubCommands.addCommand("delete", individualsCommandOptions.deleteCommandOptions);
+        individualsSubCommands.addCommand("info", individualsCommandOptions.infoCommandOptions);
+        individualsSubCommands.addCommand("update", individualsCommandOptions.updateCommandOptions);
+        individualsSubCommands.addCommand("relatives", individualsCommandOptions.relativesCommandOptions);
 
-        individualCommandOptions = new IndividualCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("individuals", individualCommandOptions);
-        JCommander individualSubCommands = jCommander.getCommands().get("individuals");
-        individualSubCommands.addCommand("update-acl", individualCommandOptions.updateAclCommandOptions);
-        individualSubCommands.addCommand("aggregation-stats", individualCommandOptions.aggregationStatsCommandOptions);
-        individualSubCommands.addCommand("load-annotation-sets", individualCommandOptions.loadAnnotationSetsCommandOptions);
-        individualSubCommands.addCommand("create", individualCommandOptions.createCommandOptions);
-        individualSubCommands.addCommand("distinct", individualCommandOptions.distinctCommandOptions);
-        individualSubCommands.addCommand("search", individualCommandOptions.searchCommandOptions);
-        individualSubCommands.addCommand("acl", individualCommandOptions.aclCommandOptions);
-        individualSubCommands.addCommand("delete", individualCommandOptions.deleteCommandOptions);
-        individualSubCommands.addCommand("info", individualCommandOptions.infoCommandOptions);
-        individualSubCommands.addCommand("update", individualCommandOptions.updateCommandOptions);
-        individualSubCommands.addCommand("update-annotations", individualCommandOptions.updateAnnotationsCommandOptions);
-        individualSubCommands.addCommand("relatives", individualCommandOptions.relativesCommandOptions);
+        familiesCommandOptions = new FamiliesCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("family", familiesCommandOptions);
+        JCommander familiesSubCommands = jCommander.getCommands().get("family");
+        familiesSubCommands.addCommand("update-acl", familiesCommandOptions.updateAclCommandOptions);
+        familiesSubCommands.addCommand("aggregationStats", familiesCommandOptions.aggregationStatsCommandOptions);
+        familiesSubCommands.addCommand("load-annotationSets", familiesCommandOptions.loadAnnotationSetsCommandOptions);
+        familiesSubCommands.addCommand("create", familiesCommandOptions.createCommandOptions);
+        familiesSubCommands.addCommand("distinct", familiesCommandOptions.distinctCommandOptions);
+        familiesSubCommands.addCommand("search", familiesCommandOptions.searchCommandOptions);
+        familiesSubCommands.addCommand("acl", familiesCommandOptions.aclCommandOptions);
+        familiesSubCommands.addCommand("delete", familiesCommandOptions.deleteCommandOptions);
+        familiesSubCommands.addCommand("info", familiesCommandOptions.infoCommandOptions);
+        familiesSubCommands.addCommand("update", familiesCommandOptions.updateCommandOptions);
 
-        familyCommandOptions = new FamilyCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("families", familyCommandOptions);
-        JCommander familySubCommands = jCommander.getCommands().get("families");
-        familySubCommands.addCommand("update-acl", familyCommandOptions.updateAclCommandOptions);
-        familySubCommands.addCommand("aggregation-stats", familyCommandOptions.aggregationStatsCommandOptions);
-        familySubCommands.addCommand("load-annotation-sets", familyCommandOptions.loadAnnotationSetsCommandOptions);
-        familySubCommands.addCommand("create", familyCommandOptions.createCommandOptions);
-        familySubCommands.addCommand("distinct", familyCommandOptions.distinctCommandOptions);
-        familySubCommands.addCommand("search", familyCommandOptions.searchCommandOptions);
-        familySubCommands.addCommand("acl", familyCommandOptions.aclCommandOptions);
-        familySubCommands.addCommand("delete", familyCommandOptions.deleteCommandOptions);
-        familySubCommands.addCommand("info", familyCommandOptions.infoCommandOptions);
-        familySubCommands.addCommand("update", familyCommandOptions.updateCommandOptions);
-        familySubCommands.addCommand("update-annotations", familyCommandOptions.updateAnnotationsCommandOptions);
+        usersCommandOptions = new UsersCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("user", usersCommandOptions);
+        JCommander usersSubCommands = jCommander.getCommands().get("user");
+        usersSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
+        usersSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
+        usersSubCommands.addCommand("password", usersCommandOptions.passwordCommandOptions);
+        usersSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
+        usersSubCommands.addCommand("configs", usersCommandOptions.configsCommandOptions);
+        usersSubCommands.addCommand("update-configs", usersCommandOptions.updateConfigsCommandOptions);
+        usersSubCommands.addCommand("filters", usersCommandOptions.filtersCommandOptions);
+        usersSubCommands.addCommand("update-filters", usersCommandOptions.updateFiltersCommandOptions);
+        usersSubCommands.addCommand("update-filters", usersCommandOptions.updateFiltersCommandOptions);
+        usersSubCommands.addCommand("projects", usersCommandOptions.projectsCommandOptions);
+        usersSubCommands.addCommand("update", usersCommandOptions.updateCommandOptions);
 
-        cohortCommandOptions = new CohortCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("cohorts", cohortCommandOptions);
-        JCommander cohortSubCommands = jCommander.getCommands().get("cohorts");
-        cohortSubCommands.addCommand("update-acl", cohortCommandOptions.updateAclCommandOptions);
-        cohortSubCommands.addCommand("aggregation-stats", cohortCommandOptions.aggregationStatsCommandOptions);
-        cohortSubCommands.addCommand("load-annotation-sets", cohortCommandOptions.loadAnnotationSetsCommandOptions);
-        cohortSubCommands.addCommand("create", cohortCommandOptions.createCommandOptions);
-        cohortSubCommands.addCommand("distinct", cohortCommandOptions.distinctCommandOptions);
-        cohortSubCommands.addCommand("generate", cohortCommandOptions.generateCommandOptions);
-        cohortSubCommands.addCommand("search", cohortCommandOptions.searchCommandOptions);
-        cohortSubCommands.addCommand("acl", cohortCommandOptions.aclCommandOptions);
-        cohortSubCommands.addCommand("delete", cohortCommandOptions.deleteCommandOptions);
-        cohortSubCommands.addCommand("info", cohortCommandOptions.infoCommandOptions);
-        cohortSubCommands.addCommand("update", cohortCommandOptions.updateCommandOptions);
-        cohortSubCommands.addCommand("update-annotations", cohortCommandOptions.updateAnnotationsCommandOptions);
+        samplesCommandOptions = new SamplesCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("sample", samplesCommandOptions);
+        JCommander samplesSubCommands = jCommander.getCommands().get("sample");
+        samplesSubCommands.addCommand("update-acl", samplesCommandOptions.updateAclCommandOptions);
+        samplesSubCommands.addCommand("aggregationStats", samplesCommandOptions.aggregationStatsCommandOptions);
+        samplesSubCommands.addCommand("load-annotationSets", samplesCommandOptions.loadAnnotationSetsCommandOptions);
+        samplesSubCommands.addCommand("create", samplesCommandOptions.createCommandOptions);
+        samplesSubCommands.addCommand("distinct", samplesCommandOptions.distinctCommandOptions);
+        samplesSubCommands.addCommand("load", samplesCommandOptions.loadCommandOptions);
+        samplesSubCommands.addCommand("search", samplesCommandOptions.searchCommandOptions);
+        samplesSubCommands.addCommand("acl", samplesCommandOptions.aclCommandOptions);
+        samplesSubCommands.addCommand("delete", samplesCommandOptions.deleteCommandOptions);
+        samplesSubCommands.addCommand("info", samplesCommandOptions.infoCommandOptions);
+        samplesSubCommands.addCommand("update", samplesCommandOptions.updateCommandOptions);
 
-        diseasePanelCommandOptions = new DiseasePanelCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("panels", diseasePanelCommandOptions);
-        JCommander diseasePanelSubCommands = jCommander.getCommands().get("panels");
-        diseasePanelSubCommands.addCommand("update-acl", diseasePanelCommandOptions.updateAclCommandOptions);
-        diseasePanelSubCommands.addCommand("create", diseasePanelCommandOptions.createCommandOptions);
-        diseasePanelSubCommands.addCommand("distinct", diseasePanelCommandOptions.distinctCommandOptions);
-        diseasePanelSubCommands.addCommand("search", diseasePanelCommandOptions.searchCommandOptions);
-        diseasePanelSubCommands.addCommand("acl", diseasePanelCommandOptions.aclCommandOptions);
-        diseasePanelSubCommands.addCommand("delete", diseasePanelCommandOptions.deleteCommandOptions);
-        diseasePanelSubCommands.addCommand("info", diseasePanelCommandOptions.infoCommandOptions);
-        diseasePanelSubCommands.addCommand("update", diseasePanelCommandOptions.updateCommandOptions);
-
-        alignmentCommandOptions = new AlignmentCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("alignments", alignmentCommandOptions);
-        JCommander alignmentSubCommands = jCommander.getCommands().get("alignments");
-        alignmentSubCommands.addCommand("run-bwa", alignmentCommandOptions.runBwaCommandOptions);
-        alignmentSubCommands.addCommand("run-coverage-index", alignmentCommandOptions.runCoverageIndexCommandOptions);
-        alignmentSubCommands.addCommand("run-qc-gene-coverage-stats", alignmentCommandOptions.runQcGeneCoverageStatsCommandOptions);
-        alignmentSubCommands.addCommand("query-coverage", alignmentCommandOptions.queryCoverageCommandOptions);
-        alignmentSubCommands.addCommand("ratio-coverage", alignmentCommandOptions.ratioCoverageCommandOptions);
-        alignmentSubCommands.addCommand("stats-coverage", alignmentCommandOptions.statsCoverageCommandOptions);
-        alignmentSubCommands.addCommand("run-deeptools", alignmentCommandOptions.runDeeptoolsCommandOptions);
-        alignmentSubCommands.addCommand("run-fastqc", alignmentCommandOptions.runFastqcCommandOptions);
-        alignmentSubCommands.addCommand("run-index", alignmentCommandOptions.runIndexCommandOptions);
-        alignmentSubCommands.addCommand("run-picard", alignmentCommandOptions.runPicardCommandOptions);
-        alignmentSubCommands.addCommand("run-qc", alignmentCommandOptions.runQcCommandOptions);
-        alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryCommandOptions);
-        alignmentSubCommands.addCommand("run-samtools", alignmentCommandOptions.runSamtoolsCommandOptions);
-
-        variantCommandOptions = new VariantCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("variant", variantCommandOptions);
-        JCommander variantSubCommands = jCommander.getCommands().get("variant");
-        variantSubCommands.addCommand("aggregation-stats", variantCommandOptions.aggregationStatsCommandOptions);
-        variantSubCommands.addCommand("metadata-annotation", variantCommandOptions.metadataAnnotationCommandOptions);
-        variantSubCommands.addCommand("query-annotation", variantCommandOptions.queryAnnotationCommandOptions);
-        variantSubCommands.addCommand("run-circos", variantCommandOptions.runCircosCommandOptions);
-        variantSubCommands.addCommand("delete-cohort-stats", variantCommandOptions.deleteCohortStatsCommandOptions);
-        variantSubCommands.addCommand("info-cohort-stats", variantCommandOptions.infoCohortStatsCommandOptions);
-        variantSubCommands.addCommand("run-cohort-stats", variantCommandOptions.runCohortStatsCommandOptions);
-        variantSubCommands.addCommand("run-export", variantCommandOptions.runExportCommandOptions);
-        variantSubCommands.addCommand("genotypes-family", variantCommandOptions.genotypesFamilyCommandOptions);
-        variantSubCommands.addCommand("run-family-qc", variantCommandOptions.runFamilyQcCommandOptions);
-        variantSubCommands.addCommand("delete-file", variantCommandOptions.deleteFileCommandOptions);
-        variantSubCommands.addCommand("run-gatk", variantCommandOptions.runGatkCommandOptions);
-        variantSubCommands.addCommand("run-genome-plot", variantCommandOptions.runGenomePlotCommandOptions);
-        variantSubCommands.addCommand("run-gwas", variantCommandOptions.runGwasCommandOptions);
-        variantSubCommands.addCommand("run-index", variantCommandOptions.runIndexCommandOptions);
-        variantSubCommands.addCommand("run-individual-qc", variantCommandOptions.runIndividualQcCommandOptions);
-        variantSubCommands.addCommand("run-inferred-sex", variantCommandOptions.runInferredSexCommandOptions);
-        variantSubCommands.addCommand("query-knockout-gene", variantCommandOptions.queryKnockoutGeneCommandOptions);
-        variantSubCommands.addCommand("query-knockout-individual", variantCommandOptions.queryKnockoutIndividualCommandOptions);
-        variantSubCommands.addCommand("run-knockout", variantCommandOptions.runKnockoutCommandOptions);
-        variantSubCommands.addCommand("run-mendelian-error", variantCommandOptions.runMendelianErrorCommandOptions);
-        variantSubCommands.addCommand("metadata", variantCommandOptions.metadataCommandOptions);
-        variantSubCommands.addCommand("query-mutational-signature", variantCommandOptions.queryMutationalSignatureCommandOptions);
-        variantSubCommands.addCommand("run-mutational-signature", variantCommandOptions.runMutationalSignatureCommandOptions);
-        variantSubCommands.addCommand("run-plink", variantCommandOptions.runPlinkCommandOptions);
-        variantSubCommands.addCommand("query", variantCommandOptions.queryCommandOptions);
-        variantSubCommands.addCommand("run-relatedness", variantCommandOptions.runRelatednessCommandOptions);
-        variantSubCommands.addCommand("run-rvtests", variantCommandOptions.runRvtestsCommandOptions);
-        variantSubCommands.addCommand("aggregation-stats-sample", variantCommandOptions.aggregationStatsSampleCommandOptions);
-        variantSubCommands.addCommand("run-sample-eligibility", variantCommandOptions.runSampleEligibilityCommandOptions);
-        variantSubCommands.addCommand("run-sample-qc", variantCommandOptions.runSampleQcCommandOptions);
-        variantSubCommands.addCommand("query-sample", variantCommandOptions.querySampleCommandOptions);
-        variantSubCommands.addCommand("run-sample", variantCommandOptions.runSampleCommandOptions);
-        variantSubCommands.addCommand("query-sample-stats", variantCommandOptions.querySampleStatsCommandOptions);
-        variantSubCommands.addCommand("run-sample-stats", variantCommandOptions.runSampleStatsCommandOptions);
-        variantSubCommands.addCommand("run-stats-export", variantCommandOptions.runStatsExportCommandOptions);
-        variantSubCommands.addCommand("run-stats", variantCommandOptions.runStatsCommandOptions);
-
-        clinicalAnalysisCommandOptions = new ClinicalAnalysisCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("clinical", clinicalAnalysisCommandOptions);
-        JCommander clinicalAnalysisSubCommands = jCommander.getCommands().get("clinical");
-        clinicalAnalysisSubCommands.addCommand("update-acl", clinicalAnalysisCommandOptions.updateAclCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("update-clinical-configuration", clinicalAnalysisCommandOptions.updateClinicalConfigurationCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("create", clinicalAnalysisCommandOptions.createCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("distinct", clinicalAnalysisCommandOptions.distinctCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("distinct-interpretation", clinicalAnalysisCommandOptions.distinctInterpretationCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("search-interpretation", clinicalAnalysisCommandOptions.searchInterpretationCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("info-interpretation", clinicalAnalysisCommandOptions.infoInterpretationCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("run-interpreter-cancer-tiering", clinicalAnalysisCommandOptions.runInterpreterCancerTieringCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("run-interpreter-team", clinicalAnalysisCommandOptions.runInterpreterTeamCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("run-interpreter-tiering", clinicalAnalysisCommandOptions.runInterpreterTieringCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("run-interpreter-zetta", clinicalAnalysisCommandOptions.runInterpreterZettaCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("aggregation-stats-rga", clinicalAnalysisCommandOptions.aggregationStatsRgaCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("query-rga-gene", clinicalAnalysisCommandOptions.queryRgaGeneCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("summary-rga-gene", clinicalAnalysisCommandOptions.summaryRgaGeneCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("run-rga-index", clinicalAnalysisCommandOptions.runRgaIndexCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("query-rga-individual", clinicalAnalysisCommandOptions.queryRgaIndividualCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("summary-rga-individual", clinicalAnalysisCommandOptions.summaryRgaIndividualCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("query-rga-variant", clinicalAnalysisCommandOptions.queryRgaVariantCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("summary-rga-variant", clinicalAnalysisCommandOptions.summaryRgaVariantCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("search", clinicalAnalysisCommandOptions.searchCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("actionable-variant", clinicalAnalysisCommandOptions.actionableVariantCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("query-variant", clinicalAnalysisCommandOptions.queryVariantCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("acl", clinicalAnalysisCommandOptions.aclCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("delete", clinicalAnalysisCommandOptions.deleteCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("update", clinicalAnalysisCommandOptions.updateCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("info", clinicalAnalysisCommandOptions.infoCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("create-interpretation", clinicalAnalysisCommandOptions.createInterpretationCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("clear-interpretation", clinicalAnalysisCommandOptions.clearInterpretationCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("delete-interpretation", clinicalAnalysisCommandOptions.deleteInterpretationCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("merge-interpretation", clinicalAnalysisCommandOptions.mergeInterpretationCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("revert-interpretation", clinicalAnalysisCommandOptions.revertInterpretationCommandOptions);
-        clinicalAnalysisSubCommands.addCommand("update-interpretation", clinicalAnalysisCommandOptions.updateInterpretationCommandOptions);
-
-        variantOperationCommandOptions = new VariantOperationCommandOptions(commonCommandOptions, jCommander);
-        jCommander.addCommand("operations", variantOperationCommandOptions);
-        JCommander variantOperationSubCommands = jCommander.getCommands().get("operations");
-        variantOperationSubCommands.addCommand("configure-cellbase", variantOperationCommandOptions.configureCellbaseCommandOptions);
-        variantOperationSubCommands.addCommand("aggregate-variant", variantOperationCommandOptions.aggregateVariantCommandOptions);
-        variantOperationSubCommands.addCommand("delete-variant-annotation", variantOperationCommandOptions.deleteVariantAnnotationCommandOptions);
-        variantOperationSubCommands.addCommand("index-variant-annotation", variantOperationCommandOptions.indexVariantAnnotationCommandOptions);
-        variantOperationSubCommands.addCommand("save-variant-annotation", variantOperationCommandOptions.saveVariantAnnotationCommandOptions);
-        variantOperationSubCommands.addCommand("configure-variant", variantOperationCommandOptions.configureVariantCommandOptions);
-        variantOperationSubCommands.addCommand("aggregate-variant-family", variantOperationCommandOptions.aggregateVariantFamilyCommandOptions);
-        variantOperationSubCommands.addCommand("index-variant-family", variantOperationCommandOptions.indexVariantFamilyCommandOptions);
-        variantOperationSubCommands.addCommand("launcher-variant-index", variantOperationCommandOptions.launcherVariantIndexCommandOptions);
-        variantOperationSubCommands.addCommand("run-variant-julie", variantOperationCommandOptions.runVariantJulieCommandOptions);
-        variantOperationSubCommands.addCommand("repair-variant-metadata", variantOperationCommandOptions.repairVariantMetadataCommandOptions);
-        variantOperationSubCommands.addCommand("synchronize-variant-metadata", variantOperationCommandOptions.synchronizeVariantMetadataCommandOptions);
-        variantOperationSubCommands.addCommand("index-variant-sample", variantOperationCommandOptions.indexVariantSampleCommandOptions);
-        variantOperationSubCommands.addCommand("configure-sample-index", variantOperationCommandOptions.configureSampleIndexCommandOptions);
-        variantOperationSubCommands.addCommand("delete-variant-score", variantOperationCommandOptions.deleteVariantScoreCommandOptions);
-        variantOperationSubCommands.addCommand("index-variant-score", variantOperationCommandOptions.indexVariantScoreCommandOptions);
-        variantOperationSubCommands.addCommand("secondary-index-variant", variantOperationCommandOptions.secondaryIndexVariantCommandOptions);
-        variantOperationSubCommands.addCommand("delete-variant-secondary-index", variantOperationCommandOptions.deleteVariantSecondaryIndexCommandOptions);
-        variantOperationSubCommands.addCommand("index-variant-stats", variantOperationCommandOptions.indexVariantStatsCommandOptions);
+        analysisAlignmentCommandOptions = new AnalysisAlignmentCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("alignment", analysisAlignmentCommandOptions);
+        JCommander analysisAlignmentSubCommands = jCommander.getCommands().get("alignment");
+        analysisAlignmentSubCommands.addCommand("run-bwa", analysisAlignmentCommandOptions.runBwaCommandOptions);
+        analysisAlignmentSubCommands.addCommand("run-coverage-index", analysisAlignmentCommandOptions.runCoverageIndexCommandOptions);
+        analysisAlignmentSubCommands.addCommand("run-qc-geneCoverageStats",
+                analysisAlignmentCommandOptions.runQcGeneCoverageStatsCommandOptions);
+        analysisAlignmentSubCommands.addCommand("query-coverage", analysisAlignmentCommandOptions.queryCoverageCommandOptions);
+        analysisAlignmentSubCommands.addCommand("ratio-coverage", analysisAlignmentCommandOptions.ratioCoverageCommandOptions);
+        analysisAlignmentSubCommands.addCommand("stats-coverage", analysisAlignmentCommandOptions.statsCoverageCommandOptions);
+        analysisAlignmentSubCommands.addCommand("run-deeptools", analysisAlignmentCommandOptions.runDeeptoolsCommandOptions);
+        analysisAlignmentSubCommands.addCommand("run-fastqc", analysisAlignmentCommandOptions.runFastqcCommandOptions);
+        analysisAlignmentSubCommands.addCommand("run-index", analysisAlignmentCommandOptions.runIndexCommandOptions);
+        analysisAlignmentSubCommands.addCommand("run-picard", analysisAlignmentCommandOptions.runPicardCommandOptions);
+        analysisAlignmentSubCommands.addCommand("run-qc", analysisAlignmentCommandOptions.runQcCommandOptions);
+        analysisAlignmentSubCommands.addCommand("query", analysisAlignmentCommandOptions.queryCommandOptions);
+        analysisAlignmentSubCommands.addCommand("run-samtools", analysisAlignmentCommandOptions.runSamtoolsCommandOptions);
 
         metaCommandOptions = new MetaCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("meta", metaCommandOptions);
@@ -360,6 +265,108 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         metaSubCommands.addCommand("fail", metaCommandOptions.failCommandOptions);
         metaSubCommands.addCommand("ping", metaCommandOptions.pingCommandOptions);
         metaSubCommands.addCommand("status", metaCommandOptions.statusCommandOptions);
+
+        studiesCommandOptions = new StudiesCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("study", studiesCommandOptions);
+        JCommander studiesSubCommands = jCommander.getCommands().get("study");
+        studiesSubCommands.addCommand("update-acl", studiesCommandOptions.updateAclCommandOptions);
+        studiesSubCommands.addCommand("create", studiesCommandOptions.createCommandOptions);
+        studiesSubCommands.addCommand("search", studiesCommandOptions.searchCommandOptions);
+        studiesSubCommands.addCommand("acl", studiesCommandOptions.aclCommandOptions);
+        studiesSubCommands.addCommand("aggregationStats", studiesCommandOptions.aggregationStatsCommandOptions);
+        studiesSubCommands.addCommand("info", studiesCommandOptions.infoCommandOptions);
+        studiesSubCommands.addCommand("search-audit", studiesCommandOptions.searchAuditCommandOptions);
+        studiesSubCommands.addCommand("groups", studiesCommandOptions.groupsCommandOptions);
+        studiesSubCommands.addCommand("update-groups", studiesCommandOptions.updateGroupsCommandOptions);
+        studiesSubCommands.addCommand("permissionRules", studiesCommandOptions.permissionRulesCommandOptions);
+        studiesSubCommands.addCommand("update-permissionRules", studiesCommandOptions.updatePermissionRulesCommandOptions);
+        studiesSubCommands.addCommand("run-templates", studiesCommandOptions.runTemplatesCommandOptions);
+        studiesSubCommands.addCommand("update", studiesCommandOptions.updateCommandOptions);
+        studiesSubCommands.addCommand("variableSets", studiesCommandOptions.variableSetsCommandOptions);
+        studiesSubCommands.addCommand("update-variableSets", studiesCommandOptions.updateVariableSetsCommandOptions);
+        studiesSubCommands.addCommand("update-variables", studiesCommandOptions.updateVariablesCommandOptions);
+
+        filesCommandOptions = new FilesCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("file", filesCommandOptions);
+        JCommander filesSubCommands = jCommander.getCommands().get("file");
+        filesSubCommands.addCommand("update-acl", filesCommandOptions.updateAclCommandOptions);
+        filesSubCommands.addCommand("aggregationStats", filesCommandOptions.aggregationStatsCommandOptions);
+        filesSubCommands.addCommand("load-annotationSets", filesCommandOptions.loadAnnotationSetsCommandOptions);
+        filesSubCommands.addCommand("bioformats", filesCommandOptions.bioformatsCommandOptions);
+        filesSubCommands.addCommand("create", filesCommandOptions.createCommandOptions);
+        filesSubCommands.addCommand("distinct", filesCommandOptions.distinctCommandOptions);
+        filesSubCommands.addCommand("fetch", filesCommandOptions.fetchCommandOptions);
+        filesSubCommands.addCommand("formats", filesCommandOptions.formatsCommandOptions);
+        filesSubCommands.addCommand("link", filesCommandOptions.linkCommandOptions);
+        filesSubCommands.addCommand("run-link", filesCommandOptions.runLinkCommandOptions);
+        filesSubCommands.addCommand("search", filesCommandOptions.searchCommandOptions);
+        filesSubCommands.addCommand("upload", filesCommandOptions.uploadCommandOptions);
+        filesSubCommands.addCommand("acl", filesCommandOptions.aclCommandOptions);
+        filesSubCommands.addCommand("delete", filesCommandOptions.deleteCommandOptions);
+        filesSubCommands.addCommand("info", filesCommandOptions.infoCommandOptions);
+        filesSubCommands.addCommand("unlink", filesCommandOptions.unlinkCommandOptions);
+        filesSubCommands.addCommand("update", filesCommandOptions.updateCommandOptions);
+        filesSubCommands.addCommand("download", filesCommandOptions.downloadCommandOptions);
+        filesSubCommands.addCommand("grep", filesCommandOptions.grepCommandOptions);
+        filesSubCommands.addCommand("head", filesCommandOptions.headCommandOptions);
+        filesSubCommands.addCommand("image", filesCommandOptions.imageCommandOptions);
+        filesSubCommands.addCommand("refresh", filesCommandOptions.refreshCommandOptions);
+        filesSubCommands.addCommand("tail", filesCommandOptions.tailCommandOptions);
+        filesSubCommands.addCommand("list", filesCommandOptions.listCommandOptions);
+        filesSubCommands.addCommand("tree", filesCommandOptions.treeCommandOptions);
+
+        operationsVariantStorageCommandOptions = new OperationsVariantStorageCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("variantoperation", operationsVariantStorageCommandOptions);
+        JCommander operationsVariantStorageSubCommands = jCommander.getCommands().get("variantoperation");
+        operationsVariantStorageSubCommands.addCommand("configure-cellbase",
+                operationsVariantStorageCommandOptions.configureCellbaseCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("aggregate-variant",
+                operationsVariantStorageCommandOptions.aggregateVariantCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("delete-variant-annotation",
+                operationsVariantStorageCommandOptions.deleteVariantAnnotationCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("index-variant-annotation",
+                operationsVariantStorageCommandOptions.indexVariantAnnotationCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("save-variant-annotation",
+                operationsVariantStorageCommandOptions.saveVariantAnnotationCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("aggregate-variant-family",
+                operationsVariantStorageCommandOptions.aggregateVariantFamilyCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("index-variant-family",
+                operationsVariantStorageCommandOptions.indexVariantFamilyCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("launcher-variant-index",
+                operationsVariantStorageCommandOptions.launcherVariantIndexCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("run-variant-julie",
+                operationsVariantStorageCommandOptions.runVariantJulieCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("repair-variant-metadata",
+                operationsVariantStorageCommandOptions.repairVariantMetadataCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("synchronize-variant-metadata",
+                operationsVariantStorageCommandOptions.synchronizeVariantMetadataCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("index-variant-sample",
+                operationsVariantStorageCommandOptions.indexVariantSampleCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("delete-variant-score",
+                operationsVariantStorageCommandOptions.deleteVariantScoreCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("index-variant-score",
+                operationsVariantStorageCommandOptions.indexVariantScoreCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("secondaryIndex-variant",
+                operationsVariantStorageCommandOptions.secondaryIndexVariantCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("delete-variant-secondaryIndex",
+                operationsVariantStorageCommandOptions.deleteVariantSecondaryIndexCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("index-variant-stats",
+                operationsVariantStorageCommandOptions.indexVariantStatsCommandOptions);
+
+        cohortsCommandOptions = new CohortsCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("cohort", cohortsCommandOptions);
+        JCommander cohortsSubCommands = jCommander.getCommands().get("cohort");
+        cohortsSubCommands.addCommand("update-acl", cohortsCommandOptions.updateAclCommandOptions);
+        cohortsSubCommands.addCommand("aggregationStats", cohortsCommandOptions.aggregationStatsCommandOptions);
+        cohortsSubCommands.addCommand("load-annotationSets", cohortsCommandOptions.loadAnnotationSetsCommandOptions);
+        cohortsSubCommands.addCommand("create", cohortsCommandOptions.createCommandOptions);
+        cohortsSubCommands.addCommand("distinct", cohortsCommandOptions.distinctCommandOptions);
+        cohortsSubCommands.addCommand("generate", cohortsCommandOptions.generateCommandOptions);
+        cohortsSubCommands.addCommand("search", cohortsCommandOptions.searchCommandOptions);
+        cohortsSubCommands.addCommand("acl", cohortsCommandOptions.aclCommandOptions);
+        cohortsSubCommands.addCommand("delete", cohortsCommandOptions.deleteCommandOptions);
+        cohortsSubCommands.addCommand("info", cohortsCommandOptions.infoCommandOptions);
+        cohortsSubCommands.addCommand("update", cohortsCommandOptions.updateCommandOptions);
     }
 
     @Override
@@ -441,7 +448,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
     public GeneralCliOptions.CommonCommandOptions getCommonCommandOptions() {
         return commonCommandOptions;
     }
-    
+
     public UserCommandOptions getUserCommandOptions() {
         return userCommandOptions;
     }
@@ -493,12 +500,14 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
     public ClinicalAnalysisCommandOptions getClinicalAnalysisCommandOptions() {
         return clinicalAnalysisCommandOptions;
     }
-    
+
     public VariantOperationCommandOptions getVariantOperationCommandOptions() {
         return variantOperationCommandOptions;
     }
-    
+
     public MetaCommandOptions getMetaCommandOptions() {
         return metaCommandOptions;
     }
+
+    enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
 }

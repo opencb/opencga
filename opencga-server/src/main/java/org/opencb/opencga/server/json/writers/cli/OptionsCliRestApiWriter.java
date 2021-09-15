@@ -14,22 +14,26 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.json.clients;
+package org.opencb.opencga.server.json.writers.cli;
 
 import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.Parameter;
 import org.opencb.opencga.server.json.beans.RestApi;
 import org.opencb.opencga.server.json.config.CategoryConfig;
-import org.opencb.opencga.server.json.config.Configuration;
-import org.opencb.opencga.server.json.utils.CLIUtils;
+import org.opencb.opencga.server.json.config.CommandLineConfiguration;
+import org.opencb.opencga.server.json.config.Shortcut;
+import org.opencb.opencga.server.json.utils.CommandLineUtils;
+import org.opencb.opencga.server.json.writers.ParentClientRestApiWriter;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
 
-    public OptionsCliRestApiWriter(RestApi restApi, Configuration config) {
+    public OptionsCliRestApiWriter(RestApi restApi, CommandLineConfiguration config) {
         super(restApi, config);
     }
 
@@ -135,10 +139,9 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                     sb.append("        public CommonCommandOptions commonOptions = commonCommandOptions;\n");
                     sb.append("    \n");
                     for (Parameter parameter : endpoint.getParameters()) {
-                        //  System.out.println(parameter);
                         if (config.isAvailableSubCommand(parameter.getName())) {
                             if (!"body".equals(normaliceNames(parameter.getName()))) {
-                                if (CLIUtils.isPrimitive(parameter.getType())) {
+                                if (CommandLineUtils.isPrimitive(parameter.getType())) {
                                     sb.append("        @Parameter(names = {\"" + getShortCuts(parameter, config) + "\"}, description = " +
                                             "\"" + parameter.getDescription().replaceAll("\"", "'") + "\", required = " + parameter.isRequired() + ", arity = 1)\n");
                                     sb.append("        public " + getValidValue(parameter.getType()) + " " + normaliceNames(getAsCamelCase(parameter.getName())) + ";" +
@@ -148,7 +151,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                 }
                             } else {
                                 for (Parameter body_parameter : parameter.getData()) {
-                                    if (config.isAvailableSubCommand(body_parameter.getName()) && CLIUtils.isPrimitive(body_parameter.getType())) {
+                                    if (config.isAvailableSubCommand(body_parameter.getName()) && CommandLineUtils.isPrimitive(body_parameter.getType())) {
                                         sb.append("        @Parameter(names = {\"" + getShortCuts(body_parameter, config) + "\"}, " +
                                                 "description" +
                                                 " = " +
@@ -179,7 +182,33 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     private String getShortCuts(Parameter parameter, CategoryConfig config) {
-        return "--" + getKebabCase(parameter.getName() + config.getStringShortcuts(parameter));
+        return "--" + getKebabCase(parameter.getName() + getStringShortcuts(parameter, config));
+    }
+
+    public String getStringShortcuts(Parameter parameter, CategoryConfig categoryConfig) {
+        String res = "";
+        Set<String> scut = new HashSet<>();
+
+        //Generic shortcuts
+        if (config.getApiConfig().getShortcuts() != null) {
+            for (Shortcut sc : config.getApiConfig().getShortcuts()) {
+                if (parameter.getName().equals(sc.getName()) && !scut.contains(sc.getShortcut())) {
+                    scut.add(sc.getShortcut());
+                    res += " -" + sc.getShortcut();
+                }
+            }
+        }
+
+        //category shortcuts
+        if (categoryConfig.getShortcuts() != null) {
+            for (Shortcut sc : categoryConfig.getShortcuts()) {
+                if (parameter.getName().equals(sc.getName()) && !scut.contains(sc.getShortcut())) {
+                    scut.add(sc.getShortcut());
+                    res += " -" + sc.getShortcut();
+                }
+            }
+        }
+        return res;
     }
 
     @Override

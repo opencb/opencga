@@ -3,14 +3,14 @@ package org.opencb.opencga.server.json.config;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Configuration {
+public class CommandLineConfiguration {
     private Options options;
     private ApiConfig apiConfig;
 
-    public Configuration() {
+    public CommandLineConfiguration() {
     }
 
-    public Configuration(Options options, ApiConfig apiConfig) {
+    public CommandLineConfiguration(Options options, ApiConfig apiConfig) {
         this.options = options;
         this.apiConfig = apiConfig;
     }
@@ -19,7 +19,7 @@ public class Configuration {
         return apiConfig;
     }
 
-    public Configuration setApiConfig(ApiConfig apiConfig) {
+    public CommandLineConfiguration setApiConfig(ApiConfig apiConfig) {
         this.apiConfig = apiConfig;
         return this;
     }
@@ -28,7 +28,7 @@ public class Configuration {
         return options;
     }
 
-    public Configuration setOptions(Options options) {
+    public CommandLineConfiguration setOptions(Options options) {
         this.options = options;
         return this;
     }

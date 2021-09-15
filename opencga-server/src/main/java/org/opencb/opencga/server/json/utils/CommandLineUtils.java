@@ -3,7 +3,7 @@ package org.opencb.opencga.server.json.utils;
 import java.util.HashSet;
 import java.util.Set;
 
-public class CLIUtils {
+public class CommandLineUtils {
 
     private static final Set<String> primitiveTypes = new HashSet<>();
 
@@ -33,6 +33,6 @@ public class CLIUtils {
     }
 
     public static String getAsVariableName(String path) {
-        return (Character.toLowerCase(path.charAt(0)) + path.substring(1));
+        return (Character.toLowerCase(path.charAt(0)) + path.substring(1)).replace(" ", "").replace("-", "");
     }
 }
