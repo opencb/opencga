@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.json.writers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.RestApi;
@@ -44,13 +45,13 @@ public abstract class ParentClientRestApiWriter {
         init();
     }
 
-    abstract String getClassImports(String key);
+    protected abstract String getClassImports(String key);
 
-    abstract String getClassHeader(String key);
+    protected abstract String getClassHeader(String key);
 
-    abstract String getClassMethods(String key);
+    protected abstract String getClassMethods(String key);
 
-    abstract String getClassFileName(String key);
+    protected abstract String getClassFileName(String key);
 
     public void write() {
         for (String key : availableCategories.keySet()) {
@@ -69,7 +70,14 @@ public abstract class ParentClientRestApiWriter {
         }
     }
 
-    private void writeToFile(File file, StringBuffer sb) throws IOException {
+    public String getCategoryCommandName(Category category, CategoryConfig categoryConfig) {
+        if (!StringUtils.isEmpty(categoryConfig.getCommandName())) {
+            return categoryConfig.getCommandName();
+        }
+        return category.getPath().substring(category.getPath().lastIndexOf("/") + 1);
+    }
+
+    protected void writeToFile(File file, StringBuffer sb) throws IOException {
         String str = sb.toString();
         FileOutputStream outputStream = new FileOutputStream(file.getAbsolutePath());
         byte[] strToBytes = str.getBytes();

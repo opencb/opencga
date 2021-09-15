@@ -38,7 +38,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     @Override
-    String getClassImports(String key) {
+    protected String getClassImports(String key) {
         StringBuilder sb = new StringBuilder();
         Category category = availableCategories.get(key);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ");
@@ -63,18 +63,19 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("\n");
         sb.append("/**\n");
         sb.append(" * This class contains methods for the " + category.getName() + " command line.\n");
-        sb.append(" *    Command line version: 3.0\n");
+        sb.append(" *    Command line version: " + restApi.getVersion() + "\n");
+        sb.append(" *    Command line commit: " + restApi.getCommit() + "\n");
         sb.append(" *    PATH: " + category.getPath() + "\n");
         sb.append(" */\n");
         return sb.toString();
     }
 
     @Override
-    String getClassHeader(String key) {
+    protected String getClassHeader(String key) {
         Category category = availableCategories.get(key);
         CategoryConfig config = availableCategoryConfigs.get(key);
         StringBuilder sb = new StringBuilder();
-        sb.append("@Parameters(commandNames = {\"" + category.getName().toLowerCase() + "\"}, commandDescription = \""
+        sb.append("@Parameters(commandNames = {\"" + getCategoryCommandName(category, config) + "\"}, commandDescription = \""
                 + category.getName() + " commands\")\n");
         sb.append("public class " + getAsClassName(category.getName()) + "CommandOptions {\n");
         sb.append("\n");
@@ -120,7 +121,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     @Override
-    String getClassMethods(String key) {
+    protected String getClassMethods(String key) {
         Category category = availableCategories.get(key);
         CategoryConfig config = availableCategoryConfigs.get(key);
         StringBuilder sb = new StringBuilder();
@@ -142,7 +143,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                         if (config.isAvailableSubCommand(parameter.getName())) {
                             if (!"body".equals(normaliceNames(parameter.getName()))) {
                                 if (CommandLineUtils.isPrimitive(parameter.getType())) {
-                                    sb.append("        @Parameter(names = {\"" + getShortCuts(parameter, config) + "\"}, description = " +
+                                    sb.append("        @Parameter(names = {" + getShortCuts(parameter, config) + "}, description = " +
                                             "\"" + parameter.getDescription().replaceAll("\"", "'") + "\", required = " + parameter.isRequired() + ", arity = 1)\n");
                                     sb.append("        public " + getValidValue(parameter.getType()) + " " + normaliceNames(getAsCamelCase(parameter.getName())) + ";" +
                                             " " +
@@ -152,7 +153,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                             } else {
                                 for (Parameter body_parameter : parameter.getData()) {
                                     if (config.isAvailableSubCommand(body_parameter.getName()) && CommandLineUtils.isPrimitive(body_parameter.getType())) {
-                                        sb.append("        @Parameter(names = {\"" + getShortCuts(body_parameter, config) + "\"}, " +
+                                        sb.append("        @Parameter(names = {" + getShortCuts(body_parameter, config) + "}, " +
                                                 "description" +
                                                 " = " +
                                                 "\"" + body_parameter.getDescription().replaceAll("\"", "'") + "\", required = " + body_parameter.isRequired() + ", arity = 1)\n");
@@ -182,7 +183,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     private String getShortCuts(Parameter parameter, CategoryConfig config) {
-        return "--" + getKebabCase(parameter.getName() + getStringShortcuts(parameter, config));
+        return "\"--" + getKebabCase(parameter.getName() + "\"" + getStringShortcuts(parameter, config));
     }
 
     public String getStringShortcuts(Parameter parameter, CategoryConfig categoryConfig) {
@@ -194,7 +195,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             for (Shortcut sc : config.getApiConfig().getShortcuts()) {
                 if (parameter.getName().equals(sc.getName()) && !scut.contains(sc.getShortcut())) {
                     scut.add(sc.getShortcut());
-                    res += " -" + sc.getShortcut();
+                    res += ", \"-" + sc.getShortcut() + "\"";
                 }
             }
         }
@@ -204,7 +205,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             for (Shortcut sc : categoryConfig.getShortcuts()) {
                 if (parameter.getName().equals(sc.getName()) && !scut.contains(sc.getShortcut())) {
                     scut.add(sc.getShortcut());
-                    res += " -" + sc.getShortcut();
+                    res += ", \"-" + sc.getShortcut() + "\"";
                 }
             }
         }
@@ -212,7 +213,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     @Override
-    String getClassFileName(String key) {
+    protected String getClassFileName(String key) {
         Category category = availableCategories.get(key);
         return config.getOptions().getOptionsOutputDir() + "/" + getAsClassName(category.getName()) + "CommandOptions.java";
     }

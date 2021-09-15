@@ -1,10 +1,8 @@
 options:
   serverUrl: http://localhost:8080/opencga
   version: 1.0
-  parserOutputDir: opencga-client/src/main/java/org/opencb/opencga/client/rest/clients
-  #optionsOutputDir: ../../../../src/main/java/org/opencb/opencga/app/cli/main/options
+  parserOutputDir: opencga-app/src/main/java/org/opencb/opencga/app/cli/main/
   optionsOutputDir: opencga-app/src/main/java/org/opencb/opencga/app/cli/main/options
-  #executorsOutputDir: ../../../../src/main/java/org/opencb/opencga/app/cli/main/executors
   executorsOutputDir: opencga-app/src/main/java/org/opencb/opencga/app/cli/main/executors
   executorsPackage: org.opencb.opencga.app.cli.main.executors
   optionsPackage: org.opencb.opencga.app.cli.main.options

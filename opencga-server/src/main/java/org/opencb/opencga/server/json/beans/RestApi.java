@@ -16,10 +16,28 @@
 
 package org.opencb.opencga.server.json.beans;
 
+import org.opencb.opencga.core.common.GitRepositoryState;
+
 import java.util.List;
 
 public class RestApi {
+
     private List<Category> categories;
+    private String commit = GitRepositoryState.get().getCommitId();
+    private String version = GitRepositoryState.get().getBuildVersion();
+
+    public RestApi() {
+
+    }
+
+    public String getCommit() {
+        return commit;
+    }
+
+    public RestApi setCommit(String commit) {
+        this.commit = commit;
+        return this;
+    }
 
     public List<Category> getCategories() {
         return categories;
@@ -27,6 +45,15 @@ public class RestApi {
 
     public RestApi setCategories(List<Category> categories) {
         this.categories = categories;
+        return this;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public RestApi setVersion(String version) {
+        this.version = version;
         return this;
     }
 }

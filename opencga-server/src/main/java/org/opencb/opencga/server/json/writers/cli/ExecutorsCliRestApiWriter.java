@@ -36,7 +36,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     @Override
-    String getClassImports(String key) {
+    protected String getClassImports(String key) {
         StringBuilder sb = new StringBuilder();
         Category category = availableCategories.get(key);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ");
@@ -80,7 +80,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("\n");
         sb.append("/**\n");
         sb.append(" * This class contains methods for the " + category.getName() + " command line.\n");
-        sb.append(" *    Command line version: 3.0\n");
+        sb.append(" *    Command line version: " + restApi.getVersion() + "\n");
+        sb.append(" *    Command line commit: " + restApi.getCommit() + "\n");
         sb.append(" *    PATH: " + category.getPath() + "\n");
         sb.append(" */\n");
         return sb.toString();
@@ -103,7 +104,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     @Override
-    String getClassHeader(String key) {
+    protected String getClassHeader(String key) {
         StringBuilder sb = new StringBuilder();
         Category category = availableCategories.get(key);
         CategoryConfig config = availableCategoryConfigs.get(key);
@@ -169,7 +170,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     @Override
-    String getClassMethods(String key) {
+    protected String getClassMethods(String key) {
         StringBuilder sb = new StringBuilder();
         Category category = availableCategories.get(key);
         CategoryConfig config = availableCategoryConfigs.get(key);
@@ -291,7 +292,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     @Override
-    String getClassFileName(String key) {
+    protected String getClassFileName(String key) {
         Category category = availableCategories.get(key);
         return config.getOptions().getExecutorsOutputDir() + "/" + getAsClassName(category.getName()) + "CommandExecutor.java";
         //  return "/tmp" + "/" + getAsClassName(category.getName()) + "CommandExecutor.java";

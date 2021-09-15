@@ -16,20 +16,19 @@
 
 package org.opencb.opencga.server.json.writers.cli;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
-import org.opencb.opencga.server.json.beans.Parameter;
 import org.opencb.opencga.server.json.beans.RestApi;
 import org.opencb.opencga.server.json.config.CategoryConfig;
 import org.opencb.opencga.server.json.config.CommandLineConfiguration;
-import org.opencb.opencga.server.json.utils.CommandLineUtils;
 import org.opencb.opencga.server.json.writers.ParentClientRestApiWriter;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
 
@@ -38,12 +37,11 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     @Override
-    String getClassImports(String key) {
+    protected String getClassImports(String key) {
         StringBuilder sb = new StringBuilder();
-        Category category = availableCategories.get(key);
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
         sb.append("/*\n");
-        sb.append("* Copyright 2015-{} OpenCB" + sdf.format(new Date()) + "\n");
+        sb.append("* Copyright 2015-" + sdf.format(new Date()) + " OpenCB\n");
         sb.append("*\n");
         sb.append("* Licensed under the Apache License, Version 2.0 (the \"License\");\n");
         sb.append("* you may not use this file except in compliance with the License.\n");
@@ -80,22 +78,16 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("*\n");
         sb.append("* Manual changes to this file may cause unexpected behavior in your application.\n");
         sb.append("* Manual changes to this file will be overwritten if the code is regenerated.\n");
+        sb.append("*    Command line version: " + restApi.getVersion() + "\n");
+        sb.append("*    Command line commit: " + restApi.getCommit() + "\n");
         sb.append("*/\n");
-        sb.append("\n");
-        sb.append("\n");
-        sb.append("/**\n");
-        sb.append(" * This class contains methods for the " + category.getName() + " command line.\n");
-        sb.append(" *    Command line version: 3.0\n");
-        sb.append(" *    PATH: " + category.getPath() + "\n");
-        sb.append(" */\n");
+
         return sb.toString();
     }
 
     @Override
-    String getClassHeader(String key) {
+    protected String getClassHeader(String key) {
         StringBuilder sb = new StringBuilder();
-        //Category category = availableCategories.get(key);
-        CategoryConfig config = availableCategoryConfigs.get(key);
         sb.append("\n");
         sb.append("public class OpencgaCliOptionsParser extends CliOptionsParser {\n");
         sb.append("\n");
@@ -105,7 +97,7 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
                     "CommandOptions;\n");
         }
         sb.append("\n");
-        sb.append("    enum OutputFormat {{IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}}");
+        sb.append("    enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}\n");
         sb.append("\n");
         sb.append("    public OpencgaCliOptionsParser() {\n");
         sb.append("\n");
@@ -113,14 +105,16 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("        commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();\n");
 
         for (Category category : availableCategories.values()) {
+            CategoryConfig config = availableCategoryConfigs.get(getIdCategory(category));
             sb.append("\n");
             sb.append("        " + getAsVariableName(category.getName()) + "CommandOptions = new " + getAsClassName(category.getName())
                     + "CommandOptions(commonCommandOptions, jCommander);\n");
-            sb.append("        jCommander.addCommand(\"" + availableCategoryConfigs.get(getIdCategory(category)).getKey().toLowerCase()
+            sb.append("        jCommander.addCommand(\"" + getCategoryCommandName(category, config)
                     + "\", " + getAsVariableName(category.getName()) + "CommandOptions);\n");
             sb.append("        JCommander " + getAsVariableName(category.getName()) + "SubCommands = jCommander.getCommands().get(\""
-                    + availableCategoryConfigs.get(getIdCategory(category)).getKey().toLowerCase() + "\");\n");
+                    + getCategoryCommandName(category, config) + "\");\n");
             for (Endpoint endpoint : category.getEndpoints()) {
+
                 if (!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config)) {
                     String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
                     if (config.isAvailableCommand(commandName)) {
@@ -135,100 +129,96 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
         return sb.toString();
     }
 
+    public void write() {
+        StringBuffer sb = new StringBuffer();
+        sb.append(getClassImports(""));
+        sb.append(getClassHeader(""));
+        sb.append(getClassMethods(""));
+        sb.append("}");
+
+        File file = new File(getClassFileName(""));
+        try {
+            writeToFile(file, sb);
+            System.out.println("Writing :::: " + file.getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
-    String getClassMethods(String key) {
-        return "";
-    }
-
-    private String getReturn(Category category, Endpoint endpoint, CategoryConfig config, String commandName) {
-        String res =
-                "        return openCGAClient.get" + getAsClassName(config.getKey()) + "Client()."
-                        + getAsCamelCase(commandName) + "(";
-        res += endpoint.getPathParams();
-        res += endpoint.getMandatoryQueryParams(config);
-        if (endpoint.hasPrimitiveBodyParams(config)) {
-            res += getAsVariableName(endpoint.getBodyParamsObject()) + ", ";
-        }
-        if (endpoint.hasQueryParams()) {
-            res += "queryParams";
-        }
-        if (res.trim().endsWith(",")) {
-            res = res.substring(0, res.lastIndexOf(","));
-        }
-        res += ");\n";
-        return res;
-    }
-
-    private String getBodyParams(Endpoint endpoint, CategoryConfig config) {
+    protected String getClassMethods(String key) {
         StringBuilder sb = new StringBuilder();
-        if (endpoint.hasPrimitiveBodyParams(config)) {
-            String bodyParamsObject = endpoint.getBodyParamsObject();
-            sb.append("        " + bodyParamsObject + " " + getAsVariableName(bodyParamsObject) + " = new " + bodyParamsObject + "()");
-            for (Parameter parameter : endpoint.getParameters()) {
-                if (parameter.getData() != null && !parameter.getData().isEmpty()) {
-                    for (Parameter body_param : parameter.getData()) {
-                        if (config.isAvailableSubCommand(body_param.getName()) && CommandLineUtils.isPrimitive(body_param.getType())) {
-                            //sometimes the name of the parameter has the prefix "body" so as not to coincide with another parameter
-                            // with the same name, but the setter does not have this prefix, so it must be removed
-                            sb.append("\n            .set" + getAsClassName(body_param.getName().replaceAll("body_", "")) +
-                                    "(commandOptions."
-                                    + normaliceNames(getAsCamelCase(body_param.getName())) + ")");
-                        }
-                    }
-                }
-            }
-            sb.append(";\n");
+
+        sb.append(getTemplateParser());
+        for (Category category : availableCategories.values()) {
+
+            sb.append("    \n");
+            sb.append("    public " + getAsClassName(category.getName()) + "CommandOptions get" + getAsClassName(category.getName())
+                    + "CommandOptions() {\n");
+            sb.append("        return " + getAsVariableName(category.getName()) + "CommandOptions;\n");
+            sb.append("    }\n");
+            sb.append("    \n");
         }
         return sb.toString();
     }
 
-    private String getQueryParams(Endpoint endpoint) {
-        String res = "\n        ObjectMap queryParams = new ObjectMap();\n";
-        boolean enc = false;
-        for (Parameter parameter : endpoint.getParameters()) {
-            if ("query".equals(parameter.getParam()) && !parameter.isRequired() && CommandLineUtils.isPrimitive(parameter.getType())) {
-                enc = true;
-                if (StringUtils.isNotEmpty(parameter.getType()) && "string".equalsIgnoreCase(parameter.getType())) {
-                    res += "        queryParams.putIfNotEmpty(\"" + normaliceNames(parameter.getName()) + "\", commandOptions."
-                            + normaliceNames(parameter.getName()) + ");\n";
-                } else {
-                    res += "        queryParams.putIfNotNull(\"" + normaliceNames(parameter.getName()) + "\", commandOptions."
-                            + normaliceNames(parameter.getName()) + ");\n";
-                }
-            }
-        }
-        if (enc)
-            return res + "\n";
+    private String getTemplateParser() {
+        try {
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            File file = new File(classLoader.getResource("parserAbstractMethods.template").getFile());
+            String res = readFile(file.getAbsolutePath());
+            res = res.replaceAll("##@@ANALYSIS@@##", getAnalysisCategories());
+            res = res.replaceAll("##@@OPERATIONS@@##", getOperationsCategories());
 
+            return res;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return "";
     }
 
-    private String getValidResponseNames(String responseClass) {
-        Map<String, String> validResponse = new HashMap<>();
-        validResponse.put("map", "ObjectMap");
-        validResponse.put("Map", "ObjectMap");
-        validResponse.put("Object", "ObjectMap");
-        validResponse.put("", "ObjectMap");
-
-        responseClass = responseClass.replace('$', '.');
-        if (validResponse.containsKey(responseClass)) {
-            return validResponse.get(responseClass);
+    private String getOperationsCategories() {
+        String res = "";
+        for (CategoryConfig category : config.getApiConfig().getCategoryConfigList()) {
+            if (category.isOperations()) {
+                res += "\"" + getCategoryCommandName(availableCategories.get(category.getKey()), category) + "\"" + ", ";
+            }
         }
-        return responseClass;
+        return res.substring(0, res.lastIndexOf(", "));
     }
 
-    private String normaliceNames(String name) {
-        name = getAsCamelCase(name, "\\.");
-        if (invalidNames.containsKey(name)) {
-            name = invalidNames.get(name);
+    private String getAnalysisCategories() {
+        String res = "";
+        for (CategoryConfig category : config.getApiConfig().getCategoryConfigList()) {
+            if (category.isAnalysis()) {
+                res += "\"" + getCategoryCommandName(availableCategories.get(category.getKey()), category) + "\"" + ", ";
+            }
         }
-        return name;
+        return res.substring(0, res.lastIndexOf(", "));
+    }
+
+    private String readFile(String file) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(file));
+        String line = null;
+        StringBuilder stringBuilder = new StringBuilder();
+        String ls = System.getProperty("line.separator");
+
+        try {
+            while ((line = reader.readLine()) != null) {
+                stringBuilder.append(line);
+                stringBuilder.append(ls);
+            }
+
+            return stringBuilder.toString();
+        } finally {
+            reader.close();
+        }
     }
 
     @Override
-    String getClassFileName(String key) {
+    protected String getClassFileName(String key) {
         Category category = availableCategories.get(key);
-        // return config.getOptions().getParserOutputDir() + "/OpencgaCliOptionsParser.java";
-        return "/tmp/OpencgaCliOptionsParser.java";
+        return config.getOptions().getParserOutputDir() + "/OpencgaCliOptionsParser.java";
+        //return "/tmp/OpencgaCliOptionsParser.java";
     }
 }

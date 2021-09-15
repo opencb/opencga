@@ -3,10 +3,9 @@
 import argparse
 import os
 import re
+import sys
 # importing date class from datetime module
 from datetime import date
-
-import sys
 
 currentdir = os.path.dirname(os.path.realpath(__file__))
 parentdir = os.path.dirname(currentdir)
@@ -170,7 +169,6 @@ class ParserCliGenerator(rest_client_generator.RestClientGenerator):
                 text.append(' ' * 4)
                 text.append('{}public {}CommandOptions get{}CommandOptions() {{'.format((' ' * 4), self.categories[
                     self.get_category_name(category)], self.categories[self.get_category_name(category)]))
-
                 text.append('{}return {}CommandOptions;'.format((' ' * 8), self.get_as_variable_name(
                     self.categories[self.get_category_name(category)])))
                 text.append('{}}}'.format((' ' * 4)))
