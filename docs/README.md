@@ -1,3 +1,7 @@
+---
+description: Welcome to the official page for OpenCGA documentation.
+---
+
 # Home
 
 OpenCGA is the most advanced big data genomic analysis platform. It is implemented as an open-source project that implements a high-performance, scalable and secure platform for Genomic data analysis and visualisation.
