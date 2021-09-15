@@ -1,10 +1,10 @@
 # Templates / Manifest
 
-Since OpenCGA v2.1.x, the OpenCGA users with administration roles are offered the possibility to work with templates. Templates are a set of files with a defined specification that allow the user to perform a series of different operations, related to the ingestion of metadata in OpenCGA, e.g: define the samples, individuals, permission groups, etc. For more information on how OpenCGA stores metadata in Catalog refer to [Catalog]()
+Since OpenCGA v2.1.0,  OpenCGA users with administration roles have the possibility to work with templates. Templates are a set of files with a defined specification that allow the user to perform a series of different operations, related to the ingestion of metadata in OpenCGA, e.g: define the samples, individuals, permission groups, etc. For more information on how OpenCGA stores metadata in Catalog [here](../../components-1/catalog.md).
 
 Templates are defined at a study level and could be provided in different formats accordingly to the user's needs. The file format and some common use cases are illustrated in the following section.
 
-Remember that OpenCGA is highly configurable, and the use of templates constitutes a useful resource to reduce some common artifacts on the ingestion of metadata, but you can always use the OpenCGA clients \([Client Libraries]()\), command line \([Command Line]()\) or [REST Web Service API](../using-opencga/restful-web-service-api.md) to perform different operations in OpenCGA.
+Remember that OpenCGA is highly configurable, and the use of templates constitutes a useful resource to reduce some common artifacts on the ingestion of metadata, but you can always use the OpenCGA clients \([Client Libraries](../using-opencga/client-libraries/)\), command line \([Command Line](../using-opencga/command-line/)\) or [REST Web Service API](../using-opencga/restful-web-service-api.md) to perform different operations in OpenCGA.
 
 ## How it Works
 
