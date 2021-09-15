@@ -4,7 +4,7 @@ description: >-
   files into an OpenCGA Variant Store.
 ---
 
-# Loading of VCF files
+# Loading VCF files to a Study
 
 ## **Introduction**
 
