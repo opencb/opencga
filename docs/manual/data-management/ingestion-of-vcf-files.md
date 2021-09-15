@@ -4,7 +4,7 @@ description: >-
   files into an OpenCGA Variant Store.
 ---
 
-# Loading VCF files to a Study
+# Load VCF Files to a Study
 
 ## **Introduction**
 
@@ -34,13 +34,13 @@ This document assumes that:
 * The destination Study has been created on the OpenCGA server. Find [here](projects-and-studies.md) instructions for creating Projects and Studies. 
 * The operator has login credentials on the OpenCGA server with appropriate permissions; i.e. write access to the destination Study. 
 
-### **Catalog file register**
+## **Catalog file register**
 
 This step presents the data to OpenCGA and registers the new files into the system. Samples will be created automatically after linking the file, by reading the VCF Header. This step can be further extended with extra annotations, defining individuals, creating cohorts or even families.
 
 It is important to note that this step is a synchronous operation that does not upload the genomic data \(e.g:VCFs\) into OpenCGA, instead, the files will only be “linked” \(registered\) with OpenCGA. Therefore, the files to link must be in a location that is accessible by the OpenCGA server \(REST servers and the Master service\).
 
-#### **Catalog Path Structure**
+### **Catalog Path Structure**
 
 **I**nternally, the Catalog metadata holds a logical tree view of the linked files that can easily be explored or listed. Try using:
 
@@ -56,13 +56,17 @@ $ ./opencga files create --study <study> --path <catalog-logical-path>
 
 Being `<catalog-logical-path>` the directory that you’d like to create within catalog.
 
-#### **Linking files synchronously \(less than 5000 samples\)**
+### Linking files **synchronously** vs. **asynchronously**
+
+There are two different commands depending on the type of VCF that needs to be loaded. Aggregated VCFs files with many samples need to be linked by launching an asynchronous job.
+
+#### **Linking files synchronously \(~less than 5000 samples\)**
 
 {% hint style="warning" %}
-Note that for files with more than 5000 samples, the linking step needs to be performed as an asynchronous job using the command described below.
+Note that for files with more than 5000 samples linking is an asynchronous job 
 {% endhint %}
 
-Each file needs to be “linked” into OpenCGA using this command line:
+Files are registered into OpenCGA Catalog using this command line:
 
 ```text
 $ ./opencga.sh files link --study <study> 
@@ -94,7 +98,7 @@ $ ./opencga.sh files link  --study <owner@project:myStudy>
                            -i /data/myFirstFile.vcf.gz /data/mySecondFile.vcf.gz
 ```
 
-### **Variant storage index**
+## **Variant storage index**
 
 This operation will read the content of the file, run some simple validations to detect possible errors or data corruptions, and ingest the variants into the Hadoop system, building some high performance indexes.
 
@@ -133,7 +137,7 @@ When using special callers it is important to specify it in the command line wit
 Note: Be aware that the misuse of this parameters may lead to data corruption.
 {% endhint %}
 
-### **Variant Annotation**
+## **Variant Annotation**
 
 Once all the data is loaded, we need to run the Variant Annotation. This is a key enrichment operation that will attach CellBase Variant Annotations with the loaded data, allowing filtering by a large number of fields.
 
@@ -148,7 +152,7 @@ $ ./opencga.sh operations variant-annotation-index --project<project>
 
 Similar to the variant-index process, this command line will queue an asynchronous job to be executed by the OpenCGA Master service.
 
-### **Variant Statistics calculation**
+## **Variant Statistics calculation**
 
 The second enrichment operation is the Variant Statistics Calculation. After defining a cohort, you might decide to compute the Variant Stats for that cohort. These statistics include the most typical values like allele and genotype frequencies, MAF, QUAL average, FILTER count...
 
@@ -225,7 +229,7 @@ $ ./opencga.sh operations variant-stats-index --study <study>
                                  --aggregation-mapping-file custom_mapping.properties
 ```
 
-### **Variant Secondary Index Build**
+## **Variant Secondary Index Build**
 
 Secondary indexes are built using the search engine Apache Solr for improving the performance of some queries and aggregations, allowing full text search and faceted queries to the Variant database.
 

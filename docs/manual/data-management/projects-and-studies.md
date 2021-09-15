@@ -1,4 +1,4 @@
-# Projects and Studies Creation
+# Create Projects and Studies
 
 ## Introduction
 
