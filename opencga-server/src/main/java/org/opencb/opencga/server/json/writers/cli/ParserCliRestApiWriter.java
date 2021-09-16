@@ -139,7 +139,6 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
         File file = new File(getClassFileName(""));
         try {
             writeToFile(file, sb);
-            System.out.println("Writing :::: " + file.getAbsolutePath());
         } catch (IOException e) {
             e.printStackTrace();
         }

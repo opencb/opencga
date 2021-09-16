@@ -1,5 +1,6 @@
 package org.opencb.opencga.server.json;
 
+import org.apache.log4j.Logger;
 import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.Parameter;
@@ -17,11 +18,13 @@ import org.opencb.opencga.server.rest.analysis.VariantWebService;
 import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
 import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainClientGenerator {
 
+    private static final Logger LOG = Logger.getLogger(MainClientGenerator.class);
     private static RestApi restApi;
     private static CommandLineConfiguration config;
 
@@ -52,14 +55,18 @@ public class MainClientGenerator {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         cli();
     }
 
     private static void cli() {
+        LOG.info("Creating CLI options files in folder " + new File(config.getOptions().getOptionsOutputDir()).getAbsolutePath());
         OptionsCliRestApiWriter optionsCliRestApiWriter = new OptionsCliRestApiWriter(restApi, config);
         optionsCliRestApiWriter.write();
+        LOG.info("Creating CLI executors files in folder " + new File(config.getOptions().getExecutorsOutputDir()).getAbsolutePath());
         ExecutorsCliRestApiWriter executorsCliRestApiWriter = new ExecutorsCliRestApiWriter(restApi, config);
         executorsCliRestApiWriter.write();
+        LOG.info("Creating CLI parser file in folder " + new File(config.getOptions().getParserOutputDir()).getAbsolutePath());
         ParserCliRestApiWriter parserCliRestApiWriter = new ParserCliRestApiWriter(restApi, config);
         parserCliRestApiWriter.write();
     }
