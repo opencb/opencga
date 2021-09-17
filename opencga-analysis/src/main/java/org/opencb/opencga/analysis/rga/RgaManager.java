@@ -899,11 +899,14 @@ public class RgaManager implements AutoCloseable {
                 StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
 
         // Check number of individuals matching query without checking their permissions
-        Future<Integer> totalIndividualsFuture = executor.submit(() -> {
-            QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.INDIVIDUAL_ID + ")");
-            DataResult<FacetField> result = rgaEngine.facetedQuery(collection, query, facetOptions);
-            return ((Number) result.first().getAggregationValues().get(0)).intValue();
-        });
+        Future<Integer> totalIndividualsFuture = null;
+        if (options.getBoolean(QueryOptions.COUNT)) {
+            totalIndividualsFuture = executor.submit(() -> {
+                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.INDIVIDUAL_ID + ")");
+                DataResult<FacetField> result = rgaEngine.facetedQuery(collection, query, facetOptions);
+                return ((Number) result.first().getAggregationValues().get(0)).intValue();
+            });
+        }
 
         List<String> sampleIds = preprocess.getQuery().getAsStringList(RgaQueryParams.SAMPLE_ID.key());
         preprocess.getQuery().remove(RgaQueryParams.SAMPLE_ID.key());
@@ -962,11 +965,14 @@ public class RgaManager implements AutoCloseable {
         }
 
         ObjectMap resultAttributes = new ObjectMap();
-        try {
-            resultAttributes.put("totalIndividuals", totalIndividualsFuture.get());
-        } catch (InterruptedException | ExecutionException e) {
-            logger.error("Unexpected error getting total number of individuals without checking permissions: {}", e.getMessage(), e);
+        if (totalIndividualsFuture != null) {
+            try {
+                resultAttributes.put("totalIndividuals", totalIndividualsFuture.get());
+            } catch (InterruptedException | ExecutionException e) {
+                logger.error("Unexpected error getting total number of individuals without checking permissions: {}", e.getMessage(), e);
+            }
         }
+
         int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
         OpenCGAResult<KnockoutByIndividualSummary> result = new OpenCGAResult<>(time, Collections.emptyList(),
                 knockoutByIndividualSummaryList.size(), knockoutByIndividualSummaryList, -1);
@@ -1670,6 +1676,8 @@ public class RgaManager implements AutoCloseable {
         boolean count = queryOptions.getBoolean(QueryOptions.COUNT);
 
         if (preprocessResult.getQuery().isEmpty()) {
+            StopWatch stopWatch = StopWatch.createStarted();
+            // If the query is empty, query Catalog directly to fetch the first X individuals
             QueryOptions catalogOptions = new QueryOptions(SampleManager.INCLUDE_SAMPLE_IDS)
                     .append(QueryOptions.LIMIT, limit)
                     .append(QueryOptions.SKIP, skip)
@@ -1681,6 +1689,9 @@ public class RgaManager implements AutoCloseable {
             }
 
             OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(study.getFqn(), catalogQuery, catalogOptions, token);
+            stopWatch.stop();
+            logger.info("Fetch first {} individuals from Catalog with skip {} and count {}: {} milliseconds.", limit, skip, count,
+                    stopWatch.getTime(TimeUnit.MILLISECONDS));
             if (search.getNumResults() == 0) {
                 throw RgaException.noResultsMatching();
             }
