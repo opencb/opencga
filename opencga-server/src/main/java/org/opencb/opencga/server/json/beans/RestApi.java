@@ -23,11 +23,22 @@ import java.util.List;
 public class RestApi {
 
     private List<Category> categories;
-    private String commit = GitRepositoryState.get().getCommitId();
-    private String version = GitRepositoryState.get().getBuildVersion();
+    private String commit;
+    private String version;
 
     public RestApi() {
+        commit = GitRepositoryState.get().getCommitId();
+        version = GitRepositoryState.get().getBuildVersion();
+    }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("RestApi{");
+        sb.append("categories=").append(categories);
+        sb.append(", commit='").append(commit).append('\'');
+        sb.append(", version='").append(version).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getCommit() {

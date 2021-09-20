@@ -15,6 +15,84 @@ public class Endpoint {
     private String description;
     private List<Parameter> parameters;
 
+    public boolean hasPrimitiveBodyParams(CategoryConfig config) {
+
+        for (Parameter parameter : getParameters()) {
+            if (parameter.getData() != null && !parameter.getData().isEmpty()) {
+                for (Parameter body_param : parameter.getData()) {
+                    if (config.isAvailableSubCommand(body_param.getName()) && CommandLineUtils.isPrimitive(body_param.getType())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean hasQueryParams() {
+        for (Parameter parameter : getParameters()) {
+            if ("query".equals(parameter.getParam()) && !parameter.isRequired() && CommandLineUtils.isPrimitive(parameter.getType())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String getBodyParamsObject() {
+        for (Parameter parameter : getParameters()) {
+            if (parameter.getData() != null) {
+                return parameter.getTypeClass().substring(parameter.getTypeClass().lastIndexOf('.') + 1).replaceAll(";", "").trim();
+            }
+        }
+        return "";
+    }
+
+    public String getPathParams() {
+        StringBuilder sb = new StringBuilder();
+        String endpointPath = path.substring(path.lastIndexOf("/{apiVersion}/") + 1);
+        String[] saux = endpointPath.split("\\{");
+        for (String aux : saux) {
+            if (aux.contains("}") && !aux.contains("apiVersion")) {
+                sb.append("commandOptions." + aux.substring(0, aux.lastIndexOf("}")) + ", ");
+            }
+        }
+        return sb.toString();
+    }
+
+    public String getMandatoryQueryParams(CategoryConfig config) {
+        StringBuilder sb = new StringBuilder();
+        for (Parameter parameter : getParameters()) {
+            if (parameter.getParam().equals("query")) {
+//                if (body_param.getName().equals("action")) {
+//                    System.out.println("action :::: config.isAvailableSubCommand(body_param.getName()) " + config
+//                            .isAvailableSubCommand(body_param.getName()));
+//                    System.out.println("action :::: CLIUtils.isPrimitive(body_param.getType()) " + CLIUtils.isPrimitive(body_param
+//                            .getType()));
+//                    System.out.println("action :::: body_param.isRequired() " + body_param.isRequired());
+//                }
+                if (config.isAvailableSubCommand(parameter.getName()) && CommandLineUtils.isPrimitive(parameter.getType())
+                        && parameter.isRequired()) {
+                    sb.append("commandOptions.").append(CommandLineUtils.getAsVariableName(parameter.getName())).append(", ");
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Endpoint{");
+        sb.append("path='").append(path).append('\'');
+        sb.append(", method='").append(method).append('\'');
+        sb.append(", response='").append(response).append('\'');
+        sb.append(", responseClass='").append(responseClass).append('\'');
+        sb.append(", notes='").append(notes).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", parameters=").append(parameters);
+        sb.append('}');
+        return sb.toString();
+    }
+
     public String getPath() {
         return path;
     }
@@ -76,85 +154,5 @@ public class Endpoint {
     public Endpoint setParameters(List<Parameter> parameters) {
         this.parameters = parameters;
         return this;
-    }
-
-    @Override
-    public String toString() {
-        return "Endpoint{" +
-                "path='" + path + '\'' +
-                ", method='" + method + '\'' +
-                ", response='" + response + '\'' +
-                ", responseClass='" + responseClass + '\'' +
-                ", notes='" + notes + '\'' +
-                ", description='" + description + '\'' +
-                ", parameters=" + parameters +
-                "}\n";
-    }
-
-    public boolean hasPrimitiveBodyParams(CategoryConfig config) {
-
-        for (Parameter parameter : getParameters()) {
-            if (parameter.getData() != null && !parameter.getData().isEmpty()) {
-                for (Parameter body_param : parameter.getData()) {
-                    if (config.isAvailableSubCommand(body_param.getName()) && CommandLineUtils.isPrimitive(body_param.getType())) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    public boolean hasQueryParams() {
-        for (Parameter parameter : getParameters()) {
-            if ("query".equals(parameter.getParam()) && !parameter.isRequired() && CommandLineUtils.isPrimitive(parameter.getType())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public String getBodyParamsObject() {
-        for (Parameter parameter : getParameters()) {
-            if (parameter.getData() != null) {
-
-                return parameter.getTypeClass().substring(parameter.getTypeClass().lastIndexOf('.') + 1).replaceAll(";", "").trim();
-            }
-        }
-        return "";
-    }
-
-    public String getPathParams() {
-        StringBuilder sb = new StringBuilder();
-        String endpointPath = path.substring(path.lastIndexOf("/{apiVersion}/") + 1);
-        String[] saux = endpointPath.split("\\{");
-        for (String aux : saux) {
-            if (aux.contains("}") && !aux.contains("apiVersion")) {
-                sb.append("commandOptions." + aux.substring(0, aux.lastIndexOf("}")) + ", ");
-            }
-        }
-
-        return sb.toString();
-    }
-
-    public String getMandatoryQueryParams(CategoryConfig config) {
-        StringBuilder sb = new StringBuilder();
-        for (Parameter parameter : getParameters()) {
-            if (parameter.getParam().equals("query")) {
-
-                  /*  if (body_param.getName().equals("action")) {
-                        System.out.println("action :::: config.isAvailableSubCommand(body_param.getName()) " + config
-                        .isAvailableSubCommand(body_param.getName()));
-                        System.out.println("action :::: CLIUtils.isPrimitive(body_param.getType()) " + CLIUtils.isPrimitive(body_param
-                        .getType()));
-                        System.out.println("action :::: body_param.isRequired() " + body_param.isRequired());
-                    }
-*/
-                if (config.isAvailableSubCommand(parameter.getName()) && CommandLineUtils.isPrimitive(parameter.getType()) && parameter.isRequired()) {
-                    sb.append("commandOptions." + CommandLineUtils.getAsVariableName(parameter.getName()) + ", ");
-                }
-            }
-        }
-        return sb.toString();
     }
 }

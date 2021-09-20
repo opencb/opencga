@@ -32,7 +32,7 @@ import java.util.Map;
 
 public abstract class ParentClientRestApiWriter {
 
-    public Map<String, String> validTypes;
+    protected Map<String, String> validTypes;
     protected RestApi restApi;
     protected CommandLineConfiguration config;
     protected Map<String, Category> availableCategories = new HashMap<>();
@@ -82,7 +82,6 @@ public abstract class ParentClientRestApiWriter {
         FileOutputStream outputStream = new FileOutputStream(file.getAbsolutePath());
         byte[] strToBytes = str.getBytes();
         outputStream.write(strToBytes);
-
         outputStream.close();
     }
 
@@ -201,7 +200,6 @@ public abstract class ParentClientRestApiWriter {
     }
 
     public String getAsCamelCase(String s) {
-
         if (s.contains("-")) {
             s = s.replaceAll("-", "_");
         }

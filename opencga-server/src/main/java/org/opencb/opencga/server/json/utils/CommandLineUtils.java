@@ -5,9 +5,10 @@ import java.util.Set;
 
 public class CommandLineUtils {
 
-    private static final Set<String> primitiveTypes = new HashSet<>();
+    private static final Set<String> primitiveTypes;
 
     static {
+        primitiveTypes = new HashSet<>();
 
         primitiveTypes.add("String");
         primitiveTypes.add("string");

@@ -8,6 +8,16 @@ public class Category {
     private String path;
     private List<Endpoint> endpoints;
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Category{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", path='").append(path).append('\'');
+        sb.append(", endpoints=").append(endpoints);
+        sb.append('}');
+        return sb.toString();
+    }
+
     public String getName() {
         return name;
     }
@@ -35,12 +45,4 @@ public class Category {
         return this;
     }
 
-    @Override
-    public String toString() {
-        return "Category{" +
-                "name='" + name + '\'' +
-                ", path='" + path + '\'' +
-                ", endpoints=" + endpoints +
-                "}\n";
-    }
 }

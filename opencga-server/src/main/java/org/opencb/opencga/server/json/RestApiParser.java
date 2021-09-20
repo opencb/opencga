@@ -198,6 +198,7 @@ public class RestApiParser {
         return category;
     }
 
+    @Deprecated
     private static LinkedHashMap<String, Object> getHelp(Class clazz) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
 
