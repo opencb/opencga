@@ -20,7 +20,7 @@
     "rank" : 0,
     "dependsOn" : null,
     "description" : "Sample ID",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "individualId",
@@ -35,7 +35,7 @@
     "rank" : 1,
     "dependsOn" : null,
     "description" : "Individual ID",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "fatherId",
@@ -50,7 +50,7 @@
     "rank" : 2,
     "dependsOn" : null,
     "description" : "Father ID",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "motherId",
@@ -65,7 +65,7 @@
     "rank" : 3,
     "dependsOn" : null,
     "description" : "Mother ID",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "siblingsIds",
@@ -80,7 +80,7 @@
     "rank" : 4,
     "dependsOn" : null,
     "description" : "List of siblings IDs",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "sexReport",
@@ -95,7 +95,7 @@
     "rank" : 5,
     "dependsOn" : null,
     "description" : "Sex report",
-    "variableSet" : [ {
+    "variables" : [ {
       "id" : "sampleId",
       "name" : "Sample ID",
       "category" : null,
@@ -108,7 +108,7 @@
       "rank" : 0,
       "dependsOn" : null,
       "description" : "Sample ID",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "reportedSex",
@@ -123,7 +123,7 @@
       "rank" : 1,
       "dependsOn" : null,
       "description" : "Reported sex",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "reportedKaryotypicSex",
@@ -138,7 +138,7 @@
       "rank" : 2,
       "dependsOn" : null,
       "description" : "Reported karyotypic sex",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "ratioX",
@@ -153,7 +153,7 @@
       "rank" : 3,
       "dependsOn" : null,
       "description" : "Ratio: X-chromoxome / autosomic-chromosomes",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "ratioY",
@@ -168,7 +168,7 @@
       "rank" : 4,
       "dependsOn" : null,
       "description" : "Ratio: Y-chromoxome / autosomic-chromosomes",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "inferredKaryotypicSex",
@@ -183,7 +183,7 @@
       "rank" : 5,
       "dependsOn" : null,
       "description" : "Inferred karyotypic sex",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     } ],
     "attributes" : null
@@ -200,7 +200,7 @@
     "rank" : 6,
     "dependsOn" : null,
     "description" : "Relatedness report",
-    "variableSet" : [ {
+    "variables" : [ {
       "id" : "method",
       "name" : "Method",
       "category" : null,
@@ -213,7 +213,7 @@
       "rank" : 0,
       "dependsOn" : null,
       "description" : "Method",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "scores",
@@ -228,7 +228,7 @@
       "rank" : 1,
       "dependsOn" : null,
       "description" : "Scores",
-      "variableSet" : [ {
+      "variables" : [ {
         "id" : "sampleId1",
         "name" : "ID for sample #1",
         "category" : null,
@@ -241,7 +241,7 @@
         "rank" : 0,
         "dependsOn" : null,
         "description" : "Sample ID #1",
-        "variableSet" : null,
+        "variables" : null,
         "attributes" : null
       }, {
         "id" : "sampleId2",
@@ -256,7 +256,7 @@
         "rank" : 1,
         "dependsOn" : null,
         "description" : "Sample ID #2",
-        "variableSet" : null,
+        "variables" : null,
         "attributes" : null
       }, {
         "id" : "reportedRelation",
@@ -271,7 +271,7 @@
         "rank" : 2,
         "dependsOn" : null,
         "description" : "Reported relation",
-        "variableSet" : null,
+        "variables" : null,
         "attributes" : null
       }, {
         "id" : "z0",
@@ -286,7 +286,7 @@
         "rank" : 3,
         "dependsOn" : null,
         "description" : "Z0 value",
-        "variableSet" : null,
+        "variables" : null,
         "attributes" : null
       }, {
         "id" : "z1",
@@ -301,7 +301,7 @@
         "rank" : 4,
         "dependsOn" : null,
         "description" : "Z1 value",
-        "variableSet" : null,
+        "variables" : null,
         "attributes" : null
       }, {
         "id" : "z2",
@@ -316,7 +316,7 @@
         "rank" : 5,
         "dependsOn" : null,
         "description" : "Z2 value",
-        "variableSet" : null,
+        "variables" : null,
         "attributes" : null
       }, {
         "id" : "piHat",
@@ -331,7 +331,7 @@
         "rank" : 6,
         "dependsOn" : null,
         "description" : "PI-HAT value",
-        "variableSet" : null,
+        "variables" : null,
         "attributes" : null
       } ],
       "attributes" : null
@@ -350,7 +350,7 @@
     "rank" : 7,
     "dependsOn" : null,
     "description" : "Mendelian errors report",
-    "variableSet" : [ {
+    "variables" : [ {
       "id" : "sampleId",
       "name" : "Sample ID",
       "category" : null,
@@ -363,7 +363,7 @@
       "rank" : 7,
       "dependsOn" : null,
       "description" : "Sample ID",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "numErrors",
@@ -378,7 +378,7 @@
       "rank" : 0,
       "dependsOn" : null,
       "description" : "Total number of errors",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "errorRatio",
@@ -393,7 +393,7 @@
       "rank" : 1,
       "dependsOn" : null,
       "description" : "Error ratio",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "chromAggregation",
@@ -408,7 +408,7 @@
       "rank" : 2,
       "dependsOn" : null,
       "description" : "Aggregation per chromosome",
-      "variableSet" : [ {
+      "variables" : [ {
         "id" : "chromosome",
         "name" : "chromosome",
         "category" : null,
@@ -421,7 +421,7 @@
         "rank" : 0,
         "dependsOn" : null,
         "description" : "Chromosome",
-        "variableSet" : null,
+        "variables" : null,
         "attributes" : null
       }, {
         "id" : "numErrors",
@@ -436,7 +436,7 @@
         "rank" : 1,
         "dependsOn" : null,
         "description" : "Total number of errors",
-        "variableSet" : null,
+        "variables" : null,
         "attributes" : null
       }, {
         "id" : "codeAggregation",
@@ -451,7 +451,7 @@
         "rank" : 2,
         "dependsOn" : null,
         "description" : "Aggregation per error code for that chromosome",
-        "variableSet" : null,
+        "variables" : null,
         "attributes" : null
       } ],
       "attributes" : null
@@ -470,7 +470,7 @@
     "rank" : 8,
     "dependsOn" : null,
     "description" : "FastQC report (from the FastQC tool)",
-    "variableSet" : [ ],
+    "variables" : [ ],
     "attributes" : null
   }, {
     "id" : "flagStatsReport",
@@ -485,7 +485,7 @@
     "rank" : 9,
     "dependsOn" : null,
     "description" : "Flag stats report (from the samtools/flagstat command)",
-    "variableSet" : [ {
+    "variables" : [ {
       "id" : "totalReads",
       "name" : "Total number of reads",
       "category" : null,
@@ -498,7 +498,7 @@
       "rank" : 0,
       "dependsOn" : null,
       "description" : "Total number of reads",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "totalQcPassed",
@@ -513,7 +513,7 @@
       "rank" : 1,
       "dependsOn" : null,
       "description" : "Total number of reads marked as not passing quality controls",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "mapped",
@@ -528,7 +528,7 @@
       "rank" : 2,
       "dependsOn" : null,
       "description" : "Total number of reads which are mapped (0x4 bit not set)",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "secondaryAlignments",
@@ -543,7 +543,7 @@
       "rank" : 3,
       "dependsOn" : null,
       "description" : "Total number of reads which are secondary (0x100 bit set)",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "duplicates",
@@ -558,7 +558,7 @@
       "rank" : 4,
       "dependsOn" : null,
       "description" : "Total number of reads which are duplicates (0x400 bit set)",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "pairedInSequencing",
@@ -573,7 +573,7 @@
       "rank" : 5,
       "dependsOn" : null,
       "description" : "Total number of reads which are paired in sequencing (0x1 bit set)",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "properlyPaired",
@@ -588,7 +588,7 @@
       "rank" : 6,
       "dependsOn" : null,
       "description" : "Total number of reads which are properly paired (both 0x1 and 0x2 bits set and 0x4 bit not set)",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "selfAndMateMapped",
@@ -603,7 +603,7 @@
       "rank" : 7,
       "dependsOn" : null,
       "description" : "Total number of reads with itself and mate mapped (0x1 bit set and neither 0x4 nor 0x8 bits set)",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "singletons",
@@ -618,7 +618,7 @@
       "rank" : 8,
       "dependsOn" : null,
       "description" : "Total number of reads which are singletons (both 0x1 and 0x8 bits set and bit 0x4 not set)",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "mateMappedToDiffChr",
@@ -633,7 +633,7 @@
       "rank" : 9,
       "dependsOn" : null,
       "description" : "Total number of reads with mate mapped to a different chromosome (0x1 bit set and neither 0x4 nor 0x8 bits set and MRNM not equal to RNAME)",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "diffChrMapQ5",
@@ -648,7 +648,7 @@
       "rank" : 10,
       "dependsOn" : null,
       "description" : "Total number of reads with mate mapped to a different chromosome and with mapping quality at least 5 (0x1 bit set and neither 0x4 nor 0x8 bits set and MRNM not equal to RNAME and MAPQ >= 5)",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     } ],
     "attributes" : null
@@ -665,7 +665,7 @@
     "rank" : 10,
     "dependsOn" : null,
     "description" : "Hs metrics report (from the picard/CollecHsMetrics command)",
-    "variableSet" : [ {
+    "variables" : [ {
       "id" : "atDropout",
       "name" : "A measure of how undercovered <= 50% GC regions are relative to the mean",
       "category" : null,
@@ -678,7 +678,7 @@
       "rank" : 0,
       "dependsOn" : null,
       "description" : "A measure of how undercovered <= 50% GC regions are relative to the mean",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "baitDesignEfficiency",
@@ -693,7 +693,7 @@
       "rank" : 1,
       "dependsOn" : null,
       "description" : "Target terrirtoy / bait territory. 1 == perfectly efficient, 0.5 = half of baited bases are not target",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "baitTerritory",
@@ -708,7 +708,7 @@
       "rank" : 2,
       "dependsOn" : null,
       "description" : "The number of bases which have one or more baits on top of them",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "fold80BasePenalty",
@@ -723,7 +723,7 @@
       "rank" : 3,
       "dependsOn" : null,
       "description" : "The fold over-coverage necessary to raise 80% of bases in \"non-zero-cvg\" targets to the mean coverage level in those targets",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "foldEnrichment",
@@ -738,7 +738,7 @@
       "rank" : 4,
       "dependsOn" : null,
       "description" : "The fold by which the baited region has been amplified above genomic background",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "gcDropout",
@@ -753,7 +753,7 @@
       "rank" : 5,
       "dependsOn" : null,
       "description" : "A measure of how undercovered >= 50% GC regions are relative to the mean",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "hetSnpQ",
@@ -768,7 +768,7 @@
       "rank" : 6,
       "dependsOn" : null,
       "description" : "The Phred Scaled Q Score of the theoretical HET SNP sensitivity",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "hetSnpSensitivity",
@@ -783,7 +783,7 @@
       "rank" : 7,
       "dependsOn" : null,
       "description" : "The theoretical HET SNP sensitivity",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "nearBaitBases",
@@ -798,7 +798,7 @@
       "rank" : 8,
       "dependsOn" : null,
       "description" : "The number of PF aligned bases that mapped to within a fixed interval of a baited region, but not on a baited region",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "offBaitBases",
@@ -813,7 +813,7 @@
       "rank" : 9,
       "dependsOn" : null,
       "description" : "The number of PF aligned bases that mapped to neither on or near a bait",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "onBaitBases",
@@ -828,7 +828,7 @@
       "rank" : 10,
       "dependsOn" : null,
       "description" : "The number of PF aligned bases that mapped to a baited region of the genome",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "onTargetBases",
@@ -843,7 +843,7 @@
       "rank" : 11,
       "dependsOn" : null,
       "description" : "The number of PF aligned bases that mapped to a targeted region of the genome",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "pfBases",
@@ -858,7 +858,7 @@
       "rank" : 12,
       "dependsOn" : null,
       "description" : "Pf bases",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "pfBasesAligned",
@@ -873,7 +873,7 @@
       "rank" : 13,
       "dependsOn" : null,
       "description" : "The number of PF unique bases that are aligned with mapping score > 0 to the reference genome",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "pfReads",
@@ -888,7 +888,7 @@
       "rank" : 14,
       "dependsOn" : null,
       "description" : "The number of reads that pass the vendor's filter",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "pfUniqueReads",
@@ -903,7 +903,7 @@
       "rank" : 15,
       "dependsOn" : null,
       "description" : "The number of PF reads that are not marked as duplicates",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "pfUqBasesAligned",
@@ -918,7 +918,7 @@
       "rank" : 16,
       "dependsOn" : null,
       "description" : "The number of bases in the PF aligned reads that are mapped to a reference base. Accounts for clipping and gaps",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "pfUqReadsAligned",
@@ -933,7 +933,7 @@
       "rank" : 17,
       "dependsOn" : null,
       "description" : "The number of PF unique reads that are aligned with mapping score > 0 to the reference genome",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "totalReads",
@@ -948,7 +948,7 @@
       "rank" : 18,
       "dependsOn" : null,
       "description" : "The total number of reads in the SAM or BAM file examine",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "maxTargetCoverage",
@@ -963,7 +963,7 @@
       "rank" : 19,
       "dependsOn" : null,
       "description" : "Max target coverage",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "meanBaitCoverage",
@@ -978,7 +978,7 @@
       "rank" : 20,
       "dependsOn" : null,
       "description" : "The mean coverage of all baits in the experiment",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "meanTargetCoverage",
@@ -993,7 +993,7 @@
       "rank" : 21,
       "dependsOn" : null,
       "description" : "The mean coverage of targets",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "medianTargetCoverage",
@@ -1008,7 +1008,7 @@
       "rank" : 22,
       "dependsOn" : null,
       "description" : "The median coverage of targets",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "minTargetCoverage",
@@ -1023,7 +1023,7 @@
       "rank" : 23,
       "dependsOn" : null,
       "description" : "The minimum coverage of targets",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "onBaitVsSelected",
@@ -1038,7 +1038,7 @@
       "rank" : 24,
       "dependsOn" : null,
       "description" : "The percentage of on+near bait bases that are on as opposed to near",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "targetTerritory",
@@ -1053,7 +1053,7 @@
       "rank" : 25,
       "dependsOn" : null,
       "description" : "The unique number of target bases in the experiment where target is usually exons etc.",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "zeroCvgTargetsPct",
@@ -1068,7 +1068,7 @@
       "rank" : 26,
       "dependsOn" : null,
       "description" : "The fraction of targets that did not reach coverage=1 over any base",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "zeroCvgTargetsPct",
@@ -1083,7 +1083,7 @@
       "rank" : 27,
       "dependsOn" : null,
       "description" : "The fraction of targets that did not reach coverage=1 over any base",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "hsLibrarySize",
@@ -1098,7 +1098,7 @@
       "rank" : 28,
       "dependsOn" : null,
       "description" : "The estimated number of unique molecules in the selected part of the library",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "baitSet",
@@ -1113,7 +1113,7 @@
       "rank" : 29,
       "dependsOn" : null,
       "description" : "The name of the bait set used in the hybrid selection",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "Genome size",
@@ -1128,7 +1128,7 @@
       "rank" : 30,
       "dependsOn" : null,
       "description" : "The number of bases in the reference genome used for alignment",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "pctTargetBases",
@@ -1143,7 +1143,7 @@
       "rank" : 31,
       "dependsOn" : null,
       "description" : "The fraction of all target bases achieving 1x, 2x, 10x, 20x, 30x, 40x, 50x and 100x",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     }, {
       "id" : "hsPenalty",
@@ -1158,7 +1158,7 @@
       "rank" : 32,
       "dependsOn" : null,
       "description" : "The hybrid selection penalty incurred to get 80% of target bases to 10X, 20x, 30x, 40x, 50x and 100x",
-      "variableSet" : null,
+      "variables" : null,
       "attributes" : null
     } ],
     "attributes" : null

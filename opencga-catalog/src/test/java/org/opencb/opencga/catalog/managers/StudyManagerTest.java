@@ -89,13 +89,13 @@ public class StudyManagerTest extends AbstractManagerTest {
             variable.setDependsOn(null);
         }
         variable.setAttributes(null);
-        if (variable.getVariableSet() != null) {
-            ArrayList<Variable> l = new ArrayList<>(variable.getVariableSet());
+        if (variable.getVariables() != null) {
+            ArrayList<Variable> l = new ArrayList<>(variable.getVariables());
             l.sort(Comparator.comparing(Variable::getId));
             for (Variable subVariable : l) {
                 cleanVariable(subVariable);
             }
-            variable.setVariableSet(new LinkedHashSet<>(l));
+            variable.setVariables(new LinkedHashSet<>(l));
         }
     }
 

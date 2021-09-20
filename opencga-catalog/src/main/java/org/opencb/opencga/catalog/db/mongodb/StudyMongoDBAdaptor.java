@@ -197,9 +197,20 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         study.setFqn(project.getFqn() + ":" + study.getId());
 
+        List<VariableSet> variableSets = study.getVariableSets();
+        List<Document> variableSetDocuments = null;
+        if (variableSets != null) {
+            variableSetDocuments = new ArrayList<>(variableSets.size());
+            for (VariableSet variableSet : variableSets) {
+                variableSetDocuments.add(variableSetConverter.convertToStorageType(variableSet));
+            }
+        }
+        study.setVariableSets(null);
+
         //Create DBObject
         Document studyObject = studyConverter.convertToStorageType(study);
         studyObject.put(PRIVATE_UID, studyUid);
+        studyObject.put(QueryParams.VARIABLE_SET.key(), variableSetDocuments);
 
         //Set ProjectId
         studyObject.put(PRIVATE_PROJECT, new Document()
@@ -691,7 +702,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         long variableSetId = getNewUid();
         variableSet.setUid(variableSetId);
-        Document object = getMongoDBDocument(variableSet, "VariableSet");
+        Document object = variableSetConverter.convertToStorageType(variableSet);
         object.put(PRIVATE_UID, variableSetId);
 
         Bson bsonQuery = Filters.and(

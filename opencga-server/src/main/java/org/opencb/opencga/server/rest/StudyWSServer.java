@@ -530,8 +530,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     private void fixVariable(Variable variable) {
         variable.setId(StringUtils.isNotEmpty(variable.getId()) ? variable.getId() : variable.getName());
-        if (variable.getVariableSet() != null && variable.getVariableSet().size() > 0) {
-            for (Variable variable1 : variable.getVariableSet()) {
+        if (variable.getVariables() != null && variable.getVariables().size() > 0) {
+            for (Variable variable1 : variable.getVariables()) {
                 fixVariable(variable1);
             }
         }

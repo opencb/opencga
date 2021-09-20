@@ -36,8 +36,8 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
@@ -448,7 +448,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 Set<Variable> nestedVariables = null;
                 for (Variable tmpVariable : variables) {
                     if (tmpVariable.getId().equals(split[0])) {
-                        nestedVariables = tmpVariable.getVariableSet();
+                        nestedVariables = tmpVariable.getVariables();
                         break;
                     }
                 }
@@ -486,7 +486,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 Set<Variable> nestedVariables = null;
                 for (Variable tmpVariable : variables) {
                     if (tmpVariable.getId().equals(split[0])) {
-                        nestedVariables = tmpVariable.getVariableSet();
+                        nestedVariables = tmpVariable.getVariables();
                         break;
                     }
                 }
