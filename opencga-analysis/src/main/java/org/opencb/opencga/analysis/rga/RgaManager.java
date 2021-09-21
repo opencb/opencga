@@ -882,6 +882,16 @@ public class RgaManager implements AutoCloseable {
 
         ExecutorService executor = Executors.newFixedThreadPool(4);
 
+        // Check number of individuals matching query without checking their permissions
+        Future<Integer> totalIndividualsFuture = null;
+        if (options.getBoolean(QueryOptions.COUNT)) {
+            totalIndividualsFuture = executor.submit(() -> {
+                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.INDIVIDUAL_ID + ")");
+                DataResult<FacetField> result = rgaEngine.facetedQuery(collection, query, facetOptions);
+                return ((Number) result.first().getAggregationValues().get(0)).intValue();
+            });
+        }
+
         Preprocess preprocess;
         try {
             preprocess = individualQueryPreprocess(study, query, options, token);
@@ -897,16 +907,6 @@ public class RgaManager implements AutoCloseable {
 
         catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), preprocess.getUserId(),
                 StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
-
-        // Check number of individuals matching query without checking their permissions
-        Future<Integer> totalIndividualsFuture = null;
-        if (options.getBoolean(QueryOptions.COUNT)) {
-            totalIndividualsFuture = executor.submit(() -> {
-                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.INDIVIDUAL_ID + ")");
-                DataResult<FacetField> result = rgaEngine.facetedQuery(collection, query, facetOptions);
-                return ((Number) result.first().getAggregationValues().get(0)).intValue();
-            });
-        }
 
         List<String> sampleIds = preprocess.getQuery().getAsStringList(RgaQueryParams.SAMPLE_ID.key());
         preprocess.getQuery().remove(RgaQueryParams.SAMPLE_ID.key());
