@@ -869,6 +869,30 @@ public class RgaManager implements AutoCloseable {
         }
     }
 
+    // Added to improve performance issues. Need to be addressed properly and add this information in study internal.rga.stats field
+    @Deprecated
+    private Integer getTotalIndividuals(Study study) {
+        // In the future, this will need to be fetched from study internal.
+        // Atm, it will be fetched from study.attributes.rga.stats.totalIndividuals
+        if (study.getAttributes() == null) {
+            return null;
+        }
+        Object rga = study.getAttributes().get("RGA");
+        if (rga == null) {
+            return null;
+        }
+        Object stats = ((Map) rga).get("stats");
+        if (stats == null) {
+            return null;
+        }
+        Object totalIndividuals = ((Map) stats).get("totalIndividuals");
+        if (totalIndividuals != null) {
+            return Integer.parseInt(String.valueOf(totalIndividuals));
+        } else {
+            return null;
+        }
+    }
+
     public OpenCGAResult<KnockoutByIndividualSummary> individualSummary(String studyStr, Query query, QueryOptions options, String token)
             throws RgaException, CatalogException, IOException {
         StopWatch stopWatch = StopWatch.createStarted();
@@ -881,11 +905,17 @@ public class RgaManager implements AutoCloseable {
         // Check number of individuals matching query without checking their permissions
         Future<Integer> totalIndividualsFuture = null;
         if (options.getBoolean(QueryOptions.COUNT)) {
-            totalIndividualsFuture = executor.submit(() -> {
-                QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.INDIVIDUAL_ID + ")");
-                DataResult<FacetField> result = rgaEngine.facetedQuery(collection, query, facetOptions);
-                return ((Number) result.first().getAggregationValues().get(0)).intValue();
-            });
+            Integer totalIndividuals = getTotalIndividuals(study);
+            if (totalIndividuals != null) {
+                // Obtain it directly from the study
+                totalIndividualsFuture = executor.submit(() -> totalIndividuals);
+            } else {
+                totalIndividualsFuture = executor.submit(() -> {
+                    QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.INDIVIDUAL_ID + ")");
+                    DataResult<FacetField> result = rgaEngine.facetedQuery(collection, query, facetOptions);
+                    return ((Number) result.first().getAggregationValues().get(0)).intValue();
+                });
+            }
         }
 
         Preprocess preprocess;
