@@ -1826,7 +1826,8 @@ public class StudyManager extends AbstractManager {
                 throw new CatalogException("Error decompressing file: '" + filePath + "'", e);
             }
 
-            return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), null, 1, Collections.singletonList(templateId), 1);
+            return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(),
+                    1, Collections.singletonList(templateId), 1);
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Action.UPLOAD_TEMPLATE, Enums.Resource.STUDY, templateId, "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
