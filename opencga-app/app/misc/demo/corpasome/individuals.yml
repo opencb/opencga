@@ -1,0 +1,91 @@
+id: ISDBM322015
+name: ISDBM322015
+samples:
+  - id: ISDBM322015
+father:
+  id: ISDBM322016
+mother:
+  id: ISDBM322018
+sex: MALE
+karyotypicSex: XY
+lifeStatus: ALIVE
+phenotypes:
+  - id: HP:0000519
+    name: Developmental cataract
+    source: HPO
+    status: OBSERVED
+  - id: HP:0000545
+    name: Myopia
+    source: HPO
+    status: OBSERVED
+disorders:
+  - id: OMIM:611597
+    name: Cataract, Autosomal Dominant, Multiple Types 1
+    source: OMIM
+---
+id: ISDBM322017
+name: ISDBM322017
+samples:
+  - id: ISDBM322017
+father:
+  id: ISDBM322016
+mother:
+  id: ISDBM322018
+sex: FEMALE
+karyotypicSex: XX
+lifeStatus: ALIVE
+phenotypes:
+  - id: HP:0000545
+    name: Myopia
+    source: HPO
+    status: OBSERVED
+  - id: HP:0002077
+    name: Migraine with aura
+    source: HPO
+    status: OBSERVED
+disorders:
+  - id: OMIM:300125
+    name: Migraine, Familial Typical, Susceptibility To, 2
+    source: OMIM
+---
+id: ISDBM322016
+name: ISDBM322016
+samples:
+  - id: ISDBM322016
+sex: MALE
+karyotypicSex: XY
+lifeStatus: ALIVE
+phenotypes:
+  - id: HP:0000545
+    name: Myopia
+    source: HPO
+    status: OBSERVED
+  - id: HP:0000519
+    name: Developmental cataract
+    source: HPO
+    status: OBSERVED
+disorders:
+  - id: OMIM:611597
+    name: Cataract, Autosomal Dominant, Multiple Types 1
+    source: OMIM
+---
+id: ISDBM322018
+name: ISDBM322018
+samples:
+  - id: ISDBM322018
+sex: FEMALE
+karyotypicSex: XX
+lifeStatus: ALIVE
+phenotypes:
+  - id: HP:0002077
+    name: Migraine with aura
+    source: HPO
+    status: OBSERVED
+  - id: HP:0000958
+    name: Dry skin
+    source: HPO
+    status: OBSERVED
+disorders:
+  - id: OMIM:300125
+    name: Migraine, Familial Typical, Susceptibility To, 2
+    source: OMIM

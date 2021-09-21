@@ -106,20 +106,13 @@ public class FileWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Download an external file to catalog and register it", response = Job.class)
     public Response downloadAndRegister(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(name = "body", value = "Fetch parameters", required = true) FileFetch fetchParams) {
-        try {
-            Map<String, Object> params = new HashMap<>();
-            params.put(ParamConstants.STUDY_PARAM, studyStr);
-            params.put(ParamConstants.FILE_PATH_PARAM, fetchParams.getPath());
-            params.put("url", fetchParams.getUrl());
-
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, FetchAndRegisterTask.ID, Enums.Priority.MEDIUM,
-                    params, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return submitJob(FetchAndRegisterTask.ID, studyStr, fetchParams, jobId, jobDescription, dependsOn, jobTags);
     }
 
     @GET

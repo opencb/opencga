@@ -488,6 +488,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty("study", commandOptions.study);
+        addJobParams(commandOptions.jobOptions, params);
 
         FileFetch data = new FileFetch(commandOptions.url, commandOptions.path);
 
