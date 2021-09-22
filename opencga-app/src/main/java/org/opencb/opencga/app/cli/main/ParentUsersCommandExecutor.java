@@ -16,6 +16,7 @@
 package org.opencb.opencga.app.cli.main;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
@@ -36,6 +37,7 @@ import java.util.List;
 public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor {
     // TODO: Add include/exclude/skip/... (queryOptions) to the client calls !!!!
 
+    public static final String LOGIN_OK = "You have been logged in correctly.";
     private UsersCommandOptions usersCommandOptions;
 
     public ParentUsersCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
@@ -50,7 +52,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
 
         String user = usersCommandOptions.loginCommandOptions.user;
         String password = usersCommandOptions.loginCommandOptions.password;
-
+        RestResponse<AuthenticationResponse> res = new RestResponse();
         if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
             AuthenticationResponse response = openCGAClient.login(user, password);
             if (response != null) {
@@ -70,7 +72,10 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                 }
                 // write CLI session file
                 saveCliSessionFile(user, response.getToken(), response.getRefreshToken(), studies);
-                System.out.println("You have been logged in correctly.");
+                Event event = new Event();
+                event.setMessage(LOGIN_OK);
+                event.setType(Event.Type.INFO);
+                res.getEvents().add(event);
             }
         } else {
             String sessionId = usersCommandOptions.commonCommandOptions.token;
@@ -80,7 +85,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
             }
             System.err.println(errorMsg);
         }
-        RestResponse<AuthenticationResponse> res = new RestResponse();
+
         return res;
     }
 

@@ -182,7 +182,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     private String getShortCuts(Parameter parameter, CategoryConfig config) {
-        return "\"--" + getKebabCase(parameter.getName() + "\"" + getStringShortcuts(parameter, config));
+        return "\"--" + getKebabCase(parameter.getName()) + "\"" + getStringShortcuts(parameter, config);
     }
 
     public String getStringShortcuts(Parameter parameter, CategoryConfig categoryConfig) {
@@ -194,7 +194,11 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             for (Shortcut sc : config.getApiConfig().getShortcuts()) {
                 if (parameter.getName().equals(sc.getName()) && !scut.contains(sc.getShortcut())) {
                     scut.add(sc.getShortcut());
-                    res += ", \"-" + sc.getShortcut() + "\"";
+                    String dash = "-";
+                    if (sc.getShortcut().length() > 1) {
+                        dash = "--";
+                    }
+                    res += ", \"" + dash + "" + sc.getShortcut() + "\"";
                 }
             }
         }
@@ -204,7 +208,11 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             for (Shortcut sc : categoryConfig.getShortcuts()) {
                 if (parameter.getName().equals(sc.getName()) && !scut.contains(sc.getShortcut())) {
                     scut.add(sc.getShortcut());
-                    res += ", \"-" + sc.getShortcut() + "\"";
+                    String dash = "-";
+                    if (sc.getShortcut().length() > 1) {
+                        dash = "--";
+                    }
+                    res += ", \"" + dash + "" + sc.getShortcut() + "\"";
                 }
             }
         }

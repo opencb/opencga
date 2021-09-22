@@ -20,6 +20,16 @@ public abstract class CliOptionsParser {
         this.jCommander = new JCommander(generalOptions);
     }
 
+    public static String getSubCommand(JCommander jCommander) {
+        String parsedCommand = jCommander.getParsedCommand();
+        if (jCommander.getCommands().containsKey(parsedCommand)) {
+            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
+            return subCommand != null ? subCommand: "";
+        } else {
+            return null;
+        }
+    }
+
     public void parse(String[] args) throws ParameterException {
         jCommander.parse(args);
     }
@@ -30,16 +40,6 @@ public abstract class CliOptionsParser {
 
     public String getSubCommand() {
         return getSubCommand(jCommander);
-    }
-
-    public static String getSubCommand(JCommander jCommander) {
-        String parsedCommand = jCommander.getParsedCommand();
-        if (jCommander.getCommands().containsKey(parsedCommand)) {
-            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-            return subCommand != null ? subCommand: "";
-        } else {
-            return null;
-        }
     }
 
     public abstract boolean isHelp();

@@ -77,16 +77,21 @@ public class TextOutputWriter extends AbstractOutputWriter {
             return;
         }
 
+        if (checkLogin(queryResponse) && queryResponse.allResultsSize() == 0) {
+            return;
+        }
         if (queryResponse.getResponses().size() == 0 || ((OpenCGAResult) queryResponse.getResponses().get(0)).getNumResults() == 0) {
             if (queryResponse.getResponses().size() == 1 && queryResponse.first().getNumMatches() > 0) {
                 // count
                 ps.println(queryResponse.first().getNumMatches());
             } else {
+
                 if (CollectionUtils.isNotEmpty(queryResponse.getEvents())) {
                     for (Event event : ((RestResponse<?>) queryResponse).getEvents()) {
                         ps.println("EVENT: " + event.getMessage());
                     }
                 }
+
                 ps.println("No results found for the query.");
             }
             return;
@@ -374,8 +379,74 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .printTable(unwind(queryResultList));
     }
 
-    public interface TableSchema<T> {
-        Table.TableColumnSchema<T> getColumnSchema();
+    private void printVariableSet(List<DataResult<VariableSet>> queryResultList) {
+        new Table<VariableSet>(tableType)
+                .addColumn("ID", VariableSet::getId)
+                .addColumn("NAME", VariableSet::getName)
+                .addColumn("DESCRIPTION", VariableSet::getDescription)
+                .addColumn("VARIABLES", v -> v.getVariables().stream().map(Variable::getId).collect(Collectors.joining(",")))
+                .printTable(unwind(queryResultList));
+    }
+
+    private void printAnnotationSet(List<DataResult<AnnotationSet>> queryResultList) {
+        new Table<Map.Entry<String, Object>>(tableType)
+                .addColumn("KEY", Map.Entry::getKey)
+                .addColumn("VALUE", e -> e.getValue().toString())
+                .printTable(queryResultList.stream().flatMap(r -> r.getResults().stream().flatMap(a -> a.getAnnotations().entrySet().stream())).collect(Collectors.toList()));
+    }
+
+    private void printTreeFile(RestResponse<FileTree> queryResponse) {
+        StringBuilder sb = new StringBuilder();
+        for (DataResult<FileTree> fileTreeQueryResult : queryResponse.getResponses()) {
+            printRecursiveTree(fileTreeQueryResult.getResults(), sb, "");
+        }
+        ps.println(sb.toString());
+    }
+
+    private void printRecursiveTree(List<FileTree> fileTreeList, StringBuilder sb, String indent) {
+        if (fileTreeList == null || fileTreeList.size() == 0) {
+            return;
+        }
+
+        for (Iterator<FileTree> iterator = fileTreeList.iterator(); iterator.hasNext(); ) {
+            FileTree fileTree = iterator.next();
+            File file = fileTree.getFile();
+
+            if (!indent.isEmpty()) {
+                sb.append(indent);
+                sb.append(iterator.hasNext() ? "├──" : "└──");
+                sb.append(" ");
+            }
+            if (file.getType() == File.Type.FILE) {
+                sb.append(file.getName());
+                sb.append("  [");
+                if (file.getInternal() != null
+                        && file.getInternal().getStatus() != null
+                        && !READY.equals(file.getInternal().getStatus().getName())) {
+                    sb.append(file.getInternal().getStatus().getName()).append(", ");
+                }
+                sb.append(humanReadableByteCount(file.getSize(), false)).append("]");
+            } else {
+                sb.append(file.getName()).append("/");
+            }
+            sb.append("\n");
+
+            if (file.getType() == File.Type.DIRECTORY) {
+                printRecursiveTree(fileTree.getChildren(), sb, indent + (iterator.hasNext() ? "│   " : "    "));
+            }
+        }
+    }
+
+    private <T> List<T> unwind(List<DataResult<T>> queryResultList) {
+        return queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList());
+    }
+
+    private String getId(Annotable annotable) {
+        return getId(annotable, "-");
+    }
+
+    private String getId(Annotable annotable, String defaultStr) {
+        return annotable != null ? StringUtils.defaultIfEmpty(annotable.getId(), defaultStr) : defaultStr;
     }
 
     public enum JobColumns implements TableSchema<Job> {
@@ -433,11 +504,6 @@ public class TextOutputWriter extends AbstractOutputWriter {
             this.columnSchema = columnSchema;
         }
 
-        @Override
-        public Table.TableColumnSchema<Job> getColumnSchema() {
-            return columnSchema;
-        }
-
         private static Date getStart(Job job) {
             return job.getExecution() == null ? null : job.getExecution().getStart();
         }
@@ -480,76 +546,14 @@ public class TextOutputWriter extends AbstractOutputWriter {
             }
             return durationInMillis;
         }
-    }
 
-    private void printVariableSet(List<DataResult<VariableSet>> queryResultList) {
-        new Table<VariableSet>(tableType)
-                .addColumn("ID", VariableSet::getId)
-                .addColumn("NAME", VariableSet::getName)
-                .addColumn("DESCRIPTION", VariableSet::getDescription)
-                .addColumn("VARIABLES", v -> v.getVariables().stream().map(Variable::getId).collect(Collectors.joining(",")))
-                .printTable(unwind(queryResultList));
-    }
-
-    private void printAnnotationSet(List<DataResult<AnnotationSet>> queryResultList) {
-        new Table<Map.Entry<String, Object>>(tableType)
-                .addColumn("KEY", Map.Entry::getKey)
-                .addColumn("VALUE", e -> e.getValue().toString())
-                .printTable(queryResultList.stream().flatMap(r -> r.getResults().stream().flatMap(a -> a.getAnnotations().entrySet().stream())).collect(Collectors.toList()));
-    }
-
-    private void printTreeFile(RestResponse<FileTree> queryResponse) {
-        StringBuilder sb = new StringBuilder();
-        for (DataResult<FileTree> fileTreeQueryResult : queryResponse.getResponses()) {
-            printRecursiveTree(fileTreeQueryResult.getResults(), sb, "");
-        }
-        ps.println(sb.toString());
-    }
-
-    private void printRecursiveTree(List<FileTree> fileTreeList, StringBuilder sb, String indent) {
-        if (fileTreeList == null || fileTreeList.size() == 0) {
-            return;
-        }
-
-        for (Iterator<FileTree> iterator = fileTreeList.iterator(); iterator.hasNext(); ) {
-            FileTree fileTree = iterator.next();
-            File file = fileTree.getFile();
-
-            if (!indent.isEmpty()) {
-                sb.append(indent);
-                sb.append(iterator.hasNext() ? "├──" : "└──");
-                sb.append(" ");
-            }
-            if (file.getType() == File.Type.FILE) {
-                sb.append(file.getName());
-                sb.append("  [");
-                if (file.getInternal() != null
-                        && file.getInternal().getStatus() != null
-                        && !READY.equals(file.getInternal().getStatus().getName())) {
-                    sb.append(file.getInternal().getStatus().getName()).append(", ");
-                }
-                sb.append(humanReadableByteCount(file.getSize(), false)).append("]");
-
-            } else {
-                sb.append(file.getName()).append("/");
-            }
-            sb.append("\n");
-
-            if (file.getType() == File.Type.DIRECTORY) {
-                printRecursiveTree(fileTree.getChildren(), sb, indent + (iterator.hasNext()? "│   " : "    "));
-            }
+        @Override
+        public Table.TableColumnSchema<Job> getColumnSchema() {
+            return columnSchema;
         }
     }
 
-    private <T> List<T> unwind(List<DataResult<T>> queryResultList) {
-        return queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList());
-    }
-
-    private String getId(Annotable annotable) {
-        return getId(annotable, "-");
-    }
-
-    private String getId(Annotable annotable, String defaultStr) {
-        return annotable != null ? StringUtils.defaultIfEmpty(annotable.getId(), defaultStr) : defaultStr;
+    public interface TableSchema<T> {
+        Table.TableColumnSchema<T> getColumnSchema();
     }
 }

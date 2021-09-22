@@ -55,7 +55,7 @@ public class GeneralCliOptions {
      * This class contains all those common parameters available for all 'subcommands'
      */
     public static class CommonCommandOptions {
-        @Parameter(names = {"--out-format"}, description = "Output format. one of {JSON, JSON_PRETTY, TEXT, YAML}", arity = 1)
+        @Parameter(names = {"--out-format, --OF"}, description = "Output format. one of {JSON, JSON_PRETTY, TEXT, YAML}", arity = 1)
         public String outputFormat = "TEXT";
 
         @Parameter(names = {"-h", "--help"}, description = "Print this help", help = true)

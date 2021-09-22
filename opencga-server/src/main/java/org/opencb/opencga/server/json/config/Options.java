@@ -1,104 +1,81 @@
 package org.opencb.opencga.server.json.config;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.List;
 
 public class Options {
 
-    private String serverUrl;
-    private String version;
-    private String parserOutputDir;
-    private String optionsOutputDir;
-    private String executorsOutputDir;
-    private String executorsPackage;
-    private String optionsPackage;
-    private String parserPackage;
+    private String outputDir;
+
     private List<String> ignoreTypes;
 
     public Options() {
     }
 
-    public Options(String serverUrl, String parserOutputDir, String optionsOutputDir, String executorsOutputDir,
-                   String executorsPackage, String optionsPackage, String parserPackage, List<String> ignoreTypes) {
-        this.serverUrl = serverUrl;
-        this.parserOutputDir = parserOutputDir;
-        this.optionsOutputDir = optionsOutputDir;
-        this.executorsOutputDir = executorsOutputDir;
-        this.executorsPackage = executorsPackage;
-        this.optionsPackage = optionsPackage;
-        this.parserPackage = parserPackage;
-        this.ignoreTypes = ignoreTypes;
+    public String getOutputDir() {
+        return outputDir;
     }
 
-    public String getServerUrl() {
-        return serverUrl;
-    }
-
-    public Options setServerUrl(String serverUrl) {
-        this.serverUrl = serverUrl;
+    public Options setOutputDir(String outputDir) {
+        this.outputDir = outputDir;
         return this;
     }
 
-    public String getVersion() {
-        return version;
-    }
-
-    public Options setVersion(String version) {
-        this.version = version;
-        return this;
-    }
-
-    public String getParserOutputDir() {
-        return parserOutputDir;
-    }
-
-    public Options setParserOutputDir(String parserOutputDir) {
-        this.parserOutputDir = parserOutputDir;
-        return this;
+    private String getFolderAsPackage(String inputDir) {
+        String res = "";
+        if (inputDir.contains("/src/main/java/")) {
+            inputDir = inputDir.substring(inputDir.lastIndexOf("/src/main/java/") + "/src/main/java/".length());
+        }
+        res = inputDir.replace("/", ".");
+        if (res.endsWith(".")) {
+            res = res.substring(0, res.length() - 1);
+        }
+        return res;
     }
 
     public String getOptionsOutputDir() {
-        return optionsOutputDir;
-    }
-
-    public Options setOptionsOutputDir(String optionsOutputDir) {
-        this.optionsOutputDir = optionsOutputDir;
-        return this;
+        String res = "";
+        if (outputDir.endsWith("/")) {
+            res = outputDir + "options";
+        } else {
+            res = outputDir + "/options";
+        }
+        return res;
     }
 
     public String getExecutorsOutputDir() {
-        return executorsOutputDir;
-    }
-
-    public Options setExecutorsOutputDir(String executorsOutputDir) {
-        this.executorsOutputDir = executorsOutputDir;
-        return this;
+        String res = "";
+        if (outputDir.endsWith("/")) {
+            res = outputDir + "executors";
+        } else {
+            res = outputDir + "/executors";
+        }
+        return res;
     }
 
     public String getExecutorsPackage() {
-        return executorsPackage;
-    }
-
-    public Options setExecutorsPackage(String executorsPackage) {
-        this.executorsPackage = executorsPackage;
-        return this;
+        String res = "";
+        if (outputDir != null && !StringUtils.isEmpty(outputDir)) {
+            res = getFolderAsPackage(outputDir) + ".executors";
+        }
+        return res;
     }
 
     public String getOptionsPackage() {
-        return optionsPackage;
-    }
-
-    public Options setOptionsPackage(String optionsPackage) {
-        this.optionsPackage = optionsPackage;
-        return this;
+        String res = "";
+        if (outputDir != null && !StringUtils.isEmpty(outputDir)) {
+            res = getFolderAsPackage(outputDir) + ".options";
+        }
+        return res;
     }
 
     public String getParserPackage() {
-        return parserPackage;
-    }
-
-    public Options setParserPackage(String parserPackage) {
-        this.parserPackage = parserPackage;
-        return this;
+        String res = "";
+        if (outputDir != null && !StringUtils.isEmpty(outputDir)) {
+            res = getFolderAsPackage(outputDir);
+        }
+        return res;
     }
 
     public List<String> getIgnoreTypes() {

@@ -17,13 +17,11 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
-import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.io.Console;
 import java.util.Scanner;
 
 /**
@@ -69,12 +67,181 @@ public class OpencgaMain {
     }
 
     private static void process(String[] args) {
+        Console console = System.console();
+        boolean invalidInput = false;
+        if (console == null) {
+            System.out.println("Couldn't get Console instance");
+            System.exit(0);
+        }
 
         if (args.length == 1 && "exit".equals(args[0])) {
             System.out.println("Thanks for using OpenCGA. See you soon.");
             System.exit(0);
         }
-        if (args.length == 1 && "--shell".equals(args[0])) {
+        if (args.length == 1 && "-shell".equals(args[0])) {
+            activateShell();
+        }
+
+        if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1])) {
+            if (argsContains(args, "--password")) {
+                console.printf("Remove the password parameter and try again.");
+                invalidInput = true;
+            } else {
+                if (!argsContains(args, "--help") && !argsContains(args, "-h")) {
+                    char[] passwordArray = console.readPassword("Enter your secret password: ");
+                    args = appendArgs(args, new String[]{"--password", new String(passwordArray)});
+                }
+            }
+        }
+        if (!invalidInput) {
+            OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
+            try {
+                cliOptionsParser.parse(args);
+
+                String parsedCommand = cliOptionsParser.getCommand();
+                if (parsedCommand == null || parsedCommand.isEmpty()) {
+                    if (cliOptionsParser.getGeneralOptions().version) {
+                        System.out.println("Version " + GitRepositoryState.get().getBuildVersion());
+                        System.out.println("Git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+                        //  System.exit(0);
+                    } else if (cliOptionsParser.getGeneralOptions().help) {
+                        cliOptionsParser.printUsage();
+                        // System.exit(0);
+                    } else {
+                        cliOptionsParser.printUsage();
+                        //  System.exit(1);
+                    }
+                } else {
+                    CommandExecutor commandExecutor = null;
+                    // Check if any command -h option is present
+                    if (cliOptionsParser.isHelp()) {
+                        cliOptionsParser.printUsage();
+                        //System.exit(0);
+                    } else {
+                        String parsedSubCommand = cliOptionsParser.getSubCommand();
+                        if (parsedSubCommand == null || parsedSubCommand.isEmpty()) {
+                            cliOptionsParser.printUsage();
+                        } else {
+                            switch (parsedCommand) {
+                                case "users":
+                                    commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                                    break;
+                                case "projects":
+                                    commandExecutor = new ProjectsCommandExecutor(cliOptionsParser.getProjectsCommandOptions());
+                                    break;
+                                case "studies":
+                                    commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getStudiesCommandOptions());
+                                    break;
+                                case "files":
+                                    commandExecutor = new FilesCommandExecutor(cliOptionsParser.getFilesCommandOptions());
+                                    break;
+                                case "jobs":
+                                    commandExecutor = new JobsCommandExecutor(cliOptionsParser.getJobsCommandOptions());
+                                    break;
+                                case "individuals":
+                                    commandExecutor = new IndividualsCommandExecutor(cliOptionsParser.getIndividualsCommandOptions());
+                                    break;
+                                case "samples":
+                                    commandExecutor = new SamplesCommandExecutor(cliOptionsParser.getSamplesCommandOptions());
+                                    break;
+                                case "cohorts":
+                                    commandExecutor = new CohortsCommandExecutor(cliOptionsParser.getCohortsCommandOptions());
+                                    break;
+                                case "panels":
+                                    commandExecutor = new DiseasePanelsCommandExecutor(cliOptionsParser.getDiseasePanelsCommandOptions());
+                                    break;
+                                case "families":
+                                    commandExecutor = new FamiliesCommandExecutor(cliOptionsParser.getFamiliesCommandOptions());
+                                    break;
+                                case "alignments":
+                                    commandExecutor =
+                                            new AnalysisAlignmentCommandExecutor(cliOptionsParser.getAnalysisAlignmentCommandOptions());
+                                    break;
+                                case "variant":
+                                    commandExecutor =
+                                            new AnalysisVariantCommandExecutor(cliOptionsParser.getAnalysisVariantCommandOptions());
+                                    break;
+                                case "clinical":
+                                    commandExecutor =
+                                            new AnalysisClinicalCommandExecutor(cliOptionsParser.getAnalysisClinicalCommandOptions());
+                                    break;
+                                case "operations":
+                                    commandExecutor =
+                                            new OperationsVariantStorageCommandExecutor(cliOptionsParser.getOperationsVariantStorageCommandOptions());
+                                    break;
+                                case "meta":
+                                    commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
+                                    break;
+                                default:
+                                    System.err.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
+                                    break;
+                            }
+
+                            if (commandExecutor != null) {
+                                try {
+                                    commandExecutor.execute();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    //System.exit(1);
+                                }
+                            } else {
+                                cliOptionsParser.printUsage();
+                                // System.exit(1);
+                            }
+                        }
+                    }
+                }
+            } catch (ParameterException e) {
+                System.err.println(e.getMessage());
+                cliOptionsParser.printUsage();
+
+                //System.exit(1);
+            }
+        }
+    }
+
+    private static String[] appendArgs(String[] args, String[] strings) {
+        String[] res = new String[args.length + strings.length];
+        for (int i = 0; i < res.length; i++) {
+            if (i < args.length) {
+                res[i] = args[i];
+            } else {
+                res[i] = strings[i - args.length];
+            }
+        }
+        return res;
+    }
+
+    private static boolean argsContains(String[] args, String s) {
+        for (String arg : args) {
+            if (arg.contains(s)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    /*
+    private static void preprocess(String[] args) {
+
+        if (args.length == 1 && "test".equals(args[0])) {
+            Console console = System.console();
+            if (console == null) {
+                System.out.println("Couldn't get Console instance");
+                System.exit(0);
+            }
+
+            console.printf("Testing password%n");
+            char[] passwordArray = console.readPassword("Enter your secret password: ");
+            console.printf("Password entered was: %s%n", new String(passwordArray));
+        }
+
+        if (args.length == 1 && "exit".equals(args[0])) {
+            System.out.println("Thanks for using OpenCGA. See you soon.");
+            System.exit(0);
+        }
+        if (args.length == 1 && "-shell".equals(args[0])) {
             activateShell();
         }
 
@@ -201,5 +368,5 @@ public class OpencgaMain {
 
             //System.exit(1);
         }
-    }
+    }*/
 }

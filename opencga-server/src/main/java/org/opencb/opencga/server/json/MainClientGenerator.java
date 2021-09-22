@@ -66,7 +66,7 @@ public class MainClientGenerator {
         LOG.info("Creating CLI executors files in folder " + new File(config.getOptions().getExecutorsOutputDir()).getAbsolutePath());
         ExecutorsCliRestApiWriter executorsCliRestApiWriter = new ExecutorsCliRestApiWriter(restApi, config);
         executorsCliRestApiWriter.write();
-        LOG.info("Creating CLI parser file in folder " + new File(config.getOptions().getParserOutputDir()).getAbsolutePath());
+        LOG.info("Creating CLI parser file in folder " + new File(config.getOptions().getOutputDir()).getAbsolutePath());
         ParserCliRestApiWriter parserCliRestApiWriter = new ParserCliRestApiWriter(restApi, config);
         parserCliRestApiWriter.write();
     }

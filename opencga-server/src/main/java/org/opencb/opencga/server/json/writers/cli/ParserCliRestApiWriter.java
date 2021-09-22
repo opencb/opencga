@@ -217,7 +217,7 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
     @Override
     protected String getClassFileName(String key) {
         Category category = availableCategories.get(key);
-        return config.getOptions().getParserOutputDir() + "/OpencgaCliOptionsParser.java";
+        return config.getOptions().getOutputDir() + "/OpencgaCliOptionsParser.java";
         //return "/tmp/OpencgaCliOptionsParser.java";
     }
 }

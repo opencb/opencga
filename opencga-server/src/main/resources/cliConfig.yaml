@@ -1,12 +1,5 @@
 options:
-  serverUrl: http://localhost:8080/opencga
-  version: 1.0
-  parserOutputDir: opencga-app/src/main/java/org/opencb/opencga/app/cli/main/
-  optionsOutputDir: opencga-app/src/main/java/org/opencb/opencga/app/cli/main/options
-  executorsOutputDir: opencga-app/src/main/java/org/opencb/opencga/app/cli/main/executors
-  executorsPackage: org.opencb.opencga.app.cli.main.executors
-  optionsPackage: org.opencb.opencga.app.cli.main.options
-  parserPackage: org.opencb.opencga.app.cli.main
+  outputDir: opencga-app/src/main/java/org/opencb/opencga/app/cli/main/
   ignoreTypes:
     - string
     - object
@@ -28,10 +21,18 @@ apiConfig:
   shortcuts:
     - name: user
       shortcut: u
-    - name: password
-      shortcut: p
     - name: study
       shortcut: s
+    - name: exclude
+      shortcut: E
+    - name: include
+      shortcut: I
+    - name: project
+      shortcut: p
+    - name: creationDate
+      shortcut: cd
+    - name: modificationDate
+      shortcut: md
   categoryConfigList:
     - name: users
       ignore: False

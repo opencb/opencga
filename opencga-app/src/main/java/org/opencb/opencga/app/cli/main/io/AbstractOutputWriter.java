@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main.io;
 
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.app.cli.main.ParentUsersCommandExecutor;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.PrintStream;
@@ -27,12 +28,11 @@ import java.io.PrintStream;
  */
 public abstract class AbstractOutputWriter {
 
-    protected WriterConfiguration writerConfiguration;
-    protected PrintStream ps;
-
     protected static final String ANSI_RESET = "\033[0m";
     protected static final String ANSI_RED = "\033[31m";
     protected static final String ANSI_YELLOW = "\033[33m";
+    protected WriterConfiguration writerConfiguration;
+    protected PrintStream ps;
 
     public AbstractOutputWriter() {
         this(new WriterConfiguration(), System.out);
@@ -78,4 +78,24 @@ public abstract class AbstractOutputWriter {
         return errors;
     }
 
+    /**
+     * Print login message.
+     *
+     * @param dataResponse dataResponse object
+     * @return true if the query gave an error.
+     */
+    protected <T> boolean checkLogin(RestResponse<T> dataResponse) {
+        // Print warnings
+        boolean res = false;
+        if (ListUtils.isNotEmpty(dataResponse.getEvents())) {
+            for (Event event : dataResponse.getEvents()) {
+                if (event.getType() == Event.Type.INFO && event.getMessage().equals(ParentUsersCommandExecutor.LOGIN_OK)) {
+                    System.out.println(ANSI_YELLOW + event.getMessage() + ANSI_RESET);
+                    res = true;
+                }
+            }
+        }
+
+        return res;
+    }
 }
