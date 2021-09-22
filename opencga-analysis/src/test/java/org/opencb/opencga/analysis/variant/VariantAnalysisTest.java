@@ -71,7 +71,7 @@ import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -468,6 +468,8 @@ public class VariantAnalysisTest {
                 .setCohort(StudyEntry.DEFAULT_COHORT)
                 .setIndex(true);
 
+        outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats_index_2"));
+        System.out.println("output = " + outDir.toAbsolutePath());
         result = toolRunner.execute(CohortVariantStatsAnalysis.class, toolParams,
                 new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
         checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
@@ -489,9 +491,22 @@ public class VariantAnalysisTest {
         variantExportParams.appendQuery(new Query(VariantQueryParam.REGION.key(), "22"));
         assertEquals("22", variantExportParams.getRegion());
         variantExportParams.setCt("lof");
-        variantExportParams.setCompress(true);
-        variantExportParams.setOutputFileName("chr22");
+        variantExportParams.setOutputFileName("chr22.vcf");
 
+        toolRunner.execute(VariantExportTool.class, variantExportParams.toObjectMap(), outDir, null, token);
+        assertTrue(outDir.resolve(variantExportParams.getOutputFileName() + ".gz").toFile().exists());
+    }
+
+    @Test
+    public void testExportVep() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_export_vep"));
+        System.out.println("outDir = " + outDir);
+        VariantExportParams variantExportParams = new VariantExportParams();
+        variantExportParams.appendQuery(new Query(VariantQueryParam.REGION.key(), "22,1,5"));
+        assertEquals("22,1,5", variantExportParams.getRegion());
+        variantExportParams.setCt("lof");
+        variantExportParams.setOutputFileName("chr1-5-22");
+        variantExportParams.setOutputFormat(VariantWriterFactory.VariantOutputFormat.ENSEMBL_VEP.name());
         toolRunner.execute(VariantExportTool.class, variantExportParams.toObjectMap(), outDir, null, token);
     }
 
