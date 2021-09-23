@@ -68,7 +68,7 @@ public class VariantMatchers {
         return new FeatureMatcher<DataResult<?>, Long>(subMatcher, "a queryResult with numTotalResults", "NumTotalResults") {
             @Override
             protected Long featureValueOf(DataResult<?> actual) {
-                return actual.getNumTotalResults();
+                return actual.getNumMatches();
             }
         };
     }
