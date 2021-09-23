@@ -659,7 +659,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return document;
     }
 
-    static void fixPhenotypesForRemoval(ObjectMap parameters) {
+    void fixPhenotypesForRemoval(ObjectMap parameters) {
         if (parameters.get(QueryParams.PHENOTYPES.key()) == null) {
             return;
         }

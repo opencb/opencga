@@ -707,8 +707,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key(), QueryParams.DISORDERS.key(),
-                QueryParams.LOCATION.key(), QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key()};
+        String[] acceptedObjectParams = {QueryParams.DISORDERS.key(), QueryParams.LOCATION.key(), QueryParams.STATUS.key(),
+                QueryParams.QUALITY_CONTROL.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -759,6 +759,28 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 case ADD:
                     filterObjectParams(parameters, document.getAddToSet(), acceptedObjectParams);
                     individualConverter.validateSamplesToUpdate(document.getAddToSet());
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
+        }
+
+        Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+        // Phenotypes
+        if (parameters.containsKey(QueryParams.PHENOTYPES.key())) {
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.PHENOTYPES.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            String[] phenotypesParams = {QueryParams.PHENOTYPES.key()};
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), phenotypesParams);
+                    break;
+                case REMOVE:
+                    dbAdaptorFactory.getCatalogSampleDBAdaptor().fixPhenotypesForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPull(), phenotypesParams);
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), phenotypesParams);
                     break;
                 default:
                     throw new IllegalStateException("Unknown operation " + operation);

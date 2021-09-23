@@ -1539,6 +1539,64 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testUpdatePhenotypes() throws CatalogException {
+        Individual individual = new Individual().setId("i1");
+        catalogManager.getIndividualManager().create(studyFqn, individual, null, token);
+
+        List<Phenotype> phenotypeList = Arrays.asList(
+                new Phenotype("phenotype0", "phenotypeName0", "SOURCE"),
+                new Phenotype("phenotype1", "phenotypeName1", "SOURCE"),
+                new Phenotype("phenotype2", "phenotypeName2", "SOURCE")
+        );
+        IndividualUpdateParams updateParams = new IndividualUpdateParams().setPhenotypes(phenotypeList);
+
+        catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, QueryOptions.empty(), token);
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        assertEquals(3, individual.getPhenotypes().size());
+        for (int i = 0; i < individual.getPhenotypes().size(); i++) {
+            assertEquals("phenotype" + i, individual.getPhenotypes().get(i).getId());
+        }
+
+        // ACTION REMOVE phenotype0, phenotype2
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+        updateParams = new IndividualUpdateParams().setPhenotypes(Arrays.asList(
+                new Phenotype("phenotype0", "phenotypeName0", "SOURCE"), new Phenotype("phenotype2", "phenotypeName2", "SOURCE")));
+        catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, options, token);
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        assertEquals(1, individual.getPhenotypes().size());
+        assertEquals("phenotype1", individual.getPhenotypes().get(0).getId());
+
+        // ADD phenotype1, phenotype2
+        actionMap.put(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), ParamUtils.BasicUpdateAction.ADD);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+        updateParams = new IndividualUpdateParams().setPhenotypes(Arrays.asList(
+                new Phenotype("phenotype1", "phenotypeName1", "SOURCE"), new Phenotype("phenotype2", "phenotypeName2", "SOURCE")));
+        catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, options, token);
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        assertEquals(2, individual.getPhenotypes().size());
+        for (int i = 0; i < individual.getPhenotypes().size(); i++) {
+            assertEquals("phenotype" + (i + 1), individual.getPhenotypes().get(i).getId());
+        }
+
+        // SET phenotype2, phenotype3
+        actionMap.put(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), ParamUtils.BasicUpdateAction.SET);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+        phenotypeList = Arrays.asList(
+                new Phenotype("phenotype2", "phenotypeName2", "SOURCE"),
+                new Phenotype("phenotype3", "phenotypeName3", "SOURCE")
+        );
+        updateParams = new IndividualUpdateParams().setPhenotypes(phenotypeList);
+        catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, options, token);
+        individual = catalogManager.getIndividualManager().get(studyFqn, individual.getId(), QueryOptions.empty(), token).first();
+        assertEquals(2, individual.getPhenotypes().size());
+        for (int i = 0; i < individual.getPhenotypes().size(); i++) {
+            assertEquals("phenotype" + (i + 2), individual.getPhenotypes().get(i).getId());
+        }
+    }
+
+    @Test
     public void testUpdateIndividualSamples() throws CatalogException {
         Sample sample = new Sample().setId("sample1");
         Sample sample2 = new Sample().setId("sample2");
