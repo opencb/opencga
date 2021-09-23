@@ -879,12 +879,14 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 && (StringUtils.isNotEmpty(user) || queryCopy.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, queryCopy.getLong(QueryParams.STUDY_UID.key()));
 
-            // Get the document query needed to check the permissions as well
-            andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                    ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name(), Enums.Resource.CLINICAL_ANALYSIS, configuration));
-
-            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, queryCopy, Enums.Resource.CLINICAL_ANALYSIS, user,
-                    configuration));
+            if (queryCopy.containsKey(ParamConstants.ACL_PARAM)) {
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, queryCopy, Enums.Resource.CLINICAL_ANALYSIS, user,
+                        configuration));
+            } else {
+                // Get the document query needed to check the permissions as well
+                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
+                        ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name(), Enums.Resource.CLINICAL_ANALYSIS, configuration));
+            }
 
             queryCopy.remove(ParamConstants.ACL_PARAM);
         }

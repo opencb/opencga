@@ -258,13 +258,19 @@ public class SampleWSServer extends OpenCGAWSServer {
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
                 @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
+            @ApiParam(value = ParamConstants.SAMPLE_PHENOTYPES_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam(ParamConstants.SAMPLE_PHENOTYPES_ACTION_PARAM) ParamUtils.BasicUpdateAction phenotypesAction,
             @ApiParam(value = "body") SampleUpdateParams parameters) {
         try {
             if (annotationSetsAction == null) {
                 annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
             }
+            if (phenotypesAction == null) {
+                phenotypesAction = ParamUtils.BasicUpdateAction.ADD;
+            }
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+            actionMap.put(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), phenotypesAction);
             QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
             return createOkResponse(sampleManager.update(studyStr, getIdList(sampleStr), parameters, true, options, token));
