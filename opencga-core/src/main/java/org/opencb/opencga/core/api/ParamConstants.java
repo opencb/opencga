@@ -220,6 +220,9 @@ public class ParamConstants {
             + "individual versions. Not supported if multiple individual ids are provided";
     public static final String INDIVIDUAL_PHENOTYPES_ACTION_PARAM = PHENOTYPES_ACTION_PARAM;
     public static final String INDIVIDUAL_PHENOTYPES_ACTION_DESCRIPTION = PHENOTYPES_ACTION_DESCRIPTION;
+    public static final String INDIVIDUAL_DISORDERS_ACTION_PARAM = "disordersAction" ;
+    public static final String INDIVIDUAL_DISORDERS_ACTION_DESCRIPTION = "Action to be performed if the array of disorders is being"
+            + " updated [SET, ADD, REMOVE]";;
 
     // ---------------------------------------------
 

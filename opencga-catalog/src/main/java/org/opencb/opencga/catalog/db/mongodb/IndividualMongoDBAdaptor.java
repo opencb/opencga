@@ -707,8 +707,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] acceptedObjectParams = {QueryParams.DISORDERS.key(), QueryParams.LOCATION.key(), QueryParams.STATUS.key(),
-                QueryParams.QUALITY_CONTROL.key()};
+        String[] acceptedObjectParams = {QueryParams.LOCATION.key(), QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -786,6 +785,26 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     throw new IllegalStateException("Unknown operation " + operation);
             }
         }
+        // Disorders
+        if (parameters.containsKey(QueryParams.DISORDERS.key())) {
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.DISORDERS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            String[] disordersParams = {QueryParams.DISORDERS.key()};
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), disordersParams);
+                    break;
+                case REMOVE:
+                    fixDisordersForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPull(), disordersParams);
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), disordersParams);
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
+        }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
             // Update modificationDate param
@@ -796,6 +815,22 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         return document;
+    }
+
+    void fixDisordersForRemoval(ObjectMap parameters) {
+        if (parameters.get(QueryParams.DISORDERS.key()) == null) {
+            return;
+        }
+
+        List<Document> disorderParamList = new LinkedList<>();
+        for (Object disorder : parameters.getAsList(QueryParams.DISORDERS.key())) {
+            if (disorder instanceof Phenotype) {
+                disorderParamList.add(new Document("id", ((Phenotype) disorder).getId()));
+            } else {
+                disorderParamList.add(new Document("id", ((Map) disorder).get("id")));
+            }
+        }
+        parameters.put(QueryParams.DISORDERS.key(), disorderParamList);
     }
 
     private void getSampleChanges(Individual individual, ObjectMap parameters, UpdateDocument updateDocument,

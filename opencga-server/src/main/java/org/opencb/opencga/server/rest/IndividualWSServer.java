@@ -306,6 +306,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 @QueryParam(ParamConstants.SAMPLES_ACTION_PARAM) ParamUtils.BasicUpdateAction samplesAction,
             @ApiParam(value = ParamConstants.INDIVIDUAL_PHENOTYPES_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
                 @QueryParam(ParamConstants.INDIVIDUAL_PHENOTYPES_ACTION_PARAM) ParamUtils.BasicUpdateAction phenotypesAction,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_DISORDERS_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam(ParamConstants.INDIVIDUAL_DISORDERS_ACTION_PARAM) ParamUtils.BasicUpdateAction disordersAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
                 @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false")
@@ -321,11 +323,15 @@ public class IndividualWSServer extends OpenCGAWSServer {
             if (phenotypesAction == null) {
                 phenotypesAction = ParamUtils.BasicUpdateAction.ADD;
             }
+            if (disordersAction == null) {
+                disordersAction = ParamUtils.BasicUpdateAction.ADD;
+            }
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samplesAction.name());
             actionMap.put(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             actionMap.put(IndividualDBAdaptor.QueryParams.PHENOTYPES.key(), phenotypesAction);
+            actionMap.put(IndividualDBAdaptor.QueryParams.DISORDERS.key(), disordersAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             List<String> individualIds = getIdList(individualStr);
