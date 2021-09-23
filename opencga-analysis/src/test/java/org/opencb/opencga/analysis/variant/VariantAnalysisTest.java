@@ -39,6 +39,7 @@ import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -50,8 +51,10 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
@@ -237,6 +240,18 @@ public class VariantAnalysisTest {
             catalogManager.getSampleManager().create(STUDY, sample, null, token);
         }
 
+    }
+
+    @Test
+    public void testMalformedVcfFileIndex() throws Exception {
+        File file = opencga.createFile(STUDY, "variant-test-file-corrupted.vcf", token);
+        try {
+            toolRunner.execute(VariantIndexOperationTool.class,
+                    new VariantIndexParams().setFile(file.getId()).setAnnotate(true), new ObjectMap(),
+                    Paths.get(opencga.createTmpOutdir()), null, token);
+        } catch (ToolException e) {
+            System.out.println(ExceptionUtils.prettyExceptionMessage(e, true, true));
+        }
     }
 
     @Test
