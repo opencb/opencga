@@ -16,9 +16,20 @@
 
 package org.opencb.opencga.app.cli;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.Jwts;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -34,26 +45,19 @@ public class CliSession {
     private String login;
     private String expirationTime;
     private List<String> studies;
+    private String currentStudy;
 
-    public CliSession() {
-    }
+    private static final String SESSION_FILENAME = "session.json";
+    private Logger privateLogger= LoggerFactory.getLogger(CommandExecutor.class);
 
-    public CliSession(String host, String user, String token, String refreshToken) {
-        this(host, user, token, refreshToken, TimeUtils.getTime(), Collections.emptyList());
-    }
+    private static CliSession instance;
+    private CliSession(){}
 
-    public CliSession(String host, String user, String token, String refreshToken, List<String> studies) {
-        this(host, user, token, refreshToken, TimeUtils.getTime(), studies);
-    }
-
-    public CliSession(String host, String user, String token, String refreshToken, String login, List<String> studies) {
-        this.host = host;
-        this.user = user;
-        this.token = token;
-        this.refreshToken = refreshToken;
-        this.login = login;
-        this.studies = studies;
-        this.version = "v2";
+    public static CliSession getInstance(){
+       if(instance==null){
+           loadCliSessionFile();
+       }
+        return instance;
     }
 
     @Override
@@ -140,5 +144,79 @@ public class CliSession {
 
     public void setStudies(List<String> studies) {
         this.studies = studies;
+    }
+
+    public String getCurrentStudy() {
+        return currentStudy;
+    }
+
+    public CliSession setCurrentStudy(String currentStudy) {
+        this.currentStudy = currentStudy;
+        return this;
+    }
+
+
+    private static void loadCliSessionFile() {
+        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
+        if (Files.exists(sessionPath)) {
+            try {
+                instance = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                        .readValue(sessionPath.toFile(), CliSession.class);
+            } catch (IOException e) {
+                System.err.println("Could not parse the session file properly");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void saveCliSessionFile() throws IOException {
+        // Check the home folder exists
+        if (!Files.exists(Paths.get(System.getProperty("user.home")))) {
+            System.out.println("WARNING: Could not store token. User home folder '" + System.getProperty("user.home")
+                    + "' not found. Please, manually provide the token for any following command lines with '-S {token}'.");
+            return;
+        }
+
+        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga");
+        // check if ~/.opencga folder exists
+        if (!Files.exists(sessionPath)) {
+            Files.createDirectory(sessionPath);
+        }
+        sessionPath = sessionPath.resolve(SESSION_FILENAME);
+
+
+
+        // we remove the part where the token signature is to avoid key verification
+        int i = token.lastIndexOf('.');
+        String withoutSignature = token.substring(0, i+1);
+        Date expiration = Jwts.parser().parseClaimsJwt(withoutSignature).getBody().getExpiration();
+
+        instance.setExpirationTime(TimeUtils.getTime(expiration));
+
+        new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), instance);
+    }
+
+    public void updateCliSessionFile() throws IOException {
+        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
+        if (Files.exists(sessionPath)) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), instance);
+        }
+    }
+
+
+    public void logoutCliSessionFile() throws IOException {
+        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
+        if (Files.exists(sessionPath)) {
+            Files.delete(sessionPath);
+        }
+    }
+
+    public boolean isValid() {
+
+        if(Long.parseLong(TimeUtils.getTime(new Date())) > Long.parseLong(instance.getExpirationTime())){
+            return false;
+        }
+        return true;
     }
 }

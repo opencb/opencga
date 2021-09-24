@@ -248,9 +248,13 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     private String getQueryParams(Endpoint endpoint) {
         String res = "\n        ObjectMap queryParams = new ObjectMap();\n";
         boolean enc = false;
+        boolean studyPresent =false;
         for (Parameter parameter : endpoint.getParameters()) {
             if ("query".equals(parameter.getParam()) && !parameter.isRequired() && CommandLineUtils.isPrimitive(parameter.getType())) {
                 enc = true;
+                if(normaliceNames(parameter.getName()).equals("study")) {
+                    studyPresent=true;
+                }
                 if (StringUtils.isNotEmpty(parameter.getType()) && "string".equalsIgnoreCase(parameter.getType())) {
                     res += "        queryParams.putIfNotEmpty(\"" + normaliceNames(parameter.getName()) + "\", commandOptions."
                             + normaliceNames(parameter.getName()) + ");\n";
@@ -260,9 +264,14 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                 }
             }
         }
-        if (enc)
+        if (enc) {
+            if (studyPresent){
+                res += "        if(queryParams.get(\"study\")==null){\n";
+                res += "                queryParams.putIfNotEmpty(\"study\", cliSession.getCurrentStudy());\n";
+                res += "        }\n";
+            }
             return res + "\n";
-
+        }
         return "";
     }
 

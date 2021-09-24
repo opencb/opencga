@@ -91,10 +91,18 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             }
 
 //            CliSession cliSession = loadCliSessionFile();
-            logger.debug("sessionFile = " + cliSession);
+            logger.debug("sessionFile = " + CliSession.getInstance());
             if (StringUtils.isNotEmpty(options.token)) {
                 // Ignore session file. Overwrite with command line information (just sessionId)
-                cliSession = new CliSession(clientConfiguration.getRest().getHost(), null, options.token, null);
+                cliSession= CliSession.getInstance();
+                cliSession.setToken(options.token);
+                cliSession.setHost(clientConfiguration.getRest().getHost());
+                try {
+                    CliSession.getInstance().saveCliSessionFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
                 token = options.token;
                 userId = null;
 
@@ -123,20 +131,20 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         if (currentDate.before(expirationDate) || !claimsMap.containsKey("exp")) {
                             logger.debug("Session ok!!");
                             //                            this.sessionId = cliSession.getSessionId();
-                            openCGAClient = new OpenCGAClient(new AuthenticationResponse(cliSession.getToken(),
-                                    cliSession.getRefreshToken()), clientConfiguration);
-                            openCGAClient.setUserId(cliSession.getUser());
+                            openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSession.getInstance().getToken(),
+                                    CliSession.getInstance().getRefreshToken()), clientConfiguration);
+                            openCGAClient.setUserId(CliSession.getInstance().getUser());
 
                             // Update token
                             if (clientConfiguration.getRest().isTokenAutoRefresh() && claimsMap.containsKey("exp")) {
                                 AuthenticationResponse refreshResponse = openCGAClient.refresh();
-                                cliSession.setToken(refreshResponse.getToken());
-                                cliSession.setRefreshToken(refreshResponse.getRefreshToken());
-                                updateCliSessionFile();
+                                CliSession.getInstance().setToken(refreshResponse.getToken());
+                                CliSession.getInstance().setRefreshToken(refreshResponse.getRefreshToken());
+                                CliSession.getInstance().updateCliSessionFile();
                             }
 
                             if (options.token == null) {
-                                options.token = cliSession.getToken();
+                                options.token = CliSession.getInstance().getToken();
                             }
                         } else {
                             String message = "ERROR: Your session has expired. Please, either login again or logout to work as "

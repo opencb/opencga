@@ -68,7 +68,6 @@ public abstract class CommandExecutor {
     protected Logger logger;
     private Logger privateLogger;
 
-    private static final String SESSION_FILENAME = "session.json";
 
     public CommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
         this(options, false);
@@ -82,7 +81,7 @@ public abstract class CommandExecutor {
     protected void init(String logLevel, String conf, boolean loadClientConfiguration) {
         this.logLevel = logLevel;
         this.conf = conf;
-
+        cliSession=CliSession.getInstance();
         /**
          * System property 'app.home' is automatically set up in opencga.sh. If by any reason
          * this is 'null' then OPENCGA_HOME environment variable is used instead.
@@ -115,14 +114,14 @@ public abstract class CommandExecutor {
             configureLogger();
 
             // Let's check the session file, maybe the session is still valid
-            loadCliSessionFile();
-            privateLogger.debug("CLI session file is: {}", this.cliSession);
+
+            privateLogger.debug("CLI session file is: {}", CliSession.getInstance());
 
             if (StringUtils.isNotBlank(options.token)) {
                 this.token = options.token;
-            } else if (cliSession != null) {
-                this.token = cliSession.getToken();
-                this.userId = cliSession.getUser();
+            } else if (CliSession.getInstance() != null) {
+                this.token = CliSession.getInstance().getToken();
+                this.userId = CliSession.getInstance().getUser();
             }
 
         } catch (IOException e) {
@@ -239,70 +238,6 @@ public abstract class CommandExecutor {
     }
 
 
-    protected void loadCliSessionFile() {
-        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
-        if (Files.exists(sessionPath)) {
-            try {
-                this.cliSession = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                        .readValue(sessionPath.toFile(), CliSession.class);
-            } catch (IOException e) {
-                privateLogger.debug("Could not parse the session file properly");
-            }
-        }
-    }
-
-    protected void saveCliSessionFile(String user, String token, String refreshToken, List<String> studies) throws IOException {
-        // Check the home folder exists
-        if (!Files.exists(Paths.get(System.getProperty("user.home")))) {
-            System.out.println("WARNING: Could not store token. User home folder '" + System.getProperty("user.home")
-                    + "' not found. Please, manually provide the token for any following command lines with '-S {token}'.");
-            return;
-        }
-
-        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga");
-        // check if ~/.opencga folder exists
-        if (!Files.exists(sessionPath)) {
-            Files.createDirectory(sessionPath);
-        }
-        sessionPath = sessionPath.resolve(SESSION_FILENAME);
-        CliSession cliSession = new CliSession(clientConfiguration.getRest().getHost(), user, token, refreshToken, studies);
-
-        // we remove the part where the token signature is to avoid key verification
-        int i = token.lastIndexOf('.');
-        String withoutSignature = token.substring(0, i+1);
-        Date expiration = Jwts.parser().parseClaimsJwt(withoutSignature).getBody().getExpiration();
-
-        cliSession.setExpirationTime(TimeUtils.getTime(expiration));
-
-        new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), cliSession);
-    }
-
-    protected void updateCliSessionFile() throws IOException {
-        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
-        if (Files.exists(sessionPath)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), cliSession);
-        }
-    }
-
-//    protected void updateCliSessionFileTimestamp() throws IOException {
-////        QueryResponse<ObjectMap> refresh = new OpenCGAClient(sessionId, clientConfiguration).refresh();
-//
-//        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
-//        if (Files.exists(sessionPath)) {
-//            ObjectMapper objectMapper = new ObjectMapper();
-//            CliSession cliSession = objectMapper.readValue(sessionPath.toFile(), CliSession.class);
-//            cliSession.setTimestamp(System.currentTimeMillis());
-//            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), cliSession);
-//        }
-//    }
-
-    protected void logoutCliSessionFile() throws IOException {
-        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
-        if (Files.exists(sessionPath)) {
-            Files.delete(sessionPath);
-        }
-    }
 
     protected void checkSignatureRelease(String release) throws ClientException {
         switch (release) {
