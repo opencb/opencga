@@ -24,6 +24,7 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -74,8 +75,10 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
             return Collections.emptyList();
         }
         try {
+            List<String> variantIds = variants.stream().map(variantSerializer).collect(Collectors.toList());
+            // Make a copy of QueryOptions, as it might be modified from the client.
             CellBaseDataResponse<VariantAnnotation> response = cellBaseClient.getVariantClient()
-                    .getAnnotationByVariantIds(variants.stream().map(variantSerializer).collect(Collectors.toList()), queryOptions, true);
+                    .getAnnotationByVariantIds(variantIds, new QueryOptions(queryOptions), true);
             return response.getResponses();
         } catch (IOException e) {
             throw new VariantAnnotatorException("Error fetching variants from Client");
