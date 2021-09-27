@@ -6,15 +6,15 @@ public class InterpretationVariantCallerConfiguration {
 
     private String id;
     private List<String> columns;
-    private List<FileDataFilter> fileDataFilters;
+    private List<DataFilter> dataFilters;
 
     public InterpretationVariantCallerConfiguration() {
     }
 
-    public InterpretationVariantCallerConfiguration(String id, List<String> columns, List<FileDataFilter> fileDataFilters) {
+    public InterpretationVariantCallerConfiguration(String id, List<String> columns, List<DataFilter> dataFilters) {
         this.id = id;
         this.columns = columns;
-        this.fileDataFilters = fileDataFilters;
+        this.dataFilters = dataFilters;
     }
 
     @Override
@@ -22,7 +22,7 @@ public class InterpretationVariantCallerConfiguration {
         final StringBuilder sb = new StringBuilder("InterpretationVariantCallerConfiguration{");
         sb.append("id='").append(id).append('\'');
         sb.append(", columns=").append(columns);
-        sb.append(", fileDataFilters=").append(fileDataFilters);
+        sb.append(", dataFilters=").append(dataFilters);
         sb.append('}');
         return sb.toString();
     }
@@ -45,54 +45,64 @@ public class InterpretationVariantCallerConfiguration {
         return this;
     }
 
-    public List<FileDataFilter> getFileDataFilters() {
-        return fileDataFilters;
+    public List<DataFilter> getDataFilters() {
+        return dataFilters;
     }
 
-    public InterpretationVariantCallerConfiguration setFileDataFilters(List<FileDataFilter> fileDataFilters) {
-        this.fileDataFilters = fileDataFilters;
+    public InterpretationVariantCallerConfiguration setDataFilters(List<DataFilter> dataFilters) {
+        this.dataFilters = dataFilters;
         return this;
     }
 
-    public static class FileDataFilter {
+    public static class DataFilter {
 
         private String id;
         private String name;
+        private Source source;
         private DataType type;
         private String defaultValue;
         private List<String> allowedValues;
 
-        public FileDataFilter() {
+        public enum Source {
+            FILE,
+            SAMPLE
         }
 
-        public FileDataFilter(String id, String name, DataType type) {
+        public DataFilter() {
+        }
+
+        public DataFilter(String id, String name, Source source, DataType type) {
             this.name = name;
             this.id = id;
+            this.source = source;
             this.type = type;
         }
 
-        public FileDataFilter(String id, String name, DataType type, String defaultValue) {
+        public DataFilter(String id, String name, Source source, DataType type, String defaultValue) {
             this.name = name;
             this.id = id;
             this.type = type;
+            this.source = source;
             this.defaultValue = defaultValue;
         }
 
-        public FileDataFilter(String id, String name, DataType type, String defaultValue, List<String> allowedValues) {
+        public DataFilter(String id, String name, Source source, DataType type, String defaultValue, List<String> allowedValues) {
             this.name = name;
             this.id = id;
             this.type = type;
+            this.source = source;
             this.defaultValue = defaultValue;
             this.allowedValues = allowedValues;
         }
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("FileDataFilter{");
-            sb.append("field='").append(id).append('\'');
+            final StringBuilder sb = new StringBuilder("DataFilter{");
+            sb.append("id='").append(id).append('\'');
             sb.append(", name='").append(name).append('\'');
+            sb.append(", source=").append(source);
             sb.append(", type=").append(type);
-            sb.append(", defaultValue=").append(defaultValue);
+            sb.append(", defaultValue='").append(defaultValue).append('\'');
             sb.append(", allowedValues=").append(allowedValues);
             sb.append('}');
             return sb.toString();
@@ -102,7 +112,7 @@ public class InterpretationVariantCallerConfiguration {
             return name;
         }
 
-        public FileDataFilter setName(String name) {
+        public DataFilter setName(String name) {
             this.name = name;
             return this;
         }
@@ -111,8 +121,17 @@ public class InterpretationVariantCallerConfiguration {
             return id;
         }
 
-        public FileDataFilter setId(String id) {
+        public DataFilter setId(String id) {
             this.id = id;
+            return this;
+        }
+
+        public Source getSource() {
+            return source;
+        }
+
+        public DataFilter setSource(Source source) {
+            this.source = source;
             return this;
         }
 
@@ -120,12 +139,12 @@ public class InterpretationVariantCallerConfiguration {
             return type;
         }
 
-        public FileDataFilter setType(DataType type) {
+        public DataFilter setType(DataType type) {
             this.type = type;
             return this;
         }
 
-        public FileDataFilter setDefaultValue(String defaultValue) {
+        public DataFilter setDefaultValue(String defaultValue) {
             this.defaultValue = defaultValue;
             return this;
         }
@@ -138,7 +157,7 @@ public class InterpretationVariantCallerConfiguration {
             return allowedValues;
         }
 
-        public FileDataFilter setAllowedValues(List<String> allowedValues) {
+        public DataFilter setAllowedValues(List<String> allowedValues) {
             this.allowedValues = allowedValues;
             return this;
         }
