@@ -180,6 +180,8 @@ public class ParamConstants {
 
     public static final String SAMPLE_DESCRIPTION = "Sample ID or UUID";
     public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or UUIDs" + UP_TO_100;
+    public static final String SAMPLES_ID_DESCRIPTION = "Comma separated list sample IDs" + UP_TO_100;
+    public static final String SAMPLES_UUID_DESCRIPTION = "Comma separated list sample UUIDs" + UP_TO_100;
     public static final String SAMPLE_INDIVIDUAL_ID_PARAM = "individualId";
     public static final String SAMPLE_INDIVIDUAL_ID_DESCRIPTION = "Individual ID or UUID";
     public static final String SAMPLE_FILE_IDS_PARAM = "fileIds";
@@ -188,14 +190,59 @@ public class ParamConstants {
     public static final String SAMPLE_PHENOTYPES_ACTION_DESCRIPTION = PHENOTYPES_ACTION_DESCRIPTION;
 
     public static final String SAMPLE_ID_PARAM = "id";
+    public static final String SAMPLE_UUID_PARAM = "uuid";
     public static final String SAMPLE_PARAM = "sample";
     public static final String SAMPLE_ID_DESCRIPTION = "Sample ID";
     public static final String SAMPLE_NAME_DESCRIPTION = "Sample name";
     public static final String SAMPLE_SOMATIC_PARAM = "somatic";
     public static final String SAMPLE_SOMATIC_DESCRIPTION = "Somatic sample";
+    public static final String SAMPLE_RGA_STATUS_PARAM = "internalRgaStatus";
+    public static final String SAMPLE_RGA_STATUS_DESCRIPTION = "Index status of the sample for the Recessive Gene Analysis";
+    public static final String SAMPLE_PROCESSING_PRODUCT_PARAM = "processingProduct";
+    public static final String SAMPLE_PROCESSING_PREPARATION_METHOD_PARAM = "processingPreparationMethod";
+    public static final String SAMPLE_PROCESSING_EXTRACTION_METHOD_PARAM = "processingExtractionMethod";
+    public static final String SAMPLE_PROCESSING_LAB_SAMPLE_ID_PARAM = "processingLabSampleId";
+    public static final String SAMPLE_COLLECTION_TISSUE_PARAM = "collectionTissue";
+    public static final String SAMPLE_COLLECTION_ORGAN_PARAM = "collectionOrgan";
+    public static final String SAMPLE_COLLECTION_METHOD_PARAM = "collectionMethod";
+    public static final String SAMPLE_PROCESSING_PRODUCT_DESCRIPTION = "Processing product";
+    public static final String SAMPLE_PROCESSING_PREPARATION_METHOD_DESCRIPTION = "Processing preparation method";
+    public static final String SAMPLE_PROCESSING_EXTRACTION_METHOD_DESCRIPTION = "Processing extraction method";
+    public static final String SAMPLE_PROCESSING_LAB_SAMPLE_ID_DESCRIPTION = "Processing lab sample id";
+    public static final String SAMPLE_COLLECTION_TISSUE_DESCRIPTION = "Collection tissue";
+    public static final String SAMPLE_COLLECTION_ORGAN_DESCRIPTION = "Collection organ";
+    public static final String SAMPLE_COLLECTION_METHOD_DESCRIPTION = "Collection method";
     public static final String SAMPLE_VERSION_PARAM = "version";
     public static final String SAMPLE_VERSION_DESCRIPTION = "Comma separated list of sample versions. 'all' to get all the sample versions."
             + " Not supported if multiple sample ids are provided";
+
+    public static final String SAMPLE_VARIANT_STATS_ID_PARAM = "statsId";
+    public static final String SAMPLE_VARIANT_STATS_COUNT_PARAM = "statsVariantCount";
+    public static final String SAMPLE_VARIANT_STATS_CHROMOSOME_COUNT_PARAM = "statsChromosomeCount";
+    public static final String SAMPLE_VARIANT_STATS_TYPE_COUNT_PARAM = "statsTypeCount";
+    public static final String SAMPLE_VARIANT_STATS_GENOTYPE_COUNT_PARAM = "statsGenotypeCount";
+    public static final String SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM = "statsTiTvRatio";
+    public static final String SAMPLE_VARIANT_STATS_QUALITY_AVG_PARAM = "statsQualityAvg";
+    public static final String SAMPLE_VARIANT_STATS_QUALITY_STD_DEV_PARAM = "statsQualityStdDev";
+    public static final String SAMPLE_VARIANT_STATS_HETEROZYGOSITY_RATE_PARAM = "statsHeterozygosityRate";
+    public static final String SAMPLE_VARIANT_STATS_DEPTH_COUNT_PARAM = "statsDepthCount";
+    public static final String SAMPLE_VARIANT_STATS_BIOTYPE_COUNT_PARAM = "statsBiotypeCount";
+    public static final String SAMPLE_VARIANT_STATS_CLINICAL_SIGNIFICANCE_COUNT_PARAM = "statsClinicalSignificanceCount";
+    public static final String SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_PARAM = "statsConsequenceTypeCount";
+    public static final String SAMPLE_VARIANT_STATS_ID_DESCRIPTION = "Sample variant stats Id. If this field is not provided and the user "
+            + "filters by other stats fields, it will automatically be set to ALL";
+    public static final String SAMPLE_VARIANT_STATS_COUNT_DESCRIPTION = "Sample variant stats VariantCount";
+    public static final String SAMPLE_VARIANT_STATS_CHROMOSOME_COUNT_DESCRIPTION = "Sample variant stats ChromosomeCount";
+    public static final String SAMPLE_VARIANT_STATS_TYPE_COUNT_DESCRIPTION = "Sample variant stats TypeCount";
+    public static final String SAMPLE_VARIANT_STATS_GENOTYPE_COUNT_DESCRIPTION = "Sample variant stats GenotypeCount";
+    public static final String SAMPLE_VARIANT_STATS_TI_TV_RATIO_DESCRIPTION = "Sample variant stats TiTvRatio";
+    public static final String SAMPLE_VARIANT_STATS_QUALITY_AVG_DESCRIPTION = "Sample variant stats QualityAvg";
+    public static final String SAMPLE_VARIANT_STATS_QUALITY_STD_DEV_DESCRIPTION = "Sample variant stats QualityStdDev";
+    public static final String SAMPLE_VARIANT_STATS_HETEROZYGOSITY_RATE_DESCRIPTION = "Sample variant stats HeterozygosityRate";
+    public static final String SAMPLE_VARIANT_STATS_DEPTH_COUNT_DESCRIPTION = "Sample variant stats DepthCount";
+    public static final String SAMPLE_VARIANT_STATS_BIOTYPE_COUNT_DESCRIPTION = "Sample variant stats BiotypeCount";
+    public static final String SAMPLE_VARIANT_STATS_CLINICAL_SIGNIFICANCE_COUNT_DESCRIPTION = "Sample variant stats ClinicalSignificanceCount";
+    public static final String SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_DESCRIPTION = "Sample variant stats ConsequenceTypeCount";
 
     public static final String SAMPLE_INCLUDE_INDIVIDUAL_PARAM = "includeIndividual";
     public static final String SAMPLE_INCLUDE_INDIVIDUAL_DESCRIPTION = "Include Individual object as an attribute";

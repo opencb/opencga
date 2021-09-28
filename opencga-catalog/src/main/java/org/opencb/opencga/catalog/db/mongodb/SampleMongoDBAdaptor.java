@@ -1285,17 +1285,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     case STUDY_UID:
                         addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
                     case PHENOTYPES:
                         addOntologyQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
                         break;
@@ -1327,17 +1316,20 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         break;
                     case ID:
                     case UUID:
+                    case PROCESSING_PRODUCT:
+                    case PROCESSING_PREPARATION_METHOD:
+                    case PROCESSING_EXTRACTION_METHOD:
+                    case PROCESSING_LAB_SAMPLE_ID:
+                    case COLLECTION_TISSUE:
+                    case COLLECTION_ORGAN:
+                    case COLLECTION_METHOD:
                     case RELEASE:
                     case FILE_IDS:
                     case VERSION:
-                    case DESCRIPTION:
                     case INDIVIDUAL_ID:
-                    case INTERNAL_STATUS_DATE:
                     case INTERNAL_RGA_STATUS:
                     case SOMATIC:
                     case PHENOTYPES_ID:
-                    case PHENOTYPES_NAME:
-                    case PHENOTYPES_SOURCE:
 //                    case ANNOTATION_SETS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;

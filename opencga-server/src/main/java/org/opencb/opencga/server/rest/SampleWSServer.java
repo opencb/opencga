@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
@@ -139,7 +140,8 @@ public class SampleWSServer extends OpenCGAWSServer {
     })
     public Response search(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.SAMPLES_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.SAMPLES_UUID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_UUID_PARAM) String uuid,
             @ApiParam(value = ParamConstants.SAMPLE_SOMATIC_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_SOMATIC_PARAM) Boolean somatic,
             @ApiParam(value = ParamConstants.SAMPLE_INDIVIDUAL_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_INDIVIDUAL_ID_PARAM) String individual,
             @ApiParam(value = ParamConstants.SAMPLE_FILE_IDS_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_FILE_IDS_PARAM) String fileIds,
@@ -147,28 +149,35 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_PRODUCT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_PRODUCT_PARAM) String product,
+            @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_PREPARATION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_PREPARATION_METHOD_PARAM) String preparationMethod,
+            @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_EXTRACTION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_EXTRACTION_METHOD_PARAM) String extractionMethod,
+            @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_LAB_SAMPLE_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_LAB_SAMPLE_ID_PARAM) String labSampleId,
+            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_TISSUE_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_TISSUE_PARAM) String tissue,
+            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_ORGAN_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_ORGAN_PARAM) String organ,
+            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_METHOD_PARAM) String method,
             @ApiParam(value = ParamConstants.PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.PHENOTYPES_PARAM) String phenotypes,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = ParamConstants.ATTRIBUTES_DESCRIPTION) @DefaultValue("") @QueryParam(ParamConstants.ATTRIBUTES_PARAM) String attributes,
+            @ApiParam(value = ParamConstants.SAMPLE_RGA_STATUS_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_RGA_STATUS_PARAM) RgaIndex.Status rgaStatus,
             @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
             @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot,
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted,
 
-            @ApiParam(value = "Sample variant stats id. If filtering by other stats fields and not provided, it will be automatically set to ALL")
-                @QueryParam(SampleDBAdaptor.STATS_ID) String statsId,
-            @ApiParam(value = "Sample variant stats variantCount.") @QueryParam(SampleDBAdaptor.STATS_VARIANT_COUNT) String variantCount,
-            @ApiParam(value = "Sample variant stats chromosomeCount.") @QueryParam("stats.chromosomeCount") String chromosomeCount,
-            @ApiParam(value = "Sample variant stats typeCount.") @QueryParam("stats.typeCount") String typeCount,
-            @ApiParam(value = "Sample variant stats genotypeCount.") @QueryParam("stats.genotypeCount") String genotypeCount,
-            @ApiParam(value = "Sample variant stats tiTvRatio.") @QueryParam("stats.tiTvRatio") String tiTvRatio,
-            @ApiParam(value = "Sample variant stats qualityAvg.") @QueryParam("stats.qualityAvg") String qualityAvg,
-            @ApiParam(value = "Sample variant stats qualityStdDev.") @QueryParam("stats.qualityStdDev") String qualityStdDev,
-            @ApiParam(value = "Sample variant stats heterozygosityRate.") @QueryParam("stats.heterozygosityRate") String heterozygosityRate,
-            @ApiParam(value = "Sample variant stats depthCount.") @QueryParam("stats.depthCount") String depthCount,
-            @ApiParam(value = "Sample variant stats biotypeCount.") @QueryParam("stats.biotypeCount") String biotypeCount,
-            @ApiParam(value = "Sample variant stats clinicalSignificanceCount.") @QueryParam("stats.clinicalSignificanceCount") String clinicalSignificanceCount,
-            @ApiParam(value = "Sample variant stats consequenceTypeCount.") @QueryParam("stats.consequenceTypeCount") String consequenceTypeCount) {
+            // Variants stats query params
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM) String statsId,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM) String variantCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_CHROMOSOME_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_CHROMOSOME_COUNT_PARAM) String chromosomeCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_TYPE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_TYPE_COUNT_PARAM) String typeCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_GENOTYPE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_GENOTYPE_COUNT_PARAM) String genotypeCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM) String tiTvRatio,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_QUALITY_AVG_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_QUALITY_AVG_PARAM) String qualityAvg,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_QUALITY_STD_DEV_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_QUALITY_STD_DEV_PARAM) String qualityStdDev,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_HETEROZYGOSITY_RATE_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_HETEROZYGOSITY_RATE_PARAM) String heterozygosityRate,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_DEPTH_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_DEPTH_COUNT_PARAM) String depthCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_BIOTYPE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_BIOTYPE_COUNT_PARAM) String biotypeCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_CLINICAL_SIGNIFICANCE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_CLINICAL_SIGNIFICANCE_COUNT_PARAM) String clinicalSignificanceCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_PARAM) String consequenceTypeCount) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(sampleManager.search(studyStr, query, queryOptions, token));
@@ -182,7 +191,8 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Sample distinct method")
     public Response distinct(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.SAMPLES_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.SAMPLES_UUID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_UUID_PARAM) String uuid,
             @ApiParam(value = ParamConstants.SAMPLE_SOMATIC_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_SOMATIC_PARAM) Boolean somatic,
             @ApiParam(value = ParamConstants.SAMPLE_INDIVIDUAL_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_INDIVIDUAL_ID_PARAM) String individual,
             @ApiParam(value = ParamConstants.SAMPLE_FILE_IDS_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_FILE_IDS_PARAM) String fileIds,
@@ -190,12 +200,35 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_PRODUCT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_PRODUCT_PARAM) String product,
+            @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_PREPARATION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_PREPARATION_METHOD_PARAM) String preparationMethod,
+            @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_EXTRACTION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_EXTRACTION_METHOD_PARAM) String extractionMethod,
+            @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_LAB_SAMPLE_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_LAB_SAMPLE_ID_PARAM) String labSampleId,
+            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_TISSUE_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_TISSUE_PARAM) String tissue,
+            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_ORGAN_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_ORGAN_PARAM) String organ,
+            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_METHOD_PARAM) String method,
             @ApiParam(value = ParamConstants.PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.PHENOTYPES_PARAM) String phenotypes,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = ParamConstants.ATTRIBUTES_DESCRIPTION) @DefaultValue("") @QueryParam(ParamConstants.ATTRIBUTES_PARAM) String attributes,
+            @ApiParam(value = ParamConstants.SAMPLE_RGA_STATUS_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_RGA_STATUS_PARAM) RgaIndex.Status rgaStatus,
             @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
             @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot,
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.DELETED_PARAM) boolean deleted,
+
+            // Variants stats query params
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM) String statsId,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM) String variantCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_CHROMOSOME_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_CHROMOSOME_COUNT_PARAM) String chromosomeCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_TYPE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_TYPE_COUNT_PARAM) String typeCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_GENOTYPE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_GENOTYPE_COUNT_PARAM) String genotypeCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM) String tiTvRatio,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_QUALITY_AVG_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_QUALITY_AVG_PARAM) String qualityAvg,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_QUALITY_STD_DEV_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_QUALITY_STD_DEV_PARAM) String qualityStdDev,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_HETEROZYGOSITY_RATE_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_HETEROZYGOSITY_RATE_PARAM) String heterozygosityRate,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_DEPTH_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_DEPTH_COUNT_PARAM) String depthCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_BIOTYPE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_BIOTYPE_COUNT_PARAM) String biotypeCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_CLINICAL_SIGNIFICANCE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_CLINICAL_SIGNIFICANCE_COUNT_PARAM) String clinicalSignificanceCount,
+            @ApiParam(value = ParamConstants.SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_PARAM) String consequenceTypeCount,
             @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
