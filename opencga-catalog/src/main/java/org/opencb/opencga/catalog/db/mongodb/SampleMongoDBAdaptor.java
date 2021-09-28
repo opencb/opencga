@@ -1255,10 +1255,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         Query queryCopy = new Query(query);
         queryCopy.remove(QueryParams.DELETED.key());
 
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
-
         if ("all".equalsIgnoreCase(queryCopy.getString(QueryParams.VERSION.key()))) {
             queryCopy.put(Constants.ALL_VERSIONS, true);
             queryCopy.remove(QueryParams.VERSION.key());
