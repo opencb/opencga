@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -1694,6 +1695,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     private void fixQuery(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);
+        changeQueryId(query, ParamConstants.INDIVIDUAL_POPULATION_NAME_PARAM, IndividualDBAdaptor.QueryParams.POPULATION_NAME.key());
+        changeQueryId(query, ParamConstants.INDIVIDUAL_POPULATION_SUBPOPULATION_PARAM,
+                IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key());
+        changeQueryId(query, ParamConstants.INTERNAL_STATUS_PARAM, IndividualDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
+        changeQueryId(query, ParamConstants.STATUS_PARAM, IndividualDBAdaptor.QueryParams.STATUS_NAME.key());
 
         if (query.containsKey(IndividualDBAdaptor.QueryParams.FATHER.key())) {
             if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {

@@ -266,8 +266,12 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String INDIVIDUALS_DESCRIPTION = "Comma separated list of individual names or IDs" + UP_TO_100;
-    public static final String INDIVIDUAL_DESCRIPTION = "Individual ID or UUID";
+    public static final String INDIVIDUAL_DESCRIPTION = "Individual ID, name or UUID";
+    public static final String INDIVIDUALS_DESCRIPTION = "Comma separated list of individual IDs, names or UUIDs" + UP_TO_100;
+    public static final String INDIVIDUALS_ID_DESCRIPTION = "Comma separated list individual IDs" + UP_TO_100;
+    public static final String INDIVIDUAL_NAME_DESCRIPTION = "Comma separated list individual names" + UP_TO_100;
+    public static final String INDIVIDUAL_UUID_DESCRIPTION = "Comma separated list individual UUIDs" + UP_TO_100;
+
     public static final String INDIVIDUAL_VERSION_PARAM = "version";
     public static final String INDIVIDUAL_VERSION_DESCRIPTION = "Comma separated list of individual versions. 'all' to get all the "
             + "individual versions. Not supported if multiple individual ids are provided";
@@ -275,7 +279,44 @@ public class ParamConstants {
     public static final String INDIVIDUAL_PHENOTYPES_ACTION_DESCRIPTION = PHENOTYPES_ACTION_DESCRIPTION;
     public static final String INDIVIDUAL_DISORDERS_ACTION_PARAM = "disordersAction" ;
     public static final String INDIVIDUAL_DISORDERS_ACTION_DESCRIPTION = "Action to be performed if the array of disorders is being"
-            + " updated [SET, ADD, REMOVE]";;
+            + " updated [SET, ADD, REMOVE]";
+    public static final String INDIVIDUAL_ID_PARAM = "id";
+    public static final String INDIVIDUAL_NAME_PARAM = "name";
+    public static final String INDIVIDUAL_UUID_PARAM = "uuid";
+    public static final String INDIVIDUAL_FATHER_PARAM = "father";
+    public static final String INDIVIDUAL_MOTHER_PARAM = "mother";
+    public static final String INDIVIDUAL_SAMPLES_PARAM = "samples";
+    public static final String INDIVIDUAL_SEX_PARAM = "sex";
+    public static final String INDIVIDUAL_ETHNICITY_PARAM = "ethnicity";
+    public static final String INDIVIDUAL_DATE_OF_BIRTH_PARAM = "dateOfBirth";
+    public static final String INDIVIDUAL_DISORDERS_PARAM = DISORDERS_PARAM;
+    public static final String INDIVIDUAL_PHENOTYPES_PARAM = PHENOTYPES_PARAM;
+    public static final String INDIVIDUAL_POPULATION_NAME_PARAM = "populationName";
+    public static final String INDIVIDUAL_POPULATION_SUBPOPULATION_PARAM = "populationSubpopulation";
+    public static final String INDIVIDUAL_KARYOTYPIC_SEX_PARAM = "karyotypicSex";
+    public static final String INDIVIDUAL_LIFE_STATUS_PARAM = "lifeStatus";
+    public static final String INDIVIDUAL_DELETED_PARAM = DELETED_PARAM;
+    public static final String INDIVIDUAL_CREATION_DATE_PARAM = CREATION_DATE_PARAM;
+    public static final String INDIVIDUAL_MODIFICATION_DATE_PARAM = MODIFICATION_DATE_PARAM;
+    public static final String INDIVIDUAL_RELEASE_PARAM = RELEASE_PARAM;
+    public static final String INDIVIDUAL_SNAPSHOT_PARAM = SNAPSHOT_PARAM;
+    public static final String INDIVIDUAL_FATHER_DESCRIPTION = "Father ID, name or UUID";
+    public static final String INDIVIDUAL_MOTHER_DESCRIPTION = "Mother ID, name or UUID";
+    public static final String INDIVIDUAL_SAMPLES_DESCRIPTION = "Sample ID, name or UUID";
+    public static final String INDIVIDUAL_SEX_DESCRIPTION = "Individual sex";
+    public static final String INDIVIDUAL_ETHNICITY_DESCRIPTION = "Individual ethnicity";
+    public static final String INDIVIDUAL_DATE_OF_BIRTH_DESCRIPTION = "Individual date of birth";
+    public static final String INDIVIDUAL_DISORDERS_DESCRIPTION = DISORDERS_DESCRIPTION;
+    public static final String INDIVIDUAL_PHENOTYPES_DESCRIPTION = PHENOTYPES_DESCRIPTION;
+    public static final String INDIVIDUAL_POPULATION_NAME_DESCRIPTION = "Population name";
+    public static final String INDIVIDUAL_POPULATION_SUBPOPULATION_DESCRIPTION = "Subpopulation name";
+    public static final String INDIVIDUAL_KARYOTYPIC_SEX_DESCRIPTION = "Individual karyotypic sex";
+    public static final String INDIVIDUAL_LIFE_STATUS_DESCRIPTION = "Individual life status";
+    public static final String INDIVIDUAL_DELETED_DESCRIPTION = DELETED_DESCRIPTION;
+    public static final String INDIVIDUAL_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
+    public static final String INDIVIDUAL_MODIFICATION_DATE_DESCRIPTION = MODIFICATION_DATE_DESCRIPTION;
+    public static final String INDIVIDUAL_RELEASE_DESCRIPTION = RELEASE_DESCRIPTION;
+    public static final String INDIVIDUAL_SNAPSHOT_DESCRIPTION = SNAPSHOT_DESCRIPTION;
 
     // ---------------------------------------------
 
