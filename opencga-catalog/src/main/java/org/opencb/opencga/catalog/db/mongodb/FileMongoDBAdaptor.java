@@ -1240,10 +1240,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             myQuery.remove(QueryParams.TYPE.key());
         }
 
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), myQuery);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), myQuery);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), myQuery);
-
         for (Map.Entry<String, Object> entry : myQuery.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
@@ -1276,19 +1272,11 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                                     myQuery.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
                         }
                         break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), myQuery, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), myQuery, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), myQuery, queryParam.type(), andBsonList);
-                        break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), myQuery, queryParam.type(), andBsonList);
+                        break;
+                    case MODIFICATION_DATE:
+                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case STATUS:
                     case STATUS_NAME:
@@ -1338,32 +1326,16 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case UUID:
+                    case EXTERNAL:
                     case TYPE:
-                    case CHECKSUM:
                     case URI:
                     case ID:
                     case PATH:
-                    case MODIFICATION_DATE:
-                    case DESCRIPTION:
-                    case EXTERNAL:
                     case RELEASE:
                     case TAGS:
-                    case INTERNAL_STATUS_DESCRIPTION:
-                    case INTERNAL_STATUS_DATE:
-                    case RELATED_FILES:
-                    case RELATED_FILES_RELATION:
                     case SIZE:
                     case SOFTWARE_NAME:
-                    case SOFTWARE_VERSION:
-                    case SOFTWARE_COMMIT:
                     case JOB_ID:
-                    case INTERNAL_INDEX:
-                    case INTERNAL_INDEX_USER_ID:
-                    case INTERNAL_INDEX_CREATION_DATE:
-                    case INTERNAL_INDEX_STATUS_MESSAGE:
-                    case INTERNAL_INDEX_JOB_ID:
-                    case INTERNAL_INDEX_TRANSFORMED_FILE:
-                    case STATS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     default:

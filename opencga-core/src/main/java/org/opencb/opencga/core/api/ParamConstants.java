@@ -147,18 +147,24 @@ public class ParamConstants {
     // ---------------------------------------------
 
     public static final String FILES_DESCRIPTION = "Comma separated list of file IDs or names" + UP_TO_100;
+    public static final String FILES_ID_DESCRIPTION = "Comma separated list of file IDs" + UP_TO_100;
+    public static final String FILES_UUID_DESCRIPTION = "Comma separated list file UUIDs" + UP_TO_100;
     public static final String FILE_ID_DESCRIPTION = "File ID";
     public static final String FILE_NAME_DESCRIPTION = "File name";
     public static final String FILE_NAMES_DESCRIPTION = "Comma separated list of file names";
     public static final String FILE_PATH_PARAM = "path";
     public static final String FILE_PATH_DESCRIPTION = "File path";
     public static final String FILE_PATHS_DESCRIPTION = "Comma separated list of paths";
+    public static final String FILE_URIS_DESCRIPTION = "Comma separated list of uris";
     public static final String FILE_TYPE_DESCRIPTION = "File type, either FILE or DIRECTORY";
     public static final String FILE_FORMAT_DESCRIPTION = "Comma separated Format values. For existing Formats see files/formats";
+    public static final String FILE_EXTERNAL_DESCRIPTION = "Boolean field indicating whether to filter by external or non external files";
     public static final String FILE_BIOFORMAT_DESCRIPTION = "Comma separated Bioformat values. For existing Bioformats see files/bioformats";
     public static final String FILE_STATUS_DESCRIPTION = "File status";
     public static final String FILE_DESCRIPTION_DESCRIPTION = "Description";
     public static final String FILE_TAGS_DESCRIPTION = "Tags";
+    public static final String FILE_SOFTWARE_NAME_PARAM = "softwareName";
+    public static final String FILE_SOFTWARE_NAME_DESCRIPTION = "Software name";
     public static final String FILE_JOB_ID_DESCRIPTION = "Job ID that created the file(s) or folder(s)";
     public static final String FILE_DIRECTORY_DESCRIPTION = "Directory under which we want to look for files or folders";
     public static final String FILE_CREATION_DATA_DESCRIPTION = "Creation date of the file";

@@ -36,19 +36,25 @@
 {"collection": "file", "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "file", "fields": {"path": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "file", "fields": {"name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"uri": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"_reverse": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"type": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"format": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"bioformat": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "file", "fields": {"uri": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"tags": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"size": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"software.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"external": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"_samples.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"_samples.uuid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"jobId": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"internal.index.status.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"studyUid": 1, "_acl": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"customAnnotationSets.as": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"customAnnotationSets.vs": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"customAnnotationSets.id": 1, "customAnnotationSets.value": 1, "studyUid": 1}, "options": {"background": true}}

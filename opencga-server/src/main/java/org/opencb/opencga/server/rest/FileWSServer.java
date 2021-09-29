@@ -313,36 +313,33 @@ public class FileWSServer extends OpenCGAWSServer {
     })
     public Response search(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.FILE_NAMES_DESCRIPTION) @DefaultValue("") @QueryParam("name") String name,
-            @ApiParam(value = ParamConstants.FILE_PATHS_DESCRIPTION) @DefaultValue("") @QueryParam("path") String path,
-            @ApiParam(value = ParamConstants.FILE_TYPE_DESCRIPTION) @DefaultValue("") @QueryParam("type") String type,
-            @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @DefaultValue("") @QueryParam("bioformat") String bioformat,
-            @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @DefaultValue("") @QueryParam("format") String formats,
+            @ApiParam(value = ParamConstants.FILES_ID_DESCRIPTION) @QueryParam("id") String id,
+            @ApiParam(value = ParamConstants.FILES_UUID_DESCRIPTION) @QueryParam("uuid") String uuid,
+            @ApiParam(value = ParamConstants.FILE_NAMES_DESCRIPTION) @QueryParam("name") String name,
+            @ApiParam(value = ParamConstants.FILE_PATHS_DESCRIPTION) @QueryParam("path") String path,
+            @ApiParam(value = ParamConstants.FILE_URIS_DESCRIPTION) @QueryParam("uri") String uri,
+            @ApiParam(value = ParamConstants.FILE_TYPE_DESCRIPTION) @QueryParam("type") String type,
+            @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @QueryParam("bioformat") String bioformat,
+            @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @QueryParam("format") String formats,
+            @ApiParam(value = ParamConstants.FILE_EXTERNAL_DESCRIPTION) @QueryParam("external") Boolean external,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.INTERNAL_INDEX_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_INDEX_STATUS_PARAM) String internalIndexStatus,
-            @ApiParam(value = ParamConstants.FILE_DIRECTORY_DESCRIPTION) @DefaultValue("") @QueryParam("directory") String directory,
+            @ApiParam(value = ParamConstants.FILE_SOFTWARE_NAME_DESCRIPTION) @QueryParam(ParamConstants.FILE_SOFTWARE_NAME_PARAM) String softwareName,
+            @ApiParam(value = ParamConstants.FILE_DIRECTORY_DESCRIPTION) @QueryParam("directory") String directory,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @DefaultValue("") @QueryParam("description") String description,
+            @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @QueryParam("description") String description,
             @ApiParam(value = ParamConstants.FILE_TAGS_DESCRIPTION) @QueryParam("tags") String tags,
-            @ApiParam(value = ParamConstants.FILE_SIZE_DESCRIPTION) @DefaultValue("") @QueryParam("size") String size,
+            @ApiParam(value = ParamConstants.FILE_SIZE_DESCRIPTION) @QueryParam("size") String size,
             @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("sampleIds") String samples,
             @ApiParam(value = ParamConstants.FILE_JOB_ID_DESCRIPTION) @QueryParam("jobId") String jobId,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = ParamConstants.ATTRIBUTES_DESCRIPTION) @DefaultValue("") @QueryParam("attributes") String attributes,
             @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam("release") String release) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-
-            if (query.containsKey(FileDBAdaptor.QueryParams.NAME.key()) && (query.get(FileDBAdaptor.QueryParams.NAME.key()) == null
-                    || query.getString(FileDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
-                query.remove(FileDBAdaptor.QueryParams.NAME.key());
-                logger.debug("Name attribute empty, it's been removed");
-            }
-
             return createOkResponse(fileManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -354,24 +351,30 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "File distinct method")
     public Response distinct(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.FILE_NAMES_DESCRIPTION) @DefaultValue("") @QueryParam("name") String name,
-            @ApiParam(value = ParamConstants.FILE_PATHS_DESCRIPTION) @DefaultValue("") @QueryParam("path") String path,
-            @ApiParam(value = ParamConstants.FILE_TYPE_DESCRIPTION) @DefaultValue("") @QueryParam("type") String type,
-            @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @DefaultValue("") @QueryParam("bioformat") String bioformat,
-            @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @DefaultValue("") @QueryParam("format") String formats,
+            @ApiParam(value = ParamConstants.FILES_ID_DESCRIPTION) @QueryParam("id") String id,
+            @ApiParam(value = ParamConstants.FILES_UUID_DESCRIPTION) @QueryParam("uuid") String uuid,
+            @ApiParam(value = ParamConstants.FILE_NAMES_DESCRIPTION) @QueryParam("name") String name,
+            @ApiParam(value = ParamConstants.FILE_PATHS_DESCRIPTION) @QueryParam("path") String path,
+            @ApiParam(value = ParamConstants.FILE_URIS_DESCRIPTION) @QueryParam("uri") String uri,
+            @ApiParam(value = ParamConstants.FILE_TYPE_DESCRIPTION) @QueryParam("type") String type,
+            @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @QueryParam("bioformat") String bioformat,
+            @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @QueryParam("format") String formats,
+            @ApiParam(value = ParamConstants.FILE_EXTERNAL_DESCRIPTION) @QueryParam("external") Boolean external,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
-            @ApiParam(value = ParamConstants.FILE_DIRECTORY_DESCRIPTION) @DefaultValue("") @QueryParam("directory") String directory,
+            @ApiParam(value = ParamConstants.INTERNAL_INDEX_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_INDEX_STATUS_PARAM) String internalIndexStatus,
+            @ApiParam(value = ParamConstants.FILE_SOFTWARE_NAME_DESCRIPTION) @QueryParam(ParamConstants.FILE_SOFTWARE_NAME_PARAM) String softwareName,
+            @ApiParam(value = ParamConstants.FILE_DIRECTORY_DESCRIPTION) @QueryParam("directory") String directory,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @DefaultValue("") @QueryParam("description") String description,
+            @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @QueryParam("description") String description,
             @ApiParam(value = ParamConstants.FILE_TAGS_DESCRIPTION) @QueryParam("tags") String tags,
-            @ApiParam(value = ParamConstants.FILE_SIZE_DESCRIPTION) @DefaultValue("") @QueryParam("size") String size,
+            @ApiParam(value = ParamConstants.FILE_SIZE_DESCRIPTION) @QueryParam("size") String size,
             @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("sampleIds") String samples,
             @ApiParam(value = ParamConstants.FILE_JOB_ID_DESCRIPTION) @QueryParam("jobId") String jobId,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = ParamConstants.ATTRIBUTES_DESCRIPTION) @DefaultValue("") @QueryParam("attributes") String attributes,
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam("release") String release,
             @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
         try {

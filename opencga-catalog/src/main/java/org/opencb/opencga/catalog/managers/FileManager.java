@@ -1338,20 +1338,9 @@ public class FileManager extends AnnotationSetManager<File> {
     void fixQueryObject(Study study, Query query, String user) throws CatalogException {
         super.fixQueryObject(query);
 
-        if (query.containsKey(ParamConstants.INTERNAL_INDEX_STATUS_PARAM)) {
-            query.put(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), query.get(ParamConstants.INTERNAL_INDEX_STATUS_PARAM));
-            query.remove(ParamConstants.INTERNAL_INDEX_STATUS_PARAM);
-        }
-
-//        if (query.containsKey(FileDBAdaptor.QueryParams.ID.key())) {
-//            if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.ID.key()))) {
-//                OpenCGAResult<File> queryResult = internalGet(study.getUid(), query.getAsStringList(FileDBAdaptor.QueryParams.ID.key()),
-//                        INCLUDE_FILE_IDS, user, true);
-//                query.put(FileDBAdaptor.QueryParams.UID.key(), queryResult.getResults().stream().map(File::getUid)
-//                        .collect(Collectors.toList()));
-//            }
-//            query.remove(FileDBAdaptor.QueryParams.ID.key());
-//        }
+        changeQueryId(query, ParamConstants.INTERNAL_INDEX_STATUS_PARAM, FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key());
+        changeQueryId(query, ParamConstants.INTERNAL_STATUS_PARAM, FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
+        changeQueryId(query, ParamConstants.FILE_SOFTWARE_NAME_PARAM, FileDBAdaptor.QueryParams.SOFTWARE_NAME.key());
 
         validateQueryPath(query, FileDBAdaptor.QueryParams.PATH.key());
         validateQueryPath(query, FileDBAdaptor.QueryParams.DIRECTORY.key());
@@ -1362,14 +1351,6 @@ public class FileManager extends AnnotationSetManager<File> {
             query.put(FileDBAdaptor.QueryParams.JOB_ID.key(), "");
         }
 
-//        // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-//        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
-//            OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().internalGet(study.getUid(),
-//                    query.getAsStringList(FileDBAdaptor.QueryParams.SAMPLES.key()), SampleManager.INCLUDE_SAMPLE_IDS, user, true);
-//            query.put(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleDataResult.getResults().stream().map(Sample::getUid)
-//                    .collect(Collectors.toList()));
-//            query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
-//        }
     }
 
     private void validateQueryPath(Query query, String key) {
