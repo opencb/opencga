@@ -147,16 +147,22 @@
 {"collection": "family", "fields": {"name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"members.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"phenotypes.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "family", "fields": {"phenotypes.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"disorders.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "family", "fields": {"disorders.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "family", "fields": {"expectedSize": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {"background": true}}
+{"collection": "family", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1, "_acl": 1}, "options": {"background": true}}
+{"collection": "family", "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"customAnnotationSets.as": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"customAnnotationSets.vs": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"customAnnotationSets.id": 1, "customAnnotationSets.value": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"customInternalAnnotationSets.as": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"customInternalAnnotationSets.vs": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"customInternalAnnotationSets.id": 1, "customInternalAnnotationSets.value": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "family", "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
 
 {"collection": "panel", "fields": {"uuid": 1, "version": 1}, "options": {"unique": true, "background": true}}

@@ -82,6 +82,31 @@ public class ParamConstants {
 
     public static final String OVERWRITE = "overwrite";
     public static final String FORCE = "force";
+
+    // ---------------------------------------------
+
+    public static final String ANNOTATION_DOC_URL = "http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0";
+
+    public static final String VARIABLE_SET_DESCRIPTION = "Variable set ID or name";
+    public static final String ANNOTATION_DESCRIPTION = "Annotation filters. Example: age>30;gender=FEMALE. For more information, " +
+            "please visit " + ANNOTATION_DOC_URL;
+    public static final String ANNOTATION_AS_MAP_DESCRIPTION = "Indicates whether to show the annotations as key-value";
+    public static final String ANNOTATION_SET_ID = "AnnotationSet ID to be updated.";
+    public static final String ANNOTATION_SET_NAME = "Annotation set name. If provided, only chosen annotation set will be shown";
+    public static final String ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing "
+            + "annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some "
+            + "annotations; RESET to set some annotations to the default value configured in the corresponding variables of the "
+            + "VariableSet if any.";
+    public static final String ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION = "Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key "
+            + "'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json "
+            + "with only the key 'reset' containing the comma separated variables that will be set to the default value"
+            + " when the action is RESET";
+    /**
+     * Boolean indicating if the annotations have to be returned flattened or not. Default: false
+     */
+    public static final String FLATTEN_ANNOTATIONS = "flattenAnnotations";
+    public static final String FLATTEN_ANNOTATION_DESCRIPTION = "Boolean indicating to flatten the annotations.";
+
     // ---------------------------------------------
 
     public static final String USER_PROJECT_SEPARATOR = "@";
@@ -326,6 +351,40 @@ public class ParamConstants {
     public static final String FAMILY_VERSION_PARAM = "version";
     public static final String FAMILY_VERSION_DESCRIPTION = "Comma separated list of family versions. 'all' to get all the "
             + "family versions. Not supported if multiple family ids are provided";
+    public static final String FAMILY_ID_PARAM = "id";
+    public static final String FAMILY_UUID_PARAM = "uuid";
+    public static final String FAMILY_NAME_PARAM = "name";
+    public static final String FAMILY_MEMBERS_PARAM = "members";
+    public static final String FAMILY_SAMPLES_PARAM = "samples";
+    public static final String FAMILY_EXPECTED_SIZE_PARAM = "expectedSize";
+    public static final String FAMILY_PHENOTYPES_PARAM = PHENOTYPES_PARAM;
+    public static final String FAMILY_DISORDERS_PARAM = DISORDERS_PARAM;
+    public static final String FAMILY_CREATION_DATE_PARAM = CREATION_DATE_PARAM;
+    public static final String FAMILY_MODIFICATION_DATE_PARAM = MODIFICATION_DATE_PARAM;
+    public static final String FAMILY_DELETED_PARAM = DELETED_PARAM;
+    public static final String FAMILY_STATUS_PARAM = STATUS_PARAM;
+    public static final String FAMILY_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
+    public static final String FAMILY_ANNOTATION_PARAM = "annotation";
+    public static final String FAMILY_ACL_PARAM = ACL_PARAM;
+    public static final String FAMILY_RELEASE_PARAM = RELEASE_PARAM;
+    public static final String FAMILY_SNAPSHOT_PARAM = SNAPSHOT_PARAM;
+    public static final String FAMILY_ID_DESCRIPTION = "Comma separated list family IDs" + UP_TO_100;
+    public static final String FAMILY_NAME_DESCRIPTION = "Comma separated list family names" + UP_TO_100;
+    public static final String FAMILY_UUID_DESCRIPTION = "Comma separated list family UUIDs" + UP_TO_100;
+    public static final String FAMILY_MEMBERS_DESCRIPTION = "Comma separated list of family members";
+    public static final String FAMILY_SAMPLES_DESCRIPTION = "Comma separated list of member's samples";
+    public static final String FAMILY_EXPECTED_SIZE_DESCRIPTION = "Expected size of the family (number of members)";
+    public static final String FAMILY_PHENOTYPES_DESCRIPTION = PHENOTYPES_DESCRIPTION;
+    public static final String FAMILY_DISORDERS_DESCRIPTION = DISORDERS_DESCRIPTION;
+    public static final String FAMILY_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
+    public static final String FAMILY_MODIFICATION_DATE_DESCRIPTION = MODIFICATION_DATE_DESCRIPTION;
+    public static final String FAMILY_DELETED_DESCRIPTION = DELETED_DESCRIPTION;
+    public static final String FAMILY_STATUS_DESCRIPTION = STATUS_DESCRIPTION;
+    public static final String FAMILY_INTERNAL_STATUS_DESCRIPTION = INTERNAL_STATUS_DESCRIPTION;
+    public static final String FAMILY_ANNOTATION_DESCRIPTION = ANNOTATION_DESCRIPTION;
+    public static final String FAMILY_ACL_DESCRIPTION = ACL_DESCRIPTION;
+    public static final String FAMILY_RELEASE_DESCRIPTION = RELEASE_DESCRIPTION;
+    public static final String FAMILY_SNAPSHOT_DESCRIPTION = SNAPSHOT_DESCRIPTION;
 
     // ---------------------------------------------
 
@@ -399,30 +458,6 @@ public class ParamConstants {
     public static final String JOB_EXECUTION_START_DESCRIPTION = "Execution start date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
     public static final String JOB_EXECUTION_END_PARAM = "execution.end";
     public static final String JOB_EXECUTION_END_DESCRIPTION = "Execution end date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
-
-    // ---------------------------------------------
-
-    public static final String ANNOTATION_DOC_URL = "http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0";
-
-    public static final String VARIABLE_SET_DESCRIPTION = "Variable set ID or name";
-    public static final String ANNOTATION_DESCRIPTION = "Annotation filters. Example: age>30;gender=FEMALE. For more information, " +
-            "please visit " + ANNOTATION_DOC_URL;
-    public static final String ANNOTATION_AS_MAP_DESCRIPTION = "Indicates whether to show the annotations as key-value";
-    public static final String ANNOTATION_SET_ID = "AnnotationSet ID to be updated.";
-    public static final String ANNOTATION_SET_NAME = "Annotation set name. If provided, only chosen annotation set will be shown";
-    public static final String ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing "
-            + "annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some "
-            + "annotations; RESET to set some annotations to the default value configured in the corresponding variables of the "
-            + "VariableSet if any.";
-    public static final String ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION = "Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key "
-            + "'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json "
-            + "with only the key 'reset' containing the comma separated variables that will be set to the default value"
-            + " when the action is RESET";
-    /**
-     * Boolean indicating if the annotations have to be returned flattened or not. Default: false
-     */
-    public static final String FLATTEN_ANNOTATIONS = "flattenAnnotations";
-    public static final String FLATTEN_ANNOTATION_DESCRIPTION = "Boolean indicating to flatten the annotations.";
 
     // ---------------------------------------------
 
