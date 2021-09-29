@@ -107,6 +107,9 @@ class OpencgaCliShellExecutor extends CommandExecutor {
             while (true) {
                 // Read and sanitize the input
                 String line;
+                if(!CliSession.getInstance().isValid()){
+                    OpencgaCliProcessor.forceLogin();
+                }
                 if(cliSession != null && cliSession.getUser() != null && CliSession.getInstance().isValid()){
                     PROMPT = getPrompt();
                 }
@@ -134,9 +137,11 @@ class OpencgaCliShellExecutor extends CommandExecutor {
         } catch (Exception e) {
             printlnRed(e.getMessage());
             e.printStackTrace();
-            execute();
+           // execute();
         }
     }
+
+
 
     private String getPrompt() {
 

@@ -30,7 +30,7 @@ public class OpencgaMain {
         if (args != null && args.length > 0) {
             OpencgaCliProcessor.process(args);
         } else {
-            OpencgaCliShellExecutor shell= new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
+            OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
             try {
                 shell.execute();
             } catch (Exception e) {

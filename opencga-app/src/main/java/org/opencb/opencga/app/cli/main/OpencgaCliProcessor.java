@@ -14,11 +14,28 @@ import static org.fusesource.jansi.Ansi.ansi;
 
 public class OpencgaCliProcessor {
 
+
+    private static Console console;
+    private static OpencgaCliShellExecutor shell= new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
+    private static OpencgaCliOptionsParser cliOptionsParser;
+
+
+    private static Console getConsole(){
+        if (console == null) {
+            console = System.console();
+        }
+        return console;
+    }
+
+    private static OpencgaCliOptionsParser getCliOptionsParser(){
+        if (cliOptionsParser == null) {
+            cliOptionsParser = new OpencgaCliOptionsParser();
+        }
+        return cliOptionsParser;
+    }
     public static void process(String[] args) {
 
-        OpencgaCliShellExecutor shell= new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
-
-        Console console = System.console();
+        console =getConsole();
         boolean invalidInput = false;
         if (console == null) {
             System.out.println("Couldn't get Console instance");
@@ -52,7 +69,7 @@ public class OpencgaCliProcessor {
 
         }
         if (!invalidInput) {
-            OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
+                cliOptionsParser=getCliOptionsParser();
 
             try {
                 cliOptionsParser.parse(args);
@@ -146,18 +163,7 @@ public class OpencgaCliProcessor {
                                     break;
                             }
 
-                            if (commandExecutor != null) {
-                                try {
-                                    commandExecutor.execute();
-                                } catch (Exception e) {
-                                    shell.printlnRed(e.getMessage());
-                                   // e.printStackTrace();
-                                    //System.exit(1);
-                                }
-                            } else {
-                                cliOptionsParser.printUsage();
-                                // System.exit(1);
-                            }
+                            executeCommand(commandExecutor);
                         }
                     }
                 }
@@ -167,6 +173,21 @@ public class OpencgaCliProcessor {
 
                 //System.exit(1);
             }
+        }
+    }
+
+    private static void executeCommand(CommandExecutor commandExecutor) {
+        if (commandExecutor != null) {
+            try {
+                commandExecutor.execute();
+            } catch (Exception e) {
+                shell.printlnRed(e.getMessage());
+               // e.printStackTrace();
+                //System.exit(1);
+            }
+        } else {
+            cliOptionsParser.printUsage();
+            // System.exit(1);
         }
     }
 
@@ -189,5 +210,21 @@ public class OpencgaCliProcessor {
             }
         }
         return false;
+    }
+
+    public static void forceLogin() {
+        console =getConsole();
+        String[] args = new String[2];
+        String user=  console.readLine(String.valueOf(ansi().fg(GREEN).a("\nEnter your user: ").reset()));
+        char[] passwordArray = console.readPassword(String.valueOf(ansi().fg(GREEN).a("\nEnter your password: ").reset()));
+        args[0]="users";
+        args[1]="login";
+        args = appendArgs(args, new String[]{"-u", user});
+        args = appendArgs(args, new String[]{"--password", new String(passwordArray)});
+        cliOptionsParser = getCliOptionsParser();
+        cliOptionsParser.parse(args);
+        CommandExecutor commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+        executeCommand(commandExecutor);
+
     }
 }
