@@ -28,6 +28,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.IntersectMulti
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.QueryOperation;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -721,8 +722,41 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         }
     }
 
+    public static void printQuery(SampleIndexQuery query, Query variantsQuery) {
+        printQuery(query);
+
+        List<String> nonCoveredParams = VariantQueryUtils.validParams(variantsQuery, true)
+                .stream().map(VariantQueryParam::key).collect(Collectors.toList());
+        logger.info("Non covered params : " + nonCoveredParams);
+    }
+
+    public static void printQuery(SampleIndexQuery query) {
+        printQuery(query.getAnnotationIndexQuery());
+        logger.info("Study  : " + query.getStudy());
+        if (CollectionUtils.isNotEmpty(query.getRegions())) {
+            List<Region> regions = query.getRegions();
+            if (regions.size() > 10) {
+                logger.info("Regions  : #" + regions.size() + " [ " + regions.get(0) + " , " + regions.get(1) + " .... ] ");
+            } else {
+                logger.info("Regions  : #" + regions.size() + " " + regions);
+            }
+        }
+
+        if (query.getQueryOperation() != null) {
+            logger.info("Sample query operator " + query.getQueryOperation().name());
+        }
+        for (String sample : query.getSamplesMap().keySet()) {
+            logger.info("Sample : " + sample);
+            printSingleSampleIndexQuery(query.forSample(sample));
+        }
+    }
+
     public static void printQuery(SingleSampleIndexQuery query) {
         printQuery(query.getAnnotationIndexQuery());
+        printSingleSampleIndexQuery(query);
+    }
+
+    private static void printSingleSampleIndexQuery(SingleSampleIndexQuery query) {
         for (SampleFileIndexQuery sampleFileIndexQuery : query.getSampleFileIndexQuery()) {
             for (IndexFieldFilter filter : sampleFileIndexQuery.getFilters()) {
                 logger.info("Filter       = " + filter);
