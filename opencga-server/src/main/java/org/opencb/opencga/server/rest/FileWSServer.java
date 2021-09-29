@@ -31,7 +31,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
@@ -46,7 +45,6 @@ import javax.ws.rs.core.*;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.util.*;
@@ -468,57 +466,57 @@ public class FileWSServer extends OpenCGAWSServer {
         return files;
     }
 
-    @POST
-    @Path("/update")
-    @ApiOperation(value = "Update some file attributes", response = File.class, hidden = true)
-    public Response updateQuery(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Comma separated list of file names") @QueryParam("name") String name,
-            @ApiParam(value = "Comma separated list of paths") @QueryParam("path") String path,
-            @ApiParam(value = ParamConstants.FILE_TYPE_DESCRIPTION) @QueryParam("type") String type,
-            @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @QueryParam("bioformat") String bioformat,
-            @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @QueryParam("format") String formats,
-            @ApiParam(value = ParamConstants.FILE_STATUS_DESCRIPTION) @QueryParam("status") String status,
-            @ApiParam(value = ParamConstants.FILE_DIRECTORY_DESCRIPTION) @QueryParam("directory") String directory,
-            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @QueryParam("description") String description,
-            @ApiParam(value = ParamConstants.FILE_SIZE_DESCRIPTION) @QueryParam("size") String size,
-            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("samples") String samples,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = "Job id that created the file(s) or folder(s)") @QueryParam("job.id") String jobId,
-            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
-            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes,
-            @ApiParam(value = "Release value") @QueryParam("release") String release,
-
-            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
-            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
-            @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.BasicUpdateAction relatedFilesAction,
-            @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.BasicUpdateAction tagsAction,
-            @ApiParam(name = "body", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            if (samplesAction == null) {
-                samplesAction = ParamUtils.BasicUpdateAction.ADD;
-            }
-            if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
-            }
-
-            Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), samplesAction.name());
-            actionMap.put(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
-            actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFilesAction);
-            actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), tagsAction);
-            queryOptions.put(Constants.ACTIONS, actionMap);
-
-            DataResult<File> queryResult = fileManager.update(studyStr, query, updateParams, true, queryOptions, token);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @POST
+//    @Path("/update")
+//    @ApiOperation(value = "Update some file attributes", response = File.class, hidden = true)
+//    public Response updateQuery(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
+//            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Comma separated list of file names") @QueryParam("name") String name,
+//            @ApiParam(value = "Comma separated list of paths") @QueryParam("path") String path,
+//            @ApiParam(value = ParamConstants.FILE_TYPE_DESCRIPTION) @QueryParam("type") String type,
+//            @ApiParam(value = ParamConstants.FILE_BIOFORMAT_DESCRIPTION) @QueryParam("bioformat") String bioformat,
+//            @ApiParam(value = ParamConstants.FILE_FORMAT_DESCRIPTION) @QueryParam("format") String formats,
+//            @ApiParam(value = ParamConstants.FILE_STATUS_DESCRIPTION) @QueryParam("status") String status,
+//            @ApiParam(value = ParamConstants.FILE_DIRECTORY_DESCRIPTION) @QueryParam("directory") String directory,
+//            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
+//            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam("modificationDate") String modificationDate,
+//            @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @QueryParam("description") String description,
+//            @ApiParam(value = ParamConstants.FILE_SIZE_DESCRIPTION) @QueryParam("size") String size,
+//            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("samples") String samples,
+//            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+//            @ApiParam(value = "Job id that created the file(s) or folder(s)") @QueryParam("job.id") String jobId,
+//            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
+//            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes,
+//            @ApiParam(value = "Release value") @QueryParam("release") String release,
+//
+//            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
+//            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
+//            @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.BasicUpdateAction relatedFilesAction,
+//            @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.BasicUpdateAction tagsAction,
+//            @ApiParam(name = "body", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
+//        try {
+//            query.remove(ParamConstants.STUDY_PARAM);
+//            if (samplesAction == null) {
+//                samplesAction = ParamUtils.BasicUpdateAction.ADD;
+//            }
+//            if (annotationSetsAction == null) {
+//                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
+//            }
+//
+//            Map<String, Object> actionMap = new HashMap<>();
+//            actionMap.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), samplesAction.name());
+//            actionMap.put(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+//            actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFilesAction);
+//            actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), tagsAction);
+//            queryOptions.put(Constants.ACTIONS, actionMap);
+//
+//            DataResult<File> queryResult = fileManager.update(studyStr, query, updateParams, true, queryOptions, token);
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/{files}/update")
@@ -608,39 +606,39 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/link")
-    @ApiOperation(value = "Link an external file into catalog.", hidden = true, response = File.class)
-    @Deprecated
-    public Response linkGet(
-            @ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Path where the external file will be allocated in catalog", required = true) @QueryParam("path") String path,
-            @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @QueryParam("description") String description,
-            @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
-            @ApiParam(value = "Size of the folder/file") @QueryParam("size") long size,
-            @ApiParam(value = "Checksum of something") @QueryParam("checksum") String checksum) {
-        try {
-            logger.debug("study: {}", studyStr);
-
-            path = path.replace(":", "/");
-
-            ObjectMap objectMap = new ObjectMap()
-                    .append("parents", parents)
-                    .append("description", description);
-            objectMap.putIfNotEmpty(FileDBAdaptor.QueryParams.CHECKSUM.key(), checksum);
-
-            List<DataResult<File>> queryResultList = new ArrayList<>();
-            logger.info("path: {}", path);
-            // If it is just one uri to be linked, it will return an error response if there is some kind of error.
-            URI myUri = UriUtils.createUri(uriStr);
-            queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, path, objectMap, token));
-
-            return createOkResponse(queryResultList);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/link")
+//    @ApiOperation(value = "Link an external file into catalog.", hidden = true, response = File.class)
+//    @Deprecated
+//    public Response linkGet(
+//            @ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Path where the external file will be allocated in catalog", required = true) @QueryParam("path") String path,
+//            @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @QueryParam("description") String description,
+//            @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
+//            @ApiParam(value = "Size of the folder/file") @QueryParam("size") long size,
+//            @ApiParam(value = "Checksum of something") @QueryParam("checksum") String checksum) {
+//        try {
+//            logger.debug("study: {}", studyStr);
+//
+//            path = path.replace(":", "/");
+//
+//            ObjectMap objectMap = new ObjectMap()
+//                    .append("parents", parents)
+//                    .append("description", description);
+//            objectMap.putIfNotEmpty(FileDBAdaptor.QueryParams.CHECKSUM.key(), checksum);
+//
+//            List<DataResult<File>> queryResultList = new ArrayList<>();
+//            logger.info("path: {}", path);
+//            // If it is just one uri to be linked, it will return an error response if there is some kind of error.
+//            URI myUri = UriUtils.createUri(uriStr);
+//            queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, path, objectMap, token));
+//
+//            return createOkResponse(queryResultList);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/link")

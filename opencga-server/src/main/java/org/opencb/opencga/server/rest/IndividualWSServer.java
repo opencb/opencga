@@ -19,7 +19,6 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -238,61 +237,61 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
-    @POST
-    @Path("/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some individual attributes", hidden = true, response = Individual.class)
-    public Response updateByQuery(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "id") @QueryParam("id") String id,
-            @ApiParam(value = "name") @QueryParam("name") String name,
-            @ApiParam(value = "father") @QueryParam("father") String father,
-            @ApiParam(value = "mother") @QueryParam("mother") String mother,
-            @ApiParam(value = "sex") @QueryParam("sex") String sex,
-            @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-            @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
-                    String populationName,
-            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
-                    String populationSubpopulation,
-            @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
-                    String populationDescription,
-            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                    IndividualProperty.KaryotypicSex karyotypicSex,
-            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
-                    IndividualProperty.LifeStatus lifeStatus,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION, required = false) @QueryParam("annotation") String annotation,
-            @ApiParam(value = "Release value (Current release from the moment the individuals were first created)") @QueryParam("release") String release,
-            @ApiParam(value = ParamConstants.SAMPLES_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam(ParamConstants.SAMPLES_ACTION_PARAM) ParamUtils.BasicUpdateAction samplesAction,
-            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
-            @ApiParam(value = "Create a new version of individual", defaultValue = "false")
-                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(value = ParamConstants.BODY_PARAM) IndividualUpdateParams updateParams) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-
-            if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
-            }
-            if (samplesAction == null) {
-                samplesAction = ParamUtils.BasicUpdateAction.ADD;
-            }
-
-            Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samplesAction.name());
-            actionMap.put(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
-            queryOptions.put(Constants.ACTIONS, actionMap);
-
-            DataResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, query, updateParams, true,
-                    queryOptions, token);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @POST
+//    @Path("/update")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "Update some individual attributes", hidden = true, response = Individual.class)
+//    public Response updateByQuery(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "id") @QueryParam("id") String id,
+//            @ApiParam(value = "name") @QueryParam("name") String name,
+//            @ApiParam(value = "father") @QueryParam("father") String father,
+//            @ApiParam(value = "mother") @QueryParam("mother") String mother,
+//            @ApiParam(value = "sex") @QueryParam("sex") String sex,
+//            @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
+//            @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
+//                    String populationName,
+//            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
+//                    String populationSubpopulation,
+//            @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
+//                    String populationDescription,
+//            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+//            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
+//                    IndividualProperty.KaryotypicSex karyotypicSex,
+//            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
+//                    IndividualProperty.LifeStatus lifeStatus,
+//            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+//            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION, required = false) @QueryParam("annotation") String annotation,
+//            @ApiParam(value = "Release value (Current release from the moment the individuals were first created)") @QueryParam("release") String release,
+//            @ApiParam(value = ParamConstants.SAMPLES_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+//                @QueryParam(ParamConstants.SAMPLES_ACTION_PARAM) ParamUtils.BasicUpdateAction samplesAction,
+//            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+//                @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
+//            @ApiParam(value = "Create a new version of individual", defaultValue = "false")
+//                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+//            @ApiParam(value = ParamConstants.BODY_PARAM) IndividualUpdateParams updateParams) {
+//        try {
+//            query.remove(ParamConstants.STUDY_PARAM);
+//
+//            if (annotationSetsAction == null) {
+//                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
+//            }
+//            if (samplesAction == null) {
+//                samplesAction = ParamUtils.BasicUpdateAction.ADD;
+//            }
+//
+//            Map<String, Object> actionMap = new HashMap<>();
+//            actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samplesAction.name());
+//            actionMap.put(IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+//            queryOptions.put(Constants.ACTIONS, actionMap);
+//
+//            DataResult<Individual> queryResult = catalogManager.getIndividualManager().update(studyStr, query, updateParams, true,
+//                    queryOptions, token);
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/{individuals}/update")

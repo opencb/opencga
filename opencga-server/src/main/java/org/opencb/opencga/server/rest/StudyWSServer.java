@@ -164,21 +164,21 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{studies}/summary")
-    @ApiOperation(value = "Fetch study information plus some basic stats", hidden = true,
-            notes = "Fetch study information plus some basic stats such as the number of files, samples, cohorts...")
-    public Response summary(@ApiParam(value = ParamConstants.STUDIES_DESCRIPTION, required = true)
-                            @PathParam(ParamConstants.STUDIES_PARAM) String studies,
-                            @ApiParam(value = ParamConstants.SILENT_DESCRIPTION,
-                                    defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
-        try {
-            List<String> idList = getIdList(studies);
-            return createOkResponse(studyManager.getSummary(idList, queryOptions, silent, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/{studies}/summary")
+//    @ApiOperation(value = "Fetch study information plus some basic stats", hidden = true,
+//            notes = "Fetch study information plus some basic stats such as the number of files, samples, cohorts...")
+//    public Response summary(@ApiParam(value = ParamConstants.STUDIES_DESCRIPTION, required = true)
+//                            @PathParam(ParamConstants.STUDIES_PARAM) String studies,
+//                            @ApiParam(value = ParamConstants.SILENT_DESCRIPTION,
+//                                    defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
+//        try {
+//            List<String> idList = getIdList(studies);
+//            return createOkResponse(studyManager.getSummary(idList, queryOptions, silent, token));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @GET
     @Path("/{study}/groups")
