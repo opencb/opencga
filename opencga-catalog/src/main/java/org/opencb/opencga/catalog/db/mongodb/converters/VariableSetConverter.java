@@ -19,6 +19,8 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.apache.avro.generic.GenericRecord;
 import org.bson.Document;
 import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableMixin;
 import org.opencb.opencga.core.models.study.VariableSet;
 
 /**
@@ -29,12 +31,13 @@ public class VariableSetConverter extends OpenCgaMongoConverter<VariableSet> {
     public VariableSetConverter() {
         super(VariableSet.class);
         getObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        getObjectMapper().addMixIn(Variable.class, VariableMixin.class);
     }
 
     @Override
     public Document convertToStorageType(VariableSet object) {
         Document document = super.convertToStorageType(object);
-        document.put("id", document.getInteger("id").longValue());
+        document.put("uid", document.getInteger("uid").longValue());
         return document;
     }
 }

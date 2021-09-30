@@ -8,9 +8,11 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.slf4j.Logger;
@@ -37,6 +39,7 @@ public abstract class MigrationTool {
 
     protected final Logger logger;
     private final Logger privateLogger;
+    private GenericDocumentComplexConverter<Object> converter;
     private final int BATCH_SIZE;
 
     public MigrationTool() {
@@ -48,6 +51,7 @@ public abstract class MigrationTool {
         // Internal logger
         this.privateLogger = LoggerFactory.getLogger(MigrationTool.class);
         this.BATCH_SIZE = batchSize;
+        this.converter = new GenericDocumentComplexConverter<>(Object.class, JacksonUtils.getDefaultObjectMapper());
     }
 
     public final Migration getAnnotation() {
@@ -218,6 +222,18 @@ public abstract class MigrationTool {
 
     protected final MongoCollection<Document> getMongoCollection(String collectionName) {
         return dbAdaptorFactory.getMongoDataStore().getDb().getCollection(collectionName);
+    }
+
+    protected <T> Document convertToDocument(T value) {
+        return converter.convertToStorageType(value);
+    }
+
+    protected <T> List<Document> convertToDocument(List<T> values) {
+        List<Document> documentList = new ArrayList<>(values.size());
+        for (Object value : values) {
+            documentList.add(convertToDocument(value));
+        }
+        return documentList;
     }
 
 }
