@@ -302,7 +302,7 @@ public class ParamConstants {
             + "individual versions. Not supported if multiple individual ids are provided";
     public static final String INDIVIDUAL_PHENOTYPES_ACTION_PARAM = PHENOTYPES_ACTION_PARAM;
     public static final String INDIVIDUAL_PHENOTYPES_ACTION_DESCRIPTION = PHENOTYPES_ACTION_DESCRIPTION;
-    public static final String INDIVIDUAL_DISORDERS_ACTION_PARAM = "disordersAction" ;
+    public static final String INDIVIDUAL_DISORDERS_ACTION_PARAM = "disordersAction";
     public static final String INDIVIDUAL_DISORDERS_ACTION_DESCRIPTION = "Action to be performed if the array of disorders is being"
             + " updated [SET, ADD, REMOVE]";
     public static final String INDIVIDUAL_ID_PARAM = "id";
@@ -388,13 +388,38 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String COHORT_DESCRIPTION = "Cohort ID or name";
-    public static final String COHORTS_DESCRIPTION = "Comma separated list of cohort names or IDs" + UP_TO_100;
+    public static final String COHORT_DESCRIPTION = "Cohort ID or UUID";
+    public static final String COHORTS_DESCRIPTION = "Comma separated list of cohort IDs or UUIDs" + UP_TO_100;
+    public static final String COHORT_IDS_DESCRIPTION = "Comma separated list of cohort IDs" + UP_TO_100;
+    public static final String COHORT_UUIDS_DESCRIPTION = "Comma separated list of cohort IDs" + UP_TO_100;
+
+    public static final String COHORT_ID_PARAM = "id";
+    public static final String COHORT_UUID_PARAM = "uuid";
+    public static final String COHORT_TYPE_PARAM = "type";
+    public static final String COHORT_CREATION_DATE_PARAM = CREATION_DATE_PARAM;
+    public static final String COHORT_MODIFICATION_DATE_PARAM = MODIFICATION_DATE_PARAM;
+    public static final String COHORT_DELETED_PARAM = DELETED_PARAM;
+    public static final String COHORT_STATUS_PARAM = STATUS_PARAM;
+    public static final String COHORT_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
+    public static final String COHORT_ANNOTATION_PARAM = "annotation";
+    public static final String COHORT_ACL_PARAM = ACL_PARAM;
+    public static final String COHORT_SAMPLES_PARAM = "samples";
+    public static final String COHORT_NUMBER_OF_SAMPLES_PARAM = "numSamples";
+    public static final String COHORT_RELEASE_PARAM = RELEASE_PARAM;
 
     public static final String COHORT_ID_DESCRIPTION = "Cohort ID";
-    public static final String COHORT_NAME_DESCRIPTION = "Cohort name";
+    public static final String COHORT_UUID_DESCRIPTION = "Cohort UUID";
     public static final String COHORT_TYPE_DESCRIPTION = "Cohort type";
-    public static final String COHORT_STATUS_DESCRIPTION = "Cohort status";
+    public static final String COHORT_CREATION_DATE_DESCRIPTION = CREATION_DATE_PARAM;
+    public static final String COHORT_MODIFICATION_DATE_DESCRIPTION = MODIFICATION_DATE_PARAM;
+    public static final String COHORT_DELETED_DESCRIPTION = DELETED_PARAM;
+    public static final String COHORT_STATUS_DESCRIPTION = STATUS_PARAM;
+    public static final String COHORT_INTERNAL_STATUS_DESCRIPTION = INTERNAL_STATUS_PARAM;
+    public static final String COHORT_ANNOTATION_DESCRIPTION = "Cohort annotation";
+    public static final String COHORT_ACL_DESCRIPTION = ACL_PARAM;
+    public static final String COHORT_SAMPLES_DESCRIPTION = "Cohort sample IDs";
+    public static final String COHORT_NUMBER_OF_SAMPLES_DESCRIPTION = "Number of samples";
+    public static final String COHORT_RELEASE_DESCRIPTION = RELEASE_PARAM;
 
     // ---------------------------------------------
 

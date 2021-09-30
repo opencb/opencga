@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
@@ -514,15 +515,16 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);
+        changeQueryId(query, ParamConstants.COHORT_INTERNAL_STATUS_PARAM, CohortDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
 
-        if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
+        if (query.containsKey(ParamConstants.COHORT_SAMPLES_PARAM)) {
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
 
             // First look for the sample ids.
             List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(),
-                    query.getAsStringList(CohortDBAdaptor.QueryParams.SAMPLES.key()), SampleManager.INCLUDE_SAMPLE_IDS, userId, true)
+                            query.getAsStringList(ParamConstants.COHORT_SAMPLES_PARAM), SampleManager.INCLUDE_SAMPLE_IDS, userId, true)
                     .getResults();
-            if (ListUtils.isNotEmpty(sampleList)) {
+            if (CollectionUtils.isNotEmpty(sampleList)) {
                 query.append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleList.stream().map(Sample::getUid)
                         .collect(Collectors.toList()));
             } else {
@@ -530,7 +532,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 query.append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), -1);
             }
 
-            query.remove(CohortDBAdaptor.QueryParams.SAMPLES.key());
+            query.remove(ParamConstants.COHORT_SAMPLES_PARAM);
         }
     }
 
@@ -838,13 +840,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     /**
      * Update a Cohort from catalog.
      *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param cohortIds  List of cohort ids. Could be either the id or uuid.
-     * @param updateParams Data model filled only with the parameters to be updated.
+     * @param studyStr             Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param cohortIds            List of cohort ids. Could be either the id or uuid.
+     * @param updateParams         Data model filled only with the parameters to be updated.
      * @param allowModifyCohortAll Boolean indicating whether we should not raise an exception if the cohort ALL is to be updated.
-     * @param ignoreException Boolean indicating whether to ignore the exception in case of an error.
-     * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
+     * @param ignoreException      Boolean indicating whether to ignore the exception in case of an error.
+     * @param options              QueryOptions object.
+     * @param token                Session id of the user logged in.
      * @return A list of DataResults with the object updated.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
@@ -912,11 +914,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     /**
      * Update a Cohort from catalog.
      *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param query  Query object.
+     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param query        Query object.
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
+     * @param token        Session id of the user logged in.
      * @return A OpenCGAResult with the object updated.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
