@@ -154,7 +154,7 @@ public class FileManager extends AnnotationSetManager<File> {
     @Override
     InternalGetDataResult<File> internalGet(long studyUid, List<String> entryList, @Nullable Query query, QueryOptions options,
                                             String user, boolean ignoreException) throws CatalogException {
-        if (ListUtils.isEmpty(entryList)) {
+        if (org.apache.commons.collections4.CollectionUtils.isEmpty(entryList)) {
             throw new CatalogException("Missing file entries.");
         }
         List<String> uniqueList = ListUtils.unique(entryList);
@@ -1344,15 +1344,15 @@ public class FileManager extends AnnotationSetManager<File> {
             query.remove(ParamConstants.INTERNAL_INDEX_STATUS_PARAM);
         }
 
-        if (query.containsKey(FileDBAdaptor.QueryParams.ID.key())) {
-            if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.ID.key()))) {
-                OpenCGAResult<File> queryResult = internalGet(study.getUid(), query.getAsStringList(FileDBAdaptor.QueryParams.ID.key()),
-                        INCLUDE_FILE_IDS, user, true);
-                query.put(FileDBAdaptor.QueryParams.UID.key(), queryResult.getResults().stream().map(File::getUid)
-                        .collect(Collectors.toList()));
-            }
-            query.remove(FileDBAdaptor.QueryParams.ID.key());
-        }
+//        if (query.containsKey(FileDBAdaptor.QueryParams.ID.key())) {
+//            if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.ID.key()))) {
+//                OpenCGAResult<File> queryResult = internalGet(study.getUid(), query.getAsStringList(FileDBAdaptor.QueryParams.ID.key()),
+//                        INCLUDE_FILE_IDS, user, true);
+//                query.put(FileDBAdaptor.QueryParams.UID.key(), queryResult.getResults().stream().map(File::getUid)
+//                        .collect(Collectors.toList()));
+//            }
+//            query.remove(FileDBAdaptor.QueryParams.ID.key());
+//        }
 
         validateQueryPath(query, FileDBAdaptor.QueryParams.PATH.key());
         validateQueryPath(query, FileDBAdaptor.QueryParams.DIRECTORY.key());

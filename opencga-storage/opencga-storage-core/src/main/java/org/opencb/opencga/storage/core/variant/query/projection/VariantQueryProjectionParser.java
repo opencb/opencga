@@ -658,7 +658,7 @@ public class VariantQueryProjectionParser {
                 if (samples == null) {
                     samples = new ArrayList<>(sampleDataQuery.size());
                 }
-                samples.addAll(sampleDataQuery.getValues(KeyValues::getKey));
+                samples.addAll(sampleDataQuery.mapValues(KeyValues::getKey));
             }
             if (VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR)) {
                 String value = query.getString(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key());

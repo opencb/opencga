@@ -106,6 +106,13 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testSearchById() throws CatalogException {
+        Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), "~/^data/");
+        OpenCGAResult<File> search = catalogManager.getFileManager().search(studyFqn, query, FileManager.INCLUDE_FILE_IDS, token);
+        assertEquals(6, search.getNumResults());
+    }
+
+    @Test
     public void testLinkCram() throws CatalogException {
         String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
         File referenceFile = fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, token).first();

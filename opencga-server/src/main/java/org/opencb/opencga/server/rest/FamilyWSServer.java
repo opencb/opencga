@@ -30,7 +30,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.family.*;
 import org.opencb.opencga.core.models.job.Job;
@@ -203,40 +202,40 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @POST
-    @Path("/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some family attributes", hidden = true, response = Family.class)
-    public Response updateByQuery(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Family id") @QueryParam("id") String id,
-            @ApiParam(value = "Family name") @QueryParam("name") String name,
-            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
-            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @QueryParam("release") String release,
-            @ApiParam(value = "Create a new version of family", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-            @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
-            @ApiParam(value = "body") FamilyUpdateParams parameters) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
-            }
-
-            Map<String, Object> actionMap = new HashMap<>();
-            actionMap.put(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
-            queryOptions.put(Constants.ACTIONS, actionMap);
-
-            DataResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, query, parameters, true, queryOptions, token);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @POST
+//    @Path("/update")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "Update some family attributes", hidden = true, response = Family.class)
+//    public Response updateByQuery(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
+//            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Family id") @QueryParam("id") String id,
+//            @ApiParam(value = "Family name") @QueryParam("name") String name,
+//            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
+//            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
+//            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
+//            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+//            @QueryParam("release") String release,
+//            @ApiParam(value = "Create a new version of family", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+//            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+//            @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
+//            @ApiParam(value = "body") FamilyUpdateParams parameters) {
+//        try {
+//            query.remove(ParamConstants.STUDY_PARAM);
+//            if (annotationSetsAction == null) {
+//                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
+//            }
+//
+//            Map<String, Object> actionMap = new HashMap<>();
+//            actionMap.put(FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+//            queryOptions.put(Constants.ACTIONS, actionMap);
+//
+//            DataResult<Family> queryResult = catalogManager.getFamilyManager().update(studyStr, query, parameters, true, queryOptions, token);
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
 
     @POST

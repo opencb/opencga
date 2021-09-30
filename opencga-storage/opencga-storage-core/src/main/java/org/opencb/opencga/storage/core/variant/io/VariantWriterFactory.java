@@ -22,6 +22,7 @@ import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.tools.variant.stats.writer.VariantStatsPopulationFrequencyExporter;
 import org.opencb.biodata.tools.variant.stats.writer.VariantStatsTsvExporter;
+import org.opencb.biodata.tools.variant.writers.EnsemblVepOutputWriter;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
@@ -83,7 +84,9 @@ public class VariantWriterFactory {
         STATS_GZ("stats.tsv.gz", false),
         CELLBASE("frequencies.json"),
         CELLBASE_GZ("frequencies.json.gz"),
-        TPED("tped", false);
+        TPED("tped", false),
+        ENSEMBL_VEP("vep.txt", false),
+        ENSEMBL_VEP_GZ("vep.txt.gz", false);
 
         private final boolean multiStudy;
         private final String extension;
@@ -106,12 +109,31 @@ public class VariantWriterFactory {
             return multiStudy;
         }
 
+        public boolean isPlain() {
+            return !isGzip() && !isSnappy();
+        }
+
         public boolean isGzip() {
             return extension.endsWith(".gz");
         }
 
         public boolean isSnappy() {
             return extension.endsWith(".snappy");
+        }
+
+        public VariantOutputFormat withGzip() {
+            try {
+                if (isGzip()) {
+                    return this;
+                } else if (isSnappy()) {
+                    return VariantOutputFormat.valueOf(name().replace("_SNAPPY", "_GZ"));
+                } else {
+                    return VariantOutputFormat.valueOf(name() + "_GZ");
+                }
+            } catch (IllegalArgumentException e) {
+                logger.debug("Unable to get gzip of " + this, e);
+                return this;
+            }
         }
 
     }
@@ -139,7 +161,7 @@ public class VariantWriterFactory {
      * @throws                  IllegalArgumentException if the outputFormatStr is not valid
      */
     public static VariantOutputFormat toOutputFormat(String outputFormatStr, URI output) {
-        if (!StringUtils.isEmpty(outputFormatStr)) {
+        if (StringUtils.isNotEmpty(outputFormatStr)) {
             outputFormatStr = outputFormatStr.replace('.', '_');
             return VariantOutputFormat.valueOf(outputFormatStr.toUpperCase());
         } else if (isStandardOutput(output)) {
@@ -274,6 +296,11 @@ public class VariantWriterFactory {
 
             case TPED:
                 exporter = new VariantTpedWriter(outputStream);
+                break;
+
+            case ENSEMBL_VEP:
+            case ENSEMBL_VEP_GZ:
+                exporter = new EnsemblVepOutputWriter(outputStream);
                 break;
 
             default:

@@ -455,7 +455,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secureOperation("configure", studyStr, params, token, engine -> {
             Study study = catalogManager.getStudyManager()
                     .get(studyStr,
-                            new QueryOptions(INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION_OPTIONS.key()),
+                            new QueryOptions(INCLUDE, StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE_OPTIONS.key()),
                             token)
                     .first();
             ObjectMap options;
@@ -907,7 +907,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         Study study = catalogManager.getStudyManager()
                 .get(studyStr, new QueryOptions(INCLUDE, Arrays.asList(
                         StudyDBAdaptor.QueryParams.FQN.key(),
-                        StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key())), token)
+                        StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key())), token)
                 .first();
 
         DataStore dataStore = getDataStore(study.getFqn(), token);

@@ -1,6 +1,4 @@
-# Permissions
-
-
+# Study ACLs
 
 {% hint style="info" %}
 Remember that you can always check the Catalog code that implements OpenCGA's ACLs permission system in our official publicly available [GitHub repository](https://github.com/opencb/opencga/blob/9b00edc7b556898d6b65527a333ecdd62aea3791/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyAclEntry.java).
@@ -92,9 +90,9 @@ _VIEW\_FILE\_HEADER_: Give permission to retrieve just the header of a file. DOW
 {% endtab %}
 {% endtabs %}
 
-## Templates <a id="SharingandPermissions-Specialcases"></a>
+## Permissions Templates <a id="SharingandPermissions-Specialcases"></a>
 
-OpenCGA Catalog implements  two sets of predefined roles to assign some generic Study permissions to users/groups:        
+OpenCGA Catalog implements two Permissions templates:  predefined generic roles that capture a list of defined permissions. The permission templates can be granted to either users or groups.
 
 * **analyst**: The member \(user or group\) will be given full READ and WRITE \(not DELETE\) permissions for all the entries related to the study. These users will be able to view and do modifications on all the data that is related to the study. 
 * **view\_only**: The member \(user or group\) will be given full READ permissions.

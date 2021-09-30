@@ -34,6 +34,7 @@ package org.opencb.opencga.client.rest;
  import org.opencb.opencga.client.config.ClientConfiguration;
  import org.opencb.opencga.client.exceptions.ClientException;
  import org.opencb.opencga.core.common.JacksonUtils;
+ import org.opencb.opencga.core.response.OpenCGAResult;
  import org.opencb.opencga.core.response.RestResponse;
  import org.opencb.opencga.core.response.VariantQueryResult;
  import org.slf4j.Logger;
@@ -261,6 +262,10 @@ public abstract class AbstractParentClient {
                 finalRestResponse = batchRestResponse;
                 if (finalRestResponse.getEvents() == null) {
                     finalRestResponse.setEvents(new ArrayList<>());
+                }
+                if (finalRestResponse.first() == null) {
+                    finalRestResponse.setResponses(Collections.singletonList(new OpenCGAResult<>()));
+                    finalRestResponse.first().setResults(new ArrayList<>());
                 }
                 if (finalRestResponse.first().getEvents() == null) {
                     finalRestResponse.first().setEvents(new ArrayList<>());

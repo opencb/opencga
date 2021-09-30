@@ -17,9 +17,7 @@
 package org.opencb.opencga.analysis.tools;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -120,12 +118,12 @@ public class ToolRunner {
                 .start();
     }
 
-    /**
-     * Execute a command tool.
-     * @param jobId jobId of the job containing the relevant information.
-     * @param sessionId session id of the user that will execute the tool.
-     */
-    public void execute(long jobId, String sessionId) {
+//    /**
+//     * Execute a command tool.
+//     * @param jobId jobId of the job containing the relevant information.
+//     * @param sessionId session id of the user that will execute the tool.
+//     */
+//    public void execute(long jobId, String sessionId) {
 //        try {
 //            // We get the job information.
 //            Query query = new Query();
@@ -188,5 +186,5 @@ public class ToolRunner {
 //        } catch (CatalogException | AnalysisToolException e) {
 //            logger.error("{}", e.getMessage(), e);
 //        }
-    }
+//    }
 }

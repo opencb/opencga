@@ -16,8 +16,7 @@
   * [Scalability and Performance](overview/scalability-and-performance.md)
   * [Sizing OpenCGA](overview/sizing-opencga.md)
 * [OpenCGA Architecture](components-1/README.md)
-  * [Catalog](components-1/catalog/README.md)
-    * [Data Management](components-1/catalog/data-management.md)
+  * [Catalog](components-1/catalog.md)
   * [Alignment and Coverage](components-1/alignment-and-coverage.md)
   * [Variant Storage Engine](components-1/variant-storage/README.md)
     * [Variant Data Model](https://docsgb.opencb.org/variant/variant-data-model)
@@ -76,12 +75,18 @@
 =======
   * [Public Demo](manual/using-opencga/public-demo.md)
 * [Managing Data](manual/data-management/README.md)
+<<<<<<< HEAD
   * [Working with Projects and Studies](manual/data-management/projects-and-studies.md)
   * [Loading of VCF files](manual/data-management/ingestion-of-vcf-files.md)
 >>>>>>> release-2.1.x
+=======
+  * [Create Projects and Studies](manual/data-management/projects-and-studies.md)
+  * [Load VCF Files to a Study](manual/data-management/ingestion-of-vcf-files.md)
+>>>>>>> release-2.1.x
   * [Working with Files](manual/data-management/working-with-files.md)
   * [Sharing and Permissions](manual/data-management/sharing-and-permissions/README.md)
-    * [Permissions](manual/data-management/sharing-and-permissions/permissions.md)
+    * [Users and Groups](manual/data-management/sharing-and-permissions/users-and-groups.md)
+    * [Study ACLs](manual/data-management/sharing-and-permissions/permissions.md)
   * [Data Versioning](manual/data-management/data-versioning.md)
   * [Adding Custom Metadata](manual/data-management/adding-custom-metadata.md)
 * [Alignment Engine](manual/alignment-engine/README.md)

@@ -81,6 +81,7 @@ solr:
 
 cellbase:
   host: "https://ws.opencb.org/cellbase/"
+  version: "v4"
 
 analysis:
   execution:

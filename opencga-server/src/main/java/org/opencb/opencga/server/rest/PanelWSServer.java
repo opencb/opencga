@@ -77,35 +77,35 @@ public class PanelWSServer extends OpenCGAWSServer {
         }
     }
 
-    @POST
-    @Path("/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update panel attributes", hidden = true, response = Panel.class)
-    public Response updateByQuery(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Panel id") @QueryParam("id") String id,
-            @ApiParam(value = "Panel name") @QueryParam("name") String name,
-            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
-            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
-            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
-            @ApiParam(value = "Panel categories") @QueryParam("categories") String categories,
-            @ApiParam(value = "Panel tags") @QueryParam("tags") String tags,
-            @ApiParam(value = "Panel description") @QueryParam("description") String description,
-            @ApiParam(value = "Panel author") @QueryParam("author") String author,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "Release") @QueryParam("release") String release,
-
-            @ApiParam(value = "Create a new version of panel", defaultValue = "false")
-                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(name = "body", value = "Panel parameters") PanelUpdateParams panelParams) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(panelManager.update(studyStr, query, panelParams, true, queryOptions, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @POST
+//    @Path("/update")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "Update panel attributes", hidden = true, response = Panel.class)
+//    public Response updateByQuery(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Panel id") @QueryParam("id") String id,
+//            @ApiParam(value = "Panel name") @QueryParam("name") String name,
+//            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
+//            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
+//            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
+//            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
+//            @ApiParam(value = "Panel categories") @QueryParam("categories") String categories,
+//            @ApiParam(value = "Panel tags") @QueryParam("tags") String tags,
+//            @ApiParam(value = "Panel description") @QueryParam("description") String description,
+//            @ApiParam(value = "Panel author") @QueryParam("author") String author,
+//            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+//            @ApiParam(value = "Release") @QueryParam("release") String release,
+//
+//            @ApiParam(value = "Create a new version of panel", defaultValue = "false")
+//                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+//            @ApiParam(name = "body", value = "Panel parameters") PanelUpdateParams panelParams) {
+//        try {
+//            query.remove(ParamConstants.STUDY_PARAM);
+//            return createOkResponse(panelManager.update(studyStr, query, panelParams, true, queryOptions, token));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/{panels}/update")

@@ -1,23 +1,27 @@
-# Working with Projects and Studies
+# Create Projects and Studies
 
 ## Introduction
 
-The project/study organisation is a key in order to optimise the data usability.
+The project/study organisation is key in order to optimise the usability of the data in OpenCGA.
 
-Projects provide physical separation of data into different database tables.  
-Studies provide logical separation of data within a Project.
+**Projects** provide physical separation of data into different database tables.  
+**Studies** provide logical separation of data within a Project.
 
-* You MUST store your data in different  projects when they are on different genome assemblies \(e.g you should create a project for data from GRCh37 and other for data from GRCh38\)
+### Guidelines
+
+* You MUST store your data in different  projects when they are on different genome assemblies \(e.g you should create a project for data from _GRCh37_ and other for data from _GRCh38_\)
 * You CAN store your data in different projects when there is no foreseeable  need to process them jointly.
 * You may divide your data in studies corresponding to different independent datasets that may be used together in some analysis, with the aim of having homogeneous datasets for each study.
 
-The owner user is the owner of the data; it’s the user who creates the project/study where the new data will be loaded. The users with permission to perform data ingestion into a concrete study in OpenCGA are the owner user, and other users with admin privileges for the specific study \(provided by the owner\).
+### Owner user
+
+The owner is the user who creates the project/study where the new data will be loaded. The users with permission to perform data ingestion into a concrete study in OpenCGA are the owner user, and other users with admin privileges for the specific study \(provided by the owner\).
 
 After deciding structure, the new projects and studies may need to be created. This step must be performed by the owner of the new created elements. 
 
 ## **Creating new projects**
 
-Once logged in to OpenCGA as the owner, a Project can be created with this command:
+The first step is [login](../login.md) into OpenCGA with a `FULL` account \(See  [Data Management]()\). Then, a Project can be created using the next command:
 
 ```text
 $ ./opencga.sh projects create --id <short-project-id> 

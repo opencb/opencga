@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -377,13 +378,8 @@ public class SampleIndexQueryParser {
             }
 
         }
-        Map<String, Values<SampleFileIndexQuery>> fileIndexMap = new HashMap<>(samplesMap.size());
-        for (String sample : samplesMap.keySet()) {
-            Values<SampleFileIndexQuery> fileIndexQuery =
-                    parseFilesQuery(query, studyId, sample, multiFileSamples.contains(sample), partialFilesIndex, partialGtIndex);
-
-            fileIndexMap.put(sample, fileIndexQuery);
-        }
+        Map<String, Values<SampleFileIndexQuery>> fileIndexMap
+                = parseSampleSpecificQuery(query, studyId, queryOperation, samplesMap, multiFileSamples, partialGtIndex, partialFilesIndex);
 
         int sampleIndexVersion = defaultStudy.getSampleIndexConfigurationLatest().getVersion();
         boolean allSamplesAnnotated = true;
@@ -574,23 +570,202 @@ public class SampleIndexQueryParser {
     }
 
 
-    protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, int studyId, String sample,
-                                                           boolean multiFileSample, boolean partialFilesIndex, boolean partialGtIndex) {
-        return parseFilesQuery(query, sample, multiFileSample, partialFilesIndex, s -> {
-            Integer sampleId = metadataManager.getSampleId(studyId, s);
-            List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId);
-            List<String> fileNames = new ArrayList<>(fileIds.size());
-            for (Integer fileId : fileIds) {
-                fileNames.add(metadataManager.getFileName(studyId, fileId));
+
+    private Map<String, Values<SampleFileIndexQuery>> parseSampleSpecificQuery(Query query, int studyId, QueryOperation queryOperation,
+                                                                               Map<String, List<String>> samplesMap,
+                                                                               Set<String> multiFileSamples,
+                                                                               boolean partialGtIndex, boolean partialFilesIndex) {
+        // 1. Split query -- getQueriesPerSample
+        // 2. Parse Files Query
+        //   2.1. Parse File query
+        // 3. Rebuild Query with covered/non-covered params
+
+        Map<String, Values<SampleFileIndexQuery>> fileIndexMap = new HashMap<>(samplesMap.size());
+
+        Query nonCoveredQuery = new Query();
+        Map<String, Query> queriesPerSample = getQueriesPerSample(studyId, query, queryOperation, samplesMap.keySet(), nonCoveredQuery);
+        for (String sample : samplesMap.keySet()) {
+            Query sampleQuery = queriesPerSample.get(sample);
+            Values<SampleFileIndexQuery> fileIndexQuery =
+                    parseFilesQuery(sampleQuery, studyId, sample, multiFileSamples.contains(sample), partialGtIndex, partialFilesIndex);
+            fileIndexMap.put(sample, fileIndexQuery);
+        }
+
+
+        // -- Check for covered filters --
+        // Filters need to be checked for every sample, as each sample may provide different set of variants.
+        //
+        // Sample INTERSECTION (AND)
+        //   If any sample covers a filter from QUERY it doesn't need to be even checked on any other sample.
+        //   That query will be then removed from the QUERY object.
+        //   We can share the same QUERY object.
+        //
+        //   e.g.
+        //   QUERY = samples = (S1 AND S2) AND type = SNV AND (S1:DP>10 OR S2:DP>30)
+        //     SampleFileIndexQuery[0] = S1 , type = SNV , DP>10
+        //     SampleFileIndexQuery[1] = S2 , type = SNV , DP>30
+        //
+        // Sample UNION (OR)
+        //   A filter will be covered if it's covered by ALL samples.
+        //   If a sample covers a filter, it will be removed from the QUERY.
+        //   If all samples remove one particular filter from QUERY (i.e. all samples cover that filter)
+        //   it is definitely covered, and can be removed from the final query
+        //
+        //   e.g.
+        //   QUERY = samples = (S1 OR S2) AND type = SNV AND (S1:DP>10 OR S2:DP>30)
+        //     SampleFileIndexQuery[0] = S1 , type = SNV , DP>10
+        //     SampleFileIndexQuery[1] = S2 , type = SNV , DP>30
+        //     Query is covered
+        //
+        //   QUERY = samples = (S1 OR S2) AND file=file_S1.vcf.gz
+        //     SampleFileIndexQuery[0] = S1 , file = file_S1.vcf.gz
+        //     SampleFileIndexQuery[1] = S2
+        //     Query is NOT covered. Still need to filter by "file=file_S1.vcf.gz", as it was not covered by S2
+
+
+        List<String> coveredParams = new ArrayList<>(query.size());
+        for (String queryParam : query.keySet()) {
+            boolean queryParamCoveredOnAllSamples = true;
+            if (nonCoveredQuery.get(queryParam) != null) {
+                queryParamCoveredOnAllSamples = false;
             }
-            return fileNames;
-        }, partialGtIndex);
+            for (Query sampleQuery : queriesPerSample.values()) {
+                if (sampleQuery.containsKey(queryParam)) {
+                    // This sample does not cover this query param, so it's not covered on ALL samples.
+                    queryParamCoveredOnAllSamples = false;
+                    break;
+                }
+            }
+            if (queryParamCoveredOnAllSamples) {
+                // This query param is covered on ALL samples. We can remove it.
+                coveredParams.add(queryParam);
+            }
+        }
+        for (String coveredParam : coveredParams) {
+            query.remove(coveredParam);
+        }
+
+        return fileIndexMap;
     }
 
-    protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, String sample, boolean multiFileSample, boolean partialFilesIndex,
-                                                           Function<String, List<String>> filesFromSample, boolean partialGtIndex) {
+    private Map<String, Query> getQueriesPerSample(int studyId, Query query, QueryOperation queryOperation, Collection<String> samples,
+                                                   Query nonCoveredQuery) {
+        Map<String, Query> queriesPerSample = new HashMap<>(samples.size());
+
+        // Non processed query params.
+        // This method will remove elements from these ParsedQueries when they are processed by any sample.
+        // If any of these values keep any element at the end of the method, will mean that the filter param is not being fully used.
+        // Therefore, it's added to "nonCovered"
+        ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> unprocessedFileDataParsedQuery = parseFileData(query);
+        ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> unprocessedSampleDataParsedQuery = parseSampleData(query);
+        ParsedQuery<String> unprocessedFilesQuery = splitValue(query, FILE);
+
+        for (String sample : samples) {
+            Query sampleQuery = new Query(query);
+            List<String> filesFromSample = getFilesFromSample(studyId, sample);
+
+            if (queryOperation == QueryOperation.OR) {
+                // This new sampleQuery will process all file and fileData elements.
+                unprocessedFilesQuery.getValues().clear();
+                unprocessedFileDataParsedQuery.getValues().clear();
+            } else {
+//                if (isValidParam(sampleQuery, TYPE)) {
+//                    List<VariantType> types = query.getAsStringList(VariantQueryParam.TYPE.key())
+//                            .stream()
+//                            .map(t -> VariantType.valueOf(t.toUpperCase()))
+//                            .collect(Collectors.toList());
+//                    if (schema.getFileIndex().getTypeIndex().buildFilter(QueryOperation.OR, types).isExactFilter()) {
+//                        query.remove(TYPE.key());
+//                    }
+//                }
+                if (isValidParam(sampleQuery, FILE)) {
+                    ParsedQuery<String> filesQuery = splitValue(query, FILE);
+                    if (filesQuery.getOperation() == QueryOperation.AND || filesQuery.getOperation() == null) {
+                        filesQuery.getValues().removeIf(file -> !filesFromSample.contains(file));
+                        if (filesQuery.isEmpty()) {
+                            sampleQuery.remove(FILE.key());
+                        } else {
+                            unprocessedFilesQuery.getValues().removeAll(filesQuery.getValues());
+                            sampleQuery.put(FILE.key(), filesQuery.toQuery());
+                        }
+                    }
+                }
+                if (isValidParam(sampleQuery, FILE_DATA)) {
+                    ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileDataParsedQuery = parseFileData(query);
+//                    System.out.println(fileDataParsedQuery.describe());
+
+                    ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> subFilter
+                            = fileDataParsedQuery.filter(p -> filesFromSample.contains(p.getKey()));
+                    if (subFilter.getValues().isEmpty()) {
+                        // FileData not found for this sample.
+                        sampleQuery.remove(FILE_DATA.key());
+                    } else {
+                        // FileData found. Remove from input query.
+                        for (KeyValues<String, KeyOpValue<String, String>> value : subFilter.getValues()) {
+                            unprocessedFileDataParsedQuery.getValues()
+                                    .removeIf(inputFileDataQuery -> inputFileDataQuery.getKey().equals(value.getKey()));
+                        }
+                        fileDataParsedQuery.getValues().removeAll(subFilter.getValues());
+//                        query.put(FILE_DATA.key(), fileDataParsedQuery.toQuery());
+                        sampleQuery.put(FILE_DATA.key(), subFilter.toQuery());
+                    }
+                }
+            }
+
+            if (isValidParam(sampleQuery, SAMPLE_DATA)) {
+                ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> sampleDataParsedQuery = parseSampleData(query);
+//                System.out.println(sampleDataParsedQuery.describe());
+
+                KeyValues<String, KeyOpValue<String, String>> kv = sampleDataParsedQuery.getValue(p -> p.getKey().equals(sample));
+                if (kv == null) {
+                    // SampleData not found for this sample.
+                    sampleQuery.remove(SAMPLE_DATA.key());
+                } else {
+                    // SampleData found. Remove from query.
+                    sampleDataParsedQuery.getValues().remove(kv);
+                    unprocessedSampleDataParsedQuery.getValues().removeIf(thisKv -> thisKv.getKey().equals(kv.getKey()));
+//                        query.put(SAMPLE_DATA.key(), sampleDataParsedQuery.toQuery());
+                    sampleQuery.put(SAMPLE_DATA.key(), kv.toQuery());
+                }
+            }
+
+            queriesPerSample.put(sample, sampleQuery);
+        }
+
+        if (unprocessedFileDataParsedQuery.isNotEmpty()) {
+            nonCoveredQuery.put(FILE_DATA.key(), query.get(FILE_DATA.key()));
+        }
+        if (unprocessedSampleDataParsedQuery.isNotEmpty()) {
+            nonCoveredQuery.put(SAMPLE_DATA.key(), query.get(SAMPLE_DATA.key()));
+        }
+        if (unprocessedFilesQuery.isNotEmpty()) {
+            nonCoveredQuery.put(FILE.key(), query.get(FILE.key()));
+        }
+
+        return queriesPerSample;
+    }
+
+
+    protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, int studyId, String sample,
+                                                           boolean multiFileSample, boolean partialGtIndex, boolean partialFilesIndex) {
+        return parseFilesQuery(query, sample, multiFileSample, partialGtIndex, partialFilesIndex, s -> getFilesFromSample(studyId, s));
+    }
+
+    private List<String> getFilesFromSample(int studyId, String s) {
+        Integer sampleId = metadataManager.getSampleId(studyId, s);
+        List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId);
+        List<String> fileNames = new ArrayList<>(fileIds.size());
+        for (Integer fileId : fileIds) {
+            fileNames.add(metadataManager.getFileName(studyId, fileId));
+        }
+        return fileNames;
+    }
+
+    protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, String sample, boolean multiFileSample,
+                                                           boolean partialGtIndex, boolean partialFilesIndex,
+                                                           Function<String, List<String>> filesFromSample) {
         ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileDataParsedQuery = parseFileData(query);
-        List<String> filesFromFileData = fileDataParsedQuery.getValues(KeyValues::getKey);
+        List<String> filesFromFileData = fileDataParsedQuery.mapValues(KeyValues::getKey);
 
         boolean splitFileDataQuery = false;
         if (fileDataParsedQuery.getOperation() == QueryOperation.AND) {
@@ -605,27 +780,59 @@ public class SampleIndexQueryParser {
         if (splitFileDataQuery) {
             List<SampleFileIndexQuery> fileIndexQueries = new ArrayList<>(filesFromFileData.size());
             boolean fileDataCovered = true;
+            boolean fileCovered = true;
+            boolean typeCovered = true;
+            boolean filterCovered = true;
+            boolean qualCovered = true;
             for (String fileFromFileData : filesFromFileData) {
                 Query subQuery = new Query(query);
 //                    subQuery.remove(FILE.key());
                 subQuery.put(FILE_DATA.key(), fileDataParsedQuery.getValue(kv -> kv.getKey().equals(fileFromFileData)).toQuery());
-                fileIndexQueries.add(parseFileQuery(subQuery, sample, multiFileSample, partialFilesIndex, filesFromSample, partialGtIndex));
+                fileIndexQueries.add(parseFileQuery(subQuery, sample, multiFileSample, partialGtIndex, partialFilesIndex, filesFromSample));
                 if (isValidParam(subQuery, FILE_DATA)) {
                     // This subquery did not remove the fileData, so it's not fully covered. Can't remove the fileData filter.
                     fileDataCovered = false;
                 }
+                if (isValidParam(subQuery, TYPE)) {
+                    typeCovered = false;
+                }
+                if (isValidParam(subQuery, FILE)) {
+                    fileCovered = false;
+                }
+                if (isValidParam(subQuery, FILTER)) {
+                    filterCovered = false;
+                }
+                if (isValidParam(subQuery, QUAL)) {
+                    qualCovered = false;
+                }
             }
-            if (fileDataCovered && !partialFilesIndex) {
-                query.remove(FILE_DATA.key());
+            if (!partialFilesIndex) {
+                if (fileDataCovered) {
+                    query.remove(FILE_DATA.key());
+                }
+                if (fileCovered) {
+                    query.remove(FILE.key());
+                }
+                if (filterCovered) {
+                    query.remove(FILTER.key());
+                }
+                if (qualCovered) {
+                    query.remove(QUAL.key());
+                }
+            }
+            if (typeCovered) {
+                query.remove(TYPE.key());
             }
             return new Values<>(fileDataParsedQuery.getOperation(), fileIndexQueries);
+        } else {
+            return new Values<>(null, Collections.singletonList(
+                    parseFileQuery(query, sample, multiFileSample, partialGtIndex, partialFilesIndex, filesFromSample)));
         }
-        return new Values<>(null, Collections.singletonList(
-                parseFileQuery(query, sample, multiFileSample, partialFilesIndex, filesFromSample, partialGtIndex)));
     }
 
-    protected SampleFileIndexQuery parseFileQuery(Query query, String sample, boolean multiFileSample, boolean partialFilesIndex,
-                                                  Function<String, List<String>> filesFromSample, boolean partialGtIndex) {
+    protected SampleFileIndexQuery parseFileQuery(Query query, String sample, boolean multiFileSample,
+                                                  boolean partialGtIndex, boolean partialFilesIndex,
+                                                  Function<String, List<String>> filesFromSample) {
 
         List<String> files = null;
         List<IndexFieldFilter> filtersList = new ArrayList<>(schema.getFileIndex().getFields().size());
@@ -651,26 +858,57 @@ public class SampleIndexQueryParser {
             if (files == null) {
                 files = filesFromSample.apply(sample);
             }
-            List<String> filesFromQuery;
+            final List<String> filesFromQuery;
+            final QueryOperation filesOperation;
             if (isValidParam(query, FILE)) {
                 ParsedQuery<String> filesQuery = splitValue(query, FILE);
                 filesFromQuery = filesQuery.getValues();
+                filesOperation = filesQuery.getOperation();
+                if (files.containsAll(filesFromQuery)) {
+                    query.remove(FILE.key());
+                }
             } else if (isValidParam(query, FILE_DATA)) {
                 ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileData = parseFileData(query);
-                filesFromQuery = fileData.getValues(KeyValues::getKey);
+                filesFromQuery = fileData.mapValues(KeyValues::getKey);
+                filesOperation = fileData.getOperation();
             } else {
                 filesFromQuery = null;
+                filesOperation = null;
             }
             if (filesFromQuery != null) {
-                for (String file : filesFromQuery) {
-                    int indexOf = files.indexOf(file);
-                    if (indexOf >= 0) {
-                        sampleFilesFilter.add(indexOf);
+                if (CollectionUtils.containsAll(files, filesFromQuery)
+                        || CollectionUtils.containsAny(files, filesFromQuery) && filesOperation == QueryOperation.AND) {
+                    for (String file : filesFromQuery) {
+                        int indexOf = files.indexOf(file);
+                        if (indexOf >= 0) {
+                            sampleFilesFilter.add(indexOf);
+                        }
+                    }
+                    IndexFieldFilter filePositionFilter =
+                            schema.getFileIndex().getFilePositionIndex().buildFilter(QueryOperation.OR, sampleFilesFilter);
+                    filtersList.add(filePositionFilter);
+                }
+
+            }
+        } else {
+            if (isValidParam(query, FILE)) {
+                ParsedQuery<String> filesQuery = splitValue(query, FILE);
+                // Conditions for having a covered file query param
+                // 1. Filter by one single file
+                //   In case of filtering my multiple samples, the upper layer should have
+                //   been able to remove some of them if affecting to other samples
+                // 2. Sample present in one single file
+                //   This block has already discarded the "multi-file-sample" scenario, but
+                //   we could still be in a "SplitData.REGION" scenario
+                if (filesQuery.size() == 1) {
+                    // Lazy get files from sample
+                    if (files == null) {
+                        files = filesFromSample.apply(sample);
+                    }
+                    if (files.size() == 1 && files.equals(filesQuery.getValues())) {
+                        query.remove(FILE.key());
                     }
                 }
-                IndexFieldFilter filePositionFilter =
-                        schema.getFileIndex().getFilePositionIndex().buildFilter(QueryOperation.OR, sampleFilesFilter);
-                filtersList.add(filePositionFilter);
             }
         }
 
@@ -1003,7 +1241,7 @@ public class SampleIndexQueryParser {
             Values<String> sources = splitValues(query.getString(ANNOT_CLINICAL.key()));
 
             clinicalFieldFilters.add(schema.getClinicalIndexSchema().getSourceField().buildFilter(
-                    new Values<>(sources.getOperation(), sources.getValues(s -> new OpValue<>("=", Collections.singletonList(s))))));
+                    new Values<>(sources.getOperation(), sources.mapValues(s -> new OpValue<>("=", Collections.singletonList(s))))));
         }
         if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE) || isValidParam(query, ANNOT_CLINICAL_CONFIRMED_STATUS)) {
             annotationIndex |= CLINICAL_MASK;

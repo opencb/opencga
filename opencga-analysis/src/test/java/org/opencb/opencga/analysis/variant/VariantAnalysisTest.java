@@ -39,6 +39,7 @@ import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -50,8 +51,10 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
@@ -72,7 +75,7 @@ import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -242,6 +245,18 @@ public class VariantAnalysisTest {
             catalogManager.getSampleManager().create(STUDY, sample, null, token);
         }
 
+    }
+
+    @Test
+    public void testMalformedVcfFileIndex() throws Exception {
+        File file = opencga.createFile(STUDY, "variant-test-file-corrupted.vcf", token);
+        try {
+            toolRunner.execute(VariantIndexOperationTool.class,
+                    new VariantIndexParams().setFile(file.getId()).setAnnotate(true), new ObjectMap(),
+                    Paths.get(opencga.createTmpOutdir()), null, token);
+        } catch (ToolException e) {
+            System.out.println(ExceptionUtils.prettyExceptionMessage(e, true, true));
+        }
     }
 
     @Test
@@ -473,6 +488,8 @@ public class VariantAnalysisTest {
                 .setCohort(StudyEntry.DEFAULT_COHORT)
                 .setIndex(true);
 
+        outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats_index_2"));
+        System.out.println("output = " + outDir.toAbsolutePath());
         result = toolRunner.execute(CohortVariantStatsAnalysis.class, toolParams,
                 new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
         checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
@@ -494,9 +511,22 @@ public class VariantAnalysisTest {
         variantExportParams.appendQuery(new Query(VariantQueryParam.REGION.key(), "22"));
         assertEquals("22", variantExportParams.getRegion());
         variantExportParams.setCt("lof");
-        variantExportParams.setCompress(true);
-        variantExportParams.setOutputFileName("chr22");
+        variantExportParams.setOutputFileName("chr22.vcf");
 
+        toolRunner.execute(VariantExportTool.class, variantExportParams.toObjectMap(), outDir, null, token);
+        assertTrue(outDir.resolve(variantExportParams.getOutputFileName() + ".gz").toFile().exists());
+    }
+
+    @Test
+    public void testExportVep() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_export_vep"));
+        System.out.println("outDir = " + outDir);
+        VariantExportParams variantExportParams = new VariantExportParams();
+        variantExportParams.appendQuery(new Query(VariantQueryParam.REGION.key(), "22,1,5"));
+        assertEquals("22,1,5", variantExportParams.getRegion());
+        variantExportParams.setCt("lof");
+        variantExportParams.setOutputFileName("chr1-5-22");
+        variantExportParams.setOutputFormat(VariantWriterFactory.VariantOutputFormat.ENSEMBL_VEP.name());
         toolRunner.execute(VariantExportTool.class, variantExportParams.toObjectMap(), outDir, null, token);
     }
 
