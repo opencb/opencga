@@ -742,15 +742,19 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
-            if (containsAnnotationQuery(query)) {
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                        CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.COHORT, configuration));
-            } else {
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, CohortAclEntry.CohortPermissions.VIEW.name(),
-                        Enums.Resource.COHORT, configuration));
-            }
 
-            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.COHORT, user, configuration));
+            if (query.containsKey(ParamConstants.ACL_PARAM)) {
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.COHORT, user,
+                        configuration));
+            } else {
+                if (containsAnnotationQuery(query)) {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
+                            CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.COHORT, configuration));
+                } else {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, CohortAclEntry.CohortPermissions.VIEW.name(),
+                            Enums.Resource.COHORT, configuration));
+                }
+            }
 
             query.remove(ParamConstants.ACL_PARAM);
         }

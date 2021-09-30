@@ -48,10 +48,15 @@ public class TemplateRunner extends OperationTool {
         if (!path.toFile().exists() || !path.toFile().isDirectory()) {
             throw new IllegalArgumentException("Template '" + templateParams.getId() + "' not found");
         }
-        if (!path.resolve("manifest.yml").toFile().exists()) {
+        Path manifestPath;
+        if (path.resolve("manifest.yml").toFile().exists()) {
+            manifestPath = path.resolve("manifest.yml");
+        } else if (path.resolve("manifest.yaml").toFile().exists()) {
+            manifestPath = path.resolve("manifest.yaml");
+        } else {
             throw new IllegalArgumentException("Cannot find manifest.yml file for template '" + templateParams.getId() + "'.");
         }
-        manifest = TemplateManifest.load(path.resolve("manifest.yml"));
+        manifest = TemplateManifest.load(manifestPath);
 
         // TODO: Validate manifest file
         templateManager.validate(manifest);

@@ -7,7 +7,9 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -21,6 +23,8 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleVariantIndex
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 public class SampleIndexMain extends AbstractMain {
@@ -84,16 +88,21 @@ public class SampleIndexMain extends AbstractMain {
                 rawQuery(dbAdaptor, argsMap);
                 break;
             }
+            case "index-stats": {
+                indexStats(dbAdaptor, argsMap);
+                break;
+            }
             case "help":
             default:
                 System.out.println("Commands:");
                 System.out.println("  help");
-                System.out.println("  count           <databaseName> [--region <region>] [--study <study>] [--sample <sample>] ...");
-                System.out.println("  query           <databaseName> [--region <region>] [--study <study>] [--sample <sample>] [--quiet] "
+                System.out.println("  count           <databaseName> [--study <study>] [--sample <sample>] [--region <region>] ...");
+                System.out.println("  query           <databaseName> [--study <study>] [--sample <sample>] [--region <region>] [--quiet] "
                         + "[query...]");
-                System.out.println("  query-detailed  <databaseName> [--region <region>] [--study <study>] [--sample <sample>] [--quiet] "
+                System.out.println("  query-detailed  <databaseName> [--study <study>] [--sample <sample>] [--region <region>] [--quiet] "
                         + "[query...]");
                 System.out.println("  query-raw       <databaseName> [--study <study>] [--sample <sample>] [--quiet]");
+                System.out.println("  index-stats     <databaseName> [--study <study>] [--sample <sample>]");
                 break;
         }
         System.err.println("--------------------------");
@@ -156,4 +165,64 @@ public class SampleIndexMain extends AbstractMain {
         }
         iterator.close();
     }
+
+    private void indexStats(SampleIndexDBAdaptor dbAdaptor, ObjectMap argsMap) throws Exception {
+        SampleIndexQuery sampleIndexQuery = dbAdaptor.parseSampleIndexQuery(new Query(argsMap));
+        VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
+        int studyId = metadataManager.getStudyId(sampleIndexQuery.getStudy());
+        if (sampleIndexQuery.getSamplesMap().size() != 1) {
+            printError("Unable to get raw content from more than one sample at a time");
+            return;
+        }
+
+        int sampleId = metadataManager.getSampleIdOrFail(studyId, sampleIndexQuery.getSamplesMap().keySet().iterator().next());
+        Region region = argsMap.containsKey(VariantQueryParam.REGION.key())
+                ? Region.parseRegion(argsMap.getString(VariantQueryParam.REGION.key()))
+                : null;
+
+        Map<String, Integer> counts = new TreeMap<>();
+        Map<String, Map<String, Integer>> countsByGt = new TreeMap<>();
+        try (CloseableIterator<SampleIndexEntry> iterator = dbAdaptor.rawIterator(studyId, sampleId, region)) {
+            while (iterator.hasNext()) {
+                SampleIndexEntry entry = iterator.next();
+                for (SampleIndexEntry.SampleIndexGtEntry gtEntry : entry.getGts().values()) {
+                    String gt = gtEntry.getGt();
+                    addLength(gt, counts, countsByGt, "variants", new BitInputStream(
+                            gtEntry.getVariants(), gtEntry.getVariantsOffset(), gtEntry.getVariantsLength()));
+                    addLength(gt, counts, countsByGt, "fileIndex", gtEntry.getFileIndexStream());
+                    addLength(gt, counts, countsByGt, "populationFrequencyIndex", gtEntry.getPopulationFrequencyIndexStream());
+                    addLength(gt, counts, countsByGt, "ctBtTfIndex", gtEntry.getCtBtTfIndexStream());
+                    addLength(gt, counts, countsByGt, "biotypeIndex", gtEntry.getBiotypeIndexStream());
+                    addLength(gt, counts, countsByGt, "ctIndex", gtEntry.getConsequenceTypeIndexStream());
+                    addLength(gt, counts, countsByGt, "clinicalIndex", gtEntry.getClinicalIndexStream());
+                    addLength(gt, counts, countsByGt, "transcriptFlagIndex", gtEntry.getTranscriptFlagIndexStream());
+                }
+            }
+        }
+
+        int bytes = 0;
+        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+            if (entry.getKey().endsWith("_bytes")) {
+                bytes += entry.getValue();
+            }
+        }
+        print(new ObjectMap()
+                .append("total_bytes", bytes)
+                .append("total_size", IOUtils.humanReadableByteCount(bytes, true))
+                .append("counts", counts)
+                .append("countsByGt", countsByGt));
+    }
+
+    private void addLength(String gt, Map<String, Integer> counts, Map<String, Map<String, Integer>> countsByGt,
+                           String key, BitInputStream stream) {
+        if (stream != null) {
+            counts.merge(key + "_bytes", stream.getByteLength(), Integer::sum);
+            counts.merge(key + "_bytes_max", stream.getByteLength(), Math::max);
+            counts.merge(key + "_count", 1, Integer::sum);
+            Map<String, Integer> gtCounts = countsByGt.computeIfAbsent(gt, k -> new TreeMap<>());
+            gtCounts.merge(gt + "_" + key + "_bytes", stream.getByteLength(), Integer::sum);
+            gtCounts.merge(gt + "_" + key + "_count", 1, Integer::sum);
+        }
+    }
+
 }

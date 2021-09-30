@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.query.executors.accumulators.*;
 import org.opencb.opencga.storage.hadoop.variant.index.core.CategoricalMultiValuedIndexField;
+import org.opencb.opencga.storage.hadoop.variant.index.core.CombinationTripleIndexSchema.CombinationTriple;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
@@ -38,7 +39,6 @@ import java.util.regex.Pattern;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.search.solr.SolrQueryParser.CHROM_DENSITY;
-import static org.opencb.opencga.storage.hadoop.variant.index.core.CombinationIndexSchema.Combination;
 
 public class SampleIndexVariantAggregationExecutor extends VariantAggregationExecutor {
 
@@ -254,49 +254,43 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                     if (filterTranscript) {
                         thisAccumulator = new CategoricalAccumulator<>(
                                 s -> {
-                                    if (s.getAnnotationIndexEntry() == null) {
+                                    if (s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasCtIndex()) {
                                         return Collections.emptyList();
                                     }
                                     Set<String> cts = new HashSet<>(field.decode(s.getAnnotationIndexEntry().getCtIndex()));
                                     if (!ctFilter.isEmpty()) {
                                         cts.removeIf(ct -> !ctFilter.contains(ct));
                                     }
-                                    if (!biotypeFilter.isEmpty()) {
+                                    if (!biotypeFilter.isEmpty() || !transcriptFlagFilter.isEmpty()) {
                                         Set<String> ctBt = new HashSet<>();
-                                        Combination ctBtCombination = s.getAnnotationIndexEntry().getCtBtCombination();
-                                        schema.getCtBtIndex().getField()
-                                                .getPairs(
-                                                        ctBtCombination,
-                                                        s.getAnnotationIndexEntry().getCtIndex(),
-                                                        s.getAnnotationIndexEntry().getBtIndex())
-                                                .forEach(pair -> {
-                                                    if (biotypeFilter.contains(pair.getValue())) {
-                                                        ctBt.add(pair.getKey());
-                                                    }
-                                                });
-                                        cts.removeIf(ct -> !ctBt.contains(ct));
-                                    }
-                                    if (!transcriptFlagFilter.isEmpty()) {
                                         Set<String> ctTf = new HashSet<>();
-                                        Combination ctTfCombination = s.getAnnotationIndexEntry().getCtTfCombination();
-                                        schema.getCtTfIndex().getField()
-                                                .getPairs(
-                                                        ctTfCombination,
+                                        schema.getCtBtTfIndex().getField()
+                                                .getTriples(
+                                                        s.getAnnotationIndexEntry().getCtBtTfCombination(),
                                                         s.getAnnotationIndexEntry().getCtIndex(),
+                                                        s.getAnnotationIndexEntry().getBtIndex(),
                                                         s.getAnnotationIndexEntry().getTfIndex())
-                                                .forEach(pair -> {
-                                                    if (transcriptFlagFilter.contains(pair.getValue())) {
-                                                        ctTf.add(pair.getKey());
+                                                .forEach(triple -> {
+                                                    if (biotypeFilter.contains(triple.getMiddle())) {
+                                                        ctBt.add(triple.getLeft());
+                                                    }
+                                                    if (transcriptFlagFilter.contains(triple.getRight())) {
+                                                        ctTf.add(triple.getLeft());
                                                     }
                                                 });
-                                        cts.removeIf(ct -> !ctTf.contains(ct));
+                                        if (!biotypeFilter.isEmpty()) {
+                                            cts.removeIf(ct -> !ctBt.contains(ct));
+                                        }
+                                        if (!transcriptFlagFilter.isEmpty()) {
+                                            cts.removeIf(ct -> !ctTf.contains(ct));
+                                        }
                                     }
                                     return cts;
                                 },
                                 fieldKey);
                     } else {
                         thisAccumulator = new CategoricalAccumulator<>(
-                                s -> s.getAnnotationIndexEntry() == null
+                                s -> s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasCtIndex()
                                         ? Collections.emptyList()
                                         : field.decode(s.getAnnotationIndexEntry().getCtIndex()),
                                 fieldKey);
@@ -309,34 +303,44 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                     if (filterTranscript) {
                         thisAccumulator = new CategoricalAccumulator<>(
                                 s -> {
-                                    if (s.getAnnotationIndexEntry() == null) {
+                                    if (s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasBtIndex()) {
                                         return Collections.emptyList();
                                     }
                                     Set<String> bts = new HashSet<>(field.decode(s.getAnnotationIndexEntry().getBtIndex()));
                                     if (!biotypeFilter.isEmpty()) {
                                         bts.removeIf(bt -> !biotypeFilter.contains(bt));
                                     }
-                                    if (!ctFilter.isEmpty()) {
-                                        Set<String> ctBt = new HashSet<>();
-                                        Combination ctBtCombination = s.getAnnotationIndexEntry().getCtBtCombination();
-                                        schema.getCtBtIndex().getField()
-                                                .getPairs(
-                                                        ctBtCombination,
+                                    if (!ctFilter.isEmpty() || !transcriptFlagFilter.isEmpty()) {
+                                        Set<String> btCt = new HashSet<>();
+                                        Set<String> btTf = new HashSet<>();
+                                        CombinationTriple ctBtTfCombination = s.getAnnotationIndexEntry().getCtBtTfCombination();
+                                        schema.getCtBtTfIndex().getField()
+                                                .getTriples(
+                                                        ctBtTfCombination,
                                                         s.getAnnotationIndexEntry().getCtIndex(),
-                                                        s.getAnnotationIndexEntry().getBtIndex())
+                                                        s.getAnnotationIndexEntry().getBtIndex(),
+                                                        s.getAnnotationIndexEntry().getTfIndex())
                                                 .forEach(pair -> {
-                                                    if (ctFilter.contains(pair.getKey())) {
-                                                        ctBt.add(pair.getValue());
+                                                    if (ctFilter.contains(pair.getLeft())) {
+                                                        btCt.add(pair.getMiddle());
+                                                    }
+                                                    if (transcriptFlagFilter.contains(pair.getRight())) {
+                                                        btTf.add(pair.getMiddle());
                                                     }
                                                 });
-                                        bts.removeIf(bt -> !ctBt.contains(bt));
+                                        if (!ctFilter.isEmpty()) {
+                                            bts.removeIf(ct -> !btCt.contains(ct));
+                                        }
+                                        if (!transcriptFlagFilter.isEmpty()) {
+                                            bts.removeIf(ct -> !btTf.contains(ct));
+                                        }
                                     }
                                     return bts;
                                 },
                                 fieldKey);
                     } else {
                         thisAccumulator = new CategoricalAccumulator<>(
-                                s -> s.getAnnotationIndexEntry() == null
+                                s -> s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasBtIndex()
                                         ? Collections.emptyList()
                                         : field.decode(s.getAnnotationIndexEntry().getBtIndex()),
                                 fieldKey);
@@ -347,7 +351,7 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
                     CategoricalMultiValuedIndexField<String> field = schema.getTranscriptFlagIndexSchema().getField();
                     thisAccumulator = new CategoricalAccumulator<>(
                             s -> {
-                                if (s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasClinical()) {
+                                if (s.getAnnotationIndexEntry() == null || !s.getAnnotationIndexEntry().hasTfIndex()) {
                                     return Collections.emptyList();
                                 }
                                 return field.decode(s.getAnnotationIndexEntry().getTfIndex());

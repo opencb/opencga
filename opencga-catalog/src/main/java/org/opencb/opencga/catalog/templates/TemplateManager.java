@@ -273,7 +273,7 @@ public class TemplateManager {
                     }
 
                     // Create individual
-                    logger.debug("Create individual '{}'", individual.getId());
+                    logger.info("Create individual '{}'", individual.getId());
                     catalogManager.getIndividualManager().create(studyFqn, individual.toIndividual(), QueryOptions.empty(), token);
 
                     count++;
@@ -282,7 +282,7 @@ public class TemplateManager {
                     // Remove individualId
                     individual.setId(null);
 
-                    logger.debug("Overwrite individual '{}'", individual.getId());
+                    logger.info("Update individual '{}'", individual.getId());
                     catalogManager.getIndividualManager().update(studyFqn, individualId, individual, QueryOptions.empty(), token);
 
                     count++;
@@ -308,7 +308,7 @@ public class TemplateManager {
                         IndividualUpdateParams updateParams = new IndividualUpdateParams()
                                 .setFather(individual.getFather())
                                 .setMother(individual.getMother());
-                        logger.debug("Updating individual '{}' parents", individual.getId());
+                        logger.info("Updating individual '{}' parents", individual.getId());
 
                         catalogManager.getIndividualManager().update(studyFqn, individual.getId(), updateParams, QueryOptions.empty(),
                                 token);
@@ -424,7 +424,7 @@ public class TemplateManager {
                         logger.info("Creating samples for study '{}'", studyFqn);
                     }
                     // Create sample
-                    logger.debug("Create sample '{}'", sample.getId());
+                    logger.info("Create sample '{}'", sample.getId());
                     catalogManager.getSampleManager().create(studyFqn, sample.toSample(), QueryOptions.empty(), token);
 
                     count++;
@@ -433,7 +433,7 @@ public class TemplateManager {
                     // Remove sampleId
                     sample.setId(null);
 
-                    logger.debug("Overwrite sample '{}'", sample.getId());
+                    logger.info("Update sample '{}'", sample.getId());
                     catalogManager.getSampleManager().update(studyFqn, sampleId, sample, QueryOptions.empty(), token);
 
                     count++;
@@ -466,7 +466,7 @@ public class TemplateManager {
                     }
 
                     // Create cohort
-                    logger.debug("Create cohort '{}'", cohort.getId());
+                    logger.info("Create cohort '{}'", cohort.getId());
                     catalogManager.getCohortManager().create(studyFqn, cohort.toCohort(), QueryOptions.empty(), token);
 
                     count++;
@@ -475,7 +475,7 @@ public class TemplateManager {
                     // Remove cohortId
                     cohort.setId(null);
 
-                    logger.debug("Overwrite cohort '{}'", cohort.getId());
+                    logger.info("Update cohort '{}'", cohort.getId());
                     catalogManager.getCohortManager().update(studyFqn, cohortId, cohort, QueryOptions.empty(), token);
 
                     count++;
@@ -508,7 +508,7 @@ public class TemplateManager {
                     }
 
                     // Create family
-                    logger.debug("Create family '{}'", family.getId());
+                    logger.info("Create family '{}'", family.getId());
                     Family completeFamily = family.toFamily();
                     if (CollectionUtils.isNotEmpty(completeFamily.getMembers())) {
                         List<String> memberIds = completeFamily.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
@@ -524,7 +524,7 @@ public class TemplateManager {
                     // Remove familyId
                     family.setId(null);
 
-                    logger.debug("Overwrite family '{}'", family.getId());
+                    logger.info("Update family '{}'", family.getId());
                     catalogManager.getFamilyManager().update(studyFqn, familyId, family, QueryOptions.empty(), token);
 
                     count++;
@@ -557,7 +557,7 @@ public class TemplateManager {
                     }
 
                     // Create family
-                    logger.debug("Create panel '{}'", panel.getId());
+                    logger.info("Create panel '{}'", panel.getId());
                     catalogManager.getPanelManager().create(studyFqn, panel.toPanel(), QueryOptions.empty(), token);
 
                     count++;
@@ -566,7 +566,7 @@ public class TemplateManager {
                     // Remove panelId
                     panel.setId(null);
 
-                    logger.debug("Overwrite panel '{}'", panel.getId());
+                    logger.info("Update panel '{}'", panel.getId());
                     catalogManager.getPanelManager().update(studyFqn, panelId, panel, QueryOptions.empty(), token);
 
                     count++;
@@ -600,7 +600,7 @@ public class TemplateManager {
                     }
 
                     // Create Clinical Analysis
-                    logger.debug("Create Clinical Analysis '{}'", clinical.getId());
+                    logger.info("Create Clinical Analysis '{}'", clinical.getId());
                     catalogManager.getClinicalAnalysisManager().create(studyFqn, clinical.toClinicalAnalysis(), QueryOptions.empty(),
                             token);
 
@@ -610,7 +610,7 @@ public class TemplateManager {
                     // Remove clinicalAnalysisId
                     clinical.setId(null);
 
-                    logger.debug("Overwrite Clinical Analysis '{}'", clinical.getId());
+                    logger.info("Update Clinical Analysis '{}'", clinical.getId());
                     catalogManager.getClinicalAnalysisManager().update(studyFqn, clinicalId, clinical, QueryOptions.empty(), token);
 
                     count++;
@@ -644,7 +644,7 @@ public class TemplateManager {
                     }
 
                     // Create File
-                    logger.debug("Create File '{}'", file.getPath());
+                    logger.info("Create File '{}'", file.getPath());
                     catalogManager.getFileManager().link(studyFqn,
                             new FileLinkParams(file.getUri(), file.getPath(), file.getDescription(), file.getRelatedFiles(),
                                     file.getStatus(), null), true, token);
@@ -653,7 +653,7 @@ public class TemplateManager {
 
                 if (incomplete || overwrite) {
                     if (overwrite && !incomplete) {
-                        logger.debug("Overwrite Clinical Analysis '{}'", file.getPath());
+                        logger.info("Update Clinical Analysis '{}'", file.getPath());
                     }
                     catalogManager.getFileManager().update(studyFqn, file.getPath(), file, QueryOptions.empty(), token);
 

@@ -191,7 +191,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
 //        for (Variant variant : queryResult.getResults()) {
 //            System.out.println("variant = " + variant);
 //        }
-        assertEquals(queryResult.getNumResults(), queryResult.getNumTotalResults());
+        assertEquals(queryResult.getNumResults(), queryResult.getNumMatches());
         assertNotEquals(0, queryResult.getNumResults());
 
         verify(solrClient, times(1)).query(anyString(), any());

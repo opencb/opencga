@@ -132,6 +132,7 @@ public class SampleIndexConfiguration {
                         IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
                         "do_not_use"
                 ).setNullable(false));
+        sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptCombination(false);
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSource(
                 new IndexFieldConfiguration(
@@ -265,7 +266,8 @@ public class SampleIndexConfiguration {
                         "LRG",
                         "EGLH_HaemOnc",
                         "TSO500"
-                        ).setNullable(false));
+                        ).setNullable(true));
+        sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptCombination(true);
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSource(
                 new IndexFieldConfiguration(
@@ -343,6 +345,9 @@ public class SampleIndexConfiguration {
         if (annotationIndexConfiguration.transcriptFlagIndexConfiguration == null) {
             annotationIndexConfiguration.transcriptFlagIndexConfiguration = defaultConfiguration.annotationIndexConfiguration
                     .transcriptFlagIndexConfiguration;
+        }
+        if (annotationIndexConfiguration.transcriptCombination == null) {
+            annotationIndexConfiguration.transcriptCombination = defaultConfiguration.annotationIndexConfiguration.transcriptCombination;
         }
         if (annotationIndexConfiguration.clinicalSignificance == null) {
             annotationIndexConfiguration.clinicalSignificance = defaultConfiguration.annotationIndexConfiguration.clinicalSignificance;
@@ -425,6 +430,7 @@ public class SampleIndexConfiguration {
         private IndexFieldConfiguration clinicalSource;
         private IndexFieldConfiguration clinicalSignificance;
         private IndexFieldConfiguration transcriptFlagIndexConfiguration;
+        private Boolean transcriptCombination;
 
         public PopulationFrequencyIndexConfiguration getPopulationFrequency() {
             return populationFrequency;
@@ -479,6 +485,14 @@ public class SampleIndexConfiguration {
             return this;
         }
 
+        public Boolean getTranscriptCombination() {
+            return transcriptCombination;
+        }
+
+        public AnnotationIndexConfiguration setTranscriptCombination(Boolean transcriptCombination) {
+            this.transcriptCombination = transcriptCombination;
+            return this;
+        }
 
         @Override
         public boolean equals(Object o) {

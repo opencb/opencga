@@ -281,7 +281,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 dbAdaptor.getTableNameGenerator().getVariantTableName(),
                 columnsToCopyMap, options);
 
-        mrExecutor.run(CopyHBaseColumnDriver.class, args, options, "Create new annotation snapshot with name '" + name + '\'');
+        mrExecutor.run(CopyHBaseColumnDriver.class, args, "Create new annotation snapshot with name '" + name + '\'');
     }
 
     @Override
@@ -298,7 +298,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 dbAdaptor.getTableNameGenerator().getVariantTableName(),
                 Collections.singletonList(columnFamily + ':' + targetColumn), options);
 
-        mrExecutor.run(DeleteHBaseColumnDriver.class, args, options, "Delete annotation snapshot '" + name + '\'');
+        mrExecutor.run(DeleteHBaseColumnDriver.class, args, "Delete annotation snapshot '" + name + '\'');
 
         dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
             removeAnnotationSnapshot(name, project);

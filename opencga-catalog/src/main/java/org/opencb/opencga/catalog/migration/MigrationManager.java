@@ -287,7 +287,8 @@ public class MigrationManager {
             Job job = catalogManager.getJobManager()
                     .get(jobR.getStudyId(), jobR.getId(), new QueryOptions(QueryOptions.INCLUDE, "id,internal"), token).first();
             String jobStatus = job.getInternal().getStatus().getName();
-            if (jobStatus.equals(Enums.ExecutionStatus.ERROR)) {
+            if (jobStatus.equals(Enums.ExecutionStatus.ERROR)
+                    || jobStatus.equals(Enums.ExecutionStatus.ABORTED)) {
                 anyError = true;
             }
             if (!jobStatus.equals(Enums.ExecutionStatus.DONE)) {

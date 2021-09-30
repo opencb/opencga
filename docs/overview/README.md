@@ -11,8 +11,8 @@ OpenCGA is developed and maintained in the University of Cambridge and it is cur
 OpenCGA provides a complete solution for genomics data analysis:
 
 * **Authenticated** and **secure** platform to query and visualise data, advanced **permission** system
-* A **metadata database** to keep track of registered users, projects, studies, files, samples, families, jobs, ...
-* You can store the **clinical data** for sample, patients or families
+* A **metadata database** to keep track of registered users, projects, studies, files, samples, families, jobs, 
+* **Clinical data** from sample, patients or families
 * **Alignment storage** allows to index BAM/CRAM, calculate index and query data and coverage
 * The most advanced, high-performance and scalable **Variant storage** solution, you can normalise, load, index and aggregate thousands of whole genomes per day
 * **Genomic Analysis** implemented on top of variant and alignment storage layer using advanced technologies such as Spark 
@@ -23,7 +23,7 @@ OpenCGA provides a complete solution for genomics data analysis:
 
 ## Projects <a id="Overview-Projects"></a>
 
-OpenCGA is used by several projects being the most importan [Genomics England \(NHS\)](https://www.genomicsengland.co.uk/).
+OpenCGA is used by several projects being the most important [Genomics England \(NHS\)](https://www.genomicsengland.co.uk/).
 
 
 

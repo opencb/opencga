@@ -10,7 +10,7 @@ In this section, you will find a summary of the main features of OpenCGA.
 
 OpenCGA Catalog is one of the most important components. Catalog implements the data models, allow custom annotations, implement permissions, ... An audit system has also been implemented.
 
-### Catalog Data Models and Annotations
+### Catalog Data Models and Annotations 
 
 * **Rich data models** implemented for studies, files, samples, individuals, families, ...
 * Advanced **free data model** implemented for storing **custom annotations** such as stats or clinical data from patients. Users can define **confidential annotations** as only visible for authorised users.
@@ -25,26 +25,11 @@ OpenCGA Catalog is one of the most important components. Catalog implements the 
 * OpenCGA comes with a built-in **authentication** system. Other systems are also supported such as LDAP or Microsoft Azure AD \(_under development_\). Authentication **tokens** use [**JWT**](https://jwt.io/) standard which facilitates the creation of federated systems.
 * Advanced and efficient resource **permission** system implemented in Catalog. You can define different permissions such as VIEW, WRITE or DELETE at study level or at any specific document. This allow to **share** data with other users. More information at [Sharing and Permissions](http://docs.opencb.org/display/opencga/Sharing+and+Permissions).
 
-## Alignment Storage
-
-OpenCGA can manage alignment data. BAM files can be indexed and coverage calculated.
-
-### Fetching alignments
-
-* **Query indexed BAM files**, allowed filters include by region, mapping quality, number of mismatches, properly paired, ...
-* GA4GH data model used for alignments
-* **Google gRPC** is used as an alternative to REST \(JSON\) to improve performance.
-
-### Coverage
-
-* **Coverage** can be calculated and stored in a _BigWig_ file.
-* **Coverage queries** at any window size or zoom.
-
 ## Variant Storage
 
-OpenCGA provides a framework for implementing _big data_ variant storage engines which support: real-time queries, interactive complex data aggregations, full-text search, variant analysis, ... The framework takes care of several common operations such as variant normalisation, sample genotype aggregation, variant stats calculation, variant annotation, secondary indexing or in-memory cache. Two different engines are implemented using NoSQL databases: MongoDB and HBase. A secondary index using Solr is nicely integrated with the two implementations. By implementing variant storage engines with NoSQL databases we ensure a fast response time and high concurrent queries.
+OpenCGA provides a framework for implementing _big data_ variant storage engines which support: real-time queries, interactive complex data aggregations, full-text search, variant analysis, ... The framework takes care of several common operations such as variant normalisation, sample genotype aggregation, variant stats calculation, variant annotation, secondary indexing or in-memory cache. Two different engines are implemented using NoSQL databases: MongoDB and HBase. A secondary index using Solr is nicely integrated with the two implementations. By implementing variant storage engines with NoSQL databases we ensure a fast response time and high concurrent queries. 
 
-### Data Management
+#### Data Management
 
 * Advanced **variant normalisation** implemented supporting multi-allelic split or left-alignment of INDELs among others.
 * High quality **sample genotype aggregation** supporting multi-allelic variants, overlapping SNV-INDEL or structural variants. HBase storage engine can aggregate tens of thousands of samples efficiently. Current design and implementation should scale to hundreds of thousands of samples. 
@@ -56,7 +41,7 @@ OpenCGA provides a framework for implementing _big data_ variant storage engines
 * Custom **variant scores** from external analysis tools such as GWAS association can be loaded, indexed and queried by.
 * **Export** variant data in different formats such as VCF or Parquet. You can filter which variants and samples are exported.
 
-### Query Engine
+#### Query Engine
 
 * OpenCGA implements a **very sophisticated query engine** supporting the combination of more than 25 filters: region, genes, type, file attributes, sample genotypes, consequence types, population frequencies, biotype, conservation scores, variant and gene clinical traits, mode of inheritance, disease panels,  ... **Full-text search** is also implemented.
 * Other **query options** supported such as _include,  exclude,  limit,  skip,  count,_ ... 
@@ -64,19 +49,19 @@ OpenCGA provides a framework for implementing _big data_ variant storage engines
 * Variant query engine supports filtering by **sample clinical data** thanks to the integration with _Catalog._
 * MongoDB or HBase are fully integrated with **Solr secondary indexes** to provide a real-time query engine for all queries and use cases.
 
-### Aggregation and Stats
+#### Aggregation and Stats
 
 * Solr integration allows the execution of **complex aggregations** \(faceted search\) interactively. Nested and range aggregations are supported. For instance, you can aggregate variants by chromosome and type over 46 million variants in just 2 seconds: [http://bioinfo.hpc.cam.ac.uk/hgva/webservices/rest/v1/analysis/variant/stats?timeout=60000&study=reference\_grch37%3AUK10K&fields=chromosome%3E%3Etype](http://bioinfo.hpc.cam.ac.uk/hgva/webservices/rest/v1/analysis/variant/stats?timeout=60000&study=reference_grch37%3AUK10K&fields=chromosome%3E%3Etype)
 * **Variant query filters** – for filtering variants – and **aggregation** analysis can be combined to calculate the aggregation of any variant query result.
 * **Aggregation stats** such as average, median, percentile, min, max, ... are also supported
 
-### Big Data Analysis
+#### Big Data Analysis
 
 * Variants can be exported to **parquet** file which is an efficient columnar file format. This parquet file can be used by Hive or Spark big data technologies.
 * Some **complex analysis** such as IBS are implemented using a custom Spark library to extend the number of uses cases supported. Note that this analysis can take some time and Spark is not a highly concurrent technology, therefore this analysis are queued by OpenCGA.
 * Variant data model store genotypes efficiently ensuring we can execute analysis with tens of thousands of samples.
 
-### Performance and scalability
+#### Performance and scalability
 
 * HBase storage engine have been implemented to provide **real-time queries** and **interactive aggregations** _\(faceted\)_ even with tens of thousands of whole genomes.
 * **Google gRPC** is used as an alternative to REST \(JSON\) to improve performance. 
@@ -85,7 +70,7 @@ OpenCGA provides a framework for implementing _big data_ variant storage engines
 
 ## Clinical Analysis
 
-OpenCGA aims to provide a full solution for Clinical Genomics analysis, this covers patient clinical data, interpretation algorithms and a pathogenic variant database.
+OpenCGA aims to provide a full solution for Clinical Genomics analysis, this covers patient clinical data, interpretation algorithms and a pathogenic variant database. 
 
 ### Clinical Data
 
@@ -105,11 +90,26 @@ OpenCGA aims to provide a full solution for Clinical Genomics analysis, this cov
 * Interpreted variants – and their variant annotation – can be indexed in a high-performance **pathogenic variant database**. Clinical data from _catalog,_ the _clinical analysis_ and _interpretation_ are also indexed together with interpreted variants.
 * Real-time **queries** and **complex aggregations** have been implemented.
 
+## **Alignment Storage**
+
+OpenCGA can manage alignment data. BAM files can be indexed and coverage calculated.
+
+### **Fetching alignments**
+
+* **Query indexed BAM files**, allowed filters include by region, mapping quality, number of mismatches, properly paired, ...
+* GA4GH data model used for alignments
+* **Google gRPC** is used as an alternative to REST \(JSON\) to improve performance.
+
+### **Coverage**
+
+* **Coverage** can be calculated and stored in a _BigWig_ file.
+* **Coverage queries** at any window size or zoom.
+
 ## RESTful Web Services
 
 OpenCGA implements more than 150 RESTful web services to allow users to manipulate and query Catalog metadata and data such as _alignment_, _variants_ and _pathogenic variants_. REST web services are documented using [Swagger](https://swagger.io/), you can see OpenCGA Swagger documentation at [http://bioinfo.hpc.cam.ac.uk/hgva/webservices/](http://bioinfo.hpc.cam.ac.uk/hgva/webservices/). To facilitate the usage all of these web services we have implemented different client libraries and a command line \(see below in _Usability\)._
 
-REST web services can be grouped in different categories: _Catalog, Alignment, Variant, Clinical_ and _Admin._
+REST web services can be grouped in different categories: _Catalog, Alignment, Variant, Clinical_ and _Admin._ 
 
 ### Catalog
 

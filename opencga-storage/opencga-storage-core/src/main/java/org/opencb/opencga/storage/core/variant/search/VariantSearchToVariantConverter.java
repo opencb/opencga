@@ -808,7 +808,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             // Add a combination with the transcript flag
                             if (conseqType.getTranscriptAnnotationFlags() != null) {
                                 for (String transcriptFlag : conseqType.getTranscriptAnnotationFlags()) {
-                                    if (transcriptFlag.equalsIgnoreCase("basic") || transcriptFlag.equalsIgnoreCase("CCDS")) {
+                                    if (VariantQueryUtils.IMPORTANT_TRANSCRIPT_FLAGS.contains(transcriptFlag)) {
                                         geneToSOAccessions.add(conseqType.getGeneName() + "_" + soIdInt + "_" + transcriptFlag);
                                         geneToSOAccessions.add(conseqType.getGeneId() + "_" + soIdInt + "_" + transcriptFlag);
                                         geneToSOAccessions.add(conseqType.getTranscriptId() + "_" + soIdInt + "_" + transcriptFlag);
@@ -825,7 +825,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             || (conseqType.getCdnaPosition() != null && conseqType.getCdnaPosition() > 0)
                             || (conseqType.getCdsPosition() != null && conseqType.getCdsPosition() > 0)) {
                         if (trans.length() == 0) {  // Sanity check
-                            logger.warn("Codon information without Ensembl transcript ID");
+                            logger.warn("Codon information found without Ensembl Transcript ID, variant: " + variant.getId());
                         } else {
                             trans.append(FIELD_SEP)
                                     .append(conseqType.getCdnaPosition() == null ? 0 : conseqType.getCdnaPosition())

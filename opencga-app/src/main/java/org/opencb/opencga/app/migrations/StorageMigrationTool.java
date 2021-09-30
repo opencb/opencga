@@ -33,7 +33,7 @@ public abstract class StorageMigrationTool extends MigrationTool {
 
     protected final VariantStorageEngine getVariantStorageEngineByProject(String projectFqn) throws Exception {
         DataStore dataStore = getVariantStorageManager().getDataStoreByProjectId(projectFqn, token);
-        VariantStorageEngine variantStorageEngine = engineFactory
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngineFactory()
                 .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
         if (dataStore.getOptions() != null) {
             variantStorageEngine.getOptions().putAll(dataStore.getOptions());
@@ -63,6 +63,7 @@ public abstract class StorageMigrationTool extends MigrationTool {
      */
     protected final List<String> getVariantStorageStudies() throws Exception {
         Set<String> studies = new LinkedHashSet<>();
+        VariantStorageManager variantStorageManager = getVariantStorageManager();
         for (Study study : catalogManager.getStudyManager().search(new Query(), new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList("fqn")), token).getResults()) {
             if (variantStorageManager.exists(study.getFqn(), token)) {

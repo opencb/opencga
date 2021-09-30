@@ -172,6 +172,10 @@ public class ParamConstants {
     public static final String MAXIMUM_LINES_CONTENT_DESCRIPTION =
             "Maximum number of lines to be returned up to a maximum of " + MAXIMUM_LINES_CONTENT;
 
+    public static final String PHENOTYPES_ACTION_PARAM = "phenotypesAction";
+    public static final String PHENOTYPES_ACTION_DESCRIPTION = "Action to be performed if the array of phenotypes is being updated "
+            + "[SET, ADD, REMOVE]";
+
     // ---------------------------------------------
 
     public static final String SAMPLE_DESCRIPTION = "Sample ID or UUID";
@@ -180,6 +184,8 @@ public class ParamConstants {
     public static final String SAMPLE_INDIVIDUAL_ID_DESCRIPTION = "Individual ID or UUID";
     public static final String SAMPLE_FILE_IDS_PARAM = "fileIds";
     public static final String SAMPLE_FILE_IDS_DESCRIPTION = "Comma separated list of file IDs, paths or UUIDs";
+    public static final String SAMPLE_PHENOTYPES_ACTION_PARAM = PHENOTYPES_ACTION_PARAM;
+    public static final String SAMPLE_PHENOTYPES_ACTION_DESCRIPTION = PHENOTYPES_ACTION_DESCRIPTION;
 
     public static final String SAMPLE_ID_PARAM = "id";
     public static final String SAMPLE_PARAM = "sample";
@@ -212,6 +218,11 @@ public class ParamConstants {
     public static final String INDIVIDUAL_VERSION_PARAM = "version";
     public static final String INDIVIDUAL_VERSION_DESCRIPTION = "Comma separated list of individual versions. 'all' to get all the "
             + "individual versions. Not supported if multiple individual ids are provided";
+    public static final String INDIVIDUAL_PHENOTYPES_ACTION_PARAM = PHENOTYPES_ACTION_PARAM;
+    public static final String INDIVIDUAL_PHENOTYPES_ACTION_DESCRIPTION = PHENOTYPES_ACTION_DESCRIPTION;
+    public static final String INDIVIDUAL_DISORDERS_ACTION_PARAM = "disordersAction" ;
+    public static final String INDIVIDUAL_DISORDERS_ACTION_DESCRIPTION = "Action to be performed if the array of disorders is being"
+            + " updated [SET, ADD, REMOVE]";;
 
     // ---------------------------------------------
 

@@ -149,7 +149,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, options);
 
         assertEquals(numVariants, queryResult.getNumResults());
-        assertEquals(numVariants, queryResult.getNumTotalResults());
+        assertEquals(numVariants, queryResult.getNumMatches());
 
         for (Variant variant : queryResult.getResults()) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
@@ -200,7 +200,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, options);
 
         assertEquals(numVariants, queryResult.getNumResults());
-        assertEquals(numVariants, queryResult.getNumTotalResults());
+        assertEquals(numVariants, queryResult.getNumMatches());
 
         for (Variant variant : queryResult.getResults()) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
@@ -212,7 +212,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, options);
 
         assertEquals(numVariants, queryResult.getNumResults());
-        assertEquals(numVariants, queryResult.getNumTotalResults());
+        assertEquals(numVariants, queryResult.getNumMatches());
 
         for (Variant variant : queryResult.getResults()) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
@@ -230,7 +230,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, options);
 
         assertEquals(numVariants, queryResult.getNumResults());
-        assertEquals(numVariants, queryResult.getNumTotalResults());
+        assertEquals(numVariants, queryResult.getNumMatches());
 
         for (Variant variant : queryResult.getResults()) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
@@ -249,7 +249,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, options);
 
         assertEquals(numVariants, queryResult.getNumResults());
-        assertEquals(numVariants, queryResult.getNumTotalResults());
+        assertEquals(numVariants, queryResult.getNumMatches());
 
         Set<Set<String>> studySets = new HashSet<>();
         for (Variant variant : queryResult.getResults()) {
@@ -268,7 +268,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, options);
 
         assertEquals(numVariants, queryResult.getNumResults());
-        assertEquals(numVariants, queryResult.getNumTotalResults());
+        assertEquals(numVariants, queryResult.getNumMatches());
 
         for (Variant variant : queryResult.getResults()) {
             assertEquals(Collections.emptyList(), variant.getStudies());
@@ -420,7 +420,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
         assertTrue(expectedVariants > 0);
         assertEquals(expectedVariants, queryResult.getNumResults());
-        assertEquals(expectedVariants, queryResult.getNumTotalResults());
+        assertEquals(expectedVariants, queryResult.getNumMatches());
 
         Set<String> actualStudyIds = new HashSet<>();
         Set<Set<String>> actualStudyIdSets = new HashSet<>();
@@ -457,7 +457,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         }
         assertTrue(expectedVariants > 0);
         assertEquals(expectedVariants, queryResult.getNumResults());
-        assertEquals(expectedVariants, queryResult.getNumTotalResults());
+        assertEquals(expectedVariants, queryResult.getNumMatches());
 
         for (Variant variant : queryResult.getResults()) {
             List<String> returnedStudyIds = variant.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toList());
@@ -697,7 +697,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         assertTrue(expectedCount > 0);
         assertEquals(queryResultFile.first().intValue(), queryResult.getNumResults());
         assertEquals(expectedCount, queryResult.getNumResults());
-        assertEquals(expectedCount, queryResult.getNumTotalResults());
+        assertEquals(expectedCount, queryResult.getNumMatches());
 
         for (Variant variant : queryResult.getResults()) {
             Set<String> returnedFileIds = variant.getStudies()
@@ -754,7 +754,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, options);
 
         assertEquals(numVariants, queryResult.getNumResults());
-        assertEquals(numVariants, queryResult.getNumTotalResults());
+        assertEquals(numVariants, queryResult.getNumMatches());
 
         for (Variant variant : queryResult.getResults()) {
             for (StudyEntry sourceEntry : variant.getStudies()) {

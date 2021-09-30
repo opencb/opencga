@@ -53,85 +53,85 @@ public class AnnotationIndexConverterTest {
 
     @Test
     public void testLof() {
-        assertEquals(LOF_MASK | LOF_EXTENDED_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(CUSTOM_LOF_MASK | CUSTOM_LOFE_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("stop_lost"))).getSummaryIndex());
     }
 
     @Test
     public void testLofe() {
-        assertEquals(LOF_EXTENDED_MASK | MISSENSE_VARIANT_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(CUSTOM_LOFE_MASK | MISSENSE_VARIANT_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("missense_variant"))).getSummaryIndex());
     }
 
     @Test
     public void testLofProtein() {
-        assertEquals(LOF_MASK | LOF_EXTENDED_MASK | LOFE_PROTEIN_CODING_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(CUSTOM_LOF_MASK | CUSTOM_LOFE_MASK | CUSTOM_LOFE_PROTEIN_CODING_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("stop_lost", "protein_coding"))).getSummaryIndex());
     }
 
     @Test
     public void testLofeProtein() {
-        assertEquals(LOF_EXTENDED_MASK | MISSENSE_VARIANT_MASK | LOFE_PROTEIN_CODING_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(CUSTOM_LOFE_MASK | MISSENSE_VARIANT_MASK | CUSTOM_LOFE_PROTEIN_CODING_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("missense_variant", "protein_coding"))).getSummaryIndex());
     }
 
     @Test
     public void testLofProteinDifferentTranscript() {
-        assertEquals(LOF_MASK | LOF_EXTENDED_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(CUSTOM_LOF_MASK | CUSTOM_LOFE_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("stop_lost", "other"), ct("other", "protein_coding"))).getSummaryIndex());
 
     }
 
     @Test
     public void testLofeProteinDifferentTranscript() {
-        assertEquals(LOF_EXTENDED_MASK | MISSENSE_VARIANT_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
+        assertEquals(CUSTOM_LOFE_MASK | MISSENSE_VARIANT_MASK | PROTEIN_CODING_MASK | POP_FREQ_ANY_001_MASK,
                 b = converter.convert(annot(ct("missense_variant", "other"), ct("other", "protein_coding"))).getSummaryIndex());
     }
 
-    @Test
-    public void testCtBtCombination() {
-        AnnotationIndexEntry entry = converter.convert(annot(ct("missense_variant", "pseudogene"), ct("pseudogene", "protein_coding")));
-        int[] ctBtIndex = entry.getCtBtCombination().getMatrix();
-        assertEquals(1, ctBtIndex.length);
-        assertEquals(1, entry.getCtBtCombination().getNumA());
-        assertEquals(1, entry.getCtBtCombination().getNumB());
-        assertEquals(0, ctBtIndex[0]); // No combination
-
-        entry = converter.convert(annot(ct("missense_variant", "protein_coding"), ct("stop_lost", "protein_coding")));
-        ctBtIndex = entry.getCtBtCombination().getMatrix();
-        assertEquals(2, ctBtIndex.length);
-        assertEquals(2, entry.getCtBtCombination().getNumA());
-        assertEquals(1, entry.getCtBtCombination().getNumB());
-        assertEquals(1, ctBtIndex[0]); // missense_variant
-        assertEquals(1, ctBtIndex[1]); // stop_lost
-
-        entry = converter.convert(annot(ct("missense_variant", "protein_coding"), ct("stop_lost", "protein_coding"), ct("stop_gained", "pseudogene")));
-        ctBtIndex = entry.getCtBtCombination().getMatrix();
-        assertEquals(3, ctBtIndex.length);
-        assertEquals(3, entry.getCtBtCombination().getNumA());
-        assertEquals(1, entry.getCtBtCombination().getNumB());
-        assertEquals(1, ctBtIndex[0]); // missense_variant
-        assertEquals(0, ctBtIndex[1]); // stop_gained
-        assertEquals(1, ctBtIndex[2]); // stop_lost
-
-        entry = converter.convert(annot(
-                ct("missense_variant", "protein_coding"),
-                ct("start_lost", "processed_transcript"),
-                ct("start_lost", "protein_coding"),
-                ct("stop_lost", "processed_transcript"),
-                ct("stop_gained", "pseudogene")));
-        ctBtIndex = entry.getCtBtCombination().getMatrix();
-        System.out.println("entry = " + entry);
-        assertEquals(4, ctBtIndex.length);
-        assertEquals(4, entry.getCtBtCombination().getNumA());
-        assertEquals(2, entry.getCtBtCombination().getNumB()); // protein_coding + processed_transcript. biotype "other" does not count
-
-                 //protein_coding | processed_transcript
-        assertEquals(0b10, ctBtIndex[0]); // missense_variant
-        assertEquals(0b11, ctBtIndex[1]); // start_lost
-        assertEquals(0b00, ctBtIndex[2]); // stop_gained
-        assertEquals(0b01, ctBtIndex[3]); // stop_lost
-    }
+//    @Test
+//    public void testCtBtCombination() {
+//        AnnotationIndexEntry entry = converter.convert(annot(ct("missense_variant", "pseudogene"), ct("pseudogene", "protein_coding")));
+//        int[] ctBtIndex = entry.getCtBtCombination().getMatrix();
+//        assertEquals(1, ctBtIndex.length);
+//        assertEquals(1, entry.getCtBtCombination().getNumA());
+//        assertEquals(1, entry.getCtBtCombination().getNumB());
+//        assertEquals(0, ctBtIndex[0]); // No combination
+//
+//        entry = converter.convert(annot(ct("missense_variant", "protein_coding"), ct("stop_lost", "protein_coding")));
+//        ctBtIndex = entry.getCtBtCombination().getMatrix();
+//        assertEquals(2, ctBtIndex.length);
+//        assertEquals(2, entry.getCtBtCombination().getNumA());
+//        assertEquals(1, entry.getCtBtCombination().getNumB());
+//        assertEquals(1, ctBtIndex[0]); // missense_variant
+//        assertEquals(1, ctBtIndex[1]); // stop_lost
+//
+//        entry = converter.convert(annot(ct("missense_variant", "protein_coding"), ct("stop_lost", "protein_coding"), ct("stop_gained", "pseudogene")));
+//        ctBtIndex = entry.getCtBtCombination().getMatrix();
+//        assertEquals(3, ctBtIndex.length);
+//        assertEquals(3, entry.getCtBtCombination().getNumA());
+//        assertEquals(1, entry.getCtBtCombination().getNumB());
+//        assertEquals(1, ctBtIndex[0]); // missense_variant
+//        assertEquals(0, ctBtIndex[1]); // stop_gained
+//        assertEquals(1, ctBtIndex[2]); // stop_lost
+//
+//        entry = converter.convert(annot(
+//                ct("missense_variant", "protein_coding"),
+//                ct("start_lost", "processed_transcript"),
+//                ct("start_lost", "protein_coding"),
+//                ct("stop_lost", "processed_transcript"),
+//                ct("stop_gained", "pseudogene")));
+//        ctBtIndex = entry.getCtBtCombination().getMatrix();
+//        System.out.println("entry = " + entry);
+//        assertEquals(4, ctBtIndex.length);
+//        assertEquals(4, entry.getCtBtCombination().getNumA());
+//        assertEquals(2, entry.getCtBtCombination().getNumB()); // protein_coding + processed_transcript. biotype "other" does not count
+//
+//                 //protein_coding | processed_transcript
+//        assertEquals(0b10, ctBtIndex[0]); // missense_variant
+//        assertEquals(0b11, ctBtIndex[1]); // start_lost
+//        assertEquals(0b00, ctBtIndex[2]); // stop_gained
+//        assertEquals(0b01, ctBtIndex[3]); // stop_lost
+//    }
 
     @Test
     public void testIntergenic() {
@@ -145,7 +145,7 @@ public class AnnotationIndexConverterTest {
         assertEquals(POP_FREQ_ANY_001_MASK | INTERGENIC_MASK,
                 b = converter.convert(annot(ct("intergenic_variant"), ct("regulatory_region_variant"))).getSummaryIndex());
 
-        assertEquals(POP_FREQ_ANY_001_MASK | MISSENSE_VARIANT_MASK | LOF_EXTENDED_MASK | INTERGENIC_MASK,
+        assertEquals(POP_FREQ_ANY_001_MASK | MISSENSE_VARIANT_MASK | CUSTOM_LOFE_MASK | INTERGENIC_MASK,
                 b = converter.convert(annot(ct("intergenic_variant"), ct("missense_variant"))).getSummaryIndex());
     }
 
@@ -240,6 +240,7 @@ public class AnnotationIndexConverterTest {
         ConsequenceType consequenceType = new ConsequenceType();;
         consequenceType.setGeneName("Gene");
         consequenceType.setEnsemblGeneId("ENSEMBL_GENE");
+//        consequenceType.setTranscriptFlags(Collections.singletonList("basic"));
         consequenceType.setSequenceOntologyTerms(Collections.singletonList(new SequenceOntologyTerm(ct, ct)));
         return consequenceType;
     }

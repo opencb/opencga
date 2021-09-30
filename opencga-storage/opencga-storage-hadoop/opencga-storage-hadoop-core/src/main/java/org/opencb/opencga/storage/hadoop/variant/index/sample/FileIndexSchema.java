@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 
 public class FileIndexSchema extends FixedSizeIndexSchema {
 
+    public static final String TYPE_KEY = VariantQueryParam.TYPE.key();
+    public static final String FILE_POSITION_KEY = "filePosition";
     private final List<IndexField<?>> fixedFields;
     private final List<IndexField<String>> customFields;
     private final List<IndexField<String>> customFieldsSourceSample;
@@ -131,7 +133,7 @@ public class FileIndexSchema extends FixedSizeIndexSchema {
 
     private CategoricalIndexField<VariantType> buildVariantTypeIndexField(IndexField<?> prevIndex) {
         return new CategoricalIndexField<>(
-                new IndexFieldConfiguration(IndexFieldConfiguration.Source.VARIANT, VariantQueryParam.TYPE.key(),
+                new IndexFieldConfiguration(IndexFieldConfiguration.Source.VARIANT, TYPE_KEY,
                         IndexFieldConfiguration.Type.CATEGORICAL),
                 prevIndex == null ? 0 : (prevIndex.getBitOffset() + prevIndex.getBitLength()),
                 VariantTypeIndexCodec.TYPE_NUM_VALUES, new VariantTypeIndexCodec());
@@ -140,7 +142,7 @@ public class FileIndexSchema extends FixedSizeIndexSchema {
     private static CategoricalIndexField<Integer> buildFilePositionIndexField(IndexField<?> prevIndex, int filePositionSize) {
         int maxValues = (1 << filePositionSize) - 1;
         return new CategoricalIndexField<>(
-                new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, "filePosition",
+                new IndexFieldConfiguration(IndexFieldConfiguration.Source.META, FILE_POSITION_KEY,
                         IndexFieldConfiguration.Type.CATEGORICAL),
                 prevIndex == null ? 0 : (prevIndex.getBitOffset() + prevIndex.getBitLength()), maxValues,
                 new IndexCodec<Integer>() {

@@ -789,6 +789,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         long fileUid = fileDocument.getLong(PRIVATE_UID);
         long studyUid = fileDocument.getLong(PRIVATE_STUDY_UID);
+        String fileId = fileDocument.getString(QueryParams.ID.key());
         String path = fileDocument.getString(QueryParams.PATH.key());
 
         Query query = new Query(QueryParams.STUDY_UID.key(), studyUid);
@@ -804,6 +805,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
             return endWrite(tmpStartTime, fileCollection.update(parseQuery(query), update, multi));
         } else {
+            // Delete file references from all referenced samples
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().removeFileReferences(clientSession, studyUid, fileId);
+
             // DELETED AND REMOVED status
             QueryOptions options = new QueryOptions()
                     .append(QueryOptions.SORT, QueryParams.PATH.key())
@@ -1210,15 +1214,18 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
-            if (containsAnnotationQuery(query)) {
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name(),
-                        Enums.Resource.FILE, configuration));
-            } else {
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FileAclEntry.FilePermissions.VIEW.name(),
-                        Enums.Resource.FILE, configuration));
-            }
 
-            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FILE, user, configuration));
+            if (query.containsKey(ParamConstants.ACL_PARAM)) {
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FILE, user, configuration));
+            } else {
+                if (containsAnnotationQuery(query)) {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name(),
+                            Enums.Resource.FILE, configuration));
+                } else {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FileAclEntry.FilePermissions.VIEW.name(),
+                            Enums.Resource.FILE, configuration));
+                }
+            }
 
             query.remove(ParamConstants.ACL_PARAM);
         }

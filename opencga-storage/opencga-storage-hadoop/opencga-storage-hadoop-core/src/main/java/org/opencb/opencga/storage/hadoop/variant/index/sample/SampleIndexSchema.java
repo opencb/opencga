@@ -9,7 +9,9 @@ import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -64,6 +66,26 @@ public final class SampleIndexSchema {
                     .thenComparing(Variant::getAlternate)
                     .thenComparing(Variant::toString);
 
+    public static final Set<String> CUSTOM_LOF = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            VariantAnnotationConstants.FRAMESHIFT_VARIANT,
+            VariantAnnotationConstants.INFRAME_DELETION,
+            VariantAnnotationConstants.INFRAME_INSERTION,
+            VariantAnnotationConstants.START_LOST,
+            VariantAnnotationConstants.STOP_GAINED,
+            VariantAnnotationConstants.STOP_LOST,
+            VariantAnnotationConstants.SPLICE_ACCEPTOR_VARIANT,
+            VariantAnnotationConstants.SPLICE_DONOR_VARIANT,
+            VariantAnnotationConstants.TRANSCRIPT_ABLATION,
+            VariantAnnotationConstants.TRANSCRIPT_AMPLIFICATION,
+            VariantAnnotationConstants.INITIATOR_CODON_VARIANT,
+            VariantAnnotationConstants.SPLICE_REGION_VARIANT,
+            VariantAnnotationConstants.INCOMPLETE_TERMINAL_CODON_VARIANT
+    )));
+    public static final Set<String> CUSTOM_LOFE = Collections.unmodifiableSet(new HashSet<>(
+            ListUtils.concat(
+                    new ArrayList<>(CUSTOM_LOF),
+                    Arrays.asList(VariantAnnotationConstants.MISSENSE_VARIANT))));
+
     static final String MENDELIAN_ERROR_COLUMN = "ME";
     static final byte[] MENDELIAN_ERROR_COLUMN_BYTES = Bytes.toBytes(MENDELIAN_ERROR_COLUMN);
     static final char META_PREFIX = '_';
@@ -91,12 +113,9 @@ public final class SampleIndexSchema {
     // Transcript Flag
     static final String ANNOTATION_TF_PREFIX = META_PREFIX + "TF_";
     static final byte[] ANNOTATION_TF_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_TF_PREFIX);
-    // ConsequenceType + Biotype combination
-    static final String ANNOTATION_CT_BT_PREFIX = META_PREFIX + "CB_";
-    static final byte[] ANNOTATION_CT_BT_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_CT_BT_PREFIX);
-    // ConsequenceType + TranscriptFlag combination
-    static final String ANNOTATION_CT_TF_PREFIX = META_PREFIX + "CF_";
-    static final byte[] ANNOTATION_CT_TF_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_CT_TF_PREFIX);
+    // ConsequenceType + Biotype + TranscriptFlag combination combination
+    static final String ANNOTATION_CT_BT_TF_PREFIX = META_PREFIX + "CBT_";
+    static final byte[] ANNOTATION_CT_BT_TF_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_CT_BT_TF_PREFIX);
     // PopFreq
     static final String ANNOTATION_POP_FREQ_PREFIX = META_PREFIX + "PF_";
     static final byte[] ANNOTATION_POP_FREQ_PREFIX_BYTES = Bytes.toBytes(ANNOTATION_POP_FREQ_PREFIX);
@@ -110,8 +129,7 @@ public final class SampleIndexSchema {
     private final ConsequenceTypeIndexSchema ctIndex;
     private final BiotypeIndexSchema biotypeIndex;
     private final TranscriptFlagIndexSchema transcriptFlagIndexSchema;
-    private final CtBtCombinationIndexSchema ctBtIndex;
-    private final CtFlagCombinationIndexSchema ctFlagIndex;
+    private final CtBtFtCombinationIndexSchema ctBtTfIndex;
     private final ClinicalIndexSchema clinicalIndexSchema;
 //    private final AnnotationSummaryIndexSchema annotationSummaryIndexSchema;
 
@@ -123,8 +141,7 @@ public final class SampleIndexSchema {
         biotypeIndex = new BiotypeIndexSchema(configuration.getAnnotationIndexConfiguration().getBiotype());
         transcriptFlagIndexSchema = new TranscriptFlagIndexSchema(
                 configuration.getAnnotationIndexConfiguration().getTranscriptFlagIndexConfiguration());
-        ctBtIndex = new CtBtCombinationIndexSchema(ctIndex, biotypeIndex);
-        ctFlagIndex = new CtFlagCombinationIndexSchema(ctIndex, transcriptFlagIndexSchema);
+        ctBtTfIndex = new CtBtFtCombinationIndexSchema(ctIndex, biotypeIndex, transcriptFlagIndexSchema);
         popFreqIndex = new PopulationFrequencyIndexSchema(configuration.getAnnotationIndexConfiguration().getPopulationFrequency());
         clinicalIndexSchema = new ClinicalIndexSchema(
                 configuration.getAnnotationIndexConfiguration().getClinicalSource(),
@@ -162,12 +179,8 @@ public final class SampleIndexSchema {
         return transcriptFlagIndexSchema;
     }
 
-    public CtBtCombinationIndexSchema getCtBtIndex() {
-        return ctBtIndex;
-    }
-
-    public CtFlagCombinationIndexSchema getCtTfIndex() {
-        return ctFlagIndex;
+    public CtBtFtCombinationIndexSchema getCtBtTfIndex() {
+        return ctBtTfIndex;
     }
 
     public PopulationFrequencyIndexSchema getPopFreqIndex() {
@@ -290,12 +303,8 @@ public final class SampleIndexSchema {
         return Bytes.toBytes(ANNOTATION_TF_PREFIX + genotype);
     }
 
-    public static byte[] toAnnotationCtBtIndexColumn(String genotype) {
-        return Bytes.toBytes(ANNOTATION_CT_BT_PREFIX + genotype);
-    }
-
-    public static byte[] toAnnotationCtTfIndexColumn(String genotype) {
-        return Bytes.toBytes(ANNOTATION_CT_TF_PREFIX + genotype);
+    public static byte[] toAnnotationCtBtTfIndexColumn(String genotype) {
+        return Bytes.toBytes(ANNOTATION_CT_BT_TF_PREFIX + genotype);
     }
 
     public static byte[] toAnnotationPopFreqIndexColumn(String genotype) {

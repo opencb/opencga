@@ -1643,7 +1643,7 @@ public class StudyManager extends AbstractManager {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = get(studyStr, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                 StudyDBAdaptor.QueryParams.UID.key(),
-                StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key())), token).first();
+                StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key())), token).first();
 
         authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         StudyVariantEngineConfiguration configuration = study.getInternal().getConfiguration().getVariantEngine();
@@ -1652,7 +1652,7 @@ public class StudyManager extends AbstractManager {
         }
         configuration.setOptions(options);
 
-        ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key(), configuration);
+        ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(), configuration);
         studyDBAdaptor.update(study.getUid(), parameters, QueryOptions.empty());
     }
 
@@ -1661,7 +1661,7 @@ public class StudyManager extends AbstractManager {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = get(studyStr, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                 StudyDBAdaptor.QueryParams.UID.key(),
-                StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key())), token).first();
+                StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key())), token).first();
 
         authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
         StudyVariantEngineConfiguration configuration = study.getInternal().getConfiguration().getVariantEngine();
@@ -1670,7 +1670,7 @@ public class StudyManager extends AbstractManager {
         }
         configuration.setSampleIndex(sampleIndexConfiguration);
 
-        ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_VARIANT_ENGINE_CONFIGURATION.key(), configuration);
+        ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(), configuration);
         studyDBAdaptor.update(study.getUid(), parameters, QueryOptions.empty());
     }
 
@@ -1826,7 +1826,8 @@ public class StudyManager extends AbstractManager {
                 throw new CatalogException("Error decompressing file: '" + filePath + "'", e);
             }
 
-            return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), null, 1, Collections.singletonList(templateId), 1);
+            return new OpenCGAResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(),
+                    1, Collections.singletonList(templateId), 1);
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Action.UPLOAD_TEMPLATE, Enums.Resource.STUDY, templateId, "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

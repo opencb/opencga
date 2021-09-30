@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -155,7 +154,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
                 }
 
                 List<Document> secondaryInterpretations = (List<Document>) clinicalDocument.get(SECONDARY_INTERPRETATIONS.key());
-                if (ListUtils.isNotEmpty(secondaryInterpretations)) {
+                if (CollectionUtils.isNotEmpty(secondaryInterpretations)) {
                     for (Document interpretation : secondaryInterpretations) {
                         interpretationSet.add(interpretation.get(UID) + UID_VERSION_SEP + interpretation.get(VERSION));
                     }
@@ -263,15 +262,17 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         }
 
         List<Document> origSecondaryInterpretations = (List<Document>) clinicalAnalysis.get(SECONDARY_INTERPRETATIONS.key());
-        List<Document> secondaryInterpretations = new ArrayList<>();
-        // If the interpretations have been returned... (it might have not been fetched due to permissions issues)
-        for (Document origInterpretation : origSecondaryInterpretations) {
-            String interpretationId = origInterpretation.get(UID) + UID_VERSION_SEP + origInterpretation.get(VERSION);
-            if (interpretationMap.containsKey(interpretationId)) {
-                secondaryInterpretations.add(new Document(interpretationMap.get(interpretationId)));
+        if (CollectionUtils.isNotEmpty(origSecondaryInterpretations)) {
+            List<Document> secondaryInterpretations = new ArrayList<>();
+            // If the interpretations have been returned... (it might have not been fetched due to permissions issues)
+            for (Document origInterpretation : origSecondaryInterpretations) {
+                String interpretationId = origInterpretation.get(UID) + UID_VERSION_SEP + origInterpretation.get(VERSION);
+                if (interpretationMap.containsKey(interpretationId)) {
+                    secondaryInterpretations.add(new Document(interpretationMap.get(interpretationId)));
+                }
             }
+            clinicalAnalysis.put(SECONDARY_INTERPRETATIONS.key(), secondaryInterpretations);
         }
-        clinicalAnalysis.put(SECONDARY_INTERPRETATIONS.key(), secondaryInterpretations);
     }
 
     private void fillPanels(Document clinicalAnalysis, Map<String, Document> panelMap) {

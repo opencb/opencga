@@ -36,6 +36,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
     private boolean multiFileSamples;
     private AnnotationIndexConverter converter;
     private int firstSampleId;
+    private SampleIndexSchema schema;
 
     public static void setHasGenotype(Job job, boolean hasGenotype) {
         job.getConfiguration().setBoolean(HAS_GENOTYPE, hasGenotype);
@@ -63,8 +64,8 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
         for (int i = 0; i < annotationIndices.length; i++) {
             annotationIndices[i] = new HashMap<>();
         }
-        converter = new AnnotationIndexConverter(
-                new SampleIndexSchema(VariantMapReduceUtil.getSampleIndexConfiguration(context.getConfiguration())));
+        schema = new SampleIndexSchema(VariantMapReduceUtil.getSampleIndexConfiguration(context.getConfiguration()));
+        converter = new AnnotationIndexConverter(schema);
     }
 
     @Override
@@ -100,7 +101,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
             if (samples == null || samples.add(sampleId + "_" + gt)) {
                 if (validGt) {
                     annotationIndices[sampleId - firstSampleId]
-                            .computeIfAbsent(gt, k -> new AnnotationIndexPutBuilder()).add(indexEntry);
+                            .computeIfAbsent(gt, k -> new AnnotationIndexPutBuilder(schema)).add(indexEntry);
                 }
             }
         }).walk();

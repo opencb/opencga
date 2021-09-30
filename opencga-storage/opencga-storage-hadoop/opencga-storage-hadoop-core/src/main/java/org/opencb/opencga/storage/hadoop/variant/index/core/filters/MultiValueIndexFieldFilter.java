@@ -62,7 +62,7 @@ public class MultiValueIndexFieldFilter extends IndexFieldFilter {
                     msg.append(" , ");
                 }
                 first = false;
-                msg.append(IndexUtils.binaryToString(i, getIndex().getBitLength()));
+                msg.append(IndexUtils.binaryToString(i, getIndex().getBitLength())).append(" (").append(getIndex().decode(i)).append(")");
             }
         }
         msg.append(" ] }");

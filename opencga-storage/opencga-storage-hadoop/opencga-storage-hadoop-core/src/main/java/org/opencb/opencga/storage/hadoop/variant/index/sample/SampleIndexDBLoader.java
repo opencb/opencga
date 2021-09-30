@@ -130,7 +130,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
 
         private SampleIndexEntryPutBuilder fetchIndex(IndexChunk indexChunk, Integer sampleId) {
             try {
-                return dbAdaptor.queryByGtBuilder(studyId, sampleId, indexChunk.chromosome, indexChunk.position);
+                return dbAdaptor.queryByGtBuilder(studyId, sampleId, indexChunk.chromosome, indexChunk.position, schema);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -253,7 +253,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                             delete.addColumn(family, SampleIndexSchema.toAnnotationClinicalIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
-                            delete.addColumn(family, SampleIndexSchema.toAnnotationCtBtIndexColumn(gt));
+                            delete.addColumn(family, SampleIndexSchema.toAnnotationCtBtTfIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt));
