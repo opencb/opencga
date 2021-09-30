@@ -274,7 +274,7 @@ public class VariantStatsOperationManager extends OperationManager {
         return new StorageEngineException("Unable to calculate stats for cohort "
                 + "{ uid: " + cohort.getUid() + " id: \"" + cohort.getId() + "\" }"
                 + " with status \"" + cohort.getInternal().getStatus().getName() + "\". "
-                + "Resume or update stats for continue calculation");
+                + "Resume or overwrite stats for continue calculation");
     }
 
     public static StorageEngineException unableToCalculateCohortCalculating(Cohort cohort) {
