@@ -22,14 +22,17 @@
 {"collection": "job", "fields": {"userId": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"input.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"output.uid": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "job", "fields": {"outDir.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"tags": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"visited": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "job", "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"_priority": 1, "_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"_priority": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"studyUid": 1, "_acl": 1}, "options": {"background": true}}
+{"collection": "job", "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
 
 {"collection": "file", "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "file", "fields": {"uid": 1}, "options": {"unique": true, "background": true}}

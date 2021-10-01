@@ -93,7 +93,7 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
      * be applied.
      *
-     * @param studyId study id containing the entries affected.
+     * @param studyId          study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
      * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.
@@ -112,11 +112,18 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
 
         TOOL("tool", OBJECT, ""),
         TOOL_ID("tool.id", TEXT, ""),
+        TOOL_TYPE("tool.type", TEXT, ""),
 
         PRIORITY("priority", TEXT, ""),
 
+        STATUS("status", OBJECT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
+
         INTERNAL("internal", OBJECT, ""),
         INTERNAL_STATUS("internal.status", OBJECT, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DESCRIPTION("internal.status.description", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         INTERNAL_WEBHOOK("internal.webhook", OBJECT, ""),
         INTERNAL_EVENTS("internal.events", OBJECT, ""),
         OUT_DIR("outDir", OBJECT, ""),
@@ -137,27 +144,12 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
 
         // The parameters below this line are under revision
-        TOOL_NAME("toolName", TEXT_ARRAY, ""),
-        TYPE("type", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
-        START_TIME("startTime", INTEGER_ARRAY, ""),
-        END_TIME("endTime", INTEGER_ARRAY, ""),
-        OUTPUT_ERROR("outputError", TEXT_ARRAY, ""),
         //PARAMS,
         VISITED("visited", BOOLEAN, ""),
-        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
-        INTERNAL_STATUS_DESCRIPTION("internal.status.description", TEXT, ""),
-        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
-        SIZE("size", DECIMAL, ""),
         OUT_DIR_UID("outDir.uid", INTEGER, ""),
-        TMP_OUT_DIR_URI("tmpOutDirUri", TEXT_ARRAY, ""),
         INPUT_UID("input.uid", INTEGER_ARRAY, ""),
         OUTPUT_UID("output.uid", INTEGER_ARRAY, ""),
-        NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
-        BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
-        RESOURCE_MANAGER_ATTRIBUTES("resourceManagerAttributes", TEXT_ARRAY, ""),
-        ERROR("error", TEXT_ARRAY, ""),
-        ERROR_DESCRIPTION("errorDescription", TEXT_ARRAY, ""),
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
@@ -166,6 +158,7 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
         STUDY_OTHERS("study.others", TEXT, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
+
         static {
             for (QueryParams params : QueryParams.values()) {
                 map.put(params.key(), params);

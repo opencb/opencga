@@ -840,7 +840,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     /**
      * Update a Cohort from catalog.
      *
-     * @param studyStr             Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param studyStr             Study id in string format. Could be one of [studyId|projectId:studyId|user@projectId:studyId].
      * @param cohortIds            List of cohort ids. Could be either the id or uuid.
      * @param updateParams         Data model filled only with the parameters to be updated.
      * @param allowModifyCohortAll Boolean indicating whether we should not raise an exception if the cohort ALL is to be updated.

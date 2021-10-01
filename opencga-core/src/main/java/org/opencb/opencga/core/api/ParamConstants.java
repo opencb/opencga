@@ -451,6 +451,8 @@ public class ParamConstants {
     // ---------------------------------------------
 
     public static final String JOBS_DESCRIPTION = "Comma separated list of job IDs or UUIDs" + UP_TO_100;
+    public static final String JOB_IDS_DESCRIPTION = "Comma separated list of job IDs" + UP_TO_100;
+    public static final String JOB_UUIDS_DESCRIPTION = "Comma separated list of job UUIDs" + UP_TO_100;
 
     public static final String JOB_ID_DESCRIPTION = "Job ID or UUID";
     public static final String JOB_ID_CREATION_DESCRIPTION = "Job ID. It must be a unique string within the study. An ID will be "
@@ -458,18 +460,24 @@ public class ParamConstants {
     public static final String JOB_PARAM = "job";
     public static final String JOB_ID = "jobId";
     public static final String JOB_ID_PARAM = ID;
+    public static final String JOB_UUID_PARAM = "uuid";
     public static final String JOB_DESCRIPTION = "jobDescription";
     public static final String JOB_DESCRIPTION_DESCRIPTION = "Job description";
     public static final String JOB_DEPENDS_ON = "jobDependsOn";
     public static final String JOB_DEPENDS_ON_PARAM = "dependsOn";
     public static final String JOB_DEPENDS_ON_DESCRIPTION = "Comma separated list of existing job IDs the job will depend on.";
     public static final String JOB_TOOL_ID_PARAM = "toolId";
+    public static final String JOB_TOOL_TYPE_PARAM = "toolType";
     public static final String JOB_TOOL_ID_DESCRIPTION = "Tool ID executed by the job";
+    public static final String JOB_TOOL_TYPE_DESCRIPTION = "Tool type executed by the job [OPERATION, ANALYSIS]";
     public static final String JOB_USER_PARAM = "userId";
     public static final String JOB_USER_DESCRIPTION = "User that created the job";
     public static final String JOB_PRIORITY_PARAM = "priority";
     public static final String JOB_PRIORITY_DESCRIPTION = "Priority of the job";
-    public static final String JOB_STATUS_DESCRIPTION = "Job internal status";
+    public static final String JOB_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
+    public static final String JOB_INTERNAL_STATUS_DESCRIPTION = INTERNAL_STATUS_DESCRIPTION;
+    public static final String JOB_STATUS_PARAM = STATUS_PARAM;
+    public static final String JOB_STATUS_DESCRIPTION = STATUS_DESCRIPTION;
     public static final String JOB_VISITED_PARAM = "visited";
     public static final String JOB_VISITED_DESCRIPTION = "Visited status of job";
     public static final String JOB_TAGS = "jobTags";
