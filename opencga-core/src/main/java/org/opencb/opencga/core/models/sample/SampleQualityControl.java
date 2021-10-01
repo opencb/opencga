@@ -24,7 +24,7 @@ import java.util.List;
 
 public class SampleQualityControl implements Serializable {
 
-    private List<String> files;
+    private List<String> fileIds;
     private List<ClinicalComment> comments;
     private SampleVariantQualityControlMetrics variant;
 
@@ -33,7 +33,7 @@ public class SampleQualityControl implements Serializable {
     }
 
     public SampleQualityControl(List<String> files, List<ClinicalComment> comments, SampleVariantQualityControlMetrics variant) {
-        this.files = files;
+        this.fileIds = files;
         this.comments = comments;
         this.variant = variant;
     }
@@ -41,19 +41,19 @@ public class SampleQualityControl implements Serializable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleQualityControl{");
-        sb.append("files=").append(files);
+        sb.append("files=").append(fileIds);
         sb.append(", comments=").append(comments);
         sb.append(", variant=").append(variant);
         sb.append('}');
         return sb.toString();
     }
 
-    public List<String> getFiles() {
-        return files;
+    public List<String> getFileIds() {
+        return fileIds;
     }
 
-    public SampleQualityControl setFiles(List<String> files) {
-        this.files = files;
+    public SampleQualityControl setFileIds(List<String> fileIds) {
+        this.fileIds = fileIds;
         return this;
     }
 

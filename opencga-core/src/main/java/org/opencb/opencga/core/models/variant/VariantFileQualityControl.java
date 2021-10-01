@@ -16,25 +16,38 @@
 
 package org.opencb.opencga.core.models.variant;
 
+import org.opencb.biodata.formats.sequence.ascat.AscatMetrics;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 
 public class VariantFileQualityControl {
 
     private VariantSetStats variantSetMetrics;
+    private AscatMetrics ascatMetrics;
 
     public VariantFileQualityControl() {
     }
 
-    public VariantFileQualityControl(VariantSetStats variantSetStats) {
-        this.variantSetMetrics = variantSetStats;
+    public VariantFileQualityControl(VariantSetStats variantSetMetrics, AscatMetrics ascatMetrics) {
+        this.variantSetMetrics = variantSetMetrics;
+        this.ascatMetrics = ascatMetrics;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("VariantFileQualityControl{");
         sb.append("variantSetMetrics=").append(variantSetMetrics);
+        sb.append(", ascatMetrics=").append(ascatMetrics);
         sb.append('}');
         return sb.toString();
+    }
+
+    public AscatMetrics getAscatMetrics() {
+        return ascatMetrics;
+    }
+
+    public VariantFileQualityControl setAscatMetrics(AscatMetrics ascatMetrics) {
+        this.ascatMetrics = ascatMetrics;
+        return this;
     }
 
     public VariantSetStats getVariantSetMetrics() {

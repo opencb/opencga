@@ -7,18 +7,19 @@ import org.opencb.biodata.formats.sequence.fastqc.FastQcMetrics;
 
 import java.io.Serializable;
 
-public class AlignmentQualityControl implements Serializable {
+public class AlignmentFileQualityControl implements Serializable {
 
     private FastQcMetrics fastQcMetrics;
     private SamtoolsStats samtoolsStats;
     private SamtoolsFlagstats samtoolsFlagStats;
     private HsMetrics hsMetrics;
 
-    public AlignmentQualityControl() {
+    public AlignmentFileQualityControl() {
         this(null, null, null, null);
     }
 
-    public AlignmentQualityControl(FastQcMetrics fastQcMetrics, SamtoolsStats samtoolsStats, SamtoolsFlagstats samtoolsFlagStats, HsMetrics hsMetrics) {
+    public AlignmentFileQualityControl(FastQcMetrics fastQcMetrics, SamtoolsStats samtoolsStats, SamtoolsFlagstats samtoolsFlagStats,
+                                       HsMetrics hsMetrics) {
         this.fastQcMetrics = fastQcMetrics;
         this.samtoolsStats = samtoolsStats;
         this.samtoolsFlagStats = samtoolsFlagStats;
@@ -40,7 +41,7 @@ public class AlignmentQualityControl implements Serializable {
         return fastQcMetrics;
     }
 
-    public AlignmentQualityControl setFastQcMetrics(FastQcMetrics fastQcMetrics) {
+    public AlignmentFileQualityControl setFastQcMetrics(FastQcMetrics fastQcMetrics) {
         this.fastQcMetrics = fastQcMetrics;
         return this;
     }
@@ -49,7 +50,7 @@ public class AlignmentQualityControl implements Serializable {
         return samtoolsStats;
     }
 
-    public AlignmentQualityControl setSamtoolsStats(SamtoolsStats samtoolsStats) {
+    public AlignmentFileQualityControl setSamtoolsStats(SamtoolsStats samtoolsStats) {
         this.samtoolsStats = samtoolsStats;
         return this;
     }
@@ -58,7 +59,7 @@ public class AlignmentQualityControl implements Serializable {
         return samtoolsFlagStats;
     }
 
-    public AlignmentQualityControl setSamtoolsFlagStats(SamtoolsFlagstats samtoolsFlagStats) {
+    public AlignmentFileQualityControl setSamtoolsFlagStats(SamtoolsFlagstats samtoolsFlagStats) {
         this.samtoolsFlagStats = samtoolsFlagStats;
         return this;
     }
@@ -67,7 +68,7 @@ public class AlignmentQualityControl implements Serializable {
         return hsMetrics;
     }
 
-    public AlignmentQualityControl setHsMetrics(HsMetrics hsMetrics) {
+    public AlignmentFileQualityControl setHsMetrics(HsMetrics hsMetrics) {
         this.hsMetrics = hsMetrics;
         return this;
     }

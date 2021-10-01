@@ -46,6 +46,52 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
     String STATS_ID = "stats.id";
     String STATS_VARIANT_COUNT = "stats.variantCount";
 
+    default boolean exists(long sampleId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return count(new Query(QueryParams.UID.key(), sampleId)).getNumMatches() > 0;
+    }
+
+    default void checkId(long sampleId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        if (sampleId < 0) {
+            throw CatalogDBException.newInstance("Sample id '{}' is not valid: ", sampleId);
+        }
+
+        if (!exists(sampleId)) {
+            throw CatalogDBException.newInstance("Sample id '{}' does not exist", sampleId);
+        }
+    }
+
+    OpenCGAResult nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException;
+
+    OpenCGAResult insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<Sample> get(long sampleId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    OpenCGAResult<Sample> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+
+    long getStudyId(long sampleId) throws CatalogDBException;
+
+    OpenCGAResult updateProjectRelease(long studyId, int release)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    /**
+     * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
+     * be applied.
+     *
+     * @param studyId          study id containing the entries affected.
+     * @param permissionRuleId permission rule id to be unmarked.
+     * @return a OpenCGAResult object.
+     * @throws CatalogException if there is any database error.
+     */
+    OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+
+    default OpenCGAResult<Sample> setRgaIndexes(long studyUid, RgaIndex rgaIndex) throws CatalogDBException {
+        return setRgaIndexes(studyUid, Collections.emptyList(), rgaIndex);
+    }
+
+    OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex) throws CatalogDBException;
+
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
         UID("uid", LONG, ""),
@@ -81,7 +127,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 
-        QUALITY_CONTORL("qualityControl", TEXT_ARRAY, ""),
+        QUALITY_CONTROL("qualityControl", TEXT_ARRAY, ""),
         PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
         PHENOTYPES_ID("phenotypes.id", TEXT, ""),
         PHENOTYPES_NAME("phenotypes.name", TEXT, ""),
@@ -92,6 +138,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         ANNOTATION(Constants.ANNOTATION, TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
+
         static {
             map = new LinkedMap();
             for (QueryParams params : QueryParams.values()) {
@@ -109,6 +156,14 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
             this.description = description;
         }
 
+        public static Map<String, QueryParams> getMap() {
+            return map;
+        }
+
+        public static QueryParams getParam(String key) {
+            return map.get(key);
+        }
+
         @Override
         public String key() {
             return key;
@@ -123,59 +178,5 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         public String description() {
             return description;
         }
-
-        public static Map<String, QueryParams> getMap() {
-            return map;
-        }
-
-        public static QueryParams getParam(String key) {
-            return map.get(key);
-        }
     }
-
-    default boolean exists(long sampleId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return count(new Query(QueryParams.UID.key(), sampleId)).getNumMatches() > 0;
-    }
-
-    default void checkId(long sampleId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        if (sampleId < 0) {
-            throw CatalogDBException.newInstance("Sample id '{}' is not valid: ", sampleId);
-        }
-
-        if (!exists(sampleId)) {
-            throw CatalogDBException.newInstance("Sample id '{}' does not exist", sampleId);
-        }
-    }
-
-    OpenCGAResult nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException;
-
-    OpenCGAResult insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-    OpenCGAResult<Sample> get(long sampleId, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-    OpenCGAResult<Sample> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
-
-    long getStudyId(long sampleId) throws CatalogDBException;
-
-    OpenCGAResult updateProjectRelease(long studyId, int release)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-    /**
-     * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
-     * be applied.
-     *
-     * @param studyId study id containing the entries affected.
-     * @param permissionRuleId permission rule id to be unmarked.
-     * @return a OpenCGAResult object.
-     * @throws CatalogException if there is any database error.
-     */
-    OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
-
-    default OpenCGAResult<Sample> setRgaIndexes(long studyUid, RgaIndex rgaIndex) throws CatalogDBException {
-        return setRgaIndexes(studyUid, Collections.emptyList(), rgaIndex);
-    }
-
-    OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex) throws CatalogDBException;
 }

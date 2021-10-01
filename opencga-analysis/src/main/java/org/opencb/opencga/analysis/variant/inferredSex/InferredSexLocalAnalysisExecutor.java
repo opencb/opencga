@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-@ToolExecutor(id="opencga-local", tool = InferredSexAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
+@ToolExecutor(id = "opencga-local", tool = InferredSexAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
 public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecutor implements StorageToolExecutor {
 
@@ -49,7 +49,8 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
         }
 
         // Compute ratios: X-chrom / autosomic-chroms and Y-chrom / autosomic-chroms
-        double[] ratios = InferredSexComputation.computeRatios(getStudyId(), getIndividualId(), assembly, fileManager, alignmentStorageManager,
+        double[] ratios = InferredSexComputation.computeRatios(getStudyId(), getIndividualId(), assembly, fileManager,
+                alignmentStorageManager,
                 getToken());
 
         // TODO infer sex from ratios
@@ -60,6 +61,7 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
         values.put("ratioY", ratios[1]);
 
         // Set inferred sex report (individual fields will be set later)
-        setInferredSexReport(new InferredSexReport("CoverageRatio", inferredKaryotypicSex, values, Collections.emptyList()));
+        // TODO: Joaquin to check sampleId?
+        setInferredSexReport(new InferredSexReport("", "CoverageRatio", inferredKaryotypicSex, values, Collections.emptyList()));
     }
 }

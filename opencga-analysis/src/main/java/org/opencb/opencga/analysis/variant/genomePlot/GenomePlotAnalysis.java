@@ -36,6 +36,7 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.GenomePlotAnalysisExecutor;
 
 import java.nio.file.Paths;
+import java.util.Collections;
 
 @Tool(id = GenomePlotAnalysis.ID, resource = Enums.Resource.VARIANT)
 public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
@@ -79,7 +80,6 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
                     .setConfigFile(configFile)
                     .execute();
 
-
             // Update quality control for the catalog sample
             if (StringUtils.isNotEmpty(genomePlotParams.getSample())) {
                 OpenCGAResult<Sample> sampleResult = getCatalogManager().getSampleManager().get(getStudy(), genomePlotParams.getSample(),
@@ -95,11 +95,13 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
                         if (imgFile.getName().endsWith(GenomePlotAnalysis.SUFFIX_FILENAME)) {
                             int index = imgFile.getAbsolutePath().indexOf("JOBS/");
                             String relativeFilePath = (index == -1 ? imgFile.getName() : imgFile.getAbsolutePath().substring(index));
-                            genomePlot = new GenomePlot("", getGenomePlotParams().getDescription(), plotConfig, relativeFilePath);
+                            // TODO: Joaquin to check. There's a new list of tracks that should be populated
+                            genomePlot = new GenomePlot("", getGenomePlotParams().getDescription(), plotConfig, relativeFilePath,
+                                    Collections.emptyList());
                             break;
                         }
                     }
-                    if (genomePlot !=  null) {
+                    if (genomePlot != null) {
                         SampleQualityControl qc = sampleResult.first().getQualityControl();
                         if (qc == null) {
                             qc = new SampleQualityControl();
