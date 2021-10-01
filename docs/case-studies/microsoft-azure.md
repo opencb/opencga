@@ -16,7 +16,7 @@ For this proof of concept \(PoC\) we loaded all the genomic variants of about **
 
 For this proof of concept \(PoC\) we used the development version **OpenCGA v2.0.0-beta** using the Hadoop Variant Storage Engine that uses [**Apache HBase**](https://hbase.apache.org/) as back-end. We also used [**CellBase**](http://docs.opencb.org/display/cellbase/CellBase+Home) **4.6** for the variant annotation.
 
-For the platform we used a 10-nodes ****[**Azure HDInsight**](https://azure.microsoft.com/en-gb/services/hdinsight/) **3.6** cluster using [**Data Lake Storage Gen2**](https://docs.microsoft.com/en-gb/azure/storage/blobs/data-lake-storage-introduction). HDInsight 3.6 uses [**Hortonworks HDP**](https://www.cloudera.com/products/hdp.html) **2.6.5** \(with **Hadoop 2.7.3** and **HBase 1.1.2**\) and we used Azure Batch for loading concurrently all the VCF files which had been copied previously to a NFS server, you can see details here:
+For the platform we used a 10-nodes **\*\*\[**Azure HDInsight**\]\(**[https://azure.microsoft.com/en-gb/services/hdinsight/](https://azure.microsoft.com/en-gb/services/hdinsight/)**\)** 3.6 **cluster using \[**Data Lake Storage Gen2**\]\(**[https://docs.microsoft.com/en-gb/azure/storage/blobs/data-lake-storage-introduction](https://docs.microsoft.com/en-gb/azure/storage/blobs/data-lake-storage-introduction)**\). HDInsight 3.6 uses \[**Hortonworks HDP**\]\(**[https://www.cloudera.com/products/hdp.html](https://www.cloudera.com/products/hdp.html)**\)** 2.6.5 **\(with** Hadoop 2.7.3 **and** HBase 1.1.2\*\*\) and we used Azure Batch for loading concurrently all the VCF files which had been copied previously to a NFS server, you can see details here:
 
 | Node Type | Nodes | Azure Type | Cores | Memory \(GB\) | Storage |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -33,9 +33,9 @@ As you will see below in the Analysis Benchmark section, once we completed the P
 In order to study the **loading performance** we set up a Azure Batch queue of 20 computing nodes. This allowed us to load multiple files at the same time from different servers. We configured Azure Batch to load 1 VCF file per node resulting in 20 files being loaded in HBase simultaneously. During the load we studied two different configurations:
 
 1. Loading VCF files vs. loading transformed files
-2. Using HDD vs. SSD disk in the NFS server 
+2. Using HDD vs. SSD disk in the NFS server
 
- You can observe the results in the following plot:
+   You can observe the results in the following plot:
 
 ![](http://docs.opencb.org/download/attachments/15598505/load.png?version=1&modificationDate=1569501564112&api=v2)
 
@@ -66,7 +66,7 @@ We executed an initial aggregation with the first batch 700 samples accounting f
 
 #### Variant Annotation
 
-This operation uses the ****[**CellBase**](http://docs.opencb.org/display/cellbase/CellBase+Home) to annotate each unique variant in the database, this annotation include consequence types, population frequencies, conservation scores clinical info, ... and will be typically used for variant queries and different analysis. We executed variant annotation during the variant indexing, in OpenCGA 2.0.0 you can load variants and annotate at the same time, the performance of variant annotation is affected mainly by CellBase installation, in this PoC we used a small CellBase installation from University of Cambridge which is far from ideal. The performance observed was about **120 million variants annotated a day.**
+This operation uses the **\*\*\[**CellBase**\]\(**[http://docs.opencb.org/display/cellbase/CellBase+Home](http://docs.opencb.org/display/cellbase/CellBase+Home)**\) to annotate each unique variant in the database, this annotation include consequence types, population frequencies, conservation scores clinical info, ... and will be typically used for variant queries and different analysis. We executed variant annotation during the variant indexing, in OpenCGA 2.0.0 you can load variants and annotate at the same time, the performance of variant annotation is affected mainly by CellBase installation, in this PoC we used a small CellBase installation from University of Cambridge which is far from ideal. The performance observed was about** 120 million variants annotated a day.\*\*
 
 #### Cohort Stats Calculation
 

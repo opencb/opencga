@@ -6,13 +6,7 @@ description: A rich web app front-end to work with OpenCGA
 
 ## Overview
 
-
-
 ## Uses Cases
 
-
-
 ## Gallery
-
-
 

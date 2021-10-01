@@ -25,7 +25,3 @@ OpenCGA provides a complete solution for genomics data analysis:
 
 OpenCGA is used by several projects being the most importan [Genomics England \(NHS\)](https://www.genomicsengland.co.uk/).
 
-
-
-
-

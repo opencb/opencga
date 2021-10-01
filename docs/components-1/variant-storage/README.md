@@ -2,13 +2,5 @@
 
 ## Overview
 
-
-
-
-
 ## Data Model
-
-
-
-
 

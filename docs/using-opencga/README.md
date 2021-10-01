@@ -14,5 +14,3 @@ We have implemented **three different ways** to query and operate OpenCGA throug
 
 ### gRPC
 
-
-

@@ -19,9 +19,9 @@ You can create _group_ of users, this will simplify data permission management. 
 * If one user leaves the department, we would just need to remove that user from the corresponding group. That user will automatically lose the permissions the group has\*.
 * If one user starts in the department, we would just need to add that user to the corresponding group. That user will automatically gain the permissions the group has.
 
- \* Unless the user had some or all the permissions granted to the group defined in a different group he/she might still belong to or assigned directly to the user.
+  \* Unless the user had some or all the permissions granted to the group defined in a different group he/she might still belong to or assigned directly to the user.
 
-All _studies_ have always two administrative groups that cannot be deleted or renamed, these are _admins_ and _members_. 
+All _studies_ have always two administrative groups that cannot be deleted or renamed, these are _admins_ and _members_.
 
 ## Projects <a id="DataManagement-Projects"></a>
 
