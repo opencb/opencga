@@ -10,7 +10,7 @@ In this section, you will find a summary of the main features of OpenCGA.
 
 OpenCGA Catalog is one of the most important components. Catalog implements the data models, allow custom annotations, implement permissions, ... An audit system has also been implemented.
 
-### Catalog Data Models and Annotations 
+### Catalog Data Models and Annotations
 
 * **Rich data models** implemented for studies, files, samples, individuals, families, ...
 * Advanced **free data model** implemented for storing **custom annotations** such as stats or clinical data from patients. Users can define **confidential annotations** as only visible for authorised users.
@@ -27,7 +27,7 @@ OpenCGA Catalog is one of the most important components. Catalog implements the 
 
 ## Variant Storage
 
-OpenCGA provides a framework for implementing _big data_ variant storage engines which support: real-time queries, interactive complex data aggregations, full-text search, variant analysis, ... The framework takes care of several common operations such as variant normalisation, sample genotype aggregation, variant stats calculation, variant annotation, secondary indexing or in-memory cache. Two different engines are implemented using NoSQL databases: MongoDB and HBase. A secondary index using Solr is nicely integrated with the two implementations. By implementing variant storage engines with NoSQL databases we ensure a fast response time and high concurrent queries. 
+OpenCGA provides a framework for implementing _big data_ variant storage engines which support: real-time queries, interactive complex data aggregations, full-text search, variant analysis, ... The framework takes care of several common operations such as variant normalisation, sample genotype aggregation, variant stats calculation, variant annotation, secondary indexing or in-memory cache. Two different engines are implemented using NoSQL databases: MongoDB and HBase. A secondary index using Solr is nicely integrated with the two implementations. By implementing variant storage engines with NoSQL databases we ensure a fast response time and high concurrent queries.
 
 #### Data Management
 
@@ -70,7 +70,7 @@ OpenCGA provides a framework for implementing _big data_ variant storage engines
 
 ## Clinical Analysis
 
-OpenCGA aims to provide a full solution for Clinical Genomics analysis, this covers patient clinical data, interpretation algorithms and a pathogenic variant database. 
+OpenCGA aims to provide a full solution for Clinical Genomics analysis, this covers patient clinical data, interpretation algorithms and a pathogenic variant database.
 
 ### Clinical Data
 
@@ -109,7 +109,7 @@ OpenCGA can manage alignment data. BAM files can be indexed and coverage calcula
 
 OpenCGA implements more than 150 RESTful web services to allow users to manipulate and query Catalog metadata and data such as _alignment_, _variants_ and _pathogenic variants_. REST web services are documented using [Swagger](https://swagger.io/), you can see OpenCGA Swagger documentation at [http://bioinfo.hpc.cam.ac.uk/hgva/webservices/](http://bioinfo.hpc.cam.ac.uk/hgva/webservices/). To facilitate the usage all of these web services we have implemented different client libraries and a command line \(see below in _Usability\)._
 
-REST web services can be grouped in different categories: _Catalog, Alignment, Variant, Clinical_ and _Admin._ 
+REST web services can be grouped in different categories: _Catalog, Alignment, Variant, Clinical_ and _Admin._
 
 ### Catalog
 

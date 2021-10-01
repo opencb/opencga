@@ -1,6 +1,6 @@
 # On-Premise HPC Cluster
 
-You can install OpenCGA on a local HPC cluster.  Installing and configuring OpenCGA consists of different steps, as you will see on this page you must first make sure that the server\(s\) have all dependencies installed, then you can configure and complete the installation.
+You can install OpenCGA on a local HPC cluster. Installing and configuring OpenCGA consists of different steps, as you will see on this page you must first make sure that the server\(s\) have all dependencies installed, then you can configure and complete the installation.
 
 ## Installation and Configuration
 

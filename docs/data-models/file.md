@@ -43,32 +43,32 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **id**  _String_   | File ID is a mandatory parameter when creating a new File, this ID cannot be changed at the moment._Tags_: _required, immutable, unique_ |
-| **uuid**  _String_   | Global unique ID at the whole OpenCGA installation. This is automatically created during the File creation and cannot be changed._Tags_: _internal, unique, immutable_ |
-| **name**  _String_   |  |
-| **type** [_File.Type_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#enum-filetype)   | Formats: file, folder, index. |
-| **format** [_File.Format_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#enum-fileformat)   | Formats: txt, executable, image, ... |
-| **bioformat** [_File.Bioformat_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#enum-filebioformat)   | BAM, VCF, ... |
-| **checksum**  _String_   |  |
-| **uri**  _URI_   |  |
-| **path**  _String_   |  |
-| **release**  _int_   | An integer describing the current data release._Tags_: _internal_ |
-| **creationDate**  _String_   | String representing when the File was created, this is automatically set by OpenCGA._Tags_: _internal_ |
-| **modificationDate**  _String_   | String representing when was the last time the File was modified, this is automatically set by OpenCGA._Tags_: _internal_ |
-| **description**  _String_   | An string to describe the properties of the File. |
-| **external**  _boolean_   |  |
-| **size**  _long_   |  |
-| **software**  _Software_   |  |
-| **experiment** [_FileExperiment_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#FileExperiment)   |  |
-| **sampleIds**  List&lt;_String_&gt;   |  |
-| **jobId**  _String_   |  |
-| **tags**  List&lt;_String_&gt;   |  |
-| **relatedFiles**  List&lt;[_FileRelatedFile_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#FileRelatedFile)&gt;   |  |
-| **qualityControl** [_FileQualityControl_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#FileQualityControl)   |  |
-| **stats**  Map&lt;_Object_,_String_&gt;   |  |
-| **status** [_CustomStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#CustomStatus)   | An object describing the status of the File. |
-| **internal** [_FileInternal_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#FileInternal)   | An object describing the internal information of the File. This is managed by OpenCGA._Tags_: _internal_ |
-| **attributes**  Map&lt;_Object_,_String_&gt;   | You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes. |
+| **id**  _String_ | File ID is a mandatory parameter when creating a new File, this ID cannot be changed at the moment._Tags_: _required, immutable, unique_ |
+| **uuid**  _String_ | Global unique ID at the whole OpenCGA installation. This is automatically created during the File creation and cannot be changed._Tags_: _internal, unique, immutable_ |
+| **name**  _String_ |  |
+| **type** [_File.Type_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#enum-filetype) | Formats: file, folder, index. |
+| **format** [_File.Format_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#enum-fileformat) | Formats: txt, executable, image, ... |
+| **bioformat** [_File.Bioformat_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#enum-filebioformat) | BAM, VCF, ... |
+| **checksum**  _String_ |  |
+| **uri**  _URI_ |  |
+| **path**  _String_ |  |
+| **release**  _int_ | An integer describing the current data release._Tags_: _internal_ |
+| **creationDate**  _String_ | String representing when the File was created, this is automatically set by OpenCGA._Tags_: _internal_ |
+| **modificationDate**  _String_ | String representing when was the last time the File was modified, this is automatically set by OpenCGA._Tags_: _internal_ |
+| **description**  _String_ | An string to describe the properties of the File. |
+| **external**  _boolean_ |  |
+| **size**  _long_ |  |
+| **software**  _Software_ |  |
+| **experiment** [_FileExperiment_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#FileExperiment) |  |
+| **sampleIds**  List&lt;_String_&gt; |  |
+| **jobId**  _String_ |  |
+| **tags**  List&lt;_String_&gt; |  |
+| **relatedFiles**  List&lt;[_FileRelatedFile_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#FileRelatedFile)&gt; |  |
+| **qualityControl** [_FileQualityControl_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#FileQualityControl) |  |
+| **stats**  Map&lt;_Object_,_String_&gt; |  |
+| **status** [_CustomStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#CustomStatus) | An object describing the status of the File. |
+| **internal** [_FileInternal_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#FileInternal) | An object describing the internal information of the File. This is managed by OpenCGA._Tags_: _internal_ |
+| **attributes**  Map&lt;_Object_,_String_&gt; | You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes. |
 
 ### FileRelatedFile
 
@@ -76,8 +76,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **file** [_File_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#File)   |  |
-| **relation** [_FileRelatedFile.Relation_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#enum-filerelatedfilerelation)   |  |
+| **file** [_File_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#File) |  |
+| **relation** [_FileRelatedFile.Relation_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#enum-filerelatedfilerelation) |  |
 
 ### SampleInternal
 
@@ -85,8 +85,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#Status)   |  |
-| **rga** [_RgaIndex_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#RgaIndex)   |  |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#Status) |  |
+| **rga** [_RgaIndex_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#RgaIndex) |  |
 
 ### IndividualInternal
 
@@ -94,7 +94,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#Status)   |  |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#Status) |  |
 
 ### FamilyInternal
 
@@ -102,7 +102,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_FamilyStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#FamilyStatus)   |  |
+| **status** [_FamilyStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#FamilyStatus) |  |
 
 ### FileInternal
 
@@ -110,10 +110,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_FileStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#FileStatus)   |  |
-| **index** [_FileIndex_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#FileIndex)   |  |
-| **sampleMap**  Map&lt;_String_&gt;   |  |
-| **missingSamples** [_MissingSamples_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#MissingSamples)   |  |
+| **status** [_FileStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#FileStatus) |  |
+| **index** [_FileIndex_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#FileIndex) |  |
+| **sampleMap**  Map&lt;_String_&gt; |  |
+| **missingSamples** [_MissingSamples_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#MissingSamples) |  |
 
 ### JobInternal
 
@@ -121,9 +121,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_ExecutionStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#ExecutionStatus)   |  |
-| **webhook** [_JobInternalWebhook_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#JobInternalWebhook)   |  |
-| **events**  List&lt;_Event_&gt;   |  |
+| **status** [_ExecutionStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#ExecutionStatus) |  |
+| **webhook** [_JobInternalWebhook_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#JobInternalWebhook) |  |
+| **events**  List&lt;_Event_&gt; |  |
 
 ### InterpretationInternal
 
@@ -131,7 +131,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_InterpretationStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#InterpretationStatus)   |  |
+| **status** [_InterpretationStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#InterpretationStatus) |  |
 
 ### ProjectInternal
 
@@ -139,9 +139,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **datastores** [_Datastores_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#Datastores)   |  |
-| **cellbase** [_CellBaseConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#CellBaseConfiguration)   |  |
-| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#Status)   |  |
+| **datastores** [_Datastores_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#Datastores) |  |
+| **cellbase** [_CellBaseConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#CellBaseConfiguration) |  |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#Status) |  |
 
 ### CohortInternal
 
@@ -149,7 +149,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_CohortStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#CohortStatus)   |  |
+| **status** [_CohortStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#CohortStatus) |  |
 
 ### ClinicalAnalysisInternal
 
@@ -157,7 +157,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_ClinicalAnalysisStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#ClinicalAnalysisStatus)   |  |
+| **status** [_ClinicalAnalysisStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#ClinicalAnalysisStatus) |  |
 
 ### StudyInternal
 
@@ -165,6 +165,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#Status)   |  |
-| **configuration** [_StudyConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#StudyConfiguration)   |  |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#Status) |  |
+| **configuration** [_StudyConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/File.md#StudyConfiguration) |  |
 

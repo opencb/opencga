@@ -4,7 +4,7 @@ description: 'Java, Python, R and Javascript clients are implemented'
 
 # Client Libraries
 
-OpenCGA implements four client libraries: 
+OpenCGA implements four client libraries:
 
 * [Java](java.md)
 * [Python](python.md)

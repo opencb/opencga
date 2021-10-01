@@ -4,7 +4,7 @@ description: >-
   files into an OpenCGA Variant Store.
 ---
 
-# Load VCF Files to a Study
+# Loading of VCF files
 
 ## **Introduction**
 
@@ -30,8 +30,8 @@ This document assumes that:
 
 * The source VCF files are accessible \(e.g. via shared filesystem\) on the target OpenCGA server. 
 * The operator has access to a workstation with network access to the web services on the OpenCGA server.
-* Compatible OpenCGA client software is installed on the workstation. Find [here](ingestion-of-vcf-files.md) the instructions on how to install the client software.
-* The destination Study has been created on the OpenCGA server. Find [here](projects-and-studies.md) instructions for creating Projects and Studies. 
+* Compatible OpenCGA client software is installed on the workstation. Find [here](ingestion-of-vcf-files-1.md) the instructions on how to install the client software.
+* The destination Study has been created on the OpenCGA server. Find [here](projects-and-studies-1.md) instructions for creating Projects and Studies. 
 * The operator has login credentials on the OpenCGA server with appropriate permissions; i.e. write access to the destination Study. 
 
 ## **Catalog file register**
@@ -63,7 +63,7 @@ There are two different commands depending on the type of VCF that needs to be l
 #### **Linking files synchronously \(~less than 5000 samples\)**
 
 {% hint style="warning" %}
-Note that for files with more than 5000 samples linking is an asynchronous job 
+Note that for files with more than 5000 samples linking is an asynchronous job
 {% endhint %}
 
 Files are registered into OpenCGA Catalog using this command line:

@@ -5,7 +5,7 @@ In this section, you can find only the main top-level features planned for major
 ## OpenCGA 2.x Releases
 
 {% hint style="info" %}
-From OpenCGA version 2.0.0 we follow **time-based releases**, two minor releases a year will be scheduled in April and October. 
+From OpenCGA version 2.0.0 we follow **time-based releases**, two minor releases a year will be scheduled in April and October.
 {% endhint %}
 
 ### 2.1.0 \(Apr 2021\)
@@ -14,7 +14,7 @@ You can track GitHub issues at [GitHub Issues 2.1.0](https://github.com/opencb/o
 
 #### General
 
-* Implement a **Centralised Log** analytic solution, we are planning to use Kibana ****
+* Implement a **Centralised Log** analytic solution, we are planning to use Kibana _\*\*_
 
 #### Catalog
 
@@ -30,11 +30,7 @@ You can track GitHub issues at [GitHub Issues 2.1.0](https://github.com/opencb/o
 
 #### Clinical
 
-
-
 #### Analysis Framework
-
-
 
 #### Others
 

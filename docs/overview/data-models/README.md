@@ -8,8 +8,6 @@ All OpenCGA Data Models have been designed to follow some principles:
 2. Chid-Parent reference
 3. Annotation Sets
 
-
-
 ## Implementation
 
 ### Diagram
@@ -95,15 +93,9 @@ Describe a phenotype following an OBO ontology.
 
 ### Creation and Modification Date
 
-
-
 ### Status
-
-
 
 ### File ID
 
 File IDs contain the path using `:`
-
-
 

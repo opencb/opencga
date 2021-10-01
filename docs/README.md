@@ -6,9 +6,9 @@ description: Welcome to the official page for OpenCGA documentation.
 
 OpenCGA is the most advanced big data genomic analysis platform. It is implemented as an open-source project that implements a high-performance, scalable and secure platform for Genomic data analysis and visualisation.
 
-OpenCGA provides the most advanced and complete genomic data platform. The performance, scalability and huge number features makes of OpenCGA an unique full-stack solution today. OpenCGA takes care of security and implements a high-performance query engine and analysis frameworks for _Big Data_ analysis and visualisation in current genomics. OpenCGA uses the most modern and advanced technologies, and has been designed and implemented to scale to hundreds of thousands if genomes accounting for petabytes of variant data. It is built on top of three main components: _Catalog Metadata Database_, _Variant Storage Engine_ and _Analysis Framework_. 
+OpenCGA provides the most advanced and complete genomic data platform. The performance, scalability and huge number features makes of OpenCGA an unique full-stack solution today. OpenCGA takes care of security and implements a high-performance query engine and analysis frameworks for _Big Data_ analysis and visualisation in current genomics. OpenCGA uses the most modern and advanced technologies, and has been designed and implemented to scale to hundreds of thousands if genomes accounting for petabytes of variant data. It is built on top of three main components: _Catalog Metadata Database_, _Variant Storage Engine_ and _Analysis Framework_.
 
-### Main Features
+## Main Features
 
 * **Authenticated** and **secure** platform to query and visualise data. An advanced **permission** system has been implemented to ensure data privacy.
 * A **metadata database** to keep track of registered users, projects, studies, files, samples, families, jobs and other entities.
@@ -23,16 +23,12 @@ OpenCGA provides the most advanced and complete genomic data platform. The perfo
 * Interactive **web-based application** to query, analyse and visualise variants, alignments and clinical data
 
 {% hint style="info" %}
-**Zetta Genomics** is a start-up  launched in 2019 to offer official support and customisation of your OpenCB applications. 
+**Zetta Genomics** is a start-up launched in 2019 to offer official support and customisation of your OpenCB applications.
 
 Zetta offers advanced data management systems for precision medicine based on the OpenCB applications. Find more information about this consolidated and demanding initiative at [https://zettagenomics.com/](https://zettagenomics.com/)
 {% endhint %}
 
-
-
 \*\*\*\*
 
 \*\*\*\*
-
-
 
