@@ -173,10 +173,20 @@
 {"collection": "panel", "fields": {"uuid": 1, "version": 1}, "options": {"unique": true, "background": true}}
 {"collection": "panel", "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}
 {"collection": "panel", "fields": {"id": 1, "studyUid": 1, "version": 1}, "options": {"unique": true, "background": true}}
+{"collection": "panel", "fields": {"name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "panel", "fields": {"tags": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"disorders.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"disorders.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"variants.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"genes.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"regions.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"categories.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "panel", "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "panel", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "panel", "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1, "_acl": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
 
 {"collection": "clinical", "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "clinical", "fields": {"uid": 1}, "options": {"unique": true, "background": true}}

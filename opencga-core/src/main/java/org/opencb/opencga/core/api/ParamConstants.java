@@ -435,6 +435,40 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
+    public static final String PANEL_ID_PARAM = ID;
+    public static final String PANEL_UUID_PARAM = "uuid";
+    public static final String PANEL_NAME_PARAM = "name";
+    public static final String PANEL_DISORDERS_PARAM = DISORDERS_PARAM;
+    public static final String PANEL_VARIANTS_PARAM = "variants";
+    public static final String PANEL_GENES_PARAM = "genes";
+    public static final String PANEL_REGIONS_PARAM = "regions";
+    public static final String PANEL_CATEGORIES_PARAM = "categories";
+    public static final String PANEL_TAGS_PARAM = "tags";
+    public static final String PANEL_DELETED_PARAM = DELETED_PARAM;
+    public static final String PANEL_STATUS_PARAM = STATUS_PARAM;
+    public static final String PANEL_CREATION_DATE_PARAM = CREATION_DATE_PARAM;
+    public static final String PANEL_MODIFICATION_DATE_PARAM = MODIFICATION_DATE_PARAM;
+    public static final String PANEL_ACL_PARAM = ACL_PARAM;
+    public static final String PANEL_RELEASE_PARAM = RELEASE_PARAM;
+    public static final String PANEL_SNAPSHOT_PARAM = SNAPSHOT_PARAM;
+
+    public static final String PANEL_ID_DESCRIPTION = "Comma separated list of panel IDs " + UP_TO_100;
+    public static final String PANEL_UUID_DESCRIPTION = "Comma separated list of panel UUIDs " + UP_TO_100;
+    public static final String PANEL_NAME_DESCRIPTION = "Comma separated list of panel names " + UP_TO_100;
+    public static final String PANEL_DISORDERS_DESCRIPTION = DISORDERS_DESCRIPTION;
+    public static final String PANEL_VARIANTS_DESCRIPTION = "Comma separated list of variant ids";
+    public static final String PANEL_GENES_DESCRIPTION = "Comma separated list of gene ids";
+    public static final String PANEL_REGIONS_DESCRIPTION = "Comma separated list of regions";
+    public static final String PANEL_CATEGORIES_DESCRIPTION = "Comma separated list of category names";
+    public static final String PANEL_TAGS_DESCRIPTION = "Panel tags";
+    public static final String PANEL_DELETED_DESCRIPTION = DELETED_DESCRIPTION;
+    public static final String PANEL_STATUS_DESCRIPTION = STATUS_DESCRIPTION;
+    public static final String PANEL_CREATION_DATE_DESCRIPTION = CREATION_DATE_DESCRIPTION;
+    public static final String PANEL_MODIFICATION_DATE_DESCRIPTION = MODIFICATION_DATE_DESCRIPTION;
+    public static final String PANEL_ACL_DESCRIPTION = ACL_DESCRIPTION;
+    public static final String PANEL_RELEASE_DESCRIPTION = RELEASE_DESCRIPTION;
+    public static final String PANEL_SNAPSHOT_DESCRIPTION = SNAPSHOT_DESCRIPTION;
+
     public static final String PANEL_SOURCE = "source";
     public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
             + "sources are 'panelapp' and 'cancer-gene-census'";
