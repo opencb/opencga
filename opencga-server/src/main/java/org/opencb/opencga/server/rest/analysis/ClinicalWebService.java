@@ -614,17 +614,28 @@ public class ClinicalWebService extends AnalysisWebService {
     })
     public Response interpretationSearch(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Interpretation ID") @QueryParam("id") String id,
-            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-            @ApiParam(value = "Clinical analyst ID") @QueryParam("analyst") String clinicalAnalyst,
-            @ApiParam(value = "Interpretation method name") @QueryParam("methods") String methods,
-            @ApiParam(value = "Primary finding IDs") @QueryParam("primaryFindings") String primaryFindings,
-            @ApiParam(value = "Secondary finding IDs") @QueryParam("secondaryFindings") String secondaryFindings,
-            @ApiParam(value = "Interpretation status") @QueryParam("status") String status,
-            @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "Modification date") @QueryParam("modificationDate") String modificationDate) {
+            @ApiParam(value = ParamConstants.INTERPRETATION_ID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.INTERPRETATION_UUID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.INTERPRETATION_CLINICAL_ANALYSIS_ID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_CLINICAL_ANALYSIS_ID_PARAM) String clinicalAnalysisId,
+            @ApiParam(value = ParamConstants.INTERPRETATION_ANALYST_ID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_ANALYST_ID_PARAM) String analystId,
+            @ApiParam(value = ParamConstants.INTERPRETATION_METHODS_NAME_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_METHODS_NAME_PARAM) String methodsName,
+            @ApiParam(value = ParamConstants.INTERPRETATION_PANELS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_PANELS_PARAM) String panels,
+            @ApiParam(value = ParamConstants.INTERPRETATION_PRIMARY_FINDINGS_IDS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_PRIMARY_FINDINGS_IDS_PARAM) String primaryFindings,
+            @ApiParam(value = ParamConstants.INTERPRETATION_SECONDARY_FINDINGS_IDS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_SECONDARY_FINDINGS_IDS_PARAM) String secondaryFindings,
+            @ApiParam(value = ParamConstants.INTERPRETATION_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.INTERPRETATION_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.INTERPRETATION_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.INTERPRETATION_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.INTERPRETATION_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_RELEASE_PARAM) String release,
+            // The following variables were hid on version 2.1.0
+            @ApiParam(value = "Clinical analyst ID", hidden = true) @QueryParam("analyst") String clinicalAnalyst,
+            @ApiParam(value = "Interpretation method name", hidden = true) @QueryParam("methods") String methods) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
+            query.putIfNotEmpty(ParamConstants.INTERPRETATION_ANALYST_ID_PARAM, clinicalAnalyst);
+            query.putIfNotEmpty(ParamConstants.INTERPRETATION_METHODS_NAME_PARAM, clinicalAnalyst);
+            query.remove("analyst");
+            query.remove("methods");
             return createOkResponse(catalogInterpretationManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -636,19 +647,32 @@ public class ClinicalWebService extends AnalysisWebService {
     @ApiOperation(value = "Interpretation distinct method")
     public Response interpretationDistinct(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Interpretation ID") @QueryParam("id") String id,
-            @ApiParam(value = "Clinical Analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-            @ApiParam(value = "Clinical analyst ID") @QueryParam("analyst") String clinicalAnalyst,
-            @ApiParam(value = "Interpretation method name") @QueryParam("methods") String methods,
-            @ApiParam(value = "Primary finding IDs") @QueryParam("primaryFindings") String primaryFindings,
-            @ApiParam(value = "Secondary finding IDs") @QueryParam("secondaryFindings") String secondaryFindings,
-            @ApiParam(value = "Interpretation status") @QueryParam("status") String status,
-            @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "Modification date") @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = ParamConstants.INTERPRETATION_ID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.INTERPRETATION_UUID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.INTERPRETATION_CLINICAL_ANALYSIS_ID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_CLINICAL_ANALYSIS_ID_PARAM) String clinicalAnalysisId,
+            @ApiParam(value = ParamConstants.INTERPRETATION_ANALYST_ID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_ANALYST_ID_PARAM) String analystId,
+            @ApiParam(value = ParamConstants.INTERPRETATION_METHODS_NAME_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_METHODS_NAME_PARAM) String methodsName,
+            @ApiParam(value = ParamConstants.INTERPRETATION_PANELS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_PANELS_PARAM) String panels,
+            @ApiParam(value = ParamConstants.INTERPRETATION_PRIMARY_FINDINGS_IDS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_PRIMARY_FINDINGS_IDS_PARAM) String primaryFindings,
+            @ApiParam(value = ParamConstants.INTERPRETATION_SECONDARY_FINDINGS_IDS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_SECONDARY_FINDINGS_IDS_PARAM) String secondaryFindings,
+            @ApiParam(value = ParamConstants.INTERPRETATION_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.INTERPRETATION_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.INTERPRETATION_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.INTERPRETATION_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.INTERPRETATION_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_RELEASE_PARAM) String release,
+            // The following variables were hid on version 2.1.0
+            @ApiParam(value = "Clinical analyst ID", hidden = true) @QueryParam("analyst") String clinicalAnalyst,
+            @ApiParam(value = "Interpretation method name", hidden = true) @QueryParam("methods") String methods,
             @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
+
+            query.putIfNotEmpty(ParamConstants.INTERPRETATION_ANALYST_ID_PARAM, clinicalAnalyst);
+            query.putIfNotEmpty(ParamConstants.INTERPRETATION_METHODS_NAME_PARAM, clinicalAnalyst);
+            query.remove("analyst");
+            query.remove("methods");
+
             return createOkResponse(catalogInterpretationManager.distinct(studyStr, field, query, token));
         } catch (Exception e) {
             return createErrorResponse(e);

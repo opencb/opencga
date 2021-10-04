@@ -479,6 +479,36 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
+    public static final String INTERPRETATION_ID_PARAM = "id";
+    public static final String INTERPRETATION_UUID_PARAM = "uuid";
+    public static final String INTERPRETATION_CLINICAL_ANALYSIS_ID_PARAM = "clinicalAnalysisId";
+    public static final String INTERPRETATION_ANALYST_ID_PARAM = "analystId";
+    public static final String INTERPRETATION_METHODS_NAME_PARAM = "methodsName";
+    public static final String INTERPRETATION_PANELS_PARAM = "panels";
+    public static final String INTERPRETATION_PRIMARY_FINDINGS_IDS_PARAM = "primaryFindings";
+    public static final String INTERPRETATION_SECONDARY_FINDINGS_IDS_PARAM = "secondaryFindings";
+    public static final String INTERPRETATION_CREATION_DATE_PARAM = CREATION_DATE_PARAM;
+    public static final String INTERPRETATION_MODIFICATION_DATE_PARAM = MODIFICATION_DATE_PARAM;
+    public static final String INTERPRETATION_STATUS_PARAM = STATUS_PARAM;
+    public static final String INTERPRETATION_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
+    //    public static final String INTERPRETATION_VERSION_PARAM = "version";
+    public static final String INTERPRETATION_RELEASE_PARAM = RELEASE_PARAM;
+
+    public static final String INTERPRETATION_ID_DESCRIPTION = "Comma separated list of Interpretation IDs" + UP_TO_100;
+    public static final String INTERPRETATION_UUID_DESCRIPTION = "Comma separated list of Interpretation UUIDs" + UP_TO_100;
+    public static final String INTERPRETATION_CLINICAL_ANALYSIS_ID_DESCRIPTION = "Clinical Analysis id";
+    public static final String INTERPRETATION_ANALYST_ID_DESCRIPTION = "Analyst ID";
+    public static final String INTERPRETATION_METHODS_NAME_DESCRIPTION = "Interpretation method name";
+    public static final String INTERPRETATION_PANELS_DESCRIPTION = "Interpretation panels";
+    public static final String INTERPRETATION_PRIMARY_FINDINGS_IDS_DESCRIPTION = "Interpretation primary findings";
+    public static final String INTERPRETATION_SECONDARY_FINDINGS_IDS_DESCRIPTION = "Interpretation secondary findings";
+    public static final String INTERPRETATION_CREATION_DATE_DESCRIPTION = "Interpretation " + CREATION_DATE_DESCRIPTION;
+    public static final String INTERPRETATION_MODIFICATION_DATE_DESCRIPTION = "Interpretation " + MODIFICATION_DATE_DESCRIPTION;
+    public static final String INTERPRETATION_STATUS_DESCRIPTION = STATUS_DESCRIPTION;
+    public static final String INTERPRETATION_INTERNAL_STATUS_DESCRIPTION = INTERNAL_STATUS_DESCRIPTION;
+    //    public static final String INTERPRETATION_VERSION_DESCRIPTION = VERSION_DESCRIPTION;
+    public static final String INTERPRETATION_RELEASE_DESCRIPTION = RELEASE_DESCRIPTION;
+
     public static final String INTERPRETATION_DESCRIPTION = "Comma separated list of clinical interpretation IDs " + UP_TO_100;
 
     // ---------------------------------------------

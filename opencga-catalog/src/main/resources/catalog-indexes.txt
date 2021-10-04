@@ -216,16 +216,20 @@
 {"collection": "interpretation", "fields": {"uuid": 1, "version": 1}, "options": {"unique": true, "background": true}}
 {"collection": "interpretation", "fields": {"uid": 1, "version": 1}, "options": {"unique": true, "background": true}}
 {"collection": "interpretation", "fields": {"id": 1, "version": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
-{"collection": "interpretation", "fields": {"analyst.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "interpretation", "fields": {"method.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"clinicalAnalysisId": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"analyst.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"method.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"panels.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"status.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"primaryFindings.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"secondaryFindings.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"status.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"studyUid": 1, "_lastOfVersion": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"studyUid": 1, "release": 1}, "options": {"background": true}}
 
 {"collection": "audit", "fields": {"studyUuid": 1}, "options": {"background": true}}
 {"collection": "audit", "fields": {"userId": 1, "studyUuid": 1}, "options": {"background": true}}
