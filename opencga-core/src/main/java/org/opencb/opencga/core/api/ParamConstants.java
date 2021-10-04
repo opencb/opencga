@@ -423,6 +423,54 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
+    public static final String CLINICAL_ID_PARAM = "id";
+    public static final String CLINICAL_UUID_PARAM = "uuid";
+    public static final String CLINICAL_TYPE_PARAM = "type";
+    public static final String CLINICAL_DISORDER_PARAM = "disorder";
+    public static final String CLINICAL_FILES_PARAM = "files";
+    public static final String CLINICAL_SAMPLE_PARAM = "sample";
+    public static final String CLINICAL_INDIVIDUAL_PARAM = "individual";
+    public static final String CLINICAL_PROBAND_PARAM = "proband";
+    public static final String CLINICAL_PROBAND_SAMPLES_PARAM = "probandSamples";
+    public static final String CLINICAL_FAMILY_PARAM = "family";
+    public static final String CLINICAL_FAMILY_MEMBERS_PARAM = "familyMembers";
+    public static final String CLINICAL_FAMILY_MEMBERS_SAMPLES_PARAM = "familyMemberSamples";
+    public static final String CLINICAL_PANELS_PARAM = "panels";
+    public static final String CLINICAL_LOCKED_PARAM = "locked";
+    public static final String CLINICAL_ANALYST_ID_PARAM = "analystId";
+    public static final String CLINICAL_PRIORITY_PARAM = "priority";
+    public static final String CLINICAL_FLAGS_PARAM = "flags";
+    public static final String CLINICAL_CREATION_DATE_PARAM = CREATION_DATE_PARAM;
+    public static final String CLINICAL_MODIFICATION_DATE_PARAM = MODIFICATION_DATE_PARAM;
+    public static final String CLINICAL_QUALITY_CONTROL_SUMMARY_PARAM = "qualityControlSummary";
+    public static final String CLINICAL_RELEASE_PARAM = RELEASE_PARAM;
+    public static final String CLINICAL_STATUS_PARAM = STATUS_PARAM;
+    public static final String CLINICAL_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
+
+    public static final String CLINICAL_ID_DESCRIPTION = "Comma separated list of Clinical Analysis IDs" + UP_TO_100;
+    public static final String CLINICAL_UUID_DESCRIPTION = "Comma separated list of Clinical Analysis UUIDs" + UP_TO_100;
+    public static final String CLINICAL_TYPE_DESCRIPTION = "Clinical Analysis type";
+    public static final String CLINICAL_DISORDER_DESCRIPTION = "Clinical Analysis disorder";
+    public static final String CLINICAL_FILES_DESCRIPTION = "Clinical Analysis files";
+    public static final String CLINICAL_SAMPLE_DESCRIPTION = "Sample associated to the proband or any member of a family";
+    public static final String CLINICAL_INDIVIDUAL_DESCRIPTION = "Proband or any member of a family";
+    public static final String CLINICAL_PROBAND_DESCRIPTION = "Clinical Analysis proband";
+    public static final String CLINICAL_PROBAND_SAMPLES_DESCRIPTION = "Clinical Analysis proband samples";
+    public static final String CLINICAL_FAMILY_DESCRIPTION = "Clinical Analysis family";
+    public static final String CLINICAL_FAMILY_MEMBERS_DESCRIPTION = "Clinical Analysis family members";
+    public static final String CLINICAL_FAMILY_MEMBERS_SAMPLES_DESCRIPTION = "Clinical Analysis family members samples";
+    public static final String CLINICAL_PANELS_DESCRIPTION = "Clinical Analysis panels";
+    public static final String CLINICAL_LOCKED_DESCRIPTION = "Locked Clinical Analyses";
+    public static final String CLINICAL_ANALYST_ID_DESCRIPTION = "Clinical Analysis analyst id";
+    public static final String CLINICAL_PRIORITY_DESCRIPTION = "Clinical Analysis priority";
+    public static final String CLINICAL_FLAGS_DESCRIPTION = "Clinical Analysis flags";
+    public static final String CLINICAL_CREATION_DATE_DESCRIPTION = "Clinical Analysis " + CREATION_DATE_DESCRIPTION;
+    public static final String CLINICAL_MODIFICATION_DATE_DESCRIPTION = "Clinical Analysis " + MODIFICATION_DATE_DESCRIPTION;
+    public static final String CLINICAL_QUALITY_CONTROL_SUMMARY_DESCRIPTION = "Clinical Analysis quality control summary";
+    public static final String CLINICAL_RELEASE_DESCRIPTION = RELEASE_DESCRIPTION;
+    public static final String CLINICAL_STATUS_DESCRIPTION = STATUS_DESCRIPTION;
+    public static final String CLINICAL_INTERNAL_STATUS_DESCRIPTION = INTERNAL_STATUS_DESCRIPTION;
+
     public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of clinical analysis IDs or names" + UP_TO_100;
     public static final String CLINICAL_ANALYSES_PARAM = "clinicalAnalyses";
     public static final String CLINICAL_ANALYSIS_CREATE_DEFAULT_PARAM = "createDefaultInterpretation";

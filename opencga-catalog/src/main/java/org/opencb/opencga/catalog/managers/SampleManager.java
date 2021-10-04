@@ -109,27 +109,18 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw new CatalogException("Only one sample allowed when requesting multiple versions");
         }
 
-        Function<Sample, String> sampleStringFunction = Sample::getId;
-        SampleDBAdaptor.QueryParams idQueryParam = null;
-        for (String entry : uniqueList) {
-            SampleDBAdaptor.QueryParams param = SampleDBAdaptor.QueryParams.ID;
-            if (UuidUtils.isOpenCgaUuid(entry)) {
-                param = SampleDBAdaptor.QueryParams.UUID;
-                sampleStringFunction = Sample::getUuid;
-            }
-            if (idQueryParam == null) {
-                idQueryParam = param;
-            }
-            if (idQueryParam != param) {
-                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
-            }
-        }
+        SampleDBAdaptor.QueryParams idQueryParam = getFieldFilter(uniqueList);
         queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
         OpenCGAResult<Sample> sampleDataResult = sampleDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+
+        Function<Sample, String> sampleStringFunction = Sample::getId;
+        if (idQueryParam.equals(SampleDBAdaptor.QueryParams.UUID)) {
+            sampleStringFunction = Sample::getUuid;
+        }
 
         if (ignoreException || sampleDataResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, sampleStringFunction, sampleDataResult, ignoreException, versioned);
@@ -142,6 +133,23 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         } else {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the samples.");
         }
+    }
+
+    SampleDBAdaptor.QueryParams getFieldFilter(List<String> idList) throws CatalogException {
+        SampleDBAdaptor.QueryParams idQueryParam = null;
+        for (String entry : idList) {
+            SampleDBAdaptor.QueryParams param = SampleDBAdaptor.QueryParams.ID;
+            if (UuidUtils.isOpenCgaUuid(entry)) {
+                param = SampleDBAdaptor.QueryParams.UUID;
+            }
+            if (idQueryParam == null) {
+                idQueryParam = param;
+            }
+            if (idQueryParam != param) {
+                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
+            }
+        }
+        return idQueryParam;
     }
 
     private OpenCGAResult<Sample> getSample(long studyUid, String sampleUuid, QueryOptions options) throws CatalogException {
@@ -929,11 +937,11 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     /**
      * Update Sample from catalog.
      *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param sampleIds  List of Sample ids. Could be either the id or uuid.
+     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sampleIds    List of Sample ids. Could be either the id or uuid.
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
+     * @param token        Session id of the user logged in.
      * @return A OpenCGAResult with the objects updated.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
@@ -1123,7 +1131,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> sampleList, String member, boolean ignoreException,
-                                                         String token) throws CatalogException {
+                                                            String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1464,7 +1472,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 // Remove prefix stats
                 String field = statsKey.replace("stats", "");
                 // Convert it to cammel case again
-                field =  Character.toLowerCase(field.charAt(0)) + field.substring(1);
+                field = Character.toLowerCase(field.charAt(0)) + field.substring(1);
 
                 annotationList.add(variableSetId + "__" + id + "@" + variableSetId + ":" + field + value);
             }
@@ -1477,7 +1485,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 // Remove prefix stats
                 String field = statsKey.replace("stats", "");
                 // Convert it to cammel case again
-                field =  Character.toLowerCase(field.charAt(0)) + field.substring(1);
+                field = Character.toLowerCase(field.charAt(0)) + field.substring(1);
                 annotationList.add(variableSetId + "__" + id + "@" + variableSetId + ":" + field + "." + value);
             }
         }

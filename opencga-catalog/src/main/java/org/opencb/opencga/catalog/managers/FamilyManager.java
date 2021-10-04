@@ -122,27 +122,18 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             throw new CatalogException("Only one family allowed when requesting multiple versions");
         }
 
-        Function<Family, String> familyStringFunction = Family::getId;
-        FamilyDBAdaptor.QueryParams idQueryParam = null;
-        for (String entry : uniqueList) {
-            FamilyDBAdaptor.QueryParams param = FamilyDBAdaptor.QueryParams.ID;
-            if (UuidUtils.isOpenCgaUuid(entry)) {
-                param = FamilyDBAdaptor.QueryParams.UUID;
-                familyStringFunction = Family::getUuid;
-            }
-            if (idQueryParam == null) {
-                idQueryParam = param;
-            }
-            if (idQueryParam != param) {
-                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
-            }
-        }
+        FamilyDBAdaptor.QueryParams idQueryParam = getFieldFilter(uniqueList);
         queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
         OpenCGAResult<Family> familyDataResult = familyDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+
+        Function<Family, String> familyStringFunction = Family::getId;
+        if (idQueryParam.equals(FamilyDBAdaptor.QueryParams.UUID)) {
+            familyStringFunction = Family::getUuid;
+        }
 
         if (ignoreException || familyDataResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, familyStringFunction, familyDataResult, ignoreException, versioned);
@@ -156,6 +147,23 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         } else {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the families.");
         }
+    }
+
+    FamilyDBAdaptor.QueryParams getFieldFilter(List<String> idList) throws CatalogException {
+        FamilyDBAdaptor.QueryParams idQueryParam = null;
+        for (String entry : idList) {
+            FamilyDBAdaptor.QueryParams param = FamilyDBAdaptor.QueryParams.ID;
+            if (UuidUtils.isOpenCgaUuid(entry)) {
+                param = FamilyDBAdaptor.QueryParams.UUID;
+            }
+            if (idQueryParam == null) {
+                idQueryParam = param;
+            }
+            if (idQueryParam != param) {
+                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
+            }
+        }
+        return idQueryParam;
     }
 
     private OpenCGAResult<Family> getFamily(long studyUid, String familyUuid, QueryOptions options) throws CatalogException {
@@ -800,11 +808,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
     /**
      * Update families from catalog.
      *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param familyIds  List of family ids. Could be either the id or uuid.
+     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param familyIds    List of family ids. Could be either the id or uuid.
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
+     * @param token        Session id of the user logged in.
      * @return A OpenCGAResult.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
@@ -1169,7 +1177,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             if (StringUtils.isNotEmpty(individualStr)) {
                 familyList = catalogManager.getFamilyManager().search(studyId,
-                        new Query(FamilyDBAdaptor.QueryParams.MEMBERS.key(), individualStr), FamilyManager.INCLUDE_FAMILY_MEMBERS, token)
+                                new Query(FamilyDBAdaptor.QueryParams.MEMBERS.key(), individualStr), FamilyManager.INCLUDE_FAMILY_MEMBERS,
+                                token)
                         .getResults();
             } else if (StringUtils.isNotEmpty(aclParams.getFamily())) {
                 familyList = catalogManager.getFamilyManager().get(studyId, Arrays.asList(aclParams.getFamily().split(",")),
@@ -1344,10 +1353,10 @@ public class FamilyManager extends AnnotationSetManager<Family> {
      * It also makes sure the members provided inside the family object are valid and can be successfully created.
      * It merges all those members inside the family object afterwards.
      *
-     * @param study     study.
-     * @param family    family object.
-     * @param members   Already existing members.
-     * @param userId    user id.
+     * @param study   study.
+     * @param family  family object.
+     * @param members Already existing members.
+     * @param userId  user id.
      * @throws CatalogException if there is any kind of error.
      */
     private void autoCompleteFamilyMembers(Study study, Family family, List<String> members, String userId) throws CatalogException {

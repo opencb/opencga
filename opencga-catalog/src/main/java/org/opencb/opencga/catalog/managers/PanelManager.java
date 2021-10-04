@@ -107,27 +107,19 @@ public class PanelManager extends ResourceManager<Panel> {
             throw new CatalogException("Only one panel allowed when requesting multiple versions");
         }
 
-        Function<Panel, String> panelStringFunction = Panel::getId;
-        PanelDBAdaptor.QueryParams idQueryParam = null;
-        for (String entry : uniqueList) {
-            PanelDBAdaptor.QueryParams param = PanelDBAdaptor.QueryParams.ID;
-            if (UuidUtils.isOpenCgaUuid(entry)) {
-                param = PanelDBAdaptor.QueryParams.UUID;
-                panelStringFunction = Panel::getUuid;
-            }
-            if (idQueryParam == null) {
-                idQueryParam = param;
-            }
-            if (idQueryParam != param) {
-                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
-            }
-        }
+        PanelDBAdaptor.QueryParams idQueryParam = getFieldFilter(uniqueList);
         queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
         OpenCGAResult<Panel> panelDataResult = panelDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+
+        Function<Panel, String> panelStringFunction = Panel::getId;
+        if (idQueryParam.equals(PanelDBAdaptor.QueryParams.UUID)) {
+            panelStringFunction = Panel::getUuid;
+        }
+
         if (ignoreException || panelDataResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, panelStringFunction, panelDataResult, ignoreException, versioned);
         }
@@ -139,6 +131,23 @@ public class PanelManager extends ResourceManager<Panel> {
         } else {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the panels.");
         }
+    }
+
+    PanelDBAdaptor.QueryParams getFieldFilter(List<String> idList) throws CatalogException {
+        PanelDBAdaptor.QueryParams idQueryParam = null;
+        for (String entry : idList) {
+            PanelDBAdaptor.QueryParams param = PanelDBAdaptor.QueryParams.ID;
+            if (UuidUtils.isOpenCgaUuid(entry)) {
+                param = PanelDBAdaptor.QueryParams.UUID;
+            }
+            if (idQueryParam == null) {
+                idQueryParam = param;
+            }
+            if (idQueryParam != param) {
+                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
+            }
+        }
+        return idQueryParam;
     }
 
     private OpenCGAResult<Panel> getPanel(long studyUid, String panelUuid, QueryOptions options) throws CatalogException {
