@@ -38,7 +38,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 22/06/15.
@@ -136,56 +139,33 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     dataType = "boolean", paramType = "query")
     })
     public Response searchIndividuals(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
-                    + "alias") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "DEPRECATED: id", hidden = true) @QueryParam("id") String id,
-            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-            @ApiParam(value = "father", required = false) @QueryParam("father") String father,
-            @ApiParam(value = "mother", required = false) @QueryParam("mother") String mother,
-            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("samples") String samples,
-            @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
-            @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-            @ApiParam(value = "Comma separated list of disorder ids or names") @QueryParam("disorders") String disorders,
-            @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
-            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
-            @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
-            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") String karyotypicSex,
-            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") String lifeStatus,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INDIVIDUALS_ID_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_UUID_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_NAME_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_FATHER_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_FATHER_PARAM) String father,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_MOTHER_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_MOTHER_PARAM) String mother,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_SAMPLES_PARAM) String samples,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_SEX_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_SEX_PARAM) String sex,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_DATE_OF_BIRTH_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_DATE_OF_BIRTH_PARAM) String dateOfBirth,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_ETHNICITY_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_ETHNICITY_PARAM) String ethnicity,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_DISORDERS_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_DISORDERS_PARAM) String disorders,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_PHENOTYPES_PARAM) String phenotypes,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_POPULATION_NAME_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_POPULATION_NAME_PARAM) String populationName,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_POPULATION_SUBPOPULATION_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_POPULATION_SUBPOPULATION_PARAM) String populationSubpopulation,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_KARYOTYPIC_SEX_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_KARYOTYPIC_SEX_PARAM) String karyotypicSex,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_LIFE_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_LIFE_STATUS_PARAM) String lifeStatus,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
-            @ApiParam(value = "Boolean to retrieve deleted individuals", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
-            @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
-            @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
-            @QueryParam("annotationsetName") String annotationsetName,
-            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
-            @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION, required = false) @QueryParam("annotation") String annotation,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INDIVIDUAL_DELETED_PARAM) boolean deleted,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = "Release value (Current release from the moment the individuals were first created)")
-            @QueryParam("release") String release,
-            @ApiParam(value = "Snapshot value (Latest version of individuals in the specified release)") @QueryParam("snapshot")
-                    int snapshot) {
+            @ApiParam(value = ParamConstants.INDIVIDUAL_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_SNAPSHOT_PARAM) int snapshot) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-
-            List<String> annotationList = new ArrayList<>();
-            if (StringUtils.isNotEmpty(annotation)) {
-                annotationList.add(annotation);
-            }
-            if (StringUtils.isNotEmpty(variableSet)) {
-                annotationList.add(Constants.VARIABLE_SET + "=" + variableSet);
-            }
-            if (StringUtils.isNotEmpty(annotationsetName)) {
-                annotationList.add(Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
-            }
-            if (!annotationList.isEmpty()) {
-                query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
-            }
-
             return createOkResponse(individualManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -196,37 +176,31 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/distinct")
     @ApiOperation(value = "Individual distinct method")
     public Response distinct(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
-                    + "alias") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "DEPRECATED: id", hidden = true) @QueryParam("id") String id,
-            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-            @ApiParam(value = "father", required = false) @QueryParam("father") String father,
-            @ApiParam(value = "mother", required = false) @QueryParam("mother") String mother,
-            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("samples") String samples,
-            @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
-            @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-            @ApiParam(value = "Comma separated list of disorder ids or names") @QueryParam("disorders") String disorders,
-            @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
-            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
-            @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
-            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") String karyotypicSex,
-            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") String lifeStatus,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INDIVIDUALS_ID_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_UUID_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_NAME_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_FATHER_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_FATHER_PARAM) String father,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_MOTHER_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_MOTHER_PARAM) String mother,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_SAMPLES_PARAM) String samples,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_SEX_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_SEX_PARAM) String sex,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_ETHNICITY_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_ETHNICITY_PARAM) String ethnicity,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_DATE_OF_BIRTH_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_DATE_OF_BIRTH_PARAM) String dateOfBirth,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_DISORDERS_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_DISORDERS_PARAM) String disorders,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_PHENOTYPES_PARAM) String phenotypes,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_POPULATION_NAME_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_POPULATION_NAME_PARAM) String populationName,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_POPULATION_SUBPOPULATION_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_POPULATION_SUBPOPULATION_PARAM) String populationSubpopulation,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_KARYOTYPIC_SEX_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_KARYOTYPIC_SEX_PARAM) String karyotypicSex,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_LIFE_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_LIFE_STATUS_PARAM) String lifeStatus,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
-            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
-            @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
-            @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
-            @QueryParam("annotationsetName") String annotationsetName,
-            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
-            @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION, required = false) @QueryParam("annotation") String annotation,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INDIVIDUAL_DELETED_PARAM) boolean deleted,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = "Release value (Current release from the moment the individuals were first created)")
-            @QueryParam("release") String release,
-            @ApiParam(value = "Snapshot value (Latest version of individuals in the specified release)") @QueryParam("snapshot") int snapshot,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_SNAPSHOT_PARAM) int snapshot,
             @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
@@ -248,20 +222,20 @@ public class IndividualWSServer extends OpenCGAWSServer {
 //            @ApiParam(value = "father") @QueryParam("father") String father,
 //            @ApiParam(value = "mother") @QueryParam("mother") String mother,
 //            @ApiParam(value = "sex") @QueryParam("sex") String sex,
-//            @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-//            @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
+//            @ApiParam(value = "ethnicity") @QueryParam("ethnicity") String ethnicity,
+//            @ApiParam(value = "Population name") @QueryParam("population.name")
 //                    String populationName,
-//            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
+//            @ApiParam(value = "Subpopulation name") @QueryParam("population.subpopulation")
 //                    String populationSubpopulation,
-//            @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
+//            @ApiParam(value = "Population description") @QueryParam("population.description")
 //                    String populationDescription,
 //            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-//            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
+//            @ApiParam(value = "Karyotypic sex") @QueryParam("karyotypicSex")
 //                    IndividualProperty.KaryotypicSex karyotypicSex,
-//            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
+//            @ApiParam(value = "Life status") @QueryParam("lifeStatus")
 //                    IndividualProperty.LifeStatus lifeStatus,
 //            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-//            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION, required = false) @QueryParam("annotation") String annotation,
+//            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
 //            @ApiParam(value = "Release value (Current release from the moment the individuals were first created)") @QueryParam("release") String release,
 //            @ApiParam(value = ParamConstants.SAMPLES_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
 //                @QueryParam(ParamConstants.SAMPLES_ACTION_PARAM) ParamUtils.BasicUpdateAction samplesAction,

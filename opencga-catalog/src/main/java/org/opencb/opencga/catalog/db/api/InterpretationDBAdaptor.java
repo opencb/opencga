@@ -46,6 +46,7 @@ public interface InterpretationDBAdaptor extends CoreDBAdaptor<Interpretation> {
         INTERNAL_STATUS("internal.status", TEXT, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
+        PANELS_UID("panels.uid", LONG, ""),
         ANALYST("analyst", TEXT, ""),
         ANALYST_ID("analyst.id", TEXT, ""),
         METHODS("methods", TEXT_ARRAY, ""),
@@ -73,6 +74,7 @@ public interface InterpretationDBAdaptor extends CoreDBAdaptor<Interpretation> {
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, "");
 
         private static Map<String, QueryParams> map;
+
         static {
             map = new LinkedMap();
             for (QueryParams params : QueryParams.values()) {

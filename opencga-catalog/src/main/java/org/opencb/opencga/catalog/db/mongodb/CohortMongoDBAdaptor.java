@@ -384,7 +384,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             }
         }
 
-        String[] acceptedObjectParams = { QueryParams.STATUS.key() };
+        String[] acceptedObjectParams = {QueryParams.STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -762,10 +762,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         Query finalQuery = new Query(query);
         finalQuery.remove(QueryParams.DELETED.key());
 
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), finalQuery);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), finalQuery);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), finalQuery);
-
         for (Map.Entry<String, Object> entry : finalQuery.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
@@ -785,24 +781,10 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     case STUDY_UID:
                         addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), finalQuery, queryParam.type(), andBsonList);
                         break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), finalQuery, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), finalQuery, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), finalQuery, queryParam.type(), andBsonList);
-                        break;
                     case ANNOTATION:
                         if (annotationDocument == null) {
                             annotationDocument = createAnnotationQuery(finalQuery.getString(QueryParams.ANNOTATION.key()),
                                     finalQuery.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
-//                            annotationDocument = createAnnotationQuery(query.getString(QueryParams.ANNOTATION.key()),
-//                                    query.getLong(QueryParams.VARIABLE_SET_UID.key()),
-//                                    query.getString(QueryParams.ANNOTATION_SET_NAME.key()));
                         }
                         break;
                     case SAMPLE_UIDS:
@@ -833,11 +815,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     case TYPE:
                     case RELEASE:
                     case NUM_SAMPLES:
-                    case INTERNAL_STATUS_DESCRIPTION:
-                    case INTERNAL_STATUS_DATE:
-                    case DESCRIPTION:
-                    case ANNOTATION_SETS:
-//                    case VARIABLE_NAME:
+//                    case ANNOTATION_SETS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), finalQuery, queryParam.type(), andBsonList);
                         break;
                     default:

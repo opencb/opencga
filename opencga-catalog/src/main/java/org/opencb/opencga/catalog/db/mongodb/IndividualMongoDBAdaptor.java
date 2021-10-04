@@ -1307,10 +1307,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         Query queryCopy = new Query(query);
         queryCopy.remove(QueryParams.DELETED.key());
 
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
-
         if ("all".equalsIgnoreCase(queryCopy.getString(IndividualDBAdaptor.QueryParams.VERSION.key()))) {
             queryCopy.put(Constants.ALL_VERSIONS, true);
             queryCopy.remove(IndividualDBAdaptor.QueryParams.VERSION.key());
@@ -1336,17 +1332,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                         break;
                     case STUDY_UID:
                         addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case PHENOTYPES:
                     case DISORDERS:
@@ -1386,19 +1371,17 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     case DATE_OF_BIRTH:
                     case SEX:
                     case ETHNICITY:
-                    case INTERNAL_STATUS_DATE:
                     case POPULATION_NAME:
                     case POPULATION_SUBPOPULATION:
-                    case POPULATION_DESCRIPTION:
                     case KARYOTYPIC_SEX:
                     case LIFE_STATUS:
                     case RELEASE:
                     case VERSION:
                     case SAMPLE_UIDS:
-//                    case ANNOTATION_SETS:
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
-                    case PHENOTYPES_SOURCE:
+                    case DISORDERS_ID:
+                    case DISORDERS_NAME:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:
