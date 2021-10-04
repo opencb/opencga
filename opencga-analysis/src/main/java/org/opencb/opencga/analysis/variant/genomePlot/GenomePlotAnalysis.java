@@ -36,7 +36,6 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.GenomePlotAnalysisExecutor;
 
 import java.nio.file.Paths;
-import java.util.Collections;
 
 @Tool(id = GenomePlotAnalysis.ID, resource = Enums.Resource.VARIANT)
 public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
@@ -95,9 +94,7 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
                         if (imgFile.getName().endsWith(GenomePlotAnalysis.SUFFIX_FILENAME)) {
                             int index = imgFile.getAbsolutePath().indexOf("JOBS/");
                             String relativeFilePath = (index == -1 ? imgFile.getName() : imgFile.getAbsolutePath().substring(index));
-                            // TODO: Joaquin to check. There's a new list of tracks that should be populated
-                            genomePlot = new GenomePlot("", getGenomePlotParams().getDescription(), plotConfig, relativeFilePath,
-                                    Collections.emptyList());
+                            genomePlot = new GenomePlot("", getGenomePlotParams().getDescription(), plotConfig, relativeFilePath);
                             break;
                         }
                     }

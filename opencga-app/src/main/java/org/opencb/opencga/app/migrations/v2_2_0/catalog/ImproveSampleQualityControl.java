@@ -4,7 +4,6 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.UpdateOneModel;
 import org.apache.commons.collections4.CollectionUtils;
 import org.bson.Document;
-import org.opencb.biodata.models.clinical.qc.GenomePlot;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
@@ -12,9 +11,7 @@ import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleQualityControl;
-import org.opencb.opencga.core.models.sample.SampleVariantQualityControlMetrics;
 
-import java.util.Collections;
 import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -23,7 +20,7 @@ import static com.mongodb.client.model.Filters.eq;
         description = "Quality control normalize comments and fields #1826", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        rank = 7)
+        rank = 9)
 public class ImproveSampleQualityControl extends MigrationTool {
 
     @Override
@@ -52,17 +49,7 @@ public class ImproveSampleQualityControl extends MigrationTool {
                             if (CollectionUtils.isEmpty(fqc.getFileIds())) {
                                 fqc.setFileIds(files);
                             }
-                            SampleVariantQualityControlMetrics variant = fqc.getVariant();
-                            if (variant != null) {
-                                List<GenomePlot> genomePlots = variant.getGenomePlots();
-                                if (genomePlots != null) {
-                                    for (GenomePlot genomePlot : genomePlots) {
-                                        if (genomePlot.getTracks() == null) {
-                                            genomePlot.setTracks(Collections.emptyList());
-                                        }
-                                    }
-                                }
-                            }
+                        
                             Document doc = sampleConverter.convertToStorageType(sample);
                             bulk.add(new UpdateOneModel<>(
                                             eq("_id", sampleDoc.get("_id")),
