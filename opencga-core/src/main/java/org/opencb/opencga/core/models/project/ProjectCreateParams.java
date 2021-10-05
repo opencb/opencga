@@ -25,29 +25,32 @@ public class ProjectCreateParams {
     private String name;
     private String description;
     private String creationDate;
+    private String modificationDate;
     private ProjectOrganism organism;
     private Map<String, Object> attributes;
 
     public ProjectCreateParams() {
     }
 
-    public ProjectCreateParams(String id, String name, String description, String creationDate, ProjectOrganism organism,
-                               Map<String, Object> attributes) {
+    public ProjectCreateParams(String id, String name, String description, String creationDate, String modificationDate,
+                               ProjectOrganism organism, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.organism = organism;
         this.attributes = attributes;
     }
 
     public static ProjectCreateParams of(Project project) {
-        return new ProjectCreateParams(project.getId(), project.getName(), project.getCreationDate(), project.getDescription(),
-                project.getOrganism(), project.getAttributes());
+        return new ProjectCreateParams(project.getId(), project.getName(), project.getCreationDate(), project.getModificationDate(),
+                project.getDescription(), project.getOrganism(), project.getAttributes());
     }
 
     public Project toProject() {
-        return new Project(id, name, creationDate, description, organism, Collections.emptyList(), 1, ProjectInternal.init(), attributes);
+        return new Project(id, name, creationDate, modificationDate, description, organism, Collections.emptyList(), 1,
+                ProjectInternal.init(), attributes);
     }
 
     @Override
@@ -57,6 +60,7 @@ public class ProjectCreateParams {
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", organism=").append(organism);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -96,6 +100,15 @@ public class ProjectCreateParams {
 
     public ProjectCreateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public ProjectCreateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

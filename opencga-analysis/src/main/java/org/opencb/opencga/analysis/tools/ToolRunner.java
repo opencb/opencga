@@ -118,12 +118,12 @@ public class ToolRunner {
                 .start();
     }
 
-    /**
-     * Execute a command tool.
-     * @param jobId jobId of the job containing the relevant information.
-     * @param sessionId session id of the user that will execute the tool.
-     */
-    public void execute(long jobId, String sessionId) {
+//    /**
+//     * Execute a command tool.
+//     * @param jobId jobId of the job containing the relevant information.
+//     * @param sessionId session id of the user that will execute the tool.
+//     */
+//    public void execute(long jobId, String sessionId) {
 //        try {
 //            // We get the job information.
 //            Query query = new Query();
@@ -186,5 +186,5 @@ public class ToolRunner {
 //        } catch (CatalogException | AnalysisToolException e) {
 //            logger.error("{}", e.getMessage(), e);
 //        }
-    }
+//    }
 }

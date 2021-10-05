@@ -84,7 +84,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private final Map<Integer, List<String>> fixedFormatsMap = new ConcurrentHashMap<>();
     private Map<Integer, List<String>> expectedFormatPerStudy = new ConcurrentHashMap<>();
 
-    protected final Logger logger = LoggerFactory.getLogger(HBaseToStudyEntryConverter.class);
+    private final Logger logger = LoggerFactory.getLogger(HBaseToStudyEntryConverter.class);
     private HBaseVariantConverterConfiguration configuration;
 
     public HBaseToStudyEntryConverter(VariantStorageMetadataManager metadataManager,

@@ -42,16 +42,19 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
 
-    // TODO: Replace with QueryParam
-    String STATS_ID = "stats.id";
-    String STATS_VARIANT_COUNT = "stats.variantCount";
-
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
         UID("uid", LONG, ""),
         UUID("uuid", TEXT, ""),
         PROCESSING("processing", TEXT_ARRAY, ""),
+        PROCESSING_PRODUCT("processing.product", TEXT, ""),
+        PROCESSING_PREPARATION_METHOD("processing.preparationMethod", TEXT, ""),
+        PROCESSING_EXTRACTION_METHOD("processing.extractionMethod", TEXT, ""),
+        PROCESSING_LAB_SAMPLE_ID("processing.labSampleId", TEXT, ""),
         COLLECTION("collection", TEXT_ARRAY, ""),
+        COLLECTION_TISSUE("collection.tissue", TEXT, ""),
+        COLLECTION_ORGAN("collection.organ", TEXT, ""),
+        COLLECTION_METHOD("collection.method", TEXT, ""),
         INDIVIDUAL("individual", TEXT, ""),
         INDIVIDUAL_UID("individual.uid", INTEGER_ARRAY, ""),
         INDIVIDUAL_ID("individualId", TEXT, ""),

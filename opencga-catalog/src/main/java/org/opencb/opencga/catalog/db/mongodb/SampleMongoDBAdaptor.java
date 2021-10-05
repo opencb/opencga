@@ -28,6 +28,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
@@ -67,6 +68,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -170,7 +172,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         sampleObject.put(LAST_OF_RELEASE, true);
         sampleObject.put(PRIVATE_CREATION_DATE,
                 StringUtils.isNotEmpty(sample.getCreationDate()) ? TimeUtils.toDate(sample.getCreationDate()) : TimeUtils.getDate());
-        sampleObject.put(PRIVATE_MODIFICATION_DATE, sampleObject.get(PRIVATE_CREATION_DATE));
+        sampleObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(sample.getModificationDate())
+                ? TimeUtils.toDate(sample.getModificationDate()) : TimeUtils.getDate());
         sampleObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         sampleObject.put(PRIVATE_INDIVIDUAL_UID, individualUid);
 
@@ -319,7 +322,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         // Perform the update
         DataResult result = updateAnnotationSets(clientSession, sampleUid, parameters, variableSetList, queryOptions, true);
 
-        UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery);
+        UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions);
         Document sampleUpdate = updateParams.toFinalUpdateDocument();
 
         if (sampleUpdate.isEmpty() && result.getNumUpdated() == 0) {
@@ -538,7 +541,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         createNewVersion(clientSession, sampleCollection, queryResult.first());
     }
 
-    UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query)
+    UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         UpdateDocument document = new UpdateDocument();
 
@@ -547,6 +550,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             Date date = TimeUtils.toDate(time);
             document.getSet().put(QueryParams.CREATION_DATE.key(), time);
             document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
         }
 
         final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
@@ -558,8 +567,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key(), QueryParams.COLLECTION.key(), QueryParams.PROCESSING.key(),
-                QueryParams.STATUS.key(), QueryParams.QUALITY_CONTORL.key()};
+        final String[] acceptedObjectParams = {QueryParams.COLLECTION.key(), QueryParams.PROCESSING.key(), QueryParams.STATUS.key(),
+                QueryParams.QUALITY_CONTORL.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -630,15 +639,56 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             }
         }
 
+        Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+        // Phenotypes
+        if (parameters.containsKey(QueryParams.PHENOTYPES.key())) {
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.PHENOTYPES.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            String[] phenotypesParams = {QueryParams.PHENOTYPES.key()};
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), phenotypesParams);
+                    break;
+                case REMOVE:
+                    fixPhenotypesForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPull(), phenotypesParams);
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), phenotypesParams);
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
+        }
+
         if (!document.toFinalUpdateDocument().isEmpty()) {
-            // Update modificationDate param
             String time = TimeUtils.getTime();
-            Date date = TimeUtils.toDate(time);
-            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
-            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
         }
 
         return document;
+    }
+
+    void fixPhenotypesForRemoval(ObjectMap parameters) {
+        if (parameters.get(QueryParams.PHENOTYPES.key()) == null) {
+            return;
+        }
+
+        List<Document> phenotypeParamList = new LinkedList<>();
+        for (Object phenotype : parameters.getAsList(QueryParams.PHENOTYPES.key())) {
+            if (phenotype instanceof Phenotype) {
+                phenotypeParamList.add(new Document("id", ((Phenotype) phenotype).getId()));
+            } else {
+                phenotypeParamList.add(new Document("id", ((Map) phenotype).get("id")));
+            }
+        }
+        parameters.put(QueryParams.PHENOTYPES.key(), phenotypeParamList);
     }
 
     UpdateDocument updateFileReferences(ObjectMap parameters, QueryOptions queryOptions) {
@@ -890,6 +940,25 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         dbAdaptorFactory.getCatalogFileDBAdaptor().removeSampleReferences(clientSession, studyUid, sample);
         dbAdaptorFactory.getCatalogCohortDBAdaptor().removeSampleReferences(clientSession, studyUid, sample.getUid());
         individualDBAdaptor.removeSampleReferences(clientSession, studyUid, sample.getUid());
+    }
+
+    void removeFileReferences(ClientSession clientSession, long studyUid, String fileId)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        UpdateDocument document = new UpdateDocument();
+
+        document.getPull().put(QueryParams.FILE_IDS.key(), fileId);
+        Document updateDocument = document.toFinalUpdateDocument();
+
+        Query query = new Query()
+            .append(QueryParams.STUDY_UID.key(), studyUid)
+            .append(QueryParams.FILE_IDS.key(), fileId);
+        Bson bsonQuery = parseQuery(query);
+
+        logger.debug("Removing file from sample '{}' field. Query: {}, Update: {}", QueryParams.FILE_IDS.key(),
+                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        DataResult result = sampleCollection.update(clientSession, bsonQuery, updateDocument, new QueryOptions("multi", true));
+        logger.debug("File '{}' removed from {} samples", fileId, result.getNumUpdated());
     }
 
     // TODO: Check clean
@@ -1183,25 +1252,24 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
 
-            if (containsAnnotationQuery(query)) {
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                        SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.SAMPLE, configuration));
+            if (query.containsKey(ParamConstants.ACL_PARAM)) {
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.SAMPLE, user,
+                        configuration));
             } else {
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, SampleAclEntry.SamplePermissions.VIEW.name(),
-                        Enums.Resource.SAMPLE, configuration));
+                if (containsAnnotationQuery(query)) {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
+                            SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.SAMPLE, configuration));
+                } else {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, SampleAclEntry.SamplePermissions.VIEW.name(),
+                            Enums.Resource.SAMPLE, configuration));
+                }
             }
-
-            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.SAMPLE, user, configuration));
 
             query.remove(ParamConstants.ACL_PARAM);
         }
 
         Query queryCopy = new Query(query);
         queryCopy.remove(QueryParams.DELETED.key());
-
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
 
         if ("all".equalsIgnoreCase(queryCopy.getString(QueryParams.VERSION.key()))) {
             queryCopy.put(Constants.ALL_VERSIONS, true);
@@ -1228,17 +1296,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         break;
                     case STUDY_UID:
                         addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case PHENOTYPES:
                         addOntologyQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
@@ -1271,17 +1328,20 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         break;
                     case ID:
                     case UUID:
+                    case PROCESSING_PRODUCT:
+                    case PROCESSING_PREPARATION_METHOD:
+                    case PROCESSING_EXTRACTION_METHOD:
+                    case PROCESSING_LAB_SAMPLE_ID:
+                    case COLLECTION_TISSUE:
+                    case COLLECTION_ORGAN:
+                    case COLLECTION_METHOD:
                     case RELEASE:
                     case FILE_IDS:
                     case VERSION:
-                    case DESCRIPTION:
                     case INDIVIDUAL_ID:
-                    case INTERNAL_STATUS_DATE:
                     case INTERNAL_RGA_STATUS:
                     case SOMATIC:
                     case PHENOTYPES_ID:
-                    case PHENOTYPES_NAME:
-                    case PHENOTYPES_SOURCE:
 //                    case ANNOTATION_SETS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;

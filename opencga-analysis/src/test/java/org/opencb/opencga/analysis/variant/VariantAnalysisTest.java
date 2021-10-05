@@ -39,6 +39,7 @@ import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -50,8 +51,10 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
@@ -59,6 +62,7 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
@@ -72,6 +76,7 @@ import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -100,7 +105,7 @@ public class VariantAnalysisTest {
     public static final String DB_NAME = "opencga_test_" + USER + "_" + PROJECT;
     private ToolRunner toolRunner;
 
-    @Parameterized.Parameters(name="{0}")
+    @Parameterized.Parameters(name = "{0}")
     public static Object[][] parameters() {
         return new Object[][]{
                 {MongoDBVariantStorageEngine.STORAGE_ENGINE_ID},
@@ -168,10 +173,10 @@ public class VariantAnalysisTest {
             }
 
             catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c1")
-                    .setSamples(file.getSampleIds().subList(0, 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
+                            .setSamples(file.getSampleIds().subList(0, 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                     null, null, null, token);
             catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c2")
-                    .setSamples(file.getSampleIds().subList(2, 4).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
+                            .setSamples(file.getSampleIds().subList(2, 4).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                     null, null, null, token);
 
             Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
@@ -185,19 +190,19 @@ public class VariantAnalysisTest {
             // Father
             individuals.add(catalogManager.getIndividualManager()
                     .create(STUDY, new Individual(father, father, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, null, null, null, "",
-                                    Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()), Collections.singletonList(father), null, token).first());
+                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(father), null, token).first());
             // Mother
             individuals.add(catalogManager.getIndividualManager()
                     .create(STUDY, new Individual(mother, mother, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, null, null, null, "",
-                                    Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()), Collections.singletonList(mother), null, token).first());
+                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(mother), null, token).first());
             // Son
             individuals.add(catalogManager.getIndividualManager()
                     .create(STUDY, new Individual(son, son, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, null, null, null, "",
-                                    Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), Collections.singletonList(son), null, token).first());
+                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), Collections.singletonList(son), null, token).first());
             // Daughter
             individuals.add(catalogManager.getIndividualManager()
                     .create(STUDY, new Individual(daughter, daughter, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, null, null, null, "",
-                                    Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(daughter), null, token).first());
+                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(daughter), null, token).first());
             catalogManager.getFamilyManager().create(
                     STUDY,
                     new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
@@ -244,6 +249,18 @@ public class VariantAnalysisTest {
     }
 
     @Test
+    public void testMalformedVcfFileIndex() throws Exception {
+        File file = opencga.createFile(STUDY, "variant-test-file-corrupted.vcf", token);
+        try {
+            toolRunner.execute(VariantIndexOperationTool.class,
+                    new VariantIndexParams().setFile(file.getId()).setAnnotate(true), new ObjectMap(),
+                    Paths.get(opencga.createTmpOutdir()), null, token);
+        } catch (ToolException e) {
+            System.out.println(ExceptionUtils.prettyExceptionMessage(e, true, true));
+        }
+    }
+
+    @Test
     public void testVariantStats() throws Exception {
         ObjectMap executorParams = new ObjectMap();
         Path outDir = Paths.get(opencga.createTmpOutdir("_variant_stats"));
@@ -285,7 +302,7 @@ public class VariantAnalysisTest {
 
         MutableInt count = new MutableInt();
         java.io.File file = getOutputFile(outDir);
-        FileUtils.lineIterator(file).forEachRemaining(line->{
+        FileUtils.lineIterator(file).forEachRemaining(line -> {
             if (!line.startsWith("#")) {
                 count.increment();
             }
@@ -462,7 +479,7 @@ public class VariantAnalysisTest {
         System.out.println("variantCount = " + variantCount);
 
         CohortUpdateParams updateParams = new CohortUpdateParams()
-                .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSet.getId(), "",  Collections.singletonMap("variantCount", 1))));
+                .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSet.getId(), "", Collections.singletonMap("variantCount", 1))));
         QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, ParamUtils.CompleteUpdateAction.REPLACE));
 
         catalogManager.getCohortManager()
@@ -472,6 +489,8 @@ public class VariantAnalysisTest {
                 .setCohort(StudyEntry.DEFAULT_COHORT)
                 .setIndex(true);
 
+        outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats_index_2"));
+        System.out.println("output = " + outDir.toAbsolutePath());
         result = toolRunner.execute(CohortVariantStatsAnalysis.class, toolParams,
                 new ObjectMap(ParamConstants.STUDY_PARAM, STUDY), outDir, null, token);
         checkExecutionResult(result, storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
@@ -493,9 +512,22 @@ public class VariantAnalysisTest {
         variantExportParams.appendQuery(new Query(VariantQueryParam.REGION.key(), "22"));
         assertEquals("22", variantExportParams.getRegion());
         variantExportParams.setCt("lof");
-        variantExportParams.setCompress(true);
-        variantExportParams.setOutputFileName("chr22");
+        variantExportParams.setOutputFileName("chr22.vcf");
 
+        toolRunner.execute(VariantExportTool.class, variantExportParams.toObjectMap(), outDir, null, token);
+        assertTrue(outDir.resolve(variantExportParams.getOutputFileName() + ".gz").toFile().exists());
+    }
+
+    @Test
+    public void testExportVep() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_export_vep"));
+        System.out.println("outDir = " + outDir);
+        VariantExportParams variantExportParams = new VariantExportParams();
+        variantExportParams.appendQuery(new Query(VariantQueryParam.REGION.key(), "22,1,5"));
+        assertEquals("22,1,5", variantExportParams.getRegion());
+        variantExportParams.setCt("lof");
+        variantExportParams.setOutputFileName("chr1-5-22");
+        variantExportParams.setOutputFormat(VariantWriterFactory.VariantOutputFormat.ENSEMBL_VEP.name());
         toolRunner.execute(VariantExportTool.class, variantExportParams.toObjectMap(), outDir, null, token);
     }
 

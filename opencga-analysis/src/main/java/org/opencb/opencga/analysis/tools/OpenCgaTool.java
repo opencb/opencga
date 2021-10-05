@@ -27,6 +27,7 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -82,6 +83,7 @@ public abstract class OpenCgaTool {
     private MemoryUsageMonitor memoryUsageMonitor;
 
     private ExecutionResultManager erm;
+    private String currentStep;
 
     public OpenCgaTool() {
         privateLogger = LoggerFactory.getLogger(OpenCgaTool.class);
@@ -194,6 +196,7 @@ public abstract class OpenCgaTool {
                     if (exception == null) {
                         exception = new RuntimeException("Unexpected system shutdown");
                     }
+                    logException(exception);
                     JobResult result = erm.close(exception);
                     privateLogger.info("------- Tool '" + getId() + "' executed in "
                             + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
@@ -238,8 +241,10 @@ public abstract class OpenCgaTool {
                 }
             }
             try {
+                currentStep = "check";
                 privateCheck();
                 check();
+                currentStep = null;
                 erm.setSteps(getSteps());
                 run();
             } catch (ToolException e) {
@@ -253,12 +258,25 @@ public abstract class OpenCgaTool {
         } finally {
             deleteScratchDirectory();
             Runtime.getRuntime().removeShutdownHook(hook);
-            result = erm.close(exception);
             stopMemoryMonitor();
+            result = erm.close(exception);
+            logException(exception);
             privateLogger.info("------- Tool '" + getId() + "' executed in "
                     + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
         }
         return result;
+    }
+
+    private void logException(Throwable throwable) {
+        if (throwable == null) {
+            return;
+        }
+        privateLogger.error("## -----------------------------------------------------");
+//        privateLogger.error("## Catch exception [" + throwable.getClass().getSimpleName() + "] at step '" + getCurrentStep() + "'");
+        for (String line : ExceptionUtils.prettyExceptionMessage(throwable, true, true).split("\n")) {
+            privateLogger.error("## - " + line);
+        }
+        privateLogger.error("## -----------------------------------------------------");
     }
 
     private void deleteScratchDirectory() throws ToolException {
@@ -303,6 +321,7 @@ public abstract class OpenCgaTool {
 
     /**
      * Method to be implemented by subclasses with the actual execution of the tool.
+     *
      * @throws Exception on error
      */
     protected abstract void run() throws Exception;
@@ -329,14 +348,23 @@ public abstract class OpenCgaTool {
 
     /**
      * Method called internally to obtain the list of steps.
-     *
+     * <p>
      * Will be executed after calling to the {@link #check()} method.
+     *
      * @return the tool steps
      */
     protected List<String> getSteps() {
         List<String> steps = new ArrayList<>();
         steps.add(getId());
         return steps;
+    }
+
+    protected final String getCurrentStep() {
+        if (currentStep == null) {
+            return getSteps().get(0);
+        } else {
+            return currentStep;
+        }
     }
 
     /**
@@ -428,6 +456,7 @@ public abstract class OpenCgaTool {
                 StopWatch stopWatch = StopWatch.createStarted();
                 privateLogger.info("");
                 privateLogger.info("------- Executing step '" + stepId + "' -------");
+                currentStep = stepId;
                 step.run();
                 privateLogger.info("------- Step '" + stepId + "' executed in " + TimeUtils.durationToString(stopWatch) + " -------");
             } catch (ToolException e) {
@@ -492,9 +521,6 @@ public abstract class OpenCgaTool {
         if (StringUtils.isEmpty(executorId) && params != null) {
             executorId = params.getString(EXECUTOR_ID);
         }
-
-        System.out.println("getToolExecutor ::: " + clazz + ", " + executorId);
-        System.out.println(executorParams.toJson());
         return getToolExecutor(clazz, executorId);
     }
 

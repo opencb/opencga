@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 
@@ -35,6 +34,7 @@ public class SampleUpdateParams {
     private String id;
     private String description;
     private String creationDate;
+    private String modificationDate;
     private String individualId;
     private SampleProcessing processing;
     private SampleCollection collection;
@@ -48,13 +48,14 @@ public class SampleUpdateParams {
     public SampleUpdateParams() {
     }
 
-    public SampleUpdateParams(String id, String description, String creationDate, String individualId, SampleProcessing processing,
-                              SampleCollection collection, SampleQualityControl qualityControl,  Boolean somatic,
-                              List<Phenotype> phenotypes, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
-                              CustomStatusParams status) {
+    public SampleUpdateParams(String id, String description, String creationDate, String modificationDate, String individualId,
+                              SampleProcessing processing, SampleCollection collection, SampleQualityControl qualityControl,
+                              Boolean somatic, List<Phenotype> phenotypes, List<AnnotationSet> annotationSets,
+                              Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.individualId = individualId;
         this.processing = processing;
         this.collection = collection;
@@ -84,8 +85,8 @@ public class SampleUpdateParams {
 
     @JsonIgnore
     public Sample toSample() {
-        return new Sample(id, "", processing, collection, qualityControl, 1, 1, creationDate, TimeUtils.getTime(),
-                description, somatic, phenotypes, individualId, Collections.emptyList(), Collections.emptyList(),
+        return new Sample(id, "", processing, collection, qualityControl, 1, 1, creationDate, modificationDate,
+                description, somatic != null && somatic, phenotypes, individualId, Collections.emptyList(), Collections.emptyList(),
                 status != null ? status.toCustomStatus() : null, new SampleInternal(), annotationSets, attributes);
     }
 
@@ -95,6 +96,7 @@ public class SampleUpdateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", individualId='").append(individualId).append('\'');
         sb.append(", processing=").append(processing);
         sb.append(", collection=").append(collection);
@@ -133,6 +135,15 @@ public class SampleUpdateParams {
 
     public SampleUpdateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public SampleUpdateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

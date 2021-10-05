@@ -15,10 +15,7 @@ import org.opencb.opencga.core.models.job.JobReferenceParam;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -217,10 +214,10 @@ public class MigrationManagerTest extends AbstractManagerTest {
     public void testManualMigrations() throws CatalogException, IOException {
         String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
 
-        MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration("test4-1-manual", Paths.get(""), new ObjectMap("key", "OtherValue"), token);
+        MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "OtherValue"), token);
         assertEquals(MigrationRun.MigrationStatus.ERROR, migrationRun.getStatus());
 
-        migrationRun= catalogManager.getMigrationManager().runManualMigration("test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
+        migrationRun= catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
         assertEquals(MigrationRun.MigrationStatus.DONE, migrationRun.getStatus());
     }
 
@@ -228,7 +225,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     public void testMigrationsWithJobs() throws CatalogException, IOException {
         String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
 
-        catalogManager.getMigrationManager().runManualMigration("test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
+        catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
 
         // RUN. New status ON_HOLD
         catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), "", token);
@@ -267,6 +264,21 @@ public class MigrationManagerTest extends AbstractManagerTest {
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
         assertEquals(MigrationRun.MigrationStatus.DONE, migrationRun.getStatus());
+    }
+
+
+    @Test
+    public void testMigrationVersionOrder() {
+        List<String> expected = Arrays.asList("0.0.0", "0.0.1", "0.0.10", "0.1.0", "0.1.10", "1.1.0",
+                "2.0.0",
+                "2.0.1",
+                "2.1.0");
+
+        ArrayList<String> actual = new ArrayList<>(expected);
+        Collections.shuffle(actual);
+        actual.sort(MigrationManager::compareVersion);
+
+        assertEquals(expected, actual);
     }
 
 }

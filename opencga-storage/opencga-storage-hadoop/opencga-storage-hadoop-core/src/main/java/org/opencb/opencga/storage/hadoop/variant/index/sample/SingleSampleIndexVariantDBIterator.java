@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import com.google.common.collect.Iterators;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
@@ -28,7 +28,8 @@ public class SingleSampleIndexVariantDBIterator extends VariantDBIterator {
     private final Iterator<Variant> iterator;
     protected int count = 0;
 
-    public SingleSampleIndexVariantDBIterator(Table table, SingleSampleIndexQuery query, SampleIndexDBAdaptor dbAdaptor) {
+    public SingleSampleIndexVariantDBIterator(Table table, SingleSampleIndexQuery query, SampleIndexSchema schema,
+                                              SampleIndexDBAdaptor dbAdaptor) {
         Collection<List<Region>> regionGroups;
         if (CollectionUtils.isEmpty(query.getRegionGroups())) {
             // If no regions are defined, get a list of one null element to initialize the stream.
@@ -37,7 +38,6 @@ public class SingleSampleIndexVariantDBIterator extends VariantDBIterator {
             regionGroups = query.getRegionGroups();
         }
 
-        SampleIndexSchema schema = dbAdaptor.getSchema(query.getStudy());
         Iterator<Iterator<Variant>> iterators = regionGroups.stream()
                 .map(regions -> {
                     // One scan per region group

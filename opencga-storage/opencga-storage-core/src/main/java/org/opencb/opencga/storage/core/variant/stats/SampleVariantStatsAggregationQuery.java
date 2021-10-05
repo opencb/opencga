@@ -46,45 +46,45 @@ public class SampleVariantStatsAggregationQuery {
     }
 
 
-    public DataResult<SampleVariantStats> sampleStatsQuery(String studyStr, String sample, Query inputQuery) throws StorageEngineException {
-
+    public DataResult<SampleVariantStats> sampleStatsQuery(String studyStr, String sample, Query inputQuery, QueryOptions options)
+            throws StorageEngineException {
         if (StringUtils.isEmpty(sample)) {
             throw new VariantQueryException("Missing sample");
         }
         int studyId = engine.getMetadataManager().getStudyId(studyStr);
         int sampleId = engine.getMetadataManager().getSampleIdOrFail(studyId, sample);
 
-        Query query;
-        if (inputQuery == null) {
-            query = new Query();
-        } else {
-            query = new Query(inputQuery);
-        }
+        Query query = VariantQueryUtils.copy(inputQuery);
 
         query.put(STUDY.key(), studyStr);
         query.remove(SAMPLE.key());
 
+        options = VariantQueryUtils.copy(options);
+        return sampleStatsQuery(engine.getMetadataManager().getSampleMetadata(studyId, sampleId), query, options);
+    }
+
+    private DataResult<SampleVariantStats> sampleStatsQuery(SampleMetadata sampleMetadata, Query query, QueryOptions options)
+            throws StorageEngineException {
         // Test if there is any valid VariantAggregationExecutor
         // If no, fast fail
         engine.getVariantAggregationExecutor(new Query(query)
-                .append(SAMPLE.key(), sample), new QueryOptions(QueryOptions.FACET, "chromosome"));
+                .append(SAMPLE.key(), sampleMetadata.getName()), new QueryOptions(options).append(QueryOptions.FACET, "chromosome"));
 
         Future<DataResult<FacetField>> submit = THREAD_POOL.submit(() -> {
             DataResult<FacetField> result = engine.facet(
                     new Query(query)
-                            .append(SAMPLE.key(), sample),
-                    new QueryOptions(QueryOptions.FACET,
+                            .append(SAMPLE.key(), sampleMetadata.getName()),
+                    new QueryOptions(options).append(QueryOptions.FACET,
                             "chromosome;genotype;type;type[INDEL]>>length;titv;biotype;consequenceType;clinicalSignificance;depth;filter"));
             return result;
         });
         Future<DataResult<FacetField>> submitME = THREAD_POOL.submit(() -> {
-            SampleMetadata sampleMetadata = engine.getMetadataManager().getSampleMetadata(studyId, sampleId);
             if (sampleMetadata.getMendelianErrorStatus().equals(TaskMetadata.Status.READY)) {
                 try {
                     return engine.facet(
                             new Query(query)
-                                    .append(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key(), sample),
-                            new QueryOptions(QueryOptions.FACET,
+                                    .append(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key(), sampleMetadata.getName()),
+                            new QueryOptions(options).append(QueryOptions.FACET,
                                     "chromosome>>mendelianError"));
                 } catch (Exception e) {
                     logger.warn("Could not get mendelian error stats: " + e.toString());
@@ -97,7 +97,7 @@ public class SampleVariantStatsAggregationQuery {
         });
 
         SampleVariantStats stats = new SampleVariantStats(
-                sample,
+                sampleMetadata.getName(),
                 0,
                 new HashMap<>(),
                 new HashMap<>(),

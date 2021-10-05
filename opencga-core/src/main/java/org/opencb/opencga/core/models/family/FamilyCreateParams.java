@@ -33,6 +33,7 @@ public class FamilyCreateParams {
     private String name;
     private String description;
     private String creationDate;
+    private String modificationDate;
     private List<IndividualCreateParams> members;
 
     private Integer expectedSize;
@@ -44,13 +45,14 @@ public class FamilyCreateParams {
     public FamilyCreateParams() {
     }
 
-    public FamilyCreateParams(String id, String name, String description, String creationDate, List<IndividualCreateParams> members,
-                              Integer expectedSize, Map<String, Object> attributes, List<AnnotationSet> annotationSets,
-                              CustomStatusParams status) {
+    public FamilyCreateParams(String id, String name, String description, String creationDate, String modificationDate,
+                              List<IndividualCreateParams> members, Integer expectedSize, Map<String, Object> attributes,
+                              List<AnnotationSet> annotationSets, CustomStatusParams status) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.members = members;
         this.expectedSize = expectedSize;
         this.attributes = attributes;
@@ -60,6 +62,7 @@ public class FamilyCreateParams {
 
     public static FamilyCreateParams of(Family family) {
         return new FamilyCreateParams(family.getId(), family.getName(), family.getDescription(), family.getCreationDate(),
+                family.getModificationDate(),
                 family.getMembers() != null
                         ? family.getMembers().stream().map(IndividualCreateParams::of).collect(Collectors.toList())
                         : Collections.emptyList(),
@@ -73,6 +76,7 @@ public class FamilyCreateParams {
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", members=").append(members);
         sb.append(", expectedSize=").append(expectedSize);
         sb.append(", status=").append(status);
@@ -95,8 +99,8 @@ public class FamilyCreateParams {
         String familyId = StringUtils.isEmpty(id) ? name : id;
         String familyName = StringUtils.isEmpty(name) ? familyId : name;
         int familyExpectedSize = expectedSize != null ? expectedSize : -1;
-        return new Family(familyId, familyName, null, null, relatives, creationDate, description, familyExpectedSize, 1, 1, annotationSets,
-                status != null ? status.toCustomStatus() : null, null, null, attributes);
+        return new Family(familyId, familyName, null, null, relatives, creationDate, modificationDate, description, familyExpectedSize, 1,
+                1, annotationSets, status != null ? status.toCustomStatus() : null, null, null, attributes);
     }
 
     public String getId() {
@@ -132,6 +136,15 @@ public class FamilyCreateParams {
 
     public FamilyCreateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public FamilyCreateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

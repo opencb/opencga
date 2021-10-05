@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.slf4j.Logger;
@@ -214,7 +215,8 @@ public class ExecutionResultManager {
     }
 
     private boolean addError(Exception exception, JobResult execution) {
-        return execution.getEvents().add(new Event(Event.Type.ERROR, exception.getMessage()));
+        String message = ExceptionUtils.prettyExceptionMessage(exception, false, true);
+        return execution.getEvents().add(new Event(Event.Type.ERROR, message));
     }
 
     public void addAttribute(String key, Object value) throws ToolException {

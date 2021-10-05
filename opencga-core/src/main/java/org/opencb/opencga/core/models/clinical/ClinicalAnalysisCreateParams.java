@@ -18,7 +18,6 @@ package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.common.EntryParam;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -49,12 +48,13 @@ public class ClinicalAnalysisCreateParams {
     private Boolean panelLock;
 
     private ClinicalAnalystParam analyst;
-    private EntryParam interpretation;
+    private InterpretationCreateParams interpretation;
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
     private ClinicalConsentAnnotationParam consent;
 
     private String creationDate;
+    private String modificationDate;
     private String dueDate;
     private List<ClinicalCommentParam> comments;
     private PriorityParam priority;
@@ -69,8 +69,8 @@ public class ClinicalAnalysisCreateParams {
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
                                         List<PanelReferenceParam> panels, Boolean panelLock, ClinicalAnalystParam analyst,
-                                        EntryParam interpretation, ClinicalConsentAnnotationParam consent, String creationDate,
-                                        String dueDate, List<ClinicalCommentParam> comments,
+                                        InterpretationCreateParams interpretation, ClinicalConsentAnnotationParam consent,
+                                        String creationDate, String modificationDate, String dueDate, List<ClinicalCommentParam> comments,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl, PriorityParam priority,
                                         List<FlagValueParam> flags, Map<String, Object> attributes, StatusParam status) {
         this.id = id;
@@ -86,6 +86,7 @@ public class ClinicalAnalysisCreateParams {
         this.interpretation = interpretation;
         this.consent = consent;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.dueDate = dueDate;
         this.comments = comments;
         this.qualityControl = qualityControl;
@@ -109,10 +110,10 @@ public class ClinicalAnalysisCreateParams {
                 clinicalAnalysis.isPanelLock(),
                 clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
                 clinicalAnalysis.getInterpretation() != null
-                        ? new EntryParam(clinicalAnalysis.getInterpretation().getId())
+                        ? InterpretationCreateParams.of(clinicalAnalysis.getInterpretation())
                         : null,
                 ClinicalConsentAnnotationParam.of(clinicalAnalysis.getConsent()), clinicalAnalysis.getCreationDate(),
-                clinicalAnalysis.getDueDate(),
+                clinicalAnalysis.getModificationDate(), clinicalAnalysis.getDueDate(),
                 clinicalAnalysis.getComments() != null
                         ? clinicalAnalysis.getComments().stream().map(ClinicalCommentParam::of).collect(Collectors.toList())
                         : null,
@@ -143,6 +144,7 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", qualityControl=").append(qualityControl);
         sb.append(", consent=").append(consent);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
         sb.append(", comments=").append(comments);
         sb.append(", priority=").append(priority);
@@ -183,7 +185,7 @@ public class ClinicalAnalysisCreateParams {
             }
         }
 
-        Interpretation primaryInterpretation = interpretation != null ? new Interpretation().setId(interpretation.getId()) : null;
+        Interpretation primaryInterpretation = interpretation != null ? interpretation.toClinicalInterpretation() : null;
 
         String assignee = analyst != null ? analyst.getId() : "";
 
@@ -207,7 +209,7 @@ public class ClinicalAnalysisCreateParams {
                 new ClinicalAnalyst(assignee, assignee, "", "", TimeUtils.getTime()),
                 priority != null ? priority.toClinicalPriorityAnnotation() : null,
                 flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null ,
-                creationDate, null, dueDate, 1,
+                creationDate, modificationDate, dueDate, 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
                 qualityControl != null ? qualityControl.toClinicalQualityControl() : null, new LinkedList<>(), null, attributes,
                 status != null ? status.toCustomStatus() : null);
@@ -303,11 +305,11 @@ public class ClinicalAnalysisCreateParams {
         return this;
     }
 
-    public EntryParam getInterpretation() {
+    public InterpretationCreateParams getInterpretation() {
         return interpretation;
     }
 
-    public ClinicalAnalysisCreateParams setInterpretation(EntryParam interpretation) {
+    public ClinicalAnalysisCreateParams setInterpretation(InterpretationCreateParams interpretation) {
         this.interpretation = interpretation;
         return this;
     }
@@ -336,6 +338,15 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public ClinicalAnalysisCreateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

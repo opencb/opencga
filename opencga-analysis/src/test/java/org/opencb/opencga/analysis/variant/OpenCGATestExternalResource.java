@@ -210,6 +210,15 @@ public class OpenCGATestExternalResource extends ExternalResource {
         return createTmpOutdir(suffix);
     }
 
+    public String createTmpOutdir() throws IOException {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        // stackTrace[0] = "Thread.currentThread"
+        // stackTrace[1] = "newOutputUri"
+        // stackTrace[2] =  caller method
+        String testName = stackTrace[2].getMethodName();
+        return createTmpOutdir(testName);
+    }
+
     public String createTmpOutdir(String suffix) throws IOException {
         if (suffix.endsWith("_")) {
             suffix = suffix.substring(0, suffix.length() - 1);

@@ -10,6 +10,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -104,7 +105,9 @@ public class VariantSampleDataManager {
                     .append(VariantQueryParam.SAMPLE_LIMIT.key(), sampleLimit)
                     .append(VariantQueryParam.SAMPLE_SKIP.key(), sampleSkip);
             if (includeSamples != null && !includeSamples.isEmpty()) {
-                query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples); // if empty, will return all
+                query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples);
+            } else {
+                query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
             }
             sampleSkip += sampleLimit;
             QueryOptions variantQueryOptions;

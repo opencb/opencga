@@ -56,6 +56,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
@@ -81,7 +82,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     /**
-     *
      * @return MongoDB connection to the job collection.
      */
     public MongoDBCollection getJobCollection() {
@@ -144,7 +144,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         Document jobObject = jobConverter.convertToStorageType(job);
         jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(job.getCreationDate()));
-        jobObject.put(PRIVATE_MODIFICATION_DATE, jobObject.get(PRIVATE_CREATION_DATE));
+        jobObject.put(PRIVATE_MODIFICATION_DATE, TimeUtils.toDate(job.getModificationDate()));
         jobObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         jobObject.put(PRIVATE_PRIORITY, job.getPriority().getValue());
         jobObject.put(PRIVATE_STUDY_UIDS, Collections.singletonList(studyId));
@@ -472,15 +472,18 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     studyResults.getResults().stream().map(Study::getUid).collect(Collectors.toList()));
         }
 
-        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};
+        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
-            // Update modificationDate param
             String time = TimeUtils.getTime();
-            Date date = TimeUtils.toDate(time);
-            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
-            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
         }
 
         return document;
@@ -790,21 +793,19 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
 
-            // Get the document query needed to check the permissions as well
-            andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, JobAclEntry.JobPermissions.VIEW.name(),
-                    Enums.Resource.JOB, configuration));
-
-            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.JOB, user, configuration));
+            if (query.containsKey(ParamConstants.ACL_PARAM)) {
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.JOB, user, configuration));
+            } else {
+                // Get the document query needed to check the permissions as well
+                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, JobAclEntry.JobPermissions.VIEW.name(),
+                        Enums.Resource.JOB, configuration));
+            }
 
             query.remove(ParamConstants.ACL_PARAM);
         }
 
         Query queryCopy = new Query(query);
         queryCopy.remove(QueryParams.DELETED.key());
-
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
 
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -827,20 +828,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                             addAutoOrQuery(PRIVATE_STUDY_UIDS, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         }
                         break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case RESOURCE_MANAGER_ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
                     case TOOL:
                     case TOOL_ID:
                         addAutoOrQuery(QueryParams.TOOL_ID.key(), queryParam.key(), queryCopy, QueryParams.TOOL_ID.type(), andBsonList);
@@ -857,6 +844,11 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case STATUS:
+                    case STATUS_NAME:
+                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), queryCopy, QueryParams.STATUS_NAME.type(),
+                                andBsonList);
+                        break;
                     case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
@@ -868,25 +860,18 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case ID:
                     case UUID:
                     case USER_ID:
-                    case TYPE:
-                    case DESCRIPTION:
-                    case PRIORITY:
-                    case START_TIME:
-                    case END_TIME:
-                    case OUTPUT_ERROR:
-                    case EXECUTION_START:
-                    case EXECUTION_END:
-                    case COMMAND_LINE:
+                    case TOOL_TYPE:
+                    case PRIORITY: // TODO: This filter is not indexed. We should change it and query _priority instead.
+//                    case START_TIME:
+//                    case END_TIME:
+//                    case OUTPUT_ERROR:
+//                    case EXECUTION_START:
+//                    case EXECUTION_END:
+//                    case COMMAND_LINE:
                     case VISITED:
                     case RELEASE:
-                    case INTERNAL_STATUS_DESCRIPTION:
-                    case INTERNAL_STATUS_DATE:
-                    case SIZE:
                     case OUT_DIR_UID:
-                    case TMP_OUT_DIR_URI:
                     case TAGS:
-                    case ERROR:
-                    case ERROR_DESCRIPTION:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

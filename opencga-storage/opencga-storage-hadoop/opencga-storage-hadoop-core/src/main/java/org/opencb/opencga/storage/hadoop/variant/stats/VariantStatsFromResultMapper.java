@@ -90,7 +90,8 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
 
     @Override
     public void run(Context context) throws IOException, InterruptedException {
-        StopWatch stopWatch = StopWatch.createStarted();
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         setup(context);
         logger.info("Setup AttemptID:" + context.getTaskAttemptID() + " in " + TimeUtils.durationToString(stopWatch));
 

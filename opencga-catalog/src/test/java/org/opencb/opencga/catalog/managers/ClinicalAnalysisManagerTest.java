@@ -639,6 +639,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         Interpretation interpretation = catalogManager.getInterpretationManager().get(STUDY, "interpretation", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(2, interpretation.getSecondaryFindings().size());
+        assertNotNull(interpretation.getStats());
+        assertEquals(2, interpretation.getStats().getSecondaryFindings().getNumVariants());
+        assertEquals(2, (int) interpretation.getStats().getSecondaryFindings().getVariantStatusCount().get(ClinicalVariant.Status.NOT_REVIEWED));
 
         // Add new finding
         findingList = new ArrayList<>();
@@ -657,6 +660,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(3, interpretation.getSecondaryFindings().size());
         assertEquals("method2", interpretation.getSecondaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
         assertEquals("id3", interpretation.getSecondaryFindings().get(2).getId());
+        assertNotNull(interpretation.getStats());
+        assertEquals(3, interpretation.getStats().getSecondaryFindings().getNumVariants());
+        assertEquals(3, (int) interpretation.getStats().getSecondaryFindings().getVariantStatusCount().get(ClinicalVariant.Status.NOT_REVIEWED));
 
         // Add existing finding
         try {
@@ -677,6 +683,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, interpretation.getSecondaryFindings().size());
         assertEquals("method", interpretation.getSecondaryFindings().get(0).getEvidences().get(0).getInterpretationMethodName());
         assertEquals("id2", interpretation.getSecondaryFindings().get(0).getId());
+        assertNotNull(interpretation.getStats());
+        assertEquals(1, interpretation.getStats().getSecondaryFindings().getNumVariants());
+        assertEquals(1, (int) interpretation.getStats().getSecondaryFindings().getVariantStatusCount().get(ClinicalVariant.Status.NOT_REVIEWED));
 
         // Set findings
         updateParams = new InterpretationUpdateParams()
@@ -693,6 +702,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("id2", interpretation.getSecondaryFindings().get(1).getId());
         assertEquals("method2", interpretation.getSecondaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
         assertEquals("id3", interpretation.getSecondaryFindings().get(2).getId());
+        assertNotNull(interpretation.getStats());
+        assertEquals(3, interpretation.getStats().getSecondaryFindings().getNumVariants());
+        assertEquals(3, (int) interpretation.getStats().getSecondaryFindings().getVariantStatusCount().get(ClinicalVariant.Status.NOT_REVIEWED));
 
         // Replace findings
         cv2.setEvidences(Collections.singletonList(new ClinicalVariantEvidence().setInterpretationMethodName("AnotherMethodName")));
@@ -712,6 +724,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("id2", interpretation.getSecondaryFindings().get(1).getId());
         assertEquals("YetAnotherMethodName", interpretation.getSecondaryFindings().get(2).getEvidences().get(0).getInterpretationMethodName());
         assertEquals("id3", interpretation.getSecondaryFindings().get(2).getId());
+        assertNotNull(interpretation.getStats());
+        assertEquals(3, interpretation.getStats().getSecondaryFindings().getNumVariants());
+        assertEquals(3, (int) interpretation.getStats().getSecondaryFindings().getVariantStatusCount().get(ClinicalVariant.Status.NOT_REVIEWED));
 
         // Remove finding with missing id
         variantAvro = new VariantAvro("", null, "chr2", 1, 2, "", "", "+", null, 1, null, null, null);
@@ -1196,12 +1211,12 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals("interpretation2", ca.getInterpretation().getId());
         assertEquals(0, ca.getSecondaryInterpretations().size());
         assertEquals(0, catalogManager.getInterpretationManager().search(STUDY,
-                new Query(InterpretationDBAdaptor.QueryParams.ID.key(), "interpretation1"), QueryOptions.empty(), sessionIdUser)
+                        new Query(InterpretationDBAdaptor.QueryParams.ID.key(), "interpretation1"), QueryOptions.empty(), sessionIdUser)
                 .getNumResults());
         // Old interpretation was deleted
         assertEquals(1, catalogManager.getInterpretationManager().search(STUDY, new Query()
-                .append(InterpretationDBAdaptor.QueryParams.ID.key(), "interpretation1")
-                .append(InterpretationDBAdaptor.QueryParams.DELETED.key(), true), QueryOptions.empty(), sessionIdUser)
+                        .append(InterpretationDBAdaptor.QueryParams.ID.key(), "interpretation1")
+                        .append(InterpretationDBAdaptor.QueryParams.DELETED.key(), true), QueryOptions.empty(), sessionIdUser)
                 .getNumResults());
 
         // Interpretation2 should be moved to secondary interpretations
@@ -1801,7 +1816,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         createDummyEnvironment(false, false);
 
         OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(STUDY,
-                new Query(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), "^chil"),
+                new Query(ParamConstants.CLINICAL_PROBAND_PARAM, "^chil"),
                 new QueryOptions(QueryOptions.INCLUDE, ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_ID.key()), sessionIdUser);
         assertEquals(2, search.getNumResults());
         assertTrue(StringUtils.isNotEmpty(search.first().getProband().getId()));
@@ -1853,7 +1868,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 Collections.singletonList(dummyEnvironment.first().getId()), null, sessionIdUser);
         assertEquals(1, delete.getNumDeleted());
 
-        OpenCGAResult<ClinicalAnalysis> clinicalResult  = catalogManager.getClinicalAnalysisManager().get(STUDY,
+        OpenCGAResult<ClinicalAnalysis> clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY,
                 Collections.singletonList(dummyEnvironment.first().getId()),
                 new Query(ClinicalAnalysisDBAdaptor.QueryParams.DELETED.key(), true), new QueryOptions(), false, sessionIdUser);
         assertEquals(1, clinicalResult.getNumResults());
@@ -1894,7 +1909,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new QueryOptions(Constants.FORCE, true), sessionIdUser);
         assertEquals(1, delete.getNumDeleted());
 
-        OpenCGAResult<ClinicalAnalysis> clinicalResult  = catalogManager.getClinicalAnalysisManager().get(STUDY,
+        OpenCGAResult<ClinicalAnalysis> clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY,
                 Collections.singletonList(ca.getId()),
                 new Query(ClinicalAnalysisDBAdaptor.QueryParams.DELETED.key(), true), new QueryOptions(), false, sessionIdUser);
         assertEquals(1, clinicalResult.getNumResults());
@@ -1905,9 +1920,9 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         // Old interpretations were deleted
         assertEquals(4, catalogManager.getInterpretationManager().search(STUDY, new Query()
-                .append(InterpretationDBAdaptor.QueryParams.ID.key(),  Arrays.asList("interpretation1", "interpretation2",
-                        "interpretation3", "interpretation4"))
-                .append(InterpretationDBAdaptor.QueryParams.DELETED.key(), true), QueryOptions.empty(), sessionIdUser)
+                        .append(InterpretationDBAdaptor.QueryParams.ID.key(), Arrays.asList("interpretation1", "interpretation2",
+                                "interpretation3", "interpretation4"))
+                        .append(InterpretationDBAdaptor.QueryParams.DELETED.key(), true), QueryOptions.empty(), sessionIdUser)
                 .getNumResults());
     }
 
@@ -1929,7 +1944,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new QueryOptions(Constants.FORCE, true), sessionIdUser);
         assertEquals(1, delete.getNumDeleted());
 
-        OpenCGAResult<ClinicalAnalysis> clinicalResult  = catalogManager.getClinicalAnalysisManager().get(STUDY,
+        OpenCGAResult<ClinicalAnalysis> clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY,
                 Collections.singletonList(ca.getId()), new Query(ClinicalAnalysisDBAdaptor.QueryParams.DELETED.key(), true),
                 new QueryOptions(), false, sessionIdUser);
         assertEquals(1, clinicalResult.getNumResults());
@@ -2291,7 +2306,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertFalse(result.first().isPanelLock());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, clinicalAnalysis.getId(),
-                new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser)
+                        new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser)
                 .first();
         assertEquals(2, interpretation.getPanels().size());
 
@@ -2325,7 +2340,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertTrue(result.first().isPanelLock());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, clinicalAnalysis.getId(),
-                new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser)
+                        new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser)
                 .first();
         assertEquals(2, interpretation.getPanels().size());
 
@@ -2358,7 +2373,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertFalse(result.first().isPanelLock());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, clinicalAnalysis.getId(),
-                new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser)
+                        new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser)
                 .first();
         assertEquals(2, interpretation.getPanels().size());
 

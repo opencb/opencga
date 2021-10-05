@@ -120,7 +120,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     })
     public Response infoSample(
             @ApiParam(value = ParamConstants.COHORTS_DESCRIPTION, required = true)
-                @PathParam("cohorts") String cohortsStr,
+            @PathParam("cohorts") String cohortsStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted) {
         try {
@@ -149,22 +149,20 @@ public class CohortWSServer extends OpenCGAWSServer {
                     dataType = "boolean", paramType = "query")
     })
     public Response searchCohorts(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "DEPRECATED: Name of the cohort") @QueryParam("name") String name,
-            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Enums.CohortType type,
-            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
-                @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
-                @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
-            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
-            @ApiParam(value = "Number of samples") @QueryParam("numSamples") String numSamples,
-            @ApiParam(value = "Release value") @QueryParam("release") String release) {
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.COHORT_IDS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.COHORT_UUIDS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TYPE_PARAM) Enums.CohortType type,
+            @ApiParam(value = ParamConstants.COHORT_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.COHORT_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.COHORT_DELETED_DESCRIPTION) @QueryParam(ParamConstants.COHORT_DELETED_PARAM) Boolean deleted,
+            @ApiParam(value = ParamConstants.COHORT_STATUS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.COHORT_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.COHORT_ANNOTATION_DESCRIPTION) @QueryParam(ParamConstants.COHORT_ANNOTATION_PARAM) String annotation,
+            @ApiParam(value = ParamConstants.COHORT_ACL_DESCRIPTION) @QueryParam(ParamConstants.COHORT_ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.COHORT_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.COHORT_SAMPLES_PARAM) String samplesStr,
+            @ApiParam(value = ParamConstants.COHORT_NUMBER_OF_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.COHORT_NUMBER_OF_SAMPLES_PARAM) String numSamples,
+            @ApiParam(value = ParamConstants.COHORT_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_RELEASE_PARAM) String release) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(catalogManager.getCohortManager().search(studyStr, query, queryOptions, token));
@@ -175,20 +173,22 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/distinct")
-    @ApiOperation(value = "Cohort distinct method")
+    @ApiOperation(value = "Cohort distinct method", response = Object.class)
     public Response distinct(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Enums.CohortType type,
-            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = "Boolean to retrieve deleted cohorts", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
-            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
-            @ApiParam(value = "Number of samples") @QueryParam("numSamples") String numSamples,
-            @ApiParam(value = "Release value") @QueryParam("release") String release,
+            @ApiParam(value = ParamConstants.COHORT_IDS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.COHORT_UUIDS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TYPE_PARAM) Enums.CohortType type,
+            @ApiParam(value = ParamConstants.COHORT_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.COHORT_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.COHORT_DELETED_DESCRIPTION) @QueryParam(ParamConstants.COHORT_DELETED_PARAM) Boolean deleted,
+            @ApiParam(value = ParamConstants.COHORT_STATUS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.COHORT_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.COHORT_ANNOTATION_DESCRIPTION) @QueryParam(ParamConstants.COHORT_ANNOTATION_PARAM) String annotation,
+            @ApiParam(value = ParamConstants.COHORT_ACL_DESCRIPTION) @QueryParam(ParamConstants.COHORT_ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.COHORT_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.COHORT_SAMPLES_PARAM) String samplesStr,
+            @ApiParam(value = ParamConstants.COHORT_NUMBER_OF_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.COHORT_NUMBER_OF_SAMPLES_PARAM) String numSamples,
+            @ApiParam(value = ParamConstants.COHORT_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_RELEASE_PARAM) String release,
             @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
@@ -199,45 +199,45 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    @POST
-    @Path("/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some cohort attributes", hidden = true, response = Cohort.class)
-    public Response updateQuery(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-                @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.COHORT_ID_DESCRIPTION) @QueryParam("id") String id,
-            @ApiParam(value = ParamConstants.COHORT_NAME_DESCRIPTION) @QueryParam("name") String name,
-            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Enums.CohortType type,
-            @ApiParam(value = ParamConstants.COHORT_STATUS_DESCRIPTION) @QueryParam("status") String status,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
-            @ApiParam(value = "Release value") @QueryParam("release") String release,
-            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
-            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
-            @ApiParam(value = "body") CohortUpdateParams params) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-
-            Map<String, Object> actionMap = new HashMap<>();
-            if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
-            }
-            if (samplesAction == null) {
-                samplesAction = ParamUtils.BasicUpdateAction.ADD;
-            }
-
-            actionMap.put(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
-            actionMap.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), samplesAction);
-            queryOptions.put(Constants.ACTIONS, actionMap);
-
-            return createOkResponse(catalogManager.getCohortManager().update(studyStr, query, params, queryOptions, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @POST
+//    @Path("/update")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "Update some cohort attributes", hidden = true, response = Cohort.class)
+//    public Response updateQuery(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
+//                @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = ParamConstants.COHORT_ID_DESCRIPTION) @QueryParam("id") String id,
+//            @ApiParam(value = ParamConstants.COHORT_NAME_DESCRIPTION) @QueryParam("name") String name,
+//            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Enums.CohortType type,
+//            @ApiParam(value = ParamConstants.COHORT_STATUS_DESCRIPTION) @QueryParam("status") String status,
+//            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+//            @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
+//            @ApiParam(value = "Release value") @QueryParam("release") String release,
+//            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+//                @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
+//            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+//                @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
+//            @ApiParam(value = "body") CohortUpdateParams params) {
+//        try {
+//            query.remove(ParamConstants.STUDY_PARAM);
+//
+//            Map<String, Object> actionMap = new HashMap<>();
+//            if (annotationSetsAction == null) {
+//                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
+//            }
+//            if (samplesAction == null) {
+//                samplesAction = ParamUtils.BasicUpdateAction.ADD;
+//            }
+//
+//            actionMap.put(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+//            actionMap.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), samplesAction);
+//            queryOptions.put(Constants.ACTIONS, actionMap);
+//
+//            return createOkResponse(catalogManager.getCohortManager().update(studyStr, query, params, queryOptions, token));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/{cohorts}/update")
@@ -246,11 +246,11 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response updateByPost(
             @ApiParam(value = "Comma separated list of cohort ids", required = true) @PathParam("cohorts") String cohorts,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-                @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
+            @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
+            @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "body") CohortUpdateParams params) {
         try {
             Map<String, Object> actionMap = new HashMap<>();
@@ -282,7 +282,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.VARIABLE_SET_DESCRIPTION, required = true) @QueryParam("variableSetId") String variableSetId,
             @ApiParam(value = "Path where the TSV file is located in OpenCGA or where it should be located.", required = true)
-                @QueryParam("path") String path,
+            @QueryParam("path") String path,
             @ApiParam(value = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).")
             @DefaultValue("false") @QueryParam("parents") boolean parents,
             @ApiParam(value = "Annotation set id. If not provided, variableSetId will be used.") @QueryParam("annotationSetId") String annotationSetId,
@@ -308,7 +308,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_ID) @PathParam("annotationSet") String annotationSetId,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE,RESET,REPLACE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @QueryParam("action") ParamUtils.CompleteUpdateAction action,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION) Map<String, Object> updateParams) {
         try {
             if (action == null) {

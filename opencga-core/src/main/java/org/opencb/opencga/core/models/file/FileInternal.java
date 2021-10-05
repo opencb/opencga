@@ -32,9 +32,9 @@ public class FileInternal extends Internal {
     public FileInternal() {
     }
 
-    public FileInternal(String registrationDate, FileStatus status, FileIndex index, Map<String, String> sampleMap,
+    public FileInternal(String registrationDate, String modificationDate, FileStatus status, FileIndex index, Map<String, String> sampleMap,
                         MissingSamples missingSamples) {
-        super(null, registrationDate);
+        super(null, registrationDate, modificationDate);
         this.status = status;
         this.index = index;
         this.sampleMap = sampleMap;
@@ -42,8 +42,8 @@ public class FileInternal extends Internal {
     }
 
     public static FileInternal init() {
-        return new FileInternal(TimeUtils.getTime(), new FileStatus(FileStatus.READY), FileIndex.initialize(), new HashMap<>(),
-                MissingSamples.initialize());
+        return new FileInternal(TimeUtils.getTime(), TimeUtils.getTime(), new FileStatus(FileStatus.READY), FileIndex.initialize(),
+                new HashMap<>(), MissingSamples.initialize());
     }
 
     @Override

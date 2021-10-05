@@ -233,12 +233,8 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
 
     public static class ExposedVariantSetStatsCalculator extends VariantSetStatsCalculator {
 
-        public ExposedVariantSetStatsCalculator(String studyId, Set<String> files) {
-            super(studyId, files, 0, null);
-        }
-
-        public ExposedVariantSetStatsCalculator(String studyId, Set<String> files, int numSamples, Map<String, Long> chrLengthMap) {
-            super(studyId, files, numSamples, chrLengthMap);
+        public ExposedVariantSetStatsCalculator(String studyId, int numFiles, int numSamples, Map<String, Long> chrLengthMap) {
+            super(studyId, numFiles, numSamples, chrLengthMap);
         }
 
         public int getTransitionsCount() {
@@ -305,8 +301,8 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
 
             int numSamples = context.getConfiguration().getInt(NUM_SAMPLES, 0);
             study = String.valueOf(getStudyId());
-            calculator = new ExposedVariantSetStatsCalculator(study, null, numSamples, null);
             fileIds = new HashSet<>(getFiles(context.getConfiguration()));
+            calculator = new ExposedVariantSetStatsCalculator(study, fileIds.size(), numSamples, null);
         }
 
         @Override
@@ -388,10 +384,10 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
             }
 
             int numSamples = context.getConfiguration().getInt(NUM_SAMPLES, 0);
-            long numFiles = context.getConfiguration().getInt(NUM_FILES, 0);
+            int numFiles = context.getConfiguration().getInt(NUM_FILES, 0);
             Map<String, Long> chrLengthMap = null;
 
-            ExposedVariantSetStatsCalculator calculator = new ExposedVariantSetStatsCalculator("", null, numSamples, chrLengthMap)
+            ExposedVariantSetStatsCalculator calculator = new ExposedVariantSetStatsCalculator("", numFiles, numSamples, chrLengthMap)
                     .setTransitionsCount(stats.transitionsCount)
                     .setTransversionsCount(stats.transversionsCount)
                     .setQualCount(stats.qualCount)
@@ -400,8 +396,6 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
                     .setStats(stats.getValue());
 
             calculator.post();
-
-            stats.getValue().setFilesCount(numFiles);
 
             context.write(n, new Text(stats.getValue().toString()));
         }

@@ -40,6 +40,7 @@ public class JobCreateParams {
     private Map<String, Object> params;
 
     private String creationDate;
+    private String modificationDate;
     private JobInternal internal;
 
     private TinyFile outDir;
@@ -58,7 +59,7 @@ public class JobCreateParams {
     }
 
     public JobCreateParams(String id, String description, ToolInfo tool, Enums.Priority priority, String commandLine,
-                           Map<String, Object> params, String creationDate, JobInternal internal, TinyFile outDir,
+                           Map<String, Object> params, String creationDate, String modificationDate, JobInternal internal, TinyFile outDir,
                            List<TinyFile> input, List<TinyFile> output, List<String> tags, JobResult result, TinyFile stdout,
                            TinyFile stderr, Map<String, Object> attributes) {
         this.id = id;
@@ -68,6 +69,7 @@ public class JobCreateParams {
         this.commandLine = commandLine;
         this.params = params;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.internal = internal;
         this.outDir = outDir;
         this.input = input;
@@ -81,7 +83,7 @@ public class JobCreateParams {
 
     public static JobCreateParams of(Job job) {
         return new JobCreateParams(job.getId(), job.getDescription(), job.getTool(), job.getPriority(), job.getCommandLine(),
-                job.getParams(), job.getCreationDate(),
+                job.getParams(), job.getCreationDate(), job.getModificationDate(),
                 job.getInternal() != null ? new JobInternal(job.getInternal().getStatus()) : null, TinyFile.of(job.getOutDir()),
                 job.getInput() != null ? job.getInput().stream().map(TinyFile::of).collect(Collectors.toList()) : Collections.emptyList(),
                 job.getOutput() != null ? job.getOutput().stream().map(TinyFile::of).collect(Collectors.toList()) : Collections.emptyList(),
@@ -98,6 +100,7 @@ public class JobCreateParams {
         sb.append(", commandLine='").append(commandLine).append('\'');
         sb.append(", params=").append(params);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", internal=").append(internal);
         sb.append(", outDir=").append(outDir);
         sb.append(", input=").append(input);
@@ -172,6 +175,15 @@ public class JobCreateParams {
 
     public JobCreateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public JobCreateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

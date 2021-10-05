@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -159,21 +160,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             throw new CatalogException("Only one individual allowed when requesting multiple versions");
         }
 
-        Function<Individual, String> individualStringFunction = Individual::getId;
-        IndividualDBAdaptor.QueryParams idQueryParam = null;
-        for (String entry : uniqueList) {
-            IndividualDBAdaptor.QueryParams param = IndividualDBAdaptor.QueryParams.ID;
-            if (UuidUtils.isOpenCgaUuid(entry)) {
-                param = IndividualDBAdaptor.QueryParams.UUID;
-                individualStringFunction = Individual::getUuid;
-            }
-            if (idQueryParam == null) {
-                idQueryParam = param;
-            }
-            if (idQueryParam != param) {
-                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
-            }
-        }
+        IndividualDBAdaptor.QueryParams idQueryParam = getFieldFilter(uniqueList);
         queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
@@ -181,6 +168,10 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
+        Function<Individual, String> individualStringFunction = Individual::getId;
+        if (idQueryParam.equals(IndividualDBAdaptor.QueryParams.UUID)) {
+            individualStringFunction = Individual::getUuid;
+        }
         if (ignoreException || individualDataResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, individualStringFunction, individualDataResult, ignoreException, versioned);
         }
@@ -194,6 +185,23 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the"
                     + " individuals.");
         }
+    }
+
+    IndividualDBAdaptor.QueryParams getFieldFilter(List<String> idList) throws CatalogException {
+        IndividualDBAdaptor.QueryParams idQueryParam = null;
+        for (String entry : idList) {
+            IndividualDBAdaptor.QueryParams param = IndividualDBAdaptor.QueryParams.ID;
+            if (UuidUtils.isOpenCgaUuid(entry)) {
+                param = IndividualDBAdaptor.QueryParams.UUID;
+            }
+            if (idQueryParam == null) {
+                idQueryParam = param;
+            }
+            if (idQueryParam != param) {
+                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
+            }
+        }
+        return idQueryParam;
     }
 
     private OpenCGAResult<Individual> getIndividual(long studyUid, String individualUuid, QueryOptions options) throws CatalogException {
@@ -222,7 +230,10 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         individual.setQualityControl(ParamUtils.defaultObject(individual.getQualityControl(), IndividualQualityControl::new));
 
         individual.setInternal(IndividualInternal.init());
-        individual.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(individual.getCreationDate()));
+        individual.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(individual.getCreationDate(),
+                IndividualDBAdaptor.QueryParams.CREATION_DATE.key()));
+        individual.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(individual.getModificationDate(),
+                IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         individual.setModificationDate(TimeUtils.getTime());
         individual.setRelease(studyManager.getCurrentRelease(study));
         individual.setVersion(1);
@@ -670,8 +681,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     private Map<Family.FamiliarRelationship, List<Individual>> lookForParentsAndChildren(Study study, Individual proband,
-                                                                                                   Set<String> skipIndividuals,
-                                                                                                   QueryOptions options, String userId)
+                                                                                         Set<String> skipIndividuals,
+                                                                                         QueryOptions options, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Map<Family.FamiliarRelationship, List<Individual>> finalResult = new HashMap<>();
 
@@ -682,8 +693,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     private Map<Family.FamiliarRelationship, List<Individual>> lookForParents(Study study, Individual proband,
-                                                                                        Set<String> skipIndividuals,
-                                                                                        QueryOptions options, String userId)
+                                                                              Set<String> skipIndividuals,
+                                                                              QueryOptions options, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Map<Family.FamiliarRelationship, List<Individual>> finalResult = new HashMap<>();
 
@@ -707,8 +718,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     private Map<Family.FamiliarRelationship, List<Individual>> lookForChildren(Study study, Individual proband,
-                                                                                         Set<String> skipIndividuals,
-                                                                                         QueryOptions options, String userId)
+                                                                               Set<String> skipIndividuals,
+                                                                               QueryOptions options, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Map<Family.FamiliarRelationship, List<Individual>> finalResult = new HashMap<>();
 
@@ -1204,11 +1215,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     /**
      * Update an Individual from catalog.
      *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param studyStr      Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param individualIds List of individual ids. Could be either the id or uuid.
-     * @param updateParams Data model filled only with the parameters to be updated.
-     * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
+     * @param updateParams  Data model filled only with the parameters to be updated.
+     * @param options       QueryOptions object.
+     * @param token         Session id of the user logged in.
      * @return A OpenCGAResult.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
@@ -1290,7 +1301,12 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.CREATION_DATE.key()))) {
-            ParamUtils.checkCreationDateFormat(parameters.getString(IndividualDBAdaptor.QueryParams.CREATION_DATE.key()));
+            ParamUtils.checkDateFormat(parameters.getString(IndividualDBAdaptor.QueryParams.CREATION_DATE.key()),
+                    IndividualDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key()))) {
+            ParamUtils.checkDateFormat(parameters.getString(IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
+                    IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key());
         }
 
         if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
@@ -1702,6 +1718,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     private void fixQuery(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);
+        changeQueryId(query, ParamConstants.INDIVIDUAL_POPULATION_NAME_PARAM, IndividualDBAdaptor.QueryParams.POPULATION_NAME.key());
+        changeQueryId(query, ParamConstants.INDIVIDUAL_POPULATION_SUBPOPULATION_PARAM,
+                IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key());
+        changeQueryId(query, ParamConstants.INTERNAL_STATUS_PARAM, IndividualDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
+        changeQueryId(query, ParamConstants.STATUS_PARAM, IndividualDBAdaptor.QueryParams.STATUS_NAME.key());
 
         if (query.containsKey(IndividualDBAdaptor.QueryParams.FATHER.key())) {
             if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {

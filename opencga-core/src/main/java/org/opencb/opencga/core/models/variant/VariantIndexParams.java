@@ -38,7 +38,7 @@ public class VariantIndexParams extends ToolParams {
                               String loadArchive,
                               String loadHomRef,
                               String postLoadCheck,
-                              boolean excludeGenotypes, String includeSampleData, String merge,
+                              String includeGenotypes, String includeSampleData, String merge,
                               String deduplicationPolicy,
                               boolean calculateStats, Aggregation aggregated, String aggregationMappingFile, boolean annotate,
                               String annotator, boolean overwriteAnnotations, boolean indexSearch, boolean skipIndexedFiles) {
@@ -58,7 +58,7 @@ public class VariantIndexParams extends ToolParams {
         this.loadArchive = loadArchive;
         this.loadHomRef = loadHomRef;
         this.postLoadCheck = postLoadCheck;
-        this.excludeGenotypes = excludeGenotypes;
+        this.includeGenotypes = includeGenotypes;
         this.includeSampleData = includeSampleData;
         this.merge = merge;
         this.deduplicationPolicy = deduplicationPolicy;
@@ -92,7 +92,7 @@ public class VariantIndexParams extends ToolParams {
     private String loadArchive;
     private String loadHomRef;
     private String postLoadCheck;
-    private boolean excludeGenotypes;
+    private String includeGenotypes;
     private String includeSampleData = ParamConstants.ALL;
     private String merge;
     private String deduplicationPolicy;
@@ -253,12 +253,12 @@ public class VariantIndexParams extends ToolParams {
         return this;
     }
 
-    public boolean isExcludeGenotypes() {
-        return excludeGenotypes;
+    public String getIncludeGenotypes() {
+        return includeGenotypes;
     }
 
-    public VariantIndexParams setExcludeGenotypes(boolean excludeGenotypes) {
-        this.excludeGenotypes = excludeGenotypes;
+    public VariantIndexParams setIncludeGenotypes(String includeGenotypes) {
+        this.includeGenotypes = includeGenotypes;
         return this;
     }
 

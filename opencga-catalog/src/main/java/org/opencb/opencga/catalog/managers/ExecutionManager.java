@@ -48,7 +48,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
                     JobDBAdaptor.QueryParams.STUDY_UID.key(), JobDBAdaptor.QueryParams.INTERNAL.key()));
 
     ExecutionManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-               DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
+                     DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
@@ -131,13 +131,13 @@ public class ExecutionManager extends ResourceManager<Execution> {
     }
 
     public OpenCGAResult<Execution> submitTool(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params,
-                                           String token) throws CatalogException {
+                                               String token) throws CatalogException {
         return submitTool(studyStr, toolId, priority, params, null, null, null, null, token);
     }
 
     public OpenCGAResult<Execution> submitProject(String projectStr, String toolId, Enums.Priority priority, Map<String, Object> params,
-                                            String jobId, String jobDescription, List<String> jobDependsOn, List<String> jobTags,
-                                            String token) throws CatalogException {
+                                                  String jobId, String jobDescription, List<String> jobDependsOn, List<String> jobTags,
+                                                  String token) throws CatalogException {
         // Project job
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
         // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
@@ -154,19 +154,19 @@ public class ExecutionManager extends ResourceManager<Execution> {
     }
 
     public OpenCGAResult<Execution> submitPipeline(String studyStr, String pipelineId, Enums.Priority priority, Map<String, Object> params,
-                                           String id, String description, List<String> dependsOn, List<String> tags, String token)
+                                                   String id, String description, List<String> dependsOn, List<String> tags, String token)
             throws CatalogException {
         return submit(studyStr, "PIPELINE__" + pipelineId, priority, params, id, description, dependsOn, tags, token);
     }
 
     public OpenCGAResult<Execution> submitTool(String studyStr, String pipelineId, Enums.Priority priority, Map<String, Object> params,
-                                                   String id, String description, List<String> dependsOn, List<String> tags, String token)
+                                               String id, String description, List<String> dependsOn, List<String> tags, String token)
             throws CatalogException {
         return submit(studyStr, "TOOL__" + pipelineId, priority, params, id, description, dependsOn, tags, token);
     }
 
     private OpenCGAResult<Execution> submit(String studyStr, String resourceId, Enums.Priority priority, Map<String, Object> params,
-                                           String id, String description, List<String> dependsOn, List<String> tags, String token)
+                                            String id, String description, List<String> dependsOn, List<String> tags, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
@@ -230,7 +230,8 @@ public class ExecutionManager extends ResourceManager<Execution> {
             if (execution.getInternal() != null) {
                 execution.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
             } else {
-                execution.setInternal(new ExecutionInternal(TimeUtils.getTime(), new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
+                execution.setInternal(new ExecutionInternal(TimeUtils.getTime(), TimeUtils.getTime(),
+                        new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
                         new JobInternalWebhook(null, new HashMap<>()), Collections.emptyList()));
             }
             execution.getInternal().getStatus().setDescription(e.toString());
@@ -271,8 +272,10 @@ public class ExecutionManager extends ResourceManager<Execution> {
 
         execution.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.EXECUTION));
         execution.setDescription(ParamUtils.defaultString(execution.getDescription(), ""));
-        execution.setCreationDate(ParamUtils.checkCreationDateOrGetCurrentCreationDate(execution.getCreationDate()));
-        execution.setModificationDate(TimeUtils.getTime());
+        execution.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(execution.getCreationDate(),
+                ExecutionDBAdaptor.QueryParams.CREATION_DATE.key()));
+        execution.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(execution.getModificationDate(),
+                ExecutionDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         execution.setPriority(ParamUtils.defaultObject(execution.getPriority(), Enums.Priority.MEDIUM));
         execution.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
 

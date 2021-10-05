@@ -58,6 +58,7 @@ import static org.junit.Assert.assertTrue;
 public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTest {
 
     public static final String VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
+//    public static final String VCF_TEST_FILE_NAME = "variant-test-somatic.vcf";
     protected StudyMetadata studyMetadata;
     protected VariantDBAdaptor dbAdaptor;
 

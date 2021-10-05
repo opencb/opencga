@@ -30,40 +30,86 @@ import java.util.Map;
  */
 public class Project extends PrivateFields {
 
+    /**
+     * Project ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.
+     *
+     * @apiNote Required, Immutable, Unique
+     */
     private String id;
-    private String name;
+
+    /**
+     * Global unique ID at the whole OpenCGA installation. This is automatically created during the Project creation and cannot be changed.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private String uuid;
+    private String name;
+
     /**
      * Full Qualified Name (user@projectId).
-      */
+     */
     private String fqn;
+
+    /**
+     * String representing when the sample was created, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String creationDate;
+
+    /**
+     * String representing when was the last time the sample was modified, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String modificationDate;
+
+    /**
+     * An string to describe the properties of the sample.
+     *
+     * @apiNote
+     */
     private String description;
+
     private ProjectOrganism organism;
     private int currentRelease;
 
     private List<Study> studies;
+
+    /**
+     * An object describing the internal information of the Project. This is managed by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private ProjectInternal internal;
+
+    /**
+     * You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.
+     *
+     * @apiNote
+     */
     private Map<String, Object> attributes;
 
     public Project() {
     }
 
     public Project(String id, String name, String description, ProjectOrganism organism, int currentRelease, ProjectInternal internal) {
-        this(id, name, TimeUtils.getTime(), description, organism, new LinkedList<>(), currentRelease, internal, new HashMap<>());
+        this(id, name, TimeUtils.getTime(), TimeUtils.getTime(), description, organism, new LinkedList<>(), currentRelease, internal,
+                new HashMap<>());
     }
 
-    public Project(String id, String name, String creationDate, String description, ProjectOrganism organism, int currentRelease,
-                   ProjectInternal internal) {
-        this(id, name, creationDate, description, organism, new LinkedList<>(), currentRelease, internal, new HashMap<>());
+    public Project(String id, String name, String creationDate, String modificationDate, String description, ProjectOrganism organism,
+                   int currentRelease, ProjectInternal internal) {
+        this(id, name, creationDate, modificationDate, description, organism, new LinkedList<>(), currentRelease, internal,
+                new HashMap<>());
     }
 
-    public Project(String id, String name, String creationDate, String description, ProjectOrganism organism, List<Study> studies,
-                   int currentRelease, ProjectInternal internal, Map<String, Object> attributes) {
+    public Project(String id, String name, String creationDate, String modificationDate, String description, ProjectOrganism organism,
+                   List<Study> studies, int currentRelease, ProjectInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.description = description;
         this.organism = organism;
         this.studies = studies;

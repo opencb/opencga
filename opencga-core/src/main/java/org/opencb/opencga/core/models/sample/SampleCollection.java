@@ -18,57 +18,13 @@ package org.opencb.opencga.core.models.sample;
 
 import java.util.Map;
 
-/**
- * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh interdum
- * finibus.
- */
 public class SampleCollection {
-    /**
-     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
-     * lectus, ut ultrices nunc vulputate ac.
-     *
-     * @apiNote Internal, Unique, Immutable
-     */
-    private String tissue;
 
-    /**
-     * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh
-     * interdum finibus.
-     *
-     * @apiNote Internal, Unique, Immutable
-     * @implNote The sample collection is a list of samples
-     * @see [ZetaGenomics] (https://www.zettagenomics.com)
-     * @since 2.1
-     */
+    private String tissue;
     private String organ;
-    /**
-     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
-     * lectus, ut ultrices nunc vulputate ac.
-     *
-     * @apiNote Internal, Unique, Immutable
-     * @deprecated
-     */
     private String quantity;
-    /**
-     * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh
-     * interdum finibus.
-     *
-     * @apiNote Required, Immutable
-     */
     private String method;
-    /**
-     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
-     * lectus, ut ultrices nunc vulputate ac.
-     *
-     * @apiNote Internal, Unique, Immutable
-     */
     private String date;
-    /**
-     * Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui
-     * dignissim leo, quis ullamcorper felis elit a augue.
-     *
-     * @apiNote Required
-     */
     private Map<String, Object> attributes;
 
     public SampleCollection() {

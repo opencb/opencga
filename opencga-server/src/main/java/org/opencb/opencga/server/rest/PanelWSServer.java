@@ -77,35 +77,35 @@ public class PanelWSServer extends OpenCGAWSServer {
         }
     }
 
-    @POST
-    @Path("/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update panel attributes", hidden = true, response = Panel.class)
-    public Response updateByQuery(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Panel id") @QueryParam("id") String id,
-            @ApiParam(value = "Panel name") @QueryParam("name") String name,
-            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
-            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
-            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
-            @ApiParam(value = "Panel categories") @QueryParam("categories") String categories,
-            @ApiParam(value = "Panel tags") @QueryParam("tags") String tags,
-            @ApiParam(value = "Panel description") @QueryParam("description") String description,
-            @ApiParam(value = "Panel author") @QueryParam("author") String author,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "Release") @QueryParam("release") String release,
-
-            @ApiParam(value = "Create a new version of panel", defaultValue = "false")
-                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
-            @ApiParam(name = "body", value = "Panel parameters") PanelUpdateParams panelParams) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(panelManager.update(studyStr, query, panelParams, true, queryOptions, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @POST
+//    @Path("/update")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "Update panel attributes", hidden = true, response = Panel.class)
+//    public Response updateByQuery(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Panel id") @QueryParam("id") String id,
+//            @ApiParam(value = "Panel name") @QueryParam("name") String name,
+//            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
+//            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
+//            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
+//            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
+//            @ApiParam(value = "Panel categories") @QueryParam("categories") String categories,
+//            @ApiParam(value = "Panel tags") @QueryParam("tags") String tags,
+//            @ApiParam(value = "Panel description") @QueryParam("description") String description,
+//            @ApiParam(value = "Panel author") @QueryParam("author") String author,
+//            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
+//            @ApiParam(value = "Release") @QueryParam("release") String release,
+//
+//            @ApiParam(value = "Create a new version of panel", defaultValue = "false")
+//                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+//            @ApiParam(name = "body", value = "Panel parameters") PanelUpdateParams panelParams) {
+//        try {
+//            query.remove(ParamConstants.STUDY_PARAM);
+//            return createOkResponse(panelManager.update(studyStr, query, panelParams, true, queryOptions, token));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/{panels}/update")
@@ -164,29 +164,24 @@ public class PanelWSServer extends OpenCGAWSServer {
     })
     public Response search(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Panel name") @QueryParam("name") String name,
-            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
-            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
-            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
-            @ApiParam(value = "Panel categories") @QueryParam("categories") String categories,
-            @ApiParam(value = "Panel tags") @QueryParam("tags") String tags,
-            @ApiParam(value = "Panel description") @QueryParam("description") String description,
-            @ApiParam(value = "Panel author") @QueryParam("author") String author,
-            @ApiParam(value = "Boolean to retrieve deleted panels", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
-            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
-            @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
-            @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
-            @QueryParam("release") String release,
-            @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
-                    int snapshot) {
+            @ApiParam(value = ParamConstants.PANEL_ID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.PANEL_UUID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.PANEL_NAME_DESCRIPTION) @QueryParam(ParamConstants.PANEL_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.PANEL_DISORDERS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_DISORDERS_PARAM) String disorders,
+            @ApiParam(value = ParamConstants.PANEL_VARIANTS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_VARIANTS_PARAM) String variants,
+            @ApiParam(value = ParamConstants.PANEL_GENES_DESCRIPTION) @QueryParam(ParamConstants.PANEL_GENES_PARAM) String genes,
+            @ApiParam(value = ParamConstants.PANEL_REGIONS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_REGIONS_PARAM) String regions,
+            @ApiParam(value = ParamConstants.PANEL_CATEGORIES_DESCRIPTION) @QueryParam(ParamConstants.PANEL_CATEGORIES_PARAM) String categories,
+            @ApiParam(value = ParamConstants.PANEL_TAGS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_TAGS_PARAM) String tags,
+            @ApiParam(value = ParamConstants.PANEL_DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.PANEL_DELETED_PARAM) boolean deleted,
+            @ApiParam(value = ParamConstants.PANEL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.PANEL_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.PANEL_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.PANEL_ACL_DESCRIPTION) @QueryParam(ParamConstants.PANEL_ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.PANEL_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.PANEL_SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SNAPSHOT_PARAM) int snapshot) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-
             return createOkResponse(panelManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -195,29 +190,25 @@ public class PanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/distinct")
-    @ApiOperation(value = "Panel distinct method")
+    @ApiOperation(value = "Panel distinct method", response = Object.class)
     public Response distinct(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Panel name") @QueryParam("name") String name,
-            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
-            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
-            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
-            @ApiParam(value = "Panel categories") @QueryParam("categories") String categories,
-            @ApiParam(value = "Panel tags") @QueryParam("tags") String tags,
-            @ApiParam(value = "Panel description") @QueryParam("description") String description,
-            @ApiParam(value = "Panel author") @QueryParam("author") String author,
-            @ApiParam(value = "Boolean to retrieve deleted panels", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
-            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
-            @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
-            @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
-            @QueryParam("release") String release,
-            @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
-                    int snapshot,
+            @ApiParam(value = ParamConstants.PANEL_ID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.PANEL_UUID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.PANEL_NAME_DESCRIPTION) @QueryParam(ParamConstants.PANEL_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.PANEL_DISORDERS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_DISORDERS_PARAM) String disorders,
+            @ApiParam(value = ParamConstants.PANEL_VARIANTS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_VARIANTS_PARAM) String variants,
+            @ApiParam(value = ParamConstants.PANEL_GENES_DESCRIPTION) @QueryParam(ParamConstants.PANEL_GENES_PARAM) String genes,
+            @ApiParam(value = ParamConstants.PANEL_REGIONS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_REGIONS_PARAM) String regions,
+            @ApiParam(value = ParamConstants.PANEL_CATEGORIES_DESCRIPTION) @QueryParam(ParamConstants.PANEL_CATEGORIES_PARAM) String categories,
+            @ApiParam(value = ParamConstants.PANEL_TAGS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_TAGS_PARAM) String tags,
+            @ApiParam(value = ParamConstants.PANEL_DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.PANEL_DELETED_PARAM) boolean deleted,
+            @ApiParam(value = ParamConstants.PANEL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.PANEL_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.PANEL_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.PANEL_ACL_DESCRIPTION) @QueryParam(ParamConstants.PANEL_ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.PANEL_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.PANEL_SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SNAPSHOT_PARAM) int snapshot,
             @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
@@ -253,7 +244,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @QueryParam(Constants.SILENT) boolean silent) {
         try {
             List<String> idList = getIdList(sampleIdsStr);
-            return createOkResponse(panelManager.getAcls(studyStr, idList, member,silent, token));
+            return createOkResponse(panelManager.getAcls(studyStr, idList, member, silent, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

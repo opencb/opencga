@@ -1,7 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.query;
 
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.CtBtCombinationIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.core.CombinationTripleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
@@ -10,7 +10,8 @@ public class SampleAnnotationIndexQuery {
     private final byte[] annotationIndexMask; // byte[] = {mask , index}
     private final IndexFieldFilter consequenceTypeFilter;
     private final IndexFieldFilter biotypeFilter;
-    private final CtBtCombinationIndexSchema.Filter ctBtFilter;
+    private final IndexFieldFilter transcriptFlagFilter;
+    private final CombinationTripleIndexSchema.Filter ctBtTfFilter;
     private final IndexFilter clinicalFilter;
     private final IndexFilter populationFrequencyFilter;
 
@@ -18,18 +19,22 @@ public class SampleAnnotationIndexQuery {
         this.annotationIndexMask = new byte[]{0, 0};
         this.consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();
         this.biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
-        this.ctBtFilter = schema.getCtBtIndex().getField().noOpFilter();
+        this.transcriptFlagFilter = schema.getTranscriptFlagIndexSchema().getField().noOpFilter();
+        this.ctBtTfFilter = schema.getCtBtTfIndex().getField().noOpFilter();
         this.clinicalFilter = schema.getClinicalIndexSchema().noOpFilter();
         this.populationFrequencyFilter = schema.getPopFreqIndex().noOpFilter();
     }
 
     public SampleAnnotationIndexQuery(byte[] annotationIndexMask, IndexFieldFilter consequenceTypeFilter, IndexFieldFilter biotypeFilter,
-                                      CtBtCombinationIndexSchema.Filter ctBtFilter, IndexFilter clinicalFilter,
+                                      IndexFieldFilter transcriptFlagFilter,
+                                      CombinationTripleIndexSchema.Filter ctBtTfFilter,
+                                      IndexFilter clinicalFilter,
                                       IndexFilter populationFrequencyFilter) {
         this.annotationIndexMask = annotationIndexMask;
         this.consequenceTypeFilter = consequenceTypeFilter;
         this.biotypeFilter = biotypeFilter;
-        this.ctBtFilter = ctBtFilter;
+        this.transcriptFlagFilter = transcriptFlagFilter;
+        this.ctBtTfFilter = ctBtTfFilter;
         this.clinicalFilter = clinicalFilter;
         this.populationFrequencyFilter = populationFrequencyFilter;
     }
@@ -50,8 +55,12 @@ public class SampleAnnotationIndexQuery {
         return biotypeFilter;
     }
 
-    public CtBtCombinationIndexSchema.Filter getCtBtFilter() {
-        return ctBtFilter;
+    public IndexFieldFilter getTranscriptFlagFilter() {
+        return transcriptFlagFilter;
+    }
+
+    public CombinationTripleIndexSchema.Filter getCtBtTfFilter() {
+        return ctBtTfFilter;
     }
 
     public IndexFilter getPopulationFrequencyFilter() {

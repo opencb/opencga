@@ -1,6 +1,8 @@
 package org.opencb.opencga.catalog.templates;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.lang3.StringUtils;
@@ -9,16 +11,14 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+// TODO: Split this class. Add hierarchy
 public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
 
     private final Path path;
@@ -27,6 +27,7 @@ public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
 
     private final Format format;
     private BufferedReader br;
+    private MappingIterator<T> mappingIterator;
     private ObjectMapper objectMapper;
     private T next;
 
@@ -46,11 +47,15 @@ public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
         this.clazz = clazz;
         this.logger = LoggerFactory.getLogger(TemplateEntryIterator.class);
 
+        // FIXME: This should be part of a Factory method. Split this in sub-classes
         if (path.resolve(entity + ".json").toFile().exists()) {
             this.path = path.resolve(entity + ".json");
             this.format = Format.JSON;
         } else if (path.resolve(entity + ".yaml").toFile().exists()) {
             this.path = path.resolve(entity + ".yaml");
+            this.format = Format.YAML;
+        } else if (path.resolve(entity + ".yml").toFile().exists()) {
+            this.path = path.resolve(entity + ".yml");
             this.format = Format.YAML;
         } else if (path.resolve(entity + ".txt").toFile().exists()) {
             this.path = path.resolve(entity + ".txt");
@@ -80,20 +85,26 @@ public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
     private void initBufferedReader() {
         try {
             br = new BufferedReader(new FileReader(path.toFile()));
-        } catch (FileNotFoundException e) {
-            logger.error("Could not initialised BufferedReader: '{}'", e.getMessage(), e);
-        }
-
-        switch (format) {
-            case JSON:
-            case TXT:
-                this.objectMapper = new ObjectMapper();
-                break;
-            case YAML:
-                this.objectMapper = new ObjectMapper(new YAMLFactory());
-                break;
-            default:
-                throw new IllegalStateException("Unexpected format '" + format + "'");
+            switch (format) {
+                case TXT:
+                    objectMapper = new ObjectMapper();
+                    break;
+                case JSON:
+                    objectMapper = new ObjectMapper();
+                    objectMapper.configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, false);
+                    mappingIterator = objectMapper.readerFor(clazz).readValues(br);
+                    break;
+                case YAML:
+                    objectMapper = new ObjectMapper(new YAMLFactory());
+                    objectMapper.configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, false);
+                    mappingIterator = objectMapper.readerFor(clazz).readValues(br);
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected format '" + format + "'");
+            }
+        } catch (IOException e) {
+            logger.error("Could not initialised BufferedReader: '{}'", e.getMessage());
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -103,10 +114,10 @@ public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
         }
         switch (format) {
             case JSON:
-                this.next = readNextJsonLine();
+                this.next = readNextJson();
                 break;
             case YAML:
-                this.next = readNextYamlLine();
+                this.next = readNextYaml();
                 break;
             case TXT:
                 this.next = readNextTxtLine();
@@ -125,32 +136,14 @@ public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
         return entry;
     }
 
-    private T readNextJsonLine() {
-        String jsonLine = readNextLine();
-        if (jsonLine == null) {
-            return null;
-        }
-
-        try {
-            return objectMapper.readValue(jsonLine, clazz);
-        } catch (JsonProcessingException e) {
-            logger.error("JSON parse exception: {}", e.getMessage(), e);
-            return null;
-        }
+    private T readNextJson() {
+        // Do not read line by line. Json objects may come as "pretty", i.e. multiline
+        return mappingIterator.hasNext() ? mappingIterator.next() : null;
     }
 
-    private T readNextYamlLine() {
-        String yamlLine = readNextLine();
-        if (yamlLine == null) {
-            return null;
-        }
-
-        try {
-            return objectMapper.readValue(yamlLine, clazz);
-        } catch (JsonProcessingException e) {
-            logger.error("YAML parse exception: {}", e.getMessage(), e);
-            return null;
-        }
+    private T readNextYaml() {
+        // Do not read line by line. Yaml objects ALWAYS come as "pretty", i.e. multiline
+        return mappingIterator.hasNext() ? mappingIterator.next() : null;
     }
 
     private T readNextTxtLine() throws IOException {

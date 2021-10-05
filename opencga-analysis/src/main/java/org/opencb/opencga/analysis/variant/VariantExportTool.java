@@ -63,16 +63,14 @@ public class VariantExportTool extends OpenCgaTool {
         if (StringUtils.isEmpty(toolParams.getOutputFormat())) {
             toolParams.setOutputFormat(VariantWriterFactory.VariantOutputFormat.VCF.toString());
         }
-        if (toolParams.isCompress()) {
-            if (!toolParams.getOutputFormat().toLowerCase().endsWith(".gz")) {
-                toolParams.setOutputFormat(toolParams.getOutputFormat() + ".GZ");
-            }
-        }
         if (toolParams.getLimit() != null && toolParams.getLimit() == 0) {
             toolParams.setLimit(null);
         }
 
         outputFormat = VariantWriterFactory.toOutputFormat(toolParams.getOutputFormat(), toolParams.getOutputFileName());
+        if (outputFormat.isPlain()) {
+            outputFormat = outputFormat.withGzip();
+        }
     }
 
     @Override
