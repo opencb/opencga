@@ -101,9 +101,22 @@ public abstract class AbstractManager {
     }
 
     protected void fixQueryObject(Query query) {
-        if (query.containsKey(ParamConstants.INTERNAL_STATUS_PARAM)) {
-            query.put("internal.status", query.get(ParamConstants.INTERNAL_STATUS_PARAM));
-            query.remove(ParamConstants.INTERNAL_STATUS_PARAM);
+        changeQueryId(query, ParamConstants.INTERNAL_STATUS_PARAM, "internal.status");
+    }
+
+    /**
+     * Change key used in query object.
+     * This method is called internally by the managers to change the keys used by users to query the data for the ones the corresponding
+     * DBAdaptors will understand.
+     *
+     * @param query Query object.
+     * @param currentKey Public field offered to users to query.
+     * @param newKey     Internal field that needs to be replaced with.
+     */
+    protected void changeQueryId(Query query, String currentKey, String newKey) {
+        if (query != null && query.containsKey(currentKey)) {
+            query.put(newKey, query.get(currentKey));
+            query.remove(currentKey);
         }
     }
 

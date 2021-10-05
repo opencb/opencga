@@ -79,7 +79,6 @@ public class Job extends PrivateStudyUid {
     private File stdout;
     private File stderr;
     private boolean visited;
-    public static final String OPENCGA_PARENTS = "OPENCGA_PARENTS";
 
     /**
      * An integer describing the current data release.
@@ -89,6 +88,8 @@ public class Job extends PrivateStudyUid {
     private int release;
     private JobStudyParam study;
     private Map<String, Object> attributes;
+
+    public static final String OPENCGA_PARENTS = "OPENCGA_PARENTS";
 
     public Job() {
     }

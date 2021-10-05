@@ -62,6 +62,7 @@
     * [Configuration](manual/using-opencga/command-line/configuration.md)
     * [Files](manual/using-opencga/command-line/files.md)
   * [Public Demo](manual/using-opencga/public-demo.md)
+<<<<<<< HEAD
 * [Data Management](manual/data-management/README.md)
   * [Data Ingestion Process](manual/data-management/data-ingestion-process.md)
   * [Public Demo](manual/data-management/public-demo.md)
@@ -76,6 +77,18 @@
     * [Study ACLs](manual/data-management-1/sharing-and-permissions/permissions.md)
   * [Data Versioning](manual/data-management-1/data-versioning.md)
   * [Adding Custom Metadata](manual/data-management-1/adding-custom-metadata.md)
+=======
+* [Managing Data](manual/data-management/README.md)
+  * [Sharing and Permissions](manual/data-management/sharing-and-permissions/README.md)
+    * [Users and Groups](manual/data-management/sharing-and-permissions/users-and-groups.md)
+    * [Study ACLs](manual/data-management/sharing-and-permissions/permissions.md)
+  * [Create Projects and Studies](manual/data-management/projects-and-studies.md)
+  * [Load VCF Files to a Study](manual/data-management/ingestion-of-vcf-files.md)
+  * [Working with Files](manual/data-management/working-with-files.md)
+  * [Population of Metadata](manual/data-management/population-of-metadata/README.md)
+    * [Adding Custom Metadata](manual/data-management/population-of-metadata/adding-custom-metadata.md)
+    * [Data Versioning](manual/data-management/population-of-metadata/data-versioning.md)
+>>>>>>> release-2.1.x
 * [Alignment Engine](manual/alignment-engine/README.md)
   * [BAM Index](manual/alignment-engine/bam-index.md)
   * [Alignment Read Query](manual/alignment-engine/alignment-read-query.md)

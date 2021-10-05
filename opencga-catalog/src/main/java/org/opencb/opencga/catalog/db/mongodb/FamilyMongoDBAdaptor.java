@@ -1051,10 +1051,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         Query queryCopy = new Query(query);
         queryCopy.remove(QueryParams.DELETED.key());
 
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
-
         if ("all".equalsIgnoreCase(queryCopy.getString(QueryParams.VERSION.key()))) {
             queryCopy.put(Constants.ALL_VERSIONS, true);
             queryCopy.remove(QueryParams.VERSION.key());
@@ -1080,17 +1076,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         break;
                     case STUDY_UID:
                         addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case PHENOTYPES:
                     case DISORDERS:
@@ -1127,16 +1112,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case UUID:
                     case ID:
                     case NAME:
-                    case DESCRIPTION:
                     case EXPECTED_SIZE:
                     case RELEASE:
                     case VERSION:
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
-                    case PHENOTYPES_SOURCE:
-                    case INTERNAL_STATUS_MSG:
-                    case INTERNAL_STATUS_DATE:
-//                    case ANNOTATION_SETS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

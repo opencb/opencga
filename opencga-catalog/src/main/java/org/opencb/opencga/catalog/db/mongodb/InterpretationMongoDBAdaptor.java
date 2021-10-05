@@ -1163,6 +1163,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
+
     @Override
     public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -1188,7 +1189,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
         Query queryCopy = new Query(query);
         queryCopy.remove(SampleDBAdaptor.QueryParams.DELETED.key());
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
 
         if ("all".equalsIgnoreCase(queryCopy.getString(QueryParams.VERSION.key()))) {
             queryCopy.put(Constants.ALL_VERSIONS, true);
@@ -1216,14 +1216,14 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     case STUDY_UID:
                         addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case SNAPSHOT:
+                        addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case ANALYST:
                     case ANALYST_ID:
@@ -1257,12 +1257,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     // Other parameter that can be queried.
                     case ID:
                     case UUID:
+                    case PANELS_UID:
                     case RELEASE:
-                    case SNAPSHOT:
                     case VERSION:
                     case COMMENTS_DATE:
                     case CLINICAL_ANALYSIS_ID:
-                    case DESCRIPTION:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:
