@@ -1,20 +1,12 @@
-# Sharing and Permissions
-
-
-
-## Overview
-
-OpenCGA provides a powerful mechanism of custom-built and secure permission system defined by a mechanism of **Access Control Lists \(ACLs\).  Catalog** is the OpenCGA component that implements the permission mechanism.   
-
-The system enables to define a list of permissions at a member level, being a member either a isolate user or a defined group of users. 
+# Users and Groups
 
 ## Users in OpenCGA
 
-Any study has intrinsically defined three different membership levels:
+Any study has intrinsically defined three different membership levels or user groups:
 
 ### Owner <a id="SharingandPermissions-Owner"></a>
 
-The owner of an study is the user that creates the study. Because of that an study will always have one and only one owner, who will be able to perform any action over the data contained in the study. There are two actions that are only possible for the owner user:  _**delete the study**_ and _**assign or remove users to/from admins**_ **groups** _\(see next section\)._
+The owner of an study is the user that creates the study. Because of that an study will always have one and only one owner, who will be able to perform any action over the data contained in the study. There are two actions that are only possible for the owner user: _**delete the study**_ and _**assign or remove users to/from admins**_ **groups** _\(see next section\)._
 
 ### Administrative groups <a id="SharingandPermissions-Administrativegroups"></a>
 
@@ -31,13 +23,11 @@ Apart from _admins,_ there is also an special group called _members_. Any user w
 * The _admin_ users might want to predefined some permissions any _member_ of a study will have. In such a case, _admin_ users will just add new users to that group and those users will automatically be granted the permissions the group has.
 * If an _admin_ user wants to completely revoke any permission to one user, by removing that user from the _members_ group, OpenCGA will automatically search for any permissions set for that user in any entity and remove it.
 
-### Decision Algorithm 
+### Decision Algorithm
 
-The next schema provides a visual explanation of the algorithm implemented in Catalog for deciding whether the user has or not access to the data in the context of a study. 
+The next schema provides a visual explanation of the algorithm implemented in Catalog for deciding whether the user has or not access to the data in the context of a study.
 
 ![Decision Algorithm for granting permissions ](../../../.gitbook/assets/image%20%282%29.png)
-
-
 
 There are two circumstances under which the algorithm behaves as follows:
 

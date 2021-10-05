@@ -26,7 +26,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -235,8 +234,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @param groupId group id.
      * @param members new list of users that will compose the group.
      * @return OpenCGAResult object.
-     * @throws CatalogDBException when any of the members do not exist.
-     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogDBException            when any of the members do not exist.
+     * @throws CatalogParameterException     if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     OpenCGAResult<Group> setUsersToGroup(long studyId, String groupId, List<String> members)
@@ -284,8 +283,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * 1. Take the user out of all the synced groups.
      * 2. Add the user to any group from the groupList that matches the name in the database and is synced with the authOrigin given.
      *
-     * @param user User to be resynced in groups.
-     * @param groupList List containing possible groups that are synced and where the user should be added to.
+     * @param user       User to be resynced in groups.
+     * @param groupList  List containing possible groups that are synced and where the user should be added to.
      * @param authOrigin Authentication origin of the synced groups.
      * @return OpenCGAResult object.
      * @throws CatalogDBException CatalogDBException.
@@ -295,8 +294,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
     /**
      * Create the permission rule to the list of permission rules defined for the entry in the studyId.
      *
-     * @param studyId study id corresponding to the study where the permission rule will be added.
-     * @param entry entry for which the permission rule is to be applied (samples, cohorts, files...)
+     * @param studyId         study id corresponding to the study where the permission rule will be added.
+     * @param entry           entry for which the permission rule is to be applied (samples, cohorts, files...)
      * @param permissionRules PermissionRules object that will be added.
      * @return OpenCGAResult object.
      * @throws CatalogDBException if the permission rule id already existed.
@@ -308,7 +307,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * Get permission rules defined for an entry.
      *
      * @param studyId study id where the permission rules are stored.
-     * @param entry entry for which the permission rules is applied (samples, cohorts...)
+     * @param entry   entry for which the permission rules is applied (samples, cohorts...)
      * @return the list of permission rules defined.
      * @throws CatalogDBException if there is any error.
      */
@@ -317,15 +316,17 @@ public interface StudyDBAdaptor extends Iterable<Study> {
     /**
      * Mark a concrete permission rule to be deleted by the daemon.
      *
-     * @param studyId study id where the permission rule is stored.
-     * @param entry entry for which the permission rules is applied (samples, cohorts...)
+     * @param studyId          study id where the permission rule is stored.
+     * @param entry            entry for which the permission rules is applied (samples, cohorts...)
      * @param permissionRuleId permission rule id to be marked for deletion.
-     * @param deleteAction Action to be performed after the permission rule is removed:
-                REMOVE: Remove all the permissions assigned by the permission rule even if it had been also assigned manually.
-                REVERT: Remove all the permissions assigned by the permission rule but retain manual permissions as well as other
-                        permissions that might have been assigned by other permission rules (leave permissions as if the permission rule
-                        had never existed).
-                NONE: Remove the permission rule but no the permissions that might have been eventually assigned because of it.
+     * @param deleteAction     Action to be performed after the permission rule is removed:
+     *                         REMOVE: Remove all the permissions assigned by the permission rule even if it had been also manually
+     *                         assigned.
+     *                         REVERT: Remove all the permissions assigned by the permission rule but retain manual permissions as well as
+     *                         other permissions that might have been assigned by other permission rules (leave permissions as if the
+     *                         permission rule had never existed).
+     *                         NONE: Remove the permission rule but no the permissions that might have been eventually assigned because of
+     *                         it.
      * @return OpenCGAResult object.
      * @throws CatalogDBException if the permission rule does not exist.
      */
@@ -339,6 +340,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
 
     /**
      * The method will obtain the number of variableSets with the same id.
+     *
      * @param variableSetId id of the variableSet.
      * @return the count of variableSets with the variableSetId.
      */
@@ -390,10 +392,10 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * Get variable set.
      *
      * @param variableSetId variable set id.
-     * @param options Query options.
-     * @param user User asking for the variable set.
+     * @param options       Query options.
+     * @param user          User asking for the variable set.
      * @return variableSet
-     * @throws CatalogDBException catalogDBException.
+     * @throws CatalogDBException            catalogDBException.
      * @throws CatalogAuthorizationException if there is any permission error.
      */
     OpenCGAResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options, String user)
@@ -431,10 +433,9 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         INTERNAL_CONFIGURATION("internal.configuration", OBJECT, ""),
         INTERNAL_CONFIGURATION_CLINICAL("internal.configuration.clinical", OBJECT, ""),
         INTERNAL_INDEX_RECESSIVE_GENE("internal.index.recessiveGene", OBJECT, ""),
-        INTERNAL_VARIANT_ENGINE_CONFIGURATION("internal.configuration.variantEngineConfiguration", Type.OBJECT, ""),
-        INTERNAL_VARIANT_ENGINE_CONFIGURATION_OPTIONS("internal.configuration.variantEngineConfiguration.options", Type.OBJECT, ""),
-        INTERNAL_VARIANT_ENGINE_CONFIGURATION_SAMPLE_INDEX("internal.configuration.variantEngineConfiguration.sampleIndex", Type.OBJECT,
-                ""),
+        INTERNAL_CONFIGURATION_VARIANT_ENGINE("internal.configuration.variantEngine", Type.OBJECT, ""),
+        INTERNAL_CONFIGURATION_VARIANT_ENGINE_OPTIONS("internal.configuration.variantEngine.options", Type.OBJECT, ""),
+        INTERNAL_CONFIGURATION_VARIANT_ENGINE_SAMPLE_INDEX("internal.configuration.variantEngine.sampleIndex", Type.OBJECT, ""),
         DATASTORES("dataStores", TEXT_ARRAY, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
@@ -470,6 +471,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         VARIABLE_SET_DESCRIPTION("variableSets.description", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
+
         static {
             map = new LinkedMap();
             for (QueryParams params : QueryParams.values()) {
@@ -487,6 +489,14 @@ public interface StudyDBAdaptor extends Iterable<Study> {
             this.description = description;
         }
 
+        public static Map<String, QueryParams> getMap() {
+            return map;
+        }
+
+        public static QueryParams getParam(String key) {
+            return map.get(key);
+        }
+
         @Override
         public String key() {
             return key;
@@ -500,14 +510,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         @Override
         public String description() {
             return description;
-        }
-
-        public static Map<String, QueryParams> getMap() {
-            return map;
-        }
-
-        public static QueryParams getParam(String key) {
-            return map.get(key);
         }
     }
 
@@ -526,6 +528,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         STUDY_UID("studyUid", DECIMAL, "");
 
         private static Map<String, VariableSetParams> map;
+
         static {
             map = new LinkedMap();
             for (VariableSetParams params : VariableSetParams.values()) {
@@ -543,6 +546,14 @@ public interface StudyDBAdaptor extends Iterable<Study> {
             this.description = description;
         }
 
+        public static Map<String, VariableSetParams> getMap() {
+            return map;
+        }
+
+        public static VariableSetParams getParam(String key) {
+            return map.get(key);
+        }
+
         @Override
         public String key() {
             return key;
@@ -556,14 +567,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         @Override
         public String description() {
             return description;
-        }
-
-        public static Map<String, VariableSetParams> getMap() {
-            return map;
-        }
-
-        public static VariableSetParams getParam(String key) {
-            return map.get(key);
         }
     }
 

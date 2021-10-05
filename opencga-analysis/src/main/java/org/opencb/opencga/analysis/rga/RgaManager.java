@@ -658,8 +658,7 @@ public class RgaManager implements AutoCloseable {
             if (!includeIndividuals.isEmpty()) {
                 // 3. Get list of indexed sample ids for which the user has permissions from the list of includeIndividuals provided
                 Query sampleQuery = new Query()
-                        .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
-                                + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
+                        .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED)
                         .append(SampleDBAdaptor.QueryParams.ID.key(), includeIndividuals);
                 OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
@@ -676,8 +675,7 @@ public class RgaManager implements AutoCloseable {
                 List<String> sampleIds = result.first().getBuckets().stream().map(FacetField.Bucket::getValue).collect(Collectors.toList());
 
                 // 3. Get list of sample ids for which the user has permissions
-                Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
-                        + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
+                Query sampleQuery = new Query(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
                 OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
                         SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
@@ -778,8 +776,7 @@ public class RgaManager implements AutoCloseable {
             if (!includeIndividuals.isEmpty()) {
                 // 3. Get list of sample ids for which the user has permissions from the list of includeIndividuals provided
                 Query sampleQuery = new Query()
-                        .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
-                                + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
+                        .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED)
                         .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), includeIndividuals);
                 OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
@@ -799,8 +796,7 @@ public class RgaManager implements AutoCloseable {
                 // TODO: Batches of samples to query catalog
                 // 3. Get list of individual ids for which the user has permissions
                 Query sampleQuery = new Query()
-                        .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
-                                + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
+                        .append(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS)
                         .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
                 OpenCGAResult<?> authorisedSampleIdResult = catalogManager.getSampleManager().distinct(study.getFqn(),
                         SampleDBAdaptor.QueryParams.ID.key(), sampleQuery, token);
@@ -878,6 +874,30 @@ public class RgaManager implements AutoCloseable {
         }
     }
 
+    // Added to improve performance issues. Need to be addressed properly and add this information in study internal.rga.stats field
+    @Deprecated
+    private Integer getTotalIndividuals(Study study) {
+        // In the future, this will need to be fetched from study internal.
+        // Atm, it will be fetched from study.attributes.rga.stats.totalIndividuals
+        if (study.getAttributes() == null) {
+            return null;
+        }
+        Object rga = study.getAttributes().get("RGA");
+        if (rga == null) {
+            return null;
+        }
+        Object stats = ((Map) rga).get("stats");
+        if (stats == null) {
+            return null;
+        }
+        Object totalIndividuals = ((Map) stats).get("totalIndividuals");
+        if (totalIndividuals != null) {
+            return Integer.parseInt(String.valueOf(totalIndividuals));
+        } else {
+            return null;
+        }
+    }
+
     public OpenCGAResult<KnockoutByIndividualSummary> individualSummary(String studyStr, Query query, QueryOptions options, String token)
             throws RgaException, CatalogException, IOException {
         StopWatch stopWatch = StopWatch.createStarted();
@@ -886,6 +906,22 @@ public class RgaManager implements AutoCloseable {
         String collection = getMainCollectionName(study.getFqn());
 
         ExecutorService executor = Executors.newFixedThreadPool(4);
+
+        // Check number of individuals matching query without checking their permissions
+        Future<Integer> totalIndividualsFuture = null;
+        if (options.getBoolean(QueryOptions.COUNT)) {
+            Integer totalIndividuals = getTotalIndividuals(study);
+            if (totalIndividuals != null) {
+                // Obtain it directly from the study
+                totalIndividualsFuture = executor.submit(() -> totalIndividuals);
+            } else {
+                totalIndividualsFuture = executor.submit(() -> {
+                    QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.INDIVIDUAL_ID + ")");
+                    DataResult<FacetField> result = rgaEngine.facetedQuery(collection, query, facetOptions);
+                    return ((Number) result.first().getAggregationValues().get(0)).intValue();
+                });
+            }
+        }
 
         Preprocess preprocess;
         try {
@@ -902,13 +938,6 @@ public class RgaManager implements AutoCloseable {
 
         catalogManager.getAuthorizationManager().checkStudyPermission(study.getUid(), preprocess.getUserId(),
                 StudyAclEntry.StudyPermissions.VIEW_AGGREGATED_VARIANTS);
-
-        // Check number of individuals matching query without checking their permissions
-        Future<Integer> totalIndividualsFuture = executor.submit(() -> {
-            QueryOptions facetOptions = new QueryOptions(QueryOptions.FACET, "unique(" + RgaDataModel.INDIVIDUAL_ID + ")");
-            DataResult<FacetField> result = rgaEngine.facetedQuery(collection, query, facetOptions);
-            return ((Number) result.first().getAggregationValues().get(0)).intValue();
-        });
 
         List<String> sampleIds = preprocess.getQuery().getAsStringList(RgaQueryParams.SAMPLE_ID.key());
         preprocess.getQuery().remove(RgaQueryParams.SAMPLE_ID.key());
@@ -967,11 +996,14 @@ public class RgaManager implements AutoCloseable {
         }
 
         ObjectMap resultAttributes = new ObjectMap();
-        try {
-            resultAttributes.put("totalIndividuals", totalIndividualsFuture.get());
-        } catch (InterruptedException | ExecutionException e) {
-            logger.error("Unexpected error getting total number of individuals without checking permissions: {}", e.getMessage(), e);
+        if (totalIndividualsFuture != null) {
+            try {
+                resultAttributes.put("totalIndividuals", totalIndividualsFuture.get());
+            } catch (InterruptedException | ExecutionException e) {
+                logger.error("Unexpected error getting total number of individuals without checking permissions: {}", e.getMessage(), e);
+            }
         }
+
         int time = (int) stopWatch.getTime(TimeUnit.MILLISECONDS);
         OpenCGAResult<KnockoutByIndividualSummary> result = new OpenCGAResult<>(time, Collections.emptyList(),
                 knockoutByIndividualSummaryList.size(), knockoutByIndividualSummaryList, -1);
@@ -1675,17 +1707,21 @@ public class RgaManager implements AutoCloseable {
         boolean count = queryOptions.getBoolean(QueryOptions.COUNT);
 
         if (preprocessResult.getQuery().isEmpty()) {
+            StopWatch stopWatch = StopWatch.createStarted();
+            // If the query is empty, query Catalog directly to fetch the first X individuals
             QueryOptions catalogOptions = new QueryOptions(SampleManager.INCLUDE_SAMPLE_IDS)
                     .append(QueryOptions.LIMIT, limit)
                     .append(QueryOptions.SKIP, skip)
                     .append(QueryOptions.COUNT, queryOptions.getBoolean(QueryOptions.COUNT));
             Query catalogQuery = new Query(SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key(), RgaIndex.Status.INDEXED);
             if (!isOwnerOrAdmin) {
-                catalogQuery.put(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
-                        + SampleAclEntry.SamplePermissions.VIEW_VARIANTS);
+                catalogQuery.put(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS);
             }
 
             OpenCGAResult<Sample> search = catalogManager.getSampleManager().search(study.getFqn(), catalogQuery, catalogOptions, token);
+            stopWatch.stop();
+            logger.info("Fetch first {} individuals from Catalog with skip {} and count {}: {} milliseconds.", limit, skip, count,
+                    stopWatch.getTime(TimeUnit.MILLISECONDS));
             if (search.getNumResults() == 0) {
                 throw RgaException.noResultsMatching();
             }
@@ -1708,8 +1744,7 @@ public class RgaManager implements AutoCloseable {
             // From the list of sample ids the user wants to retrieve data from, we filter those for which the user has permissions
             Query sampleQuery = new Query();
             if (!isOwnerOrAdmin) {
-                sampleQuery.put(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW + ","
-                        + SampleAclEntry.SamplePermissions.VIEW_VARIANTS);
+                sampleQuery.put(ACL_PARAM, userId + ":" + SampleAclEntry.SamplePermissions.VIEW_VARIANTS);
             }
 
             List<String> authorisedSamples = new LinkedList<>();

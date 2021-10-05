@@ -497,7 +497,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         c.outdir,
                         c.outputFileName,
                         c.commonOptions.outputFormat,
-                        c.compress,
                         c.variantsFile), getParams(c.project, c.study).appendAll(options));
     }
 

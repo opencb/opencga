@@ -155,21 +155,21 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{studies}/summary")
-    @ApiOperation(value = "Fetch study information plus some basic stats", hidden = true,
-            notes = "Fetch study information plus some basic stats such as the number of files, samples, cohorts...")
-    public Response summary(@ApiParam(value = ParamConstants.STUDIES_DESCRIPTION, required = true)
-                            @PathParam(ParamConstants.STUDIES_PARAM) String studies,
-                            @ApiParam(value = ParamConstants.SILENT_DESCRIPTION,
-                                    defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
-        try {
-            List<String> idList = getIdList(studies);
-            return createOkResponse(studyManager.getSummary(idList, queryOptions, silent, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/{studies}/summary")
+//    @ApiOperation(value = "Fetch study information plus some basic stats", hidden = true,
+//            notes = "Fetch study information plus some basic stats such as the number of files, samples, cohorts...")
+//    public Response summary(@ApiParam(value = ParamConstants.STUDIES_DESCRIPTION, required = true)
+//                            @PathParam(ParamConstants.STUDIES_PARAM) String studies,
+//                            @ApiParam(value = ParamConstants.SILENT_DESCRIPTION,
+//                                    defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
+//        try {
+//            List<String> idList = getIdList(studies);
+//            return createOkResponse(studyManager.getSummary(idList, queryOptions, silent, token));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @GET
     @Path("/{study}/groups")
@@ -530,8 +530,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     private void fixVariable(Variable variable) {
         variable.setId(StringUtils.isNotEmpty(variable.getId()) ? variable.getId() : variable.getName());
-        if (variable.getVariableSet() != null && variable.getVariableSet().size() > 0) {
-            for (Variable variable1 : variable.getVariableSet()) {
+        if (variable.getVariables() != null && variable.getVariables().size() > 0) {
+            for (Variable variable1 : variable.getVariables()) {
                 fixVariable(variable1);
             }
         }

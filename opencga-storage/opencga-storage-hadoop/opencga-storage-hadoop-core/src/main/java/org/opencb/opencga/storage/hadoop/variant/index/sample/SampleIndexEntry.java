@@ -517,22 +517,23 @@ public class SampleIndexEntry {
             return count == that.count
                     && Objects.equals(gt, that.gt)
                     && Arrays.equals(annotationCounts, that.annotationCounts)
-                    && Arrays.equals(fileIndex, that.fileIndex)
-                    && Bytes.equals(variants, variantsOffset, that.variantsLength,
+                    && Bytes.equals(fileIndex, fileIndexOffset, fileIndexLength,
+                        that.fileIndex, that.fileIndexOffset, that.fileIndexLength)
+                    && Bytes.equals(variants, variantsOffset, variantsLength,
                         that.variants, that.variantsOffset, that.variantsLength)
-                    && Bytes.equals(annotationIndex, annotationIndexOffset, that.annotationIndexLength,
+                    && Bytes.equals(annotationIndex, annotationIndexOffset, annotationIndexLength,
                         that.annotationIndex, that.annotationIndexOffset, that.annotationIndexLength)
-                    && Bytes.equals(consequenceTypeIndex, consequenceTypeIndexOffset, that.consequenceTypeIndexLength,
+                    && Bytes.equals(consequenceTypeIndex, consequenceTypeIndexOffset, consequenceTypeIndexLength,
                         that.consequenceTypeIndex, that.consequenceTypeIndexOffset, that.consequenceTypeIndexLength)
-                    && Bytes.equals(biotypeIndex, biotypeIndexOffset, that.biotypeIndexLength,
+                    && Bytes.equals(biotypeIndex, biotypeIndexOffset, biotypeIndexLength,
                         that.biotypeIndex, that.biotypeIndexOffset, that.biotypeIndexLength)
-                    && Bytes.equals(ctBtTfIndex, ctBtTfIndexOffset, that.ctBtTfIndexLength,
+                    && Bytes.equals(ctBtTfIndex, ctBtTfIndexOffset, ctBtTfIndexLength,
                         that.ctBtTfIndex, that.ctBtTfIndexOffset, that.ctBtTfIndexLength)
-                    && Bytes.equals(populationFrequencyIndex, populationFrequencyIndexOffset, that.populationFrequencyIndexLength,
+                    && Bytes.equals(populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength,
                         that.populationFrequencyIndex, that.populationFrequencyIndexOffset, that.populationFrequencyIndexLength)
-                    && Bytes.equals(clinicalIndex, clinicalIndexOffset, that.clinicalIndexLength,
+                    && Bytes.equals(clinicalIndex, clinicalIndexOffset, clinicalIndexLength,
                         that.clinicalIndex, that.clinicalIndexOffset, that.clinicalIndexLength)
-                    && Bytes.equals(parentsIndex, parentsIndexOffset, that.parentsIndexLength,
+                    && Bytes.equals(parentsIndex, parentsIndexOffset, parentsIndexLength,
                         that.parentsIndex, that.parentsIndexOffset, that.parentsIndexLength);
         }
 

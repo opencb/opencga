@@ -50,7 +50,9 @@ public class Variable {
     /**
      * Variables for validate internal fields. Only valid if type is OBJECT.
      **/
+    @Deprecated
     private Set<Variable> variableSet;
+    private Set<Variable> variables;
     private Map<String, Object> attributes;
 
     public Variable() {
@@ -58,7 +60,7 @@ public class Variable {
 
     public Variable(String id, String name, String category, VariableType type, Object defaultValue, boolean required,
                     boolean multiValue, List<String> allowedValues, List<String> allowedKeys, long rank, String dependsOn,
-                    String description, Set<Variable> variableSet, Map<String, Object> attributes) {
+                    String description, Set<Variable> variables, Map<String, Object> attributes) {
         this.name = name;
         this.id = id;
         this.category = category;
@@ -71,16 +73,16 @@ public class Variable {
         this.rank = rank;
         this.dependsOn = dependsOn;
         this.description = description;
-        this.variableSet = variableSet;
+        this.variables = variables;
         this.attributes = attributes;
     }
 
     @Deprecated
     public Variable(String id, String category, VariableType type, Object defaultValue, boolean required, boolean multiValue,
                     List<String> allowedValues, List<String> allowedKeys, long rank, String dependsOn, String description,
-                    Set<Variable> variableSet, Map<String, Object> attributes) {
+                    Set<Variable> variables, Map<String, Object> attributes) {
         this(id, "", category, type, defaultValue, required, multiValue, allowedValues, allowedKeys, rank, dependsOn, description,
-                variableSet, attributes);
+                variables, attributes);
     }
 
     public enum VariableType {
@@ -113,7 +115,7 @@ public class Variable {
         sb.append(", rank=").append(rank);
         sb.append(", dependsOn='").append(dependsOn).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", variableSet=").append(variableSet);
+        sb.append(", variables=").append(variables);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -227,12 +229,22 @@ public class Variable {
         return this;
     }
 
+    @Deprecated
     public Set<Variable> getVariableSet() {
-        return variableSet;
+        return getVariables();
     }
 
+    @Deprecated
     public Variable setVariableSet(Set<Variable> variableSet) {
-        this.variableSet = variableSet;
+        return setVariables(variableSet);
+    }
+
+    public Set<Variable> getVariables() {
+        return variables;
+    }
+
+    public Variable setVariables(Set<Variable> variables) {
+        this.variables = variables;
         return this;
     }
 
@@ -265,13 +277,13 @@ public class Variable {
                 && Objects.equals(allowedValues, variable.allowedValues)
                 && Objects.equals(dependsOn, variable.dependsOn)
                 && Objects.equals(description, variable.description)
-                && Objects.equals(variableSet, variable.variableSet)
+                && Objects.equals(variables, variable.variables)
                 && Objects.equals(attributes, variable.attributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, category, type, defaultValue, required, multiValue, allowedValues, rank, dependsOn,
-                description, variableSet, attributes);
+        return Objects.hash(id, name, category, type, defaultValue, required, multiValue, allowedValues, rank, dependsOn, description,
+                variables, attributes);
     }
 }

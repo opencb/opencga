@@ -81,6 +81,7 @@ solr:
 
 cellbase:
   host: "https://ws.opencb.org/cellbase/"
+  version: "v4"
 
 analysis:
   execution:
@@ -181,6 +182,7 @@ rest:
       - ""              # Accept access by IP .Testing purposes only.
     # Accepts /opencga and /opencga/....
     paths:
+    - /opencga
     - /opencga/
     tls: []
     #  - secretName: chart-example-tls

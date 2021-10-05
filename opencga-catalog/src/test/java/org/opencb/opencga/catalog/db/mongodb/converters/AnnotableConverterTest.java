@@ -65,9 +65,9 @@ public class AnnotableConverterTest {
         Set<Variable> bcSet = new HashSet<>();
         bcSet.add(new Variable().setId("c").setType(Variable.VariableType.BOOLEAN));
         Set<Variable> bSet = new HashSet<>();
-        bSet.add(new Variable().setId("b").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(bcSet));
+        bSet.add(new Variable().setId("b").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariables(bcSet));
         Set<Variable> rootSet = new HashSet<>();
-        rootSet.add(new Variable().setId("a").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(bSet));
+        rootSet.add(new Variable().setId("a").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariables(bSet));
 
         VariableSet vs = new VariableSet().setVariables(rootSet).setUid(1);
 
@@ -113,9 +113,9 @@ public class AnnotableConverterTest {
         Set<Variable> bcSet = new HashSet<>();
         bcSet.add(new Variable().setId("c").setMultiValue(true).setType(Variable.VariableType.BOOLEAN));
         Set<Variable> bSet = new HashSet<>();
-        bSet.add(new Variable().setId("b").setType(Variable.VariableType.OBJECT).setVariableSet(bcSet));
+        bSet.add(new Variable().setId("b").setType(Variable.VariableType.OBJECT).setVariables(bcSet));
         Set<Variable> rootSet = new HashSet<>();
-        rootSet.add(new Variable().setId("a").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(bSet));
+        rootSet.add(new Variable().setId("a").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariables(bSet));
 
         VariableSet vs = new VariableSet().setVariables(rootSet).setUid(1);
 
@@ -159,21 +159,21 @@ public class AnnotableConverterTest {
         ab2c1Set.add(new Variable().setId("ab2c1d1").setMultiValue(true).setType(Variable.VariableType.INTEGER));
         ab2c1Set.add(new Variable().setId("ab2c1d2").setType(Variable.VariableType.STRING));
         Set<Variable> ab2Set = new HashSet<>();
-        ab2Set.add(new Variable().setId("ab2c1").setType(Variable.VariableType.OBJECT).setVariableSet(ab2c1Set));
+        ab2Set.add(new Variable().setId("ab2c1").setType(Variable.VariableType.OBJECT).setVariables(ab2c1Set));
 
         Set<Variable> ab3c1Set = new HashSet<>();
         ab3c1Set.add(new Variable().setId("ab3c1d1").setMultiValue(true).setType(Variable.VariableType.STRING));
         ab3c1Set.add(new Variable().setId("ab3c1d2").setType(Variable.VariableType.DOUBLE));
         Set<Variable> ab3Set = new HashSet<>();
-        ab3Set.add(new Variable().setId("ab3c1").setType(Variable.VariableType.OBJECT).setMultiValue(true).setVariableSet(ab3c1Set));
+        ab3Set.add(new Variable().setId("ab3c1").setType(Variable.VariableType.OBJECT).setMultiValue(true).setVariables(ab3c1Set));
 
         Set<Variable> aSet = new HashSet<>();
-        aSet.add(new Variable().setId("ab1").setType(Variable.VariableType.OBJECT).setVariableSet(ab1Set));
-        aSet.add(new Variable().setId("ab2").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(ab2Set));
-        aSet.add(new Variable().setId("ab3").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariableSet(ab3Set));
+        aSet.add(new Variable().setId("ab1").setType(Variable.VariableType.OBJECT).setVariables(ab1Set));
+        aSet.add(new Variable().setId("ab2").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariables(ab2Set));
+        aSet.add(new Variable().setId("ab3").setMultiValue(true).setType(Variable.VariableType.OBJECT).setVariables(ab3Set));
 
         Set<Variable> rootSet = new HashSet<>();
-        rootSet.add(new Variable().setId("a").setType(Variable.VariableType.OBJECT).setVariableSet(aSet));
+        rootSet.add(new Variable().setId("a").setType(Variable.VariableType.OBJECT).setVariables(aSet));
 
         VariableSet vs = new VariableSet().setVariables(rootSet).setUid(1).setId("vsId");
 

@@ -39,13 +39,13 @@ From OpenCGA v2.0.0 the Python client source code can be found at GitHub Release
 ```text
 ## Get latest stable version from https://github.com/opencb/opencga/releases. You can use wget from the terminal
 wget https://github.com/opencb/opencga/releases/download/v2.0.0/opencga-2.0.0.tar.gz
- 
+
 ## Decompress
 tar -zxvf opencga-2.0.0.tar.gz
- 
+
 ## Move to the pyOpenCGA client folder
 cd opencga-2.0.0/clients/python
- 
+
 ## Install the library
 python setup.py install
 ```
@@ -59,10 +59,10 @@ Configuration is handled by the _ClientConfiguration_ class. You can create a _C
 ```text
 ## Import ClientConfiguration class
 from pyopencga.opencga_config import ClientConfiguration
- 
+
 ## You can create a ClientConfiguration by using the path to the client-configuration.yml file (it can also accept a JSON file)
 config = ClientConfiguration('opencga-2.0.0/conf/client-configuration.yml')
- 
+
 ## Additionally, you can pass a dictionary using the same structure as the client-configuration.yml (the only required parameter is REST host)
 config = ClientConfiguration({"rest": {"host": "http://bioinfo.hpc.cam.ac.uk/opencga-prod"}})
 ```
@@ -77,20 +77,20 @@ To create an _OpencgaClient_ instance, a _ClientConfiguration_ instance must be 
 ## Import ClientConfiguration and OpencgaClient class
 from pyopencga.opencga_config import ClientConfiguration
 from pyopencga.opencga_client import OpencgaClient
- 
+
 ## Create an instance of OpencgaClient passing the configuration
 config = ClientConfiguration('opencga-2.0.0/conf/client-configuration.yml')
 oc = OpencgaClient(config)
- 
+
 ### Two authentication options:
 ## Option 1. If the user has a valid token, it can be passed to start doing calls as an authenticated user
 oc = OpencgaClient(config, token='TOKEN')
- 
+
 ## Option 2. If no token is provided, the user must login with valid credentials. Password is optional (if it is not passed to the login method, it will be prompted to the user)
 oc.login(user='USER')   ## The password will be asked
 # or
 oc.login(user='USER', password='PASSWORD')
- 
+
 ## You can logout by executing the following command, the token will be deleted.
 oc.logout()
 ```
@@ -109,13 +109,13 @@ individuals = oc.individuals
 samples = oc.samples
 cohorts = oc.cohorts
 panels = oc.panels
- 
+
 ## Create analysis clients
 alignments = oc.alignment
 variants = oc.variant
 clinical = oc.clinical
 ga4gh = oc.ga4gh
- 
+
 ## Create administrative clients
 admin = oc.admin
 meta = oc.meta
@@ -126,7 +126,7 @@ variant_operations = oc.variant_operations
 
 Clients implements **all** available REST API endpoints, one method has been implemented for each REST web service. The list of available actions that can be performed with all those clients can be checked in Swagger as explained in [RESTful Web Services\#Swagger](http://docs.opencb.org/display/opencga/RESTful+Web+Services#RESTfulWebServices-Swagger). Each particular client has a method defined for each available web service implemented for the resource. For instance, the whole list of actions available for the **Sample** resource are shown below.
 
-![](../../../.gitbook/assets/image%20%288%29%20%282%29%20%282%29%20%282%29%20%282%29.png)
+![](../../../.gitbook/assets/image%20%288%29%20%282%29%20%282%29%20%282%29%20%282%29%20%282%29.png)
 
 For all those actions, there is a method available in the sample client. For instance, to search for samples using the _/search_ web service, you need to execute:
 
@@ -146,37 +146,37 @@ The implemented _RestResponse_ methods are:
 ```text
 ## Returns the list of results for the response in position "response_pos" (response_pos=0 by default)
 sample_response.get_results(response_pos)
- 
+
 ## Returns the result in position "result_pos" for the response in position "response_pos" (response_pos=0 by default)
 sample_response.get_result(result_pos, response_pos)
- 
+
 ## Returns the list of responses
 sample_response.get_responses()
- 
+
 ## Returns the response in position "response_pos" (response_pos=0 by default)
 sample_response.get_response(response_pos)
- 
+
 ## Returns all results from the response in position "response_pos" as an iterator (response_pos=None returns all results for all QueryResponses)
 sample_response.result_iterator(response_pos)
- 
+
 ## Returns all response events by type "event_type" ('INFO', 'WARNING' or 'ERROR') (event_type=None returns all types of event)
 sample_response.get_response_events(event_type)
- 
+
 ## Returns all response events by type "event_type" ('INFO', 'WARNING or 'ERROR') for the response in position "response_pos" (event_type=None returns all types of event; response_pos=0 by default)
 sample_response.get_result_events(event_type, response_pos)
- 
+
 ## Return number of matches for the response in position "response_pos" (response_pos=None returns the number for all QueryResponses)
 sample_response.get_num_matches(response_pos)
- 
+
 ## Return number of results for the response in position "response_pos" (response_pos=None returns the number for all QueryResponses)
 sample_response.get_num_results(response_pos)
- 
+
 ## Return number of insertions for the response in position "response_pos" (response_pos=None returns the number for all QueryResponses)
 sample_response.get_num_inserted(response_pos)
- 
+
 ## Return number of updates for the response in position "response_pos" (response_pos=None returns the number for all QueryResponses)
 sample_response.get_num_updated(response_pos)
- 
+
 ## Return number of deletions for the response in position "response_pos" (response_pos=None returns the number for all QueryResponses)
 sample_response.get_num_deleted(response_pos)
 ```
@@ -196,18 +196,18 @@ sample_response.print_results(fields='id', response_pos=0, limit=5, separator='\
 # First, we need to import both the ClientConfiguration and the OpencgaClient
 from pyopencga.opencga_config import ClientConfiguration
 from pyopencga.opencga_client import OpencgaClient
- 
+
 # Second, we need to set up the configuration
 # The main client-configuration.yml file has a "host" section to point to the REST OpenCGA endpoints
 # We need to either pass the path to the configuration file or a dictionary with the same structure of the file
 config = ClientConfiguration({'rest': {'host': 'http://bioinfo.hpc.cam.ac.uk/opencga-prod'}})
- 
+
 # Third, we create an instance of the OpencgaClient passing the configuration
 oc = OpencgaClient(config)
- 
+
 # Finally, we need to authenticate.
 oc.login(user='demouser', password='demouser')
- 
+
 # Additionally, we can check that we've logged in successfully by printing the obtained token
 print(oc.token)
 ```
@@ -218,15 +218,15 @@ print(oc.token)
 # We can get the ID of all the available projects in this OpenCGA installation
 for project in oc.projects.search().get_results():
     print(project['id'])
- 
+
 # We can get the ID of all the available studies in the project
 for study in oc.studies.search(project='family').get_results():
     print(study['id'])
- 
+
 # We can get the ID for all the available families in the study
 for family in oc.families.search(study='corpasome').get_results():
     print(family['id'])
- 
+
 # We can get the ID for all the available samples in the study
 for sample in oc.samples.search(study='corpasome').get_results():
     print(sample['id'])
@@ -241,10 +241,10 @@ individuals_query_response = oc.individuals.search(
     disorders='OMIM:611597',  # id of the disorders of interest
     include='id'  # retrieve only these fields from the results
 )
- 
+
 # If we want to know exactly the number of individuals obtained, we can run:
 print(individuals_query_response.get_num_results())
- 
+
 # Now we fetch all the variants falling in the "BFSP2" gene for those individuals
 # In this case, we will limit the variant query to a maximum of 10 results
 # We also exclude sample information (includeSample='none') as it can be huge and would make this query much slower
@@ -265,7 +265,7 @@ for individual in individuals_query_response.get_results():
 # Now we are interested in getting the rs IDs for the first 10 variants for a particular sample
 for variant in oc.variants.query(sample='ISDBM322015', study='corpasome', limit=10).get_results():
     print(variant['names'])
- 
+
 # We can also get rs IDs for multiple samples
 for variant in oc.variants.query(sample='ISDBM322015,ISDBM322016,ISDBM322017,ISDBM322018', study='corpasome', limit=10).get_results():
     print(variant['names'])
@@ -276,7 +276,7 @@ for variant in oc.variants.query(sample='ISDBM322015,ISDBM322016,ISDBM322017,ISD
 ```text
 # If we have an ID for a variant, we can obtain its ID in OpenCGA (chromosome:position:reference:alternate)
 variant_id = oc.variants.query(study='corpasome', xref='rs1851943').get_result(0)['id']
- 
+
 # Now we are interested in getting all the samples that have that particular ID
 for variant in oc.variants.query_sample(study='corpasome', variant=variant_id, debug=True).get_results():
     for study in variant['studies']:

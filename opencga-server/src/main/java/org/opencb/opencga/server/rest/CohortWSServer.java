@@ -199,45 +199,45 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    @POST
-    @Path("/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some cohort attributes", hidden = true, response = Cohort.class)
-    public Response updateQuery(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-                @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.COHORT_ID_DESCRIPTION) @QueryParam("id") String id,
-            @ApiParam(value = ParamConstants.COHORT_NAME_DESCRIPTION) @QueryParam("name") String name,
-            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Enums.CohortType type,
-            @ApiParam(value = ParamConstants.COHORT_STATUS_DESCRIPTION) @QueryParam("status") String status,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
-            @ApiParam(value = "Release value") @QueryParam("release") String release,
-            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
-            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
-            @ApiParam(value = "body") CohortUpdateParams params) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-
-            Map<String, Object> actionMap = new HashMap<>();
-            if (annotationSetsAction == null) {
-                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
-            }
-            if (samplesAction == null) {
-                samplesAction = ParamUtils.BasicUpdateAction.ADD;
-            }
-
-            actionMap.put(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
-            actionMap.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), samplesAction);
-            queryOptions.put(Constants.ACTIONS, actionMap);
-
-            return createOkResponse(catalogManager.getCohortManager().update(studyStr, query, params, queryOptions, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @POST
+//    @Path("/update")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "Update some cohort attributes", hidden = true, response = Cohort.class)
+//    public Response updateQuery(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
+//                @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = ParamConstants.COHORT_ID_DESCRIPTION) @QueryParam("id") String id,
+//            @ApiParam(value = ParamConstants.COHORT_NAME_DESCRIPTION) @QueryParam("name") String name,
+//            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Enums.CohortType type,
+//            @ApiParam(value = ParamConstants.COHORT_STATUS_DESCRIPTION) @QueryParam("status") String status,
+//            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+//            @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
+//            @ApiParam(value = "Release value") @QueryParam("release") String release,
+//            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+//                @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
+//            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+//                @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
+//            @ApiParam(value = "body") CohortUpdateParams params) {
+//        try {
+//            query.remove(ParamConstants.STUDY_PARAM);
+//
+//            Map<String, Object> actionMap = new HashMap<>();
+//            if (annotationSetsAction == null) {
+//                annotationSetsAction = ParamUtils.BasicUpdateAction.ADD;
+//            }
+//            if (samplesAction == null) {
+//                samplesAction = ParamUtils.BasicUpdateAction.ADD;
+//            }
+//
+//            actionMap.put(CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+//            actionMap.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), samplesAction);
+//            queryOptions.put(Constants.ACTIONS, actionMap);
+//
+//            return createOkResponse(catalogManager.getCohortManager().update(studyStr, query, params, queryOptions, token));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/{cohorts}/update")

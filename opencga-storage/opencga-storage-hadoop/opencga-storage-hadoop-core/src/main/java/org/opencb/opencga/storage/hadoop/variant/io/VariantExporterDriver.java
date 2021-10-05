@@ -25,6 +25,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.core.variant.query.ParsedVariantQuery;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
@@ -179,6 +181,9 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
             VariantMapReduceUtil.setNoneReduce(job);
         }
 
+        VariantQueryParser variantQueryParser = new VariantQueryParser(null, getMetadataManager());
+        ParsedVariantQuery variantQuery = variantQueryParser.parseQuery(query, options);
+        Query query = variantQuery.getQuery();
         if (VariantHBaseQueryParser.isSupportedQuery(query)) {
             logger.info("Init MapReduce job reading from HBase");
             boolean useSampleIndex = !getConf().getBoolean("skipSampleIndex", false) && SampleIndexQueryParser.validSampleIndexQuery(query);
@@ -190,14 +195,14 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
             }
 
             VariantHBaseQueryParser parser = new VariantHBaseQueryParser(getHelper(), getMetadataManager());
-            List<Scan> scans = parser.parseQueryMultiRegion(query, options);
+            List<Scan> scans = parser.parseQueryMultiRegion(variantQuery, options);
             VariantMapReduceUtil.configureMapReduceScans(scans, getConf());
 
             VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTable, scans, mapperClass, useSampleIndex);
         } else {
             logger.info("Init MapReduce job reading from Phoenix");
             String sql = new VariantSqlQueryParser(getHelper(), variantTable, getMetadataManager())
-                    .parse(query, options);
+                    .parse(variantQuery, options);
 
             VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
         }

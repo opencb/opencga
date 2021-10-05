@@ -129,7 +129,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
 
         private SampleIndexEntryPutBuilder fetchIndex(IndexChunk indexChunk, Integer sampleId) {
             try {
-                return dbAdaptor.queryByGtBuilder(studyId, sampleId, indexChunk.chromosome, indexChunk.position);
+                return dbAdaptor.queryByGtBuilder(studyId, sampleId, indexChunk.chromosome, indexChunk.position, schema);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

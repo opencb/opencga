@@ -136,11 +136,12 @@ public class VariantAnnotationOperationManager extends OperationManager {
                 regions.addAll(c);
             }
         }
-        alias = StringUtils.replaceChars(alias, ":@", "__");
+        String outputFileName;
         if (regions.size() != 1) {
-            return alias + '.' + TimeUtils.getTime();
+            outputFileName = alias + '.' + TimeUtils.getTime();
         } else {
-            return alias + ".region_" + regions.get(0).toString() + '.' + TimeUtils.getTime();
+            outputFileName = alias + ".region_" + regions.get(0).toString() + '.' + TimeUtils.getTime();
         }
+        return StringUtils.replaceChars(outputFileName, ":@", "__");
     }
 }

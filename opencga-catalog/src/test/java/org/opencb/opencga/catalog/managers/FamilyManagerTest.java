@@ -748,7 +748,10 @@ public class FamilyManagerTest extends GenericTest {
 
         disorderList = Collections.emptyList();
         params.setDisorders(disorderList);
-        catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(), sessionIdUser);
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(IndividualDBAdaptor.QueryParams.DISORDERS.key(), ParamUtils.BasicUpdateAction.SET);
+        QueryOptions queryOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+        catalogManager.getIndividualManager().update(STUDY, "child1", params, queryOptions, sessionIdUser);
         child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
         assertEquals(0, child1.first().getDisorders().size());
 

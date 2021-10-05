@@ -16,14 +16,18 @@
 
 package org.opencb.opencga.analysis.variant.manager;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.operations.AbstractVariantOperationManagerTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
@@ -77,6 +81,25 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
         assertNull(vse.getOptions().get("KeyFromTheSecondStudy"));
         assertNull(vse1.getOptions().get("KeyFromTheSecondStudy"));
         assertNotNull(vse2.getOptions().get("KeyFromTheSecondStudy"));
+    }
+
+    @Test
+    public void testConfigureSampleIndex() throws Exception {
+        SampleIndexConfiguration conf = getRandomConf();
+        OpenCGAResult<Job> result = variantManager.configureSampleIndex(studyId, conf, true, sessionId);
+        assertEquals(0, result.getResults().size());
+        SampleIndexConfiguration actual = catalogManager.getStudyManager().get(studyId, null, sessionId).first().getInternal().getConfiguration().getVariantEngine().getSampleIndex();
+        assertEquals(conf, actual);
+
+        conf = getRandomConf();
+        result = variantManager.configureSampleIndex(studyId, conf, false, sessionId);
+        assertEquals(1, result.getResults().size());
+        actual = catalogManager.getStudyManager().get(studyId, null, sessionId).first().getInternal().getConfiguration().getVariantEngine().getSampleIndex();
+        assertEquals(conf, actual);
+    }
+
+    private SampleIndexConfiguration getRandomConf() {
+        return SampleIndexConfiguration.defaultConfiguration().addPopulation(new SampleIndexConfiguration.Population("MyStudy", RandomStringUtils.randomAlphabetic(10)));
     }
 
     @Test

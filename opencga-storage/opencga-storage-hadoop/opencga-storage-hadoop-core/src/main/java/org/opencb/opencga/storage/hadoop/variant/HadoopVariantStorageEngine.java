@@ -41,6 +41,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -69,6 +70,7 @@ import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HBaseColumnIntersectVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.sample.HBaseVariantSampleDataManager;
@@ -615,15 +617,19 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 for (Integer fileId : fileIds) {
                     String fileColumn = family + ':' + VariantPhoenixSchema.getFileColumn(studyId, fileId).column();
                     List<String> sampleColumns = new ArrayList<>();
-                    for (Integer sampleId : metadataManager.getFileMetadata(sm.getId(), fileId).getSamples()) {
-                        sampleColumns.add(family + ':' + VariantPhoenixSchema.getSampleColumn(studyId, sampleId).column());
+                    FileMetadata fileMetadata = metadataManager.getFileMetadata(sm.getId(), fileId);
+                    for (Integer sampleId : fileMetadata.getSamples()) {
+                        SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+                        for (PhoenixHelper.Column sampleColumn : VariantPhoenixSchema
+                                .getSampleColumns(sampleMetadata, Collections.singleton(fileId))) {
+                            sampleColumns.add(family + ':' + sampleColumn.column());
+                        }
                     }
                     columns.put(fileColumn, sampleColumns);
                 }
                 if (removeWholeStudy) {
                     columns.put(family + ':' + VariantPhoenixSchema.getStudyColumn(studyId).column(), Collections.emptyList());
                 }
-
                 String[] deleteFromVariantsArgs = DeleteHBaseColumnDriver.buildArgs(variantsTable, columns, options);
                 getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromVariantsArgs, "Delete from variants table");
                 return 0;
