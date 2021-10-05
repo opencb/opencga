@@ -29,7 +29,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.*;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -46,17 +47,22 @@ import static org.junit.Assert.*;
  */
 public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
+    private Job getNewJob(String id) {
+        // Constructor containining the minimal fields that are necessary and automatically populated by the manager
+        return new Job()
+                .setId(id)
+                .setInternal(JobInternal.init())
+                .setCreationDate(TimeUtils.getTime())
+                .setModificationDate(TimeUtils.getTime());
+    }
+
     @Test
     public void createJobTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        Job job = new Job()
-                .setInternal(new JobInternal())
-                .setId("jobName1");
+        Job job = getNewJob("jobName1");
         System.out.println(catalogJobDBAdaptor.insert(studyId, job, null));
 
-        job = new Job()
-                .setInternal(new JobInternal())
-                .setId("jobName2");
+        job = getNewJob("jobName2");
         System.out.println(catalogJobDBAdaptor.insert(studyId, job, null));
         try {
             catalogJobDBAdaptor.insert(-1, job, null);
@@ -70,10 +76,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void deleteJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        catalogJobDBAdaptor.insert(studyId, new Job()
-                .setId("name")
+        catalogJobDBAdaptor.insert(studyId, getNewJob("name")
                 .setUserId(user3.getId())
-                .setInternal(new JobInternal(new Enums.ExecutionStatus()))
                 .setOutDir(new File().setUid(4)), null);
         Job job = getJob(studyId, "name");
         assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getName());
@@ -102,7 +106,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void getJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        catalogJobDBAdaptor.insert(studyId, new Job().setInternal(new JobInternal()).setId("name").setUserId(user3.getId())
+        catalogJobDBAdaptor.insert(studyId, getNewJob("name").setUserId(user3.getId())
                 .setOutDir(new File().setUid(4)), null);
         Job job = getJob(studyId, "name");
 
@@ -126,10 +130,9 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         // Create 100 jobs
         for (int i = 0; i < 100; i++) {
-            Job job = new Job().setId(String.valueOf(i))
-                    .setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED)))
-                    .setPriority(Enums.Priority.getPriority((i % 4) + 1))
-                    .setCreationDate(TimeUtils.getTime());
+            Job job = getNewJob(String.valueOf(i))
+                    .setPriority(Enums.Priority.getPriority((i % 4) + 1));
+            job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED));
 
             catalogJobDBAdaptor.insert(studyUid, job, QueryOptions.empty());
         }
@@ -156,7 +159,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
             priority = job.getPriority().getValue();
             creationDate = job.getCreationDate();
 
-            elems ++;
+            elems++;
         }
 
         assertEquals(100, elems);
@@ -182,10 +185,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
         // Job with current date
-        Job job1 = new Job()
-                .setId("job1")
-                .setCreationDate(TimeUtils.getTime())
-                .setInternal(new JobInternal());
+        Job job1 = getNewJob("job1");
 
         // Job with current date one hour before
         Calendar cal = Calendar.getInstance();
@@ -193,10 +193,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         cal.add(Calendar.HOUR, -1);
         Date oneHourBack = cal.getTime();
 
-        Job job2 = new Job()
-                .setId("job2")
-                .setCreationDate(TimeUtils.getTime(oneHourBack))
-                .setInternal(new JobInternal());
+        Job job2 = getNewJob("job2")
+                .setCreationDate(TimeUtils.getTime(oneHourBack));
 
         // We create the jobs
         catalogJobDBAdaptor.insert(studyId, job1, new QueryOptions());
@@ -226,10 +224,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void updateInputAndOutputFiles() throws Exception {
-        Job job = new Job()
-                .setId("jobName1")
-                .setOutDir(new File().setUid(5))
-                .setInternal(new JobInternal());
+        Job job = getNewJob("jobName1")
+                .setOutDir(new File().setUid(5));
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogJobDBAdaptor.insert(studyId, job, null);
         job = getJob(studyId, "jobName1");
@@ -271,10 +267,9 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
             } else {
                 status.setName(Enums.ExecutionStatus.DONE);
             }
-            Job job = new Job()
-                    .setId("jobName" + i)
-                    .setOutDir(new File().setUid(5))
-                    .setInternal(new JobInternal(status));
+            Job job = getNewJob("jobName" + i)
+                    .setOutDir(new File().setUid(5));
+            job.getInternal().setStatus(status);
             catalogJobDBAdaptor.insert(studyId, job, null);
         }
 

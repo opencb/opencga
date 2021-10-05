@@ -62,6 +62,7 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
@@ -104,7 +105,7 @@ public class VariantAnalysisTest {
     public static final String DB_NAME = "opencga_test_" + USER + "_" + PROJECT;
     private ToolRunner toolRunner;
 
-    @Parameterized.Parameters(name="{0}")
+    @Parameterized.Parameters(name = "{0}")
     public static Object[][] parameters() {
         return new Object[][]{
                 {MongoDBVariantStorageEngine.STORAGE_ENGINE_ID},
@@ -172,10 +173,10 @@ public class VariantAnalysisTest {
             }
 
             catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c1")
-                    .setSamples(file.getSampleIds().subList(0, 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
+                            .setSamples(file.getSampleIds().subList(0, 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                     null, null, null, token);
             catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c2")
-                    .setSamples(file.getSampleIds().subList(2, 4).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
+                            .setSamples(file.getSampleIds().subList(2, 4).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                     null, null, null, token);
 
             Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
@@ -189,19 +190,19 @@ public class VariantAnalysisTest {
             // Father
             individuals.add(catalogManager.getIndividualManager()
                     .create(STUDY, new Individual(father, father, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, null, null, null, "",
-                                    Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()), Collections.singletonList(father), null, token).first());
+                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(father), null, token).first());
             // Mother
             individuals.add(catalogManager.getIndividualManager()
                     .create(STUDY, new Individual(mother, mother, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, null, null, null, "",
-                                    Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()), Collections.singletonList(mother), null, token).first());
+                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(mother), null, token).first());
             // Son
             individuals.add(catalogManager.getIndividualManager()
                     .create(STUDY, new Individual(son, son, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, null, null, null, "",
-                                    Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), Collections.singletonList(son), null, token).first());
+                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), Collections.singletonList(son), null, token).first());
             // Daughter
             individuals.add(catalogManager.getIndividualManager()
                     .create(STUDY, new Individual(daughter, daughter, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, null, null, null, "",
-                                    Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(daughter), null, token).first());
+                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(daughter), null, token).first());
             catalogManager.getFamilyManager().create(
                     STUDY,
                     new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
@@ -301,7 +302,7 @@ public class VariantAnalysisTest {
 
         MutableInt count = new MutableInt();
         java.io.File file = getOutputFile(outDir);
-        FileUtils.lineIterator(file).forEachRemaining(line->{
+        FileUtils.lineIterator(file).forEachRemaining(line -> {
             if (!line.startsWith("#")) {
                 count.increment();
             }
@@ -478,7 +479,7 @@ public class VariantAnalysisTest {
         System.out.println("variantCount = " + variantCount);
 
         CohortUpdateParams updateParams = new CohortUpdateParams()
-                .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSet.getId(), "",  Collections.singletonMap("variantCount", 1))));
+                .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSet.getId(), "", Collections.singletonMap("variantCount", 1))));
         QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, ParamUtils.CompleteUpdateAction.REPLACE));
 
         catalogManager.getCohortManager()

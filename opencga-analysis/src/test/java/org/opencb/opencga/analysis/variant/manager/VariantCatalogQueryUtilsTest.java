@@ -39,6 +39,7 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -107,13 +108,13 @@ public class VariantCatalogQueryUtilsTest {
         Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
         Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual1", "individual1", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, null, null, null, "",
-                        Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()), null, sessionId).first());
+                Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), null, sessionId).first());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual2", "individual2", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, null, null, null, "",
-                        Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()), null, sessionId).first());
+                Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), null, sessionId).first());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual3", "individual3", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, null, null, null, "",
-                        Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), null, sessionId).first());
+                Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), null, sessionId).first());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual4", "individual4", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, null, null, null, "",
-                        Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), null, sessionId).first());
+                Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), null, sessionId).first());
         catalog.getFamilyManager().create(
                 "s1",
                 new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
@@ -410,7 +411,7 @@ public class VariantCatalogQueryUtilsTest {
     @Test
     public void queryByFamilyMissingModeOfInheritance() throws CatalogException {
         VariantQueryException e = VariantQueryException.malformedParam(FAMILY_DISORDER, "asdf", "Require parameter \""
-                + FAMILY.key() + "\" and \"" + FAMILY_SEGREGATION.key() + "\" to use \""+FAMILY_DISORDER.key()+"\".");
+                + FAMILY.key() + "\" and \"" + FAMILY_SEGREGATION.key() + "\" to use \"" + FAMILY_DISORDER.key() + "\".");
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
         queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_DISORDER.key(), "asdf"), sessionId);
@@ -487,7 +488,7 @@ public class VariantCatalogQueryUtilsTest {
         Set<QueryParam> params = new HashSet<>();
         for (Field field : declaredFields) {
             if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
-                if (field.getAnnotation(Deprecated.class)==null) {
+                if (field.getAnnotation(Deprecated.class) == null) {
                     if (QueryParam.class.isAssignableFrom(field.getType())) {
                         params.add((QueryParam) field.get(null));
                     }

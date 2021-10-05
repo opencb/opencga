@@ -467,8 +467,17 @@ public class JobManager extends ResourceManager<Job> {
         job.setDescription(jobDescription);
         job.setTool(new ToolInfo().setId(toolId));
         job.setTags(jobTags);
+        job.setStudy(new JobStudyParam(study.getFqn()));
+        job.setUserId(userId);
+        job.setParams(params);
+        job.setPriority(priority);
+        job.setDependsOn(jobDependsOn != null
+                ? jobDependsOn.stream().map(j -> new Job().setId(j)).collect(Collectors.toList())
+                : Collections.emptyList());
 
         try {
+            autoCompleteNewJob(study, job, token);
+
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTE_JOBS);
 
             // Check params
@@ -478,16 +487,6 @@ public class JobManager extends ResourceManager<Job> {
                     throw new CatalogException("Found '" + entry.getKey() + "' param with null value");
                 }
             }
-
-            job.setStudy(new JobStudyParam(study.getFqn()));
-            job.setUserId(userId);
-            job.setParams(params);
-            job.setPriority(priority);
-            job.setDependsOn(jobDependsOn != null
-                    ? jobDependsOn.stream().map(j -> new Job().setId(j)).collect(Collectors.toList())
-                    : Collections.emptyList());
-
-            autoCompleteNewJob(study, job, token);
 
             jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
             OpenCGAResult<Job> jobResult = jobDBAdaptor.get(job.getUid(), new QueryOptions());
@@ -500,13 +499,7 @@ public class JobManager extends ResourceManager<Job> {
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
-            if (job.getInternal() != null) {
-                job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
-            } else {
-                job.setInternal(new JobInternal(TimeUtils.getTime(), TimeUtils.getTime(),
-                        new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
-                        new JobInternalWebhook(null, new HashMap<>()), Collections.emptyList()));
-            }
+            job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
             job.getInternal().getStatus().setDescription(e.toString());
             jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
 

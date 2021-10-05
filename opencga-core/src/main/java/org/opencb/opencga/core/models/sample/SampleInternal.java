@@ -27,14 +27,6 @@ import org.opencb.opencga.core.models.common.Status;
  */
 public class SampleInternal extends Internal {
 
-    /**
-     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
-     * lectus, ut ultrices nunc vulputate ac.
-     *
-     * @apiNote Internal, Unique, Immutable
-     * @deprecated
-     */
-    private Status status;
     private RgaIndex rga;
 
     public SampleInternal() {
