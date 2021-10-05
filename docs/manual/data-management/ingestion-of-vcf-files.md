@@ -7,7 +7,7 @@ description: >-
 # Load VCF Files to a Study
 
 {% hint style="info" %}
- This document assumes OpenCGA version 2.1 or later.
+ This document assumes you are using OpenCGA version 2.1 or later.
 {% endhint %}
 
 ## **Introduction**
