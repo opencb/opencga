@@ -247,6 +247,7 @@
                                     <arg value="${build.dir}/bin/utils"/>
                                     <arg value="${build.dir}/clients"/>
                                     <arg value="${build.dir}/conf"/>
+                                    <arg value="${build.dir}/plugins"/>
                                     <arg value="${build.dir}/test"/>
                                     <!--
                                     <arg value="${build.dir}/misc/solr/${solr.configset.name}-${opencga.version}"/>
@@ -272,6 +273,12 @@
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-analysis/src/main/R/"/>
                                     <arg value="${build.dir}/analysis"/>
+                                </exec>
+                                <echo>Copying sample plugin to ${build.dir}/plugins</echo>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-test/target/opencga-test-${opencga.version}.jar"/>
+                                    <arg value="${build.dir}/plugins/opencga-test-${opencga.version}.jar"/>
                                 </exec>
 
                                 <echo>Copying command lines and completion scripts to ${build.dir}/bin and ${build.dir}/completion</echo>
@@ -331,11 +338,11 @@
                                 </exec>
 
                                 <echo>Copying Acceptance testing files</echo>
-<!--                                <exec executable="mvn">-->
-<!--                                    <arg value="-f"/>-->
-<!--                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>-->
-<!--                                    <arg value="install"/>-->
-<!--                                </exec>-->
+                                <!--                                <exec executable="mvn">-->
+                                <!--                                    <arg value="-f"/>-->
+                                <!--                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>-->
+                                <!--                                    <arg value="install"/>-->
+                                <!--                                </exec>-->
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-test/target/appassembler/bin"/>

@@ -25,9 +25,13 @@ import org.opencb.opencga.app.cli.main.executors.analysis.VariantCommandExecutor
 import org.opencb.opencga.app.cli.main.executors.catalog.*;
 import org.opencb.opencga.app.cli.main.executors.operations.OperationsCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.OperationsCommandOptions;
+import org.opencb.opencga.app.plugins.PluginLoader;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.net.URISyntaxException;
 
 /**
  * Created by imedina on 27/05/16.
@@ -35,6 +39,27 @@ import org.slf4j.LoggerFactory;
 public class OpencgaMain {
 
     public static final String VERSION = GitRepositoryState.get().getBuildVersion();
+
+    static {
+        String currentPath = getCurrentPath() + "/../plugins/";
+        System.out.println("Directorio actual: " + currentPath);
+        PluginLoader pluginLoader = new PluginLoader();
+        pluginLoader.load(currentPath);
+    }
+    //pluginLoader.load("/workspace/opencga/build/libs/");
+
+    public static String getCurrentPath() {
+
+        String res = "";
+        try {
+            res = new File(OpencgaMain.class.getProtectionDomain().getCodeSource().getLocation()
+                    .toURI()).getPath();
+            res = res.substring(0, res.lastIndexOf(System.getProperty("file.separator")));
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
 
     public static void main(String[] args) {
 
@@ -159,5 +184,4 @@ public class OpencgaMain {
             }
         }
     }
-
 }
