@@ -166,12 +166,6 @@ public class IndividualQcAnalysis extends OpenCgaTool {
             }
         }
 
-        // TODO: Joaquin to check
-//        // Set sample ID
-//        if (StringUtils.isEmpty(qualityControl.getSampleId())) {
-//            qualityControl.setSampleId(sample.getId());
-//        }
-
         executor = getToolExecutor(IndividualQcAnalysisExecutor.class)
                 .setStudyId(studyId)
                 .setIndividual(individual)

@@ -95,32 +95,7 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
         if (MapUtils.isEmpty(karyotypicSexThresholds)) {
             addWarning("Impossible to infer karyotypic sex beacause sex thresholds are empty");
         } else {
-            if (xAuto >= karyotypicSexThresholds.get("xx.xmin") && xAuto <= karyotypicSexThresholds.get("xx.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xx.ymin") && yAuto <= karyotypicSexThresholds.get("xx.ymax")) {
-                inferredKaryotypicSex = "XX";
-            } else if (xAuto >= karyotypicSexThresholds.get("xy.xmin") && xAuto <= karyotypicSexThresholds.get("xy.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xy.ymin") && yAuto <= karyotypicSexThresholds.get("xy.ymax")) {
-                inferredKaryotypicSex = "XY";
-            } else if (xAuto >= karyotypicSexThresholds.get("xo_clearcut.xmin") && xAuto <= karyotypicSexThresholds.get("xo_clearcut.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xo_clearcut.ymin") && yAuto <= karyotypicSexThresholds.get("xo_clearcut" +
-                    ".ymax")) {
-                inferredKaryotypicSex = "XO";
-            } else if (xAuto >= karyotypicSexThresholds.get("xxy.xmin") && xAuto <= karyotypicSexThresholds.get("xxy.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xxy.ymin") && yAuto <= karyotypicSexThresholds.get("xxy.ymax")) {
-                inferredKaryotypicSex = "XXY";
-            } else if (xAuto >= karyotypicSexThresholds.get("xxx.xmin") && xAuto <= karyotypicSexThresholds.get("xxx.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xxx.ymin") && yAuto <= karyotypicSexThresholds.get("xxx.ymax")) {
-                inferredKaryotypicSex = "XXX";
-            } else if (xAuto >= karyotypicSexThresholds.get("xyy.xmin") && xAuto <= karyotypicSexThresholds.get("xyy.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xyy.ymin") && yAuto <= karyotypicSexThresholds.get("xyy.ymax")) {
-                inferredKaryotypicSex = "XYY";
-            } else if (xAuto >= karyotypicSexThresholds.get("xxxy.xmin") && xAuto <= karyotypicSexThresholds.get("xxxy.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xxxy.ymin") && yAuto <= karyotypicSexThresholds.get("xxxy.ymax")) {
-                inferredKaryotypicSex = "XXXY";
-            } else if (xAuto >= karyotypicSexThresholds.get("xyyy.xmin") && xAuto <= karyotypicSexThresholds.get("xyyy.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xyyy.ymin") && yAuto <= karyotypicSexThresholds.get("xyyy.ymax")) {
-                inferredKaryotypicSex = "XYYY";
-            }
+            inferredKaryotypicSex = InferredSexComputation.inferKaryotypicSex(xAuto, yAuto, karyotypicSexThresholds);
         }
 
         // Set coverage ratio
