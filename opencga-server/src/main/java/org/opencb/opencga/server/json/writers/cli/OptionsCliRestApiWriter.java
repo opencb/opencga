@@ -138,11 +138,11 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                     sb.append("        @ParametersDelegate\n");
                     sb.append("        public CommonCommandOptions commonOptions = commonCommandOptions;\n");
                     sb.append("    \n");
-                    Set<String> variable_names=new HashSet<>();
+                    Set<String> variable_names = new HashSet<>();
                     for (Parameter parameter : endpoint.getParameters()) {
                         if (config.isAvailableSubCommand(parameter.getName())) {
-                            if (!"body".equals(normaliceNames(parameter.getName())) ) {
-                                if (CommandLineUtils.isPrimitive(parameter.getType())&& !variable_names.contains(normaliceNames(getAsCamelCase(parameter.getName())))) {
+                            if (!"body".equals(normaliceNames(parameter.getName()))) {
+                                if (CommandLineUtils.isPrimitive(parameter.getType()) && !variable_names.contains(normaliceNames(getAsCamelCase(parameter.getName())))) {
                                     sb.append("        @Parameter(names = {" + getShortCuts(parameter, config) + "}, description = " +
                                             "\"" + parameter.getDescription().replaceAll("\"", "'") + "\", required = " + parameter.isRequired() + ", arity = 1)\n");
                                     sb.append("        public " + getValidValue(parameter.getType()) + " " + normaliceNames(getAsCamelCase(parameter.getName())) + ";" +
@@ -154,14 +154,13 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                             } else {
                                 for (Parameter body_parameter : parameter.getData()) {
                                     if (config.isAvailableSubCommand(body_parameter.getName()) && CommandLineUtils.isPrimitive(body_parameter.getType()) && !variable_names.contains(normaliceNames(getAsCamelCase(parameter.getName())))) {
-                                        sb.append("        @Parameter(names = {" + getShortCuts(body_parameter, config) + "}, " +
-                                                "description" +
-                                                " = " +
-                                                "\"" + body_parameter.getDescription().replaceAll("\"", "'") + "\", required = " + body_parameter.isRequired() + ", arity = 1)\n");
+                                        sb.append("        @Parameter(names = {" + getShortCuts(body_parameter, config) + "}, description"
+                                                + " = \"" + body_parameter.getDescription().replaceAll("\"", "'") + "\", required = "
+                                                + (body_parameter.isRequired() || isMandatory(commandName,
+                                                normaliceNames(getAsCamelCase(body_parameter.getName())))) + ", arity = 1)\n");
 
-                                        sb.append("        public " + getValidValue(body_parameter.getType()) + " " + normaliceNames(getAsCamelCase(body_parameter.getName())) + ";" +
-                                                " " +
-                                                "\n");
+                                        sb.append("        public " + getValidValue(body_parameter.getType()) + " "
+                                                + normaliceNames(getAsCamelCase(body_parameter.getName())) + ";\n");
                                         sb.append("    \n");
                                         variable_names.add(normaliceNames(getAsCamelCase(body_parameter.getName())));
                                     }
@@ -174,6 +173,10 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             }
         }
         return sb.toString();
+    }
+
+    private boolean isMandatory(String commandName, String normaliceNames) {
+        return "create".equals(commandName) && "id".equals(commandName);
     }
 
     private String normaliceNames(String name) {

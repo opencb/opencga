@@ -65,13 +65,13 @@ public class GeneralCliOptions {
         public String logLevel;
 
         @Parameter(names = {"-C", "--conf"}, description = "Configuration folder that contains configuration.yml, "
-                + "storage-configuration.yml and client-configuration.yml files.")
+                + "storage-configuration.yml and client-configuration.yml files.", hidden = true)
         public String conf;
 
-        @Parameter(names = {"--token"}, description = "Token session ID", arity = 1)
+        @Parameter(names = {"--token"}, description = "Token session ID", arity = 1, hidden = true)
         public String token;
 
-        @Parameter(names = {"-M", "--metadata"}, description = "Include metadata information", required = false, arity = 0)
+        @Parameter(names = {"-M", "--metadata"}, description = "Include metadata information", required = false, arity = 0, hidden = true)
         public boolean metadata = false;
 
         @Parameter(names = {"--no-header"}, description = "Not include headers in the output (not applicable to json output-format)",

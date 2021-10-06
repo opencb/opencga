@@ -14,28 +14,27 @@ import static org.fusesource.jansi.Ansi.ansi;
 
 public class OpencgaCliProcessor {
 
-
     private static Console console;
-    private static OpencgaCliShellExecutor shell= new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
+    private static OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
     private static OpencgaCliOptionsParser cliOptionsParser;
 
-
-    private static Console getConsole(){
+    private static Console getConsole() {
         if (console == null) {
             console = System.console();
         }
         return console;
     }
 
-    private static OpencgaCliOptionsParser getCliOptionsParser(){
+    private static OpencgaCliOptionsParser getCliOptionsParser() {
         if (cliOptionsParser == null) {
             cliOptionsParser = new OpencgaCliOptionsParser();
         }
         return cliOptionsParser;
     }
+
     public static void process(String[] args) {
 
-        console =getConsole();
+        console = getConsole();
         boolean invalidInput = false;
         if (console == null) {
             System.out.println("Couldn't get Console instance");
@@ -46,7 +45,7 @@ public class OpencgaCliProcessor {
             System.out.println(String.valueOf(ansi().fg(Ansi.Color.YELLOW).a("\nThanks for using OpenCGA. See you soon.\n\n").reset()));
             System.exit(0);
         }
-        if (args.length == 1 && "--shell".equals(args[0])) {
+      /*  if (args.length == 1 && "--shell".equals(args[0])) {
             try {
                 shell.execute();
             } catch (Exception e) {
@@ -54,7 +53,7 @@ public class OpencgaCliProcessor {
             }
         }
 
-
+*/
         if (args.length > 2 && "use".equals(args[0]) && "study".equals(args[1])) {
 
             shell.setCurrentStudy(args[2]);
@@ -62,14 +61,13 @@ public class OpencgaCliProcessor {
         }
 
         if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1])) {
-                   if (!argsContains(args, "--help") && !argsContains(args, "-h")) {
-                    char[] passwordArray = console.readPassword(String.valueOf(ansi().fg(GREEN).a("\nEnter your secret password: ").reset()));
-                    args = appendArgs(args, new String[]{"--password", new String(passwordArray)});
-                }
-
+            if (!argsContains(args, "--help") && !argsContains(args, "-h")) {
+                char[] passwordArray = console.readPassword(String.valueOf(ansi().fg(GREEN).a("\nEnter your secret password: ").reset()));
+                args = appendArgs(args, new String[]{"--password", new String(passwordArray)});
+            }
         }
         if (!invalidInput) {
-                cliOptionsParser=getCliOptionsParser();
+            cliOptionsParser = getCliOptionsParser();
 
             try {
                 cliOptionsParser.parse(args);
@@ -79,15 +77,14 @@ public class OpencgaCliProcessor {
                     if (cliOptionsParser.getGeneralOptions().version) {
                         System.out.println("");
                         OpencgaCliShellExecutor.printGreen("\tOpenCGA CLI version: ");
-                        OpencgaCliShellExecutor.printlnYellow("\t"+GitRepositoryState.get().getBuildVersion());
+                        OpencgaCliShellExecutor.printlnYellow("\t" + GitRepositoryState.get().getBuildVersion());
                         OpencgaCliShellExecutor.printGreen("\tGit version:");
-                        OpencgaCliShellExecutor.printlnYellow("\t\t"+GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+                        OpencgaCliShellExecutor.printlnYellow("\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
                         OpencgaCliShellExecutor.printGreen("\tProgram:");
                         OpencgaCliShellExecutor.printlnYellow("\t\tOpenCGA (OpenCB)");
                         OpencgaCliShellExecutor.printGreen("\tDescription: ");
                         OpencgaCliShellExecutor.printlnYellow("\t\tBig Data platform for processing and analysing NGS data");
                         System.out.println("");
-
                     } else if (cliOptionsParser.getGeneralOptions().help) {
                         cliOptionsParser.printUsage();
                         // System.exit(0);
@@ -168,7 +165,7 @@ public class OpencgaCliProcessor {
                     }
                 }
             } catch (ParameterException e) {
-                OpencgaCliShellExecutor.printlnRed("\n"+e.getMessage());
+                OpencgaCliShellExecutor.printlnRed("\n" + e.getMessage());
                 cliOptionsParser.printUsage();
 
                 //System.exit(1);
@@ -182,7 +179,7 @@ public class OpencgaCliProcessor {
                 commandExecutor.execute();
             } catch (Exception e) {
                 shell.printlnRed(e.getMessage());
-               // e.printStackTrace();
+                // e.printStackTrace();
                 //System.exit(1);
             }
         } else {
@@ -213,18 +210,17 @@ public class OpencgaCliProcessor {
     }
 
     public static void forceLogin() {
-        console =getConsole();
+        console = getConsole();
         String[] args = new String[2];
-        String user=  console.readLine(String.valueOf(ansi().fg(GREEN).a("\nEnter your user: ").reset()));
+        String user = console.readLine(String.valueOf(ansi().fg(GREEN).a("\nEnter your user: ").reset()));
         char[] passwordArray = console.readPassword(String.valueOf(ansi().fg(GREEN).a("\nEnter your password: ").reset()));
-        args[0]="users";
-        args[1]="login";
+        args[0] = "users";
+        args[1] = "login";
         args = appendArgs(args, new String[]{"-u", user});
         args = appendArgs(args, new String[]{"--password", new String(passwordArray)});
         cliOptionsParser = getCliOptionsParser();
         cliOptionsParser.parse(args);
         CommandExecutor commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
         executeCommand(commandExecutor);
-
     }
 }

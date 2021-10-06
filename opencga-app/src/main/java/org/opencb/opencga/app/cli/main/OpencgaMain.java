@@ -27,15 +27,15 @@ public class OpencgaMain {
     public static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
     public static void main(String[] args) {
-        if (args != null && args.length > 0) {
-            OpencgaCliProcessor.process(args);
-        } else {
+        if (args.length == 1 && "--shell".equals(args[0])) {
             OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
             try {
                 shell.execute();
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        } else {
+            OpencgaCliProcessor.process(args);
         }
     }
 }
