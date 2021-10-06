@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.core.models.file;
 
-public class FileFetch {
+import org.opencb.opencga.core.tools.ToolParams;
+
+public class FileFetch extends ToolParams {
 
     /**
      * External url where the file to be registered can be downloaded from.

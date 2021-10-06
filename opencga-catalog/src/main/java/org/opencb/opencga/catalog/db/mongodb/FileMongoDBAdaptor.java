@@ -804,6 +804,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         long fileUid = fileDocument.getLong(PRIVATE_UID);
         long studyUid = fileDocument.getLong(PRIVATE_STUDY_UID);
+        String fileId = fileDocument.getString(QueryParams.ID.key());
         String path = fileDocument.getString(QueryParams.PATH.key());
 
         Query query = new Query(QueryParams.STUDY_UID.key(), studyUid);
@@ -819,6 +820,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
             return endWrite(tmpStartTime, fileCollection.update(parseQuery(query), update, multi));
         } else {
+            // Delete file references from all referenced samples
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().removeFileReferences(clientSession, studyUid, fileId);
+
             // DELETED AND REMOVED status
             QueryOptions options = new QueryOptions()
                     .append(QueryOptions.SORT, QueryParams.PATH.key())
@@ -1225,15 +1229,18 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
-            if (containsAnnotationQuery(query)) {
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name(),
-                        Enums.Resource.FILE, configuration));
-            } else {
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FileAclEntry.FilePermissions.VIEW.name(),
-                        Enums.Resource.FILE, configuration));
-            }
 
-            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FILE, user, configuration));
+            if (query.containsKey(ParamConstants.ACL_PARAM)) {
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FILE, user, configuration));
+            } else {
+                if (containsAnnotationQuery(query)) {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name(),
+                            Enums.Resource.FILE, configuration));
+                } else {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FileAclEntry.FilePermissions.VIEW.name(),
+                            Enums.Resource.FILE, configuration));
+                }
+            }
 
             query.remove(ParamConstants.ACL_PARAM);
         }
@@ -1247,10 +1254,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 && File.Type.FILE.name().equals(myQuery.get(QueryParams.TYPE.key()))) {
             myQuery.remove(QueryParams.TYPE.key());
         }
-
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), myQuery);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), myQuery);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), myQuery);
 
         for (Map.Entry<String, Object> entry : myQuery.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -1284,19 +1287,11 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                                     myQuery.get(Constants.PRIVATE_ANNOTATION_PARAM_TYPES, ObjectMap.class));
                         }
                         break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), myQuery, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), myQuery, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), myQuery, queryParam.type(), andBsonList);
-                        break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), myQuery, queryParam.type(), andBsonList);
+                        break;
+                    case MODIFICATION_DATE:
+                        addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case STATUS:
                     case STATUS_NAME:
@@ -1346,32 +1341,16 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case UUID:
+                    case EXTERNAL:
                     case TYPE:
-                    case CHECKSUM:
                     case URI:
                     case ID:
                     case PATH:
-                    case MODIFICATION_DATE:
-                    case DESCRIPTION:
-                    case EXTERNAL:
                     case RELEASE:
                     case TAGS:
-                    case INTERNAL_STATUS_DESCRIPTION:
-                    case INTERNAL_STATUS_DATE:
-                    case RELATED_FILES:
-                    case RELATED_FILES_RELATION:
                     case SIZE:
                     case SOFTWARE_NAME:
-                    case SOFTWARE_VERSION:
-                    case SOFTWARE_COMMIT:
                     case JOB_ID:
-                    case INTERNAL_INDEX:
-                    case INTERNAL_INDEX_USER_ID:
-                    case INTERNAL_INDEX_CREATION_DATE:
-                    case INTERNAL_INDEX_STATUS_MESSAGE:
-                    case INTERNAL_INDEX_JOB_ID:
-                    case INTERNAL_INDEX_TRANSFORMED_FILE:
-                    case STATS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     default:

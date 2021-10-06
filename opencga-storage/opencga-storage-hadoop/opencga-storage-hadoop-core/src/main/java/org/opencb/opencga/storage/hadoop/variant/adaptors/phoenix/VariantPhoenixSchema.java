@@ -667,24 +667,27 @@ public final class VariantPhoenixSchema {
     public static List<Column> getSampleColumns(int studyId, int sampleId, List<Integer> files, Collection<Integer> requiredFiles,
                                                 VariantStorageEngine.SplitData splitData) {
         List<Column> columns = new ArrayList<>(1);
-        if (requiredFiles == null || requiredFiles.contains(files.get(0))) {
-            columns.add(getSampleColumn(studyId, sampleId));
-        }
         if (VariantStorageEngine.SplitData.MULTI.equals(splitData)) {
+            if (requiredFiles == null || requiredFiles.contains(files.get(0))) {
+                columns.add(getSampleColumn(studyId, sampleId));
+            }
             for (Integer file : files.subList(1, files.size())) {
                 if (requiredFiles == null || requiredFiles.contains(file)) {
                     columns.add(getSampleColumn(studyId, sampleId, file));
                 }
             }
+        } else {
+            // Required files doesn't apply for SplitData!=MULTI
+            columns.add(getSampleColumn(studyId, sampleId));
         }
         return columns;
     }
 
-    public static Column getSampleColumn(int studyId, int sampleId) {
+    protected static Column getSampleColumn(int studyId, int sampleId) {
         return Column.build(buildSampleColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
     }
 
-    public static Column getSampleColumn(int studyId, int sampleId, int fileId) {
+    protected static Column getSampleColumn(int studyId, int sampleId, int fileId) {
         return Column.build(buildSampleColumnKey(studyId, sampleId, fileId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
     }
 
@@ -701,8 +704,8 @@ public final class VariantPhoenixSchema {
         return buildStudyColumnsPrefix(studyId, stringBuilder).append(fileId).append(FILE_SUFIX);
     }
 
-    public static Column getFileColumn(int studyId, int sampleId) {
-        return Column.build(buildFileColumnKey(studyId, sampleId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
+    public static Column getFileColumn(int studyId, int fileId) {
+        return Column.build(buildFileColumnKey(studyId, fileId, new StringBuilder()).toString(), PVarcharArray.INSTANCE);
     }
 
     public static byte[] buildReleaseColumnKey(int release) {

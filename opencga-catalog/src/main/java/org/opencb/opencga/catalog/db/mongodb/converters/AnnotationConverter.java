@@ -98,8 +98,8 @@ public class AnnotationConverter {
                     Variable variable = variableLevel.getVariable();
 
                     // Add the new nested variables to the queue to be processed
-                    if (variable.getVariableSet() != null) {
-                        for (Variable tmpVariable : variable.getVariableSet()) {
+                    if (variable.getVariables() != null) {
+                        for (Variable tmpVariable : variable.getVariables()) {
                             List<Integer> arrayLevel = new ArrayList<>(variableLevel.getArrayLevel());
                             if (tmpVariable.isMultiValue()) {
                                 arrayLevel.add(variableLevel.getKeys().size());

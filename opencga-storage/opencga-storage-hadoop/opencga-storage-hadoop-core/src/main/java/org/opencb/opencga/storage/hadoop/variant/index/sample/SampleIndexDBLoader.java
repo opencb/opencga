@@ -8,6 +8,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -21,7 +22,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.EXCLUDE_GENOTYPES;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.INCLUDE_GENOTYPE;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.*;
 
 /**
@@ -43,7 +44,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
     private final ObjectMap options;
     private final SampleIndexDBAdaptor dbAdaptor;
     private final VariantFileIndexConverter variantFileIndexConverter;;
-    private final boolean excludeGenotypes;
+    private final boolean includeGenotype;
     private final SampleIndexSchema schema;
     private final StudyMetadata.SampleIndexConfigurationVersioned sampleIndexConfiguration;
 
@@ -85,9 +86,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                 i++;
             }
         }
-        excludeGenotypes = options.getBoolean(
-                EXCLUDE_GENOTYPES.key(),
-                EXCLUDE_GENOTYPES.defaultValue());
+        includeGenotype = YesNoAuto.parse(options, INCLUDE_GENOTYPE.key()).yesOrAuto();
         this.dbAdaptor = dbAdaptor;
         sampleIndexConfiguration = dbAdaptor.getSampleIndexConfiguration(studyId);
         schema = dbAdaptor.getSchema(studyId);
@@ -130,7 +129,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
 
         private SampleIndexEntryPutBuilder fetchIndex(IndexChunk indexChunk, Integer sampleId) {
             try {
-                return dbAdaptor.queryByGtBuilder(studyId, sampleId, indexChunk.chromosome, indexChunk.position);
+                return dbAdaptor.queryByGtBuilder(studyId, sampleId, indexChunk.chromosome, indexChunk.position, schema);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -198,7 +197,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
             int sampleIdx = 0;
             StudyEntry studyEntry = variant.getStudies().get(0);
             // The variant hasGT if has the SampleDataKey GT AND the genotypes are not being excluded
-            boolean hasGT = studyEntry.getSampleDataKeys().get(0).equals("GT") && !excludeGenotypes;
+            boolean hasGT = studyEntry.getSampleDataKeys().get(0).equals("GT") && includeGenotype;
             for (SampleEntry sample : studyEntry.getSamples()) {
                 String gt = hasGT ? sample.getData().get(0) : GenotypeClass.NA_GT_VALUE;
                 if (validVariant(variant) && validGenotype(gt)) {
@@ -253,7 +252,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                             delete.addColumn(family, SampleIndexSchema.toAnnotationClinicalIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
-                            delete.addColumn(family, SampleIndexSchema.toAnnotationCtBtIndexColumn(gt));
+                            delete.addColumn(family, SampleIndexSchema.toAnnotationCtBtTfIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));
                             delete.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt));

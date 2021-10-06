@@ -39,16 +39,16 @@ In order to study the **loading performance** we set up a Azure Batch queue of 2
 
 ![](http://docs.opencb.org/download/attachments/15598505/load.png?version=1&modificationDate=1569501564112&api=v2)
 
-Some comments:
+### Discussion
 
-1. As expected loading already transformed files is much faster since we only need to load and index data in HBase. See this link for more information [Indexing Genomic Variants](http://docs.opencb.org/display/opencga/Indexing+Genomic+Variants)
-2. Also, loading from SSD disks showed a better performance 
+* As expected loading already transformed files is much faster since we only need to load and index data in HBase. See this link for more information [Indexing Genomic Variants](http://docs.opencb.org/display/opencga/Indexing+Genomic+Variants)
+* Loading from SSD disks showed a better performance 
 
 The most typical scenario when indexing genomic data is to _transform+load_ at the same time, so assuming SSD disk the observed performance was about **380 VCF files indexed a day, or about 2TB/day**. It is worth noting that:
 
-1. gVCF used were several times bigger than usual
-2. the number of Hadoop worker nodes was just 10
-3. we loaded up to 20 files concurrently but this could have been increased
+1. _gVCF used were several times bigger than usual_
+2. _the number of Hadoop worker nodes was just 10_
+3. _we loaded up to 20 files concurrently but this could have been increased_
 
 These variables have a huge impact in the indexing performance, so the expected performance with more real gVCF files and production cluster is more than 1,000 VCF a day.
 
@@ -179,5 +179,7 @@ To study the query performance we tried different configurations:
 
 ### GWAS
 
-We defined two cohorts of 100 samples each and run a GWAS analysis over the 208 million variants. The performance observed was very similar to Cohort Stats Calculation. About 2 hours with 10 nodes and about 1 hour with 20 nodes.
+We defined two cohorts of 100 samples each and run a GWAS analysis over the 208 million variants. The performance observed was very similar to Cohort Stats Calculation.
+
+The Stats calculation took about 2 hours with 10 nodes and about 1 hour with 20 nodes.
 

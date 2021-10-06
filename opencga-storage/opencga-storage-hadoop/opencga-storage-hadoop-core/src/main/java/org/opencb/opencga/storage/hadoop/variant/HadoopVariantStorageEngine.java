@@ -41,6 +41,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -69,6 +70,7 @@ import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HBaseColumnIntersectVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.sample.HBaseVariantSampleDataManager;
@@ -479,14 +481,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                     logger.info("=================================================");
                 } else {
                     String taskDescription = "Prepare archive table for " + FILL_MISSING_OPERATION_NAME;
-                    getMRExecutor().run(PrepareFillMissingDriver.class, args, options, taskDescription);
+                    getMRExecutor().run(PrepareFillMissingDriver.class, args, taskDescription);
                 }
             }
 
             // Execute main operation
             String taskDescription = jobOperationName + " of samples " + (fillGaps ? sampleIds.toString() : "\"ALL\"")
                     + " into variants table '" + getVariantTableName() + '\'';
-            getMRExecutor().run(FillGapsDriver.class, args, options, taskDescription);
+            getMRExecutor().run(FillGapsDriver.class, args, taskDescription);
 
             // Write results
             if (!fillGaps) {
@@ -615,17 +617,21 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 for (Integer fileId : fileIds) {
                     String fileColumn = family + ':' + VariantPhoenixSchema.getFileColumn(studyId, fileId).column();
                     List<String> sampleColumns = new ArrayList<>();
-                    for (Integer sampleId : metadataManager.getFileMetadata(sm.getId(), fileId).getSamples()) {
-                        sampleColumns.add(family + ':' + VariantPhoenixSchema.getSampleColumn(studyId, sampleId).column());
+                    FileMetadata fileMetadata = metadataManager.getFileMetadata(sm.getId(), fileId);
+                    for (Integer sampleId : fileMetadata.getSamples()) {
+                        SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+                        for (PhoenixHelper.Column sampleColumn : VariantPhoenixSchema
+                                .getSampleColumns(sampleMetadata, Collections.singleton(fileId))) {
+                            sampleColumns.add(family + ':' + sampleColumn.column());
+                        }
                     }
                     columns.put(fileColumn, sampleColumns);
                 }
                 if (removeWholeStudy) {
                     columns.put(family + ':' + VariantPhoenixSchema.getStudyColumn(studyId).column(), Collections.emptyList());
                 }
-
                 String[] deleteFromVariantsArgs = DeleteHBaseColumnDriver.buildArgs(variantsTable, columns, options);
-                getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromVariantsArgs, options, "Delete from variants table");
+                getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromVariantsArgs, "Delete from variants table");
                 return 0;
             });
             // TODO: Remove whole table if removeWholeStudy
@@ -637,7 +643,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                     archiveColumns.add(family + ':' + ArchiveTableHelper.getNonRefColumnName(fileId));
                 }
                 String[] deleteFromArchiveArgs = DeleteHBaseColumnDriver.buildArgs(archiveTable, archiveColumns, options);
-                getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromArchiveArgs, options, "Delete from archive table");
+                getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromArchiveArgs, "Delete from archive table");
                 return 0;
             });
             // TODO: Remove whole table if removeWholeStudy
@@ -664,7 +670,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                                 SampleIndexSchema.toRowKey(sampleId + 1)));
                     }
                     String[] deleteFromSampleIndexArgs = DeleteHBaseColumnDriver.buildArgs(sampleIndexTable, null, true, regions, options);
-                    getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromSampleIndexArgs, options,
+                    getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromSampleIndexArgs,
                             "Delete from SamplesIndex table");
                 }
                 return 0;
@@ -720,7 +726,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     @Override
     protected void postRemoveFiles(String study, List<Integer> fileIds, int taskId, boolean error) throws StorageEngineException {
-        super.postRemoveFiles(study, fileIds, taskId, error);
+        // First, if the operation finished without errors, remove the phoenix columns.
         if (!error) {
             VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
             VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor);
@@ -733,6 +739,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 throw new StorageEngineException("Error removing columns from Phoenix", e);
             }
         }
+        // Then, run the default postRemoveFiles
+        super.postRemoveFiles(study, fileIds, taskId, error);
     }
 
     @Override
@@ -1034,17 +1042,6 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             logger.error("Connection to database '" + dbName + "' failed", e);
             throw new StorageEngineException("HBase Database connection test failed", e);
         }
-    }
-
-    public static String getJarWithDependencies(ObjectMap options) throws StorageEngineException {
-        String jar = options.getString(MR_JAR_WITH_DEPENDENCIES.key(), null);
-        if (jar == null) {
-            throw new StorageEngineException("Missing option " + MR_JAR_WITH_DEPENDENCIES);
-        }
-        if (!Paths.get(jar).isAbsolute()) {
-            jar = System.getProperty("app.home", "") + "/" + jar;
-        }
-        return jar;
     }
 
 }

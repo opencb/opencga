@@ -80,7 +80,7 @@ public class VariantIndexOperationTool extends OperationTool {
 
         params.put(VariantStorageOptions.STATS_CALCULATE.key(), indexParams.isCalculateStats());
         params.put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), indexParams.getIncludeSampleData());
-        params.put(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), indexParams.isExcludeGenotypes());
+        params.put(VariantStorageOptions.INCLUDE_GENOTYPE.key(), indexParams.getIncludeGenotypes());
         params.put(VariantStorageOptions.STATS_AGGREGATION.key(), indexParams.getAggregated());
         params.put(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), indexParams.getAggregationMappingFile());
         params.put(VariantStorageOptions.GVCF.key(), indexParams.isGvcf());

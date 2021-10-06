@@ -67,26 +67,26 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         thrown.expect(CatalogDBException.class);
         catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual().setId("father").setUid(10), null,
                 null, null, null, "", null, null, "", Collections.emptyList(), false, 1, Collections.emptyList(),
-                Collections.emptyList(), Collections.emptyList(), null), null, null);
+                Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), null, null);
     }
 
     @Test
     public void testCreateIndividualAlreadyExists() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual(), new Individual(), new Location(), null, null, "", null, null, "",
-                        Collections.emptyList(), false, 1, Collections
-                        .emptyList(), Collections.emptyList(), Collections.emptyList(), null), null, null);
+                Collections.emptyList(), false, 1, Collections
+                .emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), null, null);
         thrown.expect(CatalogDBException.class); //Name already exists
         catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual(), new Individual(), new Location(), null, null, "", null, null, "",
-                        Collections.emptyList(), false, 1, Collections
-                        .emptyList(), Collections.emptyList(), Collections.emptyList(), null), null, null);
+                Collections.emptyList(), false, 1, Collections
+                .emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), null, null);
     }
 
     @Test
     public void testGetIndividual() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         Individual individual = new Individual("an_individual", "An Individual", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, "", new IndividualPopulation(), null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null);
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null);
         catalogIndividualDBAdaptor.insert(studyId, individual, null, null);
         Individual individual2 = catalogIndividualDBAdaptor.get(individual.getUid(), null).first();
         assertEquals(individual.getId(), individual2.getId());
@@ -96,7 +96,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testGetIndividualNoExists() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         Individual individual = new Individual("in1", "An Individual", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, "", new IndividualPopulation(), null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null);
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null);
         catalogIndividualDBAdaptor.insert(studyId, individual, null, null);
         catalogIndividualDBAdaptor.get(individual.getUid(), null).first();
         thrown.expect(CatalogDBException.class); //Id not found
@@ -107,22 +107,22 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testGetAllIndividuals() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_1", "ind_1", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, "", new IndividualPopulation(), null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null), null, null);
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), null, null);
         catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_2", "ind_2", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, "", new
-                        IndividualPopulation(), null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null), null, null);
+                IndividualPopulation(), null, "",
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), null, null);
 
         catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_3", "ind_3", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, "", new IndividualPopulation(), null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null), null, null);
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), null, null);
         Individual father = getIndividual(studyId, "ind_3");
         catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_4", "ind_4", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, "", new IndividualPopulation(), null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null), null, null);
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), null, null);
         Individual mother = getIndividual(studyId, "ind_4");
         catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_5", "ind_5", father, mother, null, IndividualProperty.Sex.MALE,
                 IndividualProperty.KaryotypicSex.XY, "", new IndividualPopulation(), null, null, null, true, 1, Collections.emptyList(),
-                null, null, null), null, null);
+                null, null, IndividualInternal.init(), null), null, null);
         catalogIndividualDBAdaptor.insert(studyId, new Individual("ind_6", "ind_6", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, "", new IndividualPopulation(), null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null), null, null);
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), null, null);
 
         DataResult<Individual> result;
         result = catalogIndividualDBAdaptor.get(new Query(IndividualDBAdaptor.QueryParams.ID.key(),
@@ -143,7 +143,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testModifyIndividual() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.UNKNOWN, null, "", null, null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null), Collections.emptyList(), null);
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), Collections.emptyList(), null);
         long individualUid = getIndividual(studyId, "in1").getUid();
 
         ObjectMap params = new ObjectMap("sex", "MALE");
@@ -156,7 +156,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testModifyIndividualBadGender() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.UNKNOWN, null, "", null, null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null), Collections.emptyList(), null);
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), Collections.emptyList(), null);
         long individualUid = getIndividual(studyId, "in1").getUid();
 
         thrown.expect(CatalogDBException.class);
@@ -167,7 +167,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testModifyIndividualBadFatherId() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.UNKNOWN, null, "", null, null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null), Collections.emptyList(), null);
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), Collections.emptyList(), null);
         long individualUid = getIndividual(studyId, "in1").getUid();
 
         thrown.expect(CatalogDBException.class);
@@ -179,7 +179,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testModifyIndividualNegativeFatherId() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.UNKNOWN, null, "", null, null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null), Collections.emptyList(), null);
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), Collections.emptyList(), null);
         long individualUid = getIndividual(studyId, "in1").getUid();
 
         DataResult result = catalogIndividualDBAdaptor.update(individualUid,
@@ -197,10 +197,10 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testModifyIndividualExistingName() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.UNKNOWN, null, "", null, null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null), Collections.emptyList(), null);
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), Collections.emptyList(), null);
         long individualUid = getIndividual(studyId, "in1").getUid();
         catalogIndividualDBAdaptor.insert(studyId, new Individual("in2", "in2", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.UNKNOWN, null, "", null, null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null), Collections.emptyList(), null);
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), Collections.emptyList(), null);
 
         thrown.expect(CatalogDBException.class);
         catalogIndividualDBAdaptor.update(individualUid, new ObjectMap("name", "in2"), QueryOptions.empty());
@@ -331,10 +331,10 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void testNativeGet() throws Exception {
         long studyId = user4.getProjects().get(0).getStudies().get(0).getUid();
         Individual individual = new Individual("in1", "An Individual", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, "", new IndividualPopulation(), null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null);
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null);
         catalogIndividualDBAdaptor.insert(studyId, individual, Collections.emptyList(), null);
         Individual individual2 = new Individual("in2", "Another Individual", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, "", new IndividualPopulation(), null, "",
-                        Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null);
+                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null);
         catalogIndividualDBAdaptor.insert(studyId, individual2, Collections.emptyList(), null);
         DataResult queryResult = catalogIndividualDBAdaptor.nativeGet(new Query(IndividualDBAdaptor.QueryParams.ID.key(),
                 individual.getId()), new QueryOptions());

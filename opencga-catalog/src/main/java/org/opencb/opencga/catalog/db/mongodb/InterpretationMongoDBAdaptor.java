@@ -42,12 +42,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.InterpretationUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.clinical.InterpretationStats;
 import org.opencb.opencga.core.models.clinical.InterpretationStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
@@ -219,6 +221,10 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         if (StringUtils.isEmpty(interpretation.getUuid())) {
             interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
         }
+
+        // Calculate stats
+        InterpretationStats interpretationStats = InterpretationUtils.calculateStats(interpretation);
+        interpretation.setStats(interpretationStats);
 
         Document interpretationObject = interpretationConverter.convertToStorageType(interpretation);
         if (StringUtils.isNotEmpty(interpretation.getCreationDate())) {
@@ -402,7 +408,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] objectAcceptedParams = {QueryParams.ANALYST.key(), QueryParams.STATUS.key()};
+        String[] objectAcceptedParams = {QueryParams.ANALYST.key(), QueryParams.STATUS.key(), QueryParams.STATS.key()};
         filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
 
         objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};
@@ -830,6 +836,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     }
                 }
 
+                // Added to allow replacing a single comment
                 if (!updateDocument.getNestedUpdateList().isEmpty()) {
                     for (NestedArrayUpdateDocument nestedDocument : updateDocument.getNestedUpdateList()) {
 
@@ -842,6 +849,28 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                         if (update.getNumMatches() == 0) {
                             throw CatalogDBException.uidNotFound("Interpretation", interpretationUid);
                         }
+                    }
+                }
+
+                if (!updateOperation.isEmpty() || !updateDocument.getNestedUpdateList().isEmpty()) {
+                    // If something was updated, we will calculate the stats of the interpretation again
+                    Query iQuery = new Query()
+                            .append(QueryParams.UID.key(), interpretationUid)
+                            .append(QueryParams.STUDY_UID.key(), studyUid);
+                    Interpretation updatedInterpretation = get(clientSession, iQuery, QueryOptions.empty()).first();
+                    InterpretationStats stats = InterpretationUtils.calculateStats(updatedInterpretation);
+
+                    Bson bsonQuery = parseQuery(new Query(QueryParams.UID.key(), interpretation.getUid()));
+                    UpdateDocument updateStatsDocument = parseAndValidateUpdateParams(clientSession,
+                            new ObjectMap(QueryParams.STATS.key(), stats), iQuery, QueryOptions.empty());
+                    logger.debug("Update interpretation stats. Query: {}, Update: {}",
+                            bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                            updateStatsDocument.toFinalUpdateDocument());
+
+                    DataResult statsUpdate = interpretationCollection.update(clientSession, bsonQuery,
+                            updateStatsDocument.toFinalUpdateDocument(), null);
+                    if (statsUpdate.getNumMatches() == 0) {
+                        throw CatalogDBException.uidNotFound("Interpretation", interpretationUid);
                     }
                 }
 
@@ -1134,6 +1163,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
+
     @Override
     public <T> OpenCGAResult<T> distinct(long studyUid, String field, Query query, String userId, Class<T> clazz)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -1159,7 +1189,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
         Query queryCopy = new Query(query);
         queryCopy.remove(SampleDBAdaptor.QueryParams.DELETED.key());
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
 
         if ("all".equalsIgnoreCase(queryCopy.getString(QueryParams.VERSION.key()))) {
             queryCopy.put(Constants.ALL_VERSIONS, true);
@@ -1187,14 +1216,14 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     case STUDY_UID:
                         addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
+                    case SNAPSHOT:
+                        addAutoOrQuery(RELEASE_FROM_VERSION, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case ANALYST:
                     case ANALYST_ID:
@@ -1228,12 +1257,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     // Other parameter that can be queried.
                     case ID:
                     case UUID:
+                    case PANELS_UID:
                     case RELEASE:
-                    case SNAPSHOT:
                     case VERSION:
                     case COMMENTS_DATE:
                     case CLINICAL_ANALYSIS_ID:
-                    case DESCRIPTION:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

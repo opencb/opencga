@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.file;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.StudyManager;
@@ -27,9 +27,11 @@ import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.file.FileFetch;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -43,53 +45,40 @@ import java.util.List;
 
 @Tool(id = FetchAndRegisterTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION,
         description = "Download an external file and register it in OpenCGA.")
-public class FetchAndRegisterTask extends OpenCgaTool {
+public class FetchAndRegisterTask extends OpenCgaToolScopeStudy {
 
     public final static String ID = "files-fetch";
 
-    private String studyFqn;
-    private String urlStr;
-    private String path;
+    @ToolParams
+    protected FileFetch toolParams;
 
     private String fileName;
-
-    public FetchAndRegisterTask setStudy(String study) {
-        this.studyFqn = study;
-        return this;
-    }
-
-    public FetchAndRegisterTask setUrl(String url) {
-        this.urlStr = url;
-        return this;
-    }
-
-    public FetchAndRegisterTask setPath(String path) {
-        this.path = path;
-        return this;
-    }
+    private String studyFqn;
 
     @Override
     protected void check() throws Exception {
+        studyFqn = getStudyFqn();
         if (StringUtils.isEmpty(studyFqn)) {
             throw new ToolException("Missing mandatory study parameter");
         }
-        if (StringUtils.isEmpty(urlStr)) {
+        if (StringUtils.isEmpty(toolParams.getUrl())) {
             throw new ToolException("Missing mandatory url");
         }
 
-        URI uri = new URI(urlStr);
+        URI uri = new URI(toolParams.getUrl());
         fileName = UriUtils.fileName(uri);
 
-        if (!path.endsWith("/")) {
-            path = path + "/";
+        if (!toolParams.getPath().endsWith("/")) {
+            toolParams.setPath(toolParams.getPath() + "/");
         }
 
         try {
             Study study = catalogManager.getStudyManager().get(studyFqn, StudyManager.INCLUDE_STUDY_IDS, token).first();
 
-            OpenCGAResult<File> parents = catalogManager.getFileManager().getParents(studyFqn, path, false, QueryOptions.empty(), token);
+            OpenCGAResult<File> parents = catalogManager.getFileManager().getParents(studyFqn, toolParams.getPath(), false,
+                    QueryOptions.empty(), token);
             if (parents.getNumResults() == 0) {
-                throw new ToolException("No parent folders found for " + path);
+                throw new ToolException("No parent folders found for " + toolParams.getPath());
             }
 
             if (parents.first().isExternal()) {
@@ -111,7 +100,7 @@ public class FetchAndRegisterTask extends OpenCgaTool {
             ReadableByteChannel readableByteChannel;
             FileOutputStream fileOutputStream;
             try {
-                URL url = new URL(urlStr);
+                URL url = new URL(toolParams.getUrl());
                 readableByteChannel = Channels.newChannel(url.openStream());
                 fileOutputStream = new FileOutputStream(getOutDir().resolve(fileName).toString());
             } catch (IOException e) {
@@ -129,7 +118,7 @@ public class FetchAndRegisterTask extends OpenCgaTool {
         step("register", () -> {
             // Move downloaded file and register
             try {
-                moveFile(studyFqn, getOutDir().resolve(fileName), null, path, token);
+                moveFile(studyFqn, getOutDir().resolve(fileName), null, toolParams.getPath(), token);
             } catch (Exception e) {
                 deleteTemporaryFile();
                 throw new CatalogException(e.getMessage(), e);

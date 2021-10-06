@@ -495,7 +495,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
 
         @Override
-        public <T extends Tool> int run(Class<T> clazz, String[] args, ObjectMap options) throws StorageEngineException {
+        public <T extends Tool> int run(Class<T> clazz, String[] args) throws StorageEngineException {
             try {
                 // Copy configuration
                 Configuration conf = new Configuration(false);

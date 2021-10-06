@@ -52,13 +52,9 @@ These query parameters can modify the behavior of the query \(_exclude_, _includ
 
 ## REST Response
 
-### OpenCGA 2.x
-
 {% hint style="warning" %}
-Note that the **Response** object has changed in OpenCGA 2.0
-{% endhint %}
-
 REST web services return the response wrapped in a _**RestResponse**_ object \([view data model](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/response/RestResponse.java)\). This consists of some _metadata_ and a list of _**OpenCGAResult**_ objects \([view data model](https://github.com/opencb/opencga/blob/develop/opencga-core/src/main/java/org/opencb/opencga/core/response/OpenCGAResult.java)\) called _**responses**_ containing the data _**results**_ and _metadata_ requested. The first response of the list will always contain the response of the OpenCGA federation being directly queried. Any additional response in the list will belong to other federated servers that could be connected. Each federated response will contain a list of _**results**_ **\*\*\(\_**OpenCGAResult\*\*\_\) containing the data that has been queried.
+{% endhint %}
 
 ```javascript
 {

@@ -143,7 +143,7 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
             }
         }
         DataResult<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions());
-        assertEquals(0, allVariants.getNumTotalResults());
+        assertEquals(0, allVariants.getNumMatches());
     }
 
     @Test

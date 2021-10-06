@@ -35,8 +35,10 @@ spec:
                 && echo Configuration already exists
                 || echo "Copy configuration. Overwrite = {{ .Values.iva.configuration.overwrite }}"
                      && cp -r /usr/local/apache2/htdocs/iva/conf/* /opt/ivaconf
+                     && echo "// Section added by Kubernetes deployment" >> /opt/ivaconf/config.js
                      && echo "opencga.host = \"{{ .Values.opencga.host }}\";" >> /opt/ivaconf/config.js
-                     && echo "cellbase.hosts[0] = \"{{ .Values.cellbase.host }}\";" >> /opt/ivaconf/config.js'
+                     && echo "cellbase.host = \"{{ .Values.cellbase.host }}\";" >> /opt/ivaconf/config.js
+                     && echo "cellbase.version = \"{{ .Values.cellbase.version }}\";" >> /opt/ivaconf/config.js'
         volumeMounts:
           - mountPath: /opt/ivaconf
             name: ivaconf

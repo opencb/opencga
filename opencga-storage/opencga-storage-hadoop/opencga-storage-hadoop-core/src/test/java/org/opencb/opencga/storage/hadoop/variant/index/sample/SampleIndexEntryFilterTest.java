@@ -120,7 +120,7 @@ public class SampleIndexEntryFilterTest {
     private SampleIndexEntry getSampleIndexEntry1() {
         AnnotationIndexConverter converter = new AnnotationIndexConverter(schema);
         //{0.001, 0.005, 0.01};
-        Map<String, byte[]> map = new AnnotationIndexPutBuilder()
+        Map<String, byte[]> map = new AnnotationIndexPutBuilder(schema)
                 .add(converter.convert(annot(
                         pf("s1", "ALL", 0.0),
                         pf("s2", "ALL", 0.0),
@@ -196,7 +196,7 @@ public class SampleIndexEntryFilterTest {
     private SampleIndexEntry getSampleIndexEntry2() {
         AnnotationIndexConverter converter = new AnnotationIndexConverter(schema);
 
-        Map<String, byte[]> map = new AnnotationIndexPutBuilder()
+        Map<String, byte[]> map = new AnnotationIndexPutBuilder(schema)
                 .add(converter.convert(annot(
                         ct("missense_variant", "protein_coding"),
                         ct("start_lost", "nonsense_mediated_decay"),
@@ -219,8 +219,9 @@ public class SampleIndexEntryFilterTest {
         SampleIndexEntry entry = new SampleIndexEntry(0, "1", 0);
         entry.getGtEntry("0/1")
                 .setAnnotationIndex(map.get("_A_0/1"))
-                .setCtBtIndex(map.get("_CB_0/1"))
+                .setCtBtTfIndex(map.get("_CBT_0/1"))
                 .setConsequenceTypeIndex(map.get("_CT_0/1"))
+                .setTranscriptFlagIndex(map.get("_TF_0/1"))
                 .setBiotypeIndex(map.get("_BT_0/1"))
                 .setCount(5)
                 .setVariants(toBytes(
@@ -255,8 +256,7 @@ public class SampleIndexEntryFilterTest {
                 schema.getCtIndex().getField().noOpFilter(),
                 schema.getBiotypeIndex().getField().noOpFilter(),
                 schema.getTranscriptFlagIndexSchema().getField().noOpFilter(),
-                schema.getCtBtIndex().getField().noOpFilter(),
-                schema.getCtTfIndex().getField().noOpFilter(),
+                schema.getCtBtTfIndex().getField().noOpFilter(),
                 schema.getClinicalIndexSchema().noOpFilter(),
                 schema.getPopFreqIndex().buildFilter(Arrays.asList(frequencyQuery), op));
         // TODO: what about Partial?

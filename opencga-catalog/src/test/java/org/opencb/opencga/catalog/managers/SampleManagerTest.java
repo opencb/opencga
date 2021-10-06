@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.Document;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.Disorder;
+import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -414,33 +415,33 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertEquals(1, result.getNumUpdated());
 
         Query query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append(SampleDBAdaptor.STATS_VARIANT_COUNT, 20);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, 20);
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v2")
-                .append(SampleDBAdaptor.STATS_VARIANT_COUNT, 10);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v2")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, 10);
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append(SampleDBAdaptor.STATS_VARIANT_COUNT, 15);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, 15);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append("stats.tiTvRatio", 13.2);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM, 13.2);
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v2")
-                .append("stats.tiTvRatio", 15.2);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v2")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM, 15.2);
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v2")
-                .append("stats.tiTvRatio", 3.5);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v2")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM, 3.5);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         // Change values
@@ -459,33 +460,33 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         // Check same values as before but the results should be now different
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append(SampleDBAdaptor.STATS_VARIANT_COUNT, 20);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, 20);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v2")
-                .append(SampleDBAdaptor.STATS_VARIANT_COUNT, 10);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v2")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, 10);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append(SampleDBAdaptor.STATS_VARIANT_COUNT, 15);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, 15);
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append("stats.tiTvRatio", 13.2);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM, 13.2);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append("stats.tiTvRatio", 15.2);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM, 15.2);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append("stats.tiTvRatio", 3.5);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM, 3.5);
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         // Update any other sample field to validate it doesn't affect quality control
@@ -495,33 +496,33 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         // Check same values as before but the results should be now different
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append(SampleDBAdaptor.STATS_VARIANT_COUNT, 20);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, 20);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v2")
-                .append(SampleDBAdaptor.STATS_VARIANT_COUNT, 10);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v2")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, 10);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append(SampleDBAdaptor.STATS_VARIANT_COUNT, 15);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, 15);
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append("stats.tiTvRatio", 13.2);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM, 13.2);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append("stats.tiTvRatio", 15.2);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM, 15.2);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append("stats.tiTvRatio", 3.5);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM, 3.5);
         assertEquals(1, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         // Remove SampleQcVariantStats values
@@ -534,33 +535,33 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         // None of the previous queries should give any result
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append(SampleDBAdaptor.STATS_VARIANT_COUNT, 20);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, 20);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v2")
-                .append(SampleDBAdaptor.STATS_VARIANT_COUNT, 10);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v2")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, 10);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append(SampleDBAdaptor.STATS_VARIANT_COUNT, 15);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, 15);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append("stats.tiTvRatio", 13.2);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM, 13.2);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append("stats.tiTvRatio", 15.2);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM, 15.2);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
 
         query = new Query()
-                .append(SampleDBAdaptor.STATS_ID, "v1")
-                .append("stats.tiTvRatio", 3.5);
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "v1")
+                .append(ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM, 3.5);
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, query, token).getNumMatches());
     }
 
@@ -1984,6 +1985,63 @@ public class SampleManagerTest extends AbstractManagerTest {
         thrown.expectMessage("not found");
         catalogManager.getIndividualManager().updateAnnotations(studyFqn, ind.getId(), "blabla", annotationUpdate,
                 ParamUtils.CompleteUpdateAction.ADD, new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+    }
+
+    @Test
+    public void testUpdatePhenotypes() throws CatalogException {
+        Sample sample = catalogManager.getSampleManager().get(studyFqn, s_1, null, token).first();
+
+        List<Phenotype> phenotypeList = Arrays.asList(
+                new Phenotype("phenotype0", "phenotypeName0", "SOURCE"),
+                new Phenotype("phenotype1", "phenotypeName1", "SOURCE"),
+                new Phenotype("phenotype2", "phenotypeName2", "SOURCE")
+        );
+        SampleUpdateParams updateParams = new SampleUpdateParams().setPhenotypes(phenotypeList);
+
+        catalogManager.getSampleManager().update(studyFqn, sample.getId(), updateParams, QueryOptions.empty(), token);
+        sample = catalogManager.getSampleManager().get(studyFqn, sample.getId(), QueryOptions.empty(), token).first();
+        assertEquals(3, sample.getPhenotypes().size());
+        for (int i = 0; i < sample.getPhenotypes().size(); i++) {
+            assertEquals("phenotype" + i, sample.getPhenotypes().get(i).getId());
+        }
+
+        // ACTION REMOVE phenotype0, phenotype2
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+        updateParams = new SampleUpdateParams().setPhenotypes(Arrays.asList(
+                new Phenotype("phenotype0", "phenotypeName0", "SOURCE"), new Phenotype("phenotype2", "phenotypeName2", "SOURCE")));
+        catalogManager.getSampleManager().update(studyFqn, sample.getId(), updateParams, options, token);
+        sample = catalogManager.getSampleManager().get(studyFqn, sample.getId(), QueryOptions.empty(), token).first();
+        assertEquals(1, sample.getPhenotypes().size());
+        assertEquals("phenotype1", sample.getPhenotypes().get(0).getId());
+
+        // ADD phenotype1, phenotype2
+        actionMap.put(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), ParamUtils.BasicUpdateAction.ADD);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+        updateParams = new SampleUpdateParams().setPhenotypes(Arrays.asList(
+                new Phenotype("phenotype1", "phenotypeName1", "SOURCE"), new Phenotype("phenotype2", "phenotypeName2", "SOURCE")));
+        catalogManager.getSampleManager().update(studyFqn, sample.getId(), updateParams, options, token);
+        sample = catalogManager.getSampleManager().get(studyFqn, sample.getId(), QueryOptions.empty(), token).first();
+        assertEquals(2, sample.getPhenotypes().size());
+        for (int i = 0; i < sample.getPhenotypes().size(); i++) {
+            assertEquals("phenotype" + (i + 1), sample.getPhenotypes().get(i).getId());
+        }
+
+        // SET phenotype2, phenotype3
+        actionMap.put(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), ParamUtils.BasicUpdateAction.SET);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+        phenotypeList = Arrays.asList(
+                new Phenotype("phenotype2", "phenotypeName2", "SOURCE"),
+                new Phenotype("phenotype3", "phenotypeName3", "SOURCE")
+        );
+        updateParams = new SampleUpdateParams().setPhenotypes(phenotypeList);
+        catalogManager.getSampleManager().update(studyFqn, sample.getId(), updateParams, options, token);
+        sample = catalogManager.getSampleManager().get(studyFqn, sample.getId(), QueryOptions.empty(), token).first();
+        assertEquals(2, sample.getPhenotypes().size());
+        for (int i = 0; i < sample.getPhenotypes().size(); i++) {
+            assertEquals("phenotype" + (i + 2), sample.getPhenotypes().get(i).getId());
+        }
     }
 
     @Test

@@ -24,8 +24,10 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.cellbase.core.result.CellBaseDataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
 import java.io.IOException;
@@ -40,7 +42,6 @@ import java.util.stream.Collectors;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotator {
-    private static final int TIMEOUT = 10000;
 
     private final CellBaseClient cellBaseClient;
 
@@ -55,7 +56,12 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
 
         checkNotNull(cellbaseRest, "cellbase hosts");
         ClientConfiguration clientConfiguration = storageConfiguration.getCellbase().toClientConfiguration();
-        clientConfiguration.getRest().setTimeout(TIMEOUT);
+
+        int timeoutMillis = options.getInt(
+                VariantStorageOptions.ANNOTATION_TIMEOUT.key(),
+                VariantStorageOptions.ANNOTATION_TIMEOUT.defaultValue());
+
+        clientConfiguration.getRest().setTimeout(timeoutMillis);
         cellBaseClient = new CellBaseClient(species, assembly, clientConfiguration);
 
         logger.info("Annotating with Cellbase REST. host '{}', version '{}', species '{}', assembly '{}'",
@@ -69,8 +75,10 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
             return Collections.emptyList();
         }
         try {
+            List<String> variantIds = variants.stream().map(variantSerializer).collect(Collectors.toList());
+            // Make a copy of QueryOptions, as it might be modified from the client.
             CellBaseDataResponse<VariantAnnotation> response = cellBaseClient.getVariantClient()
-                    .getAnnotationByVariantIds(variants.stream().map(variantSerializer).collect(Collectors.toList()), queryOptions, true);
+                    .getAnnotationByVariantIds(variantIds, new QueryOptions(queryOptions), true);
             return response.getResponses();
         } catch (IOException e) {
             throw new VariantAnnotatorException("Error fetching variants from Client");

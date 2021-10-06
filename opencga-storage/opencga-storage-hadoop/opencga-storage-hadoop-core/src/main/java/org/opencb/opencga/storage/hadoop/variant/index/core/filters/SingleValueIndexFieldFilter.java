@@ -38,6 +38,9 @@ public class SingleValueIndexFieldFilter extends IndexFieldFilter {
         return getClass().getSimpleName() + "{"
                 + getIndex().getId()
                 + " (offset=" + getIndex().getBitOffset() + ", length=" + getIndex().getBitLength() + ")"
-                + " : [ " + IndexUtils.binaryToString(expectedCode, getIndex().getBitLength()) + " ] }";
+                + " : [ "
+                + IndexUtils.binaryToString(expectedCode, getIndex().getBitLength()) + " (" + getIndex().decode(expectedCode)
+                + ") ] "
+                + "}";
     }
 }

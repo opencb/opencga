@@ -126,10 +126,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                     .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
             params.putAll(getOtherParams());
             FORMAT = new HashSet<>();
-            if (!params.getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
-                    VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue())) {
-                FORMAT.add("GT");
-            }
+            FORMAT.add("GT");
             FORMAT.addAll(params.getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key()));
 
             StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata, params);
@@ -1999,7 +1996,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
             QueryOptions queryOptions = new QueryOptions("limit", 1).append("skipCount", false);
             DataResult<Variant> queryResult3 = query(new Query(GENE.key(), id), queryOptions);
-            assertEquals("Count for ID " + id, counts.get(id).longValue(), queryResult3.getNumTotalResults());
+            assertEquals("Count for ID " + id, counts.get(id).longValue(), queryResult3.getNumMatches());
             assertEquals(1, queryResult3.getNumResults());
         }
     }
@@ -2056,7 +2053,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         DataResult<Variant> queryResult;
         long numResults;
 //        numResults = dbAdaptor.count(new Query(STATS_MAF.key(), ">0.2")).first();
-//        System.out.println("queryResult.getNumTotalResults() = " + numResults);
+//        System.out.println("queryResult.getNumMatches() = " + numResults);
 
         queryResult = query(new Query(STATS_MAF.key(), STUDY_NAME + ":" + StudyEntry.DEFAULT_COHORT + ">0.2"), null);
         assertThat(queryResult, everyResult(allVariantsSummary, withStudy(STUDY_NAME, withStats(StudyEntry.DEFAULT_COHORT, withMaf(gt(0.2))))));

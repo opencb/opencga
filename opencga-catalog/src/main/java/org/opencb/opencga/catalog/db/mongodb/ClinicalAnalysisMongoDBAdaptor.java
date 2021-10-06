@@ -68,7 +68,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
     private final MongoDBCollection clinicalCollection;
     private final MongoDBCollection deletedClinicalCollection;
-    private ClinicalAnalysisConverter clinicalConverter;
+    private final ClinicalAnalysisConverter clinicalConverter;
 
     public ClinicalAnalysisMongoDBAdaptor(MongoDBCollection clinicalCollection, MongoDBCollection deletedClinicalCollection,
                                           Configuration configuration, MongoDBAdaptorFactory dbAdaptorFactory) {
@@ -893,19 +893,17 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                 && (StringUtils.isNotEmpty(user) || queryCopy.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, queryCopy.getLong(QueryParams.STUDY_UID.key()));
 
-            // Get the document query needed to check the permissions as well
-            andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                    ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name(), Enums.Resource.CLINICAL_ANALYSIS, configuration));
-
-            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, queryCopy, Enums.Resource.CLINICAL_ANALYSIS, user,
-                    configuration));
+            if (queryCopy.containsKey(ParamConstants.ACL_PARAM)) {
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, queryCopy, Enums.Resource.CLINICAL_ANALYSIS, user,
+                        configuration));
+            } else {
+                // Get the document query needed to check the permissions as well
+                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
+                        ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.VIEW.name(), Enums.Resource.CLINICAL_ANALYSIS, configuration));
+            }
 
             queryCopy.remove(ParamConstants.ACL_PARAM);
         }
-
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
 
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -923,22 +921,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     case STUDY_UID:
                         addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
                     case DISORDER:
-                        List<Bson> queryList = new ArrayList<>();
-                        addAutoOrQuery(DISORDER_ID.key(), queryParam.key(), queryCopy, DISORDER_ID.type(), queryList);
-                        addAutoOrQuery(DISORDER_NAME.key(), queryParam.key(), queryCopy, DISORDER_NAME.type(), queryList);
-                        andBsonList.add(Filters.or(queryList));
+                        addOntologyQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
                         break;
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
@@ -947,7 +931,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case INDIVIDUAL:
-                        queryList = new ArrayList<>();
+                        List<Bson> queryList = new ArrayList<>();
                         addAutoOrQuery(PROBAND_UID.key(), queryParam.key(), queryCopy, PROBAND_UID.type(), queryList);
                         addAutoOrQuery(FAMILY_MEMBERS_UID.key(), queryParam.key(), queryCopy, FAMILY_MEMBERS_UID.type(), queryList);
                         andBsonList.add(Filters.or(queryList));
@@ -970,42 +954,25 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                                 Status.getPositiveStatus(ClinicalAnalysisStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
                         addAutoOrQuery(INTERNAL_STATUS_NAME.key(), queryParam.key(), queryCopy, INTERNAL_STATUS_NAME.type(), andBsonList);
                         break;
-                    case FAMILY:
-                    case FAMILY_UID:
-                        addAutoOrQuery(FAMILY_UID.key(), queryParam.key(), queryCopy, FAMILY_UID.type(), andBsonList);
-                        break;
-                    case PROBAND:
-                    case PROBAND_ID:
-                        addAutoOrQuery(PROBAND_ID.key(), queryParam.key(), queryCopy, PROBAND_ID.type(), andBsonList);
-                        break;
-                    case ANALYST:
-                    case ANALYST_ID:
-                        addAutoOrQuery(ANALYST_ID.key(), queryParam.key(), queryCopy, ANALYST_ID.type(), andBsonList);
-                        break;
-                    case FLAGS:
-                    case FLAGS_ID:
-                        addAutoOrQuery(FLAGS_ID.key(), queryParam.key(), queryCopy, FLAGS_ID.type(), andBsonList);
-                        break;
-                    case PRIORITY:
-                    case PRIORITY_ID:
-                        addAutoOrQuery(PRIORITY_ID.key(), queryParam.key(), queryCopy, PRIORITY_ID.type(), andBsonList);
-                        break;
                     // Other parameter that can be queried.
                     case ID:
                     case UUID:
                     case TYPE:
                     case DUE_DATE:
                     case LOCKED:
-                    case PROBAND_SAMPLES_ID:
-                    case PROBAND_SAMPLES_UID:
+                    case FILES_UID:
                     case PROBAND_UID:
-                    case DESCRIPTION:
+                    case PROBAND_SAMPLES_UID:
+                    case FAMILY_UID:
+                    case FAMILY_MEMBERS_UID:
+                    case FAMILY_MEMBERS_SAMPLES_UID:
+                    case PANELS_UID:
+                    case ANALYST_ID:
+                    case PRIORITY_ID:
+                    case FLAGS_ID:
+                    case QUALITY_CONTROL_SUMMARY:
                     case RELEASE:
                     case COMMENTS_DATE:
-                    case INTERNAL_STATUS_DATE:
-                    case ACL:
-                    case ACL_MEMBER:
-                    case ACL_PERMISSIONS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

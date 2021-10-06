@@ -20,6 +20,7 @@ public class MigrationCommandOptions extends GeneralCliOptions {
 
     private final SearchCommandOptions searchCommandOptions;
     private final RunCommandOptions runCommandOptions;
+    private final RunManualCommandOptions runManualCommandOptions;
     private final AdminCliOptionsParser.AdminCommonCommandOptions commonOptions;
 
     public MigrationCommandOptions(JCommander jCommander, AdminCliOptionsParser.AdminCommonCommandOptions commonOptions) {
@@ -27,6 +28,7 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         this.commonOptions = commonOptions;
         this.searchCommandOptions = new SearchCommandOptions();
         this.runCommandOptions = new RunCommandOptions();
+        this.runManualCommandOptions = new RunManualCommandOptions();
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for migrations")
@@ -59,12 +61,33 @@ public class MigrationCommandOptions extends GeneralCliOptions {
 
     }
 
+    @Parameters(commandNames = {"run-manual"}, commandDescription = "Manually run a migration")
+    public class RunManualCommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
+
+        @Parameter(names = {"--id"}, description = "Migration ID to run", required = true)
+        public String id;
+
+        @Parameter(names = {"--version"}, description = "Migration version")
+        public String version;
+
+        @Parameter(names = {"--force"}, description = "Force migration run even if it's on status DONE, ON_HOLD or REDUNDANT", arity = 0)
+        public boolean force;
+
+    }
+
     public SearchCommandOptions getSearchCommandOptions() {
         return searchCommandOptions;
     }
 
     public RunCommandOptions getRunCommandOptions() {
         return runCommandOptions;
+    }
+
+    public RunManualCommandOptions getRunManualCommandOptions() {
+        return runManualCommandOptions;
     }
 
     public AdminCliOptionsParser.AdminCommonCommandOptions getCommonOptions() {

@@ -46,6 +46,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_GENOTYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -98,26 +99,44 @@ public final class VariantQueryUtils {
             NUM_TOTAL_SAMPLES);
 
     public static final String LOF = "lof";
-    // LOF does not include missense_variant
-    public static final Set<String> LOF_SET = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+    public static final String LOSS_OF_FUNCTION = "loss_of_function";
+    public static final String PA = "pa";
+    public static final String PROTEIN_ALTERING = "protein_altering";
+
+    public static final Set<String> LOSS_OF_FUNCTION_SET = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             VariantAnnotationConstants.FRAMESHIFT_VARIANT,
-            VariantAnnotationConstants.INFRAME_DELETION,
-            VariantAnnotationConstants.INFRAME_INSERTION,
+            VariantAnnotationConstants.INCOMPLETE_TERMINAL_CODON_VARIANT,
             VariantAnnotationConstants.START_LOST,
             VariantAnnotationConstants.STOP_GAINED,
             VariantAnnotationConstants.STOP_LOST,
             VariantAnnotationConstants.SPLICE_ACCEPTOR_VARIANT,
             VariantAnnotationConstants.SPLICE_DONOR_VARIANT,
-            VariantAnnotationConstants.TRANSCRIPT_ABLATION,
-            VariantAnnotationConstants.TRANSCRIPT_AMPLIFICATION,
-            VariantAnnotationConstants.INITIATOR_CODON_VARIANT,
-            VariantAnnotationConstants.SPLICE_REGION_VARIANT,
-            VariantAnnotationConstants.INCOMPLETE_TERMINAL_CODON_VARIANT
+            VariantAnnotationConstants.FEATURE_TRUNCATION,
+            VariantAnnotationConstants.TRANSCRIPT_ABLATION
     )));
-    public static final Set<String> LOF_EXTENDED_SET = Collections.unmodifiableSet(new HashSet<>(
+
+    public static final Set<String> PROTEIN_ALTERING_SET = Collections.unmodifiableSet(new HashSet<>(
             ListUtils.concat(
-                    new ArrayList<>(LOF_SET),
-                    Arrays.asList(VariantAnnotationConstants.MISSENSE_VARIANT))));
+                    new ArrayList<>(LOSS_OF_FUNCTION_SET),
+                    Arrays.asList(
+                            VariantAnnotationConstants.INFRAME_DELETION,
+                            VariantAnnotationConstants.INFRAME_INSERTION,
+                            VariantAnnotationConstants.MISSENSE_VARIANT
+//            VariantAnnotationConstants.TRANSCRIPT_AMPLIFICATION,
+//            VariantAnnotationConstants.INITIATOR_CODON_VARIANT,
+//            VariantAnnotationConstants.SPLICE_REGION_VARIANT,
+                    ))));
+
+    public static final Set<String> IMPORTANT_TRANSCRIPT_FLAGS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "canonical",
+            "MANE Select",
+            "MANE Plus Clinical",
+            "CCDS",
+            "basic",
+            "LRG",
+            "EGLH_HaemOnc",
+            "TSO500"
+    )));
 
     public static final Set<VariantQueryParam> MODIFIER_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             INCLUDE_STUDY,
@@ -193,10 +212,10 @@ public final class VariantQueryUtils {
         }
 
         public static BiotypeConsquenceTypeFlagCombination fromQuery(Query query) {
-            return fromQuery(query, Arrays.asList("basic", "CCDS"));
+            return fromQuery(query, IMPORTANT_TRANSCRIPT_FLAGS);
         }
 
-        public static BiotypeConsquenceTypeFlagCombination fromQuery(Query query, List<String> knownFlags) {
+        public static BiotypeConsquenceTypeFlagCombination fromQuery(Query query, Collection<String> knownFlags) {
             // Do not change the order of the following lines, it must match the Enum values!
             String combination = isValidParam(query, ANNOT_BIOTYPE) ? "BIOTYPE_" : "";
             combination += isValidParam(query, ANNOT_CONSEQUENCE_TYPE) ? "CT_" : "";
@@ -951,8 +970,10 @@ public final class VariantQueryUtils {
     public static List<String> parseConsequenceTypes(List<String> cts) {
         Set<String> parsedCts = new LinkedHashSet<>(cts.size());
         for (String ct : cts) {
-            if (ct.equalsIgnoreCase(LOF)) {
-                parsedCts.addAll(VariantQueryUtils.LOF_SET);
+            if (ct.equalsIgnoreCase(LOF) || ct.equalsIgnoreCase(LOSS_OF_FUNCTION)) {
+                parsedCts.addAll(VariantQueryUtils.LOSS_OF_FUNCTION_SET);
+            } else if (ct.equalsIgnoreCase(PA) || ct.equalsIgnoreCase(PROTEIN_ALTERING)) {
+                parsedCts.addAll(VariantQueryUtils.PROTEIN_ALTERING_SET);
             } else {
                 parsedCts.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
             }

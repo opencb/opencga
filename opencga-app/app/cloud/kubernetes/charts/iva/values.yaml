@@ -7,6 +7,7 @@ opencga:
 
 cellbase:
   host: "http://ws.opencb.org/cellbase/"
+  version: "v4"
 
 azureStorageAccount:
   enabled: true
@@ -27,8 +28,7 @@ iva:
 
   image:
     repository: opencb/iva-app:{{ .Chart.AppVersion }}
-
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
 
   imagePullSecrets: []
 

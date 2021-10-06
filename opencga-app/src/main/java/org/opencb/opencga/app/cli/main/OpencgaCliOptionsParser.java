@@ -21,11 +21,10 @@ import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.app.cli.main.options.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.*;
-
-import org.opencb.opencga.app.cli.main.options.*;
 
 
 /*
@@ -39,6 +38,7 @@ import org.opencb.opencga.app.cli.main.options.*;
 *    Command line version: 2.1.0-rc2-SNAPSHOT
 *    Command line commit: 5f5ac3fb4ccd0dd34d830d147dd704f19b078cb0
 */
+
 
 public class OpencgaCliOptionsParser extends CliOptionsParser {
 
@@ -209,6 +209,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
 
         usersCommandOptions = new UsersCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("users", usersCommandOptions);
+
         JCommander usersSubCommands = jCommander.getCommands().get("users");
         usersSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
         usersSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
@@ -425,79 +426,79 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
     public GeneralCliOptions.CommonCommandOptions getCommonCommandOptions() {
         return commonCommandOptions;
     }
-    
+
     public AnalysisVariantCommandOptions getAnalysisVariantCommandOptions() {
         return analysisVariantCommandOptions;
     }
-    
-    
+
+
     public ProjectsCommandOptions getProjectsCommandOptions() {
         return projectsCommandOptions;
     }
-    
-    
+
+
     public DiseasePanelsCommandOptions getDiseasePanelsCommandOptions() {
         return diseasePanelsCommandOptions;
     }
-    
-    
+
+
     public AnalysisClinicalCommandOptions getAnalysisClinicalCommandOptions() {
         return analysisClinicalCommandOptions;
     }
-    
-    
+
+
     public JobsCommandOptions getJobsCommandOptions() {
         return jobsCommandOptions;
     }
-    
-    
+
+
     public IndividualsCommandOptions getIndividualsCommandOptions() {
         return individualsCommandOptions;
     }
-    
-    
+
+
     public FamiliesCommandOptions getFamiliesCommandOptions() {
         return familiesCommandOptions;
     }
-    
-    
+
+
     public UsersCommandOptions getUsersCommandOptions() {
         return usersCommandOptions;
     }
-    
-    
+
+
     public SamplesCommandOptions getSamplesCommandOptions() {
         return samplesCommandOptions;
     }
-    
-    
+
+
     public AnalysisAlignmentCommandOptions getAnalysisAlignmentCommandOptions() {
         return analysisAlignmentCommandOptions;
     }
-    
-    
+
+
     public MetaCommandOptions getMetaCommandOptions() {
         return metaCommandOptions;
     }
-    
-    
+
+
     public StudiesCommandOptions getStudiesCommandOptions() {
         return studiesCommandOptions;
     }
-    
-    
+
+
     public FilesCommandOptions getFilesCommandOptions() {
         return filesCommandOptions;
     }
-    
-    
+
+
     public OperationsVariantStorageCommandOptions getOperationsVariantStorageCommandOptions() {
         return operationsVariantStorageCommandOptions;
     }
-    
-    
+
+
     public CohortsCommandOptions getCohortsCommandOptions() {
         return cohortsCommandOptions;
     }
-    
+
 }

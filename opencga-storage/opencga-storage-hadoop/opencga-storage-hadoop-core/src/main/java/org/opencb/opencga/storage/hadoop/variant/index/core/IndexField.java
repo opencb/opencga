@@ -80,7 +80,11 @@ public abstract class IndexField<T> {
     }
 
     public IndexFieldFilter buildFilter(VariantQueryUtils.QueryOperation operation, Collection<T> values) {
-        return buildFilter(new Values<>(operation, values.stream().map(v -> new OpValue<>("=", v)).collect(Collectors.toList())));
+        return buildFilter(operation, "=", values);
+    }
+
+    public IndexFieldFilter buildFilter(VariantQueryUtils.QueryOperation operation, String op, Collection<T> values) {
+        return buildFilter(new Values<>(operation, values.stream().map(v -> new OpValue<>(op, v)).collect(Collectors.toList())));
     }
 
     public IndexFieldFilter buildFilter(OpValue<T> query) {

@@ -20,7 +20,7 @@ public @interface Migration {
     String description();
 
     /**
-     * @return OpenCGA Version. Allowed formats: 1.2.3, 1.1.0-RC1
+     * @return OpenCGA Version. Must contain 3 numbers separated by dots, nothing else: 1.2.3 , 1.3.15 ...
      */
     String version();
 

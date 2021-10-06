@@ -4,10 +4,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.FlagValue;
 import org.opencb.opencga.core.models.common.StatusValue;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ClinicalAnalysisStudyConfiguration {
 
@@ -84,7 +81,8 @@ public class ClinicalAnalysisStudyConfiguration {
         clinicalConsentList.add(new ClinicalConsent("CARRIER_FINDINGS", "Carrier findings", ""));
         clinicalConsentList.add(new ClinicalConsent("RESEARCH_FINDINGS", "Research findings", ""));
 
-        return new ClinicalAnalysisStudyConfiguration(status, new InterpretationStudyConfiguration(interpretationStatus), priorities, flags,
+        return new ClinicalAnalysisStudyConfiguration(status,
+                new InterpretationStudyConfiguration(interpretationStatus, Collections.emptyList()), priorities, flags,
                 new ClinicalConsentConfiguration(clinicalConsentList));
     }
 

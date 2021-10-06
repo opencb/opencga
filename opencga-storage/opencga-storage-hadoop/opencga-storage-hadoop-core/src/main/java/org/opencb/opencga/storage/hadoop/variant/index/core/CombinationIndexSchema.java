@@ -176,6 +176,7 @@ public class CombinationIndexSchema /*extends DynamicIndexSchema*/ {
             for (int posA = 0; posA < numA; posA++) {
                 // Get the first A value from the right.
                 int a = Integer.lowestOneBit(strippedFieldValueA);
+                String decodeA = indexA.decode(a).get(0);
                 // Remove the A value from the index, so the next iteration gets the next value
                 strippedFieldValueA &= ~a;
 
@@ -185,11 +186,8 @@ public class CombinationIndexSchema /*extends DynamicIndexSchema*/ {
                     // As before, take the first B value from the right.
                     int b = Integer.lowestOneBit(strippedFieldValueB);
                     strippedFieldValueB &= ~b;
-                    // Check if the B is part of the query filter
-
                     // Check if this A was together with this B
                     if ((matrix[posA] & (1 << posB)) != 0) {
-                        String decodeA = indexA.decode(a).get(0);
                         String decodeB = indexB.decode(b).get(0);
                         pairs.add(Pair.of(decodeA == null ? "OTHER" : decodeA, decodeB == null ? "OTHER" : decodeB));
                     }
@@ -205,16 +203,20 @@ public class CombinationIndexSchema /*extends DynamicIndexSchema*/ {
             return Integer.numberOfTrailingZeros(s);
         }
 
-        public Filter buildFilter(List<Pair<String, String>> value) {
-            Set<String> setA = new HashSet<>();
-            Set<String> setB = new HashSet<>();
+//        public Filter buildFilter(List<Pair<String, String>> value) {
+//            Set<String> setA = new HashSet<>();
+//            Set<String> setB = new HashSet<>();
+//
+//            for (Pair<String, String> pair : value) {
+//                setA.add(pair.getKey());
+//                setB.add(pair.getValue());
+//            }
+//            return buildFilter(setA, setB);
+//        }
 
-            for (Pair<String, String> pair : value) {
-                setA.add(pair.getKey());
-                setB.add(pair.getValue());
-            }
-            IndexFieldFilter filterA = indexA.buildFilter(new OpValue<>("=", new ArrayList<>(setA)));
-            IndexFieldFilter filterB = indexB.buildFilter(new OpValue<>("=", new ArrayList<>(setB)));
+        public Filter buildFilter(Collection<String> valuesA, Collection<String> valuesB) {
+            IndexFieldFilter filterA = indexA.buildFilter(new OpValue<>("=", new ArrayList<>(valuesA)));
+            IndexFieldFilter filterB = indexB.buildFilter(new OpValue<>("=", new ArrayList<>(valuesB)));
 
             return buildFilter(filterA, filterB);
         }

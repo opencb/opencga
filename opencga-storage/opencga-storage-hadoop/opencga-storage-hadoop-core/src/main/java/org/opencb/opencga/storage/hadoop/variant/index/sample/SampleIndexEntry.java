@@ -183,13 +183,9 @@ public class SampleIndexEntry {
         private int transcriptFlagIndexOffset;
         private int transcriptFlagIndexLength;
 
-        private byte[] ctBtIndex;
-        private int ctBtIndexOffset;
-        private int ctBtIndexLength;
-
-        private byte[] ctTfIndex;
-        private int ctTfIndexOffset;
-        private int ctTfIndexLength;
+        private byte[] ctBtTfIndex;
+        private int ctBtTfIndexOffset;
+        private int ctBtTfIndexLength;
 
         private byte[] populationFrequencyIndex;
         private int populationFrequencyIndexOffset;
@@ -366,6 +362,10 @@ public class SampleIndexEntry {
                     : new BitInputStream(transcriptFlagIndex, transcriptFlagIndexOffset, transcriptFlagIndexLength);
         }
 
+        public SampleIndexGtEntry setTranscriptFlagIndex(byte[] value) {
+            return setTranscriptFlagIndex(value, 0, value.length);
+        }
+
         public SampleIndexGtEntry setTranscriptFlagIndex(byte[] value, int offset, int length) {
             this.transcriptFlagIndex = value;
             this.transcriptFlagIndexOffset = offset;
@@ -373,41 +373,30 @@ public class SampleIndexEntry {
             return this;
         }
 
-        public byte[] getCtBtIndex() {
-            return ctBtIndex;
+        public byte[] getCtBtTfIndex() {
+            return ctBtTfIndex;
         }
 
-        public BitInputStream getCtBtIndexStream() {
-            return ctBtIndex == null ? null : new BitInputStream(ctBtIndex, ctBtIndexOffset, ctBtIndexLength);
+        public BitInputStream getCtBtTfIndexStream() {
+            return ctBtTfIndex == null ? null : new BitInputStream(ctBtTfIndex, ctBtTfIndexOffset, ctBtTfIndexLength);
         }
 
-        public int getCtBtIndexOffset() {
-            return ctBtIndexOffset;
+        public int getCtBtTfIndexOffset() {
+            return ctBtTfIndexOffset;
         }
 
-        public int getCtBtIndexLength() {
-            return ctBtIndexLength;
+        public int getCtBtTfIndexLength() {
+            return ctBtTfIndexLength;
         }
 
-        public SampleIndexGtEntry setCtBtIndex(byte[] ctBtIndex) {
-            return setCtBtIndex(ctBtIndex, 0, ctBtIndex.length);
+        public SampleIndexGtEntry setCtBtTfIndex(byte[] ctBtTfIndex) {
+            return setCtBtTfIndex(ctBtTfIndex, 0, ctBtTfIndex.length);
         }
 
-        public SampleIndexGtEntry setCtBtIndex(byte[] ctBtIndex, int offset, int length) {
-            this.ctBtIndex = ctBtIndex;
-            this.ctBtIndexOffset = offset;
-            this.ctBtIndexLength = length;
-            return this;
-        }
-
-        public BitInputStream getCtTfIndexStream() {
-            return ctTfIndex == null ? null : new BitInputStream(ctTfIndex, ctTfIndexOffset, ctTfIndexLength);
-        }
-
-        public SampleIndexGtEntry setCtTfIndex(byte[] value, int offset, int length) {
-            this.ctTfIndex = value;
-            this.ctTfIndexOffset = offset;
-            this.ctTfIndexLength = length;
+        public SampleIndexGtEntry setCtBtTfIndex(byte[] ctBtTfIndex, int offset, int length) {
+            this.ctBtTfIndex = ctBtTfIndex;
+            this.ctBtTfIndexOffset = offset;
+            this.ctBtTfIndexLength = length;
             return this;
         }
 
@@ -500,9 +489,12 @@ public class SampleIndexEntry {
             sb.append(", biotypeIndex=").append(biotypeIndex == null ? "null"
                     : Bytes.toStringBinary(biotypeIndex, biotypeIndexOffset, biotypeIndexLength));
             sb.append(", biotypeIndexLength=").append(biotypeIndexLength);
-            sb.append(", ctBtIndex=").append(ctBtIndex == null ? "null"
-                    : Bytes.toStringBinary(ctBtIndex, ctBtIndexOffset, ctBtIndexLength));
-            sb.append(", ctBtIndexLength=").append(ctBtIndexLength);
+            sb.append(", transcriptFlagIndex=").append(transcriptFlagIndex == null ? "null"
+                    : Bytes.toStringBinary(transcriptFlagIndex, transcriptFlagIndexOffset, transcriptFlagIndexLength));
+            sb.append(", transcriptFlagIndexLength=").append(transcriptFlagIndexLength);
+            sb.append(", ctBtTfIndex=").append(ctBtTfIndex == null ? "null"
+                    : Bytes.toStringBinary(ctBtTfIndex, ctBtTfIndexOffset, ctBtTfIndexLength));
+            sb.append(", ctBtTfIndexLength=").append(ctBtTfIndexLength);
             sb.append(", populationFrequencyIndex=").append(populationFrequencyIndex == null ? "null"
                     : Bytes.toStringBinary(populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength));
             sb.append(", clinicalIndex=").append(clinicalIndex == null ? "null"
@@ -525,22 +517,23 @@ public class SampleIndexEntry {
             return count == that.count
                     && Objects.equals(gt, that.gt)
                     && Arrays.equals(annotationCounts, that.annotationCounts)
-                    && fileIndex.equals(that.fileIndex)
-                    && Bytes.equals(variants, variantsOffset, that.variantsLength,
+                    && Bytes.equals(fileIndex, fileIndexOffset, fileIndexLength,
+                        that.fileIndex, that.fileIndexOffset, that.fileIndexLength)
+                    && Bytes.equals(variants, variantsOffset, variantsLength,
                         that.variants, that.variantsOffset, that.variantsLength)
-                    && Bytes.equals(annotationIndex, annotationIndexOffset, that.annotationIndexLength,
+                    && Bytes.equals(annotationIndex, annotationIndexOffset, annotationIndexLength,
                         that.annotationIndex, that.annotationIndexOffset, that.annotationIndexLength)
-                    && Bytes.equals(consequenceTypeIndex, consequenceTypeIndexOffset, that.consequenceTypeIndexLength,
+                    && Bytes.equals(consequenceTypeIndex, consequenceTypeIndexOffset, consequenceTypeIndexLength,
                         that.consequenceTypeIndex, that.consequenceTypeIndexOffset, that.consequenceTypeIndexLength)
-                    && Bytes.equals(biotypeIndex, biotypeIndexOffset, that.biotypeIndexLength,
+                    && Bytes.equals(biotypeIndex, biotypeIndexOffset, biotypeIndexLength,
                         that.biotypeIndex, that.biotypeIndexOffset, that.biotypeIndexLength)
-                    && Bytes.equals(ctBtIndex, ctBtIndexOffset, that.ctBtIndexLength,
-                        that.ctBtIndex, that.ctBtIndexOffset, that.ctBtIndexLength)
-                    && Bytes.equals(populationFrequencyIndex, populationFrequencyIndexOffset, that.populationFrequencyIndexLength,
+                    && Bytes.equals(ctBtTfIndex, ctBtTfIndexOffset, ctBtTfIndexLength,
+                        that.ctBtTfIndex, that.ctBtTfIndexOffset, that.ctBtTfIndexLength)
+                    && Bytes.equals(populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength,
                         that.populationFrequencyIndex, that.populationFrequencyIndexOffset, that.populationFrequencyIndexLength)
-                    && Bytes.equals(clinicalIndex, clinicalIndexOffset, that.clinicalIndexLength,
+                    && Bytes.equals(clinicalIndex, clinicalIndexOffset, clinicalIndexLength,
                         that.clinicalIndex, that.clinicalIndexOffset, that.clinicalIndexLength)
-                    && Bytes.equals(parentsIndex, parentsIndexOffset, that.parentsIndexLength,
+                    && Bytes.equals(parentsIndex, parentsIndexOffset, parentsIndexLength,
                         that.parentsIndex, that.parentsIndexOffset, that.parentsIndexLength);
         }
 
@@ -553,7 +546,7 @@ public class SampleIndexEntry {
             result = 31 * result + Bytes.hashCode(annotationIndex, annotationIndexOffset, annotationIndexLength);
             result = 31 * result + Bytes.hashCode(consequenceTypeIndex, consequenceTypeIndexOffset, consequenceTypeIndexLength);
             result = 31 * result + Bytes.hashCode(biotypeIndex, biotypeIndexOffset, biotypeIndexLength);
-            result = 31 * result + Bytes.hashCode(ctBtIndex, ctBtIndexOffset, ctBtIndexLength);
+            result = 31 * result + Bytes.hashCode(ctBtTfIndex, ctBtTfIndexOffset, ctBtTfIndexLength);
             result = 31 * result + Bytes.hashCode(populationFrequencyIndex, populationFrequencyIndexOffset, populationFrequencyIndexLength);
             result = 31 * result + Bytes.hashCode(clinicalIndex, clinicalIndexOffset, clinicalIndexLength);
             result = 31 * result + Bytes.hashCode(parentsIndex, parentsIndexOffset, parentsIndexLength);

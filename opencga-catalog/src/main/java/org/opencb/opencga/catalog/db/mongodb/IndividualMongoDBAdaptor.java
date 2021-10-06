@@ -201,7 +201,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         SampleMongoDBAdaptor sampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
         ObjectMap params = new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
-        Document update = sampleDBAdaptor.parseAndValidateUpdateParams(clientSession, params, null).toFinalUpdateDocument();
+        Document update = sampleDBAdaptor.parseAndValidateUpdateParams(clientSession, params, null, QueryOptions.empty())
+                .toFinalUpdateDocument();
         Bson query = sampleDBAdaptor.parseQuery(new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(SampleDBAdaptor.QueryParams.UID.key(), sampleUid), null);
@@ -751,8 +752,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] acceptedObjectParams = {QueryParams.PHENOTYPES.key(), QueryParams.DISORDERS.key(),
-                QueryParams.LOCATION.key(), QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key()};
+        String[] acceptedObjectParams = {QueryParams.LOCATION.key(), QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -809,6 +809,48 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             }
         }
 
+        Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+        // Phenotypes
+        if (parameters.containsKey(QueryParams.PHENOTYPES.key())) {
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.PHENOTYPES.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            String[] phenotypesParams = {QueryParams.PHENOTYPES.key()};
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), phenotypesParams);
+                    break;
+                case REMOVE:
+                    dbAdaptorFactory.getCatalogSampleDBAdaptor().fixPhenotypesForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPull(), phenotypesParams);
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), phenotypesParams);
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
+        }
+        // Disorders
+        if (parameters.containsKey(QueryParams.DISORDERS.key())) {
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.DISORDERS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            String[] disordersParams = {QueryParams.DISORDERS.key()};
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), disordersParams);
+                    break;
+                case REMOVE:
+                    fixDisordersForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPull(), disordersParams);
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), disordersParams);
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
+        }
+
         if (!document.toFinalUpdateDocument().isEmpty()) {
             String time = TimeUtils.getTime();
             if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
@@ -821,6 +863,22 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         return document;
+    }
+
+    void fixDisordersForRemoval(ObjectMap parameters) {
+        if (parameters.get(QueryParams.DISORDERS.key()) == null) {
+            return;
+        }
+
+        List<Document> disorderParamList = new LinkedList<>();
+        for (Object disorder : parameters.getAsList(QueryParams.DISORDERS.key())) {
+            if (disorder instanceof Phenotype) {
+                disorderParamList.add(new Document("id", ((Phenotype) disorder).getId()));
+            } else {
+                disorderParamList.add(new Document("id", ((Map) disorder).get("id")));
+            }
+        }
+        parameters.put(QueryParams.DISORDERS.key(), disorderParamList);
     }
 
     private void getSampleChanges(Individual individual, ObjectMap parameters, UpdateDocument updateDocument,
@@ -1277,26 +1335,25 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
-            if (containsAnnotationQuery(query)) {
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                        IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.INDIVIDUAL, configuration));
-            } else {
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, IndividualAclEntry.IndividualPermissions.VIEW.name(),
-                        Enums.Resource.INDIVIDUAL, configuration));
-            }
 
-            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.INDIVIDUAL, user,
-                    configuration));
+            if (query.containsKey(ParamConstants.ACL_PARAM)) {
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.INDIVIDUAL, user,
+                        configuration));
+            } else {
+                if (containsAnnotationQuery(query)) {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
+                            IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.INDIVIDUAL, configuration));
+                } else {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, IndividualAclEntry.IndividualPermissions.VIEW.name(),
+                            Enums.Resource.INDIVIDUAL, configuration));
+                }
+            }
 
             query.remove(ParamConstants.ACL_PARAM);
         }
 
         Query queryCopy = new Query(query);
         queryCopy.remove(QueryParams.DELETED.key());
-
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
 
         if ("all".equalsIgnoreCase(queryCopy.getString(IndividualDBAdaptor.QueryParams.VERSION.key()))) {
             queryCopy.put(Constants.ALL_VERSIONS, true);
@@ -1323,17 +1380,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                         break;
                     case STUDY_UID:
                         addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case PHENOTYPES:
                     case DISORDERS:
@@ -1374,19 +1420,17 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     case DATE_OF_BIRTH:
                     case SEX:
                     case ETHNICITY:
-                    case INTERNAL_STATUS_DATE:
                     case POPULATION_NAME:
                     case POPULATION_SUBPOPULATION:
-                    case POPULATION_DESCRIPTION:
                     case KARYOTYPIC_SEX:
                     case LIFE_STATUS:
                     case RELEASE:
                     case VERSION:
                     case SAMPLE_UIDS:
-//                    case ANNOTATION_SETS:
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
-                    case PHENOTYPES_SOURCE:
+                    case DISORDERS_ID:
+                    case DISORDERS_NAME:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

@@ -159,7 +159,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
                 // Add a combination with the transcript flag
                 if (consequenceType.getTranscriptAnnotationFlags() != null) {
                     for (String flag : consequenceType.getTranscriptAnnotationFlags()) {
-                        if (flag.equals("basic") || flag.equals("CCDS")) {
+                        if (VariantQueryUtils.IMPORTANT_TRANSCRIPT_FLAGS.contains(flag)) {
                             geneSoFlag.add(combine(consequenceType.getGeneName(), so, flag));
                             geneSoFlag.add(combine(consequenceType.getGeneId(), so, flag));
                             geneSoFlag.add(combine(consequenceType.getTranscriptId(), so, flag));

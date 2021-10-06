@@ -34,6 +34,7 @@ package org.opencb.opencga.client.rest;
  import org.opencb.opencga.client.config.ClientConfiguration;
  import org.opencb.opencga.client.exceptions.ClientException;
  import org.opencb.opencga.core.common.JacksonUtils;
+ import org.opencb.opencga.core.response.OpenCGAResult;
  import org.opencb.opencga.core.response.RestResponse;
  import org.opencb.opencga.core.response.VariantQueryResult;
  import org.slf4j.Logger;
@@ -259,14 +260,28 @@ public abstract class AbstractParentClient {
 
             if (finalRestResponse == null) {
                 finalRestResponse = batchRestResponse;
+                if (finalRestResponse.getEvents() == null) {
+                    finalRestResponse.setEvents(new ArrayList<>());
+                }
+                if (finalRestResponse.first() == null) {
+                    finalRestResponse.setResponses(Collections.singletonList(new OpenCGAResult<>()));
+                    finalRestResponse.first().setResults(new ArrayList<>());
+                }
+                if (finalRestResponse.first().getEvents() == null) {
+                    finalRestResponse.first().setEvents(new ArrayList<>());
+                }
             } else {
                 // Merge results
                 if (batchNumResults > 0) {
                     finalRestResponse.first().getResults().addAll(batchRestResponse.getResponses().get(0).getResults());
                     finalRestResponse.first().setNumResults(finalRestResponse.first().getResults().size());
                 }
-                finalRestResponse.getEvents().addAll(batchRestResponse.getEvents());
-                finalRestResponse.first().getEvents().addAll(batchRestResponse.first().getEvents());
+                if (batchRestResponse.getEvents() != null) {
+                    finalRestResponse.getEvents().addAll(batchRestResponse.getEvents());
+                }
+                if (batchRestResponse.first().getEvents() != null) {
+                    finalRestResponse.first().getEvents().addAll(batchRestResponse.first().getEvents());
+                }
             }
 
             skip += batchNumResults;

@@ -308,11 +308,12 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
     private void query(VariantCommandOptions.AbstractVariantQueryCommandOptions cliOptions, String outdir) throws Exception {
 //        AnalysisCliOptionsParser.QueryVariantCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
-        if (cliOptions.compress) {
-            if (!cliOptions.commonOptions.outputFormat.toLowerCase().endsWith(".gz")) {
-                cliOptions.commonOptions.outputFormat += ".GZ";
+        if (cliOptions instanceof VariantCommandOptions.VariantQueryCommandOptions)
+            if (((VariantCommandOptions.VariantQueryCommandOptions) cliOptions).compress) {
+                if (!cliOptions.commonOptions.outputFormat.toLowerCase().endsWith(".gz")) {
+                    cliOptions.commonOptions.outputFormat += ".GZ";
+                }
             }
-        }
 
         Map<Long, String> studyIds = getStudyIds(token);
         Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds.values(), clientConfiguration);
@@ -331,7 +332,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                     query, outdir,
                     cliOptions.outputFileName,
                     cliOptions.commonOptions.outputFormat,
-                    cliOptions.compress,
                     cliOptions.variantsFile)
                     .toObjectMap(queryOptions);
             toolRunner.execute(VariantExportTool.class, params, Paths.get(outdir), jobId, token);
@@ -376,7 +376,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genericVariantIndexOptions.loadArchive,
                 cliOptions.genericVariantIndexOptions.loadHomRef,
                 cliOptions.genericVariantIndexOptions.postLoadCheck,
-                cliOptions.genericVariantIndexOptions.excludeGenotype,
+                cliOptions.genericVariantIndexOptions.includeGenotype,
                 cliOptions.genericVariantIndexOptions.includeSampleData,
                 cliOptions.genericVariantIndexOptions.merge,
                 cliOptions.genericVariantIndexOptions.deduplicationPolicy,

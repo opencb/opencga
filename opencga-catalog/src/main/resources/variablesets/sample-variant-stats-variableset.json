@@ -19,7 +19,7 @@
     "rank" : 0,
     "dependsOn" : null,
     "description" : "Sample identifier *",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "variantCount",
@@ -34,7 +34,7 @@
     "rank" : 1,
     "dependsOn" : null,
     "description" : "Number of variants where the sample has the main allele (i.e. 0/1, 1/1, ./1, 1/2, ...)",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "chromosomeCount",
@@ -49,7 +49,7 @@
     "rank" : 2,
     "dependsOn" : null,
     "description" : "Number of variants per chromosome *",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "typeCount",
@@ -64,7 +64,7 @@
     "rank" : 3,
     "dependsOn" : null,
     "description" : "Variants count group by type. e.g. SNP, INDEL, MNP, SNV, ...",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "genotypeCount",
@@ -79,7 +79,7 @@
     "rank" : 4,
     "dependsOn" : null,
     "description" : "Number of variants per genotype. Only counts genotypes with the main allele. Phase is ignored. *",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "indelLengthCount",
@@ -94,7 +94,7 @@
     "rank" : 5,
     "dependsOn" : null,
     "description" : "Indel length grouped in ranges *",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "filterCount",
@@ -109,7 +109,7 @@
     "rank" : 6,
     "dependsOn" : null,
     "description" : "The number of occurrences for each FILTER value in files from this set..  Each file can contain more than one filter value (usually separated by ';').. ",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "tiTvRatio",
@@ -124,7 +124,7 @@
     "rank" : 7,
     "dependsOn" : null,
     "description" : "TiTvRatio = num. transitions / num. transversions",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "qualityAvg",
@@ -139,7 +139,7 @@
     "rank" : 8,
     "dependsOn" : null,
     "description" : "Mean Quality for all the variants with quality",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "qualityStdDev",
@@ -154,7 +154,7 @@
     "rank" : 9,
     "dependsOn" : null,
     "description" : "Standard Deviation of the quality",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "heterozygosityRate",
@@ -169,7 +169,7 @@
     "rank" : 10,
     "dependsOn" : null,
     "description" : "Heterozygosity rate as defined by PLINK: (N–O)/N. .  N is the number of non-missing genotypes.  O is the observed number of homozygous genotypes for a given individual. ",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "mendelianErrorCount",
@@ -184,7 +184,7 @@
     "rank" : 11,
     "dependsOn" : null,
     "description" : "Number of mendelian errors grouped by PLINK error codes grouped by Chromosome.",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "consequenceTypeCount",
@@ -199,7 +199,7 @@
     "rank" : 12,
     "dependsOn" : null,
     "description" : "Variants count group by consequence type. e.g. missense_variant, synonymous_variant, stop_lost, ....  Each counter is increased at most one per variant. If multiple overlapping transcripts have the same consequence type, it will count as one.",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "biotypeCount",
@@ -214,7 +214,7 @@
     "rank" : 13,
     "dependsOn" : null,
     "description" : "Variants count group by biotype. e.g. protein-coding, miRNA, lncRNA, ....  Each counter is increased at most one per variant. If multiple overlapping genes have the same biotypes, it will count as one.",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "clinicalSignificanceCount",
@@ -229,7 +229,7 @@
     "rank" : 14,
     "dependsOn" : null,
     "description" : "Variants count group by clinical significance. e.g. benign, likely_benign, likely_pathogenic, pathogenic, uncertain_significance  ....  Each counter is increased at most one per variant. If multiple variant traits have the same clinical significance, it will count as one.",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "depthCount",
@@ -244,7 +244,7 @@
     "rank" : 15,
     "dependsOn" : null,
     "description" : "Depth count",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }
   ],
