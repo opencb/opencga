@@ -138,20 +138,22 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                     sb.append("        @ParametersDelegate\n");
                     sb.append("        public CommonCommandOptions commonOptions = commonCommandOptions;\n");
                     sb.append("    \n");
+                    Set<String> variable_names=new HashSet<>();
                     for (Parameter parameter : endpoint.getParameters()) {
                         if (config.isAvailableSubCommand(parameter.getName())) {
-                            if (!"body".equals(normaliceNames(parameter.getName()))) {
-                                if (CommandLineUtils.isPrimitive(parameter.getType())) {
+                            if (!"body".equals(normaliceNames(parameter.getName())) ) {
+                                if (CommandLineUtils.isPrimitive(parameter.getType())&& !variable_names.contains(normaliceNames(getAsCamelCase(parameter.getName())))) {
                                     sb.append("        @Parameter(names = {" + getShortCuts(parameter, config) + "}, description = " +
                                             "\"" + parameter.getDescription().replaceAll("\"", "'") + "\", required = " + parameter.isRequired() + ", arity = 1)\n");
                                     sb.append("        public " + getValidValue(parameter.getType()) + " " + normaliceNames(getAsCamelCase(parameter.getName())) + ";" +
                                             " " +
                                             "\n");
                                     sb.append("    \n");
+                                    variable_names.add(normaliceNames(getAsCamelCase(parameter.getName())));
                                 }
                             } else {
                                 for (Parameter body_parameter : parameter.getData()) {
-                                    if (config.isAvailableSubCommand(body_parameter.getName()) && CommandLineUtils.isPrimitive(body_parameter.getType())) {
+                                    if (config.isAvailableSubCommand(body_parameter.getName()) && CommandLineUtils.isPrimitive(body_parameter.getType()) && !variable_names.contains(normaliceNames(getAsCamelCase(parameter.getName())))) {
                                         sb.append("        @Parameter(names = {" + getShortCuts(body_parameter, config) + "}, " +
                                                 "description" +
                                                 " = " +
@@ -161,6 +163,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                                 " " +
                                                 "\n");
                                         sb.append("    \n");
+                                        variable_names.add(normaliceNames(getAsCamelCase(body_parameter.getName())));
                                     }
                                 }
                             }

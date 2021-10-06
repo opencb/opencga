@@ -37,7 +37,7 @@ import org.opencb.opencga.app.cli.main.options.*;
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
 *    Command line version: 2.2.0-SNAPSHOT
-*    Command line commit: 874ed756d44aaeee55a12cc4d453e782b75babec
+*    Command line commit: 874cc8c641af26fe915264f9939d844fa08fa1cd
 */
 
 public class OpencgaCliOptionsParser extends CliOptionsParser {
