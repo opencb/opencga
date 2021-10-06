@@ -70,19 +70,13 @@ import org.opencb.opencga.analysis.wrappers.picard.PicardWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.plink.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.rvtests.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.samtools.SamtoolsWrapperAnalysis;
-import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.managers.JobManager;
-import org.opencb.opencga.catalog.managers.StudyManager;
+import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -141,9 +135,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     public static final String OUTDIR_PARAM = "outdir";
     public static final int EXECUTION_RESULT_FILE_EXPIRATION_MINUTES = 10;
     public static final String REDACTED_TOKEN = "xxxxxxxxxxxxxxxxxxxxx";
-    private String internalCli;
-    private JobManager jobManager;
-    private FileManager fileManager;
+    private final String internalCli;
+    private final ExecutionManager executionManager;
+    private final JobManager jobManager;
+    private final FileManager fileManager;
     private final Map<String, Long> jobsCountByType = new HashMap<>();
     private final Map<String, Long> retainedLogsTime = new HashMap<>();
 
@@ -157,6 +152,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     // (15 + 50 from pending), and it will check up to 50 finished jobs from the running ones.
     // On second iteration, it will queue the remaining 50 pending jobs, and so on...
     private static final int NUM_JOBS_HANDLED = 50;
+    private final Query pendingExecutionsQuery;
+    private final Query queuedExecutionsQuery;
+    private final Query runningExecutionsQuery;
+
     private final Query pendingJobsQuery;
     private final Query queuedJobsQuery;
     private final Query runningJobsQuery;
@@ -165,7 +164,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     static {
-        TOOL_CLI_MAP = new HashMap<String, String>(){{
+        TOOL_CLI_MAP = new HashMap<String, String>() {{
             put(FileUnlinkTask.ID, "files unlink");
             put(FileDeleteTask.ID, "files delete");
             put(FetchAndRegisterTask.ID, "files fetch");
@@ -246,15 +245,21 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     public ExecutionDaemon(int interval, String token, CatalogManager catalogManager, String appHome) throws CatalogDBException {
         super(interval, token, catalogManager);
 
+        this.executionManager = catalogManager.getExecutionManager();
         this.jobManager = catalogManager.getJobManager();
         this.fileManager = catalogManager.getFileManager();
         this.internalCli = appHome + "/bin/opencga-internal.sh";
 
         this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
 
+        pendingExecutionsQuery = new Query(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
+        queuedExecutionsQuery = new Query(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED);
+        runningExecutionsQuery = new Query(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING);
+
         pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
         queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED);
         runningJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING);
+
         // Sort jobs by priority and creation date
         queryOptions = new QueryOptions()
                 .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
@@ -274,6 +279,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             }
 
             try {
+                checkExecutions();
                 checkJobs();
             } catch (Exception e) {
                 logger.error("Catch exception " + e.getMessage(), e);
@@ -295,6 +301,36 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
     }
 
+    protected void checkExecutions() {
+        long pendingExecutions = -1;
+        long queuedExecutions = -1;
+        long runningExecutions = -1;
+        try {
+            pendingExecutions = executionManager.count(pendingExecutionsQuery, token).getNumMatches();
+            queuedExecutions = executionManager.count(queuedExecutionsQuery, token).getNumMatches();
+            runningExecutions = executionManager.count(runningExecutionsQuery, token).getNumMatches();
+        } catch (CatalogException e) {
+            logger.error("{}", e.getMessage(), e);
+        }
+        logger.info("----- EXECUTION DAEMON  ----- pending={}, queued={}, running={}", pendingExecutions, queuedExecutions,
+                runningExecutions);
+
+            /*
+            PENDING EXECUTIONS
+             */
+        checkPendingExecutions();
+
+            /*
+            QUEUED EXECUTIONS
+             */
+        checkQueuedExecutions();
+
+            /*
+            RUNNING EXECUTIONS
+             */
+        checkRunningExecutions();
+    }
+
     protected void checkJobs() {
         long pendingJobs = -1;
         long queuedJobs = -1;
@@ -306,7 +342,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         } catch (CatalogException e) {
             logger.error("{}", e.getMessage(), e);
         }
-        logger.info("----- EXECUTION DAEMON  ----- pending={}, queued={}, running={}", pendingJobs, queuedJobs, runningJobs);
+        logger.info("----- JOB DAEMON  ----- pending={}, queued={}, running={}", pendingJobs, queuedJobs, runningJobs);
 
             /*
             PENDING JOBS
@@ -492,8 +528,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId().indexOf(ParamConstants.PROJECT_STUDY_SEPARATOR));
             try {
                 List<String> studyFqnSet = catalogManager.getStudyManager().search(projectFqn, new Query(),
-                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(),
-                                StudyDBAdaptor.QueryParams.FQN.key())), token)
+                                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(),
+                                        StudyDBAdaptor.QueryParams.FQN.key())), token)
                         .getResults()
                         .stream()
                         .map(Study::getFqn)
@@ -704,7 +740,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     private File getValidDefaultOutDir(Job job) throws CatalogException {
         File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + job.getUserId() + "/" + TimeUtils.getDay() + "/"
-                        + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token).first();
+                + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token).first();
 
         // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
         try {
@@ -782,19 +818,19 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     /**
      * Escape args if needed.
-     *
+     * <p>
      * Surround with single quotes. ('value')
      * Detect if the value had any single quote, and escape them with double quotes ("'")
-     *
-     *   --description It's true
-     *   --description 'It'"'"'s true'
-     *
+     * <p>
+     * --description It's true
+     * --description 'It'"'"'s true'
+     * <p>
      * 'It'
      * "'"
      * 's true'
      *
      * @param cliBuilder CommandLine StringBuilder
-     * @param value value to escape
+     * @param value      value to escape
      */
     public static void escapeCliArg(StringBuilder cliBuilder, String value) {
         if (StringUtils.isAlphanumeric(value) || StringUtils.isEmpty(value)) {

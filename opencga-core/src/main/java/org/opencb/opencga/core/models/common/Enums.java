@@ -76,6 +76,7 @@ public final class Enums {
         VARIANT,
         ALIGNMENT,
         CLINICAL,
+        PIPELINE,
         EXPRESSION,
         RGA,
         FUNCTIONAL;

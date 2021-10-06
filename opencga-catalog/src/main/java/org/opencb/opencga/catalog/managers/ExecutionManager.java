@@ -193,10 +193,12 @@ public class ExecutionManager extends ResourceManager<Execution> {
                 String pipelineId = resourceId.replace("PIPELINE__", "");
                 ParamUtils.checkParameter(pipelineId, "pipelineId");
 
-                pipeline = catalogManager.getPipelineManager().get(pipelineId);
-                if (pipeline == null) {
+                OpenCGAResult<Pipeline> pipelineOpenCGAResult = catalogManager.getPipelineManager().get(study.getFqn(), pipelineId,
+                        QueryOptions.empty(), token);
+                if (pipelineOpenCGAResult.getNumResults() == 0) {
                     throw new CatalogException("Pipeline '" + pipelineId + "' not found.");
                 }
+                pipeline = pipelineOpenCGAResult.first();
             } else if (resourceId.startsWith("TOOL__")) {
                 toolId = resourceId.replace("TOOL__", "");
                 ParamUtils.checkParameter(toolId, "toolId");
@@ -244,13 +246,9 @@ public class ExecutionManager extends ResourceManager<Execution> {
     private void autoCompleteNewExecution(Study study, Execution execution, String toolId, String token) throws CatalogException {
         ParamUtils.checkObj(execution, "Execution");
 
-        if (execution.isPipeline()) {
-            ParamUtils.checkObj(execution.getPipeline(), "Pipeline");
-        }
-
         // Auto generate id
         if (StringUtils.isEmpty(execution.getId())) {
-            if (execution.isPipeline()) {
+            if (execution.getPipeline() != null) {
                 ParamUtils.checkObj(execution.getPipeline(), "Pipeline");
                 execution.setId("p--" + execution.getPipeline().getId() + "." + TimeUtils.getTime() + "."
                         + RandomStringUtils.randomAlphanumeric(6));
@@ -313,6 +311,13 @@ public class ExecutionManager extends ResourceManager<Execution> {
 //            List<File> inputFiles = getJobInputFilesFromParams(study.getFqn(), execution, token);
 //            execution.setInput(inputFiles);
 //        }
+    }
+
+    public OpenCGAResult count(Query query, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        authorizationManager.isInstallationAdministrator(userId);
+
+        return executionDBAdaptor.count(query);
     }
 
     @Override

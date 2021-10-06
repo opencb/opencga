@@ -97,7 +97,7 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
         pipeline.setUid(pipelineUid);
         pipeline.setStudyUid(studyId);
         if (StringUtils.isEmpty(pipeline.getUuid())) {
-            pipeline.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.EXECUTION));
+            pipeline.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PIPELINE));
         }
         if (StringUtils.isEmpty(pipeline.getCreationDate())) {
             pipeline.setCreationDate(TimeUtils.getTime());

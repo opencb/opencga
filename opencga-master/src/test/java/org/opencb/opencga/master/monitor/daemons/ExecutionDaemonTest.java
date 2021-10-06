@@ -21,6 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentQcAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantAnnotationIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -33,9 +34,8 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileContent;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobInternal;
-import org.opencb.opencga.core.models.job.JobInternalWebhook;
+import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.StudyNotification;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
@@ -51,6 +51,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -475,6 +476,27 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         assertEquals(Enums.ExecutionStatus.ERROR, getJob(jobId).getInternal().getStatus().getName());
         assertEquals("Job could not finish successfully. Missing execution result", getJob(jobId).getInternal().getStatus().getDescription());
+    }
+
+    @Test
+    public void fastQCAnalysisPipelineTest() throws IOException, CatalogException, URISyntaxException {
+        String bamUri = getClass().getResource("/biofiles/HG00096.chrom20.small.bam").toURI().toString();
+        catalogManager.getFileManager().link(studyFqn, new FileLinkParams().setUri(bamUri).setPath("."), false, token);
+
+        // Load and create the pipeline
+        Pipeline pipeline = Pipeline.load(getClass().getResource("/pipelines/alignment-qc.yml").openStream());
+        catalogManager.getPipelineManager().create(studyFqn, pipeline, QueryOptions.empty(), token);
+
+        // Submit an alignment-qc execution
+        Map<String, Object> params = new HashMap<>();
+        params.put("bamFile", "HG00096.chrom20.small.bam");
+        params.put("bedFile", "HG00096.chrom20.small.bam");
+        params.put("dictFile", "HG00096.chrom20.small.bam");
+        OpenCGAResult<Execution> executionResult = catalogManager.getExecutionManager().submitPipeline(studyFqn,
+                AlignmentQcAnalysis.ID, Enums.Priority.MEDIUM, params, "", "", null, null, token);
+        
+        System.out.println(executionResult);
+
     }
 
     private Job getJob(String jobId) throws CatalogException {

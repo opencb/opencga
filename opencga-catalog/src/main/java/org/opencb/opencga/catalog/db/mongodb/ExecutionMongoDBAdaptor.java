@@ -57,7 +57,6 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
     }
 
     /**
-     *
      * @return MongoDB connection to the execution collection.
      */
     public MongoDBCollection getExecutionCollection() {
@@ -113,15 +112,15 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
             execution.setPriority(Enums.Priority.LOW);
         }
 
-        Document jobObject = executionConverter.convertToStorageType(execution);
-        jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(execution.getCreationDate()));
-        jobObject.put(PRIVATE_MODIFICATION_DATE, jobObject.get(PRIVATE_CREATION_DATE));
-        jobObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
-        jobObject.put(PRIVATE_PRIORITY, execution.getPriority().getValue());
-        jobObject.put(PRIVATE_STUDY_UIDS, Collections.singletonList(studyId));
+        Document executionObject = executionConverter.convertToStorageType(execution);
+        executionObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(execution.getCreationDate()));
+        executionObject.put(PRIVATE_MODIFICATION_DATE, executionObject.get(PRIVATE_CREATION_DATE));
+//        executionObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
+//        executionObject.put(PRIVATE_PRIORITY, execution.getPriority().getValue());
+        executionObject.put(PRIVATE_STUDY_UIDS, Collections.singletonList(studyId));
 
         logger.debug("Inserting execution '{}' ({})...", execution.getId(), execution.getUid());
-        executionCollection.insert(clientSession, jobObject, null);
+        executionCollection.insert(clientSession, executionObject, null);
         logger.debug("Execution '{}' successfully inserted", execution.getId());
         return executionUid;
     }

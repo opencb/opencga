@@ -49,7 +49,8 @@ public class UuidUtils {
         CLINICAL(9),
         PANEL(10),
         INTERPRETATION(11),
-        EXECUTION(12);
+        EXECUTION(12),
+        PIPELINE(13);
 
         private final int mask;
 
@@ -97,7 +98,7 @@ public class UuidUtils {
 
         long uuidVersion = /*0xf &*/ 0;
         long internalVersion = /*0xf &*/ 0;
-        long entityBin = 0xffL & (long)entity.getMask();
+        long entityBin = 0xffL & (long) entity.getMask();
 
         return (timeLow << 32) | (timeMid << 16) | (uuidVersion << 12) | (internalVersion << 8) | entityBin;
     }

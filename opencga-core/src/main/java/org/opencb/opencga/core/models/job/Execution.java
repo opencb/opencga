@@ -24,7 +24,7 @@ public class Execution extends PrivateStudyUid {
     private Map<String, Object> params;
 
     private File outDir;
-//    private List<File> input;    // input files to this job
+    //    private List<File> input;    // input files to this job
 //    private List<File> output;   // output files of this job
     private List<String> tags;
     private List<Execution> dependsOn;
@@ -253,11 +253,11 @@ public class Execution extends PrivateStudyUid {
         return this;
     }
 
-    public boolean isPipeline() {
+    public boolean isIsPipeline() {
         return isPipeline;
     }
 
-    public Execution setPipeline(boolean pipeline) {
+    public Execution setIsPipeline(boolean pipeline) {
         isPipeline = pipeline;
         return this;
     }

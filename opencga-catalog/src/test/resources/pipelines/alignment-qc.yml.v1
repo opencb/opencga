@@ -1,0 +1,46 @@
+id: "alignment-qc"
+description: "Alignment quality control (QC) parameters. It computes: stats, flag stats, fastqc and hybrid-selection metrics. The BAM file is mandatory ever but the BED file and the dictionary files are only mandatory for computing hybrid-selection (HS) metrics. In order to skip some metrics, use the following keywords (separated by commas): stats, flagstats, fastqc and hsmetrics"
+version: 1
+options:
+  retry: 2
+  timeout: 3600
+params:
+  - id: "study"
+    type: "string"
+    required: true
+  - id: "bamFile"
+    type: "string"
+    required: true
+  - id: "bedFile"
+    type: "string"
+    required: false
+  - id: "dictFile"
+    type: "string"
+    required: false
+  - id: "skip"
+    type: "string"
+    required: false
+  - id: "overwrite"
+    type: "boolean"
+    required: false
+  - id: "outdir"
+    type: "string"
+    required: false
+
+jobs:
+  - id: "alignment-stats"
+    #    if:
+    #      - ¬ ${PIPELINE.params.skip} contains "stats"
+    # params: bamFile & study
+  - id: "alignment-flagstats"
+    #    if:
+    #      - ¬ ${PIPELINE.params.skip} contains "flagstats"
+    # params: bamFile & study
+  - id: "alignment-fastqcmetrics"
+    #    if:
+    #      - ¬ ${PIPELINE.params.skip} contains "fastqc"
+    # params: bamFile & study
+  - id: "alignment-hsmetrics"
+    #    if:
+    #      - ¬ ${PIPELINE.params.skip} contains "hsmetrics"
+    # params: bamFile, bedFile, dictFile & study

@@ -118,7 +118,7 @@ public class CatalogManager implements AutoCloseable {
         jobManager = new JobManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory, configuration);
         executionManager = new ExecutionManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, ioManagerFactory,
                 configuration);
-        pipelineManager = new PipelineManager();
+        pipelineManager = new PipelineManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         sampleManager = new SampleManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         individualManager = new IndividualManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);
         cohortManager = new CohortManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, configuration);

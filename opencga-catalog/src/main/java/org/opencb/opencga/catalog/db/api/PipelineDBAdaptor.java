@@ -52,10 +52,12 @@ public interface PipelineDBAdaptor extends CoreDBAdaptor<Pipeline> {
         UUID("uuid", TEXT, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
+        VERSION("version", INTEGER, ""),
 
         STUDY_UID(MongoDBAdaptor.PRIVATE_STUDY_UID, LONG, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
+
         static {
             for (QueryParams params : QueryParams.values()) {
                 map.put(params.key(), params);

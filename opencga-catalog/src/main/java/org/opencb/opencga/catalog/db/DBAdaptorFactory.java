@@ -31,6 +31,7 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     /**
      * Says if the catalog database is ready to be used. If false, needs to be initialized.
+     *
      * @return boolean
      */
     boolean isCatalogDBReady();
@@ -95,6 +96,8 @@ public interface DBAdaptorFactory extends AutoCloseable {
     ClinicalAnalysisDBAdaptor getClinicalAnalysisDBAdaptor();
 
     InterpretationDBAdaptor getInterpretationDBAdaptor();
+
+    PipelineDBAdaptor getPipelineDBAdaptor();
 
     Map<String, MongoDBCollection> getMongoDBCollectionMap();
 }

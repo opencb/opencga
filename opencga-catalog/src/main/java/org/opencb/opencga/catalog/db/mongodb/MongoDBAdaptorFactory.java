@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.MigrationDBAdaptor;
+import org.opencb.opencga.catalog.db.api.PipelineDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Configuration;
@@ -129,6 +130,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private PanelMongoDBAdaptor panelDBAdaptor;
     private ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private InterpretationMongoDBAdaptor interpretationDBAdaptor;
+    private PipelineMongoDBAdaptor pipelineDBAdaptor;
     private AuditMongoDBAdaptor auditDBAdaptor;
     private MetaMongoDBAdaptor metaDBAdaptor;
     private MigrationMongoDBAdaptor migrationDBAdaptor;
@@ -294,6 +296,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
+    public PipelineDBAdaptor getPipelineDBAdaptor() {
+        return pipelineDBAdaptor;
+    }
+
+    @Override
     public MigrationDBAdaptor getMigrationDBAdaptor() {
         return migrationDBAdaptor;
     }
@@ -399,6 +406,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, catalogConfiguration, this);
         interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, deletedInterpretationCollection,
                 catalogConfiguration, this);
+        pipelineDBAdaptor = new PipelineMongoDBAdaptor(pipelineCollection, deletedPipelineCollection, catalogConfiguration, this);
         metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, catalogConfiguration, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection, catalogConfiguration);
         migrationDBAdaptor = new MigrationMongoDBAdaptor(migrationCollection, catalogConfiguration, this);

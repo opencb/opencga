@@ -24,6 +24,8 @@ import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Execution;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.*;
 
 /**
@@ -31,9 +33,12 @@ import java.util.*;
  */
 public class ExecutionConverter extends OpenCgaMongoConverter<Execution> {
 
+    private final PipelineConverter pipelineConverter;
+
     public ExecutionConverter() {
         super(Execution.class);
         getObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        this.pipelineConverter = new PipelineConverter();
     }
 
     @Override
@@ -41,6 +46,7 @@ public class ExecutionConverter extends OpenCgaMongoConverter<Execution> {
         Document document = super.convertToStorageType(object);
         document.put(MongoDBAdaptor.PRIVATE_UID, object.getUid());
         document.put(MongoDBAdaptor.PRIVATE_STUDY_UID, object.getStudyUid());
+        document.put(ExecutionDBAdaptor.QueryParams.PIPELINE.key(), pipelineConverter.convertToStorageType(object.getPipeline()));
         document.put(ExecutionDBAdaptor.QueryParams.OUT_DIR.key(), convertFileToDocument(object.getOutDir()));
 //        document.put(ExecutionDBAdaptor.QueryParams.INPUT.key(), convertFilesToDocument(object.getInput()));
 //        document.put(ExecutionDBAdaptor.QueryParams.OUTPUT.key(), convertFilesToDocument(object.getOutput()));
@@ -49,6 +55,31 @@ public class ExecutionConverter extends OpenCgaMongoConverter<Execution> {
         document.put(ExecutionDBAdaptor.QueryParams.DEPENDS_ON.key(), convertExecutionsOrJobsToDocument(object.getDependsOn()));
         document.put(ExecutionDBAdaptor.QueryParams.JOBS.key(), convertExecutionsOrJobsToDocument(object.getJobs()));
         return document;
+    }
+
+    @Override
+    public Execution convertToDataModelType(Document document) {
+//        ((Document) document.get("pipeline")).remove("uid");
+//        ((Document) document.get("pipeline")).remove("id");
+//        ((Document) document.get("pipeline")).remove("studyUid");
+//        ((Document) document.get("pipeline")).remove("uuid");
+//        ((Document) document.get("pipeline")).remove("description");
+//        ((Document) document.get("pipeline")).remove("version");
+//        ((Document) document.get("pipeline")).remove("creationDate");
+//        ((Document) document.get("pipeline")).remove("modificationDate");
+//        ((Document) document.get("pipeline")).remove("options");
+//        ((Document) document.get("pipeline")).remove("disabled");
+//        ((Document) document.get("pipeline")).remove("jobs");
+//        ((Document) document.get("pipeline")).put("disabled", true);
+//        document.remove("visited");
+//        document.remove("pipeline");
+        try {
+            restoreDots(document);
+            String json = getObjectMapper().writeValueAsString(document);
+            return getObjectMapper().readValue(json, Execution.class);
+        } catch (IOException var3) {
+            throw new UncheckedIOException(var3);
+        }
     }
 
     public Document convertFileToDocument(Object file) {
