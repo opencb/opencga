@@ -126,7 +126,7 @@ variant_operations = oc.variant_operations
 
 Clients implements **all** available REST API endpoints, one method has been implemented for each REST web service. The list of available actions that can be performed with all those clients can be checked in Swagger as explained in [RESTful Web Services\#Swagger](http://docs.opencb.org/display/opencga/RESTful+Web+Services#RESTfulWebServices-Swagger). Each particular client has a method defined for each available web service implemented for the resource. For instance, the whole list of actions available for the **Sample** resource are shown below.
 
-![](../../../.gitbook/assets/image%20%288%29%20%282%29%20%282%29%20%282%29%20%282%29%20%282%29%20%282%29.png)
+![](../../../.gitbook/assets/samples.webservices.png)
 
 For all those actions, there is a method available in the sample client. For instance, to search for samples using the _/search_ web service, you need to execute:
 
