@@ -4,15 +4,11 @@ description: >-
   right place!
 ---
 
-# opencgaR - R  library
-
 ## opencgaR - R  library
-
-## &lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
 
 ### Overview <a id="R-Overview"></a>
 
-> > > > > > > release-2.1.x **opencgaR** is a R library that interacts with OpenCGA REST API to execute any operation supported by the web services through R code.
+**opencgaR** is an R library that interacts with OpenCGA REST API to execute any operation supported by the web services through R code.
 
 The client offers programmatic access to the implemented REST web services, facilitating the access and analysis of data stored in OpenCGA. From version 2.0.0 data is returned in a new _RestResponse_ object which contains metadata and the results. The client also implements some handy methods to return information from this object.
 
@@ -37,8 +33,4 @@ Once requirements have been fulfilled, installing opencgaR becomes as easy as us
 ## Install opencgaR by providing the URL to the package
 > install.packages("opencgaR_2.0.0.tar.gz", repos=NULL, type="source")
 ```
-
-## &lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
-
-> > > > > > > release-2.1.x
 

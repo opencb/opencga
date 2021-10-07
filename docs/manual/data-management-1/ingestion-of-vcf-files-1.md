@@ -63,11 +63,7 @@ Being `<catalog-logical-path>` the directory that you’d like to create within 
 ### Linking files **synchronously** vs. **asynchronously**
 
 {% hint style="warning" %}
-<<<<<<< HEAD:docs/manual/data-management-1/ingestion-of-vcf-files-1.md
-Note that for files with more than 5000 samples linking is an asynchronous job
-=======
 **Note** that for VCF files with more than 5000 samples linking should be launched as an asynchronous job 
->>>>>>> release-2.1.x:docs/manual/data-management/ingestion-of-vcf-files.md
 {% endhint %}
 
 There are two different commands depending on the type of VCF that needs to be loaded. Aggregated VCF files with many samples need to be linked by launching an asynchronous job.
