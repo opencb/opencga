@@ -6,7 +6,7 @@ This section describes the most relevant entities. For more detailed information
 
 A schematic diagram with the relation between OpenCGA Catalog Data Models is shown below:  
 
-![Catalog entities and their relations.](../.gitbook/assets/image.png)
+![Catalog entities and their relations.](../.gitbook/assets/catalog_entites.png)
 
 ### Catalog Entities
 

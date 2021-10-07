@@ -27,7 +27,7 @@ Apart from _admins,_ there is also an special group called _members_. Any user w
 
 The next schema provides a visual explanation of the algorithm implemented in Catalog for deciding whether the user has or not access to the data in the context of a study.
 
-![Decision Algorithm for granting permissions ](../../../.gitbook/assets/image%20%282%29.png)
+![Decision Algorithm for granting permissions ](../../../.gitbook/assets/decision_algorithm.png)
 
 There are two circumstances under which the algorithm behaves as follows:
 
