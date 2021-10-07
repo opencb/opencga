@@ -321,6 +321,10 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory. [STDOUT]", arity = 1)
         public String outdir;
+
+        @Parameter(names = {"--compress", "-z"}, description = "Compress output file.", arity = 0)
+        public boolean compress;
+
     }
 
     @Parameters(commandNames = {VariantExportCommandOptions.EXPORT_RUN_COMMAND}, commandDescription = VariantExportTool.DESCRIPTION)
@@ -347,9 +351,6 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--output-file-name"}, description = "Output file name.", arity = 1)
         public String outputFileName;
-
-        @Parameter(names = {"--compress", "-z"}, description = "Compress output file.", arity = 0)
-        public boolean compress;
 
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;

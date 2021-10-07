@@ -22,7 +22,6 @@ import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -118,8 +117,8 @@ public class IndividualUpdateParams {
                 creationDate, modificationDate, lifeStatus, phenotypes, disorders,
                 samples != null
                         ? samples.stream().map(s -> new Sample().setId(s.getId()).setUuid(s.getUuid())).collect(Collectors.toList())
-                        : null, parentalConsanguinity, annotationSets, status != null ? status.toCustomStatus() : null,
-                new IndividualInternal(), attributes);
+                        : null, parentalConsanguinity != null && parentalConsanguinity, annotationSets,
+                status != null ? status.toCustomStatus() : null, new IndividualInternal(), attributes);
     }
 
     @Override

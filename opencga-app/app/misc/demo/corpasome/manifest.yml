@@ -1,0 +1,18 @@
+---
+## Corpasome study
+## Paper: https://www.biorxiv.org/content/10.1101/000216v1
+## Data: https://figshare.com/articles/Corpasome/693052
+## Pedigree:
+##   Father: ISDBM322016
+##   Mother: ISDBM322018
+##   Son: ISDBM322015
+##   Daughter: ISDBM322017
+
+configuration:
+  version: 2.1.0
+  index: false
+  projectId: family
+study:
+  id: corpasome
+  name: Corpas Family
+  description: This study simulates two disorders and some phenotypes in the Corpas family for training purposes

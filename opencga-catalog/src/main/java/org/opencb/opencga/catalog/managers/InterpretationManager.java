@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
@@ -430,7 +431,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                         Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList(),
                         clinicalAnalysis.getPanels() != null
                                 ? clinicalAnalysis.getPanels().stream()
-                                    .map(p -> new PanelReferenceParam().setId(p.getId())).collect(Collectors.toList())
+                                .map(p -> new PanelReferenceParam().setId(p.getId())).collect(Collectors.toList())
                                 : null,
                         Collections.emptyList(), new ObjectMap(), new StatusParam());
 
@@ -627,6 +628,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 .append("token", token);
 
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
+        fixQueryObject(study, finalQuery, userId);
 
         DBIterator<Interpretation> iterator;
         try {
@@ -751,13 +753,13 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     /**
      * Update interpretations from catalog.
      *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param studyStr           Study id in string format. Could be one of [id|user@projectId:studyId|projectId:studyId].
      * @param clinicalAnalysisId ClinicalAnalysis id.
-     * @param interpretationIds List of interpretation ids. Could be either the id or uuid.
-     * @param updateParams Data model filled only with the parameters to be updated.
-     * @param as Enum to move the importance of the interpretation within the clinical analysis context.
-     * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
+     * @param interpretationIds  List of interpretation ids. Could be either the id or uuid.
+     * @param updateParams       Data model filled only with the parameters to be updated.
+     * @param as                 Enum to move the importance of the interpretation within the clinical analysis context.
+     * @param options            QueryOptions object.
+     * @param token              Session id of the user logged in.
      * @return A OpenCGAResult.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
@@ -1097,6 +1099,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
+        fixQueryObject(study, query, userId);
         query.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), query, options, userId);
@@ -1149,7 +1152,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
             Class<?> clazz = getTypeClass(param.type());
 
-            fixQueryObject(query);
+            fixQueryObject(study, query, userId);
 
             query.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             OpenCGAResult<?> result = interpretationDBAdaptor.distinct(study.getUid(), field, query, userId, clazz);
@@ -1360,5 +1363,34 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException {
         return null;
+    }
+
+    protected void fixQueryObject(Study study, Query query, String user) throws CatalogException {
+        changeQueryId(query, ParamConstants.INTERPRETATION_ANALYST_ID_PARAM, InterpretationDBAdaptor.QueryParams.ANALYST_ID.key());
+        changeQueryId(query, ParamConstants.INTERPRETATION_METHODS_NAME_PARAM, InterpretationDBAdaptor.QueryParams.METHODS_NAME.key());
+        changeQueryId(query, ParamConstants.INTERPRETATION_PRIMARY_FINDINGS_IDS_PARAM,
+                InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key());
+        changeQueryId(query, ParamConstants.INTERPRETATION_SECONDARY_FINDINGS_IDS_PARAM,
+                InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS_ID.key());
+
+        changeQueryId(query, ParamConstants.INTERPRETATION_STATUS_PARAM, InterpretationDBAdaptor.QueryParams.STATUS_ID.key());
+        changeQueryId(query, ParamConstants.INTERPRETATION_INTERNAL_STATUS_PARAM,
+                InterpretationDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
+
+        if (query.containsKey(ParamConstants.INTERPRETATION_PANELS_PARAM)) {
+            List<String> panelList = query.getAsStringList(ParamConstants.INTERPRETATION_PANELS_PARAM);
+            query.remove(ParamConstants.INTERPRETATION_PANELS_PARAM);
+            PanelDBAdaptor.QueryParams fieldFilter = catalogManager.getPanelManager().getFieldFilter(panelList);
+            Query tmpQuery = new Query(fieldFilter.key(), panelList);
+
+            OpenCGAResult<Panel> result = panelDBAdaptor.get(study.getUid(), tmpQuery, PanelManager.INCLUDE_PANEL_IDS, user);
+            if (result.getNumResults() > 0) {
+                query.put(InterpretationDBAdaptor.QueryParams.PANELS_UID.key(),
+                        result.getResults().stream().map(Panel::getUid).collect(Collectors.toList()));
+            } else {
+                // We won't return any results
+                query.put(InterpretationDBAdaptor.QueryParams.PANELS_UID.key(), -1);
+            }
+        }
     }
 }

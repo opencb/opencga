@@ -467,8 +467,17 @@ public class JobManager extends ResourceManager<Job> {
         job.setDescription(jobDescription);
         job.setTool(new ToolInfo().setId(toolId));
         job.setTags(jobTags);
+        job.setStudy(new JobStudyParam(study.getFqn()));
+        job.setUserId(userId);
+        job.setParams(params);
+        job.setPriority(priority);
+        job.setDependsOn(jobDependsOn != null
+                ? jobDependsOn.stream().map(j -> new Job().setId(j)).collect(Collectors.toList())
+                : Collections.emptyList());
 
         try {
+            autoCompleteNewJob(study, job, token);
+
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTE_JOBS);
 
             // Check params
@@ -478,16 +487,6 @@ public class JobManager extends ResourceManager<Job> {
                     throw new CatalogException("Found '" + entry.getKey() + "' param with null value");
                 }
             }
-
-            job.setStudy(new JobStudyParam(study.getFqn()));
-            job.setUserId(userId);
-            job.setParams(params);
-            job.setPriority(priority);
-            job.setDependsOn(jobDependsOn != null
-                    ? jobDependsOn.stream().map(j -> new Job().setId(j)).collect(Collectors.toList())
-                    : Collections.emptyList());
-
-            autoCompleteNewJob(study, job, token);
 
             jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
             OpenCGAResult<Job> jobResult = jobDBAdaptor.get(job.getUid(), new QueryOptions());
@@ -500,13 +499,7 @@ public class JobManager extends ResourceManager<Job> {
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
-            if (job.getInternal() != null) {
-                job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
-            } else {
-                job.setInternal(new JobInternal(TimeUtils.getTime(), TimeUtils.getTime(),
-                        new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
-                        new JobInternalWebhook(null, new HashMap<>()), Collections.emptyList()));
-            }
+            job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
             job.getInternal().getStatus().setDescription(e.toString());
             jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
 
@@ -539,11 +532,10 @@ public class JobManager extends ResourceManager<Job> {
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);
+        changeQueryId(query, ParamConstants.JOB_TOOL_ID_PARAM, JobDBAdaptor.QueryParams.TOOL_ID.key());
+        changeQueryId(query, ParamConstants.JOB_INTERNAL_STATUS_PARAM, JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
+        changeQueryId(query, ParamConstants.JOB_STATUS_PARAM, JobDBAdaptor.QueryParams.STATUS_NAME.key());
 
-        if (query.containsKey(ParamConstants.JOB_TOOL_ID_PARAM)) {
-            query.put(JobDBAdaptor.QueryParams.TOOL_ID.key(), query.get(ParamConstants.JOB_TOOL_ID_PARAM));
-            query.remove(ParamConstants.JOB_TOOL_ID_PARAM);
-        }
         if (query.containsKey(ParamConstants.JOB_INPUT_FILES_PARAM)) {
             List<File> inputFiles = catalogManager.getFileManager().internalGet(study.getUid(),
                     query.getAsStringList(ParamConstants.JOB_INPUT_FILES_PARAM), FileManager.INCLUDE_FILE_IDS, userId, true).getResults();
@@ -984,11 +976,11 @@ public class JobManager extends ResourceManager<Job> {
     /**
      * Update Job from catalog.
      *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param jobIds  List of Job ids. Could be either the id or uuid.
+     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param jobIds       List of Job ids. Could be either the id or uuid.
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
+     * @param token        Session id of the user logged in.
      * @return A OpenCGAResult with the objects updated.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
@@ -1359,7 +1351,7 @@ public class JobManager extends ResourceManager<Job> {
     public OpenCGAResult<JobTop> top(Query baseQuery, int limit, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         List<String> studies = studyManager.search(new Query(StudyDBAdaptor.QueryParams.OWNER.key(), userId),
-                new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UUID.key()), token).getResults()
+                        new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UUID.key()), token).getResults()
                 .stream()
                 .map(Study::getUuid)
                 .collect(Collectors.toList());

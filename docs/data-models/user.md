@@ -29,18 +29,18 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **id**  _String_   | User ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment._Tags_: _required, immutable, unique_ |
-| **name**  _String_   |  |
-| **email**  _String_   |  |
-| **organization**  _String_   |  |
-| **account** [_Account_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Account)   |  |
-| **internal** [_UserInternal_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserInternal)   | An object describing the internal information of the User. This is managed by OpenCGA._Tags_: _internal_ |
-| **quota** [_UserQuota_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserQuota)   |  |
-| **projects**  List&lt;[_Project_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Project)&gt;   | A List with related projects. |
-| **sharedProjects**  List&lt;[_Project_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Project)&gt;   |  |
-| **configs**  Map&lt;_ObjectMap_,_String_&gt;   |  |
-| **filters**  List&lt;[_UserFilter_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserFilter)&gt;   |  |
-| **attributes**  Map&lt;_Object_,_String_&gt;   | You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes. |
+| **id**  _String_ | User ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment._Tags_: _required, immutable, unique_ |
+| **name**  _String_ |  |
+| **email**  _String_ |  |
+| **organization**  _String_ |  |
+| **account** [_Account_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Account) |  |
+| **internal** [_UserInternal_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserInternal) | An object describing the internal information of the User. This is managed by OpenCGA._Tags_: _internal_ |
+| **quota** [_UserQuota_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserQuota) |  |
+| **projects**  List&lt;[_Project_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Project)&gt; | A List with related projects. |
+| **sharedProjects**  List&lt;[_Project_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Project)&gt; |  |
+| **configs**  Map&lt;_ObjectMap_,_String_&gt; |  |
+| **filters**  List&lt;[_UserFilter_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserFilter)&gt; |  |
+| **attributes**  Map&lt;_Object_,_String_&gt; | You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes. |
 
 ### UserQuota
 
@@ -48,10 +48,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **diskUsage**  _long_   | Current disk usage of user in bytes. |
-| **cpuUsage**  _int_   | Current cpu usage in seconds. |
-| **maxDisk**  _long_   | Maximum amount of disk in bytes allowed for the user to use. |
-| **maxCpu**  _int_   | Maximum amount of seconds the user can use of CPU. |
+| **diskUsage**  _long_ | Current disk usage of user in bytes. |
+| **cpuUsage**  _int_ | Current cpu usage in seconds. |
+| **maxDisk**  _long_ | Maximum amount of disk in bytes allowed for the user to use. |
+| **maxCpu**  _int_ | Maximum amount of seconds the user can use of CPU. |
 
 ### Project
 
@@ -59,18 +59,18 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **id**  _String_   | Project ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment._Tags_: _required, immutable, unique_ |
-| **uuid**  _String_   | Global unique ID at the whole OpenCGA installation. This is automatically created during the Project creation and cannot be changed._Tags_: _internal, unique, immutable_ |
-| **name**  _String_   |  |
-| **fqn**  _String_   | Full Qualified Name \(user@projectId\). |
-| **creationDate**  _String_   | String representing when the sample was created, this is automatically set by OpenCGA._Tags_: _internal_ |
-| **modificationDate**  _String_   | String representing when was the last time the sample was modified, this is automatically set by OpenCGA._Tags_: _internal_ |
-| **description**  _String_   | An string to describe the properties of the sample. |
-| **organism** [_ProjectOrganism_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ProjectOrganism)   |  |
-| **currentRelease**  _int_   |  |
-| **studies**  List&lt;[_Study_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Study)&gt;   |  |
-| **internal** [_ProjectInternal_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ProjectInternal)   | An object describing the internal information of the Project. This is managed by OpenCGA._Tags_: _internal_ |
-| **attributes**  Map&lt;_Object_,_String_&gt;   | You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes. |
+| **id**  _String_ | Project ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment._Tags_: _required, immutable, unique_ |
+| **uuid**  _String_ | Global unique ID at the whole OpenCGA installation. This is automatically created during the Project creation and cannot be changed._Tags_: _internal, unique, immutable_ |
+| **name**  _String_ |  |
+| **fqn**  _String_ | Full Qualified Name \(user@projectId\). |
+| **creationDate**  _String_ | String representing when the sample was created, this is automatically set by OpenCGA._Tags_: _internal_ |
+| **modificationDate**  _String_ | String representing when was the last time the sample was modified, this is automatically set by OpenCGA._Tags_: _internal_ |
+| **description**  _String_ | An string to describe the properties of the sample. |
+| **organism** [_ProjectOrganism_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ProjectOrganism) |  |
+| **currentRelease**  _int_ |  |
+| **studies**  List&lt;[_Study_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Study)&gt; |  |
+| **internal** [_ProjectInternal_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ProjectInternal) | An object describing the internal information of the Project. This is managed by OpenCGA._Tags_: _internal_ |
+| **attributes**  Map&lt;_Object_,_String_&gt; | You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes. |
 
 ### Enum Account
 
@@ -78,10 +78,10 @@ _Enumeration class._ You can find the Java code [here](https://github.com/opencb
 
 | Field | Description |
 | :--- | :--- |
-| **type**   |  |
-| **creationDate**   |  |
-| **expirationDate**   |  |
-| **authentication**   |  |
+| **type** |  |
+| **creationDate** |  |
+| **expirationDate** |  |
+| **authentication** |  |
 
 ### UserFilter
 
@@ -89,11 +89,11 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **id**  _String_   |  |
-| **description**  _String_   |  |
-| **resource** [_Resource_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Resource)   |  |
-| **query**  _Query_   |  |
-| **options**  _QueryOptions_   |  |
+| **id**  _String_ |  |
+| **description**  _String_ |  |
+| **resource** [_Resource_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Resource) |  |
+| **query**  _Query_ |  |
+| **options**  _QueryOptions_ |  |
 
 ### SampleInternal
 
@@ -101,8 +101,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status)   |  |
-| **rga** [_RgaIndex_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#RgaIndex)   |  |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status) |  |
+| **rga** [_RgaIndex_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#RgaIndex) |  |
 
 ### IndividualInternal
 
@@ -110,7 +110,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status)   |  |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status) |  |
 
 ### FamilyInternal
 
@@ -118,7 +118,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_FamilyStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#FamilyStatus)   |  |
+| **status** [_FamilyStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#FamilyStatus) |  |
 
 ### FileInternal
 
@@ -126,10 +126,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_FileStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#FileStatus)   |  |
-| **index** [_FileIndex_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#FileIndex)   |  |
-| **sampleMap**  Map&lt;_String_&gt;   |  |
-| **missingSamples** [_MissingSamples_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#MissingSamples)   |  |
+| **status** [_FileStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#FileStatus) |  |
+| **index** [_FileIndex_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#FileIndex) |  |
+| **sampleMap**  Map&lt;_String_&gt; |  |
+| **missingSamples** [_MissingSamples_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#MissingSamples) |  |
 
 ### JobInternal
 
@@ -137,9 +137,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_ExecutionStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ExecutionStatus)   |  |
-| **webhook** [_JobInternalWebhook_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#JobInternalWebhook)   |  |
-| **events**  List&lt;_Event_&gt;   |  |
+| **status** [_ExecutionStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ExecutionStatus) |  |
+| **webhook** [_JobInternalWebhook_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#JobInternalWebhook) |  |
+| **events**  List&lt;_Event_&gt; |  |
 
 ### InterpretationInternal
 
@@ -147,7 +147,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_InterpretationStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#InterpretationStatus)   |  |
+| **status** [_InterpretationStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#InterpretationStatus) |  |
 
 ### ProjectInternal
 
@@ -155,9 +155,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **datastores** [_Datastores_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Datastores)   |  |
-| **cellbase** [_CellBaseConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#CellBaseConfiguration)   |  |
-| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status)   |  |
+| **datastores** [_Datastores_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Datastores) |  |
+| **cellbase** [_CellBaseConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#CellBaseConfiguration) |  |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status) |  |
 
 ### CohortInternal
 
@@ -165,7 +165,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_CohortStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#CohortStatus)   |  |
+| **status** [_CohortStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#CohortStatus) |  |
 
 ### ClinicalAnalysisInternal
 
@@ -173,7 +173,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_ClinicalAnalysisStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ClinicalAnalysisStatus)   |  |
+| **status** [_ClinicalAnalysisStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ClinicalAnalysisStatus) |  |
 
 ### UserInternal
 
@@ -181,7 +181,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_UserStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserStatus)   |  |
+| **status** [_UserStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserStatus) |  |
 
 ### StudyInternal
 
@@ -189,6 +189,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status)   |  |
-| **configuration** [_StudyConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#StudyConfiguration)   |  |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status) |  |
+| **configuration** [_StudyConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#StudyConfiguration) |  |
 

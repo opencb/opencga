@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.utils;
 
+import org.apache.commons.io.input.ReaderInputStream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -23,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -295,20 +297,22 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             LOGGER.info("Copy to local file " + paths.get(0) + " to " + localOutput);
             fileSystem.copyToLocalFile(false, paths.get(0), localOutput);
         } else {
-            LOGGER.info("Concat and copy to local " + paths + " files from " + mrOutdir + " to " + localOutput);
+            LOGGER.info("Concat and copy to local " + paths.size() + " files from " + mrOutdir + " to " + localOutput);
             try (FSDataOutputStream os = localOutput.getFileSystem(getConf()).create(localOutput)) {
                 for (int i = 0; i < paths.size(); i++) {
                     Path path = paths.get(i);
                     try (FSDataInputStream fsIs = fileSystem.open(path)) {
-                        DataInputStream is;
+                        BufferedReader br;
+                        br = new BufferedReader(new InputStreamReader(fsIs));
+                        InputStream is;
                         if (removeExtraHeaders && i != 0) {
-                            is = new DataInputStream(new BufferedInputStream(fsIs));
                             String line;
                             do {
-                                is.mark(10 * 1024 * 1024); //10MB
-                                line = is.readLine();
+                                br.mark(10 * 1024 * 1024); //10MB
+                                line = br.readLine();
                             } while (line != null && line.startsWith("#"));
-                            is.reset();
+                            br.reset();
+                            is = new ReaderInputStream(br, Charset.defaultCharset());
                         } else {
                             is = fsIs;
                         }

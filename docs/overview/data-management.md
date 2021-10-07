@@ -2,9 +2,7 @@
 
 ## Metadata
 
-OpenCGA implements an advanced Metadata Database \([OpenCGA Catalog](../components-1/catalog/)\) that keeps track of ...
-
-
+OpenCGA implements an advanced Metadata Database \([OpenCGA Catalog](../components-1/catalog.md)\) that keeps track of ...
 
 ## Clinical Data
 

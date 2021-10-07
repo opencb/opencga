@@ -89,6 +89,67 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         this.variableSetConverter = new VariableSetConverter();
     }
 
+    static Document getDocumentUpdateParams(ObjectMap parameters) {
+        Document studyParameters = new Document();
+
+        String[] acceptedParams = {QueryParams.ALIAS.key(), QueryParams.NAME.key(), QueryParams.DESCRIPTION.key()};
+        filterStringParams(parameters, studyParameters, acceptedParams);
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            studyParameters.put(QueryParams.CREATION_DATE.key(), time);
+            studyParameters.put(PRIVATE_CREATION_DATE, date);
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            studyParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
+            studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
+        String[] acceptedLongParams = {QueryParams.SIZE.key()};
+        filterLongParams(parameters, studyParameters, acceptedLongParams);
+
+        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
+        filterMapParams(parameters, studyParameters, acceptedMapParams);
+
+        final String[] acceptedObjectParams = {QueryParams.STATUS.key(), QueryParams.INTERNAL_CONFIGURATION_CLINICAL.key(),
+                QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(), QueryParams.INTERNAL_INDEX_RECESSIVE_GENE.key()};
+        filterObjectParams(parameters, studyParameters, acceptedObjectParams);
+
+        if (studyParameters.containsKey(QueryParams.STATUS.key())) {
+            nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), studyParameters);
+        }
+
+        if (parameters.containsKey(QueryParams.URI.key())) {
+            URI uri = parameters.get(QueryParams.URI.key(), URI.class);
+            studyParameters.put(QueryParams.URI.key(), uri.toString());
+        }
+
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
+            studyParameters.put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+            studyParameters.put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
+        }
+
+        if (parameters.containsKey(QueryParams.NOTIFICATION_WEBHOOK.key())) {
+            Object value = parameters.get(QueryParams.NOTIFICATION_WEBHOOK.key());
+            studyParameters.put(QueryParams.NOTIFICATION_WEBHOOK.key(), value);
+        }
+
+        if (!studyParameters.isEmpty()) {
+            String time = TimeUtils.getTime();
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                studyParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
+                studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            studyParameters.put(INTERNAL_LAST_MODIFIED, time);
+        }
+        return studyParameters;
+    }
+
     public void checkId(ClientSession clientSession, long studyId) throws CatalogDBException {
         if (studyId < 0) {
             throw CatalogDBException.newInstance("Study id '{}' is not valid: ", studyId);
@@ -118,22 +179,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return new OpenCGAResult<>(studyCollection.insert(studyDocument, null));
     }
 
-    @Override
-    public OpenCGAResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException {
-        try {
-            return runTransaction(clientSession -> {
-                long tmpStartTime = startQuery();
-                logger.debug("Starting study insert transaction for study id '{}'", study.getId());
-
-                insert(clientSession, project, study);
-                return endWrite(tmpStartTime, 1, 1, 0, 0, null);
-            });
-        } catch (Exception e) {
-            logger.error("Could not create study {}: {}", study.getId(), e.getMessage());
-            throw new CatalogDBException(e);
-        }
-    }
-
 //    @Override
 //    public OpenCGAResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException {
 //        ClientSession clientSession = getClientSession();
@@ -156,6 +201,22 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 //            throw new CatalogDBException(e);
 //        }
 //    }
+
+    @Override
+    public OpenCGAResult<Study> insert(Project project, Study study, QueryOptions options) throws CatalogDBException {
+        try {
+            return runTransaction(clientSession -> {
+                long tmpStartTime = startQuery();
+                logger.debug("Starting study insert transaction for study id '{}'", study.getId());
+
+                insert(clientSession, project, study);
+                return endWrite(tmpStartTime, 1, 1, 0, 0, null);
+            });
+        } catch (Exception e) {
+            logger.error("Could not create study {}: {}", study.getId(), e.getMessage());
+            throw new CatalogDBException(e);
+        }
+    }
 
     Study insert(ClientSession clientSession, Project project, Study study)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -652,6 +713,11 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return new OpenCGAResult<>(result);
     }
 
+    /*
+     * Variables Methods
+     * ***************************
+     */
+
     @Override
     public OpenCGAResult<PermissionRule> getPermissionRules(long studyId, Enums.Entity entry) throws CatalogDBException {
         // Get permission rules from study
@@ -675,11 +741,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return new OpenCGAResult<>(studyDataResult.getTime(), Collections.emptyList(), permissionRules.size(), permissionRules,
                 permissionRules.size(), new ObjectMap());
     }
-
-    /*
-     * Variables Methods
-     * ***************************
-     */
 
     @Override
     public Long variableSetExists(long variableSetId) {
@@ -1125,7 +1186,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
     }
 
-
     @Override
     public long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException {
 //        DBObject query = new BasicDBObject("variableSets.id", variableSetId);
@@ -1143,6 +1203,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
     }
 
+    /*
+     * Helper methods
+     ********************/
 
     @Override
     public OpenCGAResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException {
@@ -1166,10 +1229,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         return result;
     }
-
-    /*
-     * Helper methods
-     ********************/
 
     private void joinFields(Study study, QueryOptions options) throws CatalogDBException {
         try {
@@ -1352,67 +1411,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         logger.debug("Study {} successfully updated", study.getId());
         return endWrite(tmpStartTime, 1, 1, events);
-    }
-
-    static Document getDocumentUpdateParams(ObjectMap parameters) {
-        Document studyParameters = new Document();
-
-        String[] acceptedParams = {QueryParams.ALIAS.key(), QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), };
-        filterStringParams(parameters, studyParameters, acceptedParams);
-
-        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
-            String time = parameters.getString(QueryParams.CREATION_DATE.key());
-            Date date = TimeUtils.toDate(time);
-            studyParameters.put(QueryParams.CREATION_DATE.key(), time);
-            studyParameters.put(PRIVATE_CREATION_DATE, date);
-        }
-        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
-            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
-            Date date = TimeUtils.toDate(time);
-            studyParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
-            studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
-        }
-
-        String[] acceptedLongParams = {QueryParams.SIZE.key()};
-        filterLongParams(parameters, studyParameters, acceptedLongParams);
-
-        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
-        filterMapParams(parameters, studyParameters, acceptedMapParams);
-
-        final String[] acceptedObjectParams = {QueryParams.STATUS.key(), QueryParams.INTERNAL_CONFIGURATION_CLINICAL.key(),
-                QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(), QueryParams.INTERNAL_INDEX_RECESSIVE_GENE.key()};
-        filterObjectParams(parameters, studyParameters, acceptedObjectParams);
-
-        if (studyParameters.containsKey(QueryParams.STATUS.key())) {
-            nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), studyParameters);
-        }
-
-        if (parameters.containsKey(QueryParams.URI.key())) {
-            URI uri = parameters.get(QueryParams.URI.key(), URI.class);
-            studyParameters.put(QueryParams.URI.key(), uri.toString());
-        }
-
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
-            studyParameters.put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
-            studyParameters.put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
-        }
-
-        if (parameters.containsKey(QueryParams.NOTIFICATION_WEBHOOK.key())) {
-            Object value = parameters.get(QueryParams.NOTIFICATION_WEBHOOK.key());
-            studyParameters.put(QueryParams.NOTIFICATION_WEBHOOK.key(), value);
-        }
-
-        if (!studyParameters.isEmpty()) {
-            String time = TimeUtils.getTime();
-            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
-                // Update modificationDate param
-                Date date = TimeUtils.toDate(time);
-                studyParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
-                studyParameters.put(PRIVATE_MODIFICATION_DATE, date);
-            }
-            studyParameters.put(INTERNAL_LAST_MODIFIED, time);
-        }
-        return studyParameters;
     }
 
     private void editId(ClientSession clientSession, long studyUid, String newId) throws CatalogDBException {

@@ -106,6 +106,13 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testSearchById() throws CatalogException {
+        Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), "~/^data/");
+        OpenCGAResult<File> search = catalogManager.getFileManager().search(studyFqn, query, FileManager.INCLUDE_FILE_IDS, token);
+        assertEquals(6, search.getNumResults());
+    }
+
+    @Test
     public void testLinkCram() throws CatalogException {
         String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
         File referenceFile = fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, token).first();
@@ -1123,9 +1130,9 @@ public class FileManagerTest extends AbstractManagerTest {
         result = fileManager.search(studyFqn, query, null, token);
         assertEquals(2, result.getNumResults());
 
-        String attributes = FileDBAdaptor.QueryParams.ATTRIBUTES.key();
-        String nattributes = FileDBAdaptor.QueryParams.NATTRIBUTES.key();
-        String battributes = FileDBAdaptor.QueryParams.BATTRIBUTES.key();
+//        String attributes = FileDBAdaptor.QueryParams.ATTRIBUTES.key();
+//        String nattributes = FileDBAdaptor.QueryParams.NATTRIBUTES.key();
+//        String battributes = FileDBAdaptor.QueryParams.BATTRIBUTES.key();
         /*
 
         interface Searcher {
@@ -1136,114 +1143,114 @@ public class FileManagerTest extends AbstractManagerTest {
 
         result = searcher.apply(studyUid, new Query(attributes + ".nested.text", "~H"));
         */
-        result = fileManager.search(studyFqn, new Query(attributes + ".nested.text", "~H"), null, token);
-        assertEquals(1, result.getNumResults());
-        result = fileManager.search(studyFqn, new Query(nattributes + ".nested.num1", ">0"), null, token);
-        assertEquals(1, result.getNumResults());
-        result = fileManager.search(studyFqn, new Query(attributes + ".nested.num1", ">0"), null, token);
-        assertEquals(0, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(attributes + ".nested.num1", "notANumber"), null, token);
-        assertEquals(0, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(attributes + ".field", "~val"), null, token);
-        assertEquals(3, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query("attributes.field", "~val"), null, token);
-        assertEquals(3, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(attributes + ".field", "=~val"), null, token);
-        assertEquals(3, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(attributes + ".field", "~val"), null, token);
-        assertEquals(3, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(attributes + ".field", "value"), null, token);
-        assertEquals(2, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(attributes + ".field", "other"), null, token);
-        assertEquals(1, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query("nattributes.numValue", ">=5"), null, token);
-        assertEquals(3, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query("nattributes.numValue", ">4,<6"), null, token);
-        assertEquals(3, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "==5"), null, token);
-        assertEquals(2, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "==5.0"), null, token);
-        assertEquals(2, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "=5.0"), null, token);
-        assertEquals(2, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "5.0"), null, token);
-        assertEquals(2, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", ">5"), null, token);
-        assertEquals(1, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", ">4"), null, token);
-        assertEquals(3, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "<6"), null, token);
-        assertEquals(2, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "<=5"), null, token);
-        assertEquals(2, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "<5"), null, token);
-        assertEquals(0, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "<2"), null, token);
-        assertEquals(0, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "==23"), null, token);
-        assertEquals(0, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(attributes + ".numValue", "=~10"), null, token);
-        assertEquals(1, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "=10"), null, token);
-        assertEquals(0, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(attributes + ".boolean", "true"), null, token);
-        assertEquals(0, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(attributes + ".boolean", "=true"), null, token);
-        assertEquals(0, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(attributes + ".boolean", "=1"), null, token);
-        assertEquals(0, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(battributes + ".boolean", "true"), null, token);
-        assertEquals(1, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(battributes + ".boolean", "=true"), null, token);
-        assertEquals(1, result.getNumResults());
-
-        // This has to return not only the ones with the attribute boolean = false, but also all the files that does not contain
-        // that attribute at all.
-        result = fileManager.search(studyFqn, new Query(battributes + ".boolean", "!=true"), null, token);
-        assertEquals(7, result.getNumResults());
-
-        result = fileManager.search(studyFqn, new Query(battributes + ".boolean", "=false"), null, token);
-        assertEquals(1, result.getNumResults());
-
-        query = new Query();
-        query.append(attributes + ".name", "fileTest1k");
-        query.append(attributes + ".field", "value");
-        result = fileManager.search(studyFqn, query, null, token);
-        assertEquals(1, result.getNumResults());
-
-        query = new Query();
-        query.append(attributes + ".name", "fileTest1k");
-        query.append(attributes + ".field", "value");
-        query.append(attributes + ".numValue", Arrays.asList(8, 9, 10));   //Searching as String. numValue = "10"
-        result = fileManager.search(studyFqn, query, null, token);
-        assertEquals(1, result.getNumResults());
+//        result = fileManager.search(studyFqn, new Query(attributes + ".nested.text", "~H"), null, token);
+//        assertEquals(1, result.getNumResults());
+//        result = fileManager.search(studyFqn, new Query(nattributes + ".nested.num1", ">0"), null, token);
+//        assertEquals(1, result.getNumResults());
+//        result = fileManager.search(studyFqn, new Query(attributes + ".nested.num1", ">0"), null, token);
+//        assertEquals(0, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(attributes + ".nested.num1", "notANumber"), null, token);
+//        assertEquals(0, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(attributes + ".field", "~val"), null, token);
+//        assertEquals(3, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query("attributes.field", "~val"), null, token);
+//        assertEquals(3, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(attributes + ".field", "=~val"), null, token);
+//        assertEquals(3, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(attributes + ".field", "~val"), null, token);
+//        assertEquals(3, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(attributes + ".field", "value"), null, token);
+//        assertEquals(2, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(attributes + ".field", "other"), null, token);
+//        assertEquals(1, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query("nattributes.numValue", ">=5"), null, token);
+//        assertEquals(3, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query("nattributes.numValue", ">4,<6"), null, token);
+//        assertEquals(3, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "==5"), null, token);
+//        assertEquals(2, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "==5.0"), null, token);
+//        assertEquals(2, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "=5.0"), null, token);
+//        assertEquals(2, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "5.0"), null, token);
+//        assertEquals(2, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", ">5"), null, token);
+//        assertEquals(1, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", ">4"), null, token);
+//        assertEquals(3, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "<6"), null, token);
+//        assertEquals(2, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "<=5"), null, token);
+//        assertEquals(2, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "<5"), null, token);
+//        assertEquals(0, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "<2"), null, token);
+//        assertEquals(0, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "==23"), null, token);
+//        assertEquals(0, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(attributes + ".numValue", "=~10"), null, token);
+//        assertEquals(1, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(nattributes + ".numValue", "=10"), null, token);
+//        assertEquals(0, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(attributes + ".boolean", "true"), null, token);
+//        assertEquals(0, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(attributes + ".boolean", "=true"), null, token);
+//        assertEquals(0, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(attributes + ".boolean", "=1"), null, token);
+//        assertEquals(0, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(battributes + ".boolean", "true"), null, token);
+//        assertEquals(1, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(battributes + ".boolean", "=true"), null, token);
+//        assertEquals(1, result.getNumResults());
+//
+//        // This has to return not only the ones with the attribute boolean = false, but also all the files that does not contain
+//        // that attribute at all.
+//        result = fileManager.search(studyFqn, new Query(battributes + ".boolean", "!=true"), null, token);
+//        assertEquals(7, result.getNumResults());
+//
+//        result = fileManager.search(studyFqn, new Query(battributes + ".boolean", "=false"), null, token);
+//        assertEquals(1, result.getNumResults());
+//
+//        query = new Query();
+//        query.append(attributes + ".name", "fileTest1k");
+//        query.append(attributes + ".field", "value");
+//        result = fileManager.search(studyFqn, query, null, token);
+//        assertEquals(1, result.getNumResults());
+//
+//        query = new Query();
+//        query.append(attributes + ".name", "fileTest1k");
+//        query.append(attributes + ".field", "value");
+//        query.append(attributes + ".numValue", Arrays.asList(8, 9, 10));   //Searching as String. numValue = "10"
+//        result = fileManager.search(studyFqn, query, null, token);
+//        assertEquals(1, result.getNumResults());
 
         QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 2).append(QueryOptions.COUNT, true);
         result = fileManager.search(studyFqn, new Query(), options, token);
@@ -1257,31 +1264,31 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(8, result.getNumMatches());
 
     }
-
-    @Test
-    public void testSearchFileBoolean() throws CatalogException {
-        Query query;
-        DataResult<File> result;
-        FileDBAdaptor.QueryParams battributes = FileDBAdaptor.QueryParams.BATTRIBUTES;
-
-        query = new Query(battributes.key() + ".boolean", "true");       //boolean in [true]
-        result = fileManager.search(studyFqn, query, null, token);
-        assertEquals(1, result.getNumResults());
-
-        query = new Query(battributes.key() + ".boolean", "false");      //boolean in [false]
-        result = fileManager.search(studyFqn, query, null, token);
-        assertEquals(1, result.getNumResults());
-
-        query = new Query(battributes.key() + ".boolean", "!=false");    //boolean in [null, true]
-        query.put("type", "FILE");
-        result = fileManager.search(studyFqn, query, null, token);
-        assertEquals(2, result.getNumResults());
-
-        query = new Query(battributes.key() + ".boolean", "!=true");     //boolean in [null, false]
-        query.put("type", "FILE");
-        result = fileManager.search(studyFqn, query, null, token);
-        assertEquals(2, result.getNumResults());
-    }
+//
+//    @Test
+//    public void testSearchFileBoolean() throws CatalogException {
+//        Query query;
+//        DataResult<File> result;
+//        FileDBAdaptor.QueryParams battributes = FileDBAdaptor.QueryParams.BATTRIBUTES;
+//
+//        query = new Query(battributes.key() + ".boolean", "true");       //boolean in [true]
+//        result = fileManager.search(studyFqn, query, null, token);
+//        assertEquals(1, result.getNumResults());
+//
+//        query = new Query(battributes.key() + ".boolean", "false");      //boolean in [false]
+//        result = fileManager.search(studyFqn, query, null, token);
+//        assertEquals(1, result.getNumResults());
+//
+//        query = new Query(battributes.key() + ".boolean", "!=false");    //boolean in [null, true]
+//        query.put("type", "FILE");
+//        result = fileManager.search(studyFqn, query, null, token);
+//        assertEquals(2, result.getNumResults());
+//
+//        query = new Query(battributes.key() + ".boolean", "!=true");     //boolean in [null, false]
+//        query.put("type", "FILE");
+//        result = fileManager.search(studyFqn, query, null, token);
+//        assertEquals(2, result.getNumResults());
+//    }
 
     @Test
     public void testSearchFileFail1() throws CatalogException {

@@ -520,6 +520,9 @@ public class FileCommandOptions {
     @Parameters
     public class FetchCommandOptions extends StudyOption {
 
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = new GeneralCliOptions.JobOptions();
+
         @Parameter(names = {"--" + ParamConstants.FILE_PATH_PARAM},
                 description = "Folder path where the downloaded file will be registered", required = true, arity = 1)
         public String path;
