@@ -2,12 +2,12 @@ package org.opencb.opencga.core.models.job;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 public class Pipeline extends PrivateStudyUid {
 
@@ -21,6 +21,7 @@ public class Pipeline extends PrivateStudyUid {
     private String creationDate;
     private String modificationDate;
 
+    private Map<String, Object> params;
     private Options options;
     private List<JobDefinition> jobs;
 
@@ -29,12 +30,14 @@ public class Pipeline extends PrivateStudyUid {
     public Pipeline() {
     }
 
-    public Pipeline(String id, String uuid, String description, boolean disabled, int version, Options options, List<JobDefinition> jobs) {
+    public Pipeline(String id, String uuid, String description, boolean disabled, int version, Map<String, Object> params, Options options,
+                    List<JobDefinition> jobs) {
         this.id = id;
         this.uuid = uuid;
         this.description = description;
         this.disabled = disabled;
         this.version = version;
+        this.params = params;
         this.options = options;
         this.jobs = jobs;
     }
@@ -86,6 +89,7 @@ public class Pipeline extends PrivateStudyUid {
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", params=").append(params);
         sb.append(", options=").append(options);
         sb.append(", jobs=").append(jobs);
         sb.append('}');
@@ -135,6 +139,15 @@ public class Pipeline extends PrivateStudyUid {
 
     public Pipeline setVersion(int version) {
         this.version = version;
+        return this;
+    }
+
+    public Map<String, Object> getParams() {
+        return params;
+    }
+
+    public Pipeline setParams(Map<String, Object> params) {
+        this.params = params;
         return this;
     }
 
@@ -223,7 +236,8 @@ public class Pipeline extends PrivateStudyUid {
 
         private String id;
         private String toolId;
-        private ObjectMap params;
+        private String description;
+        private Map<String, Object> params;
         private List<String> input;
         private List<String> output;
         private List<String> dependsOn;
@@ -231,9 +245,11 @@ public class Pipeline extends PrivateStudyUid {
         public JobDefinition() {
         }
 
-        public JobDefinition(String id, String toolId, ObjectMap params, List<String> input, List<String> output, List<String> dependsOn) {
+        public JobDefinition(String id, String toolId, String description, Map<String, Object> params, List<String> input,
+                             List<String> output, List<String> dependsOn) {
             this.id = id;
             this.toolId = toolId;
+            this.description = description;
             this.params = params;
             this.input = input;
             this.output = output;
@@ -245,6 +261,7 @@ public class Pipeline extends PrivateStudyUid {
             final StringBuilder sb = new StringBuilder("Job{");
             sb.append("id='").append(id).append('\'');
             sb.append(", toolId='").append(toolId).append('\'');
+            sb.append(", description='").append(description).append('\'');
             sb.append(", params=").append(params);
             sb.append(", input=").append(input);
             sb.append(", output=").append(output);
@@ -271,11 +288,20 @@ public class Pipeline extends PrivateStudyUid {
             return this;
         }
 
-        public ObjectMap getParams() {
+        public String getDescription() {
+            return description;
+        }
+
+        public JobDefinition setDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Map<String, Object> getParams() {
             return params;
         }
 
-        public JobDefinition setParams(ObjectMap params) {
+        public JobDefinition setParams(Map<String, Object> params) {
             this.params = params;
             return this;
         }

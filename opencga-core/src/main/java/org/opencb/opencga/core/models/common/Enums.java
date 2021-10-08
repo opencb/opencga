@@ -251,9 +251,13 @@ public final class Enums {
     public static class ExecutionStatus extends Status {
 
         /**
-         * PENDING status means that the job is ready to be put into the queue.
+         * PENDING status means that the execution or job is ready to be processed or put into the queue.
          */
         public static final String PENDING = "PENDING";
+        /**
+         * PROCESSED status means that the execution has been processed and all jobs created in PENDING status.
+         */
+        public static final String PROCESSED = "PROCESSED";
         /**
          * QUEUED status means that the job is waiting on the queue to have an available slot for execution.
          */

@@ -47,6 +47,7 @@ public class Job extends PrivateStudyUid {
      * @apiNote
      */
     private String description;
+    private String executionId;
     private ToolInfo tool;
     private String userId;
     private String commandLine;
@@ -94,14 +95,15 @@ public class Job extends PrivateStudyUid {
     public Job() {
     }
 
-    public Job(String id, String uuid, String description, ToolInfo tool, String userId, String commandLine, Map<String, Object> params,
-               String creationDate, String modificationDate, Enums.Priority priority, JobInternal internal, File outDir,
-               List<File> input, List<File> output, List<Job> dependsOn, List<String> tags, JobResult execution, boolean visited,
-               File stdout, File stderr, int release, JobStudyParam study, Map<String, Object> attributes) {
+    public Job(String id, String uuid, String description, String executionId, ToolInfo tool, String userId, String commandLine,
+               Map<String, Object> params, String creationDate, String modificationDate, Enums.Priority priority, JobInternal internal,
+               File outDir, List<File> input, List<File> output, List<Job> dependsOn, List<String> tags, JobResult execution,
+               boolean visited, File stdout, File stderr, int release, JobStudyParam study, Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
         this.tool = tool;
         this.description = description;
+        this.executionId = executionId;
         this.userId = userId;
         this.commandLine = commandLine;
         this.params = params;
@@ -129,6 +131,7 @@ public class Job extends PrivateStudyUid {
         sb.append("id='").append(id).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", executionId='").append(executionId).append('\'');
         sb.append(", tool=").append(tool);
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", commandLine='").append(commandLine).append('\'');
@@ -192,6 +195,15 @@ public class Job extends PrivateStudyUid {
 
     public Job setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getExecutionId() {
+        return executionId;
+    }
+
+    public Job setExecutionId(String executionId) {
+        this.executionId = executionId;
         return this;
     }
 

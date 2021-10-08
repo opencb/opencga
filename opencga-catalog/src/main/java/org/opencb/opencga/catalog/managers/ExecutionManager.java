@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -11,7 +12,6 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ExecutionDBAdaptor;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -35,6 +35,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+
 public class ExecutionManager extends ResourceManager<Execution> {
 
     protected static Logger logger = LoggerFactory.getLogger(ExecutionManager.class);
@@ -44,8 +46,9 @@ public class ExecutionManager extends ResourceManager<Execution> {
 
     // TODO: Point to execution variables
     public static final QueryOptions INCLUDE_EXECUTION_IDS = new QueryOptions(QueryOptions.INCLUDE,
-            Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.UUID.key(),
-                    JobDBAdaptor.QueryParams.STUDY_UID.key(), JobDBAdaptor.QueryParams.INTERNAL.key()));
+            Arrays.asList(ExecutionDBAdaptor.QueryParams.ID.key(), ExecutionDBAdaptor.QueryParams.UID.key(),
+                    ExecutionDBAdaptor.QueryParams.UUID.key(), ExecutionDBAdaptor.QueryParams.STUDY_UID.key(),
+                    ExecutionDBAdaptor.QueryParams.INTERNAL.key()));
 
     ExecutionManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                      DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
@@ -208,8 +211,8 @@ public class ExecutionManager extends ResourceManager<Execution> {
                 throw new CatalogException("Expected TOOL or PIPELINE prefix for id: '" + resourceId + "'");
             }
 
-            execution = new Execution(id, description, userId, TimeUtils.getTime(), params, priority, tags, pipeline, pipeline != null,
-                    new ObjectMap());
+            execution = new Execution(id, description, userId, toolId, TimeUtils.getTime(), params, priority, tags, pipeline,
+                    pipeline != null, new ObjectMap());
 
             execution.setStudy(new JobStudyParam(study.getFqn()));
             execution.setUserId(userId);
@@ -320,6 +323,51 @@ public class ExecutionManager extends ResourceManager<Execution> {
         return executionDBAdaptor.count(query);
     }
 
+    /**
+     * Update Internal field of Execution. Only opencga user is allowed to use this method.
+     *
+     * @param studyStr    Study id.
+     * @param executionId Execution id.
+     * @param internal    Internal field.
+     * @param token       token.
+     * @return an OpenCGAResult.
+     * @throws CatalogException CatalogException.
+     */
+    public OpenCGAResult<Execution> updateInternal(String studyStr, String executionId, ExecutionInternal internal, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("executionId", executionId)
+                .append("internal", internal)
+                .append("token", token);
+        try {
+            authorizationManager.checkIsInstallationAdministrator(userId);
+            ParamUtils.checkObj(internal, "ExecutionInternal");
+
+            Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+            Execution execution = internalGet(study.getUid(), executionId, INCLUDE_EXECUTION_IDS, userId).first();
+
+            ObjectMap updateMap;
+            try {
+                updateMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(internal));
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse ExecutionInternal object: " + e.getMessage(), e);
+            }
+
+            OpenCGAResult<Execution> update = executionDBAdaptor.update(execution.getUid(), updateMap, QueryOptions.empty());
+            auditManager.auditUpdate(userId, Enums.Resource.EXECUTION, execution.getId(), execution.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return update;
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(userId, Enums.Resource.EXECUTION, executionId, "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
     @Override
     public DBIterator<Execution> iterator(String studyStr, Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
@@ -332,6 +380,18 @@ public class ExecutionManager extends ResourceManager<Execution> {
         query.put(ExecutionDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         return executionDBAdaptor.iterator(study.getUid(), query, options, userId);
+    }
+
+    public DBIterator<Execution> iterator(Query query, QueryOptions options, String token) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getUserId(token);
+        authorizationManager.isInstallationAdministrator(userId);
+
+        fixQueryObject(query);
+
+        return executionDBAdaptor.iterator(query, options);
     }
 
     @Override

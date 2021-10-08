@@ -31,6 +31,7 @@ public class JobCreateParams {
     private String id;
     private String description;
 
+    private String executionId;
     private ToolInfo tool;
 
     private Enums.Priority priority;
@@ -58,12 +59,13 @@ public class JobCreateParams {
     public JobCreateParams() {
     }
 
-    public JobCreateParams(String id, String description, ToolInfo tool, Enums.Priority priority, String commandLine,
+    public JobCreateParams(String id, String description, String executionId, ToolInfo tool, Enums.Priority priority, String commandLine,
                            Map<String, Object> params, String creationDate, String modificationDate, JobInternal internal, TinyFile outDir,
                            List<TinyFile> input, List<TinyFile> output, List<String> tags, JobResult result, TinyFile stdout,
                            TinyFile stderr, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
+        this.executionId = executionId;
         this.tool = tool;
         this.priority = priority;
         this.commandLine = commandLine;
@@ -82,8 +84,8 @@ public class JobCreateParams {
     }
 
     public static JobCreateParams of(Job job) {
-        return new JobCreateParams(job.getId(), job.getDescription(), job.getTool(), job.getPriority(), job.getCommandLine(),
-                job.getParams(), job.getCreationDate(), job.getModificationDate(),
+        return new JobCreateParams(job.getId(), job.getDescription(), job.getExecutionId(), job.getTool(), job.getPriority(),
+                job.getCommandLine(), job.getParams(), job.getCreationDate(), job.getModificationDate(),
                 job.getInternal() != null ? new JobInternal(job.getInternal().getStatus()) : null, TinyFile.of(job.getOutDir()),
                 job.getInput() != null ? job.getInput().stream().map(TinyFile::of).collect(Collectors.toList()) : Collections.emptyList(),
                 job.getOutput() != null ? job.getOutput().stream().map(TinyFile::of).collect(Collectors.toList()) : Collections.emptyList(),
@@ -95,6 +97,7 @@ public class JobCreateParams {
         final StringBuilder sb = new StringBuilder("JobCreateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", executionId='").append(executionId).append('\'');
         sb.append(", tool=").append(tool);
         sb.append(", priority=").append(priority);
         sb.append(", commandLine='").append(commandLine).append('\'');
@@ -130,6 +133,15 @@ public class JobCreateParams {
 
     public JobCreateParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getExecutionId() {
+        return executionId;
+    }
+
+    public JobCreateParams setExecutionId(String executionId) {
+        this.executionId = executionId;
         return this;
     }
 
@@ -269,7 +281,7 @@ public class JobCreateParams {
     }
 
     public Job toJob() {
-        return new Job(id, null, description, tool, null, commandLine, params, creationDate, null, priority,
+        return new Job(id, null, description, executionId, tool, null, commandLine, params, creationDate, null, priority,
                 internal != null ? new org.opencb.opencga.core.models.job.JobInternal(internal.getStatus()) : null,
                 outDir != null ? outDir.toFile() : null, getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
                 getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()), Collections.emptyList(),

@@ -14,6 +14,7 @@ public class Execution extends PrivateStudyUid {
     private String description;
 
     private String userId;
+    private String toolId;
 
     private String creationDate;
     private String modificationDate;
@@ -45,11 +46,12 @@ public class Execution extends PrivateStudyUid {
     public Execution() {
     }
 
-    public Execution(String id, String description, String userId, String creationDate, Map<String, Object> params, Enums.Priority priority,
-                     List<String> tags, Pipeline pipeline, boolean isPipeline, Map<String, Object> attributes) {
+    public Execution(String id, String description, String userId, String toolId, String creationDate, Map<String, Object> params,
+                     Enums.Priority priority, List<String> tags, Pipeline pipeline, boolean isPipeline, Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
         this.userId = userId;
+        this.toolId = toolId;
         this.creationDate = creationDate;
         this.params = params;
         this.priority = priority;
@@ -59,15 +61,16 @@ public class Execution extends PrivateStudyUid {
         this.attributes = attributes;
     }
 
-    public Execution(long studyUid, String id, String uuid, String description, String userId, String creationDate, String modificationDate,
-                     Map<String, Object> params, Enums.Priority priority, ExecutionInternal internal, File outDir, List<String> tags,
-                     List<Execution> dependsOn, File stdout, File stderr, Pipeline pipeline, boolean isPipeline, boolean visited,
-                     List<Job> jobs, int release, JobStudyParam study, Map<String, Object> attributes) {
+    public Execution(long studyUid, String id, String uuid, String description, String userId, String toolId, String creationDate,
+                     String modificationDate, Map<String, Object> params, Enums.Priority priority, ExecutionInternal internal, File outDir,
+                     List<String> tags, List<Execution> dependsOn, File stdout, File stderr, Pipeline pipeline, boolean isPipeline,
+                     boolean visited, List<Job> jobs, int release, JobStudyParam study, Map<String, Object> attributes) {
         super(studyUid);
         this.id = id;
         this.uuid = uuid;
         this.description = description;
         this.userId = userId;
+        this.toolId = toolId;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.params = params;
@@ -94,11 +97,12 @@ public class Execution extends PrivateStudyUid {
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", userId='").append(userId).append('\'');
+        sb.append(", toolId='").append(toolId).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", params='").append(params).append('\'');
         sb.append(", priority=").append(priority);
         sb.append(", internal=").append(internal);
+        sb.append(", params=").append(params);
         sb.append(", outDir=").append(outDir);
         sb.append(", tags=").append(tags);
         sb.append(", dependsOn=").append(dependsOn);
@@ -151,6 +155,15 @@ public class Execution extends PrivateStudyUid {
 
     public Execution setUserId(String userId) {
         this.userId = userId;
+        return this;
+    }
+
+    public String getToolId() {
+        return toolId;
+    }
+
+    public Execution setToolId(String toolId) {
+        this.toolId = toolId;
         return this;
     }
 

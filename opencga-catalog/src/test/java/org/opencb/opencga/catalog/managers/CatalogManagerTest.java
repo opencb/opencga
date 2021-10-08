@@ -80,7 +80,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testAdminUserExists() throws Exception {
         String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
-        assertEquals("opencga" ,catalogManager.getUserManager().getUserId(token));
+        assertEquals("opencga", catalogManager.getUserManager().getUserId(token));
     }
 
     @Test
@@ -438,7 +438,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         options = new ObjectMap();
         options.put(ProjectDBAdaptor.QueryParams.CREATION_DATE.key(), "20180101120000");
         catalogManager.getProjectManager().update(projectId, options, null, token);
-        project =  catalogManager.getProjectManager().get(projectId, null, token).first();
+        project = catalogManager.getProjectManager().get(projectId, null, token).first();
         assertEquals("20180101120000", project.getCreationDate());
 
         options = new ObjectMap();
@@ -458,7 +458,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testModifyStudy() throws Exception {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
-        String studyId =  catalogManager.getStudyManager().search(query, null, token).first().getId();
+        String studyId = catalogManager.getStudyManager().search(query, null, token).first().getId();
 
         String newName = "Phase 1 " + RandomStringUtils.randomAlphanumeric(20);
         String newDescription = RandomStringUtils.randomAlphanumeric(500);
@@ -500,14 +500,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
         String study_4 = catalogManager.getStudyManager().create(projectId, "study_4", null, "study_4", "description", null, null, null, null, null, token).first().getId();
 
         assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getStudyManager().search(new Query(StudyDBAdaptor.QueryParams
-                .GROUP_USER_IDS.key(), "user2"), null, token).getResults().stream().map(Study::getId)
+                        .GROUP_USER_IDS.key(), "user2"), null, token).getResults().stream().map(Study::getId)
                 .collect(Collectors.toSet()));
 
 //        catalogManager.getStudyManager().createGroup(Long.toString(study_4), "admins", "user3", sessionIdUser);
         catalogManager.getStudyManager().updateGroup(study_4, "admins", ParamUtils.BasicUpdateAction.SET,
                 new GroupUpdateParams(Collections.singletonList("user3")), token);
         assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getStudyManager().search(new Query(StudyDBAdaptor.QueryParams
-                .GROUP_USER_IDS.key(), "user3"), null, token).getResults().stream().map(Study::getId)
+                        .GROUP_USER_IDS.key(), "user3"), null, token).getResults().stream().map(Study::getId)
                 .collect(Collectors.toSet()));
 
         assertEquals(new HashSet<>(Arrays.asList("phase1", "phase3", "study_1", "study_2", "study_3", "study_4")),
@@ -517,7 +517,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 catalogManager.getStudyManager().search(new Query(), null, token).getResults().stream().map(Study::getId)
                         .collect(Collectors.toSet()));
         assertEquals(new HashSet<>(Arrays.asList("study_1", "study_2", "study_3", "study_4")), catalogManager.getStudyManager().search(new
-                Query(StudyDBAdaptor.QueryParams.ID.key(), "~^study"), null, token).getResults().stream()
+                        Query(StudyDBAdaptor.QueryParams.ID.key(), "~^study"), null, token).getResults().stream()
                 .map(Study::getId).collect(Collectors.toSet()));
         assertEquals(Collections.singleton("s1"), catalogManager.getStudyManager().search(new Query(), null, sessionIdUser2).getResults()
                 .stream()
@@ -828,13 +828,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void submitJobWithDependenciesFromDifferentStudies() throws CatalogException {
         Job first = catalogManager.getJobManager().submit(studyFqn, "command-subcommand", null, Collections.emptyMap(), token).first();
-        Job second = catalogManager.getJobManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
+        Job second = catalogManager.getJobManager().submit(studyFqn2, "", "command-subcommand2", null, Collections.emptyMap(), null, "",
                 Collections.singletonList(first.getUuid()), null, token).first();
         assertEquals(first.getId(), second.getDependsOn().get(0).getId());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
-        catalogManager.getJobManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
+        catalogManager.getJobManager().submit(studyFqn2, "", "command-subcommand2", null, Collections.emptyMap(), null, "",
                 Collections.singletonList(first.getId()), null, token);
     }
 
@@ -902,9 +902,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Job job1 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token).first();
         Job job2 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token).first();
 
-        Job job3 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), null, null,
+        Job job3 = catalogManager.getJobManager().submit(studyFqn, "", "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), null, null,
                 Arrays.asList(job1.getId(), job2.getId()), null, token).first();
-        Job job4 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), null, null,
+        Job job4 = catalogManager.getJobManager().submit(studyFqn, "", "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), null, null,
                 Arrays.asList(job1.getUuid(), job2.getUuid()), null, token).first();
 
         assertEquals(2, job3.getDependsOn().size());
@@ -1008,10 +1008,10 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(1, catalogManager.getJobManager().count(studyFqn, query, token).getNumMatches());
     }
 
-        /**
-         * VariableSet methods
-         * ***************************
-         */
+    /**
+     * VariableSet methods
+     * ***************************
+     */
 
     @Test
     public void testCreateVariableSet() throws CatalogException {
@@ -1107,7 +1107,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(1, numResults);
 
         numResults = catalogManager.getStudyManager().searchVariableSets(study.getFqn(),
-                new Query(StudyDBAdaptor.VariableSetParams.ID.key(), "vs1,vs2"), QueryOptions.empty(), token)
+                        new Query(StudyDBAdaptor.VariableSetParams.ID.key(), "vs1,vs2"), QueryOptions.empty(), token)
                 .getNumResults();
         assertEquals(2, numResults);
 
@@ -1165,7 +1165,6 @@ public class CatalogManagerTest extends AbstractManagerTest {
      * Cohort methods
      *
      */
-
     @Test
     public void testCreateCohort() throws CatalogException {
         Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
@@ -1235,7 +1234,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Sample sampleId5 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_5"), new QueryOptions(),
                 token).first();
         Cohort myCohort1 = catalogManager.getCohortManager().create(studyId,
-                new Cohort().setId("MyCohort1").setType(Enums.CohortType.FAMILY).setSamples(Arrays.asList(sampleId1,sampleId2, sampleId3)),
+                new Cohort().setId("MyCohort1").setType(Enums.CohortType.FAMILY).setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)),
                 null, token).first();
         Cohort myCohort2 = catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort2").setType(Enums.CohortType.FAMILY)
                 .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3, sampleId4)), null, token).first();
@@ -1480,13 +1479,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
         VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyFqn, "vs", null, token).first();
 
         String individualId1 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_1")
-                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
+                        .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
                 new QueryOptions(), token).first().getId();
         String individualId2 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_2")
-                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
+                        .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
                 new QueryOptions(), token).first().getId();
         String individualId3 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_3")
-                .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
+                        .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
                 new QueryOptions(), token).first().getId();
 
         catalogManager.getIndividualManager().update(studyFqn, individualId1, new IndividualUpdateParams()
@@ -1495,12 +1494,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 QueryOptions.empty(), token);
 
         catalogManager.getIndividualManager().update(studyFqn, individualId2, new IndividualUpdateParams()
-                .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
                                 new ObjectMap("NAME", "INDIVIDUAL_2").append("AGE", 15).append("PHEN", "CONTROL").append("ALIVE", true)))),
                 QueryOptions.empty(), token);
 
         catalogManager.getIndividualManager().update(studyFqn, individualId3, new IndividualUpdateParams()
-                .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
                                 new ObjectMap("NAME", "INDIVIDUAL_3").append("AGE", 25).append("PHEN", "CASE").append("ALIVE", true)))),
                 QueryOptions.empty(), token);
 
@@ -1514,7 +1513,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_2", "INDIVIDUAL_3")));
 
         individuals = catalogManager.getIndividualManager().search(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), variableSet.getId() + ":AGE>10;" + variableSet.getId()
-                + ":PHEN=CASE"), null, token)
+                        + ":PHEN=CASE"), null, token)
                 .getResults().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_3")));
     }
@@ -1800,9 +1799,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("father"), null, QueryOptions.empty(), token);
         catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("mother"), null, QueryOptions.empty(), token);
         catalogManager.getIndividualManager().create(studyFqn, new Individual()
-                .setId("child")
-                .setFather(new Individual().setId("father"))
-                .setMother(new Individual().setId("mother")),
+                        .setId("child")
+                        .setFather(new Individual().setId("father"))
+                        .setMother(new Individual().setId("mother")),
                 null, QueryOptions.empty(), token);
         Family family = catalogManager.getFamilyManager().create(studyFqn, new Family().setId("family"),
                 Arrays.asList("child", "mother", "father"), QueryOptions.empty(), token).first();
@@ -2073,7 +2072,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals("today", individual.getQualityControl().getComments().get(0).getDate());
     }
 
-        @Test
+    @Test
     public void testUpdateIndividualInfo() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
         DataResult<Individual> individualDataResult = individualManager.create(studyFqn, new Individual().setId("Test")
@@ -2178,11 +2177,11 @@ public class CatalogManagerTest extends AbstractManagerTest {
         individualManager.create(studyFqn, new Individual().setId("mother").setSex(IndividualProperty.Sex.FEMALE), QueryOptions.empty(), token);
 
         individualManager.update(studyFqn, "proband", new IndividualUpdateParams().setFather(new IndividualReferenceParam("father", ""))
-                        .setMother(new IndividualReferenceParam("mother", "")), QueryOptions.empty(), token);
+                .setMother(new IndividualReferenceParam("mother", "")), QueryOptions.empty(), token);
         individualManager.update(studyFqn, "brother", new IndividualUpdateParams().setFather(new IndividualReferenceParam("father", ""))
-                        .setMother(new IndividualReferenceParam("mother", "")), QueryOptions.empty(), token);
+                .setMother(new IndividualReferenceParam("mother", "")), QueryOptions.empty(), token);
         individualManager.update(studyFqn, "sister", new IndividualUpdateParams().setFather(new IndividualReferenceParam("father", ""))
-                        .setMother(new IndividualReferenceParam("mother", "")), QueryOptions.empty(), token);
+                .setMother(new IndividualReferenceParam("mother", "")), QueryOptions.empty(), token);
 
         OpenCGAResult<Individual> relatives = catalogManager.getIndividualManager().relatives(studyFqn, "proband", 2,
                 new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key()), token);
@@ -2203,13 +2202,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
                         .setDisorders(Collections.singletonList(new Disorder().setId("disorder1"))),
                 QueryOptions.empty(), token).first();
         Individual father = new Individual()
-                        .setId("father")
-                        .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype2")))
-                        .setDisorders(Collections.singletonList(new Disorder().setId("disorder2")));
+                .setId("father")
+                .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype2")))
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder2")));
         Individual mother = new Individual()
-                        .setId("mother")
-                        .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype3")))
-                        .setDisorders(Collections.singletonList(new Disorder().setId("disorder3")));
+                .setId("mother")
+                .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype3")))
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder3")));
 
         FamilyManager familyManager = catalogManager.getFamilyManager();
         familyManager.create(studyFqn, new Family().setId("family1").setMembers(Collections.singletonList(father)),

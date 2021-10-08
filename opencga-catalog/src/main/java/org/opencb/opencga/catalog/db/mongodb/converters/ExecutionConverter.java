@@ -23,6 +23,7 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor;
 import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Execution;
+import org.opencb.opencga.core.models.job.Job;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -121,17 +122,22 @@ public class ExecutionConverter extends OpenCgaMongoConverter<Execution> {
             return new Document()
                     .append(MongoDBAdaptor.PRIVATE_UID, ((Execution) execution).getUid())
                     .append(MongoDBAdaptor.PRIVATE_STUDY_UID, ((Execution) execution).getStudyUid());
-        } else if (execution instanceof Map) {
+        }
+        if (execution instanceof Job) {
+            return new Document()
+                    .append(MongoDBAdaptor.PRIVATE_UID, ((Job) execution).getUid())
+                    .append(MongoDBAdaptor.PRIVATE_STUDY_UID, ((Job) execution).getStudyUid());
+        }
+        if (execution instanceof Map) {
             return new Document()
                     .append(MongoDBAdaptor.PRIVATE_UID,
                             Long.valueOf(String.valueOf(((Map) execution).get(MongoDBAdaptor.PRIVATE_UID))))
                     .append(MongoDBAdaptor.PRIVATE_STUDY_UID,
                             Long.valueOf(String.valueOf(((Map) execution).get(MongoDBAdaptor.PRIVATE_STUDY_UID))));
-        } else {
-            return new Document()
-                    .append(MongoDBAdaptor.PRIVATE_UID, -1L)
-                    .append(MongoDBAdaptor.PRIVATE_STUDY_UID, -1L);
         }
+        return new Document()
+                .append(MongoDBAdaptor.PRIVATE_UID, -1L)
+                .append(MongoDBAdaptor.PRIVATE_STUDY_UID, -1L);
     }
 
     public List<Document> convertExecutionsOrJobsToDocument(Object executionList) {

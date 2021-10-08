@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -28,6 +29,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.job.Execution;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -247,6 +249,22 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
     public OpenCGAResult<Execution> update(Query query, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return null;
+    }
+
+    void updateJobList(ClientSession clientSession, long studyUid, String executionId, List<Job> jobList)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        List<Document> documentList = executionConverter.convertExecutionsOrJobsToDocument(jobList);
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.ID.key(), executionId);
+        Bson bsonQuery = parseQuery(query, QueryOptions.empty());
+
+        Bson update = Updates.set(QueryParams.JOBS.key(), documentList);
+        DataResult result = executionCollection.update(clientSession, bsonQuery, update, QueryOptions.empty());
+
+        if (result.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not update list of jobs. Execution '" + executionId + "' not found.");
+        }
     }
 
     @Override

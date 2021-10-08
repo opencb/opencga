@@ -321,6 +321,10 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     private void autoCompleteNewJob(Study study, Job job, String token) throws CatalogException {
+        autoCompleteNewJob(study, job, token, false);
+    }
+
+    private void autoCompleteNewJob(Study study, Job job, String token, boolean ignoreDependsOnInputFilesCheck) throws CatalogException {
         ParamUtils.checkObj(job, "Job");
 
         // Auto generate id
@@ -338,32 +342,43 @@ public class JobManager extends ResourceManager<Job> {
         job.setInternal(JobInternal.init());
         job.getInternal().setWebhook(new JobInternalWebhook(study.getNotification().getWebhook(), new HashMap<>()));
 
-        if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
-            boolean uuidProvided = job.getDependsOn().stream().map(Job::getId).anyMatch(UuidUtils::isOpenCgaUuid);
+        if (!ignoreDependsOnInputFilesCheck) {
+            if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
+                boolean uuidProvided = job.getDependsOn().stream().map(Job::getId).anyMatch(UuidUtils::isOpenCgaUuid);
 
-            try {
-                // If uuid is provided, we will remove the study uid from the query so it can be searched across any study
-                InternalGetDataResult<Job> dependsOnResult;
-                if (uuidProvided) {
-                    dependsOnResult = internalGet(0, job.getDependsOn().stream().map(Job::getId).collect(Collectors.toList()), null,
-                            INCLUDE_JOB_IDS, job.getUserId(), false);
-                } else {
-                    dependsOnResult = internalGet(study.getUid(), job.getDependsOn().stream().map(Job::getId).collect(Collectors.toList()),
-                            null, INCLUDE_JOB_IDS, job.getUserId(), false);
+                try {
+                    // If uuid is provided, we will remove the study uid from the query so it can be searched across any study
+                    InternalGetDataResult<Job> dependsOnResult;
+                    if (uuidProvided) {
+                        dependsOnResult = internalGet(0, job.getDependsOn().stream().map(Job::getId).collect(Collectors.toList()), null,
+                                INCLUDE_JOB_IDS, job.getUserId(), false);
+                    } else {
+                        dependsOnResult = internalGet(study.getUid(),
+                                job.getDependsOn().stream().map(Job::getId).collect(Collectors.toList()), null, INCLUDE_JOB_IDS,
+                                job.getUserId(), false);
+                    }
+                    job.setDependsOn(dependsOnResult.getResults());
+                } catch (CatalogException e) {
+                    throw new CatalogException("Unable to find the jobs this job depends on. " + e.getMessage(), e);
                 }
-                job.setDependsOn(dependsOnResult.getResults());
-            } catch (CatalogException e) {
-                throw new CatalogException("Unable to find the jobs this job depends on. " + e.getMessage(), e);
+
+                job.setInput(Collections.emptyList());
+            } else {
+                // We only check input files if the job does not depend on other job that might be creating the necessary file.
+                List<File> inputFiles = getJobInputFilesFromParams(study.getFqn(), job, token);
+                job.setInput(inputFiles);
             }
-
-            job.setInput(Collections.emptyList());
-        } else {
-            // We only check input files if the job does not depend on other job that might be creating the necessary file.
-
-            List<File> inputFiles = getJobInputFilesFromParams(study.getFqn(), job, token);
-            job.setInput(inputFiles);
         }
 
+        // Check params
+        ParamUtils.checkObj(job.getParams(), "params");
+        for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
+            if (entry.getValue() == null) {
+                throw new CatalogException("Found '" + entry.getKey() + "' param with null value");
+            }
+        }
+
+        job.setStudy(new JobStudyParam(study.getFqn()));
         job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
     }
 
@@ -416,7 +431,8 @@ public class JobManager extends ResourceManager<Job> {
         Job job = get(studyStr, jobRetry.getJob(), new QueryOptions(), token).first();
         if (job.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.ERROR)
                 || job.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.ABORTED)) {
-            return submit(studyStr, job.getTool().getId(), priority, job.getParams(), jobId, jobDescription, jobDependsOn, jobTags, token);
+            return submit(studyStr, "", job.getTool().getId(), priority, job.getParams(), jobId, jobDescription, jobDependsOn, jobTags,
+                    token);
         } else {
             throw new CatalogException("Unable to retry job with status " + job.getInternal().getStatus().getName());
         }
@@ -424,7 +440,7 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String token)
             throws CatalogException {
-        return submit(studyStr, toolId, priority, params, null, null, null, null, token);
+        return submit(studyStr, "", toolId, priority, params, null, null, null, null, token);
     }
 
     public OpenCGAResult<Job> submitProject(String projectStr, String toolId, Enums.Priority priority, Map<String, Object> params,
@@ -442,17 +458,27 @@ public class JobManager extends ResourceManager<Job> {
         if (studies.isEmpty()) {
             throw new CatalogException("Project '" + projectStr + "' not found!");
         }
-        return submit(studies.get(0), toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, token);
+        return submit(studies.get(0), "", toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, token);
     }
 
+    @Deprecated
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,
                                      String jobDescription, List<String> jobDependsOn, List<String> jobTags, String token)
+            throws CatalogException {
+        return submit(studyStr, "", toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, token);
+
+    }
+
+    public OpenCGAResult<Job> submit(String studyStr, String executionId, String toolId, Enums.Priority priority,
+                                     Map<String, Object> params, String jobId, String jobDescription, List<String> jobDependsOn,
+                                     List<String> jobTags, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
+                .append("executionId", executionId)
                 .append("toolId", toolId)
                 .append("priority", priority)
                 .append("params", params)
@@ -480,14 +506,6 @@ public class JobManager extends ResourceManager<Job> {
 
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTE_JOBS);
 
-            // Check params
-            ParamUtils.checkObj(params, "params");
-            for (Map.Entry<String, Object> entry : params.entrySet()) {
-                if (entry.getValue() == null) {
-                    throw new CatalogException("Found '" + entry.getKey() + "' param with null value");
-                }
-            }
-
             jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
             OpenCGAResult<Job> jobResult = jobDBAdaptor.get(job.getUid(), new QueryOptions());
 
@@ -502,6 +520,88 @@ public class JobManager extends ResourceManager<Job> {
             job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
             job.getInternal().getStatus().setDescription(e.toString());
             jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
+
+            throw e;
+        }
+    }
+
+    /**
+     * * Submit a list of jobs in a single transaction. This can only be done by the OpenCGA administrator.
+     * All jobs must belong to the same executionId.
+     *
+     * @param studyStr     study id.
+     * @param jobs         list of jobs.
+     * @param dependencies dependency map [toolId - list<toolIds>]
+     * @param token        token.
+     * @return an OpenCGAResult.
+     * @throws CatalogException CatalogException.
+     */
+    public OpenCGAResult<Job> submit(String studyStr, List<Job> jobs, Map<String, List<String>> dependencies, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("dependencies", dependencies)
+                .append("token", token);
+
+        try {
+            authorizationManager.checkIsInstallationAdministrator(userId);
+
+            for (Job job : jobs) {
+                autoCompleteNewJob(study, job, token);
+            }
+
+            // Fix dependencies
+            if (dependencies != null && !dependencies.isEmpty()) {
+                // Store a map of jobId,toolId -> Job
+                Map<String, Job> jobMap = new HashMap<>();
+                for (Job job : jobs) {
+                    jobMap.put(job.getId(), job);
+                    if (job.getTool() != null && StringUtils.isNotEmpty(job.getTool().getId())) {
+                        jobMap.put(job.getTool().getId(), job);
+                    }
+                }
+
+                // Find job dependencies and fix dependsOn object
+                for (Job job : jobs) {
+                    if (job.getTool() != null && dependencies.containsKey(job.getTool().getId())) {
+                        List<String> toolIds = dependencies.get(job.getTool().getId());
+                        List<Job> dependsOn = new ArrayList<>(toolIds.size());
+                        for (String toolId : toolIds) {
+                            Job otherJob = jobMap.get(toolId);
+                            if (otherJob == null) {
+                                throw new CatalogException("Could not find job dependency for tool '" + toolId + "'");
+                            }
+                            dependsOn.add(otherJob);
+                        }
+                        job.setDependsOn(dependsOn);
+                    }
+                }
+            }
+
+            jobDBAdaptor.insert(study.getUid(), jobs, new QueryOptions());
+            List<String> jobIds = jobs.stream().map(Job::getId).collect(Collectors.toList());
+            Query query = new Query()
+                    .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                    .append(JobDBAdaptor.QueryParams.ID.key(), jobIds);
+            OpenCGAResult<Job> jobResult = jobDBAdaptor.get(query, QueryOptions.empty());
+
+            String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+
+            auditManager.initAuditBatch(operationUuid);
+            for (Job job : jobs) {
+                auditManager.audit(operationUuid, userId, Enums.Action.CREATE, Enums.Resource.JOB, job.getId(), job.getUuid(),
+                        study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            }
+            auditManager.finishAuditBatch(operationUuid);
+
+            return jobResult;
+        } catch (CatalogException e) {
+            auditParams.put("jobs", jobs);
+            auditManager.auditCreate(userId, Enums.Resource.JOB, "", "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
             throw e;
         }

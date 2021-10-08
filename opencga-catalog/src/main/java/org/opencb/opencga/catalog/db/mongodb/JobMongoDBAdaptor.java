@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -113,6 +114,57 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             });
         } catch (Exception e) {
             logger.error("Could not create job {}: {}", job.getId(), e.getMessage());
+            throw e;
+        }
+    }
+
+    @Override
+    public OpenCGAResult insert(long studyId, List<Job> jobs, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        try {
+            return runTransaction(clientSession -> {
+                long tmpStartTime = startQuery();
+                logger.debug("Starting batch job insert transaction");
+                dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
+
+                if (CollectionUtils.isEmpty(jobs)) {
+                    throw new CatalogParameterException("Missing list of jobs");
+                }
+
+                Map<String, Job> jobMap = new HashMap<>();
+                String executionId = null;
+                for (Job job : jobs) {
+                    if (executionId == null) {
+                        executionId = job.getExecutionId();
+                        if (StringUtils.isEmpty(executionId)) {
+                            throw new CatalogParameterException("Missing executionId for job '" + job.getId() + "'");
+                        }
+                    } else if (!executionId.equals(job.getExecutionId())) {
+                        throw new CatalogParameterException("Found jobs with different executionIds.");
+                    }
+
+                    // Fix dependsOn object to contain full job (with corresponding uids if missing)
+                    if (CollectionUtils.isNotEmpty(job.getDependsOn())) {
+                        for (Job job1 : job.getDependsOn()) {
+                            if (!jobMap.containsKey(job1.getId())) {
+                                throw new CatalogParameterException("Cannot handle dependencies between jobs. Please check the input data");
+                            }
+                            job1.setUid(jobMap.get(job1.getId()).getUid());
+                            job1.setStudyUid(studyId);
+                        }
+                    }
+
+                    insert(clientSession, studyId, job);
+                    jobMap.put(job.getId(), job);
+                }
+
+                // Add job list to execution
+                dbAdaptorFactory.getExecutionDBAdaptor().updateJobList(clientSession, studyId, executionId, jobs);
+
+                return endWrite(tmpStartTime, jobs.size(), jobs.size(), 0, 0, null);
+            });
+        } catch (Exception e) {
+            logger.error("Could not perform batch creation of jobs: {}", e.getMessage());
             throw e;
         }
     }

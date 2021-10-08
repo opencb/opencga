@@ -29,6 +29,7 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -55,6 +56,25 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
     OpenCGAResult nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException;
 
     OpenCGAResult insert(long studyId, Job job, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+
+    /**
+     * Insert all jobs in a single transaction.
+     * Jobs must be sorted and those that do not depend on other jobs must be first.
+     * Job dependencies are also handled in this method, but if a job depend on another, the dependent job must also be passed here.
+     * Example: Insert 2 jobs where 'job1' depends on 'job2'.
+     * In this scenario, we would need to pass a list of jobs containing [job2, job1] in that exact order.
+     * job2 and job1 will be created which means none of those should exist before this method is run.
+     *
+     * @param studyId studyId
+     * @param jobs    Job list.
+     * @param options Options.
+     * @return an OpenCGAResult.
+     * @throws CatalogDBException            CatalogDBException.
+     * @throws CatalogParameterException     CatalogParameterException.
+     * @throws CatalogAuthorizationException CatalogAuthorizationException.
+     */
+    OpenCGAResult insert(long studyId, List<Job> jobs, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     default OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {

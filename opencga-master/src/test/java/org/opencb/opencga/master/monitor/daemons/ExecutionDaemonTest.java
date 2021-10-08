@@ -66,7 +66,7 @@ import static org.junit.Assert.assertTrue;
 
 public class ExecutionDaemonTest extends AbstractManagerTest {
 
-    private ExecutionDaemon daemon;
+    private JobDaemon daemon;
     private DummyBatchExecutor executor;
 
     @Override
@@ -78,7 +78,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken("opencga", expiringToken);
         catalogManager.getConfiguration().getAnalysis().getExecution().getMaxConcurrentJobs().put(VariantIndexOperationTool.ID, 1);
 
-        daemon = new ExecutionDaemon(1000, nonExpiringToken, catalogManager, "/tmp");
+        daemon = new JobDaemon(1000, nonExpiringToken, catalogManager, "/tmp");
         executor = new DummyBatchExecutor();
         daemon.batchExecutor = executor;
     }
@@ -101,7 +101,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         params.put("dynamicParam1", dynamic1);
         params.put("dynamicNested2", dynamic1);
-        String cli = ExecutionDaemon.buildCli("opencga-internal.sh", "variant index-run", params);
+        String cli = JobDaemon.buildCli("opencga-internal.sh", "variant index-run", params);
         assertEquals("opencga-internal.sh variant index-run "
                 + "--key value "
                 + "--camel-case-key value "
@@ -494,7 +494,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         params.put("dictFile", "HG00096.chrom20.small.bam");
         OpenCGAResult<Execution> executionResult = catalogManager.getExecutionManager().submitPipeline(studyFqn,
                 AlignmentQcAnalysis.ID, Enums.Priority.MEDIUM, params, "", "", null, null, token);
-        
+
         System.out.println(executionResult);
 
     }
