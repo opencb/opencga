@@ -135,16 +135,16 @@ public class Individual extends Annotable {
                       KaryotypicSex karyotypicSex, String ethnicity, IndividualPopulation population, LifeStatus lifeStatus,
                       String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity, int release,
                       List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, List<Disorder> disorders,
-                      Map<String, Object> attributes) {
+                      IndividualInternal internal, Map<String, Object> attributes) {
         this(id, name, father, mother, Collections.emptyList(), location, null, sex, karyotypicSex, ethnicity, population, dateOfBirth,
                 release, 1, TimeUtils.getTime(), TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples,
-                parentalConsanguinity, annotationSets, new CustomStatus(), null, attributes);
+                parentalConsanguinity, annotationSets, new CustomStatus(), internal, attributes);
     }
 
     public Individual(String id, String name, Individual father, Individual mother, List<String> familyIds, Location location,
                       IndividualQualityControl qualityControl, Sex sex, KaryotypicSex karyotypicSex, String ethnicity,
                       IndividualPopulation population, String dateOfBirth, int release, int version, String creationDate,
-                      String modificationDate,  LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders,
+                      String modificationDate, LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders,
                       List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets, CustomStatus status,
                       IndividualInternal internal, Map<String, Object> attributes) {
         this.id = id;

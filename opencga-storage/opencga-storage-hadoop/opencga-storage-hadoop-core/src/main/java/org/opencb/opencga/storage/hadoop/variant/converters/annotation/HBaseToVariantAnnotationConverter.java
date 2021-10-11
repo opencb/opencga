@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -169,27 +170,27 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     public VariantAnnotation convert(Result result) {
         VariantAnnotation variantAnnotation = null;
 
-        Cell cell = result.getColumnLatestCell(columnFamily, annotationColumn);
-        if (cell != null && cell.getValueLength() > 0) {
-            byte[] valueArray = cell.getValueArray();
-            int valueOffset = cell.getValueOffset();
-            int valueLength = cell.getValueLength();
-            variantAnnotation = convert(valueArray, valueOffset, valueLength);
+        Cell annotationCell = result.getColumnLatestCell(columnFamily, annotationColumn);
+        if (annotationCell != null && annotationCell.getValueLength() > 0) {
+            variantAnnotation = convert(annotationCell.getValueArray(), annotationCell.getValueOffset(), annotationCell.getValueLength());
         }
         List<Integer> releases = new ArrayList<>();
-        for (byte[] bytes : result.getFamilyMap(columnFamily).tailMap(VariantPhoenixSchema.RELEASE_PREFIX_BYTES).keySet()) {
-            if (Bytes.startsWith(bytes, VariantPhoenixSchema.RELEASE_PREFIX_BYTES)) {
-                releases.add(getRelease(Bytes.toString(bytes)));
+        for (Cell cell : result.rawCells()) {
+            if (columnStartsWith(cell, VariantPhoenixSchema.RELEASE_PREFIX_BYTES)) {
+                releases.add(getRelease(Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength())));
             }
         }
 
         String annotationId = this.defaultAnnotationId;
         if (defaultAnnotationId == null && annotationIds != null) {
             // Read the annotation Id from ANNOTATION_ID column
-            byte[] annotationIdBytes = result.getFamilyMap(columnFamily).get(VariantPhoenixSchema.VariantColumn.ANNOTATION_ID.bytes());
-            if (annotationIdBytes != null && annotationIdBytes.length > 0) {
-                int annotationIdNum = ((Integer) PInteger.INSTANCE.toObject(annotationIdBytes));
-                annotationId = annotationIds.get(annotationIdNum);
+            Cell cell = result.getColumnLatestCell(columnFamily, VariantColumn.ANNOTATION_ID.bytes());
+            if (cell != null) {
+                byte[] annotationIdBytes = CellUtil.cloneValue(cell);
+                if (annotationIdBytes.length > 0) {
+                    int annotationIdNum = ((Integer) PInteger.INSTANCE.toObject(annotationIdBytes));
+                    annotationId = annotationIds.get(annotationIdNum);
+                }
             }
         }
 
