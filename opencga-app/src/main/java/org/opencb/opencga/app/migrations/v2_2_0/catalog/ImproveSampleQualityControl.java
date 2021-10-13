@@ -16,7 +16,7 @@ import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
 
-@Migration(id = "improve_quality_control",
+@Migration(id = "improve_sample_quality_control",
         description = "Quality control normalize comments and fields #1826", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
@@ -49,7 +49,7 @@ public class ImproveSampleQualityControl extends MigrationTool {
                             if (CollectionUtils.isEmpty(fqc.getFileIds())) {
                                 fqc.setFileIds(files);
                             }
-                        
+
                             Document doc = sampleConverter.convertToStorageType(sample);
                             bulk.add(new UpdateOneModel<>(
                                             eq("_id", sampleDoc.get("_id")),

@@ -22,7 +22,7 @@ import java.util.Collections;
 
 import static com.mongodb.client.model.Filters.eq;
 
-@Migration(id = "improve_quality_control",
+@Migration(id = "improve_individual_quality_control",
         description = "Quality control normalize comments and fields #1826", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,

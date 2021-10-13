@@ -18,7 +18,7 @@ import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
 
-@Migration(id = "improve_quality_control",
+@Migration(id = "improve_ca_quality_control",
         description = "Quality control normalize comments and fields #1826", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
