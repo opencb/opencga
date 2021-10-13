@@ -750,16 +750,23 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 for (ConsequenceType conseqType : consequenceTypes) {
                     StringBuilder trans = new StringBuilder();
 
-                    // Set genes and biotypes if exist
-                    if (StringUtils.isNotEmpty(conseqType.getGeneName())) {
-                        // One gene can contain several transcripts and therefore several Consequence Types
-                        if (!genes.containsKey(conseqType.getGeneName())) {
-                            genes.put(conseqType.getGeneName(), new LinkedHashSet<>());
+                    String gene = conseqType.getGeneName();
+                    if (StringUtils.isEmpty(gene)) {
+                        if (StringUtils.isNotEmpty(conseqType.getGeneId())) {
+                            // Use geneId instead of geneName
+                            gene = conseqType.getGeneId();
                         }
+                    }
+
+                    // Set genes and biotypes if exist
+                    if (StringUtils.isNotEmpty(gene)) {
+                        // One gene can contain several transcripts and therefore several Consequence Types
+                        Set<String> transcriptsFromGene = genes.computeIfAbsent(gene, key -> new LinkedHashSet<>());
+
                         // DO NOT change the order of the following code
-                        genes.get(conseqType.getGeneName()).add(conseqType.getGeneName());
-                        genes.get(conseqType.getGeneName()).add(conseqType.getGeneId());
-                        genes.get(conseqType.getGeneName()).add(conseqType.getTranscriptId());
+                        transcriptsFromGene.add(gene);
+                        transcriptsFromGene.add(conseqType.getGeneId());
+                        transcriptsFromGene.add(conseqType.getTranscriptId());
 
                         if (StringUtils.isNotEmpty(conseqType.getTranscriptId())) {
                             trans.append("TRANS").append(FIELD_SEP).append(conseqType.getTranscriptId());
@@ -771,7 +778,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             }
                         }
 
-                        xrefs.add(conseqType.getGeneName());
+                        xrefs.add(gene);
                         xrefs.add(conseqType.getGeneId());
                         xrefs.add(conseqType.getTranscriptId());
 
@@ -780,7 +787,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                             // Add the combination of Gene and Biotype, this will prevent variants to be returned when they overlap
                             // two different genes where the overlapping gene has the wanted Biotype.
-                            geneToSOAccessions.add(conseqType.getGeneName() + "_" + conseqType.getBiotype());
+                            geneToSOAccessions.add(gene + "_" + conseqType.getBiotype());
                             geneToSOAccessions.add(conseqType.getGeneId() + "_" + conseqType.getBiotype());
                             geneToSOAccessions.add(conseqType.getTranscriptId() + "_" + conseqType.getBiotype());
                         }
@@ -791,13 +798,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         int soIdInt = Integer.parseInt(sequenceOntologyTerm.getAccession().substring(3));
                         soAccessions.add(soIdInt);
 
-                        if (StringUtils.isNotEmpty(conseqType.getGeneName())) {
-                            geneToSOAccessions.add(conseqType.getGeneName() + "_" + soIdInt);
+                        if (StringUtils.isNotEmpty(gene)) {
+                            geneToSOAccessions.add(gene + "_" + soIdInt);
                             geneToSOAccessions.add(conseqType.getGeneId() + "_" + soIdInt);
                             geneToSOAccessions.add(conseqType.getTranscriptId() + "_" + soIdInt);
 
                             if (StringUtils.isNotEmpty(conseqType.getBiotype())) {
-                                geneToSOAccessions.add(conseqType.getGeneName() + "_" + conseqType.getBiotype() + "_" + soIdInt);
+                                geneToSOAccessions.add(gene + "_" + conseqType.getBiotype() + "_" + soIdInt);
                                 geneToSOAccessions.add(conseqType.getGeneId() + "_" + conseqType.getBiotype() + "_" + soIdInt);
                                 geneToSOAccessions.add(conseqType.getTranscriptId() + "_" + conseqType.getBiotype() + "_" + soIdInt);
 
@@ -809,7 +816,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             if (conseqType.getTranscriptAnnotationFlags() != null) {
                                 for (String transcriptFlag : conseqType.getTranscriptAnnotationFlags()) {
                                     if (VariantQueryUtils.IMPORTANT_TRANSCRIPT_FLAGS.contains(transcriptFlag)) {
-                                        geneToSOAccessions.add(conseqType.getGeneName() + "_" + soIdInt + "_" + transcriptFlag);
+                                        geneToSOAccessions.add(gene + "_" + soIdInt + "_" + transcriptFlag);
                                         geneToSOAccessions.add(conseqType.getGeneId() + "_" + soIdInt + "_" + transcriptFlag);
                                         geneToSOAccessions.add(conseqType.getTranscriptId() + "_" + soIdInt + "_" + transcriptFlag);
                                         // This is useful when no gene or transcript is used, for example 'LoF' in 'basic' transcripts
@@ -910,7 +917,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
 
                 // We store the accumulated data
-                genes.forEach((s, strings) -> variantSearchModel.getGenes().addAll(strings));
+                genes.forEach((gene, transcripts) -> variantSearchModel.getGenes().addAll(transcripts));
                 variantSearchModel.setSoAcc(new ArrayList<>(soAccessions));
                 variantSearchModel.setGeneToSoAcc(new ArrayList<>(geneToSOAccessions));
                 variantSearchModel.setBiotypes(new ArrayList<>(biotypes));

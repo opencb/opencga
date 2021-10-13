@@ -6,15 +6,7 @@ Since OpenCGA v2.1.0, OpenCGA users with administration roles have the possibili
 
 Templates are defined at a study level and could be provided in different formats accordingly to the user's needs. The file format and some common use cases are illustrated in the following section.
 
-&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD &lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
-
-## Remember that OpenCGA is highly configurable, and the use of templates constitutes a useful resource to reduce some common artifacts on the ingestion of metadata, but you can always use the OpenCGA clients \([Client Libraries](../using-opencga/client-libraries/)\), command line \([Command Line](../using-opencga/command-line/)\) or [REST Web Service API](../using-opencga/restful-web-service-api.md) to perform different operations in OpenCGA.
-
-Remember that OpenCGA is highly configurable, and the use of templates constitutes a useful resource to reduce some common artifacts on the ingestion of metadata, but you can always use the OpenCGA clients \([Client Libraries](templates-manifest.md)\), command line \([Command Line](templates-manifest.md)\) or [REST Web Service API](../using-opencga/restful-web-service-api.md) to perform different operations in OpenCGA.
-
-> > > > > > > ## release-2.1.x
-> > > > > > >
-> > > > > > > Remember that OpenCGA is highly configurable, and the use of templates constitutes a useful resource to reduce some common artifacts on the ingestion of metadata, but you can always use the OpenCGA clients \([Client Libraries](../using-opencga/client-libraries/)\), command line \([Command Line](../using-opencga/command-line/)\) or [REST Web Service API](../using-opencga/restful-web-service-api.md) to perform different operations in OpenCGA. release-2.1.x
+Remember that OpenCGA is highly configurable, and the use of templates constitutes a useful resource to reduce some common artifacts on the ingestion of metadata, but you can always use the OpenCGA clients \([Client Libraries](../using-opencga/client-libraries/)\), command line \([Command Line](../using-opencga/command-line/)\) or [REST Web Service API](../using-opencga/restful-web-service-api.md) to perform different operations in OpenCGA.
 
 ### How it Works
 

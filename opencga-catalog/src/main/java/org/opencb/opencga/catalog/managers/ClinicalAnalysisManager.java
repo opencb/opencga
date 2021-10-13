@@ -78,11 +78,6 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
  */
 public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
-    private UserManager userManager;
-    private StudyManager studyManager;
-
-    protected static Logger logger = LoggerFactory.getLogger(ClinicalAnalysisManager.class);
-
     public static final QueryOptions INCLUDE_CLINICAL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key(), ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(),
@@ -105,6 +100,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key()));
+    protected static Logger logger = LoggerFactory.getLogger(ClinicalAnalysisManager.class);
+    private UserManager userManager;
+    private StudyManager studyManager;
 
     ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                             DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -266,8 +264,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     ClinicalAnalysisQualityControl::new));
             clinicalAnalysis.setPanels(ParamUtils.defaultObject(clinicalAnalysis.getPanels(), Collections.emptyList()));
 
-            clinicalAnalysis.getQualityControl().setUser(userId);
-            clinicalAnalysis.getQualityControl().setDate(TimeUtils.getDate());
+            if (clinicalAnalysis.getQualityControl().getComments() != null) {
+                for (ClinicalComment comment : clinicalAnalysis.getQualityControl().getComments()) {
+                    comment.setDate(TimeUtils.getTime());
+                    comment.setAuthor(userId);
+                }
+            }
 
             if (!clinicalAnalysis.getComments().isEmpty()) {
                 // Fill author and date
@@ -625,7 +627,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 consentList.add(new ClinicalConsentParam(consent.getId(), consent.getName(), consent.getDescription(),
                         ClinicalConsentParam.Value.UNKNOWN));
             }
-
         } else {
             // Adding all consents to UNKNOWN
             for (ClinicalConsent consent : consentMap.values()) {
@@ -1242,8 +1243,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
         if (parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL.key()) != null) {
             ClinicalAnalysisQualityControl qualityControl = updateParams.getQualityControl().toClinicalQualityControl();
-            qualityControl.setUser(userId);
-            qualityControl.setDate(TimeUtils.getDate());
+            if (qualityControl.getComments() != null) {
+                for (ClinicalComment comment : qualityControl.getComments()) {
+                    comment.setDate(TimeUtils.getTime());
+                    comment.setAuthor(userId);
+                }
+            }
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL.key(), qualityControl);
         }
 

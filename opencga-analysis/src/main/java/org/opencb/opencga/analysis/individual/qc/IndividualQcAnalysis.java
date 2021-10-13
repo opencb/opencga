@@ -51,8 +51,8 @@ public class IndividualQcAnalysis extends OpenCgaTool {
     public static final String DESCRIPTION = "Run quality control (QC) for a given individual. It includes inferred sex and " +
             " mendelian errors (UDP)";
 
-    public  static final String INFERRED_SEX_STEP = "inferred-sex";
-    public  static final String MENDELIAN_ERRORS_STEP = "mendelian-errors";
+    public static final String INFERRED_SEX_STEP = "inferred-sex";
+    public static final String MENDELIAN_ERRORS_STEP = "mendelian-errors";
 
     private String studyId;
     private String individualId;
@@ -100,7 +100,7 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         List<Sample> childGermlineSamples = IndividualQcUtils.getValidGermlineSamplesByIndividualId(studyId, individualId, catalogManager,
                 token);
         if (CollectionUtils.isEmpty(childGermlineSamples)) {
-            throw new ToolException("Germline sample not found for individual '" +  individualId + "'");
+            throw new ToolException("Germline sample not found for individual '" + individualId + "'");
         }
 
         if (childGermlineSamples.size() > 1) {
@@ -156,15 +156,14 @@ public class IndividualQcAnalysis extends OpenCgaTool {
         if (qualityControl == null) {
             qualityControl = new IndividualQualityControl();
         } else {
-            if (StringUtils.isNotEmpty(qualityControl.getSampleId()) && !qualityControl.getSampleId().equals(sample.getId())) {
-                throw new ToolException("Individual quality control was computed previously for the sample '" + qualityControl.getSampleId()
-                        + "'");
+            if (CollectionUtils.isNotEmpty(qualityControl.getInferredSexReports())) {
+                for (InferredSexReport inferredSexReport : qualityControl.getInferredSexReports()) {
+                    if (StringUtils.isNotEmpty(inferredSexReport.getSampleId()) && !inferredSexReport.getSampleId().equals(sample.getId())) {
+                        throw new ToolException("Individual quality control was computed previously for the sample '"
+                                + inferredSexReport.getSampleId() + "'");
+                    }
+                }
             }
-        }
-
-        // Set sample ID
-        if (StringUtils.isEmpty(qualityControl.getSampleId())) {
-            qualityControl.setSampleId(sample.getId());
         }
 
         executor = getToolExecutor(IndividualQcAnalysisExecutor.class)
@@ -236,7 +235,7 @@ public class IndividualQcAnalysis extends OpenCgaTool {
     }
 
     private void runMendelianError() throws ToolException {
-        if (qualityControl.getMendelianErrorReport() != null) {
+        if (qualityControl.getMendelianErrorReports() != null) {
             addWarning("Skipping mendelian error: it was already computed");
             return;
         }

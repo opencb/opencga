@@ -1,36 +1,27 @@
 package org.opencb.opencga.core.models.clinical;
 
-import java.util.Date;
+import org.opencb.biodata.models.clinical.ClinicalComment;
+
+import java.util.List;
 
 public class ClinicalAnalysisQualityControl {
 
     private QualityControlSummary summary;
-    private String comment;
-    private String user;
-    private Date date;
-
-    public enum QualityControlSummary {
-        EXCELLENT, GOOD, NORMAL, BAD, UNKNOWN
-    }
+    private List<ClinicalComment> comments;
 
     public ClinicalAnalysisQualityControl() {
-        this(QualityControlSummary.UNKNOWN, "", "", null);
     }
 
-    public ClinicalAnalysisQualityControl(QualityControlSummary summary, String comment, String user, Date date) {
+    public ClinicalAnalysisQualityControl(QualityControlSummary summary, List<ClinicalComment> comments) {
         this.summary = summary;
-        this.comment = comment;
-        this.user = user;
-        this.date = date;
+        this.comments = comments;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysisQualityControl{");
         sb.append("summary=").append(summary);
-        sb.append(", comment='").append(comment).append('\'');
-        sb.append(", user='").append(user).append('\'');
-        sb.append(", date=").append(date);
+        sb.append(", comments=").append(comments);
         sb.append('}');
         return sb.toString();
     }
@@ -44,30 +35,16 @@ public class ClinicalAnalysisQualityControl {
         return this;
     }
 
-    public String getComment() {
-        return comment;
+    public List<ClinicalComment> getComments() {
+        return comments;
     }
 
-    public ClinicalAnalysisQualityControl setComment(String comment) {
-        this.comment = comment;
+    public ClinicalAnalysisQualityControl setComments(List<ClinicalComment> comments) {
+        this.comments = comments;
         return this;
     }
 
-    public String getUser() {
-        return user;
-    }
-
-    public ClinicalAnalysisQualityControl setUser(String user) {
-        this.user = user;
-        return this;
-    }
-
-    public Date getDate() {
-        return date;
-    }
-
-    public ClinicalAnalysisQualityControl setDate(Date date) {
-        this.date = date;
-        return this;
+    public enum QualityControlSummary {
+        HIGH, MEDIUM, LOW, DISCARD, NEEDS_REVIEW, UNKNOWN
     }
 }

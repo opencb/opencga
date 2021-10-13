@@ -85,22 +85,15 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
  */
 public class FileManager extends AnnotationSetManager<File> {
 
-    private static final QueryOptions INCLUDE_STUDY_URI;
     public static final QueryOptions INCLUDE_FILE_IDS;
     public static final QueryOptions INCLUDE_FILE_URI;
     public static final QueryOptions INCLUDE_FILE_URI_PATH;
     public static final QueryOptions EXCLUDE_FILE_ATTRIBUTES;
+    private static final QueryOptions INCLUDE_STUDY_URI;
     private static final Comparator<File> ROOT_FIRST_COMPARATOR;
     private static final Comparator<File> ROOT_LAST_COMPARATOR;
 
     protected static Logger logger;
-    private FileMetadataReader fileMetadataReader;
-    private UserManager userManager;
-    private StudyManager studyManager;
-    private IOManagerFactory ioManagerFactory;
-
-    private final String defaultFacet = "creationYear>>creationMonth;format;bioformat;format>>bioformat;status;"
-            + "size[0..214748364800]:10737418240;numSamples[0..10]:1";
 
     static {
         INCLUDE_FILE_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
@@ -125,6 +118,13 @@ public class FileManager extends AnnotationSetManager<File> {
 
         logger = LoggerFactory.getLogger(FileManager.class);
     }
+
+    private final String defaultFacet = "creationYear>>creationMonth;format;bioformat;format>>bioformat;status;"
+            + "size[0..214748364800]:10737418240;numSamples[0..10]:1";
+    private FileMetadataReader fileMetadataReader;
+    private UserManager userManager;
+    private StudyManager studyManager;
+    private IOManagerFactory ioManagerFactory;
 
     FileManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                 DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
@@ -354,7 +354,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
             }
 
-
             if (fileList.size() != 1) {
                 // VCF file not found
                 logger.warn("The vcf file corresponding to the file " + transformedFile.getName() + " could not be found");
@@ -428,10 +427,9 @@ public class FileManager extends AnnotationSetManager<File> {
                         .update(studyStr, vcf.getPath(),
                                 new FileUpdateParams().setQualityControl(
                                         new FileQualityControl().setVariant(
-                                                new VariantFileQualityControl(stats))),
+                                                new VariantFileQualityControl(stats, null))),
                                 new QueryOptions(),
                                 sessionId);
-
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + statsFile + "\"", e);
             }
@@ -1621,8 +1619,8 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param folderId Folder id, path or uuid.
      * @param token    Token of the user. The user will need to have read and write access to the folderId.
      * @return An OpenCGAResult containing the number of files that have been added and the full list of files registered (old and new).
-     * @throws CatalogException If there is any of the following errors:
-     *                          Study not found, folderId does not exist or user does not have permissions.
+     * @throws CatalogException If there is any of the following errors: Study not found, folderId does not exist or user does not have
+     *                          permissions.
      */
     public OpenCGAResult<File> syncUntrackedFiles(String studyId, String folderId, String token) throws CatalogException {
         return syncUntrackedFiles(studyId, folderId, uri -> true, "", token);
@@ -2663,7 +2661,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
             }
 
-
             List<File> extendedFileList;
             if (StringUtils.isNotEmpty(aclParams.getSample())) {
                 // Obtain the sample ids
@@ -2746,7 +2743,6 @@ public class FileManager extends AnnotationSetManager<File> {
         result.getResults().sort(rootFirst ? ROOT_FIRST_COMPARATOR : ROOT_LAST_COMPARATOR);
         return result;
     }
-
 
     // **************************   Private methods   ******************************** //
     private boolean isRootFolder(File file) throws CatalogException {
@@ -2898,8 +2894,8 @@ public class FileManager extends AnnotationSetManager<File> {
      *
      * @param studyStr Study.
      * @param fileId   File or folder id.
-     * @param unlink   Boolean indicating whether the operation only expects to remove the entry from the database or also remove
-     *                 the file from disk.
+     * @param unlink   Boolean indicating whether the operation only expects to remove the entry from the database or also remove the file
+     *                 from disk.
      * @param token    Token of the user for which DELETE permissions will be checked.
      * @throws CatalogException if any of the files cannot be deleted.
      */
@@ -2914,8 +2910,8 @@ public class FileManager extends AnnotationSetManager<File> {
      *
      * @param study          Study.
      * @param fileId         File or folder id.
-     * @param unlink         Boolean indicating whether the operation only expects to remove the entry from the database or also remove
-     *                       the file from disk.
+     * @param unlink         Boolean indicating whether the operation only expects to remove the entry from the database or also remove the
+     *                       file from disk.
      * @param acceptedStatus List of valid statuses the file should have. For the public, the file should be in READY or TRASHED status.
      *                       However, if someone calls to the delete/unlink methods, the status of those files should already be in
      *                       PENDING_DELETE.
@@ -3021,7 +3017,6 @@ public class FileManager extends AnnotationSetManager<File> {
             // TODO: Validate no file/folder within any registered directory is not registered in OpenCGA
         }
 
-
         // Check the original files are not being indexed at the moment
         if (!indexFiles.isEmpty()) {
             Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), new ArrayList<>(indexFiles));
@@ -3122,8 +3117,8 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param study            study where they will be created.
      * @param userId           user that is creating the parents.
      * @param studyURI         Base URI where the created folders will be pointing to. (base physical location)
-     * @param path             Path used in catalog as a virtual location. (whole bunch of directories inside the virtual
-     *                         location in catalog)
+     * @param path             Path used in catalog as a virtual location. (whole bunch of directories inside the virtual location in
+     *                         catalog)
      * @param checkPermissions Boolean indicating whether to check if the user has permissions to create a folder in the first directory
      *                         that is available in catalog.
      * @throws CatalogDBException
@@ -3264,7 +3259,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append(FileDBAdaptor.QueryParams.PATH.key(), externalPathDestinyStr)
                 .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
 
-
         if (fileDBAdaptor.count(query).getNumMatches() > 0) {
             // Create a regular expression on URI to return everything linked from that URI
             query.put(FileDBAdaptor.QueryParams.URI.key(), "~^" + normalizedUri);
@@ -3399,7 +3393,6 @@ public class FileManager extends AnnotationSetManager<File> {
                                     allFileAcls.getResults().get(0), Enums.Resource.FILE);
                         }
                     }
-
                 } catch (CatalogException e) {
                     logger.error("An error occurred when trying to create folder {}", dir.toString());
                 }
@@ -3474,7 +3467,6 @@ public class FileManager extends AnnotationSetManager<File> {
                         throw new CatalogException("Cannot link the file " + Paths.get(fileUri).getFileName().toString()
                                 + ". There is already a file in the path " + destinyPath + " with the same name.");
                     }
-
                 } catch (CatalogException e) {
                     logger.error(e.getMessage());
                 }
@@ -3639,7 +3631,6 @@ public class FileManager extends AnnotationSetManager<File> {
                         continue;
                     }
                     filterWhere = filterWhere.toLowerCase();
-
 
                     if (filterValue.startsWith("~")) {
                         // Regular expression
@@ -3827,10 +3818,6 @@ public class FileManager extends AnnotationSetManager<File> {
         return studyDBAdaptor.get(studyId, INCLUDE_STUDY_URI).first().getUri();
     }
 
-    private enum CheckPath {
-        FREE_PATH, FILE_EXISTS, DIRECTORY_EXISTS
-    }
-
     private CheckPath checkPathExists(String path, long studyId) throws CatalogException {
         String myPath = path;
         if (myPath.endsWith("/")) {
@@ -3862,4 +3849,7 @@ public class FileManager extends AnnotationSetManager<File> {
         fileDBAdaptor.setFileSampleLinkThreshold(numSamples);
     }
 
+    private enum CheckPath {
+        FREE_PATH, FILE_EXISTS, DIRECTORY_EXISTS
+    }
 }

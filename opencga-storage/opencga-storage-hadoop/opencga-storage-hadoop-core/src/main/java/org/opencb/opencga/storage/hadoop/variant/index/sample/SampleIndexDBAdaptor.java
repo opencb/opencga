@@ -742,34 +742,38 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             }
         }
 
-        if (query.getQueryOperation() != null) {
-            logger.info("Sample query operator " + query.getQueryOperation().name());
-        }
-        for (String sample : query.getSamplesMap().keySet()) {
-            logger.info("Sample : " + sample);
-            printSingleSampleIndexQuery(query.forSample(sample));
+        Iterator<String> iterator = query.getSamplesMap().keySet().iterator();
+        while (iterator.hasNext()) {
+            String sample = iterator.next();
+            logger.info("  Sample : " + sample);
+            printSingleSampleIndexQuery(query.forSample(sample), true);
+            if (iterator.hasNext()) {
+                logger.info("SampleIndex " + query.getQueryOperation().name());
+            }
         }
     }
 
     public static void printQuery(SingleSampleIndexQuery query) {
         printQuery(query.getAnnotationIndexQuery());
-        printSingleSampleIndexQuery(query);
+        printSingleSampleIndexQuery(query, false);
     }
 
-    private static void printSingleSampleIndexQuery(SingleSampleIndexQuery query) {
-        for (SampleFileIndexQuery sampleFileIndexQuery : query.getSampleFileIndexQuery()) {
+    private static void printSingleSampleIndexQuery(SingleSampleIndexQuery query, boolean tab) {
+        Iterator<SampleFileIndexQuery> iterator = query.getSampleFileIndexQuery().iterator();
+        while (iterator.hasNext()) {
+            SampleFileIndexQuery sampleFileIndexQuery = iterator.next();
             for (IndexFieldFilter filter : sampleFileIndexQuery.getFilters()) {
-                logger.info("Filter       = " + filter);
+                logger.info((tab ? "      " : "") + "Filter       = " + filter);
             }
-            if (query.getSampleFileIndexQuery().getOperation() != null) {
-                logger.info("FileIndex " + query.getSampleFileIndexQuery().getOperation());
+            if (iterator.hasNext()) {
+                logger.info((tab ? "    " : "") + "FileIndex " + query.getSampleFileIndexQuery().getOperation());
             }
         }
         if (query.hasFatherFilter()) {
-            logger.info("FatherFilter       = " + IndexUtils.parentFilterToString(query.getFatherFilter()));
+            logger.info((tab ? "    " : "") + "FatherFilter       = " + IndexUtils.parentFilterToString(query.getFatherFilter()));
         }
         if (query.hasMotherFilter()) {
-            logger.info("MotherFilter       = " + IndexUtils.parentFilterToString(query.getMotherFilter()));
+            logger.info((tab ? "    " : "") + "MotherFilter       = " + IndexUtils.parentFilterToString(query.getMotherFilter()));
         }
     }
 

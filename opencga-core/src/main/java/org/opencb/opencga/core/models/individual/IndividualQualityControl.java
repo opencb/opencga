@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models.individual;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
+import org.opencb.biodata.models.clinical.qc.SampleRelatednessReport;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,39 +27,35 @@ import java.util.List;
 public class IndividualQualityControl {
 
     /**
-     * Sample ID, only germinal sample and indexed
-     */
-    private String sampleId;
-
-    /**
      * List of inferred sex reports, it depends on the method (currently by coverage ratio)
      */
-    List<InferredSexReport> inferredSexReports;
+    private List<InferredSexReport> inferredSexReports;
+
+    private SampleRelatednessReport sampleRelatednessReport;
 
     /**
      * Mendelian errors
      */
-    private MendelianErrorReport mendelianErrorReport;
-
+    private List<MendelianErrorReport> mendelianErrorReports;
     /**
      * File IDs related to the quality control
      */
     private List<String> fileIds;
-
     /**
      * Comments related to the quality control
      */
     private List<ClinicalComment> comments;
 
     public IndividualQualityControl() {
-        this(null, new ArrayList<>(), null, new ArrayList<>(), new ArrayList<>());
+        this(new SampleRelatednessReport(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
     }
 
-    public IndividualQualityControl(String sampleId, List<InferredSexReport> inferredSexReports, MendelianErrorReport mendelianErrorReport,
-                                    List<String> fileIds, List<ClinicalComment> comments) {
-        this.sampleId = sampleId;
+    public IndividualQualityControl(SampleRelatednessReport sampleRelatednessReport, List<InferredSexReport> inferredSexReports,
+                                    List<MendelianErrorReport> mendelianErrorReports, List<String> fileIds,
+                                    List<ClinicalComment> comments) {
         this.inferredSexReports = inferredSexReports;
-        this.mendelianErrorReport = mendelianErrorReport;
+        this.sampleRelatednessReport = sampleRelatednessReport;
+        this.mendelianErrorReports = mendelianErrorReports;
         this.fileIds = fileIds;
         this.comments = comments;
     }
@@ -66,22 +63,13 @@ public class IndividualQualityControl {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualQualityControl{");
-        sb.append("sampleId='").append(sampleId).append('\'');
-        sb.append(", inferredSexReports=").append(inferredSexReports);
-        sb.append(", mendelianErrorReport=").append(mendelianErrorReport);
+        sb.append("inferredSexReports=").append(inferredSexReports);
+        sb.append(", sampleRelatednessReport=").append(sampleRelatednessReport);
+        sb.append(", mendelianErrorReports=").append(mendelianErrorReports);
         sb.append(", fileIds=").append(fileIds);
         sb.append(", comments=").append(comments);
         sb.append('}');
         return sb.toString();
-    }
-
-    public String getSampleId() {
-        return sampleId;
-    }
-
-    public IndividualQualityControl setSampleId(String sampleId) {
-        this.sampleId = sampleId;
-        return this;
     }
 
     public List<InferredSexReport> getInferredSexReports() {
@@ -93,12 +81,12 @@ public class IndividualQualityControl {
         return this;
     }
 
-    public MendelianErrorReport getMendelianErrorReport() {
-        return mendelianErrorReport;
+    public List<MendelianErrorReport> getMendelianErrorReports() {
+        return mendelianErrorReports;
     }
 
-    public IndividualQualityControl setMendelianErrorReport(MendelianErrorReport mendelianErrorReport) {
-        this.mendelianErrorReport = mendelianErrorReport;
+    public IndividualQualityControl setMendelianErrorReports(List<MendelianErrorReport> mendelianErrorReports) {
+        this.mendelianErrorReports = mendelianErrorReports;
         return this;
     }
 
@@ -117,6 +105,15 @@ public class IndividualQualityControl {
 
     public IndividualQualityControl setComments(List<ClinicalComment> comments) {
         this.comments = comments;
+        return this;
+    }
+
+    public SampleRelatednessReport getSampleRelatednessReport() {
+        return sampleRelatednessReport;
+    }
+
+    public IndividualQualityControl setSampleRelatednessReport(SampleRelatednessReport sampleRelatednessReport) {
+        this.sampleRelatednessReport = sampleRelatednessReport;
         return this;
     }
 }

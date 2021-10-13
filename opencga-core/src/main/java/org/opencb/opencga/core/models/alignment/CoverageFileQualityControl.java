@@ -6,15 +6,15 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CoverageQualityControl implements Serializable {
+public class CoverageFileQualityControl implements Serializable {
 
     private List<GeneCoverageStats> geneCoverageStats;
 
-    public CoverageQualityControl() {
+    public CoverageFileQualityControl() {
         this(new ArrayList<>());
     }
 
-    public CoverageQualityControl(List<GeneCoverageStats> geneCoverageStats) {
+    public CoverageFileQualityControl(List<GeneCoverageStats> geneCoverageStats) {
         this.geneCoverageStats = geneCoverageStats;
     }
 
@@ -30,7 +30,7 @@ public class CoverageQualityControl implements Serializable {
         return geneCoverageStats;
     }
 
-    public CoverageQualityControl setGeneCoverageStats(List<GeneCoverageStats> geneCoverageStats) {
+    public CoverageFileQualityControl setGeneCoverageStats(List<GeneCoverageStats> geneCoverageStats) {
         this.geneCoverageStats = geneCoverageStats;
         return this;
     }

@@ -21,7 +21,7 @@ After deciding structure, the new projects and studies may need to be created. T
 
 ## **Creating new projects**
 
-The first step is [login](../login.md) into OpenCGA with a `FULL` account \(See [Data Management](projects-and-studies.md)\). Then, a Project can be created using the next command:
+The first step is [login](../login.md) into OpenCGA with a `FULL` account \(See [Data Management](sharing-and-permissions/README.md)\). Then, a Project can be created using the next command:
 
 ```text
 $ ./opencga.sh projects create --id <short-project-id> 
