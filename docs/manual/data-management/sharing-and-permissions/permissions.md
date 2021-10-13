@@ -14,7 +14,7 @@ A list of the basic permissions and their explanations can be found in the list 
 * _DELETE:_ Give permission to delete that kind of entries. 
 * ANNOTATIONS: In Sample, Individual, Family and Cohort we have three additional permissions to deal with annotations.
 
- Files deserve a special treatment as they not only exist in the database, but also physically in the file system. The special permissions added for files are the following:
+  Files deserve a special treatment as they not only exist in the database, but also physically in the file system. The special permissions added for files are the following:
 
 _VIEW\_FILE\_HEADER_: Give permission to retrieve just the header of a file. DOWNLOAD\_FILES or _DOWNLOAD_: Give permission to download the whole file.
 
@@ -44,9 +44,9 @@ _VIEW\_FILE\_HEADER_: Give permission to retrieve just the header of a file. DOW
 * **VIEW\_FILE\_HEADER** _\(implies: VIEW\_FILES\)_
 * **VIEW\_FILE\_CONTENT** _\(implies: VIEW\_FILES\)_ 
 * **WRITE\_FILES** \(_implies: VIEW\_FILES_\)
-* **DELETE\_FILES** _****\(implies: VIEW\_FILES, WRITE\_FILES\)_
+* **DELETE\_FILES** _\*\*\(implies: VIEW\_FILES, WRITE\_FILES\)_
 * **DOWNLOAD\_FILES** _\(implies: VIEW\_FILES\)_
-* **UPLOAD\_FILES** _****\(implies: WRITE\_FILES, VIEW\_FILES\)_ 
+* **UPLOAD\_FILES** _\*\*\(implies: WRITE\_FILES, VIEW\_FILES\)_ 
 * **VIEW\_FILE\_ANNOTATIONS** _\(implies: VIEW\_FILES\)_
 * **WRITE\_FILE\_ANNOTATIONS** _\(implies: VIEW\_FILE\_ANNOTATIONS, VIEW\_FILES\)_
 * **DELETE\_FILE\_ANNOTATIONS** _\(implies: WRITE\_FILE\_ANNOTATIONS, VIEW\_FILE\_ANNOTATIONS, VIEW\_FILES\)_
@@ -73,7 +73,7 @@ _VIEW\_FILE\_HEADER_: Give permission to retrieve just the header of a file. DOW
 * **WRITE\_COHORTS** _\(implies: VIEW\_COHORTS\)_
 * **DELETE\_COHORTS** _\(implies: VIEW\_COHORTS, WRITE\_COHORTS\)_
 * **VIEW\_COHORT\_ANNOTATIONS** _\(implies: VIEW\_COHORTS\)_
-*  **WRITE\_COHORT\_ANNOTATIONS** _\(implies: VIEW\_COHORTS, VIEW\_COHORT\_ANNOTATIONS\)_
+* **WRITE\_COHORT\_ANNOTATIONS** _\(implies: VIEW\_COHORTS, VIEW\_COHORT\_ANNOTATIONS\)_
 * **DELETE\_COHORT\_ANNOTATIONS** _\(implies: VIEW\_COHORTS, VIEW\_COHORT\_ANNOTATIONS, WRITE\_COHORT\_ANNOTATIONS\)_
 {% endtab %}
 
@@ -92,7 +92,7 @@ _VIEW\_FILE\_HEADER_: Give permission to retrieve just the header of a file. DOW
 
 ## Permissions Templates <a id="SharingandPermissions-Specialcases"></a>
 
-OpenCGA Catalog implements two Permissions templates:  predefined generic roles that capture a list of defined permissions. The permission templates can be granted to either users or groups.
+OpenCGA Catalog implements two Permissions templates: predefined generic roles that capture a list of defined permissions. The permission templates can be granted to either users or groups.
 
 * **analyst**: The member \(user or group\) will be given full READ and WRITE \(not DELETE\) permissions for all the entries related to the study. These users will be able to view and do modifications on all the data that is related to the study. 
 * **view\_only**: The member \(user or group\) will be given full READ permissions.

@@ -4,11 +4,11 @@ description: >-
   files into an OpenCGA Variant Store.
 ---
 
-# Load VCF Files to a Study
+# Loading of VCF files
 
 ## **Introduction**
 
-This page describes the typical process that an operator will follow to load their VCF files into an OpenCGA using the OpenCGA command line tools. Loading of VCF files can be done either before \(normally\) or after the loading of sample and clinical metadata. This document assumes OpenCGA version 2.0 or later
+This page describes the typical process that an operator will follow to load their VCF files into an OpenCGA using the OpenCGA command line tools. Loading of VCF files can be done either before \(normally\) or after the loading of sample and clinical metadata.
 
 It typically takes a few minutes to load a VCF from a single exome but it can take several days \(or even weeks\) to load many thousands of whole genomes. For more information on data load times see \[Data Load Benchmarks\].
 
@@ -30,7 +30,7 @@ This document assumes that:
 
 * The source VCF files are accessible \(e.g. via shared filesystem\) on the target OpenCGA server. 
 * The operator has access to a workstation with network access to the web services on the OpenCGA server.
-* Compatible OpenCGA client software is installed on the workstation. Find [here](ingestion-of-vcf-files.md) the instructions on how to install the client software.
+* Compatible OpenCGA client software is installed on the workstation. Find [here](../using-opencga/command-line/README.md) the instructions on how to install the client software.
 * The destination Study has been created on the OpenCGA server. Find [here](projects-and-studies.md) instructions for creating Projects and Studies. 
 * The operator has login credentials on the OpenCGA server with appropriate permissions; i.e. write access to the destination Study. 
 
@@ -58,13 +58,13 @@ Being `<catalog-logical-path>` the directory that you’d like to create within 
 
 ### Linking files **synchronously** vs. **asynchronously**
 
-There are two different commands depending on the type of VCF that needs to be loaded. Aggregated VCFs files with many samples need to be linked by launching an asynchronous job.
-
-#### **Linking files synchronously \(~less than 5000 samples\)**
-
 {% hint style="warning" %}
-Note that for files with more than 5000 samples linking is an asynchronous job 
+**Note** that for VCF files with more than 5000 samples linking should be launched as an asynchronous job 
 {% endhint %}
+
+There are two different commands depending on the type of VCF that needs to be loaded. Aggregated VCF files with many samples need to be linked by launching an asynchronous job.
+
+#### **- Linking files synchronously \(~less than 5000 samples\)**
 
 Files are registered into OpenCGA Catalog using this command line:
 
@@ -76,7 +76,7 @@ $ ./opencga.sh files link --study <study>
 
 Multiple files can be linked using the same command typing multiple input files separated by space or comma.
 
-#### **Linking files asynchronously \(more than 5000 samples\)**
+#### **- Linking files asynchronously \(more than 5000 samples\)**
 
 For VCFs containing more than 5000 samples, the linking steps needs to be performed as an asynchronous job. In this case, a different command needs to be run:
 
@@ -86,7 +86,7 @@ $ ./opencga.sh files link-run --study <study>
                               --input </path/to/data>
 ```
 
-**Full example:**
+**Full example: This example includes creating a directory and link of VCF file in the new path.**
 
 ```text
 ## Create one folder “data/” in study “myStudy”
@@ -121,6 +121,10 @@ $ ./opencga.sh jobs top ---study <study>
 
 **Special scenarios**
 
+{% hint style="danger" %}
+**Note**: Be aware that the misuse of the parameters described below may lead to data corruption. Please, ask for support at support@zettagenomics.com or create a ticket in the [Zetta Service Desk](https://zettagenomics.atlassian.net/servicedesk/customer/portal/1) if you are not sure about what option adjust to your dataset.
+{% endhint %}
+
 * **Samples data split by chromosome or region**
 
 By default, OpenCGA doesn’t allow you to index a VCF file if any of its samples is already indexed as part of another VCF file. This restriction is to avoid accidental data duplications. In case of having one dataset split by chromosome or region, this restriction can be bypassed by adding the param `--load-split-data <chromosome|region>` to the variant index command line.
@@ -132,10 +136,6 @@ Similarly to the previous scenario, a dataset may contain multiple files from th
 * **Family or Somatic callers**
 
 When using special callers it is important to specify it in the command line with either`--family / --somatic.`
-
-{% hint style="danger" %}
-Note: Be aware that the misuse of this parameters may lead to data corruption.
-{% endhint %}
 
 ## **Variant Annotation**
 

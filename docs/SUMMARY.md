@@ -22,8 +22,6 @@
     * [Variant Data Model](https://docsgb.opencb.org/variant/variant-data-model)
   * [Clinical Analysis](components-1/clinical.md)
   * [Analysis Framework](components-1/analysis-framework.md)
-<<<<<<< HEAD
-=======
 * [Data Models](data-models/README.md)
   * [User](data-models/user.md)
   * [Project](data-models/project.md)
@@ -35,7 +33,6 @@
   * [Cohort](data-models/cohort.md)
   * [Job](data-models/job.md)
   * [Clinical Analysis](data-models/clinical-analysis.md)
->>>>>>> release-2.1.x
 * [Case Studies](case-studies/README.md)
   * [Genomics England Research](case-studies/genomics-england-research.md)
   * [Microsoft Azure](case-studies/microsoft-azure.md)
@@ -52,10 +49,7 @@
     * [Choosing Variant Storage Engine](manual/installation/compute-cluster/chosing-variant-storage.md)
     * [Configuration](manual/installation/compute-cluster/configuration.md)
   * [Running Docker](manual/installation/docker.md)
-<<<<<<< HEAD
-=======
 * [Login](manual/login.md)
->>>>>>> release-2.1.x
 * [Using OpenCGA](manual/using-opencga/README.md)
   * [REST Web Service API](manual/using-opencga/restful-web-service-api.md)
   * [IVA Web App](manual/using-opencga/iva-web-app.md)
@@ -66,29 +60,20 @@
     * [JavaScript](manual/using-opencga/client-libraries/javascript.md)
   * [Command Line](manual/using-opencga/command-line/README.md)
     * [Configuration](manual/using-opencga/command-line/configuration.md)
-<<<<<<< HEAD
     * [Files](manual/using-opencga/command-line/files.md)
   * [Public Demo](manual/using-opencga/public-demo.md)
-* [Data Management](manual/data-management/README.md)
-  * [Data Ingestion Process](manual/data-management/data-ingestion-process.md)
-  * [Projects and Studies](manual/data-management/projects-and-studies.md)
-=======
-  * [Public Demo](manual/using-opencga/public-demo.md)
 * [Managing Data](manual/data-management/README.md)
-<<<<<<< HEAD
   * [Working with Projects and Studies](manual/data-management/projects-and-studies.md)
   * [Loading of VCF files](manual/data-management/ingestion-of-vcf-files.md)
->>>>>>> release-2.1.x
-=======
   * [Create Projects and Studies](manual/data-management/projects-and-studies.md)
   * [Load VCF Files to a Study](manual/data-management/ingestion-of-vcf-files.md)
->>>>>>> release-2.1.x
   * [Working with Files](manual/data-management/working-with-files.md)
   * [Sharing and Permissions](manual/data-management/sharing-and-permissions/README.md)
     * [Users and Groups](manual/data-management/sharing-and-permissions/users-and-groups.md)
     * [Study ACLs](manual/data-management/sharing-and-permissions/permissions.md)
-  * [Data Versioning](manual/data-management/data-versioning.md)
-  * [Adding Custom Metadata](manual/data-management/adding-custom-metadata.md)
+  * [Population of metadata](manual/data-management/population-of-metadata/README.md)
+    * [Data Versioning](manual/data-management/population-of-metadata/data-versioning.md)
+    * [Adding Custom Metadata](manual/data-management/population-of-metadata/adding-custom-metadata.md)
 * [Alignment Engine](manual/alignment-engine/README.md)
   * [BAM Index](manual/alignment-engine/bam-index.md)
   * [Alignment Read Query](manual/alignment-engine/alignment-read-query.md)

@@ -1,5 +1,7 @@
 # Genomics England Research
 
+## Background
+
 One of the goals of [The 100,000 Genomes Project](https://www.genomicsengland.co.uk/about-genomics-england/the-100000-genomes-project/) from [Genomics England](https://www.genomicsengland.co.uk) is to enable new medical research. Researchers will study how best to use genomics in healthcare and how best to interpret the data to help patients. The causes, diagnosis and treatment of disease will also be investigated. This is currently the largest national sequencing project of its kind in the world.
 
 To achieve this goal Genomics England set up a _Research_ environment for researchers and clinicians. OpenCGA, CellBase and IVA from OpenCB were installed as data platform. We loaded **64,078 whole genomes** in OpenCGA, in total **about 1 billion unique variants** were loaded and indexed in [OpenCGA Variant Storage](http://docs.opencb.org/display/opencga/Variant+Storage+Engine), and all the metadata and clinical data for samples and patients were loaded in [OpenCGA Catalog](http://docs.opencb.org/display/opencga/Catalog+and+Security). **OpenCGA was able to load and index about 6,000 samples a day**, executing the variant annotation and computing different cohort stats for the all the data run in less than a week. In summary, all data was loaded, indexed, annotated and stats calculated in less than 2 weeks. Genomic variants were annotated using [CellBase](http://docs.opencb.org/display/cellbase/CellBase+Home) and the [IVA](http://docs.opencb.org/display/iva/Welcome+to+IVA) front-end was installed for researchers and clinicians to analyse and visualise the data. In this document you can find a full report of about the loading and analysis of the 64,078 genomes.
@@ -52,7 +54,8 @@ Clinical data and genomic variants of **64,078 genomes** were loaded and indexed
       </td>
     </tr>
     <tr>
-      <td style="text-align:left">&lt;b&gt;&lt;/b&gt;</td>
+      <td style="text-align:left"><b>GRCh38 Germline</b>
+      </td>
       <td style="text-align:left">
         <p><b>CG38</b>
         </p>
@@ -81,7 +84,8 @@ Clinical data and genomic variants of **64,078 genomes** were loaded and indexed
       </td>
     </tr>
     <tr>
-      <td style="text-align:left">Total</td>
+      <td style="text-align:left"><b>Total</b>
+      </td>
       <td style="text-align:left">64,078</td>
       <td style="text-align:left">40,676</td>
       <td style="text-align:left"></td>
@@ -125,7 +129,7 @@ The loading performance always depend on the number of variants and concurrent f
 
 #### Saturation Study
 
-As part of the data loading process we decided to study the number of unique variants added in each batch of 500 samples. We generated this saturation plot for RD38:  
+As part of the data loading process we decided to study the number of unique variants added in each batch of 500 samples. We generated this saturation plot for RD38:
 
 ![](http://docs.opencb.org/download/attachments/15598206/image.png?version=1&modificationDate=1560250247113&api=v2)
 
@@ -249,7 +253,7 @@ To study the performance we used **RD38** which the largest study with 438 milli
   </tbody>
 </table>
 
-As can be observed most queries run below 1 second, you can combine as many filters as wanted. 
+As can be observed most queries run below 1 second, you can combine as many filters as wanted.
 
 ### Clinical Analysis
 
@@ -306,7 +310,7 @@ We also use here **RD38** which is the largest study. Clinical queries, or sampl
     </tr>
     <tr>
       <td style="text-align:left">
-        <p><em><b>de novo</b></em><b> Analysis</b>
+        <p><em><b>de novo</b></em>  <b>Analysis</b>
         </p>
         <p><b>filter</b> = PASS</p>
         <p><b>consequence type</b> = LoF + missense_variant</p>
@@ -338,7 +342,7 @@ Several user interfaces have been developed to query and analyse data from OpenC
 
 ### IVA
 
-[IVA](http://docs.opencb.org/display/iva/Welcome+to+IVA) v1.0.3 was installed to provide a friendly web-based analysis tool to browse variants and execute clinical analysis.   
+[IVA](http://docs.opencb.org/display/iva/Welcome+to+IVA) v1.0.3 was installed to provide a friendly web-based analysis tool to browse variants and execute clinical analysis.
 
 ![](http://docs.opencb.org/download/attachments/15598206/GEL_IVA_RD38_grid.png?version=1&modificationDate=1560259726188&api=v2)
 

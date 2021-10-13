@@ -40,6 +40,7 @@ public class AnnotationIndexConverterTest {
         );
         SampleIndexConfiguration configuration = SampleIndexConfiguration.defaultConfiguration();
         configuration.getAnnotationIndexConfiguration().getPopulationFrequency().getPopulations().clear();
+        configuration.getAnnotationIndexConfiguration().getPopulationFrequency().setThresholds(new double[]{0.001, 0.005, 0.01});
         populations.stream().map(SampleIndexConfiguration.Population::new).forEach(configuration::addPopulation);
 
         schema = new SampleIndexSchema(configuration);

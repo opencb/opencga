@@ -34,23 +34,23 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **id**  _String_   | Sample ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter  when creating a new sample, this ID cannot be changed at the moment._Tags_: _required, immutable, unique_ |
-| **uuid**  _String_   | Global unique ID at the whole OpenCGA installation. This is automatically created during the sample creation and cannot be changed._Tags_: _internal, unique, immutable_ |
-| **processing** [_SampleProcessing_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#SampleProcessing)   | Describes how the sample was processed in the lab. |
+| **id**  _String_ | Sample ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter  when creating a new sample, this ID cannot be changed at the moment._Tags_: _required, immutable, unique_ |
+| **uuid**  _String_ | Global unique ID at the whole OpenCGA installation. This is automatically created during the sample creation and cannot be changed._Tags_: _internal, unique, immutable_ |
+| **processing** [_SampleProcessing_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#SampleProcessing) | Describes how the sample was processed in the lab. |
 | **collection** [_SampleCollection_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#SampleCollection)   _since_: 2.1 | Describes how the sample was collected._Note_: _The sample collection is a list of samples_ |
 | **qualityControl** [_SampleQualityControl_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#SampleQualityControl)   _since_: 2.1 | Contains different metrics to evaluate the quality of the sample._Note_: _The sample collection is a list of samples_&lt;/br&gt;_More info at_: [ZetaGenomics](https://www.zettagenomics.com) |
-| **release**  _int_   | An integer describing the current data release._Tags_: _internal_ |
-| **version**  _int_   | An integer describing the current version._Tags_: _internal_ |
-| **creationDate**  _String_   | String representing when the sample was created, this is automatically set by OpenCGA._Tags_: _internal_ |
-| **modificationDate**  _String_   | String representing when was the last time the sample was modified, this is automatically set by OpenCGA._Tags_: _internal_ |
-| **description**  _String_   | An string to describe the properties of the sample. |
-| **somatic**  _boolean_   | Indicates if the sample is somatic or germline \(default\) |
-| **phenotypes**  List&lt;_Phenotype_&gt;   | A List with related phenotypes. |
-| **individualId**  _String_   | A reference to the Individual containing this sample. Notice that samples can exist without and Individual ID, this field is not  mandatory.._More info at_: [ZetaGenomics](https://www.zettagenomics.com) |
+| **release**  _int_ | An integer describing the current data release._Tags_: _internal_ |
+| **version**  _int_ | An integer describing the current version._Tags_: _internal_ |
+| **creationDate**  _String_ | String representing when the sample was created, this is automatically set by OpenCGA._Tags_: _internal_ |
+| **modificationDate**  _String_ | String representing when was the last time the sample was modified, this is automatically set by OpenCGA._Tags_: _internal_ |
+| **description**  _String_ | An string to describe the properties of the sample. |
+| **somatic**  _boolean_ | Indicates if the sample is somatic or germline \(default\) |
+| **phenotypes**  List&lt;_Phenotype_&gt; | A List with related phenotypes. |
+| **individualId**  _String_ | A reference to the Individual containing this sample. Notice that samples can exist without and Individual ID, this field is not  mandatory.._More info at_: [ZetaGenomics](https://www.zettagenomics.com) |
 | **fileIds**  List&lt;_String_&gt;   _Deprecated_ | List of File ID containing this sample, eg BAM, VCF, QC images, ... |
-| **status** [_CustomStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#CustomStatus)   | An object describing the status of the Sample. |
-| **internal** [_SampleInternal_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#SampleInternal)   | An object describing the internal information of the Sample. This is managed by OpenCGA._Tags_: _internal_ |
-| **attributes**  Map&lt;_Object_,_String_&gt;   | You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes. |
+| **status** [_CustomStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#CustomStatus) | An object describing the status of the Sample. |
+| **internal** [_SampleInternal_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#SampleInternal) | An object describing the internal information of the Sample. This is managed by OpenCGA._Tags_: _internal_ |
+| **attributes**  Map&lt;_Object_,_String_&gt; | You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes. |
 
 ### SampleInternal
 
@@ -58,8 +58,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#Status)   |  |
-| **rga** [_RgaIndex_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#RgaIndex)   |  |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#Status) |  |
+| **rga** [_RgaIndex_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#RgaIndex) |  |
 
 ### ProjectInternal
 
@@ -67,9 +67,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **datastores** [_Datastores_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#Datastores)   |  |
-| **cellbase** [_CellBaseConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#CellBaseConfiguration)   |  |
-| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#Status)   |  |
+| **datastores** [_Datastores_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#Datastores) |  |
+| **cellbase** [_CellBaseConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#CellBaseConfiguration) |  |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#Status) |  |
 
 ### CohortInternal
 
@@ -77,7 +77,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_CohortStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#CohortStatus)   |  |
+| **status** [_CohortStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#CohortStatus) |  |
 
 ### StudyInternal
 
@@ -85,8 +85,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :--- | :--- |
-| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#Status)   |  |
-| **configuration** [_StudyConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#StudyConfiguration)   |  |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#Status) |  |
+| **configuration** [_StudyConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/Sample.md#StudyConfiguration) |  |
 
 ## Example
 

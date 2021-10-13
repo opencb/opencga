@@ -6,14 +6,26 @@ import org.opencb.opencga.storage.hadoop.variant.index.core.IndexCodec;
 public class VariantTypeIndexCodec implements IndexCodec<VariantType> {
     public static final int TYPE_NUM_VALUES = 8;
 
-    public static final int TYPE_SNV_CODE = 0;
-    public static final int TYPE_INDEL_CODE = 1;
-    public static final int TYPE_MNV_CODE = 2;
-    public static final int TYPE_INS_CODE = 3;
-    public static final int TYPE_DEL_CODE = 4;
-    public static final int TYPE_CNV_CODE = 5;
-    public static final int TYPE_REAR_CODE = 6;
-    public static final int TYPE_OTHER_CODE = 7;
+    private static final int TYPE_SNV_CODE = 0;
+    private static final int TYPE_INDEL_CODE = 1;
+    private static final int TYPE_MNV_CODE = 2;
+    private static final int TYPE_INS_CODE = 3;
+    private static final int TYPE_DEL_CODE = 4;
+    private static final int TYPE_CNV_CODE = 5;
+    private static final int TYPE_REAR_CODE = 6;
+    private static final int TYPE_OTHER_CODE = 7;
+
+    private static final VariantType[] VARIANT_TYPES = {
+            VariantType.SNV,
+            VariantType.INDEL,
+            VariantType.MNV,
+            VariantType.INSERTION,
+            VariantType.DELETION,
+            VariantType.COPY_NUMBER,
+            VariantType.BREAKEND,
+            VariantType.SV,
+    };
+
 
     public static int getTypeCode(VariantType type) {
         switch (type) {
@@ -55,8 +67,7 @@ public class VariantTypeIndexCodec implements IndexCodec<VariantType> {
 
     @Override
     public VariantType decode(int code) {
-        // TODO
-        return null;
+        return VARIANT_TYPES[code];
     }
 
     @Override

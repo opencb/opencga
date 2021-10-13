@@ -18,7 +18,6 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -38,7 +37,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,48 +96,26 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     dataType = "boolean", paramType = "query")
     })
     public Response search(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias.")
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Family name") @QueryParam("name") String name,
-            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
-            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("samples") String samples,
-            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Comma separated list of disorder ids or names") @QueryParam("disorders") String disorders,
-            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
-                @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
-                @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = "Boolean to retrieve deleted families", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
-            @QueryParam("annotationsetName") String annotationsetName,
-            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
-            @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
-            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = "Release value (Current release from the moment the families were first created)")
-            @QueryParam("release") String release,
-            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
-                    int snapshot) {
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.FAMILY_ID_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.FAMILY_NAME_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.FAMILY_UUID_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.FAMILY_MEMBERS_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_MEMBERS_PARAM) String members,
+            @ApiParam(value = ParamConstants.FAMILY_EXPECTED_SIZE_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_EXPECTED_SIZE_PARAM) Integer expectedSize,
+            @ApiParam(value = ParamConstants.FAMILY_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_SAMPLES_PARAM) String samples,
+            @ApiParam(value = ParamConstants.FAMILY_PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_PHENOTYPES_PARAM) String phenotypes,
+            @ApiParam(value = ParamConstants.FAMILY_DISORDERS_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_DISORDERS_PARAM) String disorders,
+            @ApiParam(value = ParamConstants.FAMILY_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.FAMILY_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.FAMILY_DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.FAMILY_DELETED_PARAM) boolean deleted,
+            @ApiParam(value = ParamConstants.FAMILY_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.FAMILY_STATUS_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.FAMILY_ANNOTATION_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_ANNOTATION_PARAM) String annotation,
+            @ApiParam(value = ParamConstants.FAMILY_ACL_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.FAMILY_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.FAMILY_SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_SNAPSHOT_PARAM) Integer snapshot) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-
-            List<String> annotationList = new ArrayList<>();
-            if (StringUtils.isNotEmpty(annotation)) {
-                annotationList.add(annotation);
-            }
-            if (StringUtils.isNotEmpty(variableSet)) {
-                annotationList.add(Constants.VARIABLE_SET + "=" + variableSet);
-            }
-            if (StringUtils.isNotEmpty(annotationsetName)) {
-                annotationList.add(Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
-            }
-            if (!annotationList.isEmpty()) {
-                query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
-            }
-
             return createOkResponse(familyManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -150,29 +126,24 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @Path("/distinct")
     @ApiOperation(value = "Family distinct method", response = Object.class)
     public Response distinct(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias.")
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Family name") @QueryParam("name") String name,
-            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
-            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("samples") String samples,
-            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Comma separated list of disorder ids or names") @QueryParam("disorders") String disorders,
-            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
-            @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
-            @QueryParam("modificationDate") String modificationDate,
-            @ApiParam(value = "Boolean to retrieve deleted families", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
-            @QueryParam("annotationsetName") String annotationsetName,
-            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
-            @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
-            @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
-            @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release,
-            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot") int snapshot,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.FAMILY_ID_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.FAMILY_NAME_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.FAMILY_UUID_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.FAMILY_MEMBERS_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_MEMBERS_PARAM) String members,
+            @ApiParam(value = ParamConstants.FAMILY_EXPECTED_SIZE_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_EXPECTED_SIZE_PARAM) Integer expectedSize,
+            @ApiParam(value = ParamConstants.FAMILY_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_SAMPLES_PARAM) String samples,
+            @ApiParam(value = ParamConstants.FAMILY_PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_PHENOTYPES_PARAM) String phenotypes,
+            @ApiParam(value = ParamConstants.FAMILY_DISORDERS_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_DISORDERS_PARAM) String disorders,
+            @ApiParam(value = ParamConstants.FAMILY_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_CREATION_DATE_PARAM) String creationDate,
+            @ApiParam(value = ParamConstants.FAMILY_MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_MODIFICATION_DATE_PARAM) String modificationDate,
+            @ApiParam(value = ParamConstants.FAMILY_DELETED_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.FAMILY_DELETED_PARAM) boolean deleted,
+            @ApiParam(value = ParamConstants.FAMILY_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_INTERNAL_STATUS_PARAM) String internalStatus,
+            @ApiParam(value = ParamConstants.FAMILY_STATUS_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.FAMILY_ANNOTATION_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_ANNOTATION_PARAM) String annotation,
+            @ApiParam(value = ParamConstants.FAMILY_ACL_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_ACL_PARAM) String acl,
+            @ApiParam(value = ParamConstants.FAMILY_RELEASE_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.FAMILY_SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.FAMILY_SNAPSHOT_PARAM) Integer snapshot,
             @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);

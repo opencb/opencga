@@ -80,7 +80,7 @@ public interface PanelDBAdaptor extends CoreDBAdaptor<Panel> {
         GENES_CONFIDENCE("genes.confidence", TEXT, ""),
 
         REGIONS("regions", TEXT_ARRAY, ""),
-        REGIONS_LOCATION("regions.location", TEXT, ""),
+        REGIONS_ID("regions.id", TEXT, ""),
         REGIONS_SCORE("regions.score", DOUBLE, ""),
 
         SOURCE_ID("source.id", TEXT, ""),
@@ -169,7 +169,7 @@ public interface PanelDBAdaptor extends CoreDBAdaptor<Panel> {
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
      * be applied.
      *
-     * @param studyId study id containing the entries affected.
+     * @param studyId          study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
      * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.

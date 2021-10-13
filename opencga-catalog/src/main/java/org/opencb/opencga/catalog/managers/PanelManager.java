@@ -24,10 +24,12 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -35,10 +37,12 @@ import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.panel.Panel;
@@ -103,27 +107,19 @@ public class PanelManager extends ResourceManager<Panel> {
             throw new CatalogException("Only one panel allowed when requesting multiple versions");
         }
 
-        Function<Panel, String> panelStringFunction = Panel::getId;
-        PanelDBAdaptor.QueryParams idQueryParam = null;
-        for (String entry : uniqueList) {
-            PanelDBAdaptor.QueryParams param = PanelDBAdaptor.QueryParams.ID;
-            if (UuidUtils.isOpenCgaUuid(entry)) {
-                param = PanelDBAdaptor.QueryParams.UUID;
-                panelStringFunction = Panel::getUuid;
-            }
-            if (idQueryParam == null) {
-                idQueryParam = param;
-            }
-            if (idQueryParam != param) {
-                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
-            }
-        }
+        PanelDBAdaptor.QueryParams idQueryParam = getFieldFilter(uniqueList);
         queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
         OpenCGAResult<Panel> panelDataResult = panelDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+
+        Function<Panel, String> panelStringFunction = Panel::getId;
+        if (idQueryParam.equals(PanelDBAdaptor.QueryParams.UUID)) {
+            panelStringFunction = Panel::getUuid;
+        }
+
         if (ignoreException || panelDataResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, panelStringFunction, panelDataResult, ignoreException, versioned);
         }
@@ -135,6 +131,23 @@ public class PanelManager extends ResourceManager<Panel> {
         } else {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the panels.");
         }
+    }
+
+    PanelDBAdaptor.QueryParams getFieldFilter(List<String> idList) throws CatalogException {
+        PanelDBAdaptor.QueryParams idQueryParam = null;
+        for (String entry : idList) {
+            PanelDBAdaptor.QueryParams param = PanelDBAdaptor.QueryParams.ID;
+            if (UuidUtils.isOpenCgaUuid(entry)) {
+                param = PanelDBAdaptor.QueryParams.UUID;
+            }
+            if (idQueryParam == null) {
+                idQueryParam = param;
+            }
+            if (idQueryParam != param) {
+                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
+            }
+        }
+        return idQueryParam;
     }
 
     private OpenCGAResult<Panel> getPanel(long studyUid, String panelUuid, QueryOptions options) throws CatalogException {
@@ -346,6 +359,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
+        fixQueryObject(finalQuery);
 
         DBIterator<Panel> iterator;
         try {
@@ -436,11 +450,11 @@ public class PanelManager extends ResourceManager<Panel> {
     /**
      * Update Panel from catalog.
      *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param panelIds   List of Panel ids. Could be either the id or uuid.
+     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param panelIds     List of Panel ids. Could be either the id or uuid.
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
+     * @param token        Session id of the user logged in.
      * @return A OpenCGAResult.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
@@ -549,6 +563,7 @@ public class PanelManager extends ResourceManager<Panel> {
         String userId = userManager.getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
+        fixQueryObject(query);
         query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         return panelDBAdaptor.iterator(study.getUid(), query, options, userId);
     }
@@ -569,6 +584,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("token", token);
 
         try {
+            fixQueryObject(query);
             query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             OpenCGAResult<Panel> result = panelDBAdaptor.get(study.getUid(), query, options, userId);
 
@@ -594,6 +610,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("field", new Query(query))
                 .append("query", new Query(query))
                 .append("token", token);
+        fixQueryObject(query);
         try {
             PanelDBAdaptor.QueryParams param = PanelDBAdaptor.QueryParams.getParam(field);
             if (param == null) {
@@ -629,6 +646,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("studyId", studyId)
                 .append("query", new Query(query))
                 .append("token", token);
+        fixQueryObject(query);
         try {
             query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
@@ -745,6 +763,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("params", params)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
+        fixQueryObject(finalQuery);
 
         // If the user is the owner or the admin, we won't check if he has permissions for every single entry
         boolean checkPermissions;
@@ -810,6 +829,8 @@ public class PanelManager extends ResourceManager<Panel> {
 
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.VIEW_PANELS);
 
+        fixQueryObject(query);
+
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
         query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
@@ -826,6 +847,7 @@ public class PanelManager extends ResourceManager<Panel> {
     public OpenCGAResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
+        fixQueryObject(query);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         if (fields == null || fields.size() == 0) {
             throw new CatalogException("Empty fields parameter.");
@@ -994,6 +1016,11 @@ public class PanelManager extends ResourceManager<Panel> {
             }
             throw e;
         }
+    }
+
+    protected void fixQueryObject(Query query) {
+        super.fixQueryObject(query);
+        changeQueryId(query, ParamConstants.PANEL_STATUS_PARAM, PanelDBAdaptor.QueryParams.STATUS_NAME.key());
     }
 
     void fillDefaultStats(Panel panel) {

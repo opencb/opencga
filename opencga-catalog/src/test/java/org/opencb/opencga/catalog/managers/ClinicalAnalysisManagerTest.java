@@ -1903,7 +1903,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         createDummyEnvironment(false, false);
 
         OpenCGAResult<ClinicalAnalysis> search = catalogManager.getClinicalAnalysisManager().search(STUDY,
-                new Query(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), "^chil"),
+                new Query(ParamConstants.CLINICAL_PROBAND_PARAM, "^chil"),
                 new QueryOptions(QueryOptions.INCLUDE, ClinicalAnalysisDBAdaptor.QueryParams.PROBAND_ID.key()), sessionIdUser);
         assertEquals(2, search.getNumResults());
         assertTrue(StringUtils.isNotEmpty(search.first().getProband().getId()));
@@ -2396,8 +2396,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertFalse(result.first().isPanelLock());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, clinicalAnalysis.getId(),
-                        new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(),
-                        sessionIdUser)
+                        new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser)
                 .first();
         assertEquals(2, interpretation.getPanels().size());
 
@@ -2431,8 +2430,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertTrue(result.first().isPanelLock());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, clinicalAnalysis.getId(),
-                        new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(),
-                        sessionIdUser)
+                        new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser)
                 .first();
         assertEquals(2, interpretation.getPanels().size());
 
@@ -2465,8 +2463,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertFalse(result.first().isPanelLock());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, clinicalAnalysis.getId(),
-                        new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(),
-                        sessionIdUser)
+                        new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser)
                 .first();
         assertEquals(2, interpretation.getPanels().size());
 
