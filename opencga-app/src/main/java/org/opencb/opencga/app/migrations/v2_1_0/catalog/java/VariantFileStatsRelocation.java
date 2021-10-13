@@ -18,7 +18,8 @@ import org.opencb.opencga.core.models.variant.VariantFileQualityControl;
 
 import java.util.Arrays;
 
-@Migration(id="move_variant_file_stats_to_qc", description = "Move opencga_file_variant_stats annotation set from variable sets to FileQualityControl", version = "2.1.0",
+@Migration(id = "move_variant_file_stats_to_qc", description = "Move opencga_file_variant_stats annotation set from variable sets to " +
+        "FileQualityControl", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
         patch = 1,
@@ -59,7 +60,7 @@ public class VariantFileStatsRelocation extends MigrationTool {
                         logger.info("Relocating variant stats from file {}", file.getId());
                         catalogManager.getFileManager().update(study.getFqn(), file.getId(),
                                 new FileUpdateParams().setQualityControl(
-                                        new FileQualityControl().setVariant(new VariantFileQualityControl(variantSetStats))),
+                                        new FileQualityControl().setVariant(new VariantFileQualityControl(variantSetStats, null))),
                                 new QueryOptions(options), token);
                     }
                 }

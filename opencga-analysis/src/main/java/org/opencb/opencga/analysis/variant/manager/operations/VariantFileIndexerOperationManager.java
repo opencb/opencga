@@ -104,14 +104,6 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         logger = LoggerFactory.getLogger(VariantFileIndexerOperationManager.class);
     }
 
-    private enum Type {
-        // AUTO, // TODO
-        TRANSFORM,
-        LOAD,
-        INDEX
-    }
-
-
     public List<StoragePipelineResult> index(String study, List<String> files, URI outDirUri, ObjectMap params, String token)
             throws Exception {
         this.files = files;
@@ -125,7 +117,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             logger.warn("Nothing to do.");
             return Collections.emptyList();
         }
-        
+
         return indexFiles(fileUris, token, params);
     }
 
@@ -177,8 +169,9 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     }
 
     /**
-     * We read all input files from fileId. This can either be a single file and then we just use it,
-     * or this can be a directory, in that case we use all VCF files in that directory or subdirectory
+     * We read all input files from fileId. This can either be a single file and then we just use it, or this can be a directory, in that
+     * case we use all VCF files in that directory or subdirectory
+     *
      * @param token
      * @return
      * @throws CatalogException
@@ -206,7 +199,8 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                     query.append(FileDBAdaptor.QueryParams.FORMAT.key(),
 //                            Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
                             Arrays.asList(File.Format.VCF, File.Format.GVCF));
-                    DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, FILE_GET_QUERY_OPTIONS, token);
+                    DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, FILE_GET_QUERY_OPTIONS,
+                            token);
 //                    fileDataResult.getResults().sort(Comparator.comparing(File::getName));
                     inputFiles.addAll(fileDataResult.getResults());
                 } else {
@@ -215,7 +209,6 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                 }
             }
         }
-
 
         // Update Catalog from the storage metadata. This may change the index status of the inputFiles .
         synchronizer.synchronizeCatalogFilesFromStorage(studyFqn, inputFiles, token, FILE_GET_QUERY_OPTIONS);
@@ -251,7 +244,6 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             default:
                 throw new IllegalArgumentException("Unknown step '" + step + "'.");
         }
-
 
         // Check that we are not indexing two or more files with the same name at the same time
         Set<String> fileNamesToIndexSet = new HashSet<>();
@@ -471,9 +463,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     }
 
     /**
-     * Updates the file stats from a transformed variant file.
-     * Reads the stats generated on the transform step.
-     *
+     * Updates the file stats from a transformed variant file. Reads the stats generated on the transform step.
      *
      * @param studyFqn
      * @param variantReaderUtils
@@ -501,7 +491,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                 .update(studyFqn, inputFile.getPath(),
                         new FileUpdateParams().setQualityControl(
                                 new FileQualityControl().setVariant(
-                                        new VariantFileQualityControl(stats))),
+                                        new VariantFileQualityControl(stats, null))),
                         new QueryOptions(),
                         token);
     }
@@ -532,7 +522,8 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
     private Cohort createDefaultCohort(String studyFqn, String sessionId) throws CatalogException {
         return catalogManager.getCohortManager().create(studyFqn, new CohortCreateParams(StudyEntry.DEFAULT_COHORT,
-                Enums.CohortType.COLLECTION, DEFAULT_COHORT_DESCRIPTION, null, null, Collections.emptyList(), null, null, null), null, null,
+                        Enums.CohortType.COLLECTION, DEFAULT_COHORT_DESCRIPTION, null, null, Collections.emptyList(), null, null, null),
+                null, null,
                 QueryOptions.empty(), sessionId).first();
     }
 
@@ -559,7 +550,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
      * Get non transformed files.
      *
      * @param fileList Files to filter
-     * @param resume If resume, get also TRANSFORMING and INDEXING files.
+     * @param resume   If resume, get also TRANSFORMING and INDEXING files.
      * @return List of non transformed files
      */
     private List<File> filterTransformFiles(List<File> fileList, boolean resume) throws StorageEngineException {
@@ -664,7 +655,8 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             }
 
             if (OperationManager.isVcfFormat(file)) {
-                String status = file.getInternal().getIndex() == null || file.getInternal().getIndex().getStatus() == null ? FileIndex.IndexStatus.NONE
+                String status = file.getInternal().getIndex() == null || file.getInternal().getIndex().getStatus() == null ?
+                        FileIndex.IndexStatus.NONE
                         : file.getInternal().getIndex().getStatus().getName();
                 switch (status) {
                     case FileIndex.IndexStatus.NONE:
@@ -704,13 +696,12 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             } else {
                 logger.warn("The input file is not a variant file. Format {}", file.getFormat());
             }
-
         }
         if (!transformedToOrigFileIdsMap.isEmpty()) {
             Query query = new Query(UID.key(), new ArrayList<>(transformedToOrigFileIdsMap.keySet()));
             Set<Long> foundTransformedFiles = new HashSet<>();
             catalogManager.getFileManager().iterator(studyFQN, query, new QueryOptions(QueryOptions.INCLUDE,
-                    Arrays.asList(UID.key(), FileDBAdaptor.QueryParams.URI.key())), sessionId)
+                            Arrays.asList(UID.key(), FileDBAdaptor.QueryParams.URI.key())), sessionId)
                     .forEachRemaining(transformed -> {
                         foundTransformedFiles.add(transformed.getUid());
                         fileUris.add(transformed.getUri());
@@ -731,7 +722,6 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                         + transformedToOrigFileIdsMap.values());
             }
         }
-
 
         return filteredFiles;
     }
@@ -790,5 +780,10 @@ public class VariantFileIndexerOperationManager extends OperationManager {
         return transformedFile;
     }
 
-
+    private enum Type {
+        // AUTO, // TODO
+        TRANSFORM,
+        LOAD,
+        INDEX
+    }
 }

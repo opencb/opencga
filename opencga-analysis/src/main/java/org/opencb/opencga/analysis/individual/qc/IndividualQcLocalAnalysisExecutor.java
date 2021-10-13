@@ -24,7 +24,6 @@ import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
@@ -34,7 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-@ToolExecutor(id="opencga-local", tool = IndividualQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
+@ToolExecutor(id = "opencga-local", tool = IndividualQcAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
 public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecutor implements StorageToolExecutor {
 
@@ -96,31 +95,7 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
         if (MapUtils.isEmpty(karyotypicSexThresholds)) {
             addWarning("Impossible to infer karyotypic sex beacause sex thresholds are empty");
         } else {
-            if (xAuto >= karyotypicSexThresholds.get("xx.xmin") && xAuto <= karyotypicSexThresholds.get("xx.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xx.ymin") && yAuto <= karyotypicSexThresholds.get("xx.ymax")) {
-                inferredKaryotypicSex = "XX";
-            } else if (xAuto >= karyotypicSexThresholds.get("xy.xmin") && xAuto <= karyotypicSexThresholds.get("xy.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xy.ymin") && yAuto <= karyotypicSexThresholds.get("xy.ymax")) {
-                inferredKaryotypicSex = "XY";
-            } else if (xAuto >= karyotypicSexThresholds.get("xo_clearcut.xmin") && xAuto <= karyotypicSexThresholds.get("xo_clearcut.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xo_clearcut.ymin") && yAuto <= karyotypicSexThresholds.get("xo_clearcut.ymax")) {
-                inferredKaryotypicSex = "XO";
-            } else if (xAuto >= karyotypicSexThresholds.get("xxy.xmin") && xAuto <= karyotypicSexThresholds.get("xxy.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xxy.ymin") && yAuto <= karyotypicSexThresholds.get("xxy.ymax")) {
-                inferredKaryotypicSex = "XXY";
-            } else if (xAuto >= karyotypicSexThresholds.get("xxx.xmin") && xAuto <= karyotypicSexThresholds.get("xxx.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xxx.ymin") && yAuto <= karyotypicSexThresholds.get("xxx.ymax")) {
-                inferredKaryotypicSex = "XXX";
-            } else if (xAuto >= karyotypicSexThresholds.get("xyy.xmin") && xAuto <= karyotypicSexThresholds.get("xyy.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xyy.ymin") && yAuto <= karyotypicSexThresholds.get("xyy.ymax")) {
-                inferredKaryotypicSex = "XYY";
-            } else if (xAuto >= karyotypicSexThresholds.get("xxxy.xmin") && xAuto <= karyotypicSexThresholds.get("xxxy.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xxxy.ymin") && yAuto <= karyotypicSexThresholds.get("xxxy.ymax")) {
-                inferredKaryotypicSex = "XXXY";
-            } else if (xAuto >= karyotypicSexThresholds.get("xyyy.xmin") && xAuto <= karyotypicSexThresholds.get("xyyy.xmax")
-                    && yAuto >= karyotypicSexThresholds.get("xyyy.ymin") && yAuto <= karyotypicSexThresholds.get("xyyy.ymax")) {
-                inferredKaryotypicSex = "XYYY";
-            }
+            inferredKaryotypicSex = InferredSexComputation.inferKaryotypicSex(xAuto, yAuto, karyotypicSexThresholds);
         }
 
         // Set coverage ratio
@@ -129,7 +104,7 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
         values.put("ratioY", yAuto);
 
         // Set inferred sex report (individual fields will be set later)
-        qualityControl.getInferredSexReports().add(new InferredSexReport("CoverageRatio", inferredKaryotypicSex, values,
+        qualityControl.getInferredSexReports().add(new InferredSexReport(sampleId, "CoverageRatio", inferredKaryotypicSex, values,
                 Collections.emptyList()));
     }
 
@@ -143,7 +118,7 @@ public class IndividualQcLocalAnalysisExecutor extends IndividualQcAnalysisExecu
                     fatherSampleId, variantStorageManager, getToken());
 
             // Set relatedness report
-            qualityControl.setMendelianErrorReport(mendelianErrorReport);
+            qualityControl.setMendelianErrorReports(Collections.singletonList(mendelianErrorReport));
         } catch (ToolException e) {
             addWarning("Skipping mendelian errors: " + e.getMessage());
             return;
