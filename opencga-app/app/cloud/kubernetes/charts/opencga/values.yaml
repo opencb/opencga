@@ -46,7 +46,7 @@ solr:
     image:
       repository: "library/solr" # TODO: Value not supported yet
       tag: 8.7.0
-    imagePullSecret: "" # TODO: Value not supported yet
+      imagePullSecret: ""
 
     javaMem: "-Xms1g -Xmx3g"
     opts: "-Dsolr.autoSoftCommit.maxTime=10000"

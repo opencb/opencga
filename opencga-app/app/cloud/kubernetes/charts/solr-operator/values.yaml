@@ -1,0 +1,10 @@
+
+#global:
+#  imagePullSecrets:
+#    - name: ""
+
+
+zookeeper-operator:
+  install: true
+  crd:
+    create: true
