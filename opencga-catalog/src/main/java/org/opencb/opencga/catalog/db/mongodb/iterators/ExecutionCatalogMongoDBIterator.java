@@ -32,7 +32,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.core.models.job.Execution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +40,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
-import static org.opencb.opencga.catalog.managers.AbstractManager.keepFieldInQueryOptions;
 
 public class ExecutionCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Execution> {
 
@@ -50,14 +48,11 @@ public class ExecutionCatalogMongoDBIterator extends BatchedCatalogMongoDBIterat
 
     private final ExecutionMongoDBAdaptor executionDBAdaptor;
     private final JobMongoDBAdaptor jobDBAdaptor;
-    private final QueryOptions executionQueryOptions = new QueryOptions(QueryOptions.INCLUDE,
-            Arrays.asList(ExecutionDBAdaptor.QueryParams.ID.key(), ExecutionDBAdaptor.QueryParams.UID.key(),
-                    ExecutionDBAdaptor.QueryParams.UUID.key(), ExecutionDBAdaptor.QueryParams.CREATION_DATE.key(),
-                    ExecutionDBAdaptor.QueryParams.STUDY_UID.key(), ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
-                    ExecutionDBAdaptor.QueryParams.PRIORITY.key()));
     private final FileMongoDBAdaptor fileDBAdaptor;
-    private final QueryOptions fileQueryOptions = FileManager.INCLUDE_FILE_URI_PATH;
-    private final QueryOptions jobQueryOptions = keepFieldInQueryOptions(JobManager.INCLUDE_JOB_IDS, JobDBAdaptor.QueryParams.PARAMS.key());
+
+    private final QueryOptions executionQueryOptions;
+    private final QueryOptions fileQueryOptions;
+    private final QueryOptions jobQueryOptions;
 
     private Logger logger = LoggerFactory.getLogger(ExecutionCatalogMongoDBIterator.class);
 
@@ -74,6 +69,15 @@ public class ExecutionCatalogMongoDBIterator extends BatchedCatalogMongoDBIterat
         this.executionDBAdaptor = executionDBAdaptor;
         this.jobDBAdaptor = jobDBAdaptor;
         this.fileDBAdaptor = fileDBAdaptor;
+
+        this.executionQueryOptions = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(ExecutionDBAdaptor.QueryParams.ID.key(), ExecutionDBAdaptor.QueryParams.UID.key(),
+                        ExecutionDBAdaptor.QueryParams.UUID.key(), ExecutionDBAdaptor.QueryParams.CREATION_DATE.key(),
+                        ExecutionDBAdaptor.QueryParams.MODIFICATION_DATE.key(), ExecutionDBAdaptor.QueryParams.STUDY_UID.key(),
+                        ExecutionDBAdaptor.QueryParams.INTERNAL.key(), ExecutionDBAdaptor.QueryParams.PRIORITY.key()))
+                .append(NATIVE_QUERY, true);
+        this.fileQueryOptions = FileManager.INCLUDE_FILE_URI_PATH;
+        this.jobQueryOptions = createJobQueryOptions();
 
         this.user = user;
         this.studyUid = studyUid;
@@ -246,5 +250,50 @@ public class ExecutionCatalogMongoDBIterator extends BatchedCatalogMongoDBIterat
             }
             job.put(param.key(), updatedfiles);
         }
+    }
+
+    private QueryOptions createJobQueryOptions() {
+//        QueryOptions queryOptions = new QueryOptions(NATIVE_QUERY, true);
+        QueryOptions queryOptions = new QueryOptions();
+
+        if (options.containsKey(QueryOptions.INCLUDE)) {
+            List<String> currentIncludeList = options.getAsStringList(QueryOptions.INCLUDE);
+            List<String> includeList = new ArrayList<>();
+            for (String include : currentIncludeList) {
+                if (include.startsWith(ExecutionDBAdaptor.QueryParams.JOBS.key() + ".")) {
+                    includeList.add(include.replace(ExecutionDBAdaptor.QueryParams.JOBS.key() + ".", ""));
+                }
+            }
+            if (!includeList.isEmpty()) {
+                // If we only have include uid there is no need for an additional query so we will set current options to native query
+                boolean includeAdditionalFields = includeList.stream().anyMatch(
+                        field -> !field.equals(JobDBAdaptor.QueryParams.UID.key())
+                );
+                if (includeAdditionalFields) {
+                    includeList.add(JobDBAdaptor.QueryParams.UID.key());
+                    queryOptions.put(QueryOptions.INCLUDE, includeList);
+                } else {
+                    // User wants to include fields already retrieved
+                    options.put(NATIVE_QUERY, true);
+                }
+            }
+        }
+        if (options.containsKey(QueryOptions.EXCLUDE)) {
+            List<String> currentExcludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+            List<String> excludeList = new ArrayList<>();
+            for (String exclude : currentExcludeList) {
+                if (exclude.startsWith(ExecutionDBAdaptor.QueryParams.JOBS.key() + ".")) {
+                    String replace = exclude.replace(ExecutionDBAdaptor.QueryParams.JOBS.key() + ".", "");
+                    if (!JobDBAdaptor.QueryParams.UID.key().equals(replace)) {
+                        excludeList.add(replace);
+                    }
+                }
+            }
+            if (!excludeList.isEmpty()) {
+                queryOptions.put(QueryOptions.EXCLUDE, excludeList);
+            }
+        }
+
+        return queryOptions;
     }
 }

@@ -34,12 +34,9 @@ import java.util.*;
  */
 public class ExecutionConverter extends OpenCgaMongoConverter<Execution> {
 
-    private final PipelineConverter pipelineConverter;
-
     public ExecutionConverter() {
         super(Execution.class);
         getObjectMapper().addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
-        this.pipelineConverter = new PipelineConverter();
     }
 
     @Override
@@ -47,7 +44,6 @@ public class ExecutionConverter extends OpenCgaMongoConverter<Execution> {
         Document document = super.convertToStorageType(object);
         document.put(MongoDBAdaptor.PRIVATE_UID, object.getUid());
         document.put(MongoDBAdaptor.PRIVATE_STUDY_UID, object.getStudyUid());
-        document.put(ExecutionDBAdaptor.QueryParams.PIPELINE.key(), pipelineConverter.convertToStorageType(object.getPipeline()));
         document.put(ExecutionDBAdaptor.QueryParams.OUT_DIR.key(), convertFileToDocument(object.getOutDir()));
 //        document.put(ExecutionDBAdaptor.QueryParams.INPUT.key(), convertFilesToDocument(object.getInput()));
 //        document.put(ExecutionDBAdaptor.QueryParams.OUTPUT.key(), convertFilesToDocument(object.getOutput()));

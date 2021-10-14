@@ -22,3 +22,5 @@ jobs:
     params:
       file: $PIPELINE.params.bamFile
   - id: "alignment-hsmetrics"
+    dependsOn:
+      - "alignment-stats"

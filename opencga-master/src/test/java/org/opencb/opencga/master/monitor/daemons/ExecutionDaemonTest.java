@@ -506,6 +506,31 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         for (Job job : executionResult.first().getJobs()) {
             assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getName());
         }
+        assertEquals(1, executionResult.first().getJobs().get(3).getDependsOn().size());
+        assertEquals(executionResult.first().getJobs().get(0).getId(),
+                executionResult.first().getJobs().get(3).getDependsOn().get(0).getId());
+    }
+
+    @Test
+    public void executionToolTest() throws CatalogException, URISyntaxException {
+        String bamUri = getClass().getResource("/biofiles/HG00096.chrom20.small.bam").toURI().toString();
+        catalogManager.getFileManager().link(studyFqn, new FileLinkParams().setUri(bamUri).setPath("."), false, token);
+
+        // Submit an alignment-qc execution
+        Map<String, Object> params = new HashMap<>();
+        params.put("bamFile", "HG00096.chrom20.small.bam");
+        params.put("bedFile", "HG00096.chrom20.small.bam");
+        params.put("dictFile", "HG00096.chrom20.small.bam");
+        OpenCGAResult<Execution> executionResult = catalogManager.getExecutionManager().submitTool(studyFqn,
+                AlignmentQcAnalysis.ID, Enums.Priority.MEDIUM, params, "", "", null, null, token);
+
+        executionResult = catalogManager.getExecutionManager().get(studyFqn, executionResult.first().getId(), QueryOptions.empty(), token);
+        assertEquals(1, executionResult.getNumResults());
+        assertEquals(Enums.ExecutionStatus.PROCESSED, executionResult.first().getInternal().getStatus().getName());
+        assertEquals(1, executionResult.first().getJobs().size());
+        for (Job job : executionResult.first().getJobs()) {
+            assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getName());
+        }
     }
 
     private Job getJob(String jobId) throws CatalogException {
