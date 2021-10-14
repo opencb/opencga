@@ -320,7 +320,7 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    private void autoCompleteNewJob(Study study, Job job, String token) throws CatalogException {
+    void autoCompleteNewJob(Study study, Job job, String token) throws CatalogException {
         autoCompleteNewJob(study, job, token, false);
     }
 

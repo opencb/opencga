@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -185,13 +186,15 @@ public class ExecutionManager extends ResourceManager<Execution> {
                 .append("tags", tags)
                 .append("token", token);
 
-        Execution execution = new Execution();
+        Execution execution = new Execution(id, description, userId, TimeUtils.getTime(), params, priority, tags, null, false,
+                new ObjectMap());
+        execution.setStudy(new JobStudyParam(study.getFqn()));
+        execution.setUserId(userId);
+        execution.setPriority(priority);
 
         try {
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTE_JOBS);
 
-            Pipeline pipeline = null;
-            String toolId = null;
             if (resourceId.startsWith("PIPELINE__")) {
                 String pipelineId = resourceId.replace("PIPELINE__", "");
                 ParamUtils.checkParameter(pipelineId, "pipelineId");
@@ -201,24 +204,20 @@ public class ExecutionManager extends ResourceManager<Execution> {
                 if (pipelineOpenCGAResult.getNumResults() == 0) {
                     throw new CatalogException("Pipeline '" + pipelineId + "' not found.");
                 }
-                pipeline = pipelineOpenCGAResult.first();
+                Pipeline pipeline = pipelineOpenCGAResult.first();
+
+                execution.setPipeline(pipeline);
+                execution.setIsPipeline(true);
+                autoCompleteNewExecution(study, execution, null, token);
             } else if (resourceId.startsWith("TOOL__")) {
-                toolId = resourceId.replace("TOOL__", "");
+                String toolId = resourceId.replace("TOOL__", "");
                 ParamUtils.checkParameter(toolId, "toolId");
 
-                // TODO: Check toolId exists
+                autoCompleteNewExecution(study, execution, toolId, token);
+                createJobExecution(study, execution, toolId, dependsOn, token);
             } else {
                 throw new CatalogException("Expected TOOL or PIPELINE prefix for id: '" + resourceId + "'");
             }
-
-            execution = new Execution(id, description, userId, toolId, TimeUtils.getTime(), params, priority, tags, pipeline,
-                    pipeline != null, new ObjectMap());
-
-            execution.setStudy(new JobStudyParam(study.getFqn()));
-            execution.setUserId(userId);
-            execution.setPriority(priority);
-
-            autoCompleteNewExecution(study, execution, toolId, token);
 
             executionDBAdaptor.insert(study.getUid(), execution, new QueryOptions());
             OpenCGAResult<Execution> executionResult = executionDBAdaptor.get(execution.getUid(), new QueryOptions());
@@ -244,6 +243,24 @@ public class ExecutionManager extends ResourceManager<Execution> {
 
             throw e;
         }
+    }
+
+    private void createJobExecution(Study study, Execution execution, String toolId, List<String> dependsOn, String token)
+            throws CatalogException {
+        // Create job and validate it
+        Job job = new Job("", "", execution.getDescription(), execution.getId(), new ToolInfo().setId(toolId), execution.getUserId(), null,
+                execution.getParams(), null, null, execution.getPriority(), null, null, null, null,
+                CollectionUtils.isNotEmpty(dependsOn)
+                        ? dependsOn.stream().map(dpo -> new Job().setId(dpo)).collect(Collectors.toList())
+                        : null,
+                execution.getTags(), null, false, null, null, 0, null, null);
+        catalogManager.getJobManager().autoCompleteNewJob(study, job, token);
+
+        // Change execution status to PROCESSED
+        execution.getInternal().getStatus().setName(Enums.ExecutionStatus.PROCESSED);
+
+        // Add job to execution
+        execution.setJobs(Collections.singletonList(job));
     }
 
     private void autoCompleteNewExecution(Study study, Execution execution, String toolId, String token) throws CatalogException {
@@ -351,7 +368,9 @@ public class ExecutionManager extends ResourceManager<Execution> {
 
             ObjectMap updateMap;
             try {
-                updateMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(internal));
+                String jsonString = getUpdateObjectMapper().writeValueAsString(internal);
+                ObjectMap internalObjectMap = getUpdateObjectMapper().readValue(jsonString, ObjectMap.class);
+                updateMap = new ObjectMap(ExecutionDBAdaptor.QueryParams.INTERNAL.key(), internalObjectMap);
             } catch (JsonProcessingException e) {
                 throw new CatalogException("Could not parse ExecutionInternal object: " + e.getMessage(), e);
             }

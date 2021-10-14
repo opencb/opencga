@@ -51,7 +51,7 @@ public interface ExecutionDBAdaptor extends CoreDBAdaptor<Execution> {
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
      * be applied.
      *
-     * @param studyId study id containing the entries affected.
+     * @param studyId          study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
      * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.
@@ -62,10 +62,14 @@ public interface ExecutionDBAdaptor extends CoreDBAdaptor<Execution> {
         ID("id", TEXT, ""),
         UID(MongoDBAdaptor.PRIVATE_UID, LONG, ""),
         UUID("uuid", TEXT, ""),
+        DESCRIPTION("description", TEXT, ""),
         USER_ID("userId", TEXT, ""),
+        TOOL_ID("toolId", TEXT, ""),
         PARAMS("params", MAP, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
+
+        VISITED("visited", BOOLEAN, ""),
 
         PIPELINE("pipeline", OBJECT, ""),
         PIPELINE_ID("pipeline.id", TEXT, ""),
@@ -76,6 +80,8 @@ public interface ExecutionDBAdaptor extends CoreDBAdaptor<Execution> {
         INTERNAL("internal", OBJECT, ""),
         INTERNAL_STATUS("internal.status", OBJECT, ""),
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DESCRIPTION("internal.status.description", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         INTERNAL_WEBHOOK("internal.webhook", OBJECT, ""),
         INTERNAL_EVENTS("internal.events", OBJECT, ""),
         OUT_DIR("outDir", OBJECT, ""),
@@ -92,9 +98,13 @@ public interface ExecutionDBAdaptor extends CoreDBAdaptor<Execution> {
         RELEASE("release", INTEGER, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
 
+        STUDY("study", OBJECT, ""),
+        STUDY_ID("study.id", TEXT, ""),
+        STUDY_OTHERS("study.others", TEXT, ""),
         STUDY_UID(MongoDBAdaptor.PRIVATE_STUDY_UID, LONG, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
+
         static {
             for (QueryParams params : QueryParams.values()) {
                 map.put(params.key(), params);

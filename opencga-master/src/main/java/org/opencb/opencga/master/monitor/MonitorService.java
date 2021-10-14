@@ -75,8 +75,7 @@ public class MonitorService {
         this.catalogManager = new CatalogManager(this.configuration);
         String nonExpiringToken = this.catalogManager.getUserManager().getAdminNonExpiringToken(token);
 
-        executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken,
-                catalogManager, appHome);
+        executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken, catalogManager);
 //            fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(),
 //                    configuration.getMonitor().getDaysToRemove(), nonExpiringToken, catalogManager);
 

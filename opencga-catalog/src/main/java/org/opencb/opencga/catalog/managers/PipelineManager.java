@@ -149,11 +149,10 @@ public class PipelineManager extends ResourceManager<Pipeline> {
         }
         pipeline.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(pipeline.getModificationDate(),
                 PipelineDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
-        for (Pipeline.JobDefinition job : pipeline.getJobs()) {
-            job.setToolId(ParamUtils.defaultString(job.getToolId(), ""));
+        for (Pipeline.PipelineJob job : pipeline.getJobs()) {
+            job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
             job.setParams(ParamUtils.defaultObject(job.getParams(), ObjectMap::new));
-            job.setInput(ParamUtils.defaultObject(job.getInput(), Collections::emptyList));
-            job.setOutput(ParamUtils.defaultObject(job.getOutput(), Collections::emptyList));
+            job.setTags(ParamUtils.defaultObject(job.getTags(), Collections::emptyList));
             job.setDependsOn(ParamUtils.defaultObject(job.getDependsOn(), Collections::emptyList));
         }
         // TODO: Validate pipeline in general is correct

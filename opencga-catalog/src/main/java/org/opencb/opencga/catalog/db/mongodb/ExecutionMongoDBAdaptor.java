@@ -4,24 +4,24 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ExecutionDBAdaptor;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ExecutionConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.ExecutionCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -31,12 +31,16 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.job.Execution;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobAclEntry;
+import org.opencb.opencga.core.models.job.JobInternalWebhook;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
@@ -89,10 +93,10 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
         }
     }
 
-    long insert(ClientSession clientSession, long studyId, Execution execution) throws CatalogDBException {
+    long insert(ClientSession clientSession, long studyUid, Execution execution) throws CatalogDBException {
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), execution.getId()));
-        filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
+        filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyUid));
 
         Bson bson = Filters.and(filterList);
         DataResult<Long> count = executionCollection.count(clientSession, bson);
@@ -101,9 +105,17 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
             throw new CatalogDBException("Execution { id: '" + execution.getId() + "'} already exists.");
         }
 
+        if (CollectionUtils.isNotEmpty(execution.getJobs())) {
+            for (Job job : execution.getJobs()) {
+                // Create jobs
+                long jobUid = dbAdaptorFactory.getCatalogJobDBAdaptor().insert(clientSession, studyUid, job);
+                job.setUid(jobUid);
+            }
+        }
+
         long executionUid = getNewUid();
         execution.setUid(executionUid);
-        execution.setStudyUid(studyId);
+        execution.setStudyUid(studyUid);
         if (StringUtils.isEmpty(execution.getUuid())) {
             execution.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.EXECUTION));
         }
@@ -119,7 +131,7 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
         executionObject.put(PRIVATE_MODIFICATION_DATE, executionObject.get(PRIVATE_CREATION_DATE));
 //        executionObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 //        executionObject.put(PRIVATE_PRIORITY, execution.getPriority().getValue());
-        executionObject.put(PRIVATE_STUDY_UIDS, Collections.singletonList(studyId));
+        executionObject.put(PRIVATE_STUDY_UIDS, Collections.singletonList(studyUid));
 
         logger.debug("Inserting execution '{}' ({})...", execution.getId(), execution.getUid());
         executionCollection.insert(clientSession, executionObject, null);
@@ -240,15 +252,202 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
     }
 
     @Override
-    public OpenCGAResult<Execution> update(long id, ObjectMap parameters, QueryOptions queryOptions)
+    public OpenCGAResult<Execution> update(long uid, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return null;
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
+        OpenCGAResult<Execution> dataResult = get(uid, options);
+
+        if (dataResult.getNumResults() == 0) {
+            throw new CatalogDBException("Could not update execution. Execution uid '" + uid + "' not found.");
+        }
+
+        try {
+            return runTransaction(session -> privateUpdate(session, dataResult.first(), parameters, queryOptions));
+        } catch (CatalogDBException e) {
+            logger.error("Could not update execution {}: {}", dataResult.first().getId(), e.getMessage(), e);
+            throw new CatalogDBException("Could not update execution " + dataResult.first().getId() + ": " + e.getMessage(), e.getCause());
+        }
     }
 
     @Override
     public OpenCGAResult<Execution> update(Query query, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return null;
+        if (parameters.containsKey(QueryParams.ID.key())) {
+            // We need to check that the update is only performed over 1 single execution
+            if (count(query).getNumMatches() != 1) {
+                throw new CatalogDBException("Operation not supported: '" + QueryParams.ID.key() + "' can only be updated for one"
+                        + " execution");
+            }
+        }
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
+        DBIterator<Execution> iterator = iterator(query, options);
+
+        OpenCGAResult<Execution> result = OpenCGAResult.empty();
+
+        while (iterator.hasNext()) {
+            Execution execution = iterator.next();
+            try {
+                result.append(runTransaction(session -> privateUpdate(session, execution, parameters, queryOptions)));
+            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
+                logger.error("Could not update execution {}: {}", execution.getId(), e.getMessage(), e);
+                result.getEvents().add(new Event(Event.Type.ERROR, execution.getId(), e.getMessage()));
+                result.setNumMatches(result.getNumMatches() + 1);
+            }
+        }
+        return result;
+    }
+
+    OpenCGAResult<Execution> privateUpdate(ClientSession clientSession, Execution execution, ObjectMap parameters, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        long tmpStartTime = startQuery();
+
+        Document executionParameters = parseAndValidateUpdateParams(parameters, options).toFinalUpdateDocument();
+        if (executionParameters.isEmpty()) {
+            if (!parameters.isEmpty()) {
+                logger.error("Non-processed update parameters: {}", parameters.keySet());
+            }
+            throw new CatalogDBException("Nothing to update. Empty 'parameters' object");
+        }
+
+        Query tmpQuery = new Query()
+                .append(QueryParams.STUDY_UID.key(), execution.getStudyUid())
+                .append(QueryParams.UID.key(), execution.getUid());
+        Bson finalQuery = parseQuery(tmpQuery, options);
+
+        logger.debug("Execution update: query : {}, update: {}",
+                finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                executionParameters.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        DataResult result = executionCollection.update(clientSession, finalQuery, executionParameters, null);
+
+        if (result.getNumMatches() == 0) {
+            throw new CatalogDBException("Execution " + execution.getId() + " not found");
+        }
+        List<Event> events = new ArrayList<>();
+        if (result.getNumUpdated() == 0) {
+            events.add(new Event(Event.Type.WARNING, execution.getId(), "Nothing updated. Execution already had those values"));
+        }
+        logger.debug("Execution {} successfully updated", execution.getId());
+
+        return endWrite(tmpStartTime, 1, 1, events);
+    }
+
+    private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, QueryOptions options) throws CatalogDBException {
+        UpdateDocument document = new UpdateDocument();
+
+        String[] acceptedParams = {QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(), QueryParams.USER_ID.key(),
+                QueryParams.TOOL_ID.key()};
+        filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        String[] acceptedBooleanParams = {QueryParams.IS_PIPELINE.key(), QueryParams.VISITED.key()};
+        filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
+
+        String[] acceptedStringListParams = {QueryParams.TAGS.key()};
+        filterStringListParams(parameters, document.getSet(), acceptedStringListParams);
+
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DESCRIPTION.key(), "");
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
+        }
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_DESCRIPTION.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DESCRIPTION.key(),
+                    parameters.get(QueryParams.INTERNAL_STATUS_DESCRIPTION.key()));
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
+        }
+
+        if (parameters.containsKey(QueryParams.INTERNAL_WEBHOOK.key())) {
+            Object value = parameters.get(QueryParams.INTERNAL_WEBHOOK.key());
+            if (value instanceof JobInternalWebhook) {
+                document.getSet().put(QueryParams.INTERNAL_WEBHOOK.key(), getMongoDBDocument(value, "JobInternalWebhook"));
+            } else {
+                document.getSet().put(QueryParams.INTERNAL_WEBHOOK.key(), value);
+            }
+        }
+
+        if (parameters.containsKey(QueryParams.INTERNAL_EVENTS.key())) {
+            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.INTERNAL_EVENTS.key(),
+                    ParamUtils.BasicUpdateAction.ADD);
+            String[] acceptedObjectParams = new String[]{QueryParams.INTERNAL_EVENTS.key()};
+            switch (operation) {
+                case SET:
+                    filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+                    break;
+                case REMOVE:
+                    filterObjectParams(parameters, document.getPullAll(), acceptedObjectParams);
+                    break;
+                case ADD:
+                    filterObjectParams(parameters, document.getAddToSet(), acceptedObjectParams);
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown operation " + operation);
+            }
+        }
+
+//        if (parameters.containsKey(QueryParams.INPUT.key())) {
+//            List<Object> fileList = parameters.getList(QueryParams.INPUT.key());
+//            document.getSet().put(QueryParams.INPUT.key(), jobConverter.convertFilesToDocument(fileList));
+//        }
+//        if (parameters.containsKey(QueryParams.OUTPUT.key())) {
+//            List<Object> fileList = parameters.getList(QueryParams.OUTPUT.key());
+//            document.getSet().put(QueryParams.OUTPUT.key(), jobConverter.convertFilesToDocument(fileList));
+//        }
+        if (parameters.containsKey(QueryParams.OUT_DIR.key())) {
+            document.getSet().put(QueryParams.OUT_DIR.key(),
+                    executionConverter.convertFileToDocument(parameters.get(QueryParams.OUT_DIR.key())));
+        }
+        if (parameters.containsKey(QueryParams.STDOUT.key())) {
+            document.getSet().put(QueryParams.STDOUT.key(),
+                    executionConverter.convertFileToDocument(parameters.get(QueryParams.STDOUT.key())));
+        }
+        if (parameters.containsKey(QueryParams.STDERR.key())) {
+            document.getSet().put(QueryParams.STDERR.key(),
+                    executionConverter.convertFileToDocument(parameters.get(QueryParams.STDERR.key())));
+        }
+
+        if (parameters.containsKey(QueryParams.PRIORITY.key())) {
+            document.getSet().put(QueryParams.PRIORITY.key(), parameters.getString(QueryParams.PRIORITY.key()));
+            document.getSet().put(PRIVATE_PRIORITY,
+                    Enums.Priority.getPriority(parameters.getString(QueryParams.PRIORITY.key())).getValue());
+        }
+
+        String[] acceptedObjectParams = {QueryParams.PIPELINE.key(), QueryParams.STUDY.key()};
+        filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+
+        if (document.getSet().containsKey(QueryParams.STUDY.key())) {
+            List<String> studyFqns = new LinkedList<>();
+            studyFqns.add(parameters.getString(QueryParams.STUDY_ID.key()));
+            studyFqns.addAll(parameters.getAsStringList(QueryParams.STUDY_OTHERS.key()));
+            Query query = new Query(StudyDBAdaptor.QueryParams.FQN.key(), studyFqns);
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UID.key());
+            OpenCGAResult<Study> studyResults = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(query, queryOptions);
+            if (studyResults.getNumResults() < studyFqns.size()) {
+                throw new CatalogDBException("Unable to find some studies from '" + studyFqns + "'");
+            }
+
+            // Add uids to others array
+            document.getSet().put(PRIVATE_STUDY_UIDS,
+                    studyResults.getResults().stream().map(Study::getUid).collect(Collectors.toList()));
+        }
+
+        String[] acceptedMapParams = {QueryParams.PARAMS.key(), QueryParams.ATTRIBUTES.key()};
+        filterMapParams(parameters, document.getSet(), acceptedMapParams);
+
+        if (!document.toFinalUpdateDocument().isEmpty()) {
+            String time = TimeUtils.getTime();
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
+        }
+
+        return document;
     }
 
     void updateJobList(ClientSession clientSession, long studyUid, String executionId, List<Job> jobList)
@@ -358,7 +557,7 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
             List<String> sortList = options.getAsStringList(QueryOptions.SORT);
             List<String> fixedSortList = new ArrayList<>(sortList.size());
             for (String key : sortList) {
-                if (key.startsWith(JobDBAdaptor.QueryParams.PRIORITY.key())) {
+                if (key.startsWith(QueryParams.PRIORITY.key())) {
                     String[] priorityArray = key.split(":");
                     if (priorityArray.length == 1) {
                         fixedSortList.add(PRIVATE_PRIORITY);

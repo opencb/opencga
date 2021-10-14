@@ -23,7 +23,7 @@ public class Pipeline extends PrivateStudyUid {
 
     private Map<String, Object> params;
     private Options options;
-    private List<JobDefinition> jobs;
+    private List<PipelineJob> jobs;
 
     private static final String DEFAULT_PIPELINE_FORMAT = "yaml";
 
@@ -31,7 +31,7 @@ public class Pipeline extends PrivateStudyUid {
     }
 
     public Pipeline(String id, String uuid, String description, boolean disabled, int version, Map<String, Object> params, Options options,
-                    List<JobDefinition> jobs) {
+                    List<PipelineJob> jobs) {
         this.id = id;
         this.uuid = uuid;
         this.description = description;
@@ -160,11 +160,11 @@ public class Pipeline extends PrivateStudyUid {
         return this;
     }
 
-    public List<JobDefinition> getJobs() {
+    public List<PipelineJob> getJobs() {
         return jobs;
     }
 
-    public Pipeline setJobs(List<JobDefinition> jobs) {
+    public Pipeline setJobs(List<PipelineJob> jobs) {
         this.jobs = jobs;
         return this;
     }
@@ -232,39 +232,32 @@ public class Pipeline extends PrivateStudyUid {
         }
     }
 
-    public static class JobDefinition {
+    public static class PipelineJob {
 
         private String id;
-        private String toolId;
         private String description;
         private Map<String, Object> params;
-        private List<String> input;
-        private List<String> output;
+        private List<String> tags;
         private List<String> dependsOn;
 
-        public JobDefinition() {
+        public PipelineJob() {
         }
 
-        public JobDefinition(String id, String toolId, String description, Map<String, Object> params, List<String> input,
-                             List<String> output, List<String> dependsOn) {
+        public PipelineJob(String id, String description, Map<String, Object> params, List<String> tags, List<String> dependsOn) {
             this.id = id;
-            this.toolId = toolId;
             this.description = description;
             this.params = params;
-            this.input = input;
-            this.output = output;
+            this.tags = tags;
             this.dependsOn = dependsOn;
         }
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("Job{");
+            final StringBuilder sb = new StringBuilder("PipelineJob{");
             sb.append("id='").append(id).append('\'');
-            sb.append(", toolId='").append(toolId).append('\'');
             sb.append(", description='").append(description).append('\'');
             sb.append(", params=").append(params);
-            sb.append(", input=").append(input);
-            sb.append(", output=").append(output);
+            sb.append(", tags=").append(tags);
             sb.append(", dependsOn=").append(dependsOn);
             sb.append('}');
             return sb.toString();
@@ -274,17 +267,8 @@ public class Pipeline extends PrivateStudyUid {
             return id;
         }
 
-        public JobDefinition setId(String id) {
+        public PipelineJob setId(String id) {
             this.id = id;
-            return this;
-        }
-
-        public String getToolId() {
-            return toolId;
-        }
-
-        public JobDefinition setToolId(String toolId) {
-            this.toolId = toolId;
             return this;
         }
 
@@ -292,7 +276,7 @@ public class Pipeline extends PrivateStudyUid {
             return description;
         }
 
-        public JobDefinition setDescription(String description) {
+        public PipelineJob setDescription(String description) {
             this.description = description;
             return this;
         }
@@ -301,26 +285,17 @@ public class Pipeline extends PrivateStudyUid {
             return params;
         }
 
-        public JobDefinition setParams(Map<String, Object> params) {
+        public PipelineJob setParams(Map<String, Object> params) {
             this.params = params;
             return this;
         }
 
-        public List<String> getInput() {
-            return input;
+        public List<String> getTags() {
+            return tags;
         }
 
-        public JobDefinition setInput(List<String> input) {
-            this.input = input;
-            return this;
-        }
-
-        public List<String> getOutput() {
-            return output;
-        }
-
-        public JobDefinition setOutput(List<String> output) {
-            this.output = output;
+        public PipelineJob setTags(List<String> tags) {
+            this.tags = tags;
             return this;
         }
 
@@ -328,7 +303,7 @@ public class Pipeline extends PrivateStudyUid {
             return dependsOn;
         }
 
-        public JobDefinition setDependsOn(List<String> dependsOn) {
+        public PipelineJob setDependsOn(List<String> dependsOn) {
             this.dependsOn = dependsOn;
             return this;
         }

@@ -292,7 +292,7 @@ public final class Enums {
         public static final String UNREGISTERED = "UNREGISTERED";
 
 
-        public static final List<String> STATUS_LIST = Arrays.asList(PENDING, QUEUED, RUNNING, DONE, ERROR, UNKNOWN, REGISTERING,
+        public static final List<String> STATUS_LIST = Arrays.asList(PENDING, PROCESSED, QUEUED, RUNNING, DONE, ERROR, UNKNOWN, REGISTERING,
                 UNREGISTERED, ABORTED, DELETED);
 
         public ExecutionStatus(String status, String message) {
