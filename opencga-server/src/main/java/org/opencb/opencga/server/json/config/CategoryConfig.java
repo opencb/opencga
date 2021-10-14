@@ -7,7 +7,9 @@ public class CategoryConfig {
     private String name;
     private boolean ignore;
     private String key;
-    private boolean extended;
+    private boolean executorExtended;
+    private boolean optionExtended;
+    private List<String> addedMethods;
     private List<Shortcut> shortcuts;
     private List<Command> commands;
     private String commandName;
@@ -15,15 +17,50 @@ public class CategoryConfig {
     private boolean operations;
 
     public CategoryConfig() {
+
     }
 
-    public CategoryConfig(String name, boolean ignore, String key, boolean extended, List<Shortcut> shortcuts, List<Command> commands) {
+    public CategoryConfig(String name, boolean ignore, String key, boolean executorExtended, boolean optionExtended,
+                          List<String> addedMethods, List<Shortcut> shortcuts, List<Command> commands, String commandName,
+                          boolean analysis, boolean operations) {
         this.name = name;
         this.ignore = ignore;
         this.key = key;
-        this.extended = extended;
+        this.executorExtended = executorExtended;
+        this.optionExtended = optionExtended;
+        this.addedMethods = addedMethods;
         this.shortcuts = shortcuts;
         this.commands = commands;
+        this.commandName = commandName;
+        this.analysis = analysis;
+        this.operations = operations;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("CategoryConfig{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", ignore=").append(ignore);
+        sb.append(", key='").append(key).append('\'');
+        sb.append(", executorExtended=").append(executorExtended);
+        sb.append(", optionExtended=").append(optionExtended);
+        sb.append(", addedMethods=").append(addedMethods);
+        sb.append(", shortcuts=").append(shortcuts);
+        sb.append(", commands=").append(commands);
+        sb.append(", commandName='").append(commandName).append('\'');
+        sb.append(", analysis=").append(analysis);
+        sb.append(", operations=").append(operations);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public List<String> getAddedMethods() {
+        return addedMethods;
+    }
+
+    public CategoryConfig setAddedMethods(List<String> addedMethods) {
+        this.addedMethods = addedMethods;
+        return this;
     }
 
     public String getName() {
@@ -53,12 +90,21 @@ public class CategoryConfig {
         return this;
     }
 
-    public boolean isExtended() {
-        return extended;
+    public boolean isExecutorExtended() {
+        return executorExtended;
     }
 
-    public CategoryConfig setExtended(boolean extended) {
-        this.extended = extended;
+    public CategoryConfig setExecutorExtended(boolean executorExtended) {
+        this.executorExtended = executorExtended;
+        return this;
+    }
+
+    public boolean isOptionExtended() {
+        return optionExtended;
+    }
+
+    public CategoryConfig setOptionExtended(boolean optionExtended) {
+        this.optionExtended = optionExtended;
         return this;
     }
 
@@ -118,12 +164,23 @@ public class CategoryConfig {
         return true;
     }
 
-    public boolean isAvailableSubCommand(String name) {
+    public boolean isExtendedOptionCommand(String commandName) {
+        if (commands != null) {
+            for (Command cmd : commands) {
+                if (cmd.getName().equals(commandName) && cmd.isOptionExtended()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean isAvailableSubCommand(String sbname) {
         if (commands != null) {
             for (Command cmd : commands) {
                 if (cmd.getSubcommands() != null) {
                     for (Subcommand subcmd : cmd.getSubcommands()) {
-                        if (subcmd.getName().equals(commandName) && subcmd.isIgnore()) {
+                        if (subcmd.getName().equals(sbname) && subcmd.isIgnore()) {
                             return false;
                         }
                     }
@@ -133,11 +190,11 @@ public class CategoryConfig {
         return true;
     }
 
-    public boolean isExtendedCommand(String commandName) {
+    public boolean isExecutorExtendedCommand(String commandName) {
         if (commands != null) {
             for (Command cmd : commands) {
                 if (cmd.getName().equals(commandName)) {
-                    return cmd.isExtended();
+                    return cmd.isExecutorExtended();
                 }
             }
         }

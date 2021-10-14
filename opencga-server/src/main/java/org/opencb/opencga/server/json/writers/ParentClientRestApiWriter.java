@@ -119,6 +119,8 @@ public abstract class ParentClientRestApiWriter {
         validTypes.put("java.lang.Short", "int");
         validTypes.put("java.lang.Double", "int");
         validTypes.put("java.lang.Float", "int");
+        validTypes.put("List", "String");
+        validTypes.put("java.util.List", "String");
     }
 
     public String getValidValue(String key) {

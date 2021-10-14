@@ -6,6 +6,7 @@ import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.Parameter;
 import org.opencb.opencga.server.json.beans.RestApi;
+import org.opencb.opencga.server.json.utils.CommandLineUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,6 +143,11 @@ public class RestApiParser {
                                                 innerParam.setAllowedValues("");
                                                 innerParam.setRequired(false);
                                                 innerParam.setDefaultValue("");
+                                                innerParam.setComplex(!CommandLineUtils.isPrimitiveType(declaredField.getType().getSimpleName()));
+
+                                                if (innerParam.isList()) {
+                                                    innerParam.setGenericType(declaredField.getGenericType().getTypeName());
+                                                }
                                                 String fieldName = variablePrefix
                                                         + declaredField.getName().toUpperCase();
                                                 fieldName = normalize(fieldName);
@@ -153,20 +159,6 @@ public class RestApiParser {
                                                             "The body web service " + declaredField.getName() + " "
                                                                     + "parameter");
                                                 }
-
-                                               /* if (!fieldNames.keySet().contains(fieldName)) {
-                                                    fieldNames.put(fieldName, path);
-                                                    System.out.println(" public static final String " + fieldName + "=\"The body web " +
-                                                            "service " +
-                                                            declaredField.getName() + " parameter\";");
-                                                } else {
-                                                    // System.out.println("=============" + fieldName + "=================");
-                                                    // System.out.println("variable " + fieldName + " con path " + path);
-                                                    // System.out.println("variable " + fieldName + " con path " + fieldNames.get
-                                                    // (fieldName));
-                                                    // System.out.println("=============" + fieldName + "=================\n\n");
-                                                }
-                                                */
                                                 bodyParams.add(innerParam);
                                             }
                                         }
@@ -312,20 +304,6 @@ public class RestApiParser {
                                                             "The body web service " + declaredField.getName() + " "
                                                                     + "parameter");
                                                 }
-
-                                               /* if (!fieldNames.keySet().contains(fieldName)) {
-                                                    fieldNames.put(fieldName, path);
-                                                    System.out.println(" public static final String " + fieldName + "=\"The body web " +
-                                                            "service " +
-                                                            declaredField.getName() + " parameter\";");
-                                                } else {
-                                                    // System.out.println("=============" + fieldName + "=================");
-                                                    // System.out.println("variable " + fieldName + " con path " + path);
-                                                    // System.out.println("variable " + fieldName + " con path " + fieldNames.get
-                                                    // (fieldName));
-                                                    // System.out.println("=============" + fieldName + "=================\n\n");
-                                                }
-                                                */
                                                 bodyParams.add(innerParams);
                                             }
                                         }

@@ -15,6 +15,8 @@ public class Parameter {
     private List<Parameter> data;
     private String allowedValues;
     private int position;
+    private boolean complex;
+    private String genericType;
 
     @Deprecated
     public List<Parameter> getAvailableData() {
@@ -39,6 +41,8 @@ public class Parameter {
         sb.append(", data=").append(data);
         sb.append(", allowedValues='").append(allowedValues).append('\'');
         sb.append(", position=").append(position);
+        sb.append(", complex=").append(complex);
+        sb.append(", genericType='").append(genericType).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -133,4 +137,34 @@ public class Parameter {
         return this;
     }
 
+    public boolean isComplex() {
+        return complex;
+    }
+
+    public Parameter setComplex(boolean complex) {
+        this.complex = complex;
+        return this;
+    }
+
+    public String getGenericType() {
+        return genericType;
+    }
+
+    public Parameter setGenericType(String genericType) {
+        this.genericType = genericType;
+        return this;
+    }
+
+    public boolean isStringList() {
+        return isList() && "java.util.List<java.lang.String>".equals(getGenericType());
+    }
+
+    public boolean isList() {
+
+        return isComplex() && "List".equals(getType());
+    }
+
+    public boolean isAvailableType() {
+        return (!isComplex() || isStringList());
+    }
 }

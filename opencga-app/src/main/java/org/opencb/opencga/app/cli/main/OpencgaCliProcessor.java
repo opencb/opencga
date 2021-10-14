@@ -60,12 +60,18 @@ public class OpencgaCliProcessor {
             return;
         }
 
-        if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1])) {
+        //login The first if clause is for scripting login method and the else clause is for the shell login
+        if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1]) && argsContains(args, "--user-password")) {
+            if (!argsContains(args, "--help") && !argsContains(args, "-h")) {
+                args = getUserPasswordArgs(args, "--user-password");
+            }
+        } else if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1])) {
             if (!argsContains(args, "--help") && !argsContains(args, "-h")) {
                 char[] passwordArray = console.readPassword(String.valueOf(ansi().fg(GREEN).a("\nEnter your secret password: ").reset()));
                 args = appendArgs(args, new String[]{"--password", new String(passwordArray)});
             }
         }
+
         if (!invalidInput) {
             cliOptionsParser = getCliOptionsParser();
 
@@ -167,10 +173,20 @@ public class OpencgaCliProcessor {
             } catch (ParameterException e) {
                 OpencgaCliShellExecutor.printlnRed("\n" + e.getMessage());
                 cliOptionsParser.printUsage();
-
+                // e.printStackTrace();
                 //System.exit(1);
             }
         }
+    }
+
+    private static String[] getUserPasswordArgs(String[] args, String s) {
+        for (int i = 0; i < args.length; i++) {
+            if (s.equals(args[i])) {
+                args[i] = "--password";
+                break;
+            }
+        }
+        return args;
     }
 
     private static void executeCommand(CommandExecutor commandExecutor) {
@@ -179,7 +195,7 @@ public class OpencgaCliProcessor {
                 commandExecutor.execute();
             } catch (Exception e) {
                 shell.printlnRed(e.getMessage());
-                // e.printStackTrace();
+                //    e.printStackTrace();
                 //System.exit(1);
             }
         } else {

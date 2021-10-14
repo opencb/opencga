@@ -23,17 +23,17 @@ import static org.fusesource.jansi.Ansi.ansi;
 
 class OpencgaCliShellExecutor extends CommandExecutor {
 
+    private LineReader lineReader = null;
+    private Terminal terminal = null;
 
-
-    private LineReader lineReader=null;
-    private  Terminal terminal =null;
-
-    public OpencgaCliShellExecutor(GeneralCliOptions.CommonCommandOptions options){
-        super(new GeneralCliOptions.CommonCommandOptions(),true);
+    public OpencgaCliShellExecutor(GeneralCliOptions.CommonCommandOptions options) {
+        super(new GeneralCliOptions.CommonCommandOptions(), true);
     }
+
     public void setCurrentStudy(String arg) {
-        OpenCGAClient openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSession.getInstance().getToken()), clientConfiguration);
-        if(openCGAClient!=null) {
+        OpenCGAClient openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSession.getInstance().getToken()),
+                clientConfiguration);
+        if (openCGAClient != null) {
             try {
                 RestResponse<Study> res = openCGAClient.getStudyClient().info(arg, new ObjectMap());
                 if (res.allResultsSize() > 0) {
@@ -51,25 +51,23 @@ class OpencgaCliShellExecutor extends CommandExecutor {
                 }
             } catch (ClientException e) {
                 printlnRed(e.getMessage());
-               // e.printStackTrace();
+                e.printStackTrace();
             }
-        }else{
+        } else {
             printlnRed("Client not available");
         }
     }
 
-
-
-    private LineReader getTerminal(){
-        LineReader reader =null;
+    private LineReader getTerminal() {
+        LineReader reader = null;
         try {
-            if(terminal == null) {
+            if (terminal == null) {
                 terminal = TerminalBuilder.builder()
                         .system(true)
                         .build();
 
-            System.out.print(ansi().eraseScreen());
-            printShellHeaderMessage();
+                System.out.print(ansi().eraseScreen());
+                printShellHeaderMessage();
             }
             History defaultHistory = new DefaultHistory();
             // Register a shutdown-hook per JLine documentation to save history
@@ -85,32 +83,29 @@ class OpencgaCliShellExecutor extends CommandExecutor {
                     .highlighter(new DefaultHighlighter())
                     .history(defaultHistory)
                     .build();
-        }catch (Exception e) {
+        } catch (Exception e) {
             printlnRed("Failed to create terminal " + e.getMessage());
         }
 
-
         return reader;
     }
-
 
     @Override
     public void execute() throws Exception {
         try {
 
-            if(lineReader == null){
-                lineReader=getTerminal();
+            if (lineReader == null) {
+                lineReader = getTerminal();
             }
             String PROMPT = String.valueOf(ansi().fg(GREEN).a("\n[OpenCGA]/>").reset());
-
 
             while (true) {
                 // Read and sanitize the input
                 String line;
-                if(!CliSession.getInstance().isValid()){
+                if (!CliSession.getInstance().isValid()) {
                     OpencgaCliProcessor.forceLogin();
                 }
-                if(cliSession != null && cliSession.getUser() != null && CliSession.getInstance().isValid()){
+                if (cliSession != null && cliSession.getUser() != null && CliSession.getInstance().isValid()) {
                     PROMPT = getPrompt();
                 }
                 try {
@@ -133,19 +128,16 @@ class OpencgaCliShellExecutor extends CommandExecutor {
                 // Flush a newline to the screen.
                 terminal.writer().flush();
             }
-
         } catch (Exception e) {
             printlnRed(e.getMessage());
-            e.printStackTrace();
-           // execute();
+            // e.printStackTrace();
+            // execute();
         }
     }
 
-
-
     private String getPrompt() {
 
-        return String.valueOf(ansi().fg(BLUE).a("["+cliSession.getCurrentStudy()+"]").fg(YELLOW).a("<"+cliSession.getUser()+">").fg(GREEN).a(
+        return String.valueOf(ansi().fg(BLUE).a("[" + cliSession.getCurrentStudy() + "]").fg(YELLOW).a("<" + cliSession.getUser() + ">").fg(GREEN).a(
                 "[OpenCGA]/>").reset());
     }
 
@@ -170,12 +162,11 @@ class OpencgaCliShellExecutor extends CommandExecutor {
         printlnGreen("                █████                                                                ");
         printlnGreen("               ░░░░░                                                                 ");
 
-
         System.out.println("");
         printGreen("\tOpenCGA CLI version: ");
-        printlnYellow("\t"+GitRepositoryState.get().getBuildVersion());
+        printlnYellow("\t" + GitRepositoryState.get().getBuildVersion());
         printGreen("\tGit version:");
-        printlnYellow("\t\t"+GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+        printlnYellow("\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
         printGreen("\tProgram:");
         printlnYellow("\t\tOpenCGA (OpenCB)");
         printGreen("\tDescription: ");

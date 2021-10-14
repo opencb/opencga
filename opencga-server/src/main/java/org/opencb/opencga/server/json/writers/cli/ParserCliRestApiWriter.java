@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.json.writers.cli;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.RestApi;
@@ -115,13 +116,21 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
                     + getCategoryCommandName(category, config) + "\");\n");
             for (Endpoint endpoint : category.getEndpoints()) {
 
-                if (!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config)) {
+                if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config)) && endpoint.hasParameters()) {
                     String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
                     if (config.isAvailableCommand(commandName)) {
                         sb.append("        " + getAsVariableName(category.getName()) + "SubCommands.addCommand(\"" + commandName + "\", "
                                 + getAsVariableName(category.getName()) + "CommandOptions." + getAsCamelCase(commandName) +
                                 "CommandOptions);\n");
                     }
+                }
+            }
+
+            if (CollectionUtils.isNotEmpty(config.getAddedMethods())) {
+                for (String methodName : config.getAddedMethods()) {
+                    sb.append("        " + getAsVariableName(category.getName()) + "SubCommands.addCommand(\"" + methodName + "\", "
+                            + getAsVariableName(category.getName()) + "CommandOptions." + getAsCamelCase(methodName) +
+                            "CommandOptions);\n");
                 }
             }
         }

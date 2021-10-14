@@ -1,5 +1,6 @@
 package org.opencb.opencga.server.json.beans;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.opencga.server.json.config.CategoryConfig;
 import org.opencb.opencga.server.json.utils.CommandLineUtils;
 
@@ -19,8 +20,8 @@ public class Endpoint {
 
         for (Parameter parameter : getParameters()) {
             if (parameter.getData() != null && !parameter.getData().isEmpty()) {
-                for (Parameter body_param : parameter.getData()) {
-                    if (config.isAvailableSubCommand(body_param.getName()) && CommandLineUtils.isPrimitive(body_param.getType())) {
+                for (Parameter bodyParam : parameter.getData()) {
+                    if ((config.isAvailableSubCommand(bodyParam.getName()) && !bodyParam.isComplex()) || (bodyParam.isStringList())) {
                         return true;
                     }
                 }
@@ -31,7 +32,7 @@ public class Endpoint {
 
     public boolean hasQueryParams() {
         for (Parameter parameter : getParameters()) {
-            if ("query".equals(parameter.getParam()) && !parameter.isRequired() && CommandLineUtils.isPrimitive(parameter.getType())) {
+            if ("query".equals(parameter.getParam()) && !parameter.isRequired() && (!parameter.isComplex() || parameter.isStringList())) {
                 return true;
             }
         }
@@ -63,14 +64,7 @@ public class Endpoint {
         StringBuilder sb = new StringBuilder();
         for (Parameter parameter : getParameters()) {
             if (parameter.getParam().equals("query")) {
-//                if (body_param.getName().equals("action")) {
-//                    System.out.println("action :::: config.isAvailableSubCommand(body_param.getName()) " + config
-//                            .isAvailableSubCommand(body_param.getName()));
-//                    System.out.println("action :::: CLIUtils.isPrimitive(body_param.getType()) " + CLIUtils.isPrimitive(body_param
-//                            .getType()));
-//                    System.out.println("action :::: body_param.isRequired() " + body_param.isRequired());
-//                }
-                if (config.isAvailableSubCommand(parameter.getName()) && CommandLineUtils.isPrimitive(parameter.getType())
+                if (config.isAvailableSubCommand(parameter.getName()) && (!parameter.isComplex() || parameter.isStringList())
                         && parameter.isRequired()) {
                     sb.append("commandOptions.").append(CommandLineUtils.getAsVariableName(parameter.getName())).append(", ");
                 }
@@ -154,5 +148,9 @@ public class Endpoint {
     public Endpoint setParameters(List<Parameter> parameters) {
         this.parameters = parameters;
         return this;
+    }
+
+    public boolean hasParameters() {
+        return !CollectionUtils.isEmpty(parameters);
     }
 }

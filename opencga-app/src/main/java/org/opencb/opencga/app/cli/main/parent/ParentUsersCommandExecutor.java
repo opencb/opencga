@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencb.opencga.app.cli.main;
+package org.opencb.opencga.app.cli.main.parent;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
@@ -36,9 +36,9 @@ import java.util.List;
  * Created by imedina on 02/03/15.
  */
 public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor {
-    // TODO: Add include/exclude/skip/... (queryOptions) to the client calls !!!!
 
     public static final String LOGIN_OK = "\n\nYou have been logged in correctly.";
+    public static final String LOGIN_FAIL = "\n\nNot available login service now. Please contact the system administrator.";
     private UsersCommandOptions usersCommandOptions;
 
     public ParentUsersCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
@@ -82,6 +82,11 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                     event.setMessage(LOGIN_OK);
                     event.setType(Event.Type.INFO);
                     res.getEvents().add(event);
+                } else {
+                    Event event = new Event();
+                    event.setMessage(LOGIN_FAIL);
+                    event.setType(Event.Type.ERROR);
+                    res.getEvents().add(event);
                 }
             } else {
                 String sessionId = usersCommandOptions.commonCommandOptions.token;
@@ -91,11 +96,12 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                 }
                 System.err.println(errorMsg);
             }
-        }catch (Exception e) {
+        } catch (Exception e) {
             Event event = new Event();
             event.setMessage(e.getMessage());
             event.setType(Event.Type.ERROR);
             res.getEvents().add(event);
+            //    e.printStackTrace();
         }
         return res;
     }

@@ -33,33 +33,44 @@ apiConfig:
       shortcut: cd
     - name: modificationDate
       shortcut: md
+    - name: name
+      shortcut: n
   categoryConfigList:
     - name: users
       ignore: False
       key: User
-      extended: True
+      executorExtended: True
       commands:
         - name: update-filters
           ignore: True
         - name: login
-          extended: True
+          executorExtended: True
     - name: projects
       ignore: False
       key: Project
+      executorExtended: True
+      optionExtended: True
+      commands:
+        - name: create
+          executorExtended: True
+          optionExtended: True
     - name: studies
+      executorExtended: True
+      optionExtended: True
+      addedMethods:
+        - template-upload
+        - template-run
       ignore: False
       key: Study
     - name: files
       ignore: False
       key: File
+      executorExtended: True
+      optionExtended: True
       commands:
         - name: upload
-          ignore: True
-          subcommands:
-            - name: hash
-              ignore: True
-            - name: serialVersionUID
-              ignore: True
+          executorExtended: True
+          optionExtended: True
     - name: jobs
       ignore: False
       key: Job

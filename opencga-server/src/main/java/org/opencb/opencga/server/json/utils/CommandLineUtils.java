@@ -29,7 +29,7 @@ public class CommandLineUtils {
         primitiveTypes.add("java.lang.Float");
     }
 
-    public static boolean isPrimitive(String type) {
+    public static boolean isPrimitiveType(String type) {
         return primitiveTypes.contains(type);
     }
 
