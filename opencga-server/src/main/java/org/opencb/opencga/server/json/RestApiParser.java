@@ -147,7 +147,13 @@ public class RestApiParser {
 
                                                 if (innerParam.isList()) {
                                                     innerParam.setGenericType(declaredField.getGenericType().getTypeName());
+                                                } else {
+                                                    if (innerParam.isComplex()) {
+                                                        //System.out.println("Type: " + innerParam.getType());
+                                                        System.out.println(innerParam.getName() + " TypeClass: " + innerParam.getTypeClass());
+                                                    }
                                                 }
+
                                                 String fieldName = variablePrefix
                                                         + declaredField.getName().toUpperCase();
                                                 fieldName = normalize(fieldName);
