@@ -125,7 +125,8 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
                 // Remove quality control update key
                 signatureParams.getQuery().remove(QC_UPDATE_KEYNAME);
 
-                OpenCGAResult<Sample> sampleResult = getCatalogManager().getSampleManager().get(getStudy(), signatureParams.getSample(),                        QueryOptions.empty(), getToken());
+                OpenCGAResult<Sample> sampleResult = getCatalogManager().getSampleManager().get(getStudy(), signatureParams.getSample(),
+                        QueryOptions.empty(), getToken());
                 Sample sample = sampleResult.first();
                 if (sample != null) {
 
