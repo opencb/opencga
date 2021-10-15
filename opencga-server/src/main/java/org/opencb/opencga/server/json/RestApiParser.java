@@ -2,6 +2,7 @@ package org.opencb.opencga.server.json;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.Parameter;
@@ -109,8 +110,13 @@ public class RestApiParser {
                                     parameter.setName(methodParameter.getAnnotation(QueryParam.class).value());
                                     parameter.setParam("query");
                                 } else {
-                                    parameter.setName("body");
-                                    parameter.setParam("body");
+                                    if (methodParameter.getAnnotation(FormDataParam.class) != null) {
+                                        parameter.setName(methodParameter.getAnnotation(FormDataParam.class).value());
+                                        parameter.setParam("query");
+                                    } else {
+                                        parameter.setName("body");
+                                        parameter.setParam("body");
+                                    }
                                 }
                             }
 
