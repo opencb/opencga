@@ -159,6 +159,12 @@ public class JobsCommandOptions {
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
     
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String toolId;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String toolDescription;
+    
         @Parameter(names = {"--command-line"}, description = "The body web service commandLine parameter", required = false, arity = 1)
         public String commandLine;
     
@@ -170,6 +176,9 @@ public class JobsCommandOptions {
     
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String resultId;
     
   }
     @Parameters(commandNames = {"distinct"}, commandDescription ="Job distinct method")
@@ -436,6 +445,9 @@ public class JobsCommandOptions {
     
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
+    
+        @Parameter(names = {"--visited"}, description = "The body web service visited parameter", required = false, arity = 1)
+        public Boolean visited;
     
   }
     @Parameters(commandNames = {"head-log"}, commandDescription ="Show the first lines of a log file (up to a limit)")

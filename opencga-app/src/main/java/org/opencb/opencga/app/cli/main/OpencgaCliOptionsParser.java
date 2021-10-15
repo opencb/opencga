@@ -37,7 +37,7 @@ import org.opencb.opencga.app.cli.main.options.*;
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
 *    Command line version: 2.2.0-SNAPSHOT
-*    Command line commit: 9bcb7bc32463abbe13d1ae7b68ab65e707b98be7
+*    Command line commit: 99cbc51cc9f40e768bf4f7f82e30316e62b371e2
 */
 
 public class OpencgaCliOptionsParser extends CliOptionsParser {
@@ -133,6 +133,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         jCommander.addCommand("clinical", analysisClinicalCommandOptions);
         JCommander analysisClinicalSubCommands = jCommander.getCommands().get("clinical");
         analysisClinicalSubCommands.addCommand("update-acl", analysisClinicalCommandOptions.updateAclCommandOptions);
+        analysisClinicalSubCommands.addCommand("update-clinical-configuration", analysisClinicalCommandOptions.updateClinicalConfigurationCommandOptions);
         analysisClinicalSubCommands.addCommand("create", analysisClinicalCommandOptions.createCommandOptions);
         analysisClinicalSubCommands.addCommand("distinct", analysisClinicalCommandOptions.distinctCommandOptions);
         analysisClinicalSubCommands.addCommand("distinct-interpretation", analysisClinicalCommandOptions.distinctInterpretationCommandOptions);
@@ -159,6 +160,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         analysisClinicalSubCommands.addCommand("info", analysisClinicalCommandOptions.infoCommandOptions);
         analysisClinicalSubCommands.addCommand("create-interpretation", analysisClinicalCommandOptions.createInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("delete-interpretation", analysisClinicalCommandOptions.deleteInterpretationCommandOptions);
+        analysisClinicalSubCommands.addCommand("merge-interpretation", analysisClinicalCommandOptions.mergeInterpretationCommandOptions);
         analysisClinicalSubCommands.addCommand("update-interpretation", analysisClinicalCommandOptions.updateInterpretationCommandOptions);
 
         jobsCommandOptions = new JobsCommandOptions(commonCommandOptions, jCommander);
@@ -293,7 +295,6 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         filesSubCommands.addCommand("run-link", filesCommandOptions.runLinkCommandOptions);
         filesSubCommands.addCommand("run-postlink", filesCommandOptions.runPostlinkCommandOptions);
         filesSubCommands.addCommand("search", filesCommandOptions.searchCommandOptions);
-        filesSubCommands.addCommand("upload", filesCommandOptions.uploadCommandOptions);
         filesSubCommands.addCommand("acl", filesCommandOptions.aclCommandOptions);
         filesSubCommands.addCommand("delete", filesCommandOptions.deleteCommandOptions);
         filesSubCommands.addCommand("info", filesCommandOptions.infoCommandOptions);
@@ -316,6 +317,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         operationsVariantStorageSubCommands.addCommand("delete-variant-annotation", operationsVariantStorageCommandOptions.deleteVariantAnnotationCommandOptions);
         operationsVariantStorageSubCommands.addCommand("index-variant-annotation", operationsVariantStorageCommandOptions.indexVariantAnnotationCommandOptions);
         operationsVariantStorageSubCommands.addCommand("save-variant-annotation", operationsVariantStorageCommandOptions.saveVariantAnnotationCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("configure-variant", operationsVariantStorageCommandOptions.configureVariantCommandOptions);
         operationsVariantStorageSubCommands.addCommand("delete-variant", operationsVariantStorageCommandOptions.deleteVariantCommandOptions);
         operationsVariantStorageSubCommands.addCommand("aggregate-variant-family", operationsVariantStorageCommandOptions.aggregateVariantFamilyCommandOptions);
         operationsVariantStorageSubCommands.addCommand("index-variant-family", operationsVariantStorageCommandOptions.indexVariantFamilyCommandOptions);
@@ -325,6 +327,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         operationsVariantStorageSubCommands.addCommand("repair-variant-metadata", operationsVariantStorageCommandOptions.repairVariantMetadataCommandOptions);
         operationsVariantStorageSubCommands.addCommand("synchronize-variant-metadata", operationsVariantStorageCommandOptions.synchronizeVariantMetadataCommandOptions);
         operationsVariantStorageSubCommands.addCommand("index-variant-sample", operationsVariantStorageCommandOptions.indexVariantSampleCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("configure-sample-index", operationsVariantStorageCommandOptions.configureSampleIndexCommandOptions);
         operationsVariantStorageSubCommands.addCommand("delete-variant-score", operationsVariantStorageCommandOptions.deleteVariantScoreCommandOptions);
         operationsVariantStorageSubCommands.addCommand("index-variant-score", operationsVariantStorageCommandOptions.indexVariantScoreCommandOptions);
         operationsVariantStorageSubCommands.addCommand("secondaryIndex-variant", operationsVariantStorageCommandOptions.secondaryIndexVariantCommandOptions);

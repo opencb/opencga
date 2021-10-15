@@ -14,30 +14,34 @@ import org.opencb.opencga.app.cli.main.options.StudiesCommandOptions;
 
 import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
 
-import org.opencb.opencga.core.models.study.StudyAclUpdateParams;
-import org.opencb.opencga.core.models.study.CustomGroup;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
-import org.opencb.opencga.core.models.job.Job;
 import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.audit.AuditRecord;
-import org.opencb.opencga.core.models.study.GroupCreateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
-import org.opencb.opencga.core.models.study.VariableSetCreateParams;
 import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.core.models.common.Enums.Entity;
+import org.opencb.opencga.core.models.common.Enums.PermissionRuleAction;
+import org.opencb.opencga.core.models.study.StudyAclUpdateParams;
+import org.opencb.opencga.core.models.study.CustomGroup;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.GroupCreateParams;
+import org.opencb.opencga.core.models.study.VariableSetCreateParams;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.StudyCreateParams;
 import java.util.Map;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.models.audit.AuditRecord.Status.Result;
-import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
+import java.util.Set;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.TemplateParams;
+import org.opencb.opencga.core.models.study.StudyNotification;
 import org.opencb.opencga.core.models.common.Enums.Resource;
-import org.opencb.opencga.core.models.common.Enums.Entity;
-import org.opencb.opencga.core.models.common.Enums.PermissionRuleAction;
 
 
 /*
@@ -146,6 +150,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         logger.debug("Executing updateAcl in Studies command line");
 
         StudiesCommandOptions.UpdateAclCommandOptions commandOptions = studiesCommandOptions.updateAclCommandOptions;
+
         StudyAclUpdateParams studyAclUpdateParams = new StudyAclUpdateParams()
             .setStudy(commandOptions.study)
             .setTemplate(commandOptions.template);
@@ -161,13 +166,19 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("project", commandOptions.project);
 
+
+        CustomStatusParams customStatusParams= new CustomStatusParams();
+        invokeSetter(customStatusParams, "name", commandOptions.statusName);
+        invokeSetter(customStatusParams, "description", commandOptions.statusDescription);
+
         StudyCreateParams studyCreateParams = new StudyCreateParams()
             .setId(commandOptions.id)
             .setName(commandOptions.name)
             .setAlias(commandOptions.alias)
             .setDescription(commandOptions.description)
             .setCreationDate(commandOptions.creationDate)
-            .setModificationDate(commandOptions.modificationDate);
+            .setModificationDate(commandOptions.modificationDate)
+            .setStatus(customStatusParams);
         return openCGAClient.getStudyClient().create(studyCreateParams, queryParams);
     }
 
@@ -287,6 +298,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("action", commandOptions.action);
 
+
         GroupCreateParams groupCreateParams = new GroupCreateParams()
             .setId(commandOptions.id)
             .setUsers(CommandLineUtils.getListValues(commandOptions.users));
@@ -301,6 +313,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("action", commandOptions.action);
+
 
         GroupUpdateParams groupUpdateParams = new GroupUpdateParams()
             .setUsers(CommandLineUtils.getListValues(commandOptions.users));
@@ -324,6 +337,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("action", commandOptions.action);
 
+
         PermissionRule permissionRule = new PermissionRule()
             .setId(commandOptions.id)
             .setMembers(CommandLineUtils.getListValues(commandOptions.members))
@@ -343,6 +357,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
 
+
         TemplateParams templateParams = new TemplateParams()
             .setId(commandOptions.id)
             .setOverwrite(commandOptions.overwrite)
@@ -355,12 +370,18 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         logger.debug("Executing update in Studies command line");
 
         StudiesCommandOptions.UpdateCommandOptions commandOptions = studiesCommandOptions.updateCommandOptions;
+
+        CustomStatusParams customStatusParams= new CustomStatusParams();
+        invokeSetter(customStatusParams, "name", commandOptions.statusName);
+        invokeSetter(customStatusParams, "description", commandOptions.statusDescription);
+
         StudyUpdateParams studyUpdateParams = new StudyUpdateParams()
             .setName(commandOptions.name)
             .setAlias(commandOptions.alias)
             .setDescription(commandOptions.description)
             .setCreationDate(commandOptions.creationDate)
-            .setModificationDate(commandOptions.modificationDate);
+            .setModificationDate(commandOptions.modificationDate)
+            .setStatus(customStatusParams);
         return openCGAClient.getStudyClient().update(commandOptions.study, studyUpdateParams);
     }
 
@@ -385,9 +406,12 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("action", commandOptions.action);
 
+
         VariableSetCreateParams variableSetCreateParams = new VariableSetCreateParams()
             .setId(commandOptions.id)
             .setName(commandOptions.name)
+            .setUnique(commandOptions.unique)
+            .setConfidential(commandOptions.confidential)
             .setDescription(commandOptions.description);
         return openCGAClient.getStudyClient().updateVariableSets(commandOptions.study, variableSetCreateParams, queryParams);
     }
@@ -400,6 +424,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("action", commandOptions.action);
+
 
         Variable variable = new Variable()
             .setId(commandOptions.id)

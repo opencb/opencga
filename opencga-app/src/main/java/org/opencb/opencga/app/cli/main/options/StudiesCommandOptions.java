@@ -120,6 +120,12 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
     
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String statusName;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String statusDescription;
+    
   }
     @Parameters(commandNames = {"search"}, commandDescription ="Search studies")
     public class SearchCommandOptions {
@@ -435,6 +441,12 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
     
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String statusName;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String statusDescription;
+    
   }
     @Parameters(commandNames = {"variableSets"}, commandDescription ="Fetch variableSets from a study")
     public class VariableSetsCommandOptions {
@@ -466,6 +478,12 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
     
         @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
         public String name;
+    
+        @Parameter(names = {"--unique"}, description = "The body web service unique parameter", required = false, arity = 1)
+        public Boolean unique;
+    
+        @Parameter(names = {"--confidential"}, description = "The body web service confidential parameter", required = false, arity = 1)
+        public Boolean confidential;
     
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;

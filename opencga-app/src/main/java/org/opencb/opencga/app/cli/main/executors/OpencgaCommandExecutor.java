@@ -33,7 +33,11 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.RestResponse;
 
+import java.beans.IntrospectionException;
+import java.beans.PropertyDescriptor;
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Base64;
@@ -94,7 +98,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             logger.debug("sessionFile = " + CliSession.getInstance());
             if (StringUtils.isNotEmpty(options.token)) {
                 // Ignore session file. Overwrite with command line information (just sessionId)
-                cliSession= CliSession.getInstance();
+                cliSession = CliSession.getInstance();
                 cliSession.setToken(options.token);
                 cliSession.setHost(clientConfiguration.getRest().getHost());
                 try {
@@ -198,7 +202,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         File file = new File(ids);
         if (file.exists() && file.isFile()) {
             // Read the file
-            try(BufferedReader br = new BufferedReader(new FileReader(ids))) {
+            try (BufferedReader br = new BufferedReader(new FileReader(ids))) {
                 StringBuilder sb = new StringBuilder();
                 String line = br.readLine();
                 boolean isNotFirstLine = false;
@@ -269,4 +273,18 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         return params;
     }
 
+    public void invokeSetter(Object obj, String propertyName, Object variableValue) {
+        PropertyDescriptor pd;
+        try {
+            pd = new PropertyDescriptor(propertyName, obj.getClass());
+            Method setter = pd.getWriteMethod();
+            try {
+                setter.invoke(obj, variableValue);
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                e.printStackTrace();
+            }
+        } catch (IntrospectionException e) {
+            e.printStackTrace();
+        }
+    }
 }

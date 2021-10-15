@@ -407,6 +407,12 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--compress"}, description = "The body web service compress parameter", required = false, arity = 1)
         public boolean compress;
     
+        @Parameter(names = {"--limit"}, description = "The body web service limit parameter", required = false, arity = 1)
+        public Integer limit;
+    
+        @Parameter(names = {"--skip"}, description = "The body web service skip parameter", required = false, arity = 1)
+        public Integer skip;
+    
         @Parameter(names = {"--summary"}, description = "The body web service summary parameter", required = false, arity = 1)
         public boolean summary;
     
@@ -1486,6 +1492,78 @@ public class AnalysisVariantCommandOptions {
         @Parameter(names = {"--variant-stats-description"}, description = "The body web service variantStatsDescription parameter", required = false, arity = 1)
         public String variantStatsDescription;
     
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String variantStatsQueryId;
+    
+        @Parameter(names = {"--region"}, description = "The body web service region parameter", required = false, arity = 1)
+        public String variantStatsQueryRegion;
+    
+        @Parameter(names = {"--gene"}, description = "The body web service gene parameter", required = false, arity = 1)
+        public String variantStatsQueryGene;
+    
+        @Parameter(names = {"--type"}, description = "The body web service type parameter", required = false, arity = 1)
+        public String variantStatsQueryType;
+    
+        @Parameter(names = {"--panel"}, description = "The body web service panel parameter", required = false, arity = 1)
+        public String variantStatsQueryPanel;
+    
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = "The body web service panelModeOfInheritance parameter", required = false, arity = 1)
+        public String variantStatsQueryPanelModeOfInheritance;
+    
+        @Parameter(names = {"--panel-confidence"}, description = "The body web service panelConfidence parameter", required = false, arity = 1)
+        public String variantStatsQueryPanelConfidence;
+    
+        @Parameter(names = {"--panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
+        public String variantStatsQueryPanelRoleInCancer;
+    
+        @Parameter(names = {"--cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
+        public String variantStatsQueryCohortStatsRef;
+    
+        @Parameter(names = {"--cohort-stats-alt"}, description = "The body web service cohortStatsAlt parameter", required = false, arity = 1)
+        public String variantStatsQueryCohortStatsAlt;
+    
+        @Parameter(names = {"--cohort-stats-maf"}, description = "The body web service cohortStatsMaf parameter", required = false, arity = 1)
+        public String variantStatsQueryCohortStatsMaf;
+    
+        @Parameter(names = {"--ct"}, description = "The body web service ct parameter", required = false, arity = 1)
+        public String variantStatsQueryCt;
+    
+        @Parameter(names = {"--xref"}, description = "The body web service xref parameter", required = false, arity = 1)
+        public String variantStatsQueryXref;
+    
+        @Parameter(names = {"--biotype"}, description = "The body web service biotype parameter", required = false, arity = 1)
+        public String variantStatsQueryBiotype;
+    
+        @Parameter(names = {"--protein-substitution"}, description = "The body web service proteinSubstitution parameter", required = false, arity = 1)
+        public String variantStatsQueryProteinSubstitution;
+    
+        @Parameter(names = {"--conservation"}, description = "The body web service conservation parameter", required = false, arity = 1)
+        public String variantStatsQueryConservation;
+    
+        @Parameter(names = {"--population-frequency-maf"}, description = "The body web service populationFrequencyMaf parameter", required = false, arity = 1)
+        public String variantStatsQueryPopulationFrequencyMaf;
+    
+        @Parameter(names = {"--population-frequency-alt"}, description = "The body web service populationFrequencyAlt parameter", required = false, arity = 1)
+        public String variantStatsQueryPopulationFrequencyAlt;
+    
+        @Parameter(names = {"--population-frequency-ref"}, description = "The body web service populationFrequencyRef parameter", required = false, arity = 1)
+        public String variantStatsQueryPopulationFrequencyRef;
+    
+        @Parameter(names = {"--transcript-flag"}, description = "The body web service transcriptFlag parameter", required = false, arity = 1)
+        public String variantStatsQueryTranscriptFlag;
+    
+        @Parameter(names = {"--functional-score"}, description = "The body web service functionalScore parameter", required = false, arity = 1)
+        public String variantStatsQueryFunctionalScore;
+    
+        @Parameter(names = {"--clinical"}, description = "The body web service clinical parameter", required = false, arity = 1)
+        public String variantStatsQueryClinical;
+    
+        @Parameter(names = {"--clinical-significance"}, description = "The body web service clinicalSignificance parameter", required = false, arity = 1)
+        public String variantStatsQueryClinicalSignificance;
+    
+        @Parameter(names = {"--clinical-confirmed-status"}, description = "The body web service clinicalConfirmedStatus parameter", required = false, arity = 1)
+        public String variantStatsQueryClinicalConfirmedStatus;
+    
         @Parameter(names = {"--signature-id"}, description = "The body web service signatureId parameter", required = false, arity = 1)
         public String signatureId;
     
@@ -1657,6 +1735,9 @@ public class AnalysisVariantCommandOptions {
     
         @Parameter(names = {"--index-description"}, description = "The body web service indexDescription parameter", required = false, arity = 1)
         public String indexDescription;
+    
+        @Parameter(names = {"--batch-size"}, description = "The body web service batchSize parameter", required = false, arity = 1)
+        public Integer batchSize;
     
   }
     @Parameters(commandNames = {"run-stats-export"}, commandDescription ="Export calculated variant stats and frequencies")

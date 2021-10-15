@@ -65,6 +65,15 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                 if (isValidImport(parameter.getTypeClass())) {
                     imports.add(parameter.getTypeClass().replaceAll("\\$", "\\."));
                 }
+                if (parameter.getData() != null && !parameter.getData().isEmpty()) {
+                    for (Parameter bodyParam : parameter.getData()) {
+                        if (bodyParam.isComplex() && !bodyParam.isCollection()) {
+                            if (bodyParam.getTypeClass() != null && !bodyParam.getTypeClass().contains("$")) {
+                                imports.add(bodyParam.getTypeClass().replaceAll("\\$", "\\."));
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -240,13 +249,20 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     private String getBodyParams(Endpoint endpoint, CategoryConfig config) {
         StringBuilder sb = new StringBuilder();
         if (endpoint.hasPrimitiveBodyParams(config)) {
+
+            for (Parameter parameter : endpoint.getParameters()) {
+                if (parameter.getData() != null && !parameter.getData().isEmpty()) {
+                    sb.append(generateBeans(parameter.getData()));
+                }
+            }
             String bodyParamsObject = endpoint.getBodyParamsObject();
-            sb.append("        " + bodyParamsObject + " " + getAsVariableName(bodyParamsObject) + " = new " + bodyParamsObject + "()");
+            sb.append("\n        " + bodyParamsObject + " " + getAsVariableName(bodyParamsObject) + " = new " + bodyParamsObject + "()");
+            Set<String> variables = new HashSet<>();
             for (Parameter parameter : endpoint.getParameters()) {
                 if (parameter.getData() != null && !parameter.getData().isEmpty()) {
                     for (Parameter bodyParam : parameter.getData()) {
                         if (config.isAvailableSubCommand(bodyParam.getName())) {
-                            if (!bodyParam.isComplex()) {
+                            if (!bodyParam.isComplex() && !bodyParam.isInnerParam()) {
                                 //sometimes the name of the parameter has the prefix "body" so as not to coincide with another parameter
                                 // with the same name, but the setter does not have this prefix, so it must be removed
                                 sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
@@ -257,6 +273,15 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                                     sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
                                             "(CommandLineUtils.getListValues(commandOptions."
                                             + normaliceNames(getAsCamelCase(bodyParam.getName())) + "))");
+                                } else {
+                                    if (bodyParam.isInnerParam()) {
+                                        if (!variables.contains(parameter.getParam())) {
+                                            sb.append("\n            .set" + getAsClassName(bodyParam.getParam()) + "("
+                                                    + CommandLineUtils.getAsVariableName(CommandLineUtils.getClassName(bodyParam.getGenericType()))
+                                                    + ")");
+                                            variables.add(parameter.getParam());
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -264,6 +289,33 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                 }
             }
             sb.append(";\n");
+        }
+        return sb.toString();
+    }
+
+    private String generateBeans(List<Parameter> parameters) {
+        StringBuilder sb = new StringBuilder();
+
+        Set<String> beans = new HashSet<>();
+        for (Parameter parameter : parameters) {
+            if (parameter.isInnerParam() && !parameter.isCollection()) {
+                beans.add(parameter.getGenericType());
+            }
+        }
+
+        for (String nameBean : beans) {
+            CommandLineUtils.getClassName(nameBean);
+            sb.append("\n        " + CommandLineUtils.getClassName(nameBean) + " " + CommandLineUtils.getAsVariableName(CommandLineUtils.getClassName(nameBean)) +
+                    "= new " + CommandLineUtils.getClassName(nameBean) + "();\n");
+            for (Parameter parameter : parameters) {
+                if (parameter.getGenericType() != null && parameter.getGenericType().equals(nameBean)) {
+                    sb.append("        invokeSetter(" + CommandLineUtils.getAsVariableName(CommandLineUtils.getClassName(nameBean)) +
+                            ", \"" + parameter.getName() +
+                            "\", commandOptions." + normaliceNames(getAsCamelCase(parameter.getParam() + " " + parameter.getName())) + ")" +
+                            ";\n");
+                    System.out.println(parameter);
+                }
+            }
         }
         return sb.toString();
     }

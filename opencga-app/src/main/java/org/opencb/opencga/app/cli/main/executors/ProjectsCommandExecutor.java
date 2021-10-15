@@ -16,6 +16,7 @@ import org.opencb.opencga.app.cli.main.parent.ParentProjectsCommandExecutor;
 
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectUpdateParams;
@@ -171,11 +172,18 @@ public class ProjectsCommandExecutor extends ParentProjectsCommandExecutor {
         logger.debug("Executing update in Projects command line");
 
         ProjectsCommandOptions.UpdateCommandOptions commandOptions = projectsCommandOptions.updateCommandOptions;
+
+        ProjectOrganism projectOrganism= new ProjectOrganism();
+        invokeSetter(projectOrganism, "scientificName", commandOptions.organismScientificName);
+        invokeSetter(projectOrganism, "commonName", commandOptions.organismCommonName);
+        invokeSetter(projectOrganism, "assembly", commandOptions.organismAssembly);
+
         ProjectUpdateParams projectUpdateParams = new ProjectUpdateParams()
             .setName(commandOptions.name)
             .setDescription(commandOptions.description)
             .setCreationDate(commandOptions.creationDate)
-            .setModificationDate(commandOptions.modificationDate);
+            .setModificationDate(commandOptions.modificationDate)
+            .setOrganism(projectOrganism);
         return openCGAClient.getProjectClient().update(commandOptions.project, projectUpdateParams);
     }
 }

@@ -37,6 +37,7 @@ public class OperationsVariantStorageCommandOptions {
         public DeleteVariantAnnotationCommandOptions deleteVariantAnnotationCommandOptions;
         public IndexVariantAnnotationCommandOptions indexVariantAnnotationCommandOptions;
         public SaveVariantAnnotationCommandOptions saveVariantAnnotationCommandOptions;
+        public ConfigureVariantCommandOptions configureVariantCommandOptions;
         public DeleteVariantCommandOptions deleteVariantCommandOptions;
         public AggregateVariantFamilyCommandOptions aggregateVariantFamilyCommandOptions;
         public IndexVariantFamilyCommandOptions indexVariantFamilyCommandOptions;
@@ -46,6 +47,7 @@ public class OperationsVariantStorageCommandOptions {
         public RepairVariantMetadataCommandOptions repairVariantMetadataCommandOptions;
         public SynchronizeVariantMetadataCommandOptions synchronizeVariantMetadataCommandOptions;
         public IndexVariantSampleCommandOptions indexVariantSampleCommandOptions;
+        public ConfigureSampleIndexCommandOptions configureSampleIndexCommandOptions;
         public DeleteVariantScoreCommandOptions deleteVariantScoreCommandOptions;
         public IndexVariantScoreCommandOptions indexVariantScoreCommandOptions;
         public SecondaryIndexVariantCommandOptions secondaryIndexVariantCommandOptions;
@@ -62,6 +64,7 @@ public class OperationsVariantStorageCommandOptions {
         this.deleteVariantAnnotationCommandOptions = new DeleteVariantAnnotationCommandOptions();
         this.indexVariantAnnotationCommandOptions = new IndexVariantAnnotationCommandOptions();
         this.saveVariantAnnotationCommandOptions = new SaveVariantAnnotationCommandOptions();
+        this.configureVariantCommandOptions = new ConfigureVariantCommandOptions();
         this.deleteVariantCommandOptions = new DeleteVariantCommandOptions();
         this.aggregateVariantFamilyCommandOptions = new AggregateVariantFamilyCommandOptions();
         this.indexVariantFamilyCommandOptions = new IndexVariantFamilyCommandOptions();
@@ -71,6 +74,7 @@ public class OperationsVariantStorageCommandOptions {
         this.repairVariantMetadataCommandOptions = new RepairVariantMetadataCommandOptions();
         this.synchronizeVariantMetadataCommandOptions = new SynchronizeVariantMetadataCommandOptions();
         this.indexVariantSampleCommandOptions = new IndexVariantSampleCommandOptions();
+        this.configureSampleIndexCommandOptions = new ConfigureSampleIndexCommandOptions();
         this.deleteVariantScoreCommandOptions = new DeleteVariantScoreCommandOptions();
         this.indexVariantScoreCommandOptions = new IndexVariantScoreCommandOptions();
         this.secondaryIndexVariantCommandOptions = new SecondaryIndexVariantCommandOptions();
@@ -226,6 +230,19 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--annotation-id"}, description = "The body web service annotationId parameter", required = false, arity = 1)
         public String annotationId;
+    
+  }
+    @Parameters(commandNames = {"configure-variant"}, commandDescription ="Update Variant Storage Engine configuration. Can be updated at Project or Study level")
+    public class ConfigureVariantCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--project", "-p"}, description = "Project [user@]project where project can be either the ID or the alias", required = false, arity = 1)
+        public String project; 
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
     
   }
     @Parameters(commandNames = {"delete-variant"}, commandDescription ="Remove variant files from the variant storage")
@@ -454,6 +471,90 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--max-jobs"}, description = "The body web service maxJobs parameter", required = false, arity = 1)
         public int maxJobs;
     
+        @Parameter(names = {"--description"}, description = "The body web service DESCRIPTION parameter", required = false, arity = 1)
+        public String indexParamsDESCRIPTION;
+    
+        @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
+        public String indexParamsFile;
+    
+        @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, arity = 1)
+        public boolean indexParamsResume;
+    
+        @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
+        public String indexParamsOutdir;
+    
+        @Parameter(names = {"--transform"}, description = "The body web service transform parameter", required = false, arity = 1)
+        public boolean indexParamsTransform;
+    
+        @Parameter(names = {"--gvcf"}, description = "The body web service gvcf parameter", required = false, arity = 1)
+        public boolean indexParamsGvcf;
+    
+        @Parameter(names = {"--normalization-skip"}, description = "The body web service normalizationSkip parameter", required = false, arity = 1)
+        public boolean indexParamsNormalizationSkip;
+    
+        @Parameter(names = {"--reference-genome"}, description = "The body web service referenceGenome parameter", required = false, arity = 1)
+        public String indexParamsReferenceGenome;
+    
+        @Parameter(names = {"--family"}, description = "The body web service family parameter", required = false, arity = 1)
+        public boolean indexParamsFamily;
+    
+        @Parameter(names = {"--somatic"}, description = "The body web service somatic parameter", required = false, arity = 1)
+        public boolean indexParamsSomatic;
+    
+        @Parameter(names = {"--load"}, description = "The body web service load parameter", required = false, arity = 1)
+        public boolean indexParamsLoad;
+    
+        @Parameter(names = {"--load-split-data"}, description = "The body web service loadSplitData parameter", required = false, arity = 1)
+        public String indexParamsLoadSplitData;
+    
+        @Parameter(names = {"--load-multi-file-data"}, description = "The body web service loadMultiFileData parameter", required = false, arity = 1)
+        public boolean indexParamsLoadMultiFileData;
+    
+        @Parameter(names = {"--load-sample-index"}, description = "The body web service loadSampleIndex parameter", required = false, arity = 1)
+        public String indexParamsLoadSampleIndex;
+    
+        @Parameter(names = {"--load-archive"}, description = "The body web service loadArchive parameter", required = false, arity = 1)
+        public String indexParamsLoadArchive;
+    
+        @Parameter(names = {"--load-hom-ref"}, description = "The body web service loadHomRef parameter", required = false, arity = 1)
+        public String indexParamsLoadHomRef;
+    
+        @Parameter(names = {"--post-load-check"}, description = "The body web service postLoadCheck parameter", required = false, arity = 1)
+        public String indexParamsPostLoadCheck;
+    
+        @Parameter(names = {"--include-genotypes"}, description = "The body web service includeGenotypes parameter", required = false, arity = 1)
+        public String indexParamsIncludeGenotypes;
+    
+        @Parameter(names = {"--include-sample-data"}, description = "The body web service includeSampleData parameter", required = false, arity = 1)
+        public String indexParamsIncludeSampleData;
+    
+        @Parameter(names = {"--merge"}, description = "The body web service merge parameter", required = false, arity = 1)
+        public String indexParamsMerge;
+    
+        @Parameter(names = {"--deduplication-policy"}, description = "The body web service deduplicationPolicy parameter", required = false, arity = 1)
+        public String indexParamsDeduplicationPolicy;
+    
+        @Parameter(names = {"--calculate-stats"}, description = "The body web service calculateStats parameter", required = false, arity = 1)
+        public boolean indexParamsCalculateStats;
+    
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "The body web service aggregationMappingFile parameter", required = false, arity = 1)
+        public String indexParamsAggregationMappingFile;
+    
+        @Parameter(names = {"--annotate"}, description = "The body web service annotate parameter", required = false, arity = 1)
+        public boolean indexParamsAnnotate;
+    
+        @Parameter(names = {"--annotator"}, description = "The body web service annotator parameter", required = false, arity = 1)
+        public String indexParamsAnnotator;
+    
+        @Parameter(names = {"--overwrite-annotations"}, description = "The body web service overwriteAnnotations parameter", required = false, arity = 1)
+        public boolean indexParamsOverwriteAnnotations;
+    
+        @Parameter(names = {"--index-search"}, description = "The body web service indexSearch parameter", required = false, arity = 1)
+        public boolean indexParamsIndexSearch;
+    
+        @Parameter(names = {"--skip-indexed-files"}, description = "The body web service skipIndexedFiles parameter", required = false, arity = 1)
+        public boolean indexParamsSkipIndexedFiles;
+    
   }
     @Parameters(commandNames = {"run-variant-julie"}, commandDescription ="Transform VariantStats into PopulationFrequency values and updates the VariantAnnotation.")
     public class RunVariantJulieCommandOptions {
@@ -571,6 +672,19 @@ public class OperationsVariantStorageCommandOptions {
     
         @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, arity = 1)
         public boolean overwrite;
+    
+  }
+    @Parameters(commandNames = {"configure-sample-index"}, commandDescription ="Update SampleIndex configuration")
+    public class ConfigureSampleIndexCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--skip-rebuild"}, description = "Skip sample index re-build", required = false, arity = 1)
+        public boolean skipRebuild; 
     
   }
     @Parameters(commandNames = {"delete-variant-score"}, commandDescription ="Remove a variant score in the database")

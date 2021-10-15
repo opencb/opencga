@@ -7,8 +7,6 @@ import com.beust.jcommander.ParametersDelegate;
 
 import java.util.List;
 
-import org.opencb.opencga.app.cli.main.parent.ParentProjectsCommandOptions;
-
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
 
@@ -29,8 +27,10 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
  *    PATH: /{apiVersion}/projects
  */
 @Parameters(commandNames = {"projects"}, commandDescription = "Projects commands")
-public class ProjectsCommandOptions extends ParentProjectsCommandOptions {
+public class ProjectsCommandOptions {
 
+        public JCommander jCommander;
+        public CommonCommandOptions commonCommandOptions;
 
         public CreateCommandOptions createCommandOptions;
         public SearchCommandOptions searchCommandOptions;
@@ -42,7 +42,8 @@ public class ProjectsCommandOptions extends ParentProjectsCommandOptions {
 
     public ProjectsCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
     
-        super(commonCommandOptions,jCommander);
+        this.jCommander = jCommander;
+        this.commonCommandOptions = commonCommandOptions;
         this.createCommandOptions = new CreateCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.aggregationStatsCommandOptions = new AggregationStatsCommandOptions();
@@ -52,6 +53,37 @@ public class ProjectsCommandOptions extends ParentProjectsCommandOptions {
     
     }
     
+    @Parameters(commandNames = {"create"}, commandDescription ="Create a new project")
+    public class CreateCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String id;
+    
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String name;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String description;
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
+        public String creationDate;
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
+        public String modificationDate;
+    
+        @Parameter(names = {"--scientific-name"}, description = "The body web service scientificName parameter", required = false, arity = 1)
+        public String organismScientificName;
+    
+        @Parameter(names = {"--common-name"}, description = "The body web service commonName parameter", required = false, arity = 1)
+        public String organismCommonName;
+    
+        @Parameter(names = {"--assembly"}, description = "The body web service assembly parameter", required = false, arity = 1)
+        public String organismAssembly;
+    
+  }
     @Parameters(commandNames = {"search"}, commandDescription ="Search projects")
     public class SearchCommandOptions {
     
@@ -193,6 +225,15 @@ public class ProjectsCommandOptions extends ParentProjectsCommandOptions {
     
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
+    
+        @Parameter(names = {"--scientific-name"}, description = "The body web service scientificName parameter", required = false, arity = 1)
+        public String organismScientificName;
+    
+        @Parameter(names = {"--common-name"}, description = "The body web service commonName parameter", required = false, arity = 1)
+        public String organismCommonName;
+    
+        @Parameter(names = {"--assembly"}, description = "The body web service assembly parameter", required = false, arity = 1)
+        public String organismAssembly;
     
   }
 }

@@ -195,6 +195,48 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--individual-id"}, description = "The body web service individualId parameter", required = false, arity = 1)
         public String individualId;
     
+        @Parameter(names = {"--product"}, description = "The body web service product parameter", required = false, arity = 1)
+        public String processingProduct;
+    
+        @Parameter(names = {"--preparation-method"}, description = "The body web service preparationMethod parameter", required = false, arity = 1)
+        public String processingPreparationMethod;
+    
+        @Parameter(names = {"--extraction-method"}, description = "The body web service extractionMethod parameter", required = false, arity = 1)
+        public String processingExtractionMethod;
+    
+        @Parameter(names = {"--lab-sample-id"}, description = "The body web service labSampleId parameter", required = false, arity = 1)
+        public String processingLabSampleId;
+    
+        @Parameter(names = {"--quantity"}, description = "The body web service quantity parameter", required = false, arity = 1)
+        public String processingQuantity;
+    
+        @Parameter(names = {"--date"}, description = "The body web service date parameter", required = false, arity = 1)
+        public String processingDate;
+    
+        @Parameter(names = {"--tissue"}, description = "The body web service tissue parameter", required = false, arity = 1)
+        public String collectionTissue;
+    
+        @Parameter(names = {"--organ"}, description = "The body web service organ parameter", required = false, arity = 1)
+        public String collectionOrgan;
+    
+        @Parameter(names = {"--quantity"}, description = "The body web service quantity parameter", required = false, arity = 1)
+        public String collectionQuantity;
+    
+        @Parameter(names = {"--method"}, description = "The body web service method parameter", required = false, arity = 1)
+        public String collectionMethod;
+    
+        @Parameter(names = {"--date"}, description = "The body web service date parameter", required = false, arity = 1)
+        public String collectionDate;
+    
+        @Parameter(names = {"--somatic"}, description = "The body web service somatic parameter", required = false, arity = 1)
+        public Boolean somatic;
+    
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String statusName;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String statusDescription;
+    
   }
     @Parameters(commandNames = {"distinct"}, commandDescription ="Sample distinct method")
     public class DistinctCommandOptions {
@@ -579,6 +621,48 @@ public class SamplesCommandOptions {
     
         @Parameter(names = {"--individual-id"}, description = "The body web service individualId parameter", required = false, arity = 1)
         public String individualId;
+    
+        @Parameter(names = {"--product"}, description = "The body web service product parameter", required = false, arity = 1)
+        public String processingProduct;
+    
+        @Parameter(names = {"--preparation-method"}, description = "The body web service preparationMethod parameter", required = false, arity = 1)
+        public String processingPreparationMethod;
+    
+        @Parameter(names = {"--extraction-method"}, description = "The body web service extractionMethod parameter", required = false, arity = 1)
+        public String processingExtractionMethod;
+    
+        @Parameter(names = {"--lab-sample-id"}, description = "The body web service labSampleId parameter", required = false, arity = 1)
+        public String processingLabSampleId;
+    
+        @Parameter(names = {"--quantity"}, description = "The body web service quantity parameter", required = false, arity = 1)
+        public String processingQuantity;
+    
+        @Parameter(names = {"--date"}, description = "The body web service date parameter", required = false, arity = 1)
+        public String processingDate;
+    
+        @Parameter(names = {"--tissue"}, description = "The body web service tissue parameter", required = false, arity = 1)
+        public String collectionTissue;
+    
+        @Parameter(names = {"--organ"}, description = "The body web service organ parameter", required = false, arity = 1)
+        public String collectionOrgan;
+    
+        @Parameter(names = {"--quantity"}, description = "The body web service quantity parameter", required = false, arity = 1)
+        public String collectionQuantity;
+    
+        @Parameter(names = {"--method"}, description = "The body web service method parameter", required = false, arity = 1)
+        public String collectionMethod;
+    
+        @Parameter(names = {"--date"}, description = "The body web service date parameter", required = false, arity = 1)
+        public String collectionDate;
+    
+        @Parameter(names = {"--somatic"}, description = "The body web service somatic parameter", required = false, arity = 1)
+        public Boolean somatic;
+    
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String statusName;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String statusDescription;
     
   }
 }

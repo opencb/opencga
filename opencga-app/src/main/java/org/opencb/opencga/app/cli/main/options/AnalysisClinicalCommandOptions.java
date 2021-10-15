@@ -33,6 +33,7 @@ public class AnalysisClinicalCommandOptions {
         public CommonCommandOptions commonCommandOptions;
 
         public UpdateAclCommandOptions updateAclCommandOptions;
+        public UpdateClinicalConfigurationCommandOptions updateClinicalConfigurationCommandOptions;
         public CreateCommandOptions createCommandOptions;
         public DistinctCommandOptions distinctCommandOptions;
         public DistinctInterpretationCommandOptions distinctInterpretationCommandOptions;
@@ -59,6 +60,7 @@ public class AnalysisClinicalCommandOptions {
         public InfoCommandOptions infoCommandOptions;
         public CreateInterpretationCommandOptions createInterpretationCommandOptions;
         public DeleteInterpretationCommandOptions deleteInterpretationCommandOptions;
+        public MergeInterpretationCommandOptions mergeInterpretationCommandOptions;
         public UpdateInterpretationCommandOptions updateInterpretationCommandOptions;
 
 
@@ -67,6 +69,7 @@ public class AnalysisClinicalCommandOptions {
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
+        this.updateClinicalConfigurationCommandOptions = new UpdateClinicalConfigurationCommandOptions();
         this.createCommandOptions = new CreateCommandOptions();
         this.distinctCommandOptions = new DistinctCommandOptions();
         this.distinctInterpretationCommandOptions = new DistinctInterpretationCommandOptions();
@@ -93,6 +96,7 @@ public class AnalysisClinicalCommandOptions {
         this.infoCommandOptions = new InfoCommandOptions();
         this.createInterpretationCommandOptions = new CreateInterpretationCommandOptions();
         this.deleteInterpretationCommandOptions = new DeleteInterpretationCommandOptions();
+        this.mergeInterpretationCommandOptions = new MergeInterpretationCommandOptions();
         this.updateInterpretationCommandOptions = new UpdateInterpretationCommandOptions();
     
     }
@@ -119,6 +123,16 @@ public class AnalysisClinicalCommandOptions {
         public String clinicalAnalysis;
     
   }
+    @Parameters(commandNames = {"update-clinical-configuration"}, commandDescription ="Update Clinical Analysis configuration.")
+    public class UpdateClinicalConfigurationCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+        public String study; 
+    
+  }
     @Parameters(commandNames = {"create"}, commandDescription ="Create a new clinical analysis")
     public class CreateCommandOptions {
     
@@ -137,6 +151,39 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
     
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String disorderId;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String probandId;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String familyId;
+    
+        @Parameter(names = {"--panel-lock"}, description = "The body web service panelLock parameter", required = false, arity = 1)
+        public Boolean panelLock;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String analystId;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String interpretationId;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String interpretationDescription;
+    
+        @Parameter(names = {"--clinical-analysis-id"}, description = "The body web service clinicalAnalysisId parameter", required = false, arity = 1)
+        public String interpretationClinicalAnalysisId;
+    
+        @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
+        public String interpretationCreationDate;
+    
+        @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
+        public String interpretationModificationDate;
+    
+        @Parameter(names = {"--comment"}, description = "The body web service comment parameter", required = false, arity = 1)
+        public String qualityControlComment;
+    
         @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
         public String creationDate;
     
@@ -145,6 +192,12 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--due-date"}, description = "The body web service dueDate parameter", required = false, arity = 1)
         public String dueDate;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String priorityId;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String statusId;
     
   }
     @Parameters(commandNames = {"distinct"}, commandDescription ="Clinical Analysis distinct method")
@@ -1614,6 +1667,27 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
     
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String disorderId;
+    
+        @Parameter(names = {"--panel-lock"}, description = "The body web service panelLock parameter", required = false, arity = 1)
+        public Boolean panelLock;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String probandId;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String familyId;
+    
+        @Parameter(names = {"--locked"}, description = "The body web service locked parameter", required = false, arity = 1)
+        public Boolean locked;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String analystId;
+    
+        @Parameter(names = {"--comment"}, description = "The body web service comment parameter", required = false, arity = 1)
+        public String qualityControlComment;
+    
         @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
         public String creationDate;
     
@@ -1622,6 +1696,12 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--due-date"}, description = "The body web service dueDate parameter", required = false, arity = 1)
         public String dueDate;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String priorityId;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String statusId;
     
   }
     @Parameters(commandNames = {"info"}, commandDescription ="Clinical analysis info")
@@ -1676,6 +1756,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
     
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String analystId;
+    
   }
     @Parameters(commandNames = {"delete-interpretation"}, commandDescription ="Delete interpretation")
     public class DeleteInterpretationCommandOptions {
@@ -1694,6 +1777,28 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--set-as-primary"}, description = "Interpretation id to set as primary from the list of secondaries in case of deleting the actual primary one", required = false, arity = 1)
         public String setAsPrimary; 
+    
+  }
+    @Parameters(commandNames = {"merge-interpretation"}, commandDescription ="Merge interpretation")
+    public class MergeInterpretationCommandOptions {
+    
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--study", "-s"}, description = "[[user@]project:]study ID", required = false, arity = 1)
+        public String study; 
+    
+        @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis ID", required = false, arity = 1)
+        public String clinicalAnalysis; 
+    
+        @Parameter(names = {"--interpretation"}, description = "Interpretation ID where it will be merged", required = false, arity = 1)
+        public String interpretation; 
+    
+        @Parameter(names = {"--secondary-interpretation-id"}, description = "Secondary Interpretation ID to merge from", required = false, arity = 1)
+        public String secondaryInterpretationId; 
+    
+        @Parameter(names = {"--findings"}, description = "Comma separated list of findings to merge. If not provided, all findings will be merged.", required = false, arity = 1)
+        public String findings; 
     
   }
     @Parameters(commandNames = {"update-interpretation"}, commandDescription ="Update interpretation fields")
@@ -1732,11 +1837,17 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
     
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String analystId;
+    
         @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
         public String creationDate;
     
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String statusId;
     
   }
 }

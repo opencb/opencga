@@ -44,8 +44,8 @@ public abstract class ParentProjectsCommandExecutor extends OpencgaCommandExecut
                 .setId(createCommandOptions.id)
                 .setName(createCommandOptions.name)
                 .setDescription(createCommandOptions.description)
-                .setOrganism(new ProjectOrganism(createCommandOptions.scientificName, createCommandOptions.commonName,
-                        createCommandOptions.assembly));
+                .setOrganism(new ProjectOrganism(createCommandOptions.organismScientificName, createCommandOptions.organismCommonName,
+                        createCommandOptions.organismAssembly));
         return openCGAClient.getProjectClient().create(createParams);
     }
 }

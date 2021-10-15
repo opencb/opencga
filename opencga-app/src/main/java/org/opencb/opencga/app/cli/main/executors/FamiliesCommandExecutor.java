@@ -12,18 +12,20 @@ import java.util.List;
 
 import org.opencb.opencga.app.cli.main.options.FamiliesCommandOptions;
 
-import org.opencb.opencga.core.models.family.FamilyAclUpdateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
-import java.util.Map;
 import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
-import org.opencb.opencga.core.models.family.FamilyUpdateParams;
-import org.opencb.opencga.core.models.family.FamilyCreateParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.family.FamilyAclParams.Propagate;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyAclUpdateParams;
+import java.util.Map;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.opencga.core.models.family.FamilyUpdateParams;
+import org.opencb.opencga.core.models.family.FamilyCreateParams;
+import org.opencb.opencga.core.models.family.FamilyQualityControl;
 
 
 /*
@@ -113,6 +115,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         FamilyAclUpdateParams familyAclUpdateParams = new FamilyAclUpdateParams()
             .setFamily(commandOptions.family)
             .setIndividual(commandOptions.individual)
@@ -162,6 +165,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams()
             .setContent(commandOptions.content);
         return openCGAClient.getFamilyClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
@@ -180,12 +184,19 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        CustomStatusParams customStatusParams= new CustomStatusParams();
+        invokeSetter(customStatusParams, "name", commandOptions.statusName);
+        invokeSetter(customStatusParams, "description", commandOptions.statusDescription);
+
         FamilyCreateParams familyCreateParams = new FamilyCreateParams()
             .setId(commandOptions.id)
             .setName(commandOptions.name)
             .setDescription(commandOptions.description)
             .setCreationDate(commandOptions.creationDate)
-            .setModificationDate(commandOptions.modificationDate);
+            .setModificationDate(commandOptions.modificationDate)
+            .setExpectedSize(commandOptions.expectedSize)
+            .setStatus(customStatusParams);
         return openCGAClient.getFamilyClient().create(familyCreateParams, queryParams);
     }
 
@@ -326,12 +337,19 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        CustomStatusParams customStatusParams= new CustomStatusParams();
+        invokeSetter(customStatusParams, "name", commandOptions.statusName);
+        invokeSetter(customStatusParams, "description", commandOptions.statusDescription);
+
         FamilyUpdateParams familyUpdateParams = new FamilyUpdateParams()
             .setId(commandOptions.id)
             .setName(commandOptions.name)
             .setDescription(commandOptions.description)
             .setCreationDate(commandOptions.creationDate)
-            .setModificationDate(commandOptions.modificationDate);
+            .setModificationDate(commandOptions.modificationDate)
+            .setExpectedSize(commandOptions.expectedSize)
+            .setStatus(customStatusParams);
         return openCGAClient.getFamilyClient().update(commandOptions.families, familyUpdateParams, queryParams);
     }
 }

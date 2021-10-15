@@ -18,9 +18,11 @@ import org.opencb.opencga.core.models.job.JobRetryParams;
 import java.util.Map;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.core.models.job.JobAclUpdateParams;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.models.job.JobCreateParams;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.job.JobUpdateParams;
 
 
@@ -112,6 +114,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing updateAcl in Jobs command line");
 
         JobsCommandOptions.UpdateAclCommandOptions commandOptions = jobsCommandOptions.updateAclCommandOptions;
+
         JobAclUpdateParams jobAclUpdateParams = new JobAclUpdateParams()
             .setJob(commandOptions.job);
         return openCGAClient.getJobClient().updateAcl(commandOptions.members, commandOptions.action, jobAclUpdateParams);
@@ -161,9 +164,18 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        ToolInfo toolInfo= new ToolInfo();
+        invokeSetter(toolInfo, "id", commandOptions.toolId);
+        invokeSetter(toolInfo, "description", commandOptions.toolDescription);
+
+        ExecutionResult executionResult= new ExecutionResult();
+        invokeSetter(executionResult, "id", commandOptions.resultId);
+
         JobCreateParams jobCreateParams = new JobCreateParams()
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
+            .setTool(toolInfo)
             .setCommandLine(commandOptions.commandLine)
             .setCreationDate(commandOptions.creationDate)
             .setModificationDate(commandOptions.modificationDate)
@@ -219,6 +231,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         JobRetryParams jobRetryParams = new JobRetryParams()
             .setJob(commandOptions.job);
@@ -341,9 +354,11 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         JobUpdateParams jobUpdateParams = new JobUpdateParams()
             .setDescription(commandOptions.description)
-            .setTags(CommandLineUtils.getListValues(commandOptions.tags));
+            .setTags(CommandLineUtils.getListValues(commandOptions.tags))
+            .setVisited(commandOptions.visited);
         return openCGAClient.getJobClient().update(commandOptions.jobs, jobUpdateParams, queryParams);
     }
 

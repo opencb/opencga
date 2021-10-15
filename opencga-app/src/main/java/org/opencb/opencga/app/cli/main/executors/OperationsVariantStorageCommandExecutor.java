@@ -16,6 +16,7 @@ import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeP
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataRepairToolParams;
@@ -24,6 +25,7 @@ import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexPa
 import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
 import org.opencb.opencga.core.models.variant.VariantStatsIndexParams;
 import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
@@ -83,6 +85,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             case "save-variant-annotation":
                 queryResponse = saveVariantAnnotation();
                 break;
+            case "configure-variant":
+                queryResponse = configureVariant();
+                break;
             case "delete-variant":
                 queryResponse = deleteVariant();
                 break;
@@ -109,6 +114,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                 break;
             case "index-variant-sample":
                 queryResponse = indexVariantSample();
+                break;
+            case "configure-sample-index":
+                queryResponse = configureSampleIndex();
                 break;
             case "delete-variant-score":
                 queryResponse = deleteVariantScore();
@@ -145,6 +153,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotNull("annotationUpdate", commandOptions.annotationUpdate);
         queryParams.putIfNotEmpty("annotationSaveId", commandOptions.annotationSaveId);
 
+
         CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration()
             .setUrl(commandOptions.url)
             .setVersion(commandOptions.version);
@@ -166,6 +175,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         VariantAggregateParams variantAggregateParams = new VariantAggregateParams()
             .setOverwrite(commandOptions.overwrite)
@@ -207,6 +217,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         VariantAnnotationIndexParams variantAnnotationIndexParams = new VariantAnnotationIndexParams()
             .setOutdir(commandOptions.outdir)
             .setOutputFileName(commandOptions.outputFileName)
@@ -232,9 +243,28 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
         queryParams.putIfNotEmpty("project", commandOptions.project);
 
+
         VariantAnnotationSaveParams variantAnnotationSaveParams = new VariantAnnotationSaveParams()
             .setAnnotationId(commandOptions.annotationId);
         return openCGAClient.getVariantOperationClient().saveVariantAnnotation(variantAnnotationSaveParams, queryParams);
+    }
+
+    private RestResponse<ObjectMap> configureVariant() throws Exception {
+
+        logger.debug("Executing configureVariant in Operations - Variant Storage command line");
+
+        OperationsVariantStorageCommandOptions.ConfigureVariantCommandOptions commandOptions = operationsVariantStorageCommandOptions.configureVariantCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("project", commandOptions.project);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if(queryParams.get("study")==null){
+                queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
+        }
+
+
+        ObjectMap objectMap = new ObjectMap();
+        return openCGAClient.getVariantOperationClient().configureVariant(objectMap, queryParams);
     }
 
     private RestResponse<Job> deleteVariant() throws Exception {
@@ -252,6 +282,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         VariantFileDeleteParams variantFileDeleteParams = new VariantFileDeleteParams()
             .setFile(CommandLineUtils.getListValues(commandOptions.file))
@@ -275,6 +306,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         VariantAggregateFamilyParams variantAggregateFamilyParams = new VariantAggregateFamilyParams()
             .setSamples(CommandLineUtils.getListValues(commandOptions.samples))
             .setResume(commandOptions.resume);
@@ -296,6 +328,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         VariantFamilyIndexParams variantFamilyIndexParams = new VariantFamilyIndexParams()
             .setFamily(CommandLineUtils.getListValues(commandOptions.family))
@@ -319,6 +352,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         VariantIndexParams variantIndexParams = new VariantIndexParams()
             .setFile(commandOptions.file)
@@ -367,12 +401,44 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        VariantIndexParams variantIndexParams= new VariantIndexParams();
+        invokeSetter(variantIndexParams, "DESCRIPTION", commandOptions.indexParamsDESCRIPTION);
+        invokeSetter(variantIndexParams, "file", commandOptions.indexParamsFile);
+        invokeSetter(variantIndexParams, "resume", commandOptions.indexParamsResume);
+        invokeSetter(variantIndexParams, "outdir", commandOptions.indexParamsOutdir);
+        invokeSetter(variantIndexParams, "transform", commandOptions.indexParamsTransform);
+        invokeSetter(variantIndexParams, "gvcf", commandOptions.indexParamsGvcf);
+        invokeSetter(variantIndexParams, "normalizationSkip", commandOptions.indexParamsNormalizationSkip);
+        invokeSetter(variantIndexParams, "referenceGenome", commandOptions.indexParamsReferenceGenome);
+        invokeSetter(variantIndexParams, "family", commandOptions.indexParamsFamily);
+        invokeSetter(variantIndexParams, "somatic", commandOptions.indexParamsSomatic);
+        invokeSetter(variantIndexParams, "load", commandOptions.indexParamsLoad);
+        invokeSetter(variantIndexParams, "loadSplitData", commandOptions.indexParamsLoadSplitData);
+        invokeSetter(variantIndexParams, "loadMultiFileData", commandOptions.indexParamsLoadMultiFileData);
+        invokeSetter(variantIndexParams, "loadSampleIndex", commandOptions.indexParamsLoadSampleIndex);
+        invokeSetter(variantIndexParams, "loadArchive", commandOptions.indexParamsLoadArchive);
+        invokeSetter(variantIndexParams, "loadHomRef", commandOptions.indexParamsLoadHomRef);
+        invokeSetter(variantIndexParams, "postLoadCheck", commandOptions.indexParamsPostLoadCheck);
+        invokeSetter(variantIndexParams, "includeGenotypes", commandOptions.indexParamsIncludeGenotypes);
+        invokeSetter(variantIndexParams, "includeSampleData", commandOptions.indexParamsIncludeSampleData);
+        invokeSetter(variantIndexParams, "merge", commandOptions.indexParamsMerge);
+        invokeSetter(variantIndexParams, "deduplicationPolicy", commandOptions.indexParamsDeduplicationPolicy);
+        invokeSetter(variantIndexParams, "calculateStats", commandOptions.indexParamsCalculateStats);
+        invokeSetter(variantIndexParams, "aggregationMappingFile", commandOptions.indexParamsAggregationMappingFile);
+        invokeSetter(variantIndexParams, "annotate", commandOptions.indexParamsAnnotate);
+        invokeSetter(variantIndexParams, "annotator", commandOptions.indexParamsAnnotator);
+        invokeSetter(variantIndexParams, "overwriteAnnotations", commandOptions.indexParamsOverwriteAnnotations);
+        invokeSetter(variantIndexParams, "indexSearch", commandOptions.indexParamsIndexSearch);
+        invokeSetter(variantIndexParams, "skipIndexedFiles", commandOptions.indexParamsSkipIndexedFiles);
+
         VariantFileIndexJobLauncherParams variantFileIndexJobLauncherParams = new VariantFileIndexJobLauncherParams()
             .setName(commandOptions.name)
             .setDirectory(commandOptions.directory)
             .setResumeFailed(commandOptions.resumeFailed)
             .setIgnoreFailed(commandOptions.ignoreFailed)
-            .setMaxJobs(commandOptions.maxJobs);
+            .setMaxJobs(commandOptions.maxJobs)
+            .setIndexParams(variantIndexParams);
         return openCGAClient.getVariantOperationClient().launcherVariantIndex(variantFileIndexJobLauncherParams, queryParams);
     }
 
@@ -388,6 +454,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
         queryParams.putIfNotEmpty("project", commandOptions.project);
+
 
         JulieParams julieParams = new JulieParams()
             .setCohorts(CommandLineUtils.getListValues(commandOptions.cohorts))
@@ -407,6 +474,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
         queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
         queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+
 
         VariantStorageMetadataRepairToolParams variantStorageMetadataRepairToolParams = new VariantStorageMetadataRepairToolParams()
             .setStudies(CommandLineUtils.getListValues(commandOptions.studies))
@@ -430,6 +498,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         VariantStorageMetadataSynchronizeParams variantStorageMetadataSynchronizeParams = new VariantStorageMetadataSynchronizeParams()
             .setStudy(commandOptions.bodyStudy)
             .setFiles(CommandLineUtils.getListValues(commandOptions.files));
@@ -452,12 +521,31 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         VariantSampleIndexParams variantSampleIndexParams = new VariantSampleIndexParams()
             .setSample(CommandLineUtils.getListValues(commandOptions.sample))
             .setBuildIndex(commandOptions.buildIndex)
             .setAnnotate(commandOptions.annotate)
             .setOverwrite(commandOptions.overwrite);
         return openCGAClient.getVariantOperationClient().indexVariantSample(variantSampleIndexParams, queryParams);
+    }
+
+    private RestResponse<Job> configureSampleIndex() throws Exception {
+
+        logger.debug("Executing configureSampleIndex in Operations - Variant Storage command line");
+
+        OperationsVariantStorageCommandOptions.ConfigureSampleIndexCommandOptions commandOptions = operationsVariantStorageCommandOptions.configureSampleIndexCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotNull("skipRebuild", commandOptions.skipRebuild);
+        if(queryParams.get("study")==null){
+                queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
+        }
+
+
+        SampleIndexConfiguration sampleIndexConfiguration = new SampleIndexConfiguration();
+        return openCGAClient.getVariantOperationClient().configureSampleIndex(sampleIndexConfiguration, queryParams);
     }
 
     private RestResponse<Job> deleteVariantScore() throws Exception {
@@ -498,6 +586,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         VariantScoreIndexParams variantScoreIndexParams = new VariantScoreIndexParams()
             .setScoreName(commandOptions.scoreName)
             .setCohort1(commandOptions.cohort1)
@@ -524,6 +613,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         VariantSecondaryIndexParams variantSecondaryIndexParams = new VariantSecondaryIndexParams()
             .setRegion(commandOptions.region)
@@ -567,6 +657,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         VariantStatsIndexParams variantStatsIndexParams = new VariantStatsIndexParams()
             .setCohort(CommandLineUtils.getListValues(commandOptions.cohort))

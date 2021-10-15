@@ -171,7 +171,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                 if (parameter.isAvailableType() && !variable_names.contains(normaliceNames(getAsCamelCase(parameter.getName())))) {
                                     sb.append("        @Parameter(names = {" + getShortCuts(parameter, config) + "}, description = " +
                                             "\"" + parameter.getDescription().replaceAll("\"", "'") + "\", required = " + parameter.isRequired() + ", arity = 1)\n");
-                                    sb.append("        public " + getValidValue(parameter.getType()) + " " + normaliceNames(getAsCamelCase(parameter.getName())) + ";" +
+                                    sb.append("        public " + getValidValue(parameter.getType()) + " " + getVariableName(parameter) + ";" +
                                             " " +
                                             "\n");
                                     sb.append("    \n");
@@ -190,7 +190,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                                     normaliceNames(getAsCamelCase(bodyParameter.getName())))) + ", arity = 1)\n");
 
                                             sb.append("        public " + getValidValue(bodyParameter.getType()) + " "
-                                                    + normaliceNames(getAsCamelCase(bodyParameter.getName())) + ";\n");
+                                                    + getVariableName(bodyParameter) + ";\n");
                                             sb.append("    \n");
                                             variable_names.add(normaliceNames(getAsCamelCase(bodyParameter.getName())));
                                         }
@@ -203,6 +203,16 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             }
         }
         return sb.toString();
+    }
+
+    private String getVariableName(Parameter parameter) {
+        String res = "";
+        if (parameter.isInnerParam()) {
+            res = normaliceNames(getAsCamelCase(parameter.getParam() + " " + parameter.getName()));
+        } else {
+            res = normaliceNames(getAsCamelCase(parameter.getName()));
+        }
+        return res;
     }
 
     private boolean isMandatory(String commandName, String normaliceNames) {

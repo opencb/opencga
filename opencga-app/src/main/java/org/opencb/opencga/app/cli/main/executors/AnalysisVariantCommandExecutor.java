@@ -18,6 +18,7 @@ import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
 import org.opencb.opencga.core.models.variant.VariantExportParams;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.opencga.core.models.variant.IndividualQcAnalysisParams;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -31,6 +32,7 @@ import org.opencb.opencga.core.models.variant.CohortVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
@@ -43,6 +45,7 @@ import org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.opencga.core.models.variant.GatkWrapperParams;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
+import org.opencb.opencga.core.models.variant.AnnotationVariantQueryParams;
 import org.opencb.opencga.core.models.variant.SampleQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.RvtestsWrapperParams;
 import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
@@ -299,6 +302,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         CircosAnalysisParams circosAnalysisParams = new CircosAnalysisParams()
             .setTitle(commandOptions.title)
             .setDensity(commandOptions.density)
@@ -353,6 +357,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         CohortVariantStatsAnalysisParams cohortVariantStatsAnalysisParams = new CohortVariantStatsAnalysisParams()
             .setCohort(commandOptions.cohort)
             .setSamples(CommandLineUtils.getListValues(commandOptions.samples))
@@ -381,6 +386,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         VariantExportParams variantExportParams = new VariantExportParams()
             .setOutdir(commandOptions.outdir)
             .setOutputFileName(commandOptions.outputFileName)
@@ -389,6 +395,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             .setInclude(commandOptions.bodyInclude)
             .setExclude(commandOptions.bodyExclude)
             .setCompress(commandOptions.compress)
+            .setLimit(commandOptions.limit)
+            .setSkip(commandOptions.skip)
             .setSummary(commandOptions.summary);
         return openCGAClient.getVariantClient().runExport(variantExportParams, queryParams);
     }
@@ -427,6 +435,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         FamilyQcAnalysisParams familyQcAnalysisParams = new FamilyQcAnalysisParams()
             .setFamily(commandOptions.family)
@@ -473,6 +482,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         GatkWrapperParams gatkWrapperParams = new GatkWrapperParams()
             .setCommand(commandOptions.command)
             .setOutdir(commandOptions.outdir);
@@ -494,6 +504,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         GenomePlotAnalysisParams genomePlotAnalysisParams = new GenomePlotAnalysisParams()
             .setSample(commandOptions.sample)
@@ -519,6 +530,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         GwasAnalysisParams gwasAnalysisParams = new GwasAnalysisParams()
             .setPhenotype(commandOptions.phenotype)
@@ -549,6 +561,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         VariantIndexParams variantIndexParams = new VariantIndexParams()
             .setFile(commandOptions.file)
@@ -597,6 +610,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         IndividualQcAnalysisParams individualQcAnalysisParams = new IndividualQcAnalysisParams()
             .setIndividual(commandOptions.individual)
             .setSample(commandOptions.sample)
@@ -620,6 +634,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         InferredSexAnalysisParams inferredSexAnalysisParams = new InferredSexAnalysisParams()
             .setIndividual(commandOptions.individual)
@@ -680,6 +695,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         KnockoutAnalysisParams knockoutAnalysisParams = new KnockoutAnalysisParams()
             .setSample(CommandLineUtils.getListValues(commandOptions.sample))
             .setGene(CommandLineUtils.getListValues(commandOptions.gene))
@@ -709,6 +725,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         MendelianErrorAnalysisParams mendelianErrorAnalysisParams = new MendelianErrorAnalysisParams()
             .setFamily(commandOptions.family)
@@ -785,6 +802,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         MutationalSignatureAnalysisParams mutationalSignatureAnalysisParams = new MutationalSignatureAnalysisParams()
             .setSample(commandOptions.sample)
             .setId(commandOptions.id)
@@ -810,6 +828,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         PlinkWrapperParams plinkWrapperParams = new PlinkWrapperParams()
             .setOutdir(commandOptions.outdir);
@@ -921,6 +940,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         RelatednessAnalysisParams relatednessAnalysisParams = new RelatednessAnalysisParams()
             .setIndividuals(CommandLineUtils.getListValues(commandOptions.individuals))
             .setSamples(CommandLineUtils.getListValues(commandOptions.samples))
@@ -945,6 +965,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         RvtestsWrapperParams rvtestsWrapperParams = new RvtestsWrapperParams()
             .setCommand(commandOptions.command)
@@ -1004,6 +1025,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         SampleEligibilityAnalysisParams sampleEligibilityAnalysisParams = new SampleEligibilityAnalysisParams()
             .setQuery(commandOptions.query)
             .setIndex(commandOptions.index)
@@ -1027,10 +1049,38 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        AnnotationVariantQueryParams annotationVariantQueryParams= new AnnotationVariantQueryParams();
+        invokeSetter(annotationVariantQueryParams, "id", commandOptions.variantStatsQueryId);
+        invokeSetter(annotationVariantQueryParams, "region", commandOptions.variantStatsQueryRegion);
+        invokeSetter(annotationVariantQueryParams, "gene", commandOptions.variantStatsQueryGene);
+        invokeSetter(annotationVariantQueryParams, "type", commandOptions.variantStatsQueryType);
+        invokeSetter(annotationVariantQueryParams, "panel", commandOptions.variantStatsQueryPanel);
+        invokeSetter(annotationVariantQueryParams, "panelModeOfInheritance", commandOptions.variantStatsQueryPanelModeOfInheritance);
+        invokeSetter(annotationVariantQueryParams, "panelConfidence", commandOptions.variantStatsQueryPanelConfidence);
+        invokeSetter(annotationVariantQueryParams, "panelRoleInCancer", commandOptions.variantStatsQueryPanelRoleInCancer);
+        invokeSetter(annotationVariantQueryParams, "cohortStatsRef", commandOptions.variantStatsQueryCohortStatsRef);
+        invokeSetter(annotationVariantQueryParams, "cohortStatsAlt", commandOptions.variantStatsQueryCohortStatsAlt);
+        invokeSetter(annotationVariantQueryParams, "cohortStatsMaf", commandOptions.variantStatsQueryCohortStatsMaf);
+        invokeSetter(annotationVariantQueryParams, "ct", commandOptions.variantStatsQueryCt);
+        invokeSetter(annotationVariantQueryParams, "xref", commandOptions.variantStatsQueryXref);
+        invokeSetter(annotationVariantQueryParams, "biotype", commandOptions.variantStatsQueryBiotype);
+        invokeSetter(annotationVariantQueryParams, "proteinSubstitution", commandOptions.variantStatsQueryProteinSubstitution);
+        invokeSetter(annotationVariantQueryParams, "conservation", commandOptions.variantStatsQueryConservation);
+        invokeSetter(annotationVariantQueryParams, "populationFrequencyMaf", commandOptions.variantStatsQueryPopulationFrequencyMaf);
+        invokeSetter(annotationVariantQueryParams, "populationFrequencyAlt", commandOptions.variantStatsQueryPopulationFrequencyAlt);
+        invokeSetter(annotationVariantQueryParams, "populationFrequencyRef", commandOptions.variantStatsQueryPopulationFrequencyRef);
+        invokeSetter(annotationVariantQueryParams, "transcriptFlag", commandOptions.variantStatsQueryTranscriptFlag);
+        invokeSetter(annotationVariantQueryParams, "functionalScore", commandOptions.variantStatsQueryFunctionalScore);
+        invokeSetter(annotationVariantQueryParams, "clinical", commandOptions.variantStatsQueryClinical);
+        invokeSetter(annotationVariantQueryParams, "clinicalSignificance", commandOptions.variantStatsQueryClinicalSignificance);
+        invokeSetter(annotationVariantQueryParams, "clinicalConfirmedStatus", commandOptions.variantStatsQueryClinicalConfirmedStatus);
+
         SampleQcAnalysisParams sampleQcAnalysisParams = new SampleQcAnalysisParams()
             .setSample(commandOptions.sample)
             .setVariantStatsId(commandOptions.variantStatsId)
             .setVariantStatsDescription(commandOptions.variantStatsDescription)
+            .setVariantStatsQuery(annotationVariantQueryParams)
             .setSignatureId(commandOptions.signatureId)
             .setSignatureDescription(commandOptions.signatureDescription)
             .setSignatureRelease(commandOptions.signatureRelease)
@@ -1075,6 +1125,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         SampleVariantFilterParams sampleVariantFilterParams = new SampleVariantFilterParams()
             .setGenotypes(CommandLineUtils.getListValues(commandOptions.genotypes))
@@ -1129,6 +1180,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         SampleVariantStatsAnalysisParams sampleVariantStatsAnalysisParams = new SampleVariantStatsAnalysisParams()
             .setSample(CommandLineUtils.getListValues(commandOptions.sample))
             .setIndividual(CommandLineUtils.getListValues(commandOptions.individual))
@@ -1136,7 +1188,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             .setIndex(commandOptions.index)
             .setIndexOverwrite(commandOptions.indexOverwrite)
             .setIndexId(commandOptions.indexId)
-            .setIndexDescription(commandOptions.indexDescription);
+            .setIndexDescription(commandOptions.indexDescription)
+            .setBatchSize(commandOptions.batchSize);
         return openCGAClient.getVariantClient().runSampleStats(sampleVariantStatsAnalysisParams, queryParams);
     }
 
@@ -1156,6 +1209,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         VariantStatsExportParams variantStatsExportParams = new VariantStatsExportParams()
             .setCohorts(CommandLineUtils.getListValues(commandOptions.cohorts))
@@ -1181,6 +1235,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         VariantStatsAnalysisParams variantStatsAnalysisParams = new VariantStatsAnalysisParams()
             .setCohort(CommandLineUtils.getListValues(commandOptions.cohort))

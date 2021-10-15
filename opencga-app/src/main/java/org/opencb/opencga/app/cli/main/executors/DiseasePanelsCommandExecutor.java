@@ -100,6 +100,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         PanelAclUpdateParams panelAclUpdateParams = new PanelAclUpdateParams()
             .setPanel(commandOptions.panel);
         return openCGAClient.getDiseasePanelClient().updateAcl(commandOptions.members, commandOptions.action, panelAclUpdateParams, queryParams);
@@ -118,6 +119,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         PanelCreateParams panelCreateParams = new PanelCreateParams()
             .setId(commandOptions.bodyId)
@@ -258,6 +260,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         PanelUpdateParams panelUpdateParams = new PanelUpdateParams()
             .setId(commandOptions.id)

@@ -21,7 +21,9 @@ public class Endpoint {
         for (Parameter parameter : getParameters()) {
             if (parameter.getData() != null && !parameter.getData().isEmpty()) {
                 for (Parameter bodyParam : parameter.getData()) {
-                    if ((config.isAvailableSubCommand(bodyParam.getName()) && !bodyParam.isComplex()) || (bodyParam.isStringList())) {
+                    //     if ((config.isAvailableSubCommand(bodyParam.getName()) && !bodyParam.isComplex()) || (bodyParam.isStringList()
+                    //     )) {
+                    if (config.isAvailableSubCommand(bodyParam.getName())) {
                         return true;
                     }
                 }

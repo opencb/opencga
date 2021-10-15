@@ -14,17 +14,19 @@ import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
 
 import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
 
-import org.opencb.opencga.core.models.user.ConfigUpdateParams;
 import org.opencb.opencga.core.models.user.LoginParams;
 import org.opencb.opencga.core.models.user.PasswordChangeParams;
-import java.util.Map;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.models.user.UserCreateParams;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
 import org.opencb.opencga.core.models.user.FilterUpdateParams;
 import org.opencb.opencga.core.models.user.UserUpdateParams;
+import org.opencb.opencga.core.models.user.ConfigUpdateParams;
+import java.util.Map;
+import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 
 
@@ -104,6 +106,7 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         logger.debug("Executing create in Users command line");
 
         UsersCommandOptions.CreateCommandOptions commandOptions = usersCommandOptions.createCommandOptions;
+
         UserCreateParams userCreateParams = new UserCreateParams()
             .setId(commandOptions.id)
             .setName(commandOptions.name)
@@ -126,6 +129,7 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         logger.debug("Executing password in Users command line");
 
         UsersCommandOptions.PasswordCommandOptions commandOptions = usersCommandOptions.passwordCommandOptions;
+
         PasswordChangeParams passwordChangeParams = new PasswordChangeParams()
             .setUser(commandOptions.user)
             .setPassword(commandOptions.password)
@@ -167,6 +171,7 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("action", commandOptions.action);
 
+
         ConfigUpdateParams configUpdateParams = new ConfigUpdateParams()
             .setId(commandOptions.id);
         return openCGAClient.getUserClient().updateConfigs(commandOptions.user, configUpdateParams, queryParams);
@@ -204,6 +209,7 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         logger.debug("Executing update in Users command line");
 
         UsersCommandOptions.UpdateCommandOptions commandOptions = usersCommandOptions.updateCommandOptions;
+
         UserUpdateParams userUpdateParams = new UserUpdateParams()
             .setName(commandOptions.name)
             .setEmail(commandOptions.email)

@@ -1,6 +1,7 @@
 package org.opencb.opencga.server.json;
 
 import io.swagger.annotations.*;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.server.json.beans.Category;
@@ -141,41 +142,40 @@ public class RestApiParser {
                                             int modifiers = declaredField.getModifiers();
                                             // Ignore non-private or static fields
                                             if (Modifier.isPrivate(modifiers) && !Modifier.isStatic(modifiers)) {
-                                                Parameter innerParam = new Parameter();
-                                                innerParam.setName(declaredField.getName());
-                                                innerParam.setParam("typeClass");
-                                                innerParam.setType(declaredField.getType().getSimpleName());
-                                                innerParam.setTypeClass(declaredField.getType().getName() + ";");
-                                                innerParam.setAllowedValues("");
-                                                innerParam.setRequired(false);
-                                                innerParam.setDefaultValue("");
-                                                innerParam.setComplex(!CommandLineUtils.isPrimitiveType(declaredField.getType().getSimpleName()));
-
+                                                Parameter innerParam = getParameter(declaredField.getName(), variablePrefix, declaredField,
+                                                        declaredField.getType().getName(), declaredField.getName());
                                                 if (innerParam.isList()) {
                                                     innerParam.setGenericType(declaredField.getGenericType().getTypeName());
                                                 } else {
-                                                    if (innerParam.isComplex()) {
-                                                        //System.out.println("Type: " + innerParam.getType());
-                                                        System.out.println(innerParam.getName() + " TypeClass: " + innerParam.getTypeClass());
+                                                    if (innerParam.isComplex() && !innerParam.getTypeClass().replaceAll(";", "").contains(
+                                                            "$")) {
+                                                        String classAndPackageName = innerParam.getTypeClass().replaceAll(";", "");
+                                                        Class cls = Class.forName(classAndPackageName);
+                                                        Field[] fields = cls.getDeclaredFields();
+                                                        List<Parameter> complexParams = new ArrayList<>();
+                                                        for (Field field : fields) {
+                                                            if (CommandLineUtils.isPrimitiveType(field.getType().getSimpleName())) {
+                                                                //  System.out.println("" + field.getType().getName());
+                                                                Parameter complexParam =
+                                                                        getParameter(field.getName(), variablePrefix, field,
+                                                                                field.getType().getName(), declaredField.getName());
+                                                                complexParam.setGenericType(declaredField.getType().getName());
+                                                                complexParam.setInnerParam(true);
+                                                                complexParams.add(complexParam);
+                                                            }
+                                                        }
+                                                        if (CollectionUtils.isNotEmpty(complexParams)) {
+                                                            bodyParams.addAll(complexParams);
+                                                        }
                                                     }
                                                 }
 
-                                                String fieldName = variablePrefix
-                                                        + declaredField.getName().toUpperCase();
-                                                fieldName = normalize(fieldName);
-                                                String des = getDescriptionField(fieldName);
-                                                if (StringUtils.isNotEmpty(des)) {
-                                                    innerParam.setDescription(des);
-                                                } else {
-                                                    innerParam.setDescription(
-                                                            "The body web service " + declaredField.getName() + " "
-                                                                    + "parameter");
-                                                }
                                                 bodyParams.add(innerParam);
                                             }
                                         }
                                     } catch (ClassNotFoundException e) {
                                         logger.error("Error processing: " + typeClass);
+                                        e.printStackTrace();
                                     }
                                 }
                             }
@@ -188,6 +188,7 @@ public class RestApiParser {
                             if (!bodyParams.isEmpty()) {
                                 parameter.setData(bodyParams);
                             }
+
                             parameters.add(parameter);
                         }
                     }
@@ -200,6 +201,32 @@ public class RestApiParser {
         endpoints.sort(Comparator.comparing(endpoint -> (String) endpoint.getPath()));
         category.setEndpoints(endpoints);
         return category;
+    }
+
+    private static Parameter getParameter(String paramName, String variablePrefix, Field declaredField, String className,
+                                          String variableName) {
+        Parameter innerParam = new Parameter();
+        innerParam.setName(paramName);
+        innerParam.setParam(variableName);
+        innerParam.setType(declaredField.getType().getSimpleName());
+        innerParam.setTypeClass(className + ";");
+        innerParam.setAllowedValues("");
+        innerParam.setRequired(false);
+        innerParam.setDefaultValue("");
+        innerParam.setComplex(!CommandLineUtils.isPrimitiveType(declaredField.getType().getSimpleName()));
+
+        String fieldName = variablePrefix
+                + declaredField.getName().toUpperCase();
+        fieldName = normalize(fieldName);
+        String des = getDescriptionField(fieldName);
+        if (StringUtils.isNotEmpty(des)) {
+            innerParam.setDescription(des);
+        } else {
+            innerParam.setDescription(
+                    "The body web service " + declaredField.getName() + " "
+                            + "parameter");
+        }
+        return innerParam;
     }
 
     @Deprecated
@@ -271,8 +298,13 @@ public class RestApiParser {
                                     parameter.put("name", methodParameter.getAnnotation(QueryParam.class).value());
                                     parameter.put("param", "query");
                                 } else {
-                                    parameter.put("name", "body");
-                                    parameter.put("param", "body");
+                                    if (methodParameter.getAnnotation(FormDataParam.class) != null) {
+                                        parameter.put("name", methodParameter.getAnnotation(FormDataParam.class).value());
+                                        parameter.put("param", "query");
+                                    } else {
+                                        parameter.put("name", "body");
+                                        parameter.put("param", "body");
+                                    }
                                 }
                             }
 

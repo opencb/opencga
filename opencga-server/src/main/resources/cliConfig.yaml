@@ -49,11 +49,9 @@ apiConfig:
       ignore: False
       key: Project
       executorExtended: True
-      optionExtended: True
       commands:
         - name: create
           executorExtended: True
-          optionExtended: True
     - name: studies
       executorExtended: True
       optionExtended: True

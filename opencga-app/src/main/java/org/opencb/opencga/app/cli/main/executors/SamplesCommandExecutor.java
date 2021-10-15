@@ -12,18 +12,22 @@ import java.util.List;
 
 import org.opencb.opencga.app.cli.main.options.SamplesCommandOptions;
 
-import org.opencb.opencga.core.models.common.RgaIndex.Status;
+import org.opencb.opencga.core.models.sample.SampleCollection;
 import org.opencb.opencga.core.models.sample.SampleAclUpdateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
-import java.util.Map;
 import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
 import org.opencb.opencga.core.models.sample.SampleCreateParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
+import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.common.RgaIndex.Status;
+import java.util.Map;
+import org.opencb.opencga.core.models.sample.SampleProcessing;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
 
 
 /*
@@ -115,6 +119,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         SampleAclUpdateParams sampleAclUpdateParams = new SampleAclUpdateParams()
             .setSample(commandOptions.sample)
             .setIndividual(commandOptions.individual)
@@ -167,6 +172,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams()
             .setContent(commandOptions.content);
         return openCGAClient.getSampleClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
@@ -184,12 +190,34 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        SampleProcessing sampleProcessing= new SampleProcessing();
+        invokeSetter(sampleProcessing, "product", commandOptions.processingProduct);
+        invokeSetter(sampleProcessing, "preparationMethod", commandOptions.processingPreparationMethod);
+        invokeSetter(sampleProcessing, "extractionMethod", commandOptions.processingExtractionMethod);
+        invokeSetter(sampleProcessing, "labSampleId", commandOptions.processingLabSampleId);
+        invokeSetter(sampleProcessing, "quantity", commandOptions.processingQuantity);
+        invokeSetter(sampleProcessing, "date", commandOptions.processingDate);
+
+        SampleCollection sampleCollection= new SampleCollection();
+        invokeSetter(sampleCollection, "tissue", commandOptions.collectionTissue);
+        invokeSetter(sampleCollection, "organ", commandOptions.collectionOrgan);
+        invokeSetter(sampleCollection, "quantity", commandOptions.collectionQuantity);
+        invokeSetter(sampleCollection, "method", commandOptions.collectionMethod);
+        invokeSetter(sampleCollection, "date", commandOptions.collectionDate);
+
+        CustomStatusParams customStatusParams= new CustomStatusParams();
+        invokeSetter(customStatusParams, "name", commandOptions.statusName);
+        invokeSetter(customStatusParams, "description", commandOptions.statusDescription);
+
         SampleCreateParams sampleCreateParams = new SampleCreateParams()
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
             .setCreationDate(commandOptions.creationDate)
             .setModificationDate(commandOptions.modificationDate)
-            .setIndividualId(commandOptions.individualId);
+            .setIndividualId(commandOptions.individualId)
+            .setProcessing(sampleProcessing)
+            .setSomatic(commandOptions.somatic);
         return openCGAClient.getSampleClient().create(sampleCreateParams, queryParams);
     }
 
@@ -389,12 +417,34 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        SampleProcessing sampleProcessing= new SampleProcessing();
+        invokeSetter(sampleProcessing, "product", commandOptions.processingProduct);
+        invokeSetter(sampleProcessing, "preparationMethod", commandOptions.processingPreparationMethod);
+        invokeSetter(sampleProcessing, "extractionMethod", commandOptions.processingExtractionMethod);
+        invokeSetter(sampleProcessing, "labSampleId", commandOptions.processingLabSampleId);
+        invokeSetter(sampleProcessing, "quantity", commandOptions.processingQuantity);
+        invokeSetter(sampleProcessing, "date", commandOptions.processingDate);
+
+        SampleCollection sampleCollection= new SampleCollection();
+        invokeSetter(sampleCollection, "tissue", commandOptions.collectionTissue);
+        invokeSetter(sampleCollection, "organ", commandOptions.collectionOrgan);
+        invokeSetter(sampleCollection, "quantity", commandOptions.collectionQuantity);
+        invokeSetter(sampleCollection, "method", commandOptions.collectionMethod);
+        invokeSetter(sampleCollection, "date", commandOptions.collectionDate);
+
+        CustomStatusParams customStatusParams= new CustomStatusParams();
+        invokeSetter(customStatusParams, "name", commandOptions.statusName);
+        invokeSetter(customStatusParams, "description", commandOptions.statusDescription);
+
         SampleUpdateParams sampleUpdateParams = new SampleUpdateParams()
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
             .setCreationDate(commandOptions.creationDate)
             .setModificationDate(commandOptions.modificationDate)
-            .setIndividualId(commandOptions.individualId);
+            .setIndividualId(commandOptions.individualId)
+            .setProcessing(sampleProcessing)
+            .setSomatic(commandOptions.somatic);
         return openCGAClient.getSampleClient().update(commandOptions.samples, sampleUpdateParams, queryParams);
     }
 }

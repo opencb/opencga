@@ -42,7 +42,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         public RunLinkCommandOptions runLinkCommandOptions;
         public RunPostlinkCommandOptions runPostlinkCommandOptions;
         public SearchCommandOptions searchCommandOptions;
-        public UploadCommandOptions uploadCommandOptions;
         public AclCommandOptions aclCommandOptions;
         public DeleteCommandOptions deleteCommandOptions;
         public InfoCommandOptions infoCommandOptions;
@@ -71,7 +70,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         this.runLinkCommandOptions = new RunLinkCommandOptions();
         this.runPostlinkCommandOptions = new RunPostlinkCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
-        this.uploadCommandOptions = new UploadCommandOptions();
         this.aclCommandOptions = new AclCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
@@ -370,6 +368,12 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
     
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String statusName;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String statusDescription;
+    
   }
     @Parameters(commandNames = {"run-link"}, commandDescription ="Link an external file into catalog asynchronously.")
     public class RunLinkCommandOptions {
@@ -428,6 +432,9 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
     
         @Parameter(names = {"--files"}, description = "The body web service files parameter", required = false, arity = 1)
         public String files;
+    
+        @Parameter(names = {"--batch-size"}, description = "The body web service batchSize parameter", required = false, arity = 1)
+        public Integer batchSize;
     
   }
     @Parameters(commandNames = {"search"}, commandDescription ="File search method.")
@@ -648,11 +655,56 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--checksum"}, description = "The body web service checksum parameter", required = false, arity = 1)
         public String checksum;
     
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String softwareName;
+    
+        @Parameter(names = {"--version"}, description = "The body web service version parameter", required = false, arity = 1)
+        public String softwareVersion;
+    
+        @Parameter(names = {"--repository"}, description = "The body web service repository parameter", required = false, arity = 1)
+        public String softwareRepository;
+    
+        @Parameter(names = {"--commit"}, description = "The body web service commit parameter", required = false, arity = 1)
+        public String softwareCommit;
+    
+        @Parameter(names = {"--website"}, description = "The body web service website parameter", required = false, arity = 1)
+        public String softwareWebsite;
+    
+        @Parameter(names = {"--manufacturer"}, description = "The body web service manufacturer parameter", required = false, arity = 1)
+        public String experimentManufacturer;
+    
+        @Parameter(names = {"--platform"}, description = "The body web service platform parameter", required = false, arity = 1)
+        public String experimentPlatform;
+    
+        @Parameter(names = {"--library"}, description = "The body web service library parameter", required = false, arity = 1)
+        public String experimentLibrary;
+    
+        @Parameter(names = {"--date"}, description = "The body web service date parameter", required = false, arity = 1)
+        public String experimentDate;
+    
+        @Parameter(names = {"--center"}, description = "The body web service center parameter", required = false, arity = 1)
+        public String experimentCenter;
+    
+        @Parameter(names = {"--lab"}, description = "The body web service lab parameter", required = false, arity = 1)
+        public String experimentLab;
+    
+        @Parameter(names = {"--responsible"}, description = "The body web service responsible parameter", required = false, arity = 1)
+        public String experimentResponsible;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String experimentDescription;
+    
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
     
         @Parameter(names = {"--size"}, description = "The body web service size parameter", required = false, arity = 1)
         public Long size;
+    
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String statusName;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String statusDescription;
     
   }
     @Parameters(commandNames = {"download"}, commandDescription ="Download file")

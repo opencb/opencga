@@ -12,17 +12,22 @@ import java.util.List;
 
 import org.opencb.opencga.app.cli.main.options.IndividualsCommandOptions;
 
-import org.opencb.opencga.core.models.individual.IndividualAclUpdateParams;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
-import java.util.Map;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
+import org.opencb.opencga.core.models.individual.IndividualQualityControl;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.models.individual.IndividualCreateParams;
+import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
+import org.opencb.opencga.core.models.individual.IndividualAclUpdateParams;
+import org.opencb.opencga.core.models.individual.Individual;
+import java.util.Map;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.individual.Location;
+import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.opencga.core.models.individual.IndividualPopulation;
 
 
 /*
@@ -115,6 +120,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         IndividualAclUpdateParams individualAclUpdateParams = new IndividualAclUpdateParams()
             .setIndividual(commandOptions.individual)
             .setSample(commandOptions.sample);
@@ -170,6 +176,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams()
             .setContent(commandOptions.content);
         return openCGAClient.getIndividualClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
@@ -188,12 +195,37 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        IndividualPopulation individualPopulation= new IndividualPopulation();
+        invokeSetter(individualPopulation, "name", commandOptions.populationName);
+        invokeSetter(individualPopulation, "subpopulation", commandOptions.populationSubpopulation);
+        invokeSetter(individualPopulation, "description", commandOptions.populationDescription);
+
+        IndividualReferenceParam individualReferenceParam= new IndividualReferenceParam();
+        invokeSetter(individualReferenceParam, "id", commandOptions.fatherId);
+        invokeSetter(individualReferenceParam, "uuid", commandOptions.fatherUuid);
+        invokeSetter(individualReferenceParam, "id", commandOptions.motherId);
+        invokeSetter(individualReferenceParam, "uuid", commandOptions.motherUuid);
+
+        CustomStatusParams customStatusParams= new CustomStatusParams();
+        invokeSetter(customStatusParams, "name", commandOptions.statusName);
+        invokeSetter(customStatusParams, "description", commandOptions.statusDescription);
+
+        Location location= new Location();
+        invokeSetter(location, "address", commandOptions.locationAddress);
+        invokeSetter(location, "postalCode", commandOptions.locationPostalCode);
+        invokeSetter(location, "city", commandOptions.locationCity);
+        invokeSetter(location, "state", commandOptions.locationState);
+        invokeSetter(location, "country", commandOptions.locationCountry);
+
         IndividualCreateParams individualCreateParams = new IndividualCreateParams()
             .setId(commandOptions.id)
             .setName(commandOptions.name)
+            .setFather(individualReferenceParam)
             .setCreationDate(commandOptions.creationDate)
             .setModificationDate(commandOptions.modificationDate)
             .setEthnicity(commandOptions.ethnicity)
+            .setParentalConsanguinity(commandOptions.parentalConsanguinity)
             .setDateOfBirth(commandOptions.dateOfBirth);
         return openCGAClient.getIndividualClient().create(individualCreateParams, queryParams);
     }
@@ -354,11 +386,39 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        IndividualPopulation individualPopulation= new IndividualPopulation();
+        invokeSetter(individualPopulation, "name", commandOptions.populationName);
+        invokeSetter(individualPopulation, "subpopulation", commandOptions.populationSubpopulation);
+        invokeSetter(individualPopulation, "description", commandOptions.populationDescription);
+
+        IndividualReferenceParam individualReferenceParam= new IndividualReferenceParam();
+        invokeSetter(individualReferenceParam, "id", commandOptions.fatherId);
+        invokeSetter(individualReferenceParam, "uuid", commandOptions.fatherUuid);
+        invokeSetter(individualReferenceParam, "id", commandOptions.motherId);
+        invokeSetter(individualReferenceParam, "uuid", commandOptions.motherUuid);
+
+        CustomStatusParams customStatusParams= new CustomStatusParams();
+        invokeSetter(customStatusParams, "name", commandOptions.statusName);
+        invokeSetter(customStatusParams, "description", commandOptions.statusDescription);
+
+        Location location= new Location();
+        invokeSetter(location, "address", commandOptions.locationAddress);
+        invokeSetter(location, "postalCode", commandOptions.locationPostalCode);
+        invokeSetter(location, "city", commandOptions.locationCity);
+        invokeSetter(location, "state", commandOptions.locationState);
+        invokeSetter(location, "country", commandOptions.locationCountry);
+
+        IndividualQualityControl individualQualityControl= new IndividualQualityControl();
+        invokeSetter(individualQualityControl, "sampleId", commandOptions.qualityControlSampleId);
+
         IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams()
             .setId(commandOptions.id)
             .setName(commandOptions.name)
+            .setFather(individualReferenceParam)
             .setCreationDate(commandOptions.creationDate)
             .setModificationDate(commandOptions.modificationDate)
+            .setParentalConsanguinity(commandOptions.parentalConsanguinity)
             .setEthnicity(commandOptions.ethnicity)
             .setDateOfBirth(commandOptions.dateOfBirth);
         return openCGAClient.getIndividualClient().update(commandOptions.individuals, individualUpdateParams, queryParams);

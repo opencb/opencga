@@ -14,26 +14,32 @@ import org.opencb.opencga.app.cli.main.options.FilesCommandOptions;
 
 import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
 
-import org.opencb.opencga.core.models.file.File.Bioformat;
-import org.opencb.opencga.core.models.file.FileFetch;
-import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.core.models.file.FileAclUpdateParams;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
+import org.opencb.opencga.core.models.file.FileLinkInternalParams;
+import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import java.io.DataInputStream;
+import org.opencb.opencga.core.models.file.FileExperiment;
+import org.opencb.opencga.core.models.file.FileTree;
+import org.opencb.opencga.core.models.file.FileCreateParams;
+import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.biodata.models.clinical.interpretation.Software;
+import org.opencb.opencga.core.models.file.SmallFileInternal;
+import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.file.FileQualityControl;
+import org.opencb.opencga.core.models.file.File.Bioformat;
+import org.opencb.opencga.core.models.file.FileFetch;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.file.File.Format;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.file.FileLinkToolParams;
 import org.opencb.opencga.core.models.file.PostLinkToolParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
-import java.io.DataInputStream;
 import java.util.Map;
-import org.opencb.opencga.core.models.file.FileTree;
-import org.opencb.opencga.core.models.file.FileCreateParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileLinkParams;
 
 
 /*
@@ -101,9 +107,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             case "search":
                 queryResponse = search();
                 break;
-            case "upload":
-                queryResponse = upload();
-                break;
             case "acl":
                 queryResponse = acl();
                 break;
@@ -164,6 +167,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         FileAclUpdateParams fileAclUpdateParams = new FileAclUpdateParams()
             .setFile(commandOptions.file)
             .setSample(commandOptions.sample);
@@ -218,6 +222,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams()
             .setContent(commandOptions.content);
         return openCGAClient.getFileClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
@@ -234,6 +239,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         FileCreateParams fileCreateParams = new FileCreateParams()
             .setPath(commandOptions.path)
@@ -300,6 +306,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         FileFetch fileFetch = new FileFetch()
             .setUrl(commandOptions.url)
             .setPath(commandOptions.path);
@@ -319,12 +326,18 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        CustomStatusParams customStatusParams= new CustomStatusParams();
+        invokeSetter(customStatusParams, "name", commandOptions.statusName);
+        invokeSetter(customStatusParams, "description", commandOptions.statusDescription);
+
         FileLinkParams fileLinkParams = new FileLinkParams()
             .setUri(commandOptions.uri)
             .setPath(commandOptions.path)
             .setDescription(commandOptions.description)
             .setCreationDate(commandOptions.creationDate)
-            .setModificationDate(commandOptions.modificationDate);
+            .setModificationDate(commandOptions.modificationDate)
+            .setStatus(customStatusParams);
         return openCGAClient.getFileClient().link(fileLinkParams, queryParams);
     }
 
@@ -343,6 +356,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         FileLinkToolParams fileLinkToolParams = new FileLinkToolParams()
             .setUri(CommandLineUtils.getListValues(commandOptions.uri))
@@ -368,8 +382,10 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         PostLinkToolParams postLinkToolParams = new PostLinkToolParams()
-            .setFiles(CommandLineUtils.getListValues(commandOptions.files));
+            .setFiles(CommandLineUtils.getListValues(commandOptions.files))
+            .setBatchSize(commandOptions.batchSize);
         return openCGAClient.getFileClient().runPostlink(postLinkToolParams, queryParams);
     }
 
@@ -417,14 +433,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         }
 
         return openCGAClient.getFileClient().search(queryParams);
-    }
-
-    protected RestResponse<File> upload() throws Exception {
-
-        logger.debug("Executing upload in Files command line");
-
-        return super.upload();
-
     }
 
     private RestResponse<ObjectMap> acl() throws Exception {
@@ -510,6 +518,28 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        CustomStatusParams customStatusParams= new CustomStatusParams();
+        invokeSetter(customStatusParams, "name", commandOptions.statusName);
+        invokeSetter(customStatusParams, "description", commandOptions.statusDescription);
+
+        FileExperiment fileExperiment= new FileExperiment();
+        invokeSetter(fileExperiment, "manufacturer", commandOptions.experimentManufacturer);
+        invokeSetter(fileExperiment, "platform", commandOptions.experimentPlatform);
+        invokeSetter(fileExperiment, "library", commandOptions.experimentLibrary);
+        invokeSetter(fileExperiment, "date", commandOptions.experimentDate);
+        invokeSetter(fileExperiment, "center", commandOptions.experimentCenter);
+        invokeSetter(fileExperiment, "lab", commandOptions.experimentLab);
+        invokeSetter(fileExperiment, "responsible", commandOptions.experimentResponsible);
+        invokeSetter(fileExperiment, "description", commandOptions.experimentDescription);
+
+        Software software= new Software();
+        invokeSetter(software, "name", commandOptions.softwareName);
+        invokeSetter(software, "version", commandOptions.softwareVersion);
+        invokeSetter(software, "repository", commandOptions.softwareRepository);
+        invokeSetter(software, "commit", commandOptions.softwareCommit);
+        invokeSetter(software, "website", commandOptions.softwareWebsite);
+
         FileUpdateParams fileUpdateParams = new FileUpdateParams()
             .setName(commandOptions.name)
             .setDescription(commandOptions.description)
@@ -517,6 +547,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             .setModificationDate(commandOptions.modificationDate)
             .setSampleIds(CommandLineUtils.getListValues(commandOptions.sampleIds))
             .setChecksum(commandOptions.checksum)
+            .setSoftware(software)
             .setTags(CommandLineUtils.getListValues(commandOptions.tags))
             .setSize(commandOptions.size);
         return openCGAClient.getFileClient().update(commandOptions.files, fileUpdateParams, queryParams);

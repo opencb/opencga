@@ -23,6 +23,7 @@ import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.models.cohort.CohortGenerateParams;
 import java.util.Map;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
 import org.opencb.opencga.core.models.common.Enums.CohortType;
 
@@ -116,6 +117,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         CohortAclUpdateParams cohortAclUpdateParams = new CohortAclUpdateParams()
             .setCohort(commandOptions.cohort);
         return openCGAClient.getCohortClient().updateAcl(commandOptions.members, commandOptions.action, cohortAclUpdateParams, queryParams);
@@ -161,6 +163,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams()
             .setContent(commandOptions.content);
         return openCGAClient.getCohortClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
@@ -180,11 +183,17 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        CustomStatusParams customStatusParams= new CustomStatusParams();
+        invokeSetter(customStatusParams, "name", commandOptions.statusName);
+        invokeSetter(customStatusParams, "description", commandOptions.statusDescription);
+
         CohortCreateParams cohortCreateParams = new CohortCreateParams()
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
             .setCreationDate(commandOptions.creationDate)
-            .setModificationDate(commandOptions.modificationDate);
+            .setModificationDate(commandOptions.modificationDate)
+            .setStatus(customStatusParams);
         return openCGAClient.getCohortClient().create(cohortCreateParams, queryParams);
     }
 
@@ -241,11 +250,17 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        CustomStatusParams customStatusParams= new CustomStatusParams();
+        invokeSetter(customStatusParams, "name", commandOptions.statusName);
+        invokeSetter(customStatusParams, "description", commandOptions.statusDescription);
+
         CohortGenerateParams cohortGenerateParams = new CohortGenerateParams()
             .setId(commandOptions.bodyId)
             .setDescription(commandOptions.description)
             .setCreationDate(commandOptions.bodyCreationDate)
-            .setModificationDate(commandOptions.bodyModificationDate);
+            .setModificationDate(commandOptions.bodyModificationDate)
+            .setStatus(customStatusParams);
         return openCGAClient.getCohortClient().generate(cohortGenerateParams, queryParams);
     }
 
@@ -348,11 +363,17 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        CustomStatusParams customStatusParams= new CustomStatusParams();
+        invokeSetter(customStatusParams, "name", commandOptions.statusName);
+        invokeSetter(customStatusParams, "description", commandOptions.statusDescription);
+
         CohortUpdateParams cohortUpdateParams = new CohortUpdateParams()
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
             .setCreationDate(commandOptions.creationDate)
-            .setModificationDate(commandOptions.modificationDate);
+            .setModificationDate(commandOptions.modificationDate)
+            .setStatus(customStatusParams);
         return openCGAClient.getCohortClient().update(commandOptions.cohorts, cohortUpdateParams, queryParams);
     }
 }

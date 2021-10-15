@@ -201,17 +201,62 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
         public String name;
     
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String fatherId;
+    
+        @Parameter(names = {"--uuid"}, description = "The body web service uuid parameter", required = false, arity = 1)
+        public String fatherUuid;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
+        public String motherId;
+    
+        @Parameter(names = {"--uuid"}, description = "The body web service uuid parameter", required = false, arity = 1)
+        public String motherUuid;
+    
         @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
         public String creationDate;
     
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
     
+        @Parameter(names = {"--address"}, description = "The body web service address parameter", required = false, arity = 1)
+        public String locationAddress;
+    
+        @Parameter(names = {"--postal-code"}, description = "The body web service postalCode parameter", required = false, arity = 1)
+        public String locationPostalCode;
+    
+        @Parameter(names = {"--city"}, description = "The body web service city parameter", required = false, arity = 1)
+        public String locationCity;
+    
+        @Parameter(names = {"--state"}, description = "The body web service state parameter", required = false, arity = 1)
+        public String locationState;
+    
+        @Parameter(names = {"--country"}, description = "The body web service country parameter", required = false, arity = 1)
+        public String locationCountry;
+    
         @Parameter(names = {"--ethnicity"}, description = "The body web service ethnicity parameter", required = false, arity = 1)
         public String ethnicity;
     
+        @Parameter(names = {"--parental-consanguinity"}, description = "The body web service parentalConsanguinity parameter", required = false, arity = 1)
+        public Boolean parentalConsanguinity;
+    
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String populationName;
+    
+        @Parameter(names = {"--subpopulation"}, description = "The body web service subpopulation parameter", required = false, arity = 1)
+        public String populationSubpopulation;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String populationDescription;
+    
         @Parameter(names = {"--date-of-birth"}, description = "The body web service dateOfBirth parameter", required = false, arity = 1)
         public String dateOfBirth;
+    
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String statusName;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String statusDescription;
     
   }
     @Parameters(commandNames = {"distinct"}, commandDescription ="Individual distinct method")
@@ -501,17 +546,65 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
         public String name;
     
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String fatherId;
+    
+        @Parameter(names = {"--uuid"}, description = "The body web service uuid parameter", required = false, arity = 1)
+        public String fatherUuid;
+    
+        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String motherId;
+    
+        @Parameter(names = {"--uuid"}, description = "The body web service uuid parameter", required = false, arity = 1)
+        public String motherUuid;
+    
         @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
         public String creationDate;
     
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
     
+        @Parameter(names = {"--parental-consanguinity"}, description = "The body web service parentalConsanguinity parameter", required = false, arity = 1)
+        public Boolean parentalConsanguinity;
+    
+        @Parameter(names = {"--address"}, description = "The body web service address parameter", required = false, arity = 1)
+        public String locationAddress;
+    
+        @Parameter(names = {"--postal-code"}, description = "The body web service postalCode parameter", required = false, arity = 1)
+        public String locationPostalCode;
+    
+        @Parameter(names = {"--city"}, description = "The body web service city parameter", required = false, arity = 1)
+        public String locationCity;
+    
+        @Parameter(names = {"--state"}, description = "The body web service state parameter", required = false, arity = 1)
+        public String locationState;
+    
+        @Parameter(names = {"--country"}, description = "The body web service country parameter", required = false, arity = 1)
+        public String locationCountry;
+    
         @Parameter(names = {"--ethnicity"}, description = "The body web service ethnicity parameter", required = false, arity = 1)
         public String ethnicity;
     
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String populationName;
+    
+        @Parameter(names = {"--subpopulation"}, description = "The body web service subpopulation parameter", required = false, arity = 1)
+        public String populationSubpopulation;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String populationDescription;
+    
         @Parameter(names = {"--date-of-birth"}, description = "The body web service dateOfBirth parameter", required = false, arity = 1)
         public String dateOfBirth;
+    
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String statusName;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String statusDescription;
+    
+        @Parameter(names = {"--sample-id"}, description = "The body web service sampleId parameter", required = false, arity = 1)
+        public String qualityControlSampleId;
     
   }
     @Parameters(commandNames = {"relatives"}, commandDescription ="Get individual relatives")

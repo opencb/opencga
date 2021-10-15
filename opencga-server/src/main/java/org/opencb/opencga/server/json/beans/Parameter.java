@@ -1,6 +1,5 @@
 package org.opencb.opencga.server.json.beans;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class Parameter {
@@ -17,16 +16,7 @@ public class Parameter {
     private int position;
     private boolean complex;
     private String genericType;
-
-    @Deprecated
-    public List<Parameter> getAvailableData() {
-        List<Parameter> res = new ArrayList<>();
-        if (data != null && data.size() > 0) {
-            for (Parameter p : data) {
-            }
-        }
-        return res;
-    }
+    private boolean innerParam;
 
     @Override
     public String toString() {
@@ -43,8 +33,18 @@ public class Parameter {
         sb.append(", position=").append(position);
         sb.append(", complex=").append(complex);
         sb.append(", genericType='").append(genericType).append('\'');
+        sb.append(", innerParam=").append(innerParam);
         sb.append('}');
         return sb.toString();
+    }
+
+    public boolean isInnerParam() {
+        return innerParam;
+    }
+
+    public Parameter setInnerParam(boolean innerParam) {
+        this.innerParam = innerParam;
+        return this;
     }
 
     public boolean isRequired() {
@@ -166,5 +166,9 @@ public class Parameter {
 
     public boolean isAvailableType() {
         return (!isComplex() || isStringList());
+    }
+
+    public boolean isCollection() {
+        return isComplex() && ("List".equals(getType()) || "Map".equals(getType()));
     }
 }

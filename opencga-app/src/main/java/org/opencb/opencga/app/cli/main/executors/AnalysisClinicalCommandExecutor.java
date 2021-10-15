@@ -12,18 +12,22 @@ import java.util.List;
 
 import org.opencb.opencga.app.cli.main.options.AnalysisClinicalCommandOptions;
 
+import org.opencb.opencga.core.models.clinical.ProbandParam;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
-import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.core.models.clinical.InterpretationCreateParams;
+import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
 import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
 import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.FamilyParam;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
+import org.opencb.opencga.core.models.clinical.DisorderReferenceParam;
 import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveReplaceAction;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisCreateParams;
 import org.opencb.opencga.core.models.clinical.CancerTieringInterpretationAnalysisParams;
@@ -36,12 +40,18 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.models.clinical.PriorityParam;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
+import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
 import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
+import org.opencb.opencga.core.models.study.configuration.ClinicalConsentConfiguration;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGeneSummary;
 import java.util.Map;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalystParam;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividualSummary;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariantSummary;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQualityControlUpdateParam;
+import org.opencb.opencga.core.models.study.configuration.InterpretationStudyConfiguration;
 
 
 /*
@@ -81,6 +91,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
             case "update-acl":
                 queryResponse = updateAcl();
+                break;
+            case "update-clinical-configuration":
+                queryResponse = updateClinicalConfiguration();
                 break;
             case "create":
                 queryResponse = create();
@@ -160,6 +173,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             case "delete-interpretation":
                 queryResponse = deleteInterpretation();
                 break;
+            case "merge-interpretation":
+                queryResponse = mergeInterpretation();
+                break;
             case "update-interpretation":
                 queryResponse = updateInterpretation();
                 break;
@@ -185,9 +201,27 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         ClinicalAnalysisAclUpdateParams clinicalAnalysisAclUpdateParams = new ClinicalAnalysisAclUpdateParams()
             .setClinicalAnalysis(commandOptions.clinicalAnalysis);
         return openCGAClient.getClinicalAnalysisClient().updateAcl(commandOptions.members, commandOptions.action, clinicalAnalysisAclUpdateParams, queryParams);
+    }
+
+    private RestResponse<ObjectMap> updateClinicalConfiguration() throws Exception {
+
+        logger.debug("Executing updateClinicalConfiguration in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.UpdateClinicalConfigurationCommandOptions commandOptions = analysisClinicalCommandOptions.updateClinicalConfigurationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if(queryParams.get("study")==null){
+                queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
+        }
+
+
+        ClinicalAnalysisStudyConfiguration clinicalAnalysisStudyConfiguration = new ClinicalAnalysisStudyConfiguration();
+        return openCGAClient.getClinicalAnalysisClient().updateClinicalConfiguration(clinicalAnalysisStudyConfiguration, queryParams);
     }
 
     private RestResponse<ClinicalAnalysis> create() throws Exception {
@@ -203,9 +237,40 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        PriorityParam priorityParam= new PriorityParam();
+        invokeSetter(priorityParam, "id", commandOptions.priorityId);
+
+        StatusParam statusParam= new StatusParam();
+        invokeSetter(statusParam, "id", commandOptions.statusId);
+
+        ClinicalAnalysisQualityControlUpdateParam clinicalAnalysisQualityControlUpdateParam= new ClinicalAnalysisQualityControlUpdateParam();
+        invokeSetter(clinicalAnalysisQualityControlUpdateParam, "comment", commandOptions.qualityControlComment);
+
+        ProbandParam probandParam= new ProbandParam();
+        invokeSetter(probandParam, "id", commandOptions.probandId);
+
+        InterpretationCreateParams interpretationCreateParams= new InterpretationCreateParams();
+        invokeSetter(interpretationCreateParams, "id", commandOptions.interpretationId);
+        invokeSetter(interpretationCreateParams, "description", commandOptions.interpretationDescription);
+        invokeSetter(interpretationCreateParams, "clinicalAnalysisId", commandOptions.interpretationClinicalAnalysisId);
+        invokeSetter(interpretationCreateParams, "creationDate", commandOptions.interpretationCreationDate);
+        invokeSetter(interpretationCreateParams, "modificationDate", commandOptions.interpretationModificationDate);
+
+        ClinicalAnalystParam clinicalAnalystParam= new ClinicalAnalystParam();
+        invokeSetter(clinicalAnalystParam, "id", commandOptions.analystId);
+
+        DisorderReferenceParam disorderReferenceParam= new DisorderReferenceParam();
+        invokeSetter(disorderReferenceParam, "id", commandOptions.disorderId);
+
+        FamilyParam familyParam= new FamilyParam();
+        invokeSetter(familyParam, "id", commandOptions.familyId);
+
         ClinicalAnalysisCreateParams clinicalAnalysisCreateParams = new ClinicalAnalysisCreateParams()
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
+            .setDisorder(disorderReferenceParam)
+            .setPanelLock(commandOptions.panelLock)
             .setCreationDate(commandOptions.creationDate)
             .setModificationDate(commandOptions.modificationDate)
             .setDueDate(commandOptions.dueDate);
@@ -347,6 +412,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         CancerTieringInterpretationAnalysisParams cancerTieringInterpretationAnalysisParams = new CancerTieringInterpretationAnalysisParams()
             .setClinicalAnalysis(commandOptions.clinicalAnalysis)
             .setDiscardedVariants(CommandLineUtils.getListValues(commandOptions.discardedVariants))
@@ -369,6 +435,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         TeamInterpretationAnalysisParams teamInterpretationAnalysisParams = new TeamInterpretationAnalysisParams()
             .setClinicalAnalysis(commandOptions.clinicalAnalysis)
@@ -394,6 +461,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         TieringInterpretationAnalysisParams tieringInterpretationAnalysisParams = new TieringInterpretationAnalysisParams()
             .setClinicalAnalysis(commandOptions.clinicalAnalysis)
             .setPanels(CommandLineUtils.getListValues(commandOptions.panels))
@@ -416,6 +484,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         ZettaInterpretationAnalysisParams zettaInterpretationAnalysisParams = new ZettaInterpretationAnalysisParams()
             .setClinicalAnalysis(commandOptions.clinicalAnalysis)
@@ -606,6 +675,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         RgaAnalysisParams rgaAnalysisParams = new RgaAnalysisParams()
             .setFile(commandOptions.file);
@@ -951,9 +1021,34 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        PriorityParam priorityParam= new PriorityParam();
+        invokeSetter(priorityParam, "id", commandOptions.priorityId);
+
+        StatusParam statusParam= new StatusParam();
+        invokeSetter(statusParam, "id", commandOptions.statusId);
+
+        ClinicalAnalysisQualityControlUpdateParam clinicalAnalysisQualityControlUpdateParam= new ClinicalAnalysisQualityControlUpdateParam();
+        invokeSetter(clinicalAnalysisQualityControlUpdateParam, "comment", commandOptions.qualityControlComment);
+
+        ProbandParam probandParam= new ProbandParam();
+        invokeSetter(probandParam, "id", commandOptions.probandId);
+
+        ClinicalAnalystParam clinicalAnalystParam= new ClinicalAnalystParam();
+        invokeSetter(clinicalAnalystParam, "id", commandOptions.analystId);
+
+        DisorderReferenceParam disorderReferenceParam= new DisorderReferenceParam();
+        invokeSetter(disorderReferenceParam, "id", commandOptions.disorderId);
+
+        FamilyParam familyParam= new FamilyParam();
+        invokeSetter(familyParam, "id", commandOptions.familyId);
+
         ClinicalAnalysisUpdateParams clinicalAnalysisUpdateParams = new ClinicalAnalysisUpdateParams()
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
+            .setDisorder(disorderReferenceParam)
+            .setPanelLock(commandOptions.panelLock)
+            .setLocked(commandOptions.locked)
             .setCreationDate(commandOptions.creationDate)
             .setModificationDate(commandOptions.modificationDate)
             .setDueDate(commandOptions.dueDate);
@@ -991,12 +1086,17 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        ClinicalAnalystParam clinicalAnalystParam= new ClinicalAnalystParam();
+        invokeSetter(clinicalAnalystParam, "id", commandOptions.analystId);
+
         InterpretationCreateParams interpretationCreateParams = new InterpretationCreateParams()
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
             .setClinicalAnalysisId(commandOptions.clinicalAnalysisId)
             .setCreationDate(commandOptions.creationDate)
-            .setModificationDate(commandOptions.modificationDate);
+            .setModificationDate(commandOptions.modificationDate)
+            .setAnalyst(clinicalAnalystParam);
         return openCGAClient.getClinicalAnalysisClient().createInterpretation(commandOptions.clinicalAnalysis, interpretationCreateParams, queryParams);
     }
 
@@ -1016,6 +1116,25 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().deleteInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretations, queryParams);
     }
 
+    private RestResponse<Interpretation> mergeInterpretation() throws Exception {
+
+        logger.debug("Executing mergeInterpretation in Analysis - Clinical command line");
+
+        AnalysisClinicalCommandOptions.MergeInterpretationCommandOptions commandOptions = analysisClinicalCommandOptions.mergeInterpretationCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        queryParams.putIfNotEmpty("secondaryInterpretationId", commandOptions.secondaryInterpretationId);
+        queryParams.putIfNotEmpty("findings", commandOptions.findings);
+        if(queryParams.get("study")==null){
+                queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
+        }
+
+
+        InterpretationMergeParams interpretationMergeParams = new InterpretationMergeParams();
+        return openCGAClient.getClinicalAnalysisClient().mergeInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretation, interpretationMergeParams, queryParams);
+    }
+
     private RestResponse<Interpretation> updateInterpretation() throws Exception {
 
         logger.debug("Executing updateInterpretation in Analysis - Clinical command line");
@@ -1033,9 +1152,17 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
+        StatusParam statusParam= new StatusParam();
+        invokeSetter(statusParam, "id", commandOptions.statusId);
+
+        ClinicalAnalystParam clinicalAnalystParam= new ClinicalAnalystParam();
+        invokeSetter(clinicalAnalystParam, "id", commandOptions.analystId);
+
         InterpretationUpdateParams interpretationUpdateParams = new InterpretationUpdateParams()
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
+            .setAnalyst(clinicalAnalystParam)
             .setCreationDate(commandOptions.creationDate)
             .setModificationDate(commandOptions.modificationDate);
         return openCGAClient.getClinicalAnalysisClient().updateInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretation, interpretationUpdateParams, queryParams);

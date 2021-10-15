@@ -126,6 +126,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         BwaWrapperParams bwaWrapperParams = new BwaWrapperParams()
             .setCommand(commandOptions.command)
             .setFastaFile(commandOptions.fastaFile)
@@ -151,6 +152,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         CoverageIndexParams coverageIndexParams = new CoverageIndexParams()
             .setFile(commandOptions.file)
             .setWindowSize(commandOptions.windowSize)
@@ -173,6 +175,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         AlignmentGeneCoverageStatsParams alignmentGeneCoverageStatsParams = new AlignmentGeneCoverageStatsParams()
             .setBamFile(commandOptions.bamFile)
@@ -257,6 +260,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         DeeptoolsWrapperParams deeptoolsWrapperParams = new DeeptoolsWrapperParams()
             .setCommand(commandOptions.command)
             .setOutdir(commandOptions.outdir);
@@ -278,6 +282,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         FastqcWrapperParams fastqcWrapperParams = new FastqcWrapperParams()
             .setInputFile(commandOptions.inputFile)
@@ -301,6 +306,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         AlignmentIndexParams alignmentIndexParams = new AlignmentIndexParams()
             .setFile(commandOptions.file)
             .setOverwrite(commandOptions.overwrite);
@@ -323,6 +329,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
 
+
         PicardWrapperParams picardWrapperParams = new PicardWrapperParams()
             .setCommand(commandOptions.command)
             .setOutdir(commandOptions.outdir);
@@ -344,6 +351,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         AlignmentQcParams alignmentQcParams = new AlignmentQcParams()
             .setBamFile(commandOptions.bamFile)
@@ -403,6 +411,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", cliSession.getCurrentStudy());
         }
+
 
         SamtoolsWrapperParams samtoolsWrapperParams = new SamtoolsWrapperParams()
             .setCommand(commandOptions.command)

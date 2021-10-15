@@ -48,7 +48,20 @@ public class MainClientGenerator {
         classes.add(Ga4ghWSServer.class);
         classes.add(AdminWSServer.class);
         restApi = prepare(RestApiParser.getApi(classes));
+        /*
+        Uncomment only for test json
+            List<Class> classes2 = new ArrayList<>();
+            classes2.add(FileWSServer.class);
 
+            List<LinkedHashMap<String, Object>> help = RestApiParser.getHelp(classes2);
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            try {
+                System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(help));
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+        */
         try {
             config = ConfigurationManager.setUp(restApi);
             config.initialize();

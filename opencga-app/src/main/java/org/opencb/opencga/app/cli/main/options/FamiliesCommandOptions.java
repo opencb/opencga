@@ -190,6 +190,15 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
     
+        @Parameter(names = {"--expected-size"}, description = "The body web service expectedSize parameter", required = false, arity = 1)
+        public Integer expectedSize;
+    
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String statusName;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String statusDescription;
+    
   }
     @Parameters(commandNames = {"distinct"}, commandDescription ="Family distinct method")
     public class DistinctCommandOptions {
@@ -429,6 +438,15 @@ public class FamiliesCommandOptions {
     
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
+    
+        @Parameter(names = {"--expected-size"}, description = "The body web service expectedSize parameter", required = false, arity = 1)
+        public Integer expectedSize;
+    
+        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String statusName;
+    
+        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String statusDescription;
     
   }
 }
