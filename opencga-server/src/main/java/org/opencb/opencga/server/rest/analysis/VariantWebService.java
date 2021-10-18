@@ -85,8 +85,8 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -955,9 +955,10 @@ public class VariantWebService extends AnalysisWebService {
 
             // Create temporal directory
             outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + TimeUtils.getTimeMillis()).toFile();
-            outDir.mkdir();
-            if (!outDir.exists()) {
-                return createErrorResponse(new Exception("Error creating temporal directory for mutational-signature/query analysis"));
+            try {
+                FileUtils.forceMkdir(outDir);
+            } catch (IOException e) {
+                throw new IOException("Error creating temporal directory for mutational-signature/query analysis. " + e.getMessage(), e);
             }
 
             MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();
