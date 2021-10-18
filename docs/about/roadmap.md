@@ -8,17 +8,18 @@ In this section, you can find only the main top-level features planned for major
 From OpenCGA version 2.0.0 we follow **time-based releases**, two minor releases a year will be scheduled in April and October. 
 {% endhint %}
 
-### 2.1.0 \(Apr 2021\)
+### 2.1.0 (Apr 2021)
 
 You can track GitHub issues at [GitHub Issues 2.1.0](https://github.com/opencb/opencga/issues?q=is%3Aopen+is%3Aissue+milestone%3Av2.1.0). You can follow the development at [GitHub Projects](https://github.com/opencb/opencga/projects).
 
 #### General
 
-* Implement a **Centralised Log** analytic solution, we are planning to use Kibana ****
+* Implement a **Centralised Log** analytic solution, we are planning to use Kibana\
+  ****
 
 #### Catalog
 
-* Implement a new **Action** system, Catalog will notify to a message queue _\(RabbitMQ, Apache Kafka\),_ this will allow other applications to know what's going on
+* Implement a new **Action** system, Catalog will notify to a message queue _(RabbitMQ, Apache Kafka),_ this will allow other applications to know what's going on
 * Improve **RESTful** web services by adding standardise **error codes** to the response, this will improve debugging
 
 **Variant Storage Engine**
@@ -40,7 +41,7 @@ You can track GitHub issues at [GitHub Issues 2.1.0](https://github.com/opencb/o
 
 * Implement **FIHR Genomics** API, this will allow FIHR applications to query genomic variants in OpenCGA
 
-### 2.0.0 \(Oct 2020\)
+### 2.0.0 (Oct 2020)
 
 You can track GitHub issues at [GitHub Issues 2.0.0](https://github.com/opencb/opencga/issues?q=is%3Aopen+is%3Aissue+milestone%3Av2.0.0). You can follow the development at [GitHub Projects](https://github.com/opencb/opencga/projects).
 
@@ -70,7 +71,7 @@ You can track GitHub issues at [GitHub Issues 2.0.0](https://github.com/opencb/o
 * Implement **structural variant imprecise** queries
 * Implement new **Variant Score** to store results from analysis such as GWAS, this can be used when filtering
 * Remove any **blocking variant operation**, any variant operation should be able to run at any time in a consistent way
-* Improve **HBase sample index**, this will improve the **performance** of some **queries and** **analysis**
+* Improve **HBase sample index**, this will improve the **performance** of some** queries and** **analysis**
 * Implement HBase-based **aggregations**
 * Support new **HBase 2.0** version
 * Improve **testing** and **benchmark** module
@@ -80,23 +81,23 @@ You can track GitHub issues at [GitHub Issues 2.0.0](https://github.com/opencb/o
 **Framework**
 
 * Develop an **Analysis Framework**, this will allow users to extend and customise OpenCGA with their own analysis
-* Implement a **WrappedAnalysis** functionality in this framework to make easy to use any external tool such as Plink \(see below in _Varlant Analysis_ section\)
+* Implement a **WrappedAnalysis** functionality in this framework to make easy to use any external tool such as Plink (see below in _Varlant Analysis_ section)
 
 **Variant**
 
 * Implement on-demand **Variant Stats** and **Variant Sample Stats**
-* Add GWAS **variant analysis**, this can optionally be stored and indexed in the new **Variant Score** object
+* Add GWAS** variant analysis**, this can optionally be stored and indexed in the new **Variant Score** object
 * Add _Plink_ as **wrapped analysis**
 
 **Clinical Interpretation**
 
 * Implement **Cancer Tiering** interpretation analysis algorithm
-* Network-based clinical interpretation algorithm _\(experimental\)_
+* Network-based clinical interpretation algorithm _(experimental)_
 * Implement **Secondary Findings** analysis
 
 #### Clinical
 
-* Network-based clinical interpretation algorithm _\(experimental\)_
+* Network-based clinical interpretation algorithm _(experimental)_
 
 #### Cloud
 
@@ -107,7 +108,7 @@ You can track GitHub issues at [GitHub Issues 2.0.0](https://github.com/opencb/o
 
 ## OpenCGA 1.x Releases
 
-### 1.4.0 \(March 2019\)
+### 1.4.0 (March 2019)
 
 #### General
 
@@ -121,8 +122,8 @@ You can track GitHub issues at [GitHub Issues 2.0.0](https://github.com/opencb/o
 * Complete and test all **delete** operations and implement _delete by queries_ to make easier to delete batches of resources, with this the **REST API** can be considered complete
 * Implement a new **admin** REST API, this will allow OpenCGA administrator to execute administrative tasks remotely
 * New **PermissionRule** feature, you can define rules for assigning permissions automatically when new data is created, e.g. _set VIEW permission to USER to all samples where HOSPITAL = 'X'_
-* New implementation of how **clinical data** \(_annotation sets_\) are store in the database, this new physical schema significantly improves querying annotations \(even with nested objects or arrays\), _group by_ aggregations, _include/exclude_ filtering and allow to _flatten_ the annotations 
-* Complete _**ClinicalAnalysis and** **ClinicalInterpretation**_ data models and functionality
+* New implementation of how **clinical data** (_annotation sets_) are store in the database, this new physical schema significantly improves querying annotations (even with nested objects or arrays), _group by_ aggregations, _include/exclude_ filtering and allow to _flatten_ the annotations 
+* Complete _**ClinicalAnalysis and** **ClinicalInterpretation **_data models and functionality
 * Add **DiseasePanel** entity to manage panels
 
 #### Variant Storage
@@ -134,7 +135,7 @@ You can track GitHub issues at [GitHub Issues 2.0.0](https://github.com/opencb/o
 * **Variant Benchmark suite** to study scalability and performance
 * Add a native implementation of Genomics England Tiering analysis
 
-### 1.3.0 \(November 2017\)
+### 1.3.0 (November 2017)
 
 #### General
 
@@ -157,7 +158,7 @@ You can track GitHub issues at [GitHub Issues 2.0.0](https://github.com/opencb/o
 * Improvements in _**Group By**_ queries, now you can pass a _**count**_ parameter and aggregations only use data you can view, this can be useful for summarising data. Also, this has been added to _Individual_ and _Family_
 * Ensure that all query **GET** REST web services accept **comma-separated list of IDs**, at the moment only few of them accept ID lists, this will reduce the number of REST calls needed improving the performance
 * New REST web service to **execute remote scripts** for Catalog, for instance "_move samples from Study_"
-* **Performance improvements** when checking permissions \(ACL\) in _create_ and _update_ methods, now on average 50% less database queries are needed
+* **Performance improvements** when checking permissions (ACL) in _create_ and _update_ methods, now on average 50% less database queries are needed
 
 #### Variant Storage
 
@@ -180,8 +181,7 @@ The following features have been accepted but no release version has been assign
 
 * Add test for the CLI
 * Support Slurm
-* Add **Reactive Programming** \(RxJava\) and **Events**, this will allow to be easily integrated into other custom Java-based applications
+* Add **Reactive Programming** (RxJava) and **Events**, this will allow to be easily integrated into other custom Java-based applications
 * New **Gene Expression** database, this will include a Gene Annotation based on CellBase
 
 You can find detailed information for some of them at [https://github.com/opencb/opencga/milestone/10](https://github.com/opencb/opencga/milestone/10)
-

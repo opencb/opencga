@@ -4,22 +4,22 @@ Since OpenCGA v2.1.0,  OpenCGA users with administration roles have the possibil
 
 Templates are defined at a study level and could be provided in different formats accordingly to the user's needs. The file format and some common use cases are illustrated in the following section.
 
-Remember that OpenCGA is highly configurable, and the use of templates constitutes a useful resource to reduce some common artifacts on the ingestion of metadata, but you can always use the OpenCGA clients \([Client Libraries](../using-opencga/client-libraries/)\), command line \([Command Line](../using-opencga/command-line/)\) or [REST Web Service API](../using-opencga/restful-web-service-api.md) to perform different operations in OpenCGA.
+Remember that OpenCGA is highly configurable, and the use of templates constitutes a useful resource to reduce some common artifacts on the ingestion of metadata, but you can always use the OpenCGA clients ([Client Libraries](../using-opencga/client-libraries/)), command line ([Command Line](../using-opencga/command-line/)) or [REST Web Service API](../using-opencga/restful-web-service-api.md) to perform different operations in OpenCGA.
 
 ## How it Works
 
 The templates define a way to easily ingest metadata into OpenCGA. You need different things:
 
-* **Manfiest**: There is only one required file that you'd need to provide to use the template-related operations. This is a  `json` OR `yml` file named  `manifest.{json|yaml}` containing the specific configuration applied to the template. This file will define the root \(i.e: the study where you will perform the operation\). An example is provided below
+* **Manfiest**: There is only one required file that you'd need to provide to use the template-related operations. This is a  `json` OR `yml` file named  `manifest.{json|yaml}` containing the specific configuration applied to the template. This file will define the root (i.e: the study where you will perform the operation). An example is provided below
 
-```text
+```
 manifest.yaml
 ```
 
-* **Metadata and Clinical Data**: You might need to provide a file per entity, where entities corresponds to one of the different comprehensive data models supported by OpenCGA Catalog \(**individuals, samples, files, families, cohorts, clinical\_analysis**\). Each file will contain the entity-related information that you want to ingest into Catalog. For usability purposes two main specifications will be accepted. You can find the file structures accepted below:
+* **Metadata and Clinical Data**: You might need to provide a file per entity, where entities corresponds to one of the different comprehensive data models supported by OpenCGA Catalog (**individuals, samples, files, families, cohorts, clinical_analysis**). Each file will contain the entity-related information that you want to ingest into Catalog. For usability purposes two main specifications will be accepted. You can find the file structures accepted below:
 
 {% hint style="warning" %}
-NOTE: All the fields within each entity that are subjected to be manipulable by the users are clearly stated in the documentation of the entity data model. Please refer to [Data Models]().
+NOTE: All the fields within each entity that are subjected to be manipulable by the users are clearly stated in the documentation of the entity data model. Please refer to [Data Models](broken-reference).
 {% endhint %}
 
 ### JSON/YAML Files
@@ -28,22 +28,22 @@ You might want to provide a single JSON or YAML file per entity. In the case of 
 
 The following entities are supported.
 
-* For [Individual]():  `individuals.{json|yaml}`  
-* For [Sample]():  `samples.{json|yaml}`  
-* For  [File](): `files.{json|yaml}`  
-* For [Family]():  `families.{json|yaml}`
-* For  [Cohort](): `cohorts.{json|yaml}`  
-* For [Clinical Analysis](): `clinical_anaysis.{json|yaml}`  
+* For [Individual](broken-reference):  `individuals.{json|yaml}`  
+* For [Sample](broken-reference):  `samples.{json|yaml}`  
+* For  [File](broken-reference): `files.{json|yaml}`  
+* For [Family](broken-reference):  `families.{json|yaml}`
+* For  [Cohort](broken-reference): `cohorts.{json|yaml}`  
+* For [Clinical Analysis](broken-reference): `clinical_anaysis.{json|yaml}`  
 
 ### TAB Text Files
 
 You can load data for the entities using **TAB separated .txt files**. There are some simple construction rules that the user needs to follow for the ingestion to be successful:
 
-* First line starting with \# symbol containing the exact name of the corresponding data model
+* First line starting with # symbol containing the exact name of the corresponding data model
 * The column name must correspond to the field reserved in the entity data model. Refer to each entity data model documentation for checking the accepted fields. 
 * The order of the columns is not relevant.
 
-```text
+```
 samples.txt
 #id     individualId    somatic
 s1      NA001           true
@@ -69,4 +69,3 @@ NA001           s1
 NA001           s2
 NA002           s3
 ```
-
