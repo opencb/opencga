@@ -26,12 +26,10 @@ import org.opencb.opencga.core.common.TimeUtils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -324,5 +322,73 @@ public class ParamUtils {
                 }
             }
         }
+    }
+
+    public static void processDynamicVariables(ObjectMap fullMap, Pattern pattern) {
+        processDynamicVariables(fullMap, fullMap, pattern);
+    }
+
+    /**
+     * Process targetMap to look for the pattern and replace that pattern with the corresponding values from sourceMap.
+     * Example:
+     * sourceMap: {id: "myId", nested: {other: "myOtherValue"}}
+     * targetMap: {a: 1, b: ${ABC.id}, c: ${ABC.nested.other}}
+     * pattern: ${ABC.x.y.z}
+     * <p>
+     * Expected result:
+     * targetMap: {a: 1, b: "myId", c: "myOtherValue"}
+     *
+     * @param sourceMap Map from which variables will be extracted.
+     * @param targetMap Map that needs to be filled with the expected variables.
+     * @param pattern   Pattern used to filter the dynamic variables.
+     */
+    public static void processDynamicVariables(ObjectMap sourceMap, Map<String, Object> targetMap, Pattern pattern) {
+        // Loop over all the entries
+        for (Map.Entry<String, Object> entry : targetMap.entrySet()) {
+            if (entry.getValue() instanceof Map) {
+                // Process nested map
+                processDynamicVariables(sourceMap, (Map) entry.getValue(), pattern);
+            } else if (entry.getValue() instanceof List) {
+                List<?> values = (List<?>) entry.getValue();
+                if (!values.isEmpty()) {
+                    if (values.get(0) instanceof Map) {
+                        // Loop over all map entries
+                        for (Map tmpMap : ((Collection<Map>) entry.getValue())) {
+                            // Process nested map
+                            processDynamicVariables(sourceMap, tmpMap, pattern);
+                        }
+                    } else if (values.get(0) instanceof String) {
+                        List<String> newValues = new ArrayList(values.size());
+                        // Loop over all the String elements to see if needs any value replacing
+                        for (Object value : values) {
+                            String newValue = getStringPropertyValue(sourceMap, String.valueOf(value), pattern);
+                            newValues.add(newValue);
+                        }
+                        entry.setValue(newValues);
+                    }
+                }
+            }
+            if (entry.getValue() instanceof String) {
+                // Process String
+                String originalValue = String.valueOf(entry.getValue());
+                String newValue = getStringPropertyValue(sourceMap, originalValue, pattern);
+                entry.setValue(newValue);
+            }
+        }
+    }
+
+    private static String getStringPropertyValue(ObjectMap fullMap, String originalValue, Pattern pattern) {
+        String newValue = originalValue;
+        Matcher matcher = pattern.matcher(originalValue);
+        while (matcher.find()) {
+            String variable = matcher.group(2);
+            Object objectValue = fullMap.get(variable);
+            if (objectValue != null) {
+                // Only replace if it is not null, otherwise we will keep the property
+                String value = String.valueOf(objectValue);
+                newValue = newValue.replace(matcher.group(1), value);
+            }
+        }
+        return newValue;
     }
 }

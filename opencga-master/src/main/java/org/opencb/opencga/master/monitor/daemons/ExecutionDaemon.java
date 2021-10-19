@@ -322,21 +322,22 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         Map<String, List<String>> dependencies = new HashMap<>();
         List<Job> jobList = new LinkedList<>();
-        for (Pipeline.PipelineJob pipelineJob : execution.getPipeline().getJobs()) {
+        for (Map.Entry<String, Pipeline.PipelineJob> jobEntry : execution.getPipeline().getJobs().entrySet()) {
+            String jobId = jobEntry.getKey();
+            Pipeline.PipelineJob pipelineJob = jobEntry.getValue();
             List<String> dependsOn = new ArrayList<>();
             if (CollectionUtils.isNotEmpty(pipelineJob.getDependsOn())) {
-                dependencies.put(pipelineJob.getId(), pipelineJob.getDependsOn());
+                dependencies.put(jobId, pipelineJob.getDependsOn());
             }
 
             Map<String, Object> jobParams;
             try {
-                jobParams = getJobParams(execution.getParams(), pipelineJob.getParams(), execution.getPipeline().getParams(),
-                        pipelineJob.getId());
+                jobParams = getJobParams(execution.getParams(), pipelineJob.getParams(), execution.getPipeline().getParams(), jobId);
             } catch (ToolException e) {
                 return abortExecution(execution, e.getMessage());
             }
-            Job job = createJobInstance(execution.getId(), pipelineJob.getId(), pipelineJob.getDescription(),
-                    execution.getPriority(), jobParams, execution.getTags(), dependsOn, execution.getUserId());
+            Job job = createJobInstance(execution.getId(), jobId, pipelineJob.getDescription(), execution.getPriority(), jobParams,
+                    execution.getTags(), dependsOn, execution.getUserId());
             jobList.add(job);
         }
 

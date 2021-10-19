@@ -1,6 +1,8 @@
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -15,6 +17,7 @@ import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
@@ -25,15 +28,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 public class PipelineManager extends ResourceManager<Pipeline> {
 
     protected static Logger logger = LoggerFactory.getLogger(PipelineManager.class);
     private final UserManager userManager;
     private final StudyManager studyManager;
+
+    public static final Pattern PIPELINE_VARIABLE_PATTERN = Pattern.compile("(\\$\\{PIPELINE.([^$]+)\\})");
+
+//    private static Set<String> toolsCache;
 
     PipelineManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                     DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -127,6 +134,17 @@ public class PipelineManager extends ResourceManager<Pipeline> {
             // 1. We check everything can be done
             authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
 
+            // 2. Process dynamic variables
+            try {
+                String pipelineJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(pipeline);
+                ObjectMap pipelineMap = JacksonUtils.getDefaultObjectMapper().readValue(pipelineJsonString, ObjectMap.class);
+                ParamUtils.processDynamicVariables(pipelineMap, PIPELINE_VARIABLE_PATTERN);
+                pipelineJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(pipelineMap);
+                pipeline = JacksonUtils.getDefaultObjectMapper().readValue(pipelineJsonString, Pipeline.class);
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not process JSON properly", e);
+            }
+
             validate(pipeline);
             validateForCreation(study, pipeline);
 
@@ -144,19 +162,79 @@ public class PipelineManager extends ResourceManager<Pipeline> {
     }
 
     public static void validate(Pipeline pipeline) throws CatalogException {
+        ParamUtils.checkObj(pipeline, "Pipeline");
+        ParamUtils.checkParameter(pipeline.getId(), "id");
         if (pipeline.getJobs() == null) {
             throw new CatalogException("Pipeline does not have any jobs");
         }
+
+        pipeline.setDescription(ParamUtils.defaultString(pipeline.getDescription(), ""));
+        pipeline.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(pipeline.getCreationDate(),
+                PipelineDBAdaptor.QueryParams.CREATION_DATE.key()));
         pipeline.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(pipeline.getModificationDate(),
                 PipelineDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
-        for (Pipeline.PipelineJob job : pipeline.getJobs()) {
+        pipeline.setParams(ParamUtils.defaultObject(pipeline.getParams(), Collections::emptyMap));
+        pipeline.setConfig(ParamUtils.defaultObject(pipeline.getConfig(), Pipeline.PipelineConfig::init));
+
+        Set<String> jobIds = new HashSet<>();
+        for (Map.Entry<String, Pipeline.PipelineJob> entry : pipeline.getJobs().entrySet()) {
+            String jobId = entry.getKey();
+            Pipeline.PipelineJob job = entry.getValue();
+            job.setToolId(ParamUtils.defaultString(job.getToolId(), ""));
+            job.setName(ParamUtils.defaultString(job.getName(), ""));
             job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
-            job.setParams(ParamUtils.defaultObject(job.getParams(), ObjectMap::new));
+            job.setParams(ParamUtils.defaultObject(job.getParams(), Collections::emptyMap));
             job.setTags(ParamUtils.defaultObject(job.getTags(), Collections::emptyList));
             job.setDependsOn(ParamUtils.defaultObject(job.getDependsOn(), Collections::emptyList));
+            for (String tmpJobId : job.getDependsOn()) {
+                if (!jobIds.contains(tmpJobId)) {
+                    throw new CatalogException("Job '" + jobId + "' depends on job '" + tmpJobId + "'. '" + tmpJobId + "' is either"
+                            + " undefined or not defined before job '" + jobId + "'.");
+                }
+            }
+
+            if (StringUtils.isNotEmpty(job.getToolId())) {
+                // TODO: Validate pipeline tool exists
+//                checkToolExists(job.getToolId());
+            }
+            jobIds.add(jobId);
         }
-        // TODO: Validate pipeline in general is correct
     }
+
+//    private static void checkToolExists(String toolId) {
+//        if (toolsCache == null) {
+//            Reflections reflections = new Reflections(new ConfigurationBuilder()
+//                    .setScanners(
+//                            new SubTypesScanner(),
+//                            new TypeAnnotationsScanner().filterResultsBy(s -> StringUtils.equals(s, Tool.class.getName()))
+//                    )
+//                    .addUrls(getUrls())
+//                    .filterInputsBy(input -> input != null && input.endsWith(".class"))
+//            );
+//
+//            reflections.getAllTypes()
+//        }
+//        return toolsCache.contains(toolId);
+//    }
+//
+//    /**
+//     * Code extracted from ToolFactory class
+//     *
+//     * @return urls to be checked.
+//     */
+//    private static Collection<URL> getUrls() {
+//        // TODO: What if there are third party libraries that implement Tools?
+//        //  Currently they must contain "opencga" in the jar name.
+//        //  e.g.  acme-rockets-opencga-5.4.0.jar
+//        Collection<URL> urls = new LinkedList<>();
+//        for (URL url : ClasspathHelper.forClassLoader()) {
+//            String name = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
+//            if (name.isEmpty() || (name.contains("opencga") && !name.contains("opencga-storage-hadoop-deps"))) {
+//                urls.add(url);
+//            }
+//        }
+//        return urls;
+//    }
 
     private void validateForCreation(Study study, Pipeline pipeline) throws CatalogException {
         ParamUtils.checkIdentifier(pipeline.getId(), "id");

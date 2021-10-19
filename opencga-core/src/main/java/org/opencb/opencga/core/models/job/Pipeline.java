@@ -6,6 +6,7 @@ import org.opencb.opencga.core.models.PrivateStudyUid;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,23 +23,23 @@ public class Pipeline extends PrivateStudyUid {
     private String modificationDate;
 
     private Map<String, Object> params;
-    private Options options;
-    private List<PipelineJob> jobs;
+    private PipelineConfig config;
+    private LinkedHashMap<String, PipelineJob> jobs;
 
     private static final String DEFAULT_PIPELINE_FORMAT = "yaml";
 
     public Pipeline() {
     }
 
-    public Pipeline(String id, String uuid, String description, boolean disabled, int version, Map<String, Object> params, Options options,
-                    List<PipelineJob> jobs) {
+    public Pipeline(String id, String uuid, String description, boolean disabled, int version, Map<String, Object> params,
+                    PipelineConfig config, LinkedHashMap<String, PipelineJob> jobs) {
         this.id = id;
         this.uuid = uuid;
         this.description = description;
         this.disabled = disabled;
         this.version = version;
         this.params = params;
-        this.options = options;
+        this.config = config;
         this.jobs = jobs;
     }
 
@@ -90,7 +91,7 @@ public class Pipeline extends PrivateStudyUid {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", params=").append(params);
-        sb.append(", options=").append(options);
+        sb.append(", options=").append(config);
         sb.append(", jobs=").append(jobs);
         sb.append('}');
         return sb.toString();
@@ -151,20 +152,20 @@ public class Pipeline extends PrivateStudyUid {
         return this;
     }
 
-    public Options getOptions() {
-        return options;
+    public PipelineConfig getConfig() {
+        return config;
     }
 
-    public Pipeline setOptions(Options options) {
-        this.options = options;
+    public Pipeline setConfig(PipelineConfig config) {
+        this.config = config;
         return this;
     }
 
-    public List<PipelineJob> getJobs() {
+    public LinkedHashMap<String, PipelineJob> getJobs() {
         return jobs;
     }
 
-    public Pipeline setJobs(List<PipelineJob> jobs) {
+    public Pipeline setJobs(LinkedHashMap<String, PipelineJob> jobs) {
         this.jobs = jobs;
         return this;
     }
@@ -187,21 +188,21 @@ public class Pipeline extends PrivateStudyUid {
         return this;
     }
 
-    public static class Options {
+    public static class PipelineConfig {
 
         private int retry;
         private int timeout;
 
-        public Options() {
+        public PipelineConfig() {
         }
 
-        public Options(int retry, int timeout) {
+        public PipelineConfig(int retry, int timeout) {
             this.retry = retry;
             this.timeout = timeout;
         }
 
-        public static Options init() {
-            return new Options(3, 3600);
+        public static PipelineConfig init() {
+            return new PipelineConfig(3, 3600);
         }
 
         @Override
@@ -217,7 +218,7 @@ public class Pipeline extends PrivateStudyUid {
             return retry;
         }
 
-        public Options setRetry(int retry) {
+        public PipelineConfig setRetry(int retry) {
             this.retry = retry;
             return this;
         }
@@ -226,7 +227,7 @@ public class Pipeline extends PrivateStudyUid {
             return timeout;
         }
 
-        public Options setTimeout(int timeout) {
+        public PipelineConfig setTimeout(int timeout) {
             this.timeout = timeout;
             return this;
         }
@@ -234,7 +235,8 @@ public class Pipeline extends PrivateStudyUid {
 
     public static class PipelineJob {
 
-        private String id;
+        private String toolId;
+        private String name;
         private String description;
         private Map<String, Object> params;
         private List<String> tags;
@@ -243,8 +245,10 @@ public class Pipeline extends PrivateStudyUid {
         public PipelineJob() {
         }
 
-        public PipelineJob(String id, String description, Map<String, Object> params, List<String> tags, List<String> dependsOn) {
-            this.id = id;
+        public PipelineJob(String toolId, String name, String description, Map<String, Object> params, List<String> tags,
+                           List<String> dependsOn) {
+            this.toolId = toolId;
+            this.name = name;
             this.description = description;
             this.params = params;
             this.tags = tags;
@@ -254,7 +258,8 @@ public class Pipeline extends PrivateStudyUid {
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder("PipelineJob{");
-            sb.append("id='").append(id).append('\'');
+            sb.append("toolId='").append(toolId).append('\'');
+            sb.append(", name='").append(name).append('\'');
             sb.append(", description='").append(description).append('\'');
             sb.append(", params=").append(params);
             sb.append(", tags=").append(tags);
@@ -263,12 +268,21 @@ public class Pipeline extends PrivateStudyUid {
             return sb.toString();
         }
 
-        public String getId() {
-            return id;
+        public String getToolId() {
+            return toolId;
         }
 
-        public PipelineJob setId(String id) {
-            this.id = id;
+        public PipelineJob setToolId(String toolId) {
+            this.toolId = toolId;
+            return this;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public PipelineJob setName(String name) {
+            this.name = name;
             return this;
         }
 
