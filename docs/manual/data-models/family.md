@@ -2,7 +2,7 @@
 ## Overview
 Created by pfurio on 02/05/17.
 ### Summary 
-| Field | create | update | unique | required|
+| Field | Create | Update | Unique | Required|
 | :--- | :---: | :---: |:---: |:---: |
 | id | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png"> |
 | name | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png"> |

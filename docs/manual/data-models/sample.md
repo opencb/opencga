@@ -3,7 +3,7 @@
 Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular
  analysis. This is the main data model, it stores the most basic and important information.
 ### Summary 
-| Field | create | update | unique | required|
+| Field | Create | Update | Unique | Required|
 | :--- | :---: | :---: |:---: |:---: |
 | id | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png"> |
 | uuid | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png"> |
