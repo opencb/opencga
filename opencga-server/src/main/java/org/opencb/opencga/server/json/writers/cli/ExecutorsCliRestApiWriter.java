@@ -275,11 +275,11 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                                             + normaliceNames(getAsCamelCase(bodyParam.getName())) + "))");
                                 } else {
                                     if (bodyParam.isInnerParam()) {
-                                        if (!variables.contains(parameter.getParam())) {
-                                            sb.append("\n            .set" + getAsClassName(bodyParam.getParam()) + "("
+                                        if (!variables.contains(parameter.getParentParamName())) {
+                                            sb.append("\n            .set" + getAsClassName(bodyParam.getParentParamName()) + "("
                                                     + CommandLineUtils.getAsVariableName(CommandLineUtils.getClassName(bodyParam.getGenericType()))
                                                     + ")");
-                                            variables.add(parameter.getParam());
+                                            variables.add(parameter.getParentParamName());
                                         }
                                     }
                                 }
@@ -304,16 +304,14 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         }
 
         for (String nameBean : beans) {
-            CommandLineUtils.getClassName(nameBean);
             sb.append("\n        " + CommandLineUtils.getClassName(nameBean) + " " + CommandLineUtils.getAsVariableName(CommandLineUtils.getClassName(nameBean)) +
                     "= new " + CommandLineUtils.getClassName(nameBean) + "();\n");
             for (Parameter parameter : parameters) {
                 if (parameter.getGenericType() != null && parameter.getGenericType().equals(nameBean)) {
                     sb.append("        invokeSetter(" + CommandLineUtils.getAsVariableName(CommandLineUtils.getClassName(nameBean)) +
                             ", \"" + parameter.getName() +
-                            "\", commandOptions." + normaliceNames(getAsCamelCase(parameter.getParam() + " " + parameter.getName())) + ")" +
+                            "\", commandOptions." + normaliceNames(getAsCamelCase(parameter.getParentParamName() + " " + parameter.getName())) + ")" +
                             ";\n");
-                    System.out.println(parameter);
                 }
             }
         }

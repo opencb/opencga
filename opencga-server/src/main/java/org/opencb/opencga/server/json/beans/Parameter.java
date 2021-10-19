@@ -6,6 +6,7 @@ public class Parameter {
 
     private String name;
     private String param;
+    private String parentParamName;
     private String type;
     private String typeClass;
     private boolean required;
@@ -152,6 +153,15 @@ public class Parameter {
 
     public Parameter setGenericType(String genericType) {
         this.genericType = genericType;
+        return this;
+    }
+
+    public String getParentParamName() {
+        return parentParamName;
+    }
+
+    public Parameter setParentParamName(String parentParamName) {
+        this.parentParamName = parentParamName;
         return this;
     }
 

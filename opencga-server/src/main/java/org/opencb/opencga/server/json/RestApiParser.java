@@ -207,7 +207,8 @@ public class RestApiParser {
                                           String variableName) {
         Parameter innerParam = new Parameter();
         innerParam.setName(paramName);
-        innerParam.setParam(variableName);
+        innerParam.setParam("body");
+        innerParam.setParentParamName(variableName);
         innerParam.setType(declaredField.getType().getSimpleName());
         innerParam.setTypeClass(className + ";");
         innerParam.setAllowedValues("");

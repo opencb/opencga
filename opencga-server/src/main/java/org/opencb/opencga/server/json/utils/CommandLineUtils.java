@@ -23,10 +23,10 @@ public class CommandLineUtils {
         primitiveTypes.add("object");
         primitiveTypes.add("Object");
         primitiveTypes.add("integer");
-        primitiveTypes.add("Integer");
         primitiveTypes.add("int");
         primitiveTypes.add("boolean");
         primitiveTypes.add("Boolean");
+        primitiveTypes.add("Integer");
         primitiveTypes.add("long");
         primitiveTypes.add("enum");
         primitiveTypes.add("Long");

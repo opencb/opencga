@@ -208,7 +208,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
     private String getVariableName(Parameter parameter) {
         String res = "";
         if (parameter.isInnerParam()) {
-            res = normaliceNames(getAsCamelCase(parameter.getParam() + " " + parameter.getName()));
+            res = normaliceNames(getAsCamelCase(parameter.getParentParamName() + " " + parameter.getName()));
         } else {
             res = normaliceNames(getAsCamelCase(parameter.getName()));
         }
@@ -228,7 +228,12 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     private String getShortCuts(Parameter parameter, CategoryConfig config) {
-        return "\"--" + getKebabCase(parameter.getName()) + "\"" + getStringShortcuts(parameter, config);
+        if (parameter.isInnerParam()) {
+            return "\"--" + getKebabCase(parameter.getParentParamName()) + "-" + getKebabCase(parameter.getName()) + "\""
+                    + getStringShortcuts(parameter, config);
+        } else {
+            return "\"--" + getKebabCase(parameter.getName()) + "\"" + getStringShortcuts(parameter, config);
+        }
     }
 
     public String getStringShortcuts(Parameter parameter, CategoryConfig categoryConfig) {
