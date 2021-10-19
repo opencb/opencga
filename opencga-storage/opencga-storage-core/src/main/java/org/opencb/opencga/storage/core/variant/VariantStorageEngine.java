@@ -835,6 +835,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *    Removes the samples removed from the default cohort {@link StudyEntry#DEFAULT_COHORT}
      *      * Be aware that some samples can be in multiple files.
      *    Invalidates the cohorts with removed samples
+     *    Removes partially removed samples from their files
      * If error:
      *    Updates remove status with ERROR
      *
