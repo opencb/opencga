@@ -768,23 +768,35 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     /**
-     * Removes a file from the Variant Storage.
+     * Removes files from the Variant Storage.
      *
      * @param study  StudyName or StudyId
      * @param files Files to remove
-     * @throws StorageEngineException If the file can not be removed  or there was some problem deleting it.
+     * @throws StorageEngineException If the files can not be removed or there was some problem deleting it.
      */
     public abstract void removeFiles(String study, List<String> files) throws StorageEngineException;
+
+    /**
+     * Removes samples from the Variant Storage.
+     *
+     * @param study  StudyName or StudyId
+     * @param samples Samples to remove
+     * @throws StorageEngineException If the samples can not be removed or there was some problem deleting it.
+     */
+    public void removeSamples(String study, List<String> samples) throws StorageEngineException {
+        throw new UnsupportedOperationException("Unsupported remove sample operation at storage engine " + getStorageEngineId());
+    }
 
     /**
      * Atomically updates the storage metadata before removing samples.
      *
      * @param study    Study
-     * @param files    Files to remove
+     * @param files     Files to fully delete, including all their samples.
+     * @param samples   Samples to remove, leaving partial files.
      * @return FileIds to remove
      * @throws StorageEngineException StorageEngineException
      */
-    protected TaskMetadata preRemoveFiles(String study, List<String> files) throws StorageEngineException {
+    protected TaskMetadata preRemove(String study, List<String> files, List<String> samples) throws StorageEngineException {
         AtomicReference<TaskMetadata> batchFileOperation = new AtomicReference<>();
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         metadataManager.updateStudyMetadata(study, studyMetadata -> {
@@ -826,13 +838,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * If error:
      *    Updates remove status with ERROR
      *
-     * @param study    Study
-     * @param fileIds  Removed file ids
-     * @param taskId   Remove task id
-     * @param error    If the remove operation succeeded
+     * @param study      Study
+     * @param fileIds    Files to fully delete, including all their samples.
+     * @param sampleIds  Samples to remove, leaving partial files.
+     * @param taskId     Remove task id
+     * @param error      If the remove operation succeeded
      * @throws StorageEngineException StorageEngineException
      */
-    protected void postRemoveFiles(String study, List<Integer> fileIds, int taskId, boolean error) throws StorageEngineException {
+    protected void postRemoveFiles(String study, List<Integer> fileIds, List<Integer> sampleIds, int taskId, boolean error)
+            throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         metadataManager.updateStudyMetadata(study, studyMetadata -> {
             if (error) {
@@ -841,10 +855,31 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 metadataManager.setStatus(studyMetadata.getId(), taskId, TaskMetadata.Status.READY);
                 metadataManager.removeIndexedFiles(studyMetadata.getId(), fileIds);
 
-                Set<Integer> removedSamples = new HashSet<>();
-                for (Integer fileId : fileIds) {
-                    removedSamples.addAll(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getSamples());
+                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds)) {
+                    metadataManager.updateFileMetadata(studyMetadata.getId(), fileId, f -> {
+                        f.getSamples().removeAll(sampleIds);
+                        return f;
+                    });
                 }
+                for (Integer sampleId : sampleIds) {
+                    metadataManager.updateSampleMetadata(studyMetadata.getId(), sampleId, s -> {
+                        s.setIndexStatus(TaskMetadata.Status.NONE);
+                        s.setAnnotationStatus(TaskMetadata.Status.NONE);
+                        s.setFamilyIndexStatus(TaskMetadata.Status.NONE);
+                        s.setMendelianErrorStatus(TaskMetadata.Status.NONE);
+                        s.setFiles(Collections.emptyList());
+                        s.setCohorts(Collections.emptySet());
+                        return s;
+                    });
+                }
+
+                Set<Integer> removedSamples = new HashSet<>(sampleIds);
+                Set<Integer> removedSamplesFromFiles = new HashSet<>();
+                for (Integer fileId : fileIds) {
+                    removedSamplesFromFiles.addAll(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getSamples());
+                }
+                removedSamples.addAll(removedSamplesFromFiles);
+
                 List<Integer> cohortsToInvalidate = new LinkedList<>();
                 for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyMetadata.getId())) {
                     for (Integer removedSample : removedSamples) {
@@ -871,7 +906,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
 
                 for (Integer fileId : fileIds) {
-                    getDBAdaptor().getMetadataManager().removeVariantFileMetadata(studyMetadata.getId(), fileId);
+                    metadataManager.removeVariantFileMetadata(studyMetadata.getId(), fileId);
                 }
             }
             return studyMetadata;
