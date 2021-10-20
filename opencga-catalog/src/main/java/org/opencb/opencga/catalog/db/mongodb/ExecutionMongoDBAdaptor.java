@@ -458,7 +458,7 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
                 .append(QueryParams.ID.key(), executionId);
         Bson bsonQuery = parseQuery(query, QueryOptions.empty());
 
-        Bson update = Updates.set(QueryParams.JOBS.key(), documentList);
+        Bson update = Updates.addEachToSet(QueryParams.JOBS.key(), documentList);
         DataResult result = executionCollection.update(clientSession, bsonQuery, update, QueryOptions.empty());
 
         if (result.getNumMatches() == 0) {

@@ -541,6 +541,7 @@ public class JobManager extends ResourceManager<Job> {
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
+                .append("jobs", jobs)
                 .append("token", token);
 
         try {

@@ -237,9 +237,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         int pendingJobs = 0;
         int runningJobs = 0;
         int errorJobs = 0;
-        int doneJobs = 0;
+//        int doneJobs = 0;
         int queuedJobs = 0;
-//        int abortedJobs = 0;
+        int abortedJobs = 0;
 
         for (Job job : execution.getJobs()) {
             String status = job.getInternal().getStatus().getName();
@@ -254,19 +254,22 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     errorJobs++;
                     break;
                 case Enums.ExecutionStatus.DONE:
-                    doneJobs++;
+//                    doneJobs++;
                     break;
                 case Enums.ExecutionStatus.QUEUED:
                     queuedJobs++;
                     break;
                 case Enums.ExecutionStatus.ABORTED:
-//                    abortedJobs++;
+                    abortedJobs++;
                     break;
                 default:
                     throw new RuntimeException("Unexpected job status in job '" + job.getId() + "': " + status);
             }
         }
 
+        if (errorJobs > 0 || abortedJobs > 0) {
+            return Enums.ExecutionStatus.ERROR;
+        }
         if (runningJobs > 0) {
             return Enums.ExecutionStatus.RUNNING;
         }
@@ -276,13 +279,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (pendingJobs > 0) {
             return Enums.ExecutionStatus.PROCESSED;
         }
-        if (errorJobs > 0) {
-            return Enums.ExecutionStatus.ERROR;
-        }
-        if (doneJobs > 0) {
-            return Enums.ExecutionStatus.DONE;
-        }
-        return Enums.ExecutionStatus.ABORTED;
+        return Enums.ExecutionStatus.DONE;
     }
 
     protected void checkPendingExecutions() {
@@ -320,37 +317,91 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return 0;
         }
 
-        Map<String, List<String>> dependencies = new HashMap<>();
+        // Check job status
+        Set<String> allJobs = new HashSet<>();
+        Set<String> finishedJobs = new HashSet<>();
+        for (Job job : execution.getJobs()) {
+            String pipelineJobId = job.getTool().getId();
+            switch (job.getInternal().getStatus().getName()) {
+                case Enums.ExecutionStatus.ERROR:
+                case Enums.ExecutionStatus.ABORTED:
+                    return failExecution(execution, "Job '" + pipelineJobId + "' failed with description: "
+                            + job.getInternal().getStatus().getDescription());
+                case Enums.ExecutionStatus.DONE:
+                    finishedJobs.add(pipelineJobId);
+                    allJobs.add(pipelineJobId);
+                    break;
+                default:
+                    allJobs.add(pipelineJobId);
+                    break;
+            }
+        }
+
         List<Job> jobList = new LinkedList<>();
+        int skippedJobs = 0;
         for (Map.Entry<String, Pipeline.PipelineJob> jobEntry : execution.getPipeline().getJobs().entrySet()) {
-            String jobId = jobEntry.getKey();
+            String toolId = getPipelineJobId(jobEntry.getKey(), jobEntry.getValue());
+            if (allJobs.contains(toolId)) {
+                // Skip job. This job was already processed and it is already registered
+                continue;
+            }
+
             Pipeline.PipelineJob pipelineJob = jobEntry.getValue();
             List<String> dependsOn = new ArrayList<>();
             if (CollectionUtils.isNotEmpty(pipelineJob.getDependsOn())) {
-                dependencies.put(jobId, pipelineJob.getDependsOn());
+                boolean createJob = true;
+                for (String jobDependsOn : pipelineJob.getDependsOn()) {
+                    if (!finishedJobs.contains(jobDependsOn)) {
+                        createJob = false;
+                    }
+                }
+                if (!createJob) {
+                    skippedJobs++;
+                    continue;
+                }
             }
 
             Map<String, Object> jobParams;
             try {
-                jobParams = getJobParams(execution.getParams(), pipelineJob.getParams(), execution.getPipeline().getParams(), jobId);
+                jobParams = getJobParams(execution.getParams(), pipelineJob.getParams(), execution.getPipeline().getParams(), toolId);
             } catch (ToolException e) {
                 return abortExecution(execution, e.getMessage());
             }
-            Job job = createJobInstance(execution.getId(), jobId, pipelineJob.getDescription(), execution.getPriority(), jobParams,
+            Job job = createJobInstance(execution.getId(), toolId, pipelineJob.getDescription(), execution.getPriority(), jobParams,
                     execution.getTags(), dependsOn, execution.getUserId());
             jobList.add(job);
         }
 
-        try {
-            catalogManager.getJobManager().submit(execution.getStudy().getId(), jobList, dependencies, token);
-        } catch (CatalogException e) {
-            return abortExecution(execution, e.getMessage());
+        if (!jobList.isEmpty()) {
+            try {
+                catalogManager.getJobManager().submit(execution.getStudy().getId(), jobList, token);
+            } catch (CatalogException e) {
+                return abortExecution(execution, e.getMessage());
+            }
+
+            if (skippedJobs == 0) {
+                // Update execution (new status and new list of jobs?)
+                setStatus(execution,
+                        new Enums.ExecutionStatus(Enums.ExecutionStatus.PROCESSED, "Execution has been processed and all jobs created"));
+            } else {
+                setStatus(execution,
+                        new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING, "Execution has been partially processed and a few jobs "
+                                + "launched. Number of unprocessed jobs: " + skippedJobs));
+            }
+            return 1;
         }
 
-        // Update execution (new status and new list of jobs?)
-        setStatus(execution,
-                new Enums.ExecutionStatus(Enums.ExecutionStatus.PROCESSED, "Execution has been processed and all jobs created"));
-        return 1;
+        return 0;
+    }
+
+    private String getPipelineJobId(String key, Pipeline.PipelineJob pipelineJob) {
+        if (StringUtils.isNotEmpty(pipelineJob.getToolId())) {
+            return pipelineJob.getToolId();
+        }
+        if (pipelineJob.getExecutable() != null && StringUtils.isNotEmpty(pipelineJob.getExecutable().getId())) {
+            return pipelineJob.getExecutable().getId();
+        }
+        return key;
     }
 
     private Job createJobInstance(String executionId, String toolId, String description, Enums.Priority priority,
@@ -503,6 +554,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private int abortExecution(Execution execution, String description) {
         logger.info("Aborting execution: {} - Reason: '{}'", execution.getId(), description);
         return setStatus(execution, new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED, description));
+    }
+
+    private int failExecution(Execution execution, String description) {
+        logger.info("Stopping execution with ERROR: {} - Reason: '{}'", execution.getId(), description);
+        return setStatus(execution, new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, description));
     }
 
     private int setStatus(Execution execution, Enums.ExecutionStatus status) {
