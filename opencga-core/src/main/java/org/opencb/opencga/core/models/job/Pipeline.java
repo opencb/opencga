@@ -236,6 +236,7 @@ public class Pipeline extends PrivateStudyUid {
     public static class PipelineJob {
 
         private String toolId;
+        private PipelineJobExecutable executable;
         private String name;
         private String description;
         private Map<String, Object> params;
@@ -245,9 +246,10 @@ public class Pipeline extends PrivateStudyUid {
         public PipelineJob() {
         }
 
-        public PipelineJob(String toolId, String name, String description, Map<String, Object> params, List<String> tags,
-                           List<String> dependsOn) {
+        public PipelineJob(String toolId, PipelineJobExecutable executable, String name, String description, Map<String, Object> params,
+                           List<String> tags, List<String> dependsOn) {
             this.toolId = toolId;
+            this.executable = executable;
             this.name = name;
             this.description = description;
             this.params = params;
@@ -259,6 +261,7 @@ public class Pipeline extends PrivateStudyUid {
         public String toString() {
             final StringBuilder sb = new StringBuilder("PipelineJob{");
             sb.append("toolId='").append(toolId).append('\'');
+            sb.append(", executable=").append(executable);
             sb.append(", name='").append(name).append('\'');
             sb.append(", description='").append(description).append('\'');
             sb.append(", params=").append(params);
@@ -274,6 +277,15 @@ public class Pipeline extends PrivateStudyUid {
 
         public PipelineJob setToolId(String toolId) {
             this.toolId = toolId;
+            return this;
+        }
+
+        public PipelineJobExecutable getExecutable() {
+            return executable;
+        }
+
+        public PipelineJob setExecutable(PipelineJobExecutable executable) {
+            this.executable = executable;
             return this;
         }
 
@@ -323,4 +335,44 @@ public class Pipeline extends PrivateStudyUid {
         }
     }
 
+    public static class PipelineJobExecutable {
+
+        private String id;
+        private String command;
+
+        public PipelineJobExecutable() {
+        }
+
+        public PipelineJobExecutable(String id, String command) {
+            this.id = id;
+            this.command = command;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("PipelineJobExecutable{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", command='").append(command).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public PipelineJobExecutable setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public String getCommand() {
+            return command;
+        }
+
+        public PipelineJobExecutable setCommand(String command) {
+            this.command = command;
+            return this;
+        }
+    }
 }
