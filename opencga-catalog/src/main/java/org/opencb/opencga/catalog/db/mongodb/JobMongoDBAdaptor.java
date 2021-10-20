@@ -131,7 +131,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     throw new CatalogParameterException("Missing list of jobs");
                 }
 
-                Map<String, Job> jobMap = new HashMap<>();
                 String executionId = null;
                 for (Job job : jobs) {
                     if (executionId == null) {
@@ -143,19 +142,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         throw new CatalogParameterException("Found jobs with different executionIds.");
                     }
 
-                    // Fix dependsOn object to contain full job (with corresponding uids if missing)
-                    if (CollectionUtils.isNotEmpty(job.getDependsOn())) {
-                        for (Job job1 : job.getDependsOn()) {
-                            if (!jobMap.containsKey(job1.getId())) {
-                                throw new CatalogParameterException("Cannot handle dependencies between jobs. Please check the input data");
-                            }
-                            job1.setUid(jobMap.get(job1.getId()).getUid());
-                            job1.setStudyUid(studyId);
-                        }
-                    }
-
                     insert(clientSession, studyId, job);
-                    jobMap.put(job.getId(), job);
                 }
 
                 // Add job list to execution

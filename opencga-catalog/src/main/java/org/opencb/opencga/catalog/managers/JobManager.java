@@ -529,21 +529,18 @@ public class JobManager extends ResourceManager<Job> {
      * * Submit a list of jobs in a single transaction. This can only be done by the OpenCGA administrator.
      * All jobs must belong to the same executionId.
      *
-     * @param studyStr     study id.
-     * @param jobs         list of jobs.
-     * @param dependencies dependency map [toolId - list<toolIds>]
-     * @param token        token.
+     * @param studyStr study id.
+     * @param jobs     list of jobs.
+     * @param token    token.
      * @return an OpenCGAResult.
      * @throws CatalogException CatalogException.
      */
-    public OpenCGAResult<Job> submit(String studyStr, List<Job> jobs, Map<String, List<String>> dependencies, String token)
-            throws CatalogException {
+    public OpenCGAResult<Job> submit(String studyStr, List<Job> jobs, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
-                .append("dependencies", dependencies)
                 .append("token", token);
 
         try {
@@ -551,34 +548,6 @@ public class JobManager extends ResourceManager<Job> {
 
             for (Job job : jobs) {
                 autoCompleteNewJob(study, job, token);
-            }
-
-            // Fix dependencies
-            if (dependencies != null && !dependencies.isEmpty()) {
-                // Store a map of jobId,toolId -> Job
-                Map<String, Job> jobMap = new HashMap<>();
-                for (Job job : jobs) {
-                    jobMap.put(job.getId(), job);
-                    if (job.getTool() != null && StringUtils.isNotEmpty(job.getTool().getId())) {
-                        jobMap.put(job.getTool().getId(), job);
-                    }
-                }
-
-                // Find job dependencies and fix dependsOn object
-                for (Job job : jobs) {
-                    if (job.getTool() != null && dependencies.containsKey(job.getTool().getId())) {
-                        List<String> toolIds = dependencies.get(job.getTool().getId());
-                        List<Job> dependsOn = new ArrayList<>(toolIds.size());
-                        for (String toolId : toolIds) {
-                            Job otherJob = jobMap.get(toolId);
-                            if (otherJob == null) {
-                                throw new CatalogException("Could not find job dependency for tool '" + toolId + "'");
-                            }
-                            dependsOn.add(otherJob);
-                        }
-                        job.setDependsOn(dependsOn);
-                    }
-                }
             }
 
             jobDBAdaptor.insert(study.getUid(), jobs, new QueryOptions());
