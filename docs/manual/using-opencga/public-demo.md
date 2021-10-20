@@ -14,37 +14,113 @@ We have created a read-only user called _**demouser**_ with password _**demouser
 
 ## Datasets
 
-### Genomic Data <a href="usingopencga-genomicdata" id="usingopencga-genomicdata"></a>
+### Genomic Data <a id="UsingOpenCGA-GenomicData"></a>
 
 In this _demo_ we have indexed 5 different genomic datasets. Data has been organised in three _projects_ and five _studies_. These represents different assemblies and data types such as multi sample VCF, aggregated VCF or family genome or exome. The data is organised in 3 _projects_ and 5 studies. You can find some useful information in this table:
 
-| Project ID - Name                                                                                                    | Study ID - Name                                                                                                                 | VCF File Type          | Samples | Variants       |
-| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------- | -------------- |
-| <p><em><strong>population</strong></em></p><p><strong></strong></p><p><strong>Population Studies GRCh38</strong></p> | <p><em><strong>1000g</strong></em></p><p><strong></strong></p><p><strong>1000 Genomes phase 3</strong><br><strong></strong></p> | WGS Multisample        | 2,504   | **82,587,763** |
-| ****                                                                                                                 | <p><em><strong>uk10k</strong></em></p><p><strong></strong></p><p><strong>UK10K</strong><br><strong></strong></p>                | WGS Aggregated         | 10,000  | **46,624,127** |
-| <p><em><strong>family</strong></em></p><p><strong></strong></p><p><strong>Family Studies GRCh37</strong></p>         | <p><em><strong>corpasome</strong></em></p><p><strong></strong></p><p><strong>Corpas Family</strong></p>                         | WES Family Multisample | 4       | **300,711**    |
-| ****                                                                                                                 | <p><em><strong>platinum</strong></em></p><p><strong></strong></p><p><strong>Illumina Platinum</strong></p>                      | GWS Family Multisample | 17      | **12,263,246** |
+<table>
+  <thead>
+    <tr>
+      <th style="text-align:left">Project ID - Name</th>
+      <th style="text-align:left">Study ID - Name</th>
+      <th style="text-align:left">VCF File Type</th>
+      <th style="text-align:left">Samples</th>
+      <th style="text-align:left">Variants</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">
+        <p><em><b>population</b></em>
+        </p>
+        <p>&lt;b&gt;&lt;/b&gt;</p>
+        <p><b>Population Studies GRCh38</b>
+        </p>
+      </td>
+      <td style="text-align:left">
+        <p><em><b>1000g</b></em>
+        </p>
+        <p>&lt;b&gt;&lt;/b&gt;</p>
+        <p><b>1000 Genomes phase 3<br /></b>
+        </p>
+      </td>
+      <td style="text-align:left">WGS Multisample</td>
+      <td style="text-align:left">2,504</td>
+      <td style="text-align:left"><b>82,587,763</b>
+      </td>
+    </tr>
+    <tr>
+      <td style="text-align:left">&lt;b&gt;&lt;/b&gt;</td>
+      <td style="text-align:left">
+        <p><em><b>uk10k</b></em>
+        </p>
+        <p>&lt;b&gt;&lt;/b&gt;</p>
+        <p><b>UK10K<br /></b>
+        </p>
+      </td>
+      <td style="text-align:left">WGS Aggregated</td>
+      <td style="text-align:left">10,000</td>
+      <td style="text-align:left"><b>46,624,127</b>
+      </td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><em><b>family</b></em>
+        </p>
+        <p>&lt;b&gt;&lt;/b&gt;</p>
+        <p><b>Family Studies GRCh37</b>
+        </p>
+      </td>
+      <td style="text-align:left">
+        <p><em><b>corpasome</b></em>
+        </p>
+        <p>&lt;b&gt;&lt;/b&gt;</p>
+        <p><b>Corpas Family</b>
+        </p>
+      </td>
+      <td style="text-align:left">WES Family Multisample</td>
+      <td style="text-align:left">4</td>
+      <td style="text-align:left"><b>300,711</b>
+      </td>
+    </tr>
+    <tr>
+      <td style="text-align:left">&lt;b&gt;&lt;/b&gt;</td>
+      <td style="text-align:left">
+        <p><em><b>platinum</b></em>
+        </p>
+        <p>&lt;b&gt;&lt;/b&gt;</p>
+        <p><b>Illumina Platinum</b>
+        </p>
+      </td>
+      <td style="text-align:left">GWS Family Multisample</td>
+      <td style="text-align:left">17</td>
+      <td style="text-align:left"><b>12,263,246</b>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
-### Clinical Data <a href="usingopencga-clinicaldata" id="usingopencga-clinicaldata"></a>
+### Clinical Data <a id="UsingOpenCGA-ClinicalData"></a>
 
 In order to make this _demo_ more useful to users we have loaded or simulated some clinical data, this allows to exploit OpenCGA analysis such as GWAS or clinical interpretation. You can find clinical data for each study in the following sections.
 
-#### 1000g <a href="usingopencga-1000g" id="usingopencga-1000g"></a>
+#### 1000g <a id="UsingOpenCGA-1000g"></a>
 
-We loaded the 1000 Genomes pedigree file, you can find a copy at [http://resources.opencb.org/opencb/opencga/templates/demo/20130606\_g1k.ped](http://resources.opencb.org/opencb/opencga/templates/demo/20130606\_g1k.ped) 
+We loaded the 1000 Genomes pedigree file, you can find a copy at [http://resources.opencb.org/opencb/opencga/templates/demo/20130606\_g1k.ped](http://resources.opencb.org/opencb/opencga/templates/demo/20130606_g1k.ped) 
 
-#### uk10k <a href="usingopencga-uk10k" id="usingopencga-uk10k"></a>
+#### uk10k <a id="UsingOpenCGA-uk10k"></a>
 
 There is no possible clinical data in this study. This is a _WGS aggregated_ dataset so no samples or genotypes were present in the dataset and, therefore, no _Individuals_ or _Samples_ have been created.  
 
-#### corpasome <a href="usingopencga-corpasome" id="usingopencga-corpasome"></a>
+#### corpasome <a id="UsingOpenCGA-corpasome"></a>
 
 We simulated two different disorders and few phenotypes for the different members of the family. To be documented soon.
 
-#### platinum <a href="usingopencga-platinum" id="usingopencga-platinum"></a>
+#### platinum <a id="UsingOpenCGA-platinum"></a>
 
 To be documented soon.
 
-#### rams_cml <a href="usingopencga-rams_cml" id="usingopencga-rams_cml"></a>
+#### rams\_cml <a id="UsingOpenCGA-rams_cml"></a>
 
 To be documented soon.
+

@@ -6,20 +6,20 @@ Created by imedina on 11/09/14.
 
 ### Summary
 
-| Field          |                                                                                                            create                                                                                                           |                                                                                                            update                                                                                                           |                                                                                                            unique                                                                                                           |                                                                                                           required                                                                                                          |
-| -------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| id             |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) |
-| name           |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
-| email          |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
-| organization   |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
-| account        |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
-| quota          |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
-| projects       |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
-| sharedProjects |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
-| configs        |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
-| filters        |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
-| attributes     |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) |  ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media\&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
-| internal       | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34\_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media\&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| Field | create | update | unique | required |
+| :--- | :---: | :---: | :---: | :---: |
+| id | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) |
+| name | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| email | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| organization | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| account | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| quota | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| projects | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| sharedProjects | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| configs | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| filters | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| attributes | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
+| internal | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) | ![](https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633) |
 
 ## Data Model
 
@@ -27,167 +27,168 @@ Created by imedina on 11/09/14.
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/user/User.java).
 
-| Field                                                                                                                                                                                                             | Description                                                                                                                                |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| <p><strong>id</strong><br> <em>String</em> <br></p>                                                                                                                                                               | User ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment._Tags_: _required, immutable, unique_ |
-| <p><strong>name</strong><br> <em>String</em> <br></p>                                                                                                                                                             |                                                                                                                                            |
-| <p><strong>email</strong><br> <em>String</em> <br></p>                                                                                                                                                            |                                                                                                                                            |
-| <p><strong>organization</strong><br> <em>String</em> <br></p>                                                                                                                                                     |                                                                                                                                            |
-| <p><strong>account</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Account"><em>Account</em></a> <br></p>                    |                                                                                                                                            |
-| <p><strong>internal</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserInternal"><em>UserInternal</em></a> <br></p>         | An object describing the internal information of the User. This is managed by OpenCGA._Tags_: _internal_                                   |
-| <p><strong>quota</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserQuota"><em>UserQuota</em></a> <br></p>                  |                                                                                                                                            |
-| <p><strong>projects</strong><br> List&#x3C;<a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Project"><em>Project</em></a>> <br></p>       | A List with related projects.                                                                                                              |
-| <p><strong>sharedProjects</strong><br> List&#x3C;<a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Project"><em>Project</em></a>> <br></p> |                                                                                                                                            |
-| <p><strong>configs</strong><br> Map&#x3C;<em>ObjectMap</em>,<em>String</em>> <br></p>                                                                                                                             |                                                                                                                                            |
-| <p><strong>filters</strong><br> List&#x3C;<a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserFilter"><em>UserFilter</em></a>> <br></p>  |                                                                                                                                            |
-| <p><strong>attributes</strong><br> Map&#x3C;<em>Object</em>,<em>String</em>> <br></p>                                                                                                                             | You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.                |
+| Field | Description |
+| :--- | :--- |
+| **id**  _String_   | User ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment._Tags_: _required, immutable, unique_ |
+| **name**  _String_   |  |
+| **email**  _String_   |  |
+| **organization**  _String_   |  |
+| **account** [_Account_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Account)   |  |
+| **internal** [_UserInternal_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserInternal)   | An object describing the internal information of the User. This is managed by OpenCGA._Tags_: _internal_ |
+| **quota** [_UserQuota_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserQuota)   |  |
+| **projects**  List&lt;[_Project_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Project)&gt;   | A List with related projects. |
+| **sharedProjects**  List&lt;[_Project_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Project)&gt;   |  |
+| **configs**  Map&lt;_ObjectMap_,_String_&gt;   |  |
+| **filters**  List&lt;[_UserFilter_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserFilter)&gt;   |  |
+| **attributes**  Map&lt;_Object_,_String_&gt;   | You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes. |
 
 ### UserQuota
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserQuota.java).
 
-| Field                                                    | Description                                                  |
-| -------------------------------------------------------- | ------------------------------------------------------------ |
-| <p><strong>diskUsage</strong><br> <em>long</em> <br></p> | Current disk usage of user in bytes.                         |
-| <p><strong>cpuUsage</strong><br> <em>int</em> <br></p>   | Current cpu usage in seconds.                                |
-| <p><strong>maxDisk</strong><br> <em>long</em> <br></p>   | Maximum amount of disk in bytes allowed for the user to use. |
-| <p><strong>maxCpu</strong><br> <em>int</em> <br></p>     | Maximum amount of seconds the user can use of CPU.           |
+| Field | Description |
+| :--- | :--- |
+| **diskUsage**  _long_   | Current disk usage of user in bytes. |
+| **cpuUsage**  _int_   | Current cpu usage in seconds. |
+| **maxDisk**  _long_   | Maximum amount of disk in bytes allowed for the user to use. |
+| **maxCpu**  _int_   | Maximum amount of seconds the user can use of CPU. |
 
 ### Project
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/project/Project.java).
 
-| Field                                                                                                                                                                                                           | Description                                                                                                                                                               |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <p><strong>id</strong><br> <em>String</em> <br></p>                                                                                                                                                             | Project ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment._Tags_: _required, immutable, unique_                             |
-| <p><strong>uuid</strong><br> <em>String</em> <br></p>                                                                                                                                                           | Global unique ID at the whole OpenCGA installation. This is automatically created during the Project creation and cannot be changed._Tags_: _internal, unique, immutable_ |
-| <p><strong>name</strong><br> <em>String</em> <br></p>                                                                                                                                                           |                                                                                                                                                                           |
-| <p><strong>fqn</strong><br> <em>String</em> <br></p>                                                                                                                                                            | Full Qualified Name (user@projectId).                                                                                                                                     |
-| <p><strong>creationDate</strong><br> <em>String</em> <br></p>                                                                                                                                                   | String representing when the sample was created, this is automatically set by OpenCGA._Tags_: _internal_                                                                  |
-| <p><strong>modificationDate</strong><br> <em>String</em> <br></p>                                                                                                                                               | String representing when was the last time the sample was modified, this is automatically set by OpenCGA._Tags_: _internal_                                               |
-| <p><strong>description</strong><br> <em>String</em> <br></p>                                                                                                                                                    | An string to describe the properties of the sample.                                                                                                                       |
-| <p><strong>organism</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ProjectOrganism"><em>ProjectOrganism</em></a> <br></p> |                                                                                                                                                                           |
-| <p><strong>currentRelease</strong><br> <em>int</em> <br></p>                                                                                                                                                    |                                                                                                                                                                           |
-| <p><strong>studies</strong><br> List&#x3C;<a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Study"><em>Study</em></a>> <br></p>          |                                                                                                                                                                           |
-| <p><strong>internal</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ProjectInternal"><em>ProjectInternal</em></a> <br></p> | An object describing the internal information of the Project. This is managed by OpenCGA._Tags_: _internal_                                                               |
-| <p><strong>attributes</strong><br> Map&#x3C;<em>Object</em>,<em>String</em>> <br></p>                                                                                                                           | You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.                                               |
+| Field | Description |
+| :--- | :--- |
+| **id**  _String_   | Project ID is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment._Tags_: _required, immutable, unique_ |
+| **uuid**  _String_   | Global unique ID at the whole OpenCGA installation. This is automatically created during the Project creation and cannot be changed._Tags_: _internal, unique, immutable_ |
+| **name**  _String_   |  |
+| **fqn**  _String_   | Full Qualified Name \(user@projectId\). |
+| **creationDate**  _String_   | String representing when the sample was created, this is automatically set by OpenCGA._Tags_: _internal_ |
+| **modificationDate**  _String_   | String representing when was the last time the sample was modified, this is automatically set by OpenCGA._Tags_: _internal_ |
+| **description**  _String_   | An string to describe the properties of the sample. |
+| **organism** [_ProjectOrganism_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ProjectOrganism)   |  |
+| **currentRelease**  _int_   |  |
+| **studies**  List&lt;[_Study_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Study)&gt;   |  |
+| **internal** [_ProjectInternal_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ProjectInternal)   | An object describing the internal information of the Project. This is managed by OpenCGA._Tags_: _internal_ |
+| **attributes**  Map&lt;_Object_,_String_&gt;   | You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes. |
 
 ### Enum Account
 
 _Enumeration class._ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/user/Account.java).
 
-| Field                                       | Description |
-| ------------------------------------------- | ----------- |
-| <p><strong>type</strong> <br></p>           |             |
-| <p><strong>creationDate</strong> <br></p>   |             |
-| <p><strong>expirationDate</strong> <br></p> |             |
-| <p><strong>authentication</strong> <br></p> |             |
+| Field | Description |
+| :--- | :--- |
+| **type**   |  |
+| **creationDate**   |  |
+| **expirationDate**   |  |
+| **authentication**   |  |
 
 ### UserFilter
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserFilter.java).
 
-| Field                                                                                                                                                                                             | Description |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| <p><strong>id</strong><br> <em>String</em> <br></p>                                                                                                                                               |             |
-| <p><strong>description</strong><br> <em>String</em> <br></p>                                                                                                                                      |             |
-| <p><strong>resource</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Resource"><em>Resource</em></a> <br></p> |             |
-| <p><strong>query</strong><br> <em>Query</em> <br></p>                                                                                                                                             |             |
-| <p><strong>options</strong><br> <em>QueryOptions</em> <br></p>                                                                                                                                    |             |
+| Field | Description |
+| :--- | :--- |
+| **id**  _String_   |  |
+| **description**  _String_   |  |
+| **resource** [_Resource_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Resource)   |  |
+| **query**  _Query_   |  |
+| **options**  _QueryOptions_   |  |
 
 ### SampleInternal
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).
 
-| Field                                                                                                                                                                                        | Description |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| <p><strong>status</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status"><em>Status</em></a> <br></p>  |             |
-| <p><strong>rga</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#RgaIndex"><em>RgaIndex</em></a> <br></p> |             |
+| Field | Description |
+| :--- | :--- |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status)   |  |
+| **rga** [_RgaIndex_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#RgaIndex)   |  |
 
 ### IndividualInternal
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualInternal.java).
 
-| Field                                                                                                                                                                                       | Description |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| <p><strong>status</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status"><em>Status</em></a> <br></p> |             |
+| Field | Description |
+| :--- | :--- |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status)   |  |
 
 ### FamilyInternal
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
 
-| Field                                                                                                                                                                                                   | Description |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| <p><strong>status</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#FamilyStatus"><em>FamilyStatus</em></a> <br></p> |             |
+| Field | Description |
+| :--- | :--- |
+| **status** [_FamilyStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#FamilyStatus)   |  |
 
 ### FileInternal
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
 
-| Field                                                                                                                                                                                                               | Description |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| <p><strong>status</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#FileStatus"><em>FileStatus</em></a> <br></p>                 |             |
-| <p><strong>index</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#FileIndex"><em>FileIndex</em></a> <br></p>                    |             |
-| <p><strong>sampleMap</strong><br> Map&#x3C;<em>String</em>> <br></p>                                                                                                                                                |             |
-| <p><strong>missingSamples</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#MissingSamples"><em>MissingSamples</em></a> <br></p> |             |
+| Field | Description |
+| :--- | :--- |
+| **status** [_FileStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#FileStatus)   |  |
+| **index** [_FileIndex_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#FileIndex)   |  |
+| **sampleMap**  Map&lt;_String_&gt;   |  |
+| **missingSamples** [_MissingSamples_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#MissingSamples)   |  |
 
 ### JobInternal
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternal.java).
 
-| Field                                                                                                                                                                                                                | Description |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| <p><strong>status</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ExecutionStatus"><em>ExecutionStatus</em></a> <br></p>        |             |
-| <p><strong>webhook</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#JobInternalWebhook"><em>JobInternalWebhook</em></a> <br></p> |             |
-| <p><strong>events</strong><br> List&#x3C;<em>Event</em>> <br></p>                                                                                                                                                    |             |
+| Field | Description |
+| :--- | :--- |
+| **status** [_ExecutionStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ExecutionStatus)   |  |
+| **webhook** [_JobInternalWebhook_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#JobInternalWebhook)   |  |
+| **events**  List&lt;_Event_&gt;   |  |
 
 ### InterpretationInternal
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/InterpretationInternal.java).
 
-| Field                                                                                                                                                                                                                   | Description |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| <p><strong>status</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#InterpretationStatus"><em>InterpretationStatus</em></a> <br></p> |             |
+| Field | Description |
+| :--- | :--- |
+| **status** [_InterpretationStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#InterpretationStatus)   |  |
 
 ### ProjectInternal
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectInternal.java).
 
-| Field                                                                                                                                                                                                                       | Description |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| <p><strong>datastores</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Datastores"><em>Datastores</em></a> <br></p>                     |             |
-| <p><strong>cellbase</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#CellBaseConfiguration"><em>CellBaseConfiguration</em></a> <br></p> |             |
-| <p><strong>status</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status"><em>Status</em></a> <br></p>                                 |             |
+| Field | Description |
+| :--- | :--- |
+| **datastores** [_Datastores_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Datastores)   |  |
+| **cellbase** [_CellBaseConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#CellBaseConfiguration)   |  |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status)   |  |
 
 ### CohortInternal
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/CohortInternal.java).
 
-| Field                                                                                                                                                                                                   | Description |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| <p><strong>status</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#CohortStatus"><em>CohortStatus</em></a> <br></p> |             |
+| Field | Description |
+| :--- | :--- |
+| **status** [_CohortStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#CohortStatus)   |  |
 
 ### ClinicalAnalysisInternal
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/ClinicalAnalysisInternal.java).
 
-| Field                                                                                                                                                                                                                       | Description |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| <p><strong>status</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ClinicalAnalysisStatus"><em>ClinicalAnalysisStatus</em></a> <br></p> |             |
+| Field | Description |
+| :--- | :--- |
+| **status** [_ClinicalAnalysisStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#ClinicalAnalysisStatus)   |  |
 
 ### UserInternal
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserInternal.java).
 
-| Field                                                                                                                                                                                               | Description |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| <p><strong>status</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserStatus"><em>UserStatus</em></a> <br></p> |             |
+| Field | Description |
+| :--- | :--- |
+| **status** [_UserStatus_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#UserStatus)   |  |
 
 ### StudyInternal
 
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
 
-| Field                                                                                                                                                                                                                      | Description |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| <p><strong>status</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status"><em>Status</em></a> <br></p>                                |             |
-| <p><strong>configuration</strong><br><a href="https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#StudyConfiguration"><em>StudyConfiguration</em></a> <br></p> |             |
+| Field | Description |
+| :--- | :--- |
+| **status** [_Status_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#Status)   |  |
+| **configuration** [_StudyConfiguration_](https://github.com/opencb/opencga/tree/b5e7c1c4f74288c983705753ca17c79147b1f906/docs/manual/data-models/User.md#StudyConfiguration)   |  |
+

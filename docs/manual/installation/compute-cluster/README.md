@@ -1,12 +1,12 @@
 # On-Premise HPC Cluster
 
-You can install OpenCGA on a local HPC cluster.  Installing and configuring OpenCGA consists of different steps, as you will see on this page you must first make sure that the server(s) have all dependencies installed, then you can configure and complete the installation.
+You can install OpenCGA on a local HPC cluster.  Installing and configuring OpenCGA consists of different steps, as you will see on this page you must first make sure that the server\(s\) have all dependencies installed, then you can configure and complete the installation.
 
 ## Installation and Configuration
 
 ### Step 1 - Configuring the Server
 
-OpenCGA requires Java 8, Tomcat or MongoDB. We try to keep dependencies to the minimum to ease development, installation and administration, and divide dependencies into _required_ and _optional._ You can learn about all the dependencies and how to install them at [**Installation Guide > Server Configuration**](http://docs.opencb.org/display/opencga/Server+Configuration).
+OpenCGA requires Java 8, Tomcat or MongoDB. We try to keep dependencies to the minimum to ease development, installation and administration, and divide dependencies into _required_ and _optional._ You can learn about all the dependencies and how to install them at [**Installation Guide &gt; Server Configuration**](http://docs.opencb.org/display/opencga/Server+Configuration).
 
 ### Step 2 - Getting OpenCGA
 
@@ -19,11 +19,11 @@ Please visit [Getting OpenCGA](building-from-source.md) to learn more about thes
 
 ### Step 3 - Install OpenCGA Binaries
 
-These instructions assume that you have already downloaded or built openCGA binaries as described on [Using Binaries](http://docs.opencb.org/pages/createpage.action?spaceKey=opencga\&title=Using+Binaries\&linkCreation=true\&fromPageId=327810) and [Building from Source Code](http://docs.opencb.org/display/opencga/Building+from+Source+Code).
+These instructions assume that you have already downloaded or built openCGA binaries as described on [Using Binaries](http://docs.opencb.org/pages/createpage.action?spaceKey=opencga&title=Using+Binaries&linkCreation=true&fromPageId=327810) and [Building from Source Code](http://docs.opencb.org/display/opencga/Building+from+Source+Code).
 
-Create an installation directory called _/opt/opencga _and copy the contents of opencga into this :
+Create an installation directory called _/opt/opencga_ and copy the contents of opencga into this :
 
-**Note:** In case of reinstallation, you must clean the installation directory (_/opt/opencga_)
+**Note:** In case of reinstallation, you must clean the installation directory \(_/opt/opencga_\)
 
 ```bash
 mkdir /opt/opencga
@@ -50,7 +50,7 @@ Next you can learn more about these two options.
 
 #### Deploying OpenCGA in a Web Server
 
-Install [Apache Tomcat](https://tomcat.apache.org/download-80.cgi) and copy the deploy `opencga.war`. To do this, just copy it from the compilation directory (where you downloaded the OpenCGA repository) into the Tomcat `webapps` directory:
+Install [Apache Tomcat](https://tomcat.apache.org/download-80.cgi) and copy the deploy `opencga.war`. To do this, just copy it from the compilation directory \(where you downloaded the OpenCGA repository\) into the Tomcat `webapps` directory:
 
 `cp /opt/opencga/opencga.war $(path_to_tomcat)/webapps`
 
@@ -67,3 +67,4 @@ The OpenCGA admin command line allows users to run an embedded REST server. Thes
 `/opencga-admin.sh server rest --start -p`
 
 Warning: This method is still under development.
+

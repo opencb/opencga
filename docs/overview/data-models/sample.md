@@ -10,39 +10,255 @@ Sample data model ...
 
 This is the main data model, it stores the most basic and important information. You can find the Java [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
 
-| Field                                                                                                                                     | Description                                                                                                                                                                                                                      |
-| ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <p><strong>id</strong></p><p><em>String</em></p>                                                                                          | <p>Unique Sample ID in the study, this can be repeated across different studies. This is a mandatory parameter in the creation and cannot be changed at the moment.</p><p><em>Constraints: Mandatory, Unique, Immutable</em></p> |
-| <p><strong>uuid</strong></p><p><em>String</em></p>                                                                                        | <p>Global unique ID in any study of any OpenCGA installation. This is created during the sample creation and cannot be changed.</p><p><em>Constraints: Internal, Unique, Immutable</em></p>                                      |
-| <p><strong>individualId</strong></p><p><em>String</em></p>                                                                                | A reference to the [Individual](individual.md) containing this sample. Notice that samples can exist without and Individual ID, this field is not mandatory.                                                                     |
-| <p><strong>fileIds</strong></p><p><em>List&#x3C;String></em></p>                                                                          | List of [File ID](./#file-id) containing this sample, eg BAM, VCF, QC images, ...                                                                                                                                                |
-| <p><strong>processing</strong></p><p><em></em><a href="sample.md#sampleprocessing"><em>SampleProcessing</em></a><em></em></p>             | An object describing how to sample was processed.                                                                                                                                                                                |
-| <p><strong>collection</strong></p><p><em></em><a href="sample.md#samplecollection"><em>SampleCollection</em></a><em></em></p>             | An object describing how the sample was collected.                                                                                                                                                                               |
-| <p><strong>somatic</strong></p><p><em>Boolean</em></p>                                                                                    |                                                                                                                                                                                                                                  |
-| <p><strong>annotationSets</strong></p><p><em>List&#x3C;</em><a href="./#annotation-set"><em>AnnotationSet</em></a><em>></em></p>          |                                                                                                                                                                                                                                  |
-| <p><strong>qualityControl</strong></p><p><em></em><a href="sample.md#samplequalitycontrol"><em>SampleQualityControl</em></a><em></em></p> |                                                                                                                                                                                                                                  |
-| <p><strong>release</strong></p><p><em>Integer</em></p>                                                                                    |                                                                                                                                                                                                                                  |
-| <p><strong>version</strong></p><p><em>Integer</em></p>                                                                                    |                                                                                                                                                                                                                                  |
-| <p><strong>creationDate</strong></p><p><em>String</em></p>                                                                                | A string representing the creation date in format YYYYMMDDHHmmss                                                                                                                                                                 |
-| <p><strong>modificationDate</strong></p><p><em>String</em></p>                                                                            | A string representing the modification date in format YYYYMMDDHHmmss                                                                                                                                                             |
-| <p><strong>description</strong></p><p><em>String</em></p>                                                                                 |                                                                                                                                                                                                                                  |
-| <p><strong>phenotypes</strong></p><p><em>List&#x3C;</em><a href="./#phenotype"><em>Phenotype</em></a><em>></em></p>                       |                                                                                                                                                                                                                                  |
-| <p><strong>status</strong></p><p><em></em><a href="./#status"><em>CustomStatus</em></a><em></em></p>                                      |                                                                                                                                                                                                                                  |
-| <p><strong>internal</strong></p><p><em>SampleInternal</em></p>                                                                            |                                                                                                                                                                                                                                  |
-| <p><strong>attributes</strong></p><p><em>Map</em></p>                                                                                     |                                                                                                                                                                                                                                  |
+<table>
+  <thead>
+    <tr>
+      <th style="text-align:left">Field</th>
+      <th style="text-align:left">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">
+        <p><b>id</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left">
+        <p>Unique Sample ID in the study, this can be repeated across different studies.
+          This is a mandatory parameter in the creation and cannot be changed at
+          the moment.</p>
+        <p><em>Constraints: Mandatory, Unique, Immutable</em>
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>uuid</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left">
+        <p>Global unique ID in any study of any OpenCGA installation. This is created
+          during the sample creation and cannot be changed.</p>
+        <p><em>Constraints: Internal, Unique, Immutable</em>
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>individualId</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left">A reference to the <a href="individual.md">Individual</a> containing this
+        sample. Notice that samples can exist without and Individual ID, this field
+        is not mandatory.</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>fileIds</b>
+        </p>
+        <p><em>List&lt;String&gt;</em>
+        </p>
+      </td>
+      <td style="text-align:left">List of <a href="./#file-id">File ID</a> containing this sample, eg BAM,
+        VCF, QC images, ...</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>processing</b>
+        </p>
+        <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#sampleprocessing"><em>SampleProcessing</em></a>&lt;em&gt;&lt;/em&gt;</p>
+      </td>
+      <td style="text-align:left">An object describing how to sample was processed.</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>collection</b>
+        </p>
+        <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#samplecollection"><em>SampleCollection</em></a>&lt;em&gt;&lt;/em&gt;</p>
+      </td>
+      <td style="text-align:left">An object describing how the sample was collected.</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>somatic</b>
+        </p>
+        <p><em>Boolean</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>annotationSets</b>
+        </p>
+        <p><em>List&lt;</em><a href="./#annotation-set"><em>AnnotationSet</em></a><em>&gt;</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>qualityControl</b>
+        </p>
+        <p>&lt;em&gt;&lt;/em&gt;<a href="sample.md#samplequalitycontrol"><em>SampleQualityControl</em></a>&lt;em&gt;&lt;/em&gt;</p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>release</b>
+        </p>
+        <p><em>Integer</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>version</b>
+        </p>
+        <p><em>Integer</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>creationDate</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left">A string representing the creation date in format YYYYMMDDHHmmss</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>modificationDate</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left">A string representing the modification date in format YYYYMMDDHHmmss</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>description</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>phenotypes</b>
+        </p>
+        <p><em>List&lt;</em><a href="./#phenotype"><em>Phenotype</em></a><em>&gt;</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>status</b>
+        </p>
+        <p>&lt;em&gt;&lt;/em&gt;<a href="./#status"><em>CustomStatus</em></a>&lt;em&gt;&lt;/em&gt;</p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>internal</b>
+        </p>
+        <p><em>SampleInternal</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>attributes</b>
+        </p>
+        <p><em>Map</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+  </tbody>
+</table>
 
 ### SampleProcessing
 
 This object describes how the sample was processed in the lab.
 
-| Field                                                           | Description                                                    |
-| --------------------------------------------------------------- | -------------------------------------------------------------- |
-| <p><strong>product</strong></p><p><em>String</em></p>           | Type of product sequenced, this can be DNA or RNA for instance |
-| <p><strong>preparationMethod</strong></p><p><em>String</em></p> |                                                                |
-| <p><strong>extractionMethod</strong></p><p><em>String</em></p>  |                                                                |
-| <p><strong>labSampleId</strong></p><p><em>String</em></p>       |                                                                |
-| <p>quantity</p><p><em>String</em></p>                           |                                                                |
-| <p>date</p><p><em>String</em></p>                               |                                                                |
+<table>
+  <thead>
+    <tr>
+      <th style="text-align:left">Field</th>
+      <th style="text-align:left">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align:left">
+        <p><b>product</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left">Type of product sequenced, this can be DNA or RNA for instance</td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>preparationMethod</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>extractionMethod</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p><b>labSampleId</b>
+        </p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p>quantity</p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+    <tr>
+      <td style="text-align:left">
+        <p>date</p>
+        <p><em>String</em>
+        </p>
+      </td>
+      <td style="text-align:left"></td>
+    </tr>
+  </tbody>
+</table>
 
 ### SampleCollection
 
@@ -136,3 +352,4 @@ This is a full JSON example:
     }
 }
 ```
+
