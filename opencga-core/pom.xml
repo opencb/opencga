@@ -204,7 +204,7 @@
                             <sourcepath>${project.basedir}/src/main/java</sourcepath>
                             <additionalOptions>
                                 <additionalOption>-outputdir</additionalOption>
-                                <additionalOption>${project.basedir}/../docs/manual/data-models</additionalOption>
+                                <additionalOption>${project.basedir}/../docs/data-models</additionalOption>
                                 <additionalOption>-sourceClassesDir</additionalOption>
                                 <additionalOption>${project.basedir}/src/main/java</additionalOption>
                                 <additionalOption>-classes2Markdown</additionalOption>
