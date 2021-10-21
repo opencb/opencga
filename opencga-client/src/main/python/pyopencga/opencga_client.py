@@ -37,7 +37,6 @@ class OpencgaClient(object):
         self.auto_refresh = auto_refresh
         self.on_retry = on_retry
         self.clients = []
-        self.user_id = None
         self._login_handler = None
         self.token = token
         self.refreshToken = None
@@ -103,16 +102,15 @@ class OpencgaClient(object):
         to other code
         """
         def login_handler(refresh=False):
-            self.user_id = user
             if refresh:
-                data = {'refreshToken': self.refresh_token}
+                # TODO Change to refreshToken whenever it is properly implemented in OpenCGA
+                # data = {'refreshToken': self.refresh_token}
+                data = {'user': user, 'password': password}
             else:
                 data = {'user': user, 'password': password}
             tokens = User(self.configuration).login(data=data).get_result(0)
             self.token = tokens['token']
             self.refresh_token = tokens['refreshToken']
-            for client in self.clients:
-                client.token = self.token
             return self.token
         return login_handler
 
@@ -128,6 +126,9 @@ class OpencgaClient(object):
 
         self._login_handler = self._make_login_handler(user, password)
         self._login_handler()
+        for client in self.clients:
+            client.token = self.token
+            client.login_handler = self._login_handler
 
     def logout(self):
         self.token = None
