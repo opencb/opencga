@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
  */
 public class ExecutionDaemon extends MonitorParentDaemon {
 
-    public static final String OUTDIR_PARAM = "outdir";
     private final ExecutionManager executionManager;
 
     // Maximum number of executions of each type (Pending, queued, running) that will be handled on each iteration.
@@ -367,6 +366,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             } catch (ToolException e) {
                 return abortExecution(execution, e.getMessage());
             }
+            // Add execution outdir
+            jobParams.put(JobDaemon.OUTDIR_PARAM, execution.getOutDir().getPath() + toolId);
             Job job = createJobInstance(execution.getId(), toolId, pipelineJob.getDescription(), execution.getPriority(), jobParams,
                     execution.getTags(), dependsOn, execution.getUserId());
             jobList.add(job);

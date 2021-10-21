@@ -161,6 +161,22 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public void checkCanViewStudy(Study study, String userId) throws CatalogException {
+        if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(study.getGroups())) {
+            for (Group group : study.getGroups()) {
+                if (MEMBERS_GROUP.equals(group.getId())) {
+                    if (group.getUserIds().contains(userId)) {
+                        return;
+                    } else {
+                        throw new CatalogAuthorizationException("Only the members of the study are allowed to see it");
+                    }
+                }
+            }
+        }
+        checkCanViewStudy(study.getUid(), userId);
+    }
+
+    @Override
     public void checkCanViewStudy(long studyId, String userId) throws CatalogException {
         if (isInstallationAdministrator(userId)) {
             return;
@@ -1177,6 +1193,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     Auxiliar methods
     ====================================
      */
+
     /**
      * Retrieves the groupId where the members belongs to.
      *

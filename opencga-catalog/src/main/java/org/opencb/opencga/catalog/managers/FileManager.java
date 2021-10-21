@@ -76,6 +76,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.MEMBERS_GROUP;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
@@ -306,8 +307,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public void matchUpVariantFiles(String studyStr, List<File> transformedFiles, String sessionId) throws CatalogException {
-        String userId = userManager.getUserId(sessionId);
+    public void matchUpVariantFiles(String studyStr, List<File> transformedFiles, String userId) throws CatalogException {
         Study study = studyManager.resolveId(studyStr, userId);
 
         for (File transformedFile : transformedFiles) {
@@ -423,13 +423,10 @@ public class FileManager extends AnnotationSetManager<File> {
                 VariantFileMetadata fileMetadata = getDefaultObjectMapper().readValue(is, VariantFileMetadata.class);
                 VariantSetStats stats = fileMetadata.getStats();
 
-                catalogManager.getFileManager()
-                        .update(studyStr, vcf.getPath(),
-                                new FileUpdateParams().setQualityControl(
-                                        new FileQualityControl().setVariant(
-                                                new VariantFileQualityControl(stats, null))),
-                                new QueryOptions(),
-                                sessionId);
+                update(study, vcf, new FileUpdateParams().setQualityControl(
+                                new FileQualityControl().setVariant(
+                                        new VariantFileQualityControl(stats, null))),
+                        new QueryOptions(), userId, null);
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + statsFile + "\"", e);
             }
@@ -497,6 +494,48 @@ public class FileManager extends AnnotationSetManager<File> {
         authorizationManager.checkFilePermission(fileDataResult.first().getStudyUid(), fileId, userId, FileAclEntry.FilePermissions.VIEW);
 
         return getParents(fileDataResult.first().getStudyUid(), fileDataResult.first().getPath(), true, options);
+    }
+
+    OpenCGAResult<File> createUserExecutionsFolder(Study study, QueryOptions options, String userId) throws CatalogException {
+        // Check if the user has access to the study
+        authorizationManager.checkCanViewStudy(study, userId);
+
+        String userPath = "JOBS/" + userId + "/";
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(FileDBAdaptor.QueryParams.PATH.key(), userPath);
+
+        OpenCGAResult<File> fileOpenCGAResult = fileDBAdaptor.get(query, options);
+        if (fileOpenCGAResult.getNumResults() == 1) {
+            return fileOpenCGAResult;
+        }
+
+        // Folder does not exist so we will create it
+        String description = userId + " jobs folder";
+        File file = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, userPath, description, FileInternal.init(), 0,
+                null, null, "", new FileQualityControl(), null, null);
+        validateNewFile(study, file, false);
+
+        // Insert file in DB
+        fileDBAdaptor.insert(study.getUid(), file, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                QueryOptions.empty());
+        OpenCGAResult<File> queryResult = getFile(study.getUid(), file.getUuid(), options);
+
+        // Grant all permissions to the user so he/she can execute and create anything under that directory
+        List<String> allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
+                .stream()
+                .map(FileAclEntry.FilePermissions::toString)
+                .collect(Collectors.toList());
+        authorizationManager.setAcls(study.getUid(), Collections.singletonList(userId),
+                new AuthorizationManager.CatalogAclParams(Collections.singletonList(queryResult.first().getUid()), allFilePermissions,
+                        Enums.Resource.FILE));
+
+        // Remove permissions to the members group so only the owner of those executions and the admins can access it
+        authorizationManager.setAcls(study.getUid(), Collections.singletonList(MEMBERS_GROUP),
+                new AuthorizationManager.CatalogAclParams(Collections.singletonList(queryResult.first().getUid()), Collections.emptyList(),
+                        Enums.Resource.FILE));
+
+        return queryResult;
     }
 
     public OpenCGAResult<File> createFolder(String studyStr, String path, boolean parents, String description, QueryOptions options,
@@ -593,7 +632,7 @@ public class FileManager extends AnnotationSetManager<File> {
             File parentFile = getParents(study.getUid(), file.getPath(), false, INCLUDE_FILE_URI_PATH).first();
             authorizationManager.checkFilePermission(study.getUid(), parentFile.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
 
-            OpenCGAResult<File> result = create(study, file, parents, content, options, token);
+            OpenCGAResult<File> result = create(study, file, parents, content, options, userId);
             auditManager.auditCreate(userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
@@ -604,7 +643,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    void validateNewFile(Study study, File file, String sessionId, boolean overwrite) throws CatalogException {
+    void validateNewFile(Study study, File file, boolean overwrite) throws CatalogException {
         /** Check and set all the params and create a File object **/
         ParamUtils.checkObj(file, "File");
         ParamUtils.checkPath(file.getPath(), "path");
@@ -689,8 +728,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     private OpenCGAResult<File> register(Study study, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples,
-                                         boolean parents, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = userManager.getUserId(sessionId);
+                                         boolean parents, QueryOptions options, String userId) throws CatalogException {
         long studyId = study.getUid();
 
         //Find parent. If parents == true, create folders.
@@ -703,8 +741,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 newParent = true;
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, parentPath, "", FileInternal.init(),
                         0, Collections.emptyList(), null, "", new FileQualityControl(), Collections.emptyMap(), Collections.emptyMap());
-                validateNewFile(study, parentFile, sessionId, false);
-                parentFileId = register(study, parentFile, existingSamples, nonExistingSamples, parents, options, sessionId)
+                validateNewFile(study, parentFile, false);
+                parentFileId = register(study, parentFile, existingSamples, nonExistingSamples, parents, options, userId)
                         .first().getUid();
             } else {
                 throw new CatalogDBException("Directory not found " + parentPath);
@@ -731,14 +769,14 @@ public class FileManager extends AnnotationSetManager<File> {
                     Enums.Resource.FILE);
         }
 
-        matchUpVariantFiles(study.getFqn(), queryResult.getResults(), sessionId);
+        matchUpVariantFiles(study.getFqn(), queryResult.getResults(), userId);
 
         return queryResult;
     }
 
-    private OpenCGAResult<File> create(Study study, File file, boolean parents, String content, QueryOptions options, String sessionId)
+    private OpenCGAResult<File> create(Study study, File file, boolean parents, String content, QueryOptions options, String userId)
             throws CatalogException {
-        validateNewFile(study, file, sessionId, false);
+        validateNewFile(study, file, false);
 
         IOManager ioManager;
         try {
@@ -758,12 +796,12 @@ public class FileManager extends AnnotationSetManager<File> {
         List<Sample> existingSamples = new LinkedList<>();
         if (file.getType() == File.Type.FILE && ioManager.exists(file.getUri())) {
             new FileMetadataReader(catalogManager).addMetadataInformation(study.getFqn(), file);
-            validateNewSamples(study, file, existingSamples, nonExistingSamples, sessionId);
+            validateNewSamples(study, file, existingSamples, nonExistingSamples, userId);
         }
 
         OpenCGAResult<File> result;
         try {
-            result = register(study, file, existingSamples, nonExistingSamples, parents, options, sessionId);
+            result = register(study, file, existingSamples, nonExistingSamples, parents, options, userId);
         } catch (CatalogException e) {
             if (file.getType() == File.Type.FILE && StringUtils.isNotEmpty(content)) {
                 ioManager.deleteFile(file.getUri());
@@ -774,13 +812,11 @@ public class FileManager extends AnnotationSetManager<File> {
         return result;
     }
 
-    private void validateNewSamples(Study study, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples, String sessionId)
+    private void validateNewSamples(Study study, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples, String userId)
             throws CatalogException {
         if (file.getSampleIds() == null || file.getSampleIds().isEmpty()) {
             return;
         }
-
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
 
         InternalGetDataResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(), file.getSampleIds(),
                 SampleManager.INCLUDE_SAMPLE_IDS, userId, true);
@@ -847,7 +883,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("expectedSize", expectedSize)
                 .append("token", token);
         try {
-            validateNewFile(study, file, token, overwrite);
+            validateNewFile(study, file, overwrite);
 
             File overwrittenFile = null;
             Query query = new Query()
@@ -968,7 +1004,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
                 // Improve metadata information and extract samples if any
                 new FileMetadataReader(catalogManager).addMetadataInformation(study.getFqn(), file);
-                validateNewSamples(study, file, existingSamples, nonExistingSamples, token);
+                validateNewSamples(study, file, existingSamples, nonExistingSamples, userId);
             } catch (CatalogException e) {
                 try {
                     logger.error("Error uploading file. Deleting temp directory", e);
@@ -1014,7 +1050,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     fileDBAdaptor.update(overwrittenFile.getUid(), params, null, queryOptions);
                 } else {
                     // We need to register a new file
-                    register(study, file, existingSamples, nonExistingSamples, parents, QueryOptions.empty(), token);
+                    register(study, file, existingSamples, nonExistingSamples, parents, QueryOptions.empty(), userId);
                 }
             } catch (CatalogException e) {
                 try {
@@ -3447,7 +3483,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
                         List<Sample> existingSamples = new LinkedList<>();
                         List<Sample> nonExistingSamples = new LinkedList<>();
-                        validateNewSamples(study, subfile, existingSamples, nonExistingSamples, token);
+                        validateNewSamples(study, subfile, existingSamples, nonExistingSamples, userId);
 
                         fileDBAdaptor.insert(study.getUid(), subfile, existingSamples, nonExistingSamples, Collections.emptyList(),
                                 new QueryOptions());
@@ -3535,7 +3571,7 @@ public class FileManager extends AnnotationSetManager<File> {
         new FileMetadataReader(catalogManager).addMetadataInformation(study.getFqn(), subfile);
         List<Sample> existingSamples = new LinkedList<>();
         List<Sample> nonExistingSamples = new LinkedList<>();
-        validateNewSamples(study, subfile, existingSamples, nonExistingSamples, token);
+        validateNewSamples(study, subfile, existingSamples, nonExistingSamples, userId);
 
         fileDBAdaptor.insert(study.getUid(), subfile, existingSamples, nonExistingSamples, Collections.emptyList(), new QueryOptions());
         OpenCGAResult<File> result = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty());

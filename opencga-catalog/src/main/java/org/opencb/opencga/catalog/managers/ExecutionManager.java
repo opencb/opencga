@@ -23,6 +23,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -217,6 +218,17 @@ public class ExecutionManager extends ResourceManager<Execution> {
             } else {
                 throw new CatalogException("Expected TOOL or PIPELINE prefix for id: '" + resourceId + "'");
             }
+
+            // Ensure user has its own executions folder
+            File userFolder = catalogManager.getFileManager().createUserExecutionsFolder(study, FileManager.INCLUDE_FILE_URI_PATH, userId)
+                    .first();
+
+            // Create a folder specific for this execution
+            String executionFolder = userFolder.getPath() + TimeUtils.getDay() + "/" + execution.getId();
+            logger.debug("Will create folder '{}' for execution '{}'", executionFolder, execution.getId());
+            File execFolder = catalogManager.getFileManager().createFolder(study.getFqn(), executionFolder, true,
+                    execution.getDescription(), execution.getId(), QueryOptions.empty(), token).first();
+            execution.setOutDir(execFolder);
 
             executionDBAdaptor.insert(study.getUid(), execution, new QueryOptions());
             OpenCGAResult<Execution> executionResult = executionDBAdaptor.get(execution.getUid(), new QueryOptions());

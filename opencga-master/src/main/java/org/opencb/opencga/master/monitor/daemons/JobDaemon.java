@@ -532,20 +532,15 @@ public class JobDaemon extends MonitorParentDaemon {
         String outDirPathParam = (String) params.get(OUTDIR_PARAM);
         if (!StringUtils.isEmpty(outDirPathParam)) {
             try {
+                File jobOutDir = createJobOutDir(job.getStudy().getId(), outDirPathParam, userToken);
                 // Any path the user has requested
-                updateParams.setOutDir(getValidInternalOutDir(job.getStudy().getId(), job, outDirPathParam, userToken));
+                updateParams.setOutDir(jobOutDir);
             } catch (CatalogException e) {
                 logger.error("Cannot create output directory. {}", e.getMessage(), e);
                 return abortJob(job, "Cannot create output directory. " + e.getMessage());
             }
         } else {
-            try {
-                // JOBS/user/job_id/
-                updateParams.setOutDir(getValidDefaultOutDir(job));
-            } catch (CatalogException e) {
-                logger.error("Cannot create output directory. {}", e.getMessage(), e);
-                return abortJob(job, "Cannot create output directory. " + e.getMessage());
-            }
+            return abortJob(job, "Internal error: outdir parameter should always be present in the map of job params");
         }
 
         Path outDirPath = Paths.get(updateParams.getOutDir().getUri());
@@ -665,12 +660,20 @@ public class JobDaemon extends MonitorParentDaemon {
         return queue;
     }
 
-    private File getValidInternalOutDir(String study, Job job, String outDirPath, String userToken) throws CatalogException {
-        // TODO: Remove this line when we stop passing the outdir as a query param in the URL
-        outDirPath = outDirPath.replace(":", "/");
-        if (!outDirPath.endsWith("/")) {
-            outDirPath += "/";
+    private File createJobOutDir(String study, String outDirPath, String userToken) throws CatalogException {
+        File outDir;
+        try {
+            outDir = fileManager.createFolder(study, outDirPath, true, "", FileManager.INCLUDE_FILE_URI_PATH, userToken).first();
+            IOManager ioManager = catalogManager.getIoManagerFactory().get(outDir.getUri());
+            ioManager.createDirectory(outDir.getUri(), true);
+        } catch (CatalogException | IOException e1) {
+            throw new CatalogException("Cannot create output directory. " + e1.getMessage(), e1.getCause());
         }
+
+        return outDir;
+    }
+
+    private File getValidInternalOutDir(String study, Job job, String outDirPath, String userToken) throws CatalogException {
         File outDir;
         try {
             outDir = fileManager.get(study, outDirPath, FileManager.INCLUDE_FILE_URI_PATH, token).first();

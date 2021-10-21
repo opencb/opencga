@@ -90,6 +90,8 @@ public interface AuthorizationManager {
 
     void checkCanEditStudy(long studyId, String userId) throws CatalogException;
 
+    void checkCanViewStudy(Study study, String userId) throws CatalogException;
+
     void checkCanViewStudy(long studyId, String userId) throws CatalogException;
 
     void checkCanUpdatePermissionRules(long studyId, String userId) throws CatalogException;
@@ -167,8 +169,7 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined for the sample.
      *
-     *
-     * @param studyId study id.
+     * @param studyId  study id.
      * @param sampleId sample id.
      * @param userId   user id asking for the ACLs.
      * @return a list of sampleAcls.
@@ -179,8 +180,7 @@ public interface AuthorizationManager {
     /**
      * Return the ACL defined for the member.
      *
-     *
-     * @param studyId study id.
+     * @param studyId  study id.
      * @param sampleId sample id.
      * @param userId   user asking for the ACL.
      * @param member   member whose permissions will be retrieved.
@@ -198,9 +198,8 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined for the file.
      *
-     *
      * @param studyId study id.
-     * @param fileId file id.
+     * @param fileId  file id.
      * @return a list of FileAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
@@ -211,10 +210,9 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined for the file.
      *
-     *
-     * @param studyId study id.
-     * @param fileId file id.
-     * @param userId user id asking for the ACLs.
+     * @param studyId         study id.
+     * @param fileId          file id.
+     * @param userId          user id asking for the ACLs.
      * @param checkPermission Boolean indicating whether to check the SHARE permission and possibly fail or not. Added to be able to
      *                        propagate permissions to children files/folders when a user with WRITE permissions links or creates but it
      *                        is not able to see all the ACLs in the parent folder.
@@ -227,11 +225,10 @@ public interface AuthorizationManager {
     /**
      * Return the ACL defined for the member.
      *
-     *
      * @param studyId study id.
-     * @param fileId file id.
-     * @param userId user asking for the ACL.
-     * @param member member whose permissions will be retrieved.
+     * @param fileId  file id.
+     * @param userId  user asking for the ACL.
+     * @param member  member whose permissions will be retrieved.
      * @return the FileAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
@@ -244,8 +241,7 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined for the individual.
      *
-     *
-     * @param studyId study id.
+     * @param studyId      study id.
      * @param individualId individual id.
      * @param userId       user id asking for the ACLs.
      * @return a list of IndividualAcls.
@@ -256,8 +252,7 @@ public interface AuthorizationManager {
     /**
      * Return the ACL defined for the member.
      *
-     *
-     * @param studyId study id.
+     * @param studyId      study id.
      * @param individualId individual id.
      * @param userId       user asking for the ACL.
      * @param member       member whose permissions will be retrieved.
@@ -274,8 +269,7 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined for the cohort.
      *
-     *
-     * @param studyId study id.
+     * @param studyId  study id.
      * @param cohortId cohort id.
      * @param userId   user id asking for the ACLs.
      * @return a list of CohortAcls.
@@ -286,8 +280,7 @@ public interface AuthorizationManager {
     /**
      * Return the ACL defined for the member.
      *
-     *
-     * @param studyId study id.
+     * @param studyId  study id.
      * @param cohortId cohort id.
      * @param userId   user asking for the ACL.
      * @param member   member whose permissions will be retrieved.
@@ -304,10 +297,9 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined for the panel.
      *
-     *
      * @param studyId study id.
      * @param panelId panel id.
-     * @param userId   user id asking for the ACLs.
+     * @param userId  user id asking for the ACLs.
      * @return a list of DiseasePanelAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the panel does not have proper permissions.
      */
@@ -316,11 +308,10 @@ public interface AuthorizationManager {
     /**
      * Return the ACL defined for the member.
      *
-     *
      * @param studyId study id.
      * @param panelId panel id.
-     * @param userId   user asking for the ACL.
-     * @param member   member whose permissions will be retrieved.
+     * @param userId  user asking for the ACL.
+     * @param member  member whose permissions will be retrieved.
      * @return the DiseasePanelAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
@@ -333,10 +324,9 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined for the job.
      *
-     *
      * @param studyId study id.
-     * @param jobId  job id.
-     * @param userId user id asking for the ACLs.
+     * @param jobId   job id.
+     * @param userId  user id asking for the ACLs.
      * @return a list of JobAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
@@ -345,11 +335,10 @@ public interface AuthorizationManager {
     /**
      * Return the ACL defined for the member.
      *
-     *
      * @param studyId study id.
-     * @param jobId  job id.
-     * @param userId user asking for the ACL.
-     * @param member member whose permissions will be retrieved.
+     * @param jobId   job id.
+     * @param userId  user asking for the ACL.
+     * @param member  member whose permissions will be retrieved.
      * @return the JobAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
@@ -358,10 +347,9 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined for the family.
      *
-     *
-     * @param studyId study id.
+     * @param studyId  study id.
      * @param familyId family id.
-     * @param userId user id asking for the ACLs.
+     * @param userId   user id asking for the ACLs.
      * @return a list of FamilyAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the family does not have proper permissions.
      */
@@ -370,11 +358,10 @@ public interface AuthorizationManager {
     /**
      * Return the ACL defined for the member.
      *
-     *
-     * @param studyId study id.
-     * @param familyId  family id.
-     * @param userId user asking for the ACL.
-     * @param member member whose permissions will be retrieved.
+     * @param studyId  study id.
+     * @param familyId family id.
+     * @param userId   user asking for the ACL.
+     * @param member   member whose permissions will be retrieved.
      * @return the FamilyAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
@@ -384,13 +371,12 @@ public interface AuthorizationManager {
     /**
      * Return all the ACLs defined for the clinical analysis.
      *
-     *
-     * @param studyId study id.
+     * @param studyId            study id.
      * @param clinicalAnalysisId Clinical analysis id.
-     * @param userId user id asking for the ACLs.
+     * @param userId             user id asking for the ACLs.
      * @return a list of ClinicalAnalysisAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the clinical analysis does not have proper
-     * permissions.
+     *                          permissions.
      */
     OpenCGAResult<Map<String, List<String>>> getAllClinicalAnalysisAcls(long studyId, long clinicalAnalysisId, String userId)
             throws CatalogException;
@@ -398,11 +384,10 @@ public interface AuthorizationManager {
     /**
      * Return the ACL defined for the member.
      *
-     *
-     * @param studyId study id.
-     * @param clinicalAnalysisId  Clinical analysis id.
-     * @param userId user asking for the ACL.
-     * @param member member whose permissions will be retrieved.
+     * @param studyId            study id.
+     * @param clinicalAnalysisId Clinical analysis id.
+     * @param userId             user asking for the ACL.
+     * @param member             member whose permissions will be retrieved.
      * @return the ClinicalAnalysisAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */

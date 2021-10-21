@@ -61,8 +61,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class ExecutionDaemonTest extends AbstractManagerTest {
 
@@ -303,7 +302,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     @Test
     public void testRunJob() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
-        params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
+        params.put(JobDaemon.OUTDIR_PARAM, "outDir");
         org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, token).first();
         params.put("myFile", inputFile.getPath());
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
@@ -333,7 +332,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     @Test
     public void testCheckLogs() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
-        params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
+        params.put(JobDaemon.OUTDIR_PARAM, "outDir");
         org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, token).first();
         params.put("myFile", inputFile.getPath());
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
@@ -368,7 +367,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     @Test
     public void testRegisterFilesSuccessfully() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
-//        params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
+//        params.put(JobDaemon.OUTDIR_PARAM, "outDir");
         org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, token).first();
         params.put("myFile", inputFile.getPath());
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
@@ -436,7 +435,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     @Test
     public void testRunJobFail() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
-        params.put(ExecutionDaemon.OUTDIR_PARAM, "outputDir/");
+        params.put(JobDaemon.OUTDIR_PARAM, "outputDir/");
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
         String jobId = job.getId();
 
@@ -460,7 +459,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     @Test
     public void testRunJobFailMissingExecutionResult() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
-        params.put(ExecutionDaemon.OUTDIR_PARAM, "outputDir/");
+        params.put(JobDaemon.OUTDIR_PARAM, "outputDir/");
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
         String jobId = job.getId();
 
@@ -496,6 +495,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         params.put("dictFile", "HG00096.chrom20.small.bam");
         OpenCGAResult<Execution> executionResult = catalogManager.getExecutionManager().submitPipeline(studyFqn,
                 AlignmentQcAnalysis.ID, Enums.Priority.MEDIUM, params, "", "", null, null, token);
+        assertNotNull(executionResult.first().getOutDir());
 
         executionDaemon.checkPendingExecutions();
 
