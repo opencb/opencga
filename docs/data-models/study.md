@@ -32,6 +32,7 @@ Created by jacobo on 11/09/14.
 | internal | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 
 ## Data Model
+
 ### Study
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/Study.java).
 
@@ -63,6 +64,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **status**<br>*<a href="study.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
 | **internal**<br>*<a href="study.md#StudyInternal"><em>StudyInternal</em></a>* <br> | <p>An object describing the internal information of the Sample. This is managed by OpenCGA.</p>_Tags_: _internal_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
+
 ### File
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File.java).
 
@@ -94,6 +96,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **status**<br>*<a href="study.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the File.</p> |
 | **internal**<br>*<a href="study.md#FileInternal"><em>FileInternal</em></a>* <br> | <p>An object describing the internal information of the File. This is managed by OpenCGA.</p>_Tags_: _internal_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
+
 ### FileExperiment
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment.java).
 
@@ -111,6 +114,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **responsible**<br> *String* <br> | <p></p> |
 | **description**<br> *String* <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
+
 ### Enum FileExperiment.Method
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment/Method.java).
@@ -122,6 +126,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **TARGETED_DNA_SEQUENCING** <br> | <p></p> |
 | **AMPLICON_SEQUENCING** <br> | <p></p> |
 | **GENOTYPING_MICROARRAY** <br> | <p></p> |
+
 ### Enum FileExperiment.NucleicAcidType
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment/NucleicAcidType.java).
@@ -130,6 +135,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **DNA** <br> | <p></p> |
 | **RNA** <br> | <p></p> |
+
 ### Enum FileExperiment.Technology
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment/Technology.java).
@@ -138,6 +144,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **SEQUENCING** <br> | <p></p> |
 | **MICROARRAY** <br> | <p></p> |
+
 ### CustomStatus
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
 
@@ -146,6 +153,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **name**<br> *String* <br> | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p>_Tags_: _required, immutable_ |
 | **description**<br> *String* <br> | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p>_Tags_: _required_ |
 | **date**<br> *String* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p>_Tags_: _internal, unique, immutable_ |
+
 ### Enum File.Format
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File/Format.java).
@@ -177,6 +185,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **BINARY** <br> | <p></p> |
 | **NONE** <br> | <p></p> |
 | **UNKNOWN** <br> | <p></p> |
+
 ### FileQualityControl
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileQualityControl.java).
 
@@ -186,6 +195,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **alignment**<br>*<a href="study.md#AlignmentFileQualityControl"><em>AlignmentFileQualityControl</em></a>* <br> | <p></p> |
 | **coverage**<br>*<a href="study.md#CoverageFileQualityControl"><em>CoverageFileQualityControl</em></a>* <br> | <p></p> |
 | **comments**<br> List<*ClinicalComment*> <br> | <p></p> |
+
 ### AlignmentFileQualityControl
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/alignment/AlignmentFileQualityControl.java).
 
@@ -195,12 +205,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **samtoolsStats**<br> *SamtoolsStats* <br> | <p></p> |
 | **samtoolsFlagStats**<br> *SamtoolsFlagstats* <br> | <p></p> |
 | **hsMetrics**<br> *HsMetrics* <br> | <p></p> |
+
 ### CoverageFileQualityControl
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/alignment/CoverageFileQualityControl.java).
 
 | Field | Description |
 | :---  | :--- |
 | **geneCoverageStats**<br> List<*GeneCoverageStats*> <br> | <p></p> |
+
 ### VariantFileQualityControl
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/variant/VariantFileQualityControl.java).
 
@@ -208,6 +220,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **variantSetMetrics**<br> *VariantSetStats* <br> | <p></p> |
 | **ascatMetrics**<br> *AscatMetrics* <br> | <p></p> |
+
 ### FileRelatedFile
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileRelatedFile.java).
 
@@ -215,6 +228,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **file**<br>*<a href="study.md#File"><em>File</em></a>* <br> | <p></p> |
 | **relation**<br>*<a href="study.md#enum-filerelatedfilerelation"><em>FileRelatedFile.Relation</em></a>* <br> | <p></p> |
+
 ### Enum FileRelatedFile.Relation
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileRelatedFile/Relation.java).
@@ -225,6 +239,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **PART_OF_PAIR** <br> | <p></p> |
 | **PEDIGREE** <br> | <p></p> |
 | **REFERENCE_GENOME** <br> | <p></p> |
+
 ### Enum File.Type
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File/Type.java).
@@ -233,6 +248,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **FILE** <br> | <p></p> |
 | **DIRECTORY** <br> | <p></p> |
+
 ### Enum File.Bioformat
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File/Bioformat.java).
@@ -264,6 +280,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **REFERENCE_GENOME** <br> | <p></p> |
 | **NONE** <br> | <p></p> |
 | **UNKNOWN** <br> | <p></p> |
+
 ### FileInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
 
@@ -273,6 +290,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **index**<br>*<a href="study.md#FileIndex"><em>FileIndex</em></a>* <br> | <p></p> |
 | **sampleMap**<br> Map<*String*> <br> | <p></p> |
 | **missingSamples**<br>*<a href="study.md#MissingSamples"><em>MissingSamples</em></a>* <br> | <p></p> |
+
 ### FileIndex
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileIndex.java).
 
@@ -286,6 +304,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **transformedFile**<br>*<a href="study.md#fileindextransformedfile"><em>FileIndex.TransformedFile</em></a>* <br> | <p></p> |
 | **localFileIndex**<br>*<a href="study.md#fileindexlocalfileindex"><em>FileIndex.LocalFileIndex</em></a>* <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
+
 ### FileIndex.TransformedFile
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileIndex/TransformedFile.java).
 
@@ -293,6 +312,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **id**<br> *long* <br> | <p></p> |
 | **metadataId**<br> *long* <br> | <p></p> |
+
 ### FileIndex.LocalFileIndex
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileIndex/LocalFileIndex.java).
 
@@ -300,6 +320,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **fileId**<br> *long* <br> | <p></p> |
 | **indexer**<br> *String* <br> | <p></p> |
+
 ### FileIndex.IndexStatus
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileIndex/IndexStatus.java).
 
@@ -311,6 +332,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **LOADING**<br> *String* <br> | <p></p> |
 | **INDEXING**<br> *String* <br> | <p></p> |
 | **STATUS_LIST**<br> List> <br> | <p></p> |
+
 ### FileStatus
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileStatus.java).
 
@@ -324,6 +346,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **REMOVED**<br> *String* <br> | <p></p> |
 | **MISSING_SAMPLES**<br> *String* <br> | <p></p> |
 | **STATUS_LIST**<br> List<*String*> <br> | <p></p> |
+
 ### MissingSamples
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/MissingSamples.java).
 
@@ -331,6 +354,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **existing**<br> List<*String*> <br> | <p></p> |
 | **nonExisting**<br> List<*String*> <br> | <p></p> |
+
 ### Family
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/Family.java).
 
@@ -353,6 +377,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **internal**<br>*<a href="study.md#FamilyInternal"><em>FamilyInternal</em></a>* <br> | <p>An object describing the internal information of the Family. This is managed by OpenCGA.</p>_Tags_: _internal_ |
 | **roles**<br> Map<*MapString*,*String*,*FamiliarRelationship*> <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
+
 ### FamilyQualityControl
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyQualityControl.java).
 
@@ -361,6 +386,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **relatedness**<br> List<*RelatednessReport*> <br> | <p></p> |
 | **fileIds**<br> List<*String*> <br> | <p></p> |
 | **comments**<br> List<*ClinicalComment*> <br> | <p></p> |
+
 ### Individual
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/Individual.java).
 
@@ -391,6 +417,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **status**<br>*<a href="study.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p></p> |
 | **internal**<br>*<a href="study.md#IndividualInternal"><em>IndividualInternal</em></a>* <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
+
 ### IndividualQualityControl
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualQualityControl.java).
 
@@ -401,6 +428,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **mendelianErrorReports**<br> List<*MendelianErrorReport*> <br> | <p>Mendelian errors</p> |
 | **fileIds**<br> List<*String*> <br> | <p>File IDs related to the quality control</p> |
 | **comments**<br> List<*ClinicalComment*> <br> | <p>Comments related to the quality control</p> |
+
 ### Sample
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
 
@@ -424,6 +452,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **status**<br>*<a href="study.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>Generic: Object to define the status of the entry.</p> |
 | **internal**<br>*<a href="study.md#SampleInternal"><em>SampleInternal</em></a>* <br> | <p>Generic: Field automatically managed by OpenCGA containing relevant information of the entry. This field is used for internal<br> purposes and is visible for users.</p>_Tags_: _immutable_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>Dictionary that can be customised by users to store any additional information users may require.</p>_Note_: _This field is not meant to be queried. It should only contain extra information. To store additional information meant to<br> be queried, please use annotationSets._ |
+
 ### SampleCollection
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
 
@@ -435,6 +464,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **method**<br> *String* <br> | <p></p> |
 | **date**<br> *String* <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
+
 ### SampleQualityControl
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleQualityControl.java).
 
@@ -443,6 +473,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **fileIds**<br> List<*String*> <br> | <p></p> |
 | **comments**<br> List<*ClinicalComment*> <br> | <p></p> |
 | **variant**<br>*<a href="study.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>* <br> | <p></p> |
+
 ### SampleVariantQualityControlMetrics
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleVariantQualityControlMetrics.java).
 
@@ -451,6 +482,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **variantStats**<br> List<*SampleQcVariantStats*> <br> | <p></p> |
 | **signatures**<br> List<*Signature*> <br> | <p></p> |
 | **genomePlots**<br> List<*GenomePlot*> <br> | <p></p> |
+
 ### SampleProcessing
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleProcessing.java).
 
@@ -463,12 +495,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **quantity**<br> *String* <br> | <p></p> |
 | **date**<br> *String* <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
+
 ### SampleInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).
 
 | Field | Description |
 | :---  | :--- |
 | **rga**<br>*<a href="study.md#RgaIndex"><em>RgaIndex</em></a>* <br> | <p></p> |
+
 ### RgaIndex
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex.java).
 
@@ -476,6 +510,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **status**<br>*<a href="study.md#enum-rgaindexstatus"><em>RgaIndex.Status</em></a>* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p>_Tags_: _internal, unique, immutable_ |
 | **date**<br> *String* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p>_Tags_: _internal, unique, immutable_ |
+
 ### Enum RgaIndex.Status
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex/Status.java).
@@ -487,6 +522,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **INVALID_PERMISSIONS** <br> | <p></p> |
 | **INVALID_METADATA** <br> | <p></p> |
 | **INVALID** <br> | <p></p> |
+
 ### Location
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/Location.java).
 
@@ -497,6 +533,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **city**<br> *String* <br> | <p></p> |
 | **state**<br> *String* <br> | <p></p> |
 | **country**<br> *String* <br> | <p></p> |
+
 ### IndividualPopulation
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualPopulation.java).
 
@@ -505,8 +542,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **name**<br> *String* <br> | <p></p> |
 | **subpopulation**<br> *String* <br> | <p></p> |
 | **description**<br> *String* <br> | <p></p> |
+
 ### IndividualInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualInternal.java).
+
 
 ### FamilyInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
@@ -514,6 +553,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | Field | Description |
 | :---  | :--- |
 | **status**<br>*<a href="study.md#FamilyStatus"><em>FamilyStatus</em></a>* <br> | <p></p> |
+
 ### FamilyStatus
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyStatus.java).
 
@@ -521,6 +561,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **INCOMPLETE**<br> *String* <br> | <p></p> |
 | **STATUS_LIST**<br> List<*String*> <br> | <p></p> |
+
 ### Cohort
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/Cohort.java).
 
@@ -538,6 +579,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **status**<br>*<a href="study.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the Sample.</p> |
 | **internal**<br>*<a href="study.md#CohortInternal"><em>CohortInternal</em></a>* <br> | <p>An object describing the internal information of the Sample. This is managed by OpenCGA.</p>_Tags_: _internal_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
+
 ### Enum Enums.CohortType
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/CohortType.java).
@@ -554,12 +596,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **FAMILY** <br> | <p></p> |
 | **TRIO** <br> | <p></p> |
 | **COLLECTION** <br> | <p></p> |
+
 ### CohortInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/CohortInternal.java).
 
 | Field | Description |
 | :---  | :--- |
 | **status**<br>*<a href="study.md#CohortStatus"><em>CohortStatus</em></a>* <br> | <p></p> |
+
 ### CohortStatus
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/CohortStatus.java).
 
@@ -569,6 +613,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **CALCULATING**<br> *String* <br> | <p></p> |
 | **INVALID**<br> *String* <br> | <p></p> |
 | **STATUS_LIST**<br> List<*String*> <br> | <p></p> |
+
 ### Group
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/Group.java).
 
@@ -577,6 +622,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **id**<br> *String* <br> | <p>Group id, unique in the belonging study.</p> |
 | **userIds**<br> List<*String*> <br> | <p>Set of users belonging to this group.</p> |
 | **syncedFrom**<br>*<a href="study.md#groupsync"><em>Group.Sync</em></a>* <br> | <p>Group has been synchronised from an external authorization.</p> |
+
 ### Group.Sync
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/Group/Sync.java).
 
@@ -584,6 +630,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **authOrigin**<br> *String* <br> | <p></p> |
 | **remoteGroup**<br> *String* <br> | <p></p> |
+
 ### VariableSet
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/VariableSet.java).
 
@@ -599,6 +646,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **entities**<br> List<*AnnotableDataModels*> <br> | <p></p> |
 | **release**<br> *int* <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
+
 ### Enum Variable
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/Variable.java).
@@ -620,6 +668,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **variableSet**<br> Set<*<a href="study.md#Variable"><em>Variable</em></a>*> <br> | <p>Variables for validate internal fields. Only valid if type is OBJECT.</p> |
 | **variables**<br> Set<*<a href="study.md#Variable"><em>Variable</em></a>*> <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
+
 ### Enum Variable.VariableType
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/Variable/VariableType.java).
@@ -637,12 +686,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **MAP_INTEGER** <br> | <p></p> |
 | **MAP_DOUBLE** <br> | <p></p> |
 | **MAP_STRING** <br> | <p></p> |
+
 ### StudyNotification
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyNotification.java).
 
 | Field | Description |
 | :---  | :--- |
 | **webhook**<br> *URL* <br> | <p></p> |
+
 ### Job
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/Job.java).
 
@@ -672,6 +723,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **study**<br>*<a href="study.md#JobStudyParam"><em>JobStudyParam</em></a>* <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
 | **OPENCGA_PARENTS**<br> *String* <br> | <p></p> |
+
 ### JobStudyParam
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobStudyParam.java).
 
@@ -679,6 +731,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **id**<br> *String* <br> | <p></p> |
 | **others**<br> List<*String*> <br> | <p></p> |
+
 ### Enum Enums.Priority
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/Priority.java).
@@ -691,6 +744,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **LOW** <br> | <p></p> |
 | **UNKNOWN** <br> | <p></p> |
 | **value** <br> | <p></p> |
+
 ### ExecutionResult
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ExecutionResult.java).
 
@@ -705,6 +759,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **steps**<br> List<*<a href="study.md#ToolStep"><em>ToolStep</em></a>*> <br> | <p></p> |
 | **events**<br> List<*Event*> <br> | <p></p> |
 | **attributes**<br> *ObjectMap* <br> | <p></p> |
+
 ### ExecutorInfo
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ExecutorInfo.java).
 
@@ -715,6 +770,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **params**<br> *ObjectMap* <br> | <p></p> |
 | **source**<br>*<a href="study.md#Source"><em>Source</em></a>* <br> | <p></p> |
 | **framework**<br>*<a href="study.md#Framework"><em>Framework</em></a>* <br> | <p></p> |
+
 ### Enum ToolExecutor.Source
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/tools/annotations/ToolExecutor/Source.java).
@@ -726,6 +782,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **MONGODB** <br> | <p></p> |
 | **HBASE** <br> | <p></p> |
 | **STORAGE** <br> | <p></p> |
+
 ### Enum ToolExecutor.Framework
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/tools/annotations/ToolExecutor/Framework.java).
@@ -735,6 +792,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **LOCAL** <br> | <p></p> |
 | **MAP_REDUCE** <br> | <p></p> |
 | **SPARK** <br> | <p></p> |
+
 ### Status
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/Status.java).
 
@@ -743,6 +801,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **name**<br>*<a href="study.md#enum-statustype"><em>Status.Type</em></a>* <br> | <p></p> |
 | **step**<br> *String* <br> | <p></p> |
 | **date**<br> Date> <br> | <p></p> |
+
 ### Enum Status.Type
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/Status/Type.java).
@@ -753,6 +812,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **RUNNING** <br> | <p>RUNNING status: The job or step is running.</p> |
 | **DONE** <br> | <p>DONE status: The job or step has finished the execution, but the output is still not ready.</p> |
 | **ERROR** <br> | <p>ERROR status: The job or step finished with an error.</p> |
+
 ### ToolStep
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ToolStep.java).
 
@@ -763,6 +823,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **end**<br> Date> <br> | <p></p> |
 | **status**<br>*<a href="study.md#Type"><em>Type</em></a>* <br> | <p></p> |
 | **attributes**<br> *ObjectMap* <br> | <p></p> |
+
 ### ToolInfo
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/ToolInfo.java).
 
@@ -773,6 +834,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **scope**<br>*<a href="study.md#Scope"><em>Scope</em></a>* <br> | <p></p> |
 | **type**<br>*<a href="study.md#Type"><em>Type</em></a>* <br> | <p></p> |
 | **resource**<br>*<a href="study.md#Resource"><em>Resource</em></a>* <br> | <p></p> |
+
 ### Enum Tool.Type
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/tools/annotations/Tool/Type.java).
@@ -781,6 +843,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **OPERATION** <br> | <p></p> |
 | **ANALYSIS** <br> | <p></p> |
+
 ### Enum Enums.Resource
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/Resource.java).
@@ -806,6 +869,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **EXPRESSION** <br> | <p></p> |
 | **RGA** <br> | <p></p> |
 | **FUNCTIONAL** <br> | <p></p> |
+
 ### Enum Tool.Scope
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/tools/annotations/Tool/Scope.java).
@@ -815,6 +879,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **GLOBAL** <br> | <p></p> |
 | **PROJECT** <br> | <p></p> |
 | **STUDY** <br> | <p></p> |
+
 ### JobInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternal.java).
 
@@ -823,6 +888,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **status**<br>*<a href="study.md#ExecutionStatus"><em>ExecutionStatus</em></a>* <br> | <p></p> |
 | **webhook**<br>*<a href="study.md#JobInternalWebhook"><em>JobInternalWebhook</em></a>* <br> | <p></p> |
 | **events**<br> List<*Event*> <br> | <p></p> |
+
 ### Enums.ExecutionStatus
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/ExecutionStatus.java).
 
@@ -838,6 +904,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **REGISTERING**<br> *String* <br> | <p>REGISTERING status means that the job status could not be obtained.</p> |
 | **UNREGISTERED**<br> *String* <br> | <p>UNREGISTERED status means that the job status could not be obtained.</p> |
 | **STATUS_LIST**<br> List> <br> | <p></p> |
+
 ### JobInternalWebhook
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternalWebhook.java).
 
@@ -845,6 +912,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **url**<br> *URL* <br> | <p></p> |
 | **status**<br> Map<*Status*,*String*> <br> | <p></p> |
+
 ### ClinicalAnalysis
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/ClinicalAnalysis.java).
 
@@ -877,6 +945,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **internal**<br>*<a href="study.md#ClinicalAnalysisInternal"><em>ClinicalAnalysisInternal</em></a>* <br> | <p>An object describing the internal information of the ClinicalAnalysis. This is managed by OpenCGA.</p>_Tags_: _internal_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 | **status**<br> *Status* <br> | <p>An object describing the status of the ClinicalAnalysis.</p> |
+
 ### ClinicalAnalysisQualityControl
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/ClinicalAnalysisQualityControl.java).
 
@@ -884,6 +953,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **summary**<br>*<a href="study.md#enum-clinicalanalysisqualitycontrolqualitycontrolsummary"><em>ClinicalAnalysisQualityControl.QualityControlSummary</em></a>* <br> | <p></p> |
 | **comments**<br> List<*ClinicalComment*> <br> | <p></p> |
+
 ### Enum ClinicalAnalysisQualityControl.QualityControlSummary
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/ClinicalAnalysisQualityControl/QualityControlSummary.java).
@@ -896,6 +966,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **DISCARD** <br> | <p></p> |
 | **NEEDS_REVIEW** <br> | <p></p> |
 | **UNKNOWN** <br> | <p></p> |
+
 ### Enum ClinicalAnalysis.Type
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/ClinicalAnalysis/Type.java).
@@ -907,6 +978,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **CANCER** <br> | <p></p> |
 | **COHORT** <br> | <p></p> |
 | **AUTOCOMPARATIVE** <br> | <p></p> |
+
 ### ClinicalConsentAnnotation
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/ClinicalConsentAnnotation.java).
 
@@ -914,6 +986,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **consents**<br> List<*<a href="study.md#ClinicalConsentParam"><em>ClinicalConsentParam</em></a>*> <br> | <p></p> |
 | **date**<br> *String* <br> | <p></p> |
+
 ### ClinicalConsentParam
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/ClinicalConsentParam.java).
 
@@ -923,6 +996,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **name**<br> *String* <br> | <p></p> |
 | **description**<br> *String* <br> | <p></p> |
 | **value**<br>*<a href="study.md#enum-clinicalconsentparamvalue"><em>ClinicalConsentParam.Value</em></a>* <br> | <p></p> |
+
 ### Enum ClinicalConsentParam.Value
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/ClinicalConsentParam/Value.java).
@@ -932,6 +1006,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **YES** <br> | <p></p> |
 | **NO** <br> | <p></p> |
 | **UNKNOWN** <br> | <p></p> |
+
 ### FlagAnnotation
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/FlagAnnotation.java).
 
@@ -940,6 +1015,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **id**<br> *String* <br> | <p></p> |
 | **description**<br> *String* <br> | <p></p> |
 | **date**<br> *String* <br> | <p></p> |
+
 ### ClinicalPriorityAnnotation
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/ClinicalPriorityAnnotation.java).
 
@@ -949,6 +1025,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **description**<br> *String* <br> | <p></p> |
 | **rank**<br> *int* <br> | <p></p> |
 | **date**<br> *String* <br> | <p></p> |
+
 ### Interpretation
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/Interpretation.java).
 
@@ -960,6 +1037,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **stats**<br>*<a href="study.md#InterpretationStats"><em>InterpretationStats</em></a>* <br> | <p></p> |
 | **internal**<br>*<a href="study.md#InterpretationInternal"><em>InterpretationInternal</em></a>* <br> | <p></p> |
 | **release**<br> *int* <br> | <p></p> |
+
 ### InterpretationStats
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/InterpretationStats.java).
 
@@ -967,6 +1045,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **primaryFindings**<br>*<a href="study.md#InterpretationFindingStats"><em>InterpretationFindingStats</em></a>* <br> | <p></p> |
 | **secondaryFindings**<br>*<a href="study.md#InterpretationFindingStats"><em>InterpretationFindingStats</em></a>* <br> | <p></p> |
+
 ### InterpretationFindingStats
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/InterpretationFindingStats.java).
 
@@ -976,6 +1055,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **tierCount**<br> Map<*Integer*,*String*> <br> | <p></p> |
 | **variantStatusCount**<br> Map<*Integer*,*ClinicalVariant.Status*> <br> | <p></p> |
 | **geneCount**<br> Map<*Integer*,*String*> <br> | <p></p> |
+
 ### Panel
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/panel/Panel.java).
 
@@ -988,6 +1068,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **status**<br>*<a href="study.md#Status"><em>Status</em></a>* <br> | <p></p> |
 | **studyUid**<br> *long* <br> | <p></p> |
 | **uid**<br> *long* <br> | <p></p> |
+
 ### Status
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Status.java).
 
@@ -1000,12 +1081,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **READY**<br> *String* <br> | <p>READY name means that the object is being used.</p> |
 | **DELETED**<br> *String* <br> | <p>DELETED name means that the object is marked as removed, so it can be completely removed from the database with a clean action.</p> |
 | **STATUS_LIST**<br> List<*String*> <br> | <p></p> |
+
 ### InterpretationInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/InterpretationInternal.java).
 
 | Field | Description |
 | :---  | :--- |
 | **status**<br>*<a href="study.md#InterpretationStatus"><em>InterpretationStatus</em></a>* <br> | <p></p> |
+
 ### InterpretationStatus
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/InterpretationStatus.java).
 
@@ -1016,12 +1099,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **REVIEWED**<br> *String* <br> | <p></p> |
 | **REJECTED**<br> *String* <br> | <p></p> |
 | **STATUS_LIST**<br> List<*String*> <br> | <p></p> |
+
 ### ClinicalAnalysisInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/ClinicalAnalysisInternal.java).
 
 | Field | Description |
 | :---  | :--- |
 | **status**<br>*<a href="study.md#ClinicalAnalysisStatus"><em>ClinicalAnalysisStatus</em></a>* <br> | <p></p> |
+
 ### ClinicalAnalysisStatus
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/ClinicalAnalysisStatus.java).
 
@@ -1040,6 +1125,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **CLOSED**<br> *String* <br> | <p></p> |
 | **REJECTED**<br> *String* <br> | <p></p> |
 | **STATUS_LIST**<br> List<*String*> <br> | <p></p> |
+
 ### StudyInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
 
@@ -1048,12 +1134,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **status**<br>*<a href="study.md#Status"><em>Status</em></a>* <br> | <p></p> |
 | **index**<br>*<a href="study.md#StudyIndex"><em>StudyIndex</em></a>* <br> | <p></p> |
 | **configuration**<br>*<a href="study.md#StudyConfiguration"><em>StudyConfiguration</em></a>* <br> | <p></p> |
+
 ### StudyIndex
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyIndex.java).
 
 | Field | Description |
 | :---  | :--- |
 | **recessiveGene**<br>*<a href="study.md#RecessiveGeneSummaryIndex"><em>RecessiveGeneSummaryIndex</em></a>* <br> | <p></p> |
+
 ### RecessiveGeneSummaryIndex
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/RecessiveGeneSummaryIndex.java).
 
@@ -1061,6 +1149,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **status**<br>*<a href="study.md#enum-recessivegenesummaryindexstatus"><em>RecessiveGeneSummaryIndex.Status</em></a>* <br> | <p></p> |
 | **modificationDate**<br> *String* <br> | <p></p> |
+
 ### Enum RecessiveGeneSummaryIndex.Status
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/RecessiveGeneSummaryIndex/Status.java).
@@ -1070,6 +1159,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **NOT_INDEXED** <br> | <p></p> |
 | **INDEXED** <br> | <p></p> |
 | **INVALID** <br> | <p></p> |
+
 ### StudyConfiguration
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/StudyConfiguration.java).
 
@@ -1077,6 +1167,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **clinical**<br>*<a href="study.md#ClinicalAnalysisStudyConfiguration"><em>ClinicalAnalysisStudyConfiguration</em></a>* <br> | <p></p> |
 | **variantEngine**<br>*<a href="study.md#StudyVariantEngineConfiguration"><em>StudyVariantEngineConfiguration</em></a>* <br> | <p></p> |
+
 ### ClinicalAnalysisStudyConfiguration
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/ClinicalAnalysisStudyConfiguration.java).
 
@@ -1087,6 +1178,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **priorities**<br> List<*<a href="study.md#ClinicalPriorityValue"><em>ClinicalPriorityValue</em></a>*> <br> | <p></p> |
 | **flags**<br> Map<*ListFlagValue*,*ClinicalAnalysis.Type*> <br> | <p></p> |
 | **consent**<br>*<a href="study.md#ClinicalConsentConfiguration"><em>ClinicalConsentConfiguration</em></a>* <br> | <p></p> |
+
 ### ClinicalPriorityValue
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/ClinicalPriorityValue.java).
 
@@ -1096,12 +1188,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **description**<br> *String* <br> | <p></p> |
 | **rank**<br> *int* <br> | <p>Highest priority: 1</p> |
 | **defaultPriority**<br> *boolean* <br> | <p>Flag indicating the default priority that will be applied when empty.</p> |
+
 ### ClinicalConsentConfiguration
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/ClinicalConsentConfiguration.java).
 
 | Field | Description |
 | :---  | :--- |
 | **consents**<br> List<*<a href="study.md#ClinicalConsent"><em>ClinicalConsent</em></a>*> <br> | <p></p> |
+
 ### ClinicalConsent
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/ClinicalConsent.java).
 
@@ -1110,6 +1204,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **id**<br> *String* <br> | <p></p> |
 | **name**<br> *String* <br> | <p></p> |
 | **description**<br> *String* <br> | <p></p> |
+
 ### InterpretationStudyConfiguration
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/InterpretationStudyConfiguration.java).
 
@@ -1117,6 +1212,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **status**<br> Map<*ClinicalAnalysis.Type*,*ListStatusValue*> <br> | <p></p> |
 | **variantCallers**<br> List<*<a href="study.md#InterpretationVariantCallerConfiguration"><em>InterpretationVariantCallerConfiguration</em></a>*> <br> | <p></p> |
+
 ### InterpretationVariantCallerConfiguration
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/InterpretationVariantCallerConfiguration.java).
 
@@ -1125,6 +1221,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **id**<br> *String* <br> | <p></p> |
 | **columns**<br> List<*String*> <br> | <p></p> |
 | **dataFilters**<br> List<*DataFilter*> <br> | <p></p> |
+
 ### StudyVariantEngineConfiguration
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyVariantEngineConfiguration.java).
 
@@ -1132,6 +1229,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | :---  | :--- |
 | **options**<br> *ObjectMap* <br> | <p></p> |
 | **sampleIndex**<br>*<a href="study.md#SampleIndexConfiguration"><em>SampleIndexConfiguration</em></a>* <br> | <p></p> |
+
 ### SampleIndexConfiguration
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/config/storage/SampleIndexConfiguration.java).
 
@@ -1143,6 +1241,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **DP_THRESHOLDS_NULLABLE**<br> *double[]* <br> | <p></p> |
 | **fileIndexConfiguration**<br>*<a href="study.md#sampleindexconfigurationfileindexconfiguration"><em>SampleIndexConfiguration.FileIndexConfiguration</em></a>* <br> | <p></p> |
 | **annotationIndexConfiguration**<br>*<a href="study.md#sampleindexconfigurationannotationindexconfiguration"><em>SampleIndexConfiguration.AnnotationIndexConfiguration</em></a>* <br> | <p></p> |
+
 ### SampleIndexConfiguration.FileIndexConfiguration
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/config/storage/SampleIndexConfiguration/FileIndexConfiguration.java).
 
@@ -1151,6 +1250,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **customFields**<br> List> <br> | <p></p> |
 | **filePositionBits**<br> *int* <br> | <p></p> |
 | **fixedFieldsFirst**<br> *boolean* <br> | <p></p> |
+
 ### SampleIndexConfiguration.AnnotationIndexConfiguration
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/config/storage/SampleIndexConfiguration/AnnotationIndexConfiguration.java).
 
@@ -1163,6 +1263,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **clinicalSignificance**<br>*<a href="study.md#IndexFieldConfiguration"><em>IndexFieldConfiguration</em></a>* <br> | <p></p> |
 | **transcriptFlagIndexConfiguration**<br>*<a href="study.md#IndexFieldConfiguration"><em>IndexFieldConfiguration</em></a>* <br> | <p></p> |
 | **transcriptCombination**<br> *Boolean* <br> | <p></p> |
+
 ### IndexFieldConfiguration
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/config/storage/IndexFieldConfiguration.java).
 
@@ -1175,6 +1276,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **values**<br> *String[]* <br> | <p></p> |
 | **valuesMapping**<br> Map<*String*,*ListString*> <br> | <p></p> |
 | **nullable**<br> *boolean* <br> | <p></p> |
+
 ### Enum IndexFieldConfiguration.Type
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/config/storage/IndexFieldConfiguration/Type.java).
@@ -1185,6 +1287,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **RANGE_GT** <br> | <p></p> |
 | **CATEGORICAL** <br> | <p></p> |
 | **CATEGORICAL_MULTI_VALUE** <br> | <p></p> |
+
 ### Enum IndexFieldConfiguration.Source
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/config/storage/IndexFieldConfiguration/Source.java).
@@ -1196,6 +1299,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **FILE** <br> | <p></p> |
 | **SAMPLE** <br> | <p></p> |
 | **ANNOTATION** <br> | <p></p> |
+
 ### SampleIndexConfiguration.PopulationFrequencyIndexConfiguration
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/config/storage/SampleIndexConfiguration/PopulationFrequencyIndexConfiguration.java).
 
