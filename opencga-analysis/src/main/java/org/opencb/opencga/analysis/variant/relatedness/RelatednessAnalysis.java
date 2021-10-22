@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.variant.relatedness;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Tool(id = RelatednessAnalysis.ID, resource = Enums.Resource.VARIANT, description = RelatednessAnalysis.DESCRIPTION)
-public class RelatednessAnalysis extends OpenCgaTool {
+public class RelatednessAnalysis extends OpenCgaAnalysisTool {
 
     public static final String ID = "relatedness";
     public static final String DESCRIPTION = "Compute a score to quantify relatedness between samples.";
@@ -47,6 +47,7 @@ public class RelatednessAnalysis extends OpenCgaTool {
 
     /**
      * Study of the samples.
+     *
      * @param studyId Study id
      * @return this
      */

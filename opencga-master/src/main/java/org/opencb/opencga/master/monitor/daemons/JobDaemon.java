@@ -47,7 +47,7 @@ import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
 import org.opencb.opencga.analysis.templates.TemplateRunner;
-import org.opencb.opencga.analysis.tools.ToolFactory;
+import org.opencb.opencga.analysis.tools.AnalysisToolFactory;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
@@ -475,7 +475,7 @@ public class JobDaemon extends MonitorParentDaemon {
 
         Tool tool;
         try {
-            tool = new ToolFactory().getTool(job.getTool().getId());
+            tool = new AnalysisToolFactory().getTool(job.getTool().getId());
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return abortJob(job, "Tool " + job.getTool().getId() + " not found");
@@ -583,7 +583,7 @@ public class JobDaemon extends MonitorParentDaemon {
     }
 
     protected void checkToolExecutionPermission(Job job) throws Exception {
-        Tool tool = new ToolFactory().getTool(job.getTool().getId());
+        Tool tool = new AnalysisToolFactory().getTool(job.getTool().getId());
 
         if (catalogManager.getAuthorizationManager().isInstallationAdministrator(job.getUserId())) {
             // Installation administrator user can run everything

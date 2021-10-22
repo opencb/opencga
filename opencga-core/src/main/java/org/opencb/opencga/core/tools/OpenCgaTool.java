@@ -1,20 +1,4 @@
-/*
- * Copyright 2015-2020 OpenCB
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-package org.opencb.opencga.analysis.tools;
+package org.opencb.opencga.core.tools;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -22,28 +6,20 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.ConfigurationUtils;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.ConfigurationUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.project.DataStore;
-import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
-import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.ExecutorInfo;
 import org.opencb.opencga.core.tools.result.JobResult;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,13 +36,11 @@ import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
 public abstract class OpenCgaTool {
 
-    protected CatalogManager catalogManager;
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
-    protected VariantStorageManager variantStorageManager;
 
     private String jobId;
-    private String opencgaHome;
+    protected String opencgaHome;
     protected String token;
 
     protected final ObjectMap params;
@@ -86,24 +60,16 @@ public abstract class OpenCgaTool {
     private String currentStep;
 
     public OpenCgaTool() {
-        privateLogger = LoggerFactory.getLogger(OpenCgaTool.class);
+        privateLogger = LoggerFactory.getLogger(this.getClass());
         toolExecutorFactory = new ToolExecutorFactory();
         params = new ObjectMap();
     }
 
-    public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
-                                   ObjectMap params, Path outDir, String jobId, String token) {
-        VariantStorageManager manager = new VariantStorageManager(catalogManager, engineFactory);
-        return setUp(opencgaHome, catalogManager, manager, params, outDir, jobId, token);
-    }
-
-    public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
-                                   ObjectMap params, Path outDir, String jobId, String token) {
+    protected final OpenCgaTool setUp(String opencgaHome, Configuration configuration, StorageConfiguration storageConfiguration,
+                                      ObjectMap params, Path outDir, String jobId, String token) {
         this.opencgaHome = opencgaHome;
-        this.catalogManager = catalogManager;
-        this.configuration = catalogManager.getConfiguration();
-        this.variantStorageManager = variantStorageManager;
-        this.storageConfiguration = variantStorageManager.getStorageConfiguration();
+        this.configuration = configuration;
+        this.storageConfiguration = storageConfiguration;
         this.jobId = jobId;
         this.token = token;
         if (params != null) {
@@ -111,32 +77,6 @@ public abstract class OpenCgaTool {
         }
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
-        //this.params.put("outDir", outDir.toAbsolutePath().toString());
-
-        setUpFrameworksAndSource();
-        return this;
-    }
-
-    public final OpenCgaTool setUp(String opencgaHome, ObjectMap params, Path outDir, String token)
-            throws ToolException {
-        this.opencgaHome = opencgaHome;
-        this.token = token;
-        if (params != null) {
-            this.params.putAll(params);
-        }
-        this.executorParams = new ObjectMap();
-        this.outDir = outDir;
-        //this.params.put("outDir", outDir.toAbsolutePath().toString());
-
-        try {
-            loadConfiguration();
-            loadStorageConfiguration();
-
-            this.catalogManager = new CatalogManager(configuration);
-            this.variantStorageManager = new VariantStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
-        } catch (IOException | CatalogException e) {
-            throw new ToolException(e);
-        }
 
         setUpFrameworksAndSource();
         return this;
@@ -393,14 +333,6 @@ public abstract class OpenCgaTool {
         return jobId;
     }
 
-    public final CatalogManager getCatalogManager() {
-        return catalogManager;
-    }
-
-    public final VariantStorageManager getVariantStorageManager() {
-        return variantStorageManager;
-    }
-
     public final ObjectMap getParams() {
         return params;
     }
@@ -497,17 +429,6 @@ public abstract class OpenCgaTool {
         erm.addAttribute(key, value);
     }
 
-    protected final void moveFile(String study, Path source, Path destiny, String catalogDirectoryPath, String token) throws ToolException {
-        File file;
-        try {
-            file = catalogManager.getFileManager().moveAndRegister(study, source, destiny, catalogDirectoryPath, token).first();
-        } catch (Exception e) {
-            throw new ToolException("Error moving file from " + source + " to " + destiny, e);
-        }
-        // Add only if move is successful
-        addGeneratedFile(file);
-    }
-
     protected final void addGeneratedFile(File file) throws ToolException {
         erm.addExternalFile(file.getUri());
     }
@@ -541,32 +462,6 @@ public abstract class OpenCgaTool {
 
         toolExecutor.setUp(erm, executorParams, outDir);
         return toolExecutor;
-    }
-
-    protected final void setUpStorageEngineExecutor(String study) throws ToolException {
-        setUpStorageEngineExecutor(null, study);
-    }
-
-    protected final void setUpStorageEngineExecutorByProjectId(String projectId) throws ToolException {
-        setUpStorageEngineExecutor(projectId, null);
-    }
-
-    private final void setUpStorageEngineExecutor(String projectId, String study) throws ToolException {
-        executorParams.put("opencgaHome", opencgaHome);
-        executorParams.put(ParamConstants.TOKEN, token);
-        try {
-            DataStore dataStore;
-            if (study == null) {
-                dataStore = variantStorageManager.getDataStoreByProjectId(projectId, token);
-            } else {
-                dataStore = variantStorageManager.getDataStore(study, token);
-            }
-
-            executorParams.put("storageEngineId", dataStore.getStorageEngine());
-            executorParams.put("dbName", dataStore.getDbName());
-        } catch (CatalogException e) {
-            throw new ToolException(e);
-        }
     }
 
     /**

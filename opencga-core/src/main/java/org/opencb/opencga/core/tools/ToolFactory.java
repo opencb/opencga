@@ -14,37 +14,36 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.tools;
+package org.opencb.opencga.core.tools;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
-import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
-import java.net.URL;
 import java.util.*;
 
 public class ToolFactory {
-    private static final Logger logger = LoggerFactory.getLogger(ToolFactory.class);
-    private static Map<String, Class<? extends OpenCgaTool>> toolsCache;
-    private static Map<String, Set<Class<? extends OpenCgaTool>>> duplicatedTools;
-    private static List<Class<? extends OpenCgaTool>> toolsList;
 
-    private static synchronized Map<String, Class<? extends OpenCgaTool>> loadTools() {
+    protected static final Logger logger = LoggerFactory.getLogger(ToolFactory.class);
+    protected static Map<String, Class<? extends OpenCgaTool>> toolsCache;
+    protected static Map<String, Set<Class<? extends OpenCgaTool>>> duplicatedTools;
+    protected static List<Class<? extends OpenCgaTool>> toolsList;
+
+    protected static synchronized Map<String, Class<? extends OpenCgaTool>> loadTools() {
         if (toolsCache == null) {
             Reflections reflections = new Reflections(new ConfigurationBuilder()
                     .setScanners(
                             new SubTypesScanner(),
                             new TypeAnnotationsScanner().filterResultsBy(s -> StringUtils.equals(s, Tool.class.getName()))
                     )
-                    .addUrls(getUrls())
+                    .addUrls(ToolExecutorFactory.getUrls())
                     .filterInputsBy(input -> input != null && input.endsWith(".class"))
             );
 
@@ -86,20 +85,6 @@ public class ToolFactory {
         return toolsCache;
     }
 
-    static Collection<URL> getUrls() {
-        // TODO: What if there are third party libraries that implement Tools?
-        //  Currently they must contain "opencga" in the jar name.
-        //  e.g.  acme-rockets-opencga-5.4.0.jar
-        Collection<URL> urls = new LinkedList<>();
-        for (URL url : ClasspathHelper.forClassLoader()) {
-            String name = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
-            if (name.isEmpty() || (name.contains("opencga") && !name.contains("opencga-storage-hadoop-deps"))) {
-                urls.add(url);
-            }
-        }
-        return urls;
-    }
-
     public final Class<? extends OpenCgaTool> getToolClass(String toolId) throws ToolException {
         Objects.requireNonNull(toolId);
 
@@ -120,33 +105,4 @@ public class ToolFactory {
         return aClass;
     }
 
-    public Tool getTool(String toolId) throws ToolException {
-        return getToolClass(toolId).getAnnotation(Tool.class);
-    }
-
-    public final OpenCgaTool createTool(String toolId) throws ToolException {
-        return createTool(getToolClass(toolId));
-    }
-
-    public final OpenCgaTool createTool(Class<? extends OpenCgaTool> aClass) throws ToolException {
-        Tool annotation = aClass.getAnnotation(Tool.class);
-        if (annotation == null) {
-            throw new ToolException("Class " + aClass + " does not have the required java annotation @" + Tool.class.getSimpleName());
-        }
-        try {
-            return aClass.newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
-            throw new ToolException("Can't instantiate class " + aClass + " from tool '" + annotation.id() + "'", e);
-        }
-    }
-
-    public Collection<Class<? extends OpenCgaTool>> getTools() {
-        loadTools();
-        return toolsList;
-    }
-
-    public Map<String, Set<Class<? extends OpenCgaTool>>> getDuplicatedTools() {
-        loadTools();
-        return duplicatedTools;
-    }
 }

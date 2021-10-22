@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.variant.mendelianError;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -31,7 +31,7 @@ import org.opencb.opencga.core.tools.variant.MendelianErrorAnalysisExecutor;
 import java.io.IOException;
 
 @Tool(id = MendelianErrorAnalysis.ID, resource = Enums.Resource.VARIANT, description = MendelianErrorAnalysis.DESCRIPTION)
-public class MendelianErrorAnalysis extends OpenCgaTool {
+public class MendelianErrorAnalysis extends OpenCgaAnalysisTool {
 
     public static final String ID = "mendelian-error";
     public static final String DESCRIPTION = "Run mendelian error analysis to infer uniparental disomy regions.";
@@ -46,6 +46,7 @@ public class MendelianErrorAnalysis extends OpenCgaTool {
 
     /**
      * Study of the samples.
+     *
      * @param studyId Study id
      * @return this
      */

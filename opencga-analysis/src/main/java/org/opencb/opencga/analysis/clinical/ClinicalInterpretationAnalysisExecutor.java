@@ -17,13 +17,13 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.ConfigurationUtils;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
 
 import java.io.IOException;
 import java.nio.file.Paths;

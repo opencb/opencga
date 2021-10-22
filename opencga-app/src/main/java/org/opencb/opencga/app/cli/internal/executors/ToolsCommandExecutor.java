@@ -2,12 +2,12 @@ package org.opencb.opencga.app.cli.internal.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.analysis.tools.ToolFactory;
+import org.opencb.opencga.analysis.tools.AnalysisToolFactory;
 import org.opencb.opencga.app.cli.internal.options.ToolsCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.tools.OpenCgaTool;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.slf4j.LoggerFactory;
 
@@ -61,16 +61,16 @@ public class ToolsCommandExecutor extends InternalCommandExecutor {
     }
 
     private void listTools() {
-        Collection<Class<? extends OpenCgaTool>> tools = new ToolFactory().getTools();
+        Collection<Class<? extends OpenCgaTool>> tools = new AnalysisToolFactory().getTools();
         int toolIdSize = tools.stream().mapToInt(c -> c.getAnnotation(Tool.class).id().length()).max().orElse(0) + 2;
-        int toolTypeSize = Arrays.stream(Tool.Type.values()).mapToInt(e->e.toString().length()).max().orElse(0) + 2;
-        int toolResourceSize = Arrays.stream(Enums.Resource.values()).mapToInt(e->e.toString().length()).max().orElse(0) + 2;
-        int toolScopeSize = Arrays.stream(Tool.Scope.values()).mapToInt(e->e.toString().length()).max().orElse(0) + 2;
+        int toolTypeSize = Arrays.stream(Tool.Type.values()).mapToInt(e -> e.toString().length()).max().orElse(0) + 2;
+        int toolResourceSize = Arrays.stream(Enums.Resource.values()).mapToInt(e -> e.toString().length()).max().orElse(0) + 2;
+        int toolScopeSize = Arrays.stream(Tool.Scope.values()).mapToInt(e -> e.toString().length()).max().orElse(0) + 2;
         System.out.println(
                 StringUtils.rightPad("#Tool", toolIdSize) +
-                StringUtils.rightPad("Type", toolTypeSize) +
-                StringUtils.rightPad("Resource", toolResourceSize) +
-                StringUtils.rightPad("Scope", toolScopeSize) + "Description");
+                        StringUtils.rightPad("Type", toolTypeSize) +
+                        StringUtils.rightPad("Resource", toolResourceSize) +
+                        StringUtils.rightPad("Scope", toolScopeSize) + "Description");
         for (Class<? extends OpenCgaTool> tool : tools) {
             Tool annotation = tool.getAnnotation(Tool.class);
             if (toolCommandOptions.listToolCommandOptions.resource != null) {

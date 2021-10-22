@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.tools;
+package org.opencb.opencga.core.tools;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
-import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
+import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.util.*;
 
 public class ToolExecutorFactory {
@@ -44,13 +45,27 @@ public class ToolExecutorFactory {
                             ,
                             new TypeAnnotationsScanner().filterResultsBy(s -> StringUtils.equals(s, ToolExecutor.class.getName()))
                     )
-                    .addUrls(ToolFactory.getUrls())
+                    .addUrls(getUrls())
                     .filterInputsBy(input -> input != null && input.endsWith(".class"))
             );
 
             executorsCache = reflections.getSubTypesOf(OpenCgaToolExecutor.class);
         }
         return executorsCache;
+    }
+
+    public static Collection<URL> getUrls() {
+        // TODO: What if there are third party libraries that implement Tools?
+        //  Currently they must contain "opencga" in the jar name.
+        //  e.g.  acme-rockets-opencga-5.4.0.jar
+        Collection<URL> urls = new LinkedList<>();
+        for (URL url : ClasspathHelper.forClassLoader()) {
+            String name = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
+            if (name.isEmpty() || (name.contains("opencga") && !name.contains("opencga-storage-hadoop-deps"))) {
+                urls.add(url);
+            }
+        }
+        return urls;
     }
 
     public final Class<? extends OpenCgaToolExecutor> getToolExecutorClass(String toolId, String toolExecutorId) {
@@ -148,8 +163,8 @@ public class ToolExecutorFactory {
     }
 
     public final <T extends OpenCgaToolExecutor> T getToolExecutor(String toolId, String toolExecutorId, Class<T> clazz,
-                                                                      List<ToolExecutor.Source> sourceTypes,
-                                                                      List<ToolExecutor.Framework> availableFrameworks)
+                                                                   List<ToolExecutor.Source> sourceTypes,
+                                                                   List<ToolExecutor.Framework> availableFrameworks)
             throws ToolExecutorException {
         Class<? extends T> executorClass = getToolExecutorClass(toolId, toolExecutorId, clazz, sourceTypes, availableFrameworks);
         if (executorClass == null) {

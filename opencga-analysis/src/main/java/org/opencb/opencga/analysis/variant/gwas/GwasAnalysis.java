@@ -20,13 +20,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.GwasAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyResourceMetadata;
@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 
 @Tool(id = GwasAnalysis.ID, resource = Enums.Resource.VARIANT,
         description = GwasAnalysis.DESCRIPTION)
-public class GwasAnalysis extends OpenCgaTool {
+public class GwasAnalysis extends OpenCgaAnalysisTool {
 
     public static final String ID = "gwas";
     public static final String DESCRIPTION = "Run a Genome Wide Association Study between two cohorts.";
@@ -65,6 +65,7 @@ public class GwasAnalysis extends OpenCgaTool {
 
     /**
      * Provide the GWAS analysis configuration.
+     *
      * @param gwasConfiguration configuration
      * @return this
      */
@@ -85,6 +86,7 @@ public class GwasAnalysis extends OpenCgaTool {
 
     /**
      * Study of the samples.
+     *
      * @param study Study id
      * @return this
      */
@@ -96,7 +98,7 @@ public class GwasAnalysis extends OpenCgaTool {
     /**
      * Use this phenotype to divide all the samples from the study.
      * Samples with the phenotype will be used as Case Cohort. Rest will be used as Control Cohort.
-     *
+     * <p>
      * This parameter can not be mixed with other parameters to define the cohorts.
      *
      * @param phenotype phenotype
@@ -221,8 +223,8 @@ public class GwasAnalysis extends OpenCgaTool {
             }
             throw new ToolException("Unable to run Gwas analysis with overlapping cohorts. "
                     + (overlapping.size() < 10
-                        ? "Samples " + overlapping + " are shared between both cohorts."
-                        : "There are " + overlapping.size() + " overlapping samples between the cohorts."));
+                    ? "Samples " + overlapping + " are shared between both cohorts."
+                    : "There are " + overlapping.size() + " overlapping samples between the cohorts."));
         }
 
         // check read permission

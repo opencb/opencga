@@ -20,7 +20,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.core.api.ParamConstants;
 
-public abstract class OpenCgaToolScopeStudy extends OpenCgaTool {
+public abstract class OpenCgaToolScopeStudy extends OpenCgaAnalysisTool {
 
     protected String study;
 
@@ -39,6 +39,7 @@ public abstract class OpenCgaToolScopeStudy extends OpenCgaTool {
     /**
      * Get the study Fully Qualified Name.
      * The study is validated during {@link #check()}
+     *
      * @return study FQN
      */
     public String getStudy() {

@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.cohort;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -38,7 +38,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Tool(id = CohortIndexTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Index Cohort entries in Solr.")
-public class CohortIndexTask extends OpenCgaTool {
+public class CohortIndexTask extends OpenCgaAnalysisTool {
 
     public final static String ID = "cohort-secondary-index";
 

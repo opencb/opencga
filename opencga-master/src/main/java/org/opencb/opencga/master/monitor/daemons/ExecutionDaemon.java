@@ -20,8 +20,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.analysis.tools.ToolFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ExecutionDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -31,6 +29,8 @@ import org.opencb.opencga.catalog.managers.ExecutionManager;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.*;
+import org.opencb.opencga.core.tools.OpenCgaTool;
+import org.opencb.opencga.core.tools.ToolFactory;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.lang.reflect.Field;

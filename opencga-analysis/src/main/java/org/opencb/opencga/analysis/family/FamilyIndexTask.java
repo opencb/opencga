@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.family;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -38,7 +38,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Tool(id = FamilyIndexTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Index Family entries in Solr.")
-public class FamilyIndexTask extends OpenCgaTool {
+public class FamilyIndexTask extends OpenCgaAnalysisTool {
 
     public final static String ID = "family-secondary-index";
 

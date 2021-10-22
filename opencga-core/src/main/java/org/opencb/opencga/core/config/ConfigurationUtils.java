@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis;
+package org.opencb.opencga.core.config;
 
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,9 +34,9 @@ public class ConfigurationUtils {
     /**
      * This method attempts to load general configuration from OpenCGA installation folder, if not exists then loads JAR configuration.yml.
      *
-     * @throws IOException If any IO problem occurs
      * @param opencgaHome OpenCGA Home
      * @return
+     * @throws IOException If any IO problem occurs
      */
     public static Configuration loadConfiguration(String opencgaHome) throws IOException {
         FileUtils.checkDirectory(Paths.get(opencgaHome));
@@ -61,9 +60,9 @@ public class ConfigurationUtils {
     /**
      * This method attempts to load storage configuration from OpenCGA installation folder, if not exists then loads JAR storage-configuration.yml.
      *
-     * @throws IOException If any IO problem occurs
      * @param opencgaHome OpenCGA Home
      * @return
+     * @throws IOException If any IO problem occurs
      */
     public static StorageConfiguration loadStorageConfiguration(String opencgaHome) throws IOException {
         FileUtils.checkDirectory(Paths.get(opencgaHome));

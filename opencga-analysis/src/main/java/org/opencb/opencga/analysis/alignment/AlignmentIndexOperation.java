@@ -20,7 +20,7 @@ import org.apache.commons.io.FileUtils;
 import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -32,7 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Tool(id = AlignmentIndexOperation.ID, resource = Enums.Resource.ALIGNMENT, description = "Index alignment.")
-public class AlignmentIndexOperation extends OpenCgaTool {
+public class AlignmentIndexOperation extends OpenCgaAnalysisTool {
 
     public final static String ID = "alignment-index-run";
     public final static String DESCRIPTION = "Index a given alignment file, e.g., create a .bai file from a .bam file";

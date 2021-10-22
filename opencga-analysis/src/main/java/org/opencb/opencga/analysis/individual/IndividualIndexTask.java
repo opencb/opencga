@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.individual;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -39,7 +39,7 @@ import java.util.Set;
 
 @Tool(id = IndividualIndexTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION,
         description = "Index Individual entries in Solr.")
-public class IndividualIndexTask extends OpenCgaTool {
+public class IndividualIndexTask extends OpenCgaAnalysisTool {
 
     public final static String ID = "individual-secondary-index";
 
@@ -98,7 +98,7 @@ public class IndividualIndexTask extends OpenCgaTool {
                 .append(ParamConstants.FLATTEN_ANNOTATIONS, true);
 
         catalogSolrManager.insertCatalogCollection(catalogManager.getIndividualManager().iterator(study.getFqn(), query,
-                individualQueryOptions, token), new CatalogIndividualToSolrIndividualConverter(study),
+                        individualQueryOptions, token), new CatalogIndividualToSolrIndividualConverter(study),
                 CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
     }
 }

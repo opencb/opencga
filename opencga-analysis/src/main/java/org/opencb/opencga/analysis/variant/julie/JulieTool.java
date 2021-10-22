@@ -3,15 +3,15 @@ package org.opencb.opencga.analysis.variant.julie;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.opencga.core.tools.variant.JulieToolExecutor;
 
 import java.util.HashMap;
@@ -19,12 +19,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-@Tool(id= JulieTool.ID,
+@Tool(id = JulieTool.ID,
         resource = Enums.Resource.VARIANT,
         type = Tool.Type.OPERATION,
         scope = Tool.Scope.PROJECT,
         description = JulieTool.DESCRIPTION)
-public class JulieTool extends OpenCgaTool {
+public class JulieTool extends OpenCgaAnalysisTool {
 
     public static final String ID = "julie";
     public static final String DESCRIPTION = "Transform VariantStats into PopulationFrequency values and updates the VariantAnnotation.";

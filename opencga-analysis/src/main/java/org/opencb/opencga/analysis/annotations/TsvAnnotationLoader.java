@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
@@ -43,7 +43,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-public abstract class TsvAnnotationLoader extends OpenCgaTool  {
+public abstract class TsvAnnotationLoader extends OpenCgaAnalysisTool {
     // Variables that need to be passed
     protected String path;
     protected String variableSetId;
@@ -127,6 +127,7 @@ public abstract class TsvAnnotationLoader extends OpenCgaTool  {
 
     /**
      * Split the line by the tab symbol.
+     *
      * @param lineContent Content of a line read.
      * @return Splitted list of values.
      */

@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.variant.inferredSex;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -29,7 +29,7 @@ import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
 import java.io.IOException;
 
 @Tool(id = InferredSexAnalysis.ID, resource = Enums.Resource.VARIANT, description = InferredSexAnalysis.DESCRIPTION)
-public class InferredSexAnalysis extends OpenCgaTool {
+public class InferredSexAnalysis extends OpenCgaAnalysisTool {
 
     public static final String ID = "inferred-sex";
     public static final String DESCRIPTION = "Infer sex from chromosome mean coverages.";
@@ -42,6 +42,7 @@ public class InferredSexAnalysis extends OpenCgaTool {
 
     /**
      * Study of the samples.
+     *
      * @param studyId Study ID
      * @return this
      */

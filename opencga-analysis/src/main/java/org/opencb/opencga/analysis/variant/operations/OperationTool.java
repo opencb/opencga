@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.variant.operations;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.StudyManager;
@@ -28,7 +28,7 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.nio.file.Path;
 
-public abstract class OperationTool extends OpenCgaTool {
+public abstract class OperationTool extends OpenCgaAnalysisTool {
 
     public static final String KEEP_INTERMEDIATE_FILES = "keepIntermediateFiles";
 

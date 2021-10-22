@@ -24,8 +24,7 @@ import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.ConfigurationUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -33,11 +32,12 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.ConfigurationUtils;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -47,7 +47,7 @@ import java.util.List;
 
 import static org.opencb.opencga.analysis.clinical.ClinicalUtils.readClinicalVariants;
 
-public abstract class InterpretationAnalysis extends OpenCgaTool {
+public abstract class InterpretationAnalysis extends OpenCgaAnalysisTool {
 
 
     public static String PRIMARY_FINDINGS_FILENAME = "primary-findings.json";
@@ -71,6 +71,7 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
 
     /**
      * Method to be implemented by subclasses with the actual method of the interpretation.
+     *
      * @throws Exception on error
      */
     protected abstract InterpretationMethod getInterpretationMethod() throws Exception;

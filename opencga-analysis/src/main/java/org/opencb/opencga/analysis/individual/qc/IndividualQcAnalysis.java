@@ -21,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -45,7 +45,7 @@ import static org.opencb.opencga.core.models.study.StudyAclEntry.StudyPermission
 import static org.opencb.opencga.core.tools.variant.IndividualQcAnalysisExecutor.COVERAGE_RATIO_INFERRED_SEX_METHOD;
 
 @Tool(id = IndividualQcAnalysis.ID, resource = Enums.Resource.SAMPLE, description = IndividualQcAnalysis.DESCRIPTION)
-public class IndividualQcAnalysis extends OpenCgaTool {
+public class IndividualQcAnalysis extends OpenCgaAnalysisTool {
 
     public static final String ID = "individual-qc";
     public static final String DESCRIPTION = "Run quality control (QC) for a given individual. It includes inferred sex and " +

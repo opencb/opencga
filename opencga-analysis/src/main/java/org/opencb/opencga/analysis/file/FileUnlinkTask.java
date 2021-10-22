@@ -21,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -39,7 +39,7 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import java.util.*;
 
 @Tool(id = FileUnlinkTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Unlink files.")
-public class FileUnlinkTask extends OpenCgaTool {
+public class FileUnlinkTask extends OpenCgaAnalysisTool {
 
     public final static String ID = "files-unlink";
 

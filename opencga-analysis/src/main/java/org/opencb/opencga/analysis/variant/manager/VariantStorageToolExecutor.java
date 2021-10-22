@@ -18,11 +18,10 @@ package org.opencb.opencga.analysis.variant.manager;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.ConfigurationUtils;
-import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.ConfigurationUtils;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 

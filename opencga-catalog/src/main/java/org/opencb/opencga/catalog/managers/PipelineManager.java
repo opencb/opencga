@@ -19,11 +19,13 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Pipeline;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.ToolFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -194,8 +196,11 @@ public class PipelineManager extends ResourceManager<Pipeline> {
             }
 
             if (StringUtils.isNotEmpty(job.getToolId())) {
-                // TODO: Validate pipeline tool exists
-//                checkToolExists(job.getToolId());
+                try {
+                    new ToolFactory().getToolClass(job.getToolId());
+                } catch (ToolException e) {
+                    throw new CatalogException("Tool '" + job.getToolId() + "' from Pipeline does not exist.", e);
+                }
             }
             jobIds.add(jobId);
         }

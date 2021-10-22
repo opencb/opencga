@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.circos;
 
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
@@ -24,7 +24,7 @@ import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.variant.CircosAnalysisExecutor;
 
 @Tool(id = CircosAnalysis.ID, resource = Enums.Resource.VARIANT)
-public class CircosAnalysis extends OpenCgaTool {
+public class CircosAnalysis extends OpenCgaAnalysisTool {
 
     public static final String ID = "circos";
     public static final String DESCRIPTION = "Generate a Circos plot for a given sample.";
