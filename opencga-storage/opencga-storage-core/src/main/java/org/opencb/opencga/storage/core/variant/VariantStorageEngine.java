@@ -26,7 +26,6 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
@@ -62,7 +61,8 @@ import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescripto
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
+import org.opencb.opencga.storage.core.variant.search.VariantSecondaryIndexFilter;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrInputDocumentDataWriter;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -614,10 +614,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         // then, load variants
         queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_FILES));
-        try (VariantDBIterator iterator = getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor)) {
-            ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:");
-            VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, progressLogger,
-                    newVariantSearchLoadListener(overwrite));
+        try (VariantDBIterator iterator = getVariantsToSecondaryIndex(overwrite, query, queryOptions, dbAdaptor)) {
+            VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, newVariantSearchDataWriter(dbName));
 
             if (isValidParam(query, VariantQueryParam.REGION)) {
                 logger.info("Partial secondary index. Do not update {} timestamp", SEARCH_INDEX_LAST_TIMESTAMP.key());
@@ -630,19 +628,21 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
 
             return load;
-        } catch (StorageEngineException | IOException | RuntimeException e) {
+        } catch (StorageEngineException e) {
             throw e;
         } catch (Exception e) {
-            throw new StorageEngineException("Exception closing VariantDBIterator", e);
+            throw new StorageEngineException("Exception building secondary index", e);
         }
     }
 
-    protected VariantDBIterator getVariantsToIndex(boolean overwrite, Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor)
+    protected VariantDBIterator getVariantsToSecondaryIndex(boolean overwrite, Query query, QueryOptions queryOptions,
+                                                            VariantDBAdaptor dbAdaptor)
             throws StorageEngineException {
         if (!overwrite) {
             query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
         }
-        return dbAdaptor.iterator(query, queryOptions);
+        VariantSecondaryIndexFilter filter = new VariantSecondaryIndexFilter(getMetadataManager().getStudies());
+        return dbAdaptor.iterator(query, queryOptions).mapBuffered(filter, 10);
     }
 
     protected void searchIndexLoadedFiles(List<URI> inputFiles, ObjectMap options) throws StorageEngineException {
@@ -655,8 +655,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    protected VariantSearchLoadListener newVariantSearchLoadListener(boolean overwrite) throws StorageEngineException {
-        return VariantSearchLoadListener.empty(overwrite);
+    protected SolrInputDocumentDataWriter newVariantSearchDataWriter(String collection) throws StorageEngineException {
+        return new SolrInputDocumentDataWriter(collection,
+                getVariantSearchManager().getSolrClient(),
+                getVariantSearchManager().getInsertBatchSize());
     }
 
     public void secondaryIndexSamples(String study, List<String> samples)
@@ -687,8 +689,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
                 VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
 
-                ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
-                variantSearchManager.load(collectionName, iterator, progressLogger, VariantSearchLoadListener.empty(false));
+                variantSearchManager.load(collectionName, iterator,
+                        new SolrInputDocumentDataWriter(collectionName,
+                                variantSearchManager.getSolrClient(),
+                                variantSearchManager.getInsertBatchSize()));
             } else {
                 throw new StorageEngineException("Solr is not alive!");
             }
@@ -989,7 +993,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             synchronized (variantSearchManager) {
                 if (variantSearchManager.get() == null) {
                     // TODO One day we should use reflection here reading from storage-configuration.yml
-                    variantSearchManager.set(new VariantSearchManager(getMetadataManager(), configuration));
+                    variantSearchManager.set(new VariantSearchManager(getMetadataManager(), configuration, getOptions()));
                 }
             }
         }

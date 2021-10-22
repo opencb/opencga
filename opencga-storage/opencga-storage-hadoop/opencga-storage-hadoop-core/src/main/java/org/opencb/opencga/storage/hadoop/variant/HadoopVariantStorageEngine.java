@@ -64,7 +64,6 @@ import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescripto
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
@@ -97,7 +96,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
-import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchLoadListener;
+import org.opencb.opencga.storage.hadoop.variant.search.HadoopVariantSearchDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.search.SecondaryIndexPendingVariantsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.stats.HadoopMRVariantStatisticsManager;
@@ -381,8 +380,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    protected VariantDBIterator getVariantsToIndex(boolean overwrite, Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor)
-            throws StorageEngineException {
+    protected VariantDBIterator getVariantsToSecondaryIndex(boolean overwrite, Query query, QueryOptions queryOptions,
+                                                            VariantDBAdaptor dbAdaptor) throws StorageEngineException {
 
         logger.info("Get variants to index from pending variants table");
         logger.info("Query: " + query.toJson());
@@ -390,9 +389,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    protected VariantSearchLoadListener newVariantSearchLoadListener(boolean overwrite) throws StorageEngineException {
-        return new HadoopVariantSearchLoadListener(getDBAdaptor(),
-                new SecondaryIndexPendingVariantsManager(getDBAdaptor()).cleaner(), overwrite);
+    protected HadoopVariantSearchDataWriter newVariantSearchDataWriter(String collection) throws StorageEngineException {
+        return new HadoopVariantSearchDataWriter(
+                collection, getVariantSearchManager().getSolrClient(), getVariantSearchManager().getInsertBatchSize(),
+                getDBAdaptor());
     }
 
     @Override
