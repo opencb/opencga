@@ -13,6 +13,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ExecutionDBAdaptor;
+import org.opencb.opencga.catalog.db.api.PipelineDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
@@ -21,6 +22,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
@@ -28,6 +30,7 @@ import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.ToolFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -157,20 +160,8 @@ public class ExecutionManager extends ResourceManager<Execution> {
 //        return submitTool(studies.get(0), toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, token);
 //    }
 
-    public OpenCGAResult<Execution> submitPipeline(String studyStr, String pipelineId, Enums.Priority priority, Map<String, Object> params,
-                                                   String id, String description, List<String> dependsOn, List<String> tags, String token)
-            throws CatalogException {
-        return submit(studyStr, "PIPELINE__" + pipelineId, priority, params, id, description, dependsOn, tags, token);
-    }
-
-    public OpenCGAResult<Execution> submitTool(String studyStr, String pipelineId, Enums.Priority priority, Map<String, Object> params,
-                                               String id, String description, List<String> dependsOn, List<String> tags, String token)
-            throws CatalogException {
-        return submit(studyStr, "TOOL__" + pipelineId, priority, params, id, description, dependsOn, tags, token);
-    }
-
-    private OpenCGAResult<Execution> submit(String studyStr, String resourceId, Enums.Priority priority, Map<String, Object> params,
-                                            String id, String description, List<String> dependsOn, List<String> tags, String token)
+    public OpenCGAResult<Execution> submit(String studyStr, String resourceId, Enums.Priority priority, Map<String, Object> params,
+                                           String id, String description, List<String> dependsOn, List<String> tags, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
@@ -195,28 +186,25 @@ public class ExecutionManager extends ResourceManager<Execution> {
         try {
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTE_JOBS);
 
-            if (resourceId.startsWith("PIPELINE__")) {
-                String pipelineId = resourceId.replace("PIPELINE__", "");
-                ParamUtils.checkParameter(pipelineId, "pipelineId");
-
-                OpenCGAResult<Pipeline> pipelineOpenCGAResult = catalogManager.getPipelineManager().get(study.getFqn(), pipelineId,
-                        QueryOptions.empty(), token);
-                if (pipelineOpenCGAResult.getNumResults() == 0) {
-                    throw new CatalogException("Pipeline '" + pipelineId + "' not found.");
-                }
+            // Check if resourceId might be a pipeline
+            Query query = new Query()
+                    .append(PipelineDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                    .append(PipelineDBAdaptor.QueryParams.ID.key(), resourceId);
+            OpenCGAResult<Pipeline> pipelineOpenCGAResult = pipelineDBAdaptor.get(query, QueryOptions.empty());
+            if (pipelineOpenCGAResult.getNumResults() == 1) {
                 Pipeline pipeline = pipelineOpenCGAResult.first();
-
                 execution.setPipeline(pipeline);
                 execution.setIsPipeline(true);
                 autoCompleteNewExecution(study, execution, null, token);
-            } else if (resourceId.startsWith("TOOL__")) {
-                String toolId = resourceId.replace("TOOL__", "");
-                ParamUtils.checkParameter(toolId, "toolId");
-
-                autoCompleteNewExecution(study, execution, toolId, token);
-                createJobExecution(study, execution, toolId, dependsOn, token);
             } else {
-                throw new CatalogException("Expected TOOL or PIPELINE prefix for id: '" + resourceId + "'");
+                // Check that resourceId is an existing toolId
+                try {
+                    new ToolFactory().getToolClass(resourceId);
+                    autoCompleteNewExecution(study, execution, resourceId, token);
+                    createJobExecution(study, execution, resourceId, dependsOn, token);
+                } catch (ToolException e) {
+                    throw new CatalogException("'" + resourceId + "' seems not to be a valid pipeline or toolId");
+                }
             }
 
             // Ensure user has its own executions folder

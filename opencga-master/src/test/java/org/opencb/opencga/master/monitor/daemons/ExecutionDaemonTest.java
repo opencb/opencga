@@ -493,7 +493,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         params.put("bamFile", "HG00096.chrom20.small.bam");
         params.put("bedFile", "HG00096.chrom20.small.bam");
         params.put("dictFile", "HG00096.chrom20.small.bam");
-        OpenCGAResult<Execution> executionResult = catalogManager.getExecutionManager().submitPipeline(studyFqn,
+        OpenCGAResult<Execution> executionResult = catalogManager.getExecutionManager().submit(studyFqn,
                 AlignmentQcAnalysis.ID, Enums.Priority.MEDIUM, params, "", "", null, null, token);
         assertNotNull(executionResult.first().getOutDir());
 
@@ -521,7 +521,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         params.put("bamFile", "HG00096.chrom20.small.bam");
         params.put("bedFile", "HG00096.chrom20.small.bam");
         params.put("dictFile", "HG00096.chrom20.small.bam");
-        OpenCGAResult<Execution> executionResult = catalogManager.getExecutionManager().submitTool(studyFqn,
+        OpenCGAResult<Execution> executionResult = catalogManager.getExecutionManager().submit(studyFqn,
                 AlignmentQcAnalysis.ID, Enums.Priority.MEDIUM, params, "", "", null, null, token);
 
         executionResult = catalogManager.getExecutionManager().get(studyFqn, executionResult.first().getId(), QueryOptions.empty(), token);
