@@ -56,8 +56,7 @@ Connect to MongoDB database running these commands:
 # Solr
 Connect to Solr database running these commands:
 
-    export SERVICE_NAME="service/{{ .Values.solr.deploy.name }}-solrcloud-headless"
-    kubectl --context {{ .Values.kubeContext }} --namespace {{ .Release.Namespace }} port-forward $SERVICE_NAME 18983:8983
+    kubectl --context {{ .Values.kubeContext }} --namespace {{ .Release.Namespace }} port-forward "service/{{ .Values.solr.deploy.name }}-solrcloud-headless" 18983:8983
 
   Visit http://127.0.0.1:18983 to access Solr GUI
 {{- end }}
