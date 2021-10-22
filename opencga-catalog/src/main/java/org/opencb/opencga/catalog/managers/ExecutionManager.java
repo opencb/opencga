@@ -14,6 +14,7 @@ import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ExecutionDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PipelineDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
@@ -159,6 +160,29 @@ public class ExecutionManager extends ResourceManager<Execution> {
 //        }
 //        return submitTool(studies.get(0), toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, token);
 //    }
+
+    public OpenCGAResult<Execution> submitProject(String projectStr, String resourceId, Enums.Priority priority, Map<String, Object> params,
+                                                  String id, String description, List<String> dependsOn, List<String> tags, String token)
+            throws CatalogException {
+        // Project job
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key());
+        // Peek any study. The ExecutionDaemon will take care of filling up the rest of studies.
+        List<String> studies = catalogManager.getStudyManager()
+                .search(projectStr, new Query(), options, token)
+                .getResults()
+                .stream()
+                .map(Study::getFqn)
+                .collect(Collectors.toList());
+        if (studies.isEmpty()) {
+            throw new CatalogException("Project '" + projectStr + "' not found!");
+        }
+        return submit(studies.get(0), resourceId, priority, params, id, description, dependsOn, tags, token);
+    }
+
+    public OpenCGAResult<Execution> submit(String studyStr, String resourceId, Enums.Priority priority, Map<String, Object> params,
+                                           String token) throws CatalogException {
+        return submit(studyStr, resourceId, priority, params, null, null, null, null, token);
+    }
 
     public OpenCGAResult<Execution> submit(String studyStr, String resourceId, Enums.Priority priority, Map<String, Object> params,
                                            String id, String description, List<String> dependsOn, List<String> tags, String token)

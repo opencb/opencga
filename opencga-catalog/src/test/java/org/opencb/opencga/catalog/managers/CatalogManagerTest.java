@@ -831,14 +831,15 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void submitJobWithDependenciesFromDifferentStudies() throws CatalogException {
-        Job first = catalogManager.getJobManager().submit(studyFqn, "command-subcommand", null, Collections.emptyMap(), token).first();
-        Job second = catalogManager.getJobManager().submit(studyFqn2, "", "command-subcommand2", null, Collections.emptyMap(), null, "",
-                Collections.singletonList(first.getUuid()), null, token).first();
+        Execution first = catalogManager.getExecutionManager().submit(studyFqn, "command-subcommand", null, Collections.emptyMap(), token)
+                .first();
+        Execution second = catalogManager.getExecutionManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null,
+                "", Collections.singletonList(first.getUuid()), null, token).first();
         assertEquals(first.getId(), second.getDependsOn().get(0).getId());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
-        catalogManager.getJobManager().submit(studyFqn2, "", "command-subcommand2", null, Collections.emptyMap(), null, "",
+        catalogManager.getExecutionManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
                 Collections.singletonList(first.getId()), null, token);
     }
 
@@ -903,12 +904,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void submitJobWithDependencies() throws CatalogException {
-        Job job1 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token).first();
-        Job job2 = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token).first();
+        Execution job1 = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token).first();
+        Execution job2 = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token).first();
 
-        Job job3 = catalogManager.getJobManager().submit(studyFqn, "", "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), null, null,
+        Execution job3 = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), null, null,
                 Arrays.asList(job1.getId(), job2.getId()), null, token).first();
-        Job job4 = catalogManager.getJobManager().submit(studyFqn, "", "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), null, null,
+        Execution job4 = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), null, null,
                 Arrays.asList(job1.getUuid(), job2.getUuid()), null, token).first();
 
         assertEquals(2, job3.getDependsOn().size());

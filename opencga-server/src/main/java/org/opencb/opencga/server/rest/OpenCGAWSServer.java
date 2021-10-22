@@ -44,10 +44,11 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
-import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.Execution;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.FederationNode;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -56,7 +57,6 @@ import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.slf4j.Logger;
@@ -295,7 +295,6 @@ public class OpenCGAWSServer {
     /**
      * This method initialize CatalogManager and StorageManagerFactory.
      * This must be only executed once.
-     *
      */
     private static void initOpenCGAObjects() {
         try {
@@ -796,43 +795,43 @@ public class OpenCGAWSServer {
         }
     }
 
-    public Response submitJob(String toolId, String project, String study, Map<String, Object> paramsMap,
-                               String jobName, String jobDescription, String jobDependsOne, String jobTags) {
-        return run(() -> submitJobRaw(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags));
+    public Response submitExecution(String toolId, String project, String study, Map<String, Object> paramsMap,
+                                    String jobName, String jobDescription, String jobDependsOne, String jobTags) {
+        return run(() -> submitExecutionRaw(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags));
     }
 
-    public Response submitJob(String toolId, String study, ToolParams bodyParams, String jobId, String jobDescription,
-                              String jobDependsOnStr, String jobTagsStr) {
-        return submitJob(toolId, null, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
+    public Response submitExecution(String toolId, String study, ToolParams bodyParams, String jobId, String jobDescription,
+                                    String jobDependsOnStr, String jobTagsStr) {
+        return submitExecution(toolId, null, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
     }
 
-    public Response submitJobAdmin(String toolId, ToolParams bodyParams, String jobId, String jobDescription,
-                              String jobDependsOnStr, String jobTagsStr) {
+    public Response submitExecutionAdmin(String toolId, ToolParams bodyParams, String jobId, String jobDescription,
+                                         String jobDependsOnStr, String jobTagsStr) {
         return run(() -> {
             if (!catalogManager.getUserManager().getUserId(token).equals(ParamConstants.OPENCGA_USER_ID)) {
                 throw new CatalogAuthenticationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' can run this operation!");
             }
-            return submitJobRaw(toolId, null, ADMIN_STUDY_FQN, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
+            return submitExecutionRaw(toolId, null, ADMIN_STUDY_FQN, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
         });
     }
 
-    public Response submitJob(String toolId, String project, String study, ToolParams bodyParams, String jobId, String jobDescription,
-                              String jobDependsOnStr, String jobTagsStr) {
-        return run(() -> submitJobRaw(toolId, project, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr));
+    public Response submitExecution(String toolId, String project, String study, ToolParams bodyParams, String jobId, String jobDescription,
+                                    String jobDependsOnStr, String jobTagsStr) {
+        return run(() -> submitExecutionRaw(toolId, project, study, bodyParams, jobId, jobDescription, jobDependsOnStr, jobTagsStr));
     }
 
-    protected DataResult<Job> submitJobRaw(String toolId, String project, String study, ToolParams bodyParams,
-                                         String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
+    protected DataResult<Execution> submitExecutionRaw(String toolId, String project, String study, ToolParams bodyParams,
+                                                       String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
             throws CatalogException {
         Map<String, Object> paramsMap = bodyParams.toParams();
         if (StringUtils.isNotEmpty(study)) {
             paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
         }
-        return submitJobRaw(toolId, project, study, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
+        return submitExecutionRaw(toolId, project, study, paramsMap, jobId, jobDescription, jobDependsOnStr, jobTagsStr);
     }
 
-    protected DataResult<Job> submitJobRaw(String toolId, String project, String study, Map<String, Object> paramsMap,
-                                           String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
+    protected DataResult<Execution> submitExecutionRaw(String toolId, String project, String study, Map<String, Object> paramsMap,
+                                                       String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
             throws CatalogException {
 
         if (StringUtils.isNotEmpty(project) && StringUtils.isEmpty(study)) {
@@ -863,7 +862,7 @@ public class OpenCGAWSServer {
         } else {
             jobDependsOn = Collections.emptyList();
         }
-        return catalogManager.getJobManager()
+        return catalogManager.getExecutionManager()
                 .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, token);
     }
 

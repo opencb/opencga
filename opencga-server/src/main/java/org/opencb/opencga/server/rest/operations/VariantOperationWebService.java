@@ -147,7 +147,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = VariantStorageMetadataSynchronizeParams.DESCRIPTION) VariantStorageMetadataSynchronizeParams params) {
-        return submitJobAdmin(VariantStorageMetadataSynchronizeOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecutionAdmin(VariantStorageMetadataSynchronizeOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -159,7 +159,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantStorageMetadataRepairToolParams.DESCRIPTION) VariantStorageMetadataRepairToolParams params) {
-        return submitJobAdmin(VariantStorageMetadataRepairTool.ID, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecutionAdmin(VariantStorageMetadataRepairTool.ID, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -172,7 +172,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantStatsAnalysisParams.DESCRIPTION, required = true) VariantStatsIndexParams params) {
-        return submitJob(VariantStatsIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(VariantStatsIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -436,6 +436,6 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         if (dynamicParamsMap.size() > 0) {
             paramsMap.put("dynamicParams", dynamicParamsMap);
         }
-        return submitJob(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags);
+        return submitExecution(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags);
     }
 }

@@ -72,6 +72,7 @@ import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.job.Execution;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -187,7 +188,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantIndexParams.DESCRIPTION, required = true) VariantIndexParams params) {
-        return submitJob(VariantIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(VariantIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @Deprecated
@@ -203,7 +204,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = "Files to remove") @QueryParam("file") String file,
             @ApiParam(value = "Resume a previously failed indexation") @QueryParam("resume") boolean resume) throws WebServiceException {
         VariantFileDeleteParams params = new VariantFileDeleteParams(getIdList(file), resume);
-        return submitJob(VariantFileDeleteOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(VariantFileDeleteOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @GET
@@ -397,7 +398,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantExportParams.DESCRIPTION, required = true) VariantExportParams params) {
-        return submitJob(VariantExportTool.ID, project, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(VariantExportTool.ID, project, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @GET
@@ -440,7 +441,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantStatsAnalysisParams.DESCRIPTION, required = true) VariantStatsAnalysisParams params) {
-        return submitJob(VariantStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(VariantStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -454,7 +455,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantStatsExportParams.DESCRIPTION, required = true) VariantStatsExportParams params) {
-        return submitJob("variant-stats-export", project, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution("variant-stats-export", project, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
 //    public static class StatsDeleteParams extends ToolParams {
@@ -557,7 +558,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = SampleVariantFilterParams.DESCRIPTION, required = true) SampleVariantFilterParams params) {
-        return submitJob(SampleVariantFilterAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(SampleVariantFilterAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -570,7 +571,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = SampleEligibilityAnalysisParams.DESCRIPTION, required = true) SampleEligibilityAnalysisParams params) {
-        return submitJob(SampleEligibilityAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(SampleEligibilityAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @Deprecated
@@ -664,7 +665,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = SampleVariantStatsAnalysisParams.DESCRIPTION, required = true) SampleVariantStatsAnalysisParams params) {
-        return submitJob(SampleVariantStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(SampleVariantStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @GET
@@ -713,7 +714,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = CohortVariantStatsAnalysisParams.DESCRIPTION, required = true) CohortVariantStatsAnalysisParams params) {
-        return submitJob(CohortVariantStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(CohortVariantStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @GET
@@ -886,7 +887,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = GwasAnalysisParams.DESCRIPTION, required = true) GwasAnalysisParams params) {
-        return submitJob(GwasAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(GwasAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
 //    @POST
@@ -913,7 +914,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = MutationalSignatureAnalysisParams.DESCRIPTION, required = true) MutationalSignatureAnalysisParams params) {
-        return submitJob(MutationalSignatureAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(MutationalSignatureAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @GET
@@ -1005,7 +1006,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = MendelianErrorAnalysisParams.DESCRIPTION, required = true) MendelianErrorAnalysisParams params) {
-        return submitJob(MendelianErrorAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(MendelianErrorAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -1018,7 +1019,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = InferredSexAnalysisParams.DESCRIPTION, required = true) InferredSexAnalysisParams params) {
-        return submitJob(InferredSexAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(InferredSexAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -1031,7 +1032,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = RelatednessAnalysisParams.DESCRIPTION, required = true) RelatednessAnalysisParams params) {
-        return submitJob(RelatednessAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(RelatednessAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -1044,7 +1045,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = FamilyQcAnalysisParams.DESCRIPTION, required = true) FamilyQcAnalysisParams params) {
-        return submitJob(FamilyQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(FamilyQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -1067,7 +1068,7 @@ public class VariantWebService extends AnalysisWebService {
             List<Sample> childGermlineSamples = IndividualQcUtils.getValidGermlineSamplesByIndividualId(study, individual.getId(),
                     catalogManager, token);
             if (CollectionUtils.isEmpty(childGermlineSamples)) {
-                throw new ToolException("Germline sample not found for individual '" +  params.getIndividual() + "'");
+                throw new ToolException("Germline sample not found for individual '" + params.getIndividual() + "'");
             }
 
             Sample sample = null;
@@ -1096,7 +1097,7 @@ public class VariantWebService extends AnalysisWebService {
 
                 Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), catalogBamFile.getId() + ".bw");
                 fileResult = catalogManager.getFileManager().search(study, query, QueryOptions.empty(), token);
-                Job deeptoolsJob = null;
+                Execution deeptoolsJob = null;
                 if (fileResult.getNumResults() == 0) {
                     // Coverage file does not exit, a job must be submitted to create the .bw file
                     // but first, check if .bai (bam index file) exist
@@ -1104,7 +1105,7 @@ public class VariantWebService extends AnalysisWebService {
                     query = new Query(FileDBAdaptor.QueryParams.ID.key(), catalogBamFile.getId() + ".bai");
                     fileResult = catalogManager.getFileManager().search(study, query, QueryOptions.empty(), token);
 
-                    Job samtoolsJob = null;
+                    Execution samtoolsJob = null;
                     if (fileResult.getNumResults() == 0) {
                         // BAM index file does not exit, a job must be submitted to create the .bai file
                         SamtoolsWrapperParams samtoolsParams = new SamtoolsWrapperParams()
@@ -1112,7 +1113,7 @@ public class VariantWebService extends AnalysisWebService {
                                 .setInputFile(catalogBamFile.getId())
                                 .setSamtoolsParams(new HashMap<>());
 
-                        DataResult<Job> jobResult = submitJobRaw(SamtoolsWrapperAnalysis.ID, null, study, samtoolsParams, null, null, null,
+                        DataResult<Execution> jobResult = submitExecutionRaw(SamtoolsWrapperAnalysis.ID, null, study, samtoolsParams, null, null, null,
                                 null);
                         samtoolsJob = jobResult.first();
                     }
@@ -1129,15 +1130,15 @@ public class VariantWebService extends AnalysisWebService {
                     bamCoverageParams.put("minMappingQuality", "20");
                     deeptoolsParams.setDeeptoolsParams(bamCoverageParams);
 
-                    DataResult<Job> jobResult = submitJobRaw(DeeptoolsWrapperAnalysis.ID, null, study, deeptoolsParams, null, null,
+                    DataResult<Execution> jobResult = submitExecutionRaw(DeeptoolsWrapperAnalysis.ID, null, study, deeptoolsParams, null, null,
                             samtoolsJob == null ? null : samtoolsJob.getId(), null);
                     deeptoolsJob = jobResult.first();
                     dependsOnList.add(deeptoolsJob.getId());
                 }
             }
 
-            return submitJobRaw(IndividualQcAnalysis.ID, null, study, params, jobName, jobDescription, StringUtils.join(dependsOnList, ","),
-                    jobTags);
+            return submitExecutionRaw(IndividualQcAnalysis.ID, null, study, params, jobName, jobDescription,
+                    StringUtils.join(dependsOnList, ","), jobTags);
 
         });
     }
@@ -1153,7 +1154,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = SampleQcAnalysisParams.DESCRIPTION, required = true) SampleQcAnalysisParams params) {
 
-        return submitJob(SampleQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(SampleQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -1166,7 +1167,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = PlinkWrapperParams.DESCRIPTION, required = true) PlinkWrapperParams params) {
-        return submitJob(PlinkWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(PlinkWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -1179,7 +1180,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = RvtestsWrapperParams.DESCRIPTION, required = true) RvtestsWrapperParams params) {
-        return submitJob(RvtestsWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(RvtestsWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -1192,7 +1193,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = GatkWrapperParams.DESCRIPTION, required = true) GatkWrapperParams params) {
-        return submitJob(GatkWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(GatkWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -1205,7 +1206,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = KnockoutAnalysisParams.DESCRIPTION, required = true) KnockoutAnalysisParams params) {
-        return submitJob(KnockoutAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(KnockoutAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @GET
@@ -1248,7 +1249,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = GenomePlotAnalysisParams.DESCRIPTION, required = true) GenomePlotAnalysisParams params) {
         // To be sure: do not update quality control sample
         params.setSample(null);
-        return submitJob(GenomePlotAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(GenomePlotAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST

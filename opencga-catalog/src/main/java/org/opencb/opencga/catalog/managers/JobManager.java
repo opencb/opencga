@@ -425,6 +425,7 @@ public class JobManager extends ResourceManager<Job> {
         return inputFiles;
     }
 
+    @Deprecated
     public OpenCGAResult<Job> retry(String studyStr, JobRetryParams jobRetry, Enums.Priority priority,
                                     String jobId, String jobDescription, List<String> jobDependsOn, List<String> jobTags, String token)
             throws CatalogException {
@@ -438,11 +439,13 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
+    @Deprecated
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String token)
             throws CatalogException {
         return submit(studyStr, "", toolId, priority, params, null, null, null, null, token);
     }
 
+    @Deprecated
     public OpenCGAResult<Job> submitProject(String projectStr, String toolId, Enums.Priority priority, Map<String, Object> params,
                                             String jobId, String jobDescription, List<String> jobDependsOn, List<String> jobTags,
                                             String token) throws CatalogException {
@@ -469,6 +472,7 @@ public class JobManager extends ResourceManager<Job> {
 
     }
 
+    @Deprecated
     public OpenCGAResult<Job> submit(String studyStr, String executionId, String toolId, Enums.Priority priority,
                                      Map<String, Object> params, String jobId, String jobDescription, List<String> jobDependsOn,
                                      List<String> jobTags, String token)

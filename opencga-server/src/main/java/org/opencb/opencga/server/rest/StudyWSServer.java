@@ -192,7 +192,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateGroupPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         try {
             if (action == null) {
@@ -251,7 +251,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response addRemovePipeline(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) Pipeline pipeline) {
         try {
             if (action == null) {
@@ -291,7 +291,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response getPermissionRules(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Entity where the permission rules should be applied to", required = true)
-                @QueryParam("entity") Enums.Entity entity) {
+            @QueryParam("entity") Enums.Entity entity) {
         try {
             ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(catalogManager.getStudyManager().getPermissionRules(studyStr, entity, token));
@@ -444,7 +444,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response createOrRemoveVariableSets(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a variableSet", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing the VariableSet to be created or removed.", required = true) VariableSetCreateParams params) {
         try {
             if (action == null) {
@@ -488,7 +488,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "VariableSet id of the VariableSet to be updated") @PathParam("variableSet") String variableSetId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a variable", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing the variable to be added or removed. For removing, only the variable id will be needed.", required = true) Variable variable) {
         try {
             if (action == null) {
@@ -580,7 +580,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = TemplateParams.DESCRIPTION, required = true) TemplateParams params) {
-        return submitJob(TemplateRunner.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(TemplateRunner.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     private void fixVariable(Variable variable) {

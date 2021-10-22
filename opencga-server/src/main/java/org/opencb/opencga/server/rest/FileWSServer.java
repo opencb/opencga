@@ -110,7 +110,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(name = "body", value = "Fetch parameters", required = true) FileFetch fetchParams) {
-        return submitJob(FetchAndRegisterTask.ID, studyStr, fetchParams, jobId, jobDescription, dependsOn, jobTags);
+        return submitExecution(FetchAndRegisterTask.ID, studyStr, fetchParams, jobId, jobDescription, dependsOn, jobTags);
     }
 
     @GET
@@ -557,7 +557,7 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @JsonIgnoreProperties({"status"})
+    //    @JsonIgnoreProperties({"status"})
 //    public static class FileUpdateParams extends org.opencb.opencga.core.models.file.FileUpdateParams {
 //    }
     @POST
@@ -595,7 +595,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_ID) @PathParam("annotationSet") String annotationSetId,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @QueryParam("action") ParamUtils.CompleteUpdateAction action,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION) Map<String, Object> updateParams) {
         try {
             if (action == null) {
@@ -667,7 +667,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(name = "body", value = "File parameters", required = true) PostLinkToolParams params) {
-        return submitJob(PostLinkSampleAssociation.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags);
+        return submitExecution(PostLinkSampleAssociation.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -680,14 +680,14 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(name = "body", value = "File parameters", required = true) FileLinkToolParams params) {
-        return submitJob(FileLinkTask.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags);
+        return submitExecution(FileLinkTask.ID, studyStr, params, jobId, jobDescription, dependsOn, jobTags);
     }
 
     @DELETE
     @Path("/{files}/unlink")
     @ApiOperation(value = "Unlink linked files and folders", response = Job.class)
     public Response unlink(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)  @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of file ids, names or paths.") @PathParam("files") String files) {
         try {
             getIdList(files);

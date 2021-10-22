@@ -39,7 +39,7 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.Execution;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.Variable;
@@ -114,8 +114,8 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         }
     }
 
-    public OpenCGAResult<Job> loadTsvAnnotations(String studyStr, String variableSetId, String path, TsvAnnotationParams tsvParams,
-                                                 ObjectMap params, String toolId, String token) throws CatalogException {
+    public OpenCGAResult<Execution> loadTsvAnnotations(String studyStr, String variableSetId, String path, TsvAnnotationParams tsvParams,
+                                                       ObjectMap params, String toolId, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
@@ -167,12 +167,12 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         jobParams.put("file", path);
         jobParams.put("variableSetId", variableSetId);
         jobParams.put("annotationSetId", annotationSetId);
-        return catalogManager.getJobManager().submit(study.getFqn(), toolId, Enums.Priority.MEDIUM, jobParams, token);
+        return catalogManager.getExecutionManager().submit(study.getFqn(), toolId, Enums.Priority.MEDIUM, jobParams, token);
     }
 
-    protected  <T extends Annotable> void checkUpdateAnnotations(Study study, T entry, ObjectMap parameters, QueryOptions options,
-                                                              VariableSet.AnnotableDataModels annotableEntity,
-                                                              AnnotationSetDBAdaptor dbAdaptor, String user) throws CatalogException {
+    protected <T extends Annotable> void checkUpdateAnnotations(Study study, T entry, ObjectMap parameters, QueryOptions options,
+                                                                VariableSet.AnnotableDataModels annotableEntity,
+                                                                AnnotationSetDBAdaptor dbAdaptor, String user) throws CatalogException {
 
         List<VariableSet> variableSetList = study.getVariableSets();
         boolean confidentialPermissionsChecked = false;

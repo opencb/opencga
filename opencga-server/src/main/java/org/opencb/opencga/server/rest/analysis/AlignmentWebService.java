@@ -30,7 +30,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.alignment.AlignmentIndexOperation;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
-import org.opencb.opencga.analysis.alignment.qc.*;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentGeneCoverageStatsAnalysis;
+import org.opencb.opencga.analysis.alignment.qc.AlignmentQcAnalysis;
 import org.opencb.opencga.analysis.wrappers.bwa.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.fastqc.FastqcWrapperAnalysis;
@@ -47,7 +48,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.opencb.opencga.core.api.ParamConstants.*;
 
@@ -83,7 +87,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = AlignmentIndexParams.DESCRIPTION, required = true) AlignmentIndexParams params) {
-        return submitJob(AlignmentIndexOperation.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(AlignmentIndexOperation.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     //-------------------------------------------------------------------------
@@ -386,7 +390,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = AlignmentGeneCoverageStatsParams.DESCRIPTION, required = true) AlignmentGeneCoverageStatsParams params) {
 
-        return submitJob(AlignmentGeneCoverageStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(AlignmentGeneCoverageStatsAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     //-------------------------------------------------------------------------
@@ -404,7 +408,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = AlignmentQcParams.DESCRIPTION, required = true) AlignmentQcParams params) {
 
-        return submitJob(AlignmentQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(AlignmentQcAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     //-------------------------------------------------------------------------
@@ -421,7 +425,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = BwaWrapperParams.DESCRIPTION, required = true) BwaWrapperParams params) {
-        return submitJob(BwaWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(BwaWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -434,7 +438,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = SamtoolsWrapperParams.DESCRIPTION, required = true) SamtoolsWrapperParams params) {
-        return submitJob(SamtoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(SamtoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -447,7 +451,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = DeeptoolsWrapperParams.DESCRIPTION, required = true) DeeptoolsWrapperParams params) {
-        return submitJob(DeeptoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(DeeptoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -460,7 +464,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = FastqcWrapperParams.DESCRIPTION, required = true) FastqcWrapperParams params) {
-        return submitJob(FastqcWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(FastqcWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -473,7 +477,7 @@ public class AlignmentWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = PicardWrapperParams.DESCRIPTION, required = true) PicardWrapperParams params) {
-        return submitJob(PicardWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitExecution(PicardWrapperAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     //-------------------------------------------------------------------------
@@ -484,7 +488,7 @@ public class AlignmentWebService extends AnalysisWebService {
         OpenCGAResult finalResult = OpenCGAResult.empty();
         if (results.size() == 1) {
             finalResult = results.get(0);
-        } else if (results.size() > 1){
+        } else if (results.size() > 1) {
             if (splitResults) {
                 // Keep results split
                 int time = results.stream().mapToInt(OpenCGAResult::getTime).sum();
