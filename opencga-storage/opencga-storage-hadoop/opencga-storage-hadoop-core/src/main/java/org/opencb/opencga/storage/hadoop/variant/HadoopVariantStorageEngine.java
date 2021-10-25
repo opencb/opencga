@@ -373,8 +373,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
 
-        new SecondaryIndexPendingVariantsManager(getDBAdaptor())
-                .discoverPending(getMRExecutor(), overwrite, getMergedOptions(queryOptions));
+        if (getOptions().getBoolean("skipDiscoverPendingVariantsToSecondaryIndex", false)) {
+            logger.info("Skip discover pending variants to secondary index");
+        } else {
+            new SecondaryIndexPendingVariantsManager(getDBAdaptor())
+                    .discoverPending(getMRExecutor(), overwrite, getMergedOptions(queryOptions));
+        }
 
         return super.secondaryIndex(query, queryOptions, overwrite);
     }

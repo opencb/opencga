@@ -44,7 +44,7 @@ public class HadoopVariantSearchDataWriter extends SolrInputDocumentDataWriter {
             }
         };
         this.cleaner = new SecondaryIndexPendingVariantsManager(dbAdaptor).cleaner();
-        this.studiesMap = dbAdaptor.getMetadataManager().getStudies();
+        this.studiesMap = new HashMap<>(dbAdaptor.getMetadataManager().getStudies());
         for (String study : new ArrayList<>(studiesMap.keySet())) {
             studiesMap.put(VariantSearchToVariantConverter.studyIdToSearchModel(study), studiesMap.get(study));
         }

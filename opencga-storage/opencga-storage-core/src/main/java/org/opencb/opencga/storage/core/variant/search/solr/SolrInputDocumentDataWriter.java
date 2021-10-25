@@ -55,7 +55,7 @@ public class SolrInputDocumentDataWriter implements DataWriter<SolrInputDocument
     }
 
     protected void add(List<SolrInputDocument> batch) throws Exception {
-        UpdateResponse response = solrClient.add(batch);
+        UpdateResponse response = solrClient.add(collection, batch);
         addTimeMs += response.getElapsedTime();
         if (response.getException() != null) {
             // FIXME: Is this even possible?

@@ -29,7 +29,7 @@ import java.util.*;
  */
 public class PendingVariantsDBCleaner extends AbstractHBaseDataWriter<byte[], Delete> {
 
-    public static final int MAX_PENDING_REGIONS_TO_COMPACT = 5;
+    public static final int MAX_PENDING_REGIONS_TO_COMPACT = 2;
     private final PendingVariantsDescriptor descriptor;
     private final Deque<HRegionLocation> regions = new LinkedList<>();
     private RegionLocator regionLocator;
@@ -66,14 +66,14 @@ public class PendingVariantsDBCleaner extends AbstractHBaseDataWriter<byte[], De
             deletes.add(delete);
         }
 
-        for (int i = 0; i < batch.size(); i += 100) {
-            HRegionLocation region = regionLocator.getRegionLocation(batch.get(0));
+        for (int i = 0; i < batch.size(); i += 50) {
+            HRegionLocation region = regionLocator.getRegionLocation(batch.get(i));
             if (!regions.contains(region)) {
                 regions.add(region);
             }
         }
         while (regions.size() > MAX_PENDING_REGIONS_TO_COMPACT) {
-            // If the regions list contains more than 10 elements, start running major_compacts.
+            // If the regions list contains more than X elements, start running major_compacts.
             compactRegions(Collections.singletonList(regions.pollFirst()));
         }
 
