@@ -1259,28 +1259,59 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             validateFiles(study, clinicalAnalysis, userId);
         }
 
-        if (CollectionUtils.isNotEmpty(updateParams.getPanels()) || updateParams.getPanelLock() != null) {
-            // Check the Clinical Analysis have no interpretations
-            Query query = new Query()
-                    .append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                    .append(InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(), clinicalAnalysis.getId());
-            OpenCGAResult<Long> count = interpretationDBAdaptor.count(query);
-            if (count.getNumMatches() > 0) {
-                throw new CatalogException("Cannot update ClinicalAnalysis '" + clinicalAnalysis.getId()
-                        + "'. Updating 'panels' or 'panelLocked' fields is forbidden when the Clinical Analysis contains Interpretations");
+        if (CollectionUtils.isNotEmpty(updateParams.getPanels()) && updateParams.getPanelLock() != null && updateParams.getPanelLock()
+                && (clinicalAnalysis.getInterpretation() != null
+                || CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations()))) {
+            throw new CatalogException("Updating the list of panels and setting 'panelLock' to true at the same time is not allowed "
+                    + " when the ClinicalAnalysis has Interpretations.");
+        }
+
+        if (CollectionUtils.isNotEmpty(updateParams.getPanels())) {
+            if (clinicalAnalysis.isPanelLock()) {
+                throw new CatalogException("Cannot update panels from ClinicalAnalysis '" + clinicalAnalysis.getId() + "'. "
+                        + "'panelLocked' field from ClinicalAnalysis is set to true.");
             }
 
-            if (CollectionUtils.isNotEmpty(updateParams.getPanels())) {
-                // Validate and get panels
-                List<String> panelIds = updateParams.getPanels().stream().map(PanelReferenceParam::getId).collect(Collectors.toList());
-                query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
-                OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
-                        panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
-                if (panelResult.getNumResults() < panelIds.size()) {
-                    throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
-                }
+            // Validate and get panels
+            List<String> panelIds = updateParams.getPanels().stream().map(PanelReferenceParam::getId).collect(Collectors.toList());
+            Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
+            OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
+                    panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
+            if (panelResult.getNumResults() < panelIds.size()) {
+                throw new CatalogException("Some panels were not found or user doesn't have permissions to see them.");
+            }
 
-                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelResult.getResults());
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelResult.getResults());
+        }
+
+        if (updateParams.getPanelLock() != null && updateParams.getPanelLock() && !clinicalAnalysis.isPanelLock()) {
+            // if user wants to set panelLock to true
+            // We need to check if the CA has interpretations. If so, the interpretations should contain exactly the same panels in order
+            // to set panelLock to true. Otherwise, that action is not allowed.
+            Set<String> panelIds = clinicalAnalysis.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
+            CatalogException exception = new CatalogException("The panels of the ClinicalAnalysis are different from the ones of at "
+                    + "least one Interpretation. 'panelLock' can only be set to true if the Interpretations use exactly the same panels");
+            if (clinicalAnalysis.getInterpretation() != null) {
+                if (clinicalAnalysis.getInterpretation().getPanels().size() != panelIds.size()) {
+                    throw exception;
+                }
+                for (Panel panel : clinicalAnalysis.getInterpretation().getPanels()) {
+                    if (!panelIds.contains(panel.getId())) {
+                        throw exception;
+                    }
+                }
+            }
+            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+                for (Interpretation interpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                    if (interpretation.getPanels().size() != panelIds.size()) {
+                        throw exception;
+                    }
+                    for (Panel panel : interpretation.getPanels()) {
+                        if (!panelIds.contains(panel.getId())) {
+                            throw exception;
+                        }
+                    }
+                }
             }
         }
 

@@ -2438,7 +2438,36 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
-    public void updatePanelsFromClinicalAnalysisWithInterpretationsTest() throws CatalogException {
+    public void updatePanelsAndPanelLockFromClinicalAnalysisWithInterpretationTest() throws CatalogException {
+        List<Panel> panels = createPanels(2);
+        Individual proband = catalogManager.getIndividualManager().create(STUDY,
+                new Individual()
+                        .setId("proband")
+                        .setSamples(Collections.singletonList(new Sample().setId("sample"))),
+                QueryOptions.empty(), sessionIdUser).first();
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(proband);
+
+        OpenCGAResult<ClinicalAnalysis> result =
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, true, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals(0, result.first().getPanels().size());
+        assertFalse(result.first().isPanelLock());
+
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not allowed");
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+                        .setPanels(panels.stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList()))
+                        .setPanelLock(true),
+                QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void updatePanelsFromClinicalAnalysisWithPanelLockTest() throws CatalogException {
         List<Panel> panels = createPanels(3);
         Individual proband = catalogManager.getIndividualManager().create(STUDY,
                 new Individual()
@@ -2463,11 +2492,74 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .first();
         assertEquals(2, interpretation.getPanels().size());
 
+        // Set panelLock to true
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+                .setPanelLock(true), QueryOptions.empty(), sessionIdUser);
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertTrue(clinicalAnalysis.isPanelLock());
+
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("contains Interpretations");
+        thrown.expectMessage("panelLock");
         catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
                         .setPanels(Collections.singletonList(new PanelReferenceParam(panels.get(2).getId()))),
                 QueryOptions.empty(), sessionIdUser);
+    }
+
+    @Test
+    public void updatePanelLockWithDifferentPanels() throws CatalogException {
+        List<Panel> panels = createPanels(3);
+        Individual proband = catalogManager.getIndividualManager().create(STUDY,
+                new Individual()
+                        .setId("proband")
+                        .setSamples(Collections.singletonList(new Sample().setId("sample"))),
+                QueryOptions.empty(), sessionIdUser).first();
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(proband)
+                .setPanels(panels.subList(0, 2));
+
+        OpenCGAResult<ClinicalAnalysis> result =
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals(2, result.first().getPanels().size());
+        assertFalse(result.first().isPanelLock());
+
+        Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, clinicalAnalysis.getId(),
+                        new Interpretation().setId("interpretation"), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser)
+                .first();
+        assertEquals(2, interpretation.getPanels().size());
+
+        // Set panelLock to true
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+                .setPanelLock(true), QueryOptions.empty(), sessionIdUser);
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertTrue(clinicalAnalysis.isPanelLock());
+
+        // Set panelLock to false
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+                .setPanelLock(false), QueryOptions.empty(), sessionIdUser);
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertFalse(clinicalAnalysis.isPanelLock());
+
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.SET);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+        catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(), interpretation.getId(),
+                new InterpretationUpdateParams().setPanels(Collections.singletonList(new PanelReferenceParam(panels.get(2).getId()))),
+                null, options, sessionIdUser);
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, interpretation.getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, interpretation.getPanels().size());
+        assertEquals(panels.get(2).getId(), interpretation.getPanels().get(0).getId());
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("panels");
+        // Set panelLock to true
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+                .setPanelLock(true), QueryOptions.empty(), sessionIdUser);
+        clinicalAnalysis = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertTrue(clinicalAnalysis.isPanelLock());
     }
 
     @Test
