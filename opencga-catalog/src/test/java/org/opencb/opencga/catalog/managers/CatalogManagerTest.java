@@ -903,25 +903,6 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void submitJobWithDependencies() throws CatalogException {
-        Execution job1 = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token).first();
-        Execution job2 = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token).first();
-
-        Execution job3 = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), null, null,
-                Arrays.asList(job1.getId(), job2.getId()), null, token).first();
-        Execution job4 = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), null, null,
-                Arrays.asList(job1.getUuid(), job2.getUuid()), null, token).first();
-
-        assertEquals(2, job3.getDependsOn().size());
-        assertEquals(job1.getUuid(), job3.getDependsOn().get(0).getUuid());
-        assertEquals(job2.getUuid(), job3.getDependsOn().get(1).getUuid());
-
-        assertEquals(2, job4.getDependsOn().size());
-        assertEquals(job1.getId(), job4.getDependsOn().get(0).getId());
-        assertEquals(job2.getId(), job4.getDependsOn().get(1).getId());
-    }
-
-    @Test
     public void submitJobFromAdminsGroup() throws CatalogException {
         // Add user to admins group
         catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,

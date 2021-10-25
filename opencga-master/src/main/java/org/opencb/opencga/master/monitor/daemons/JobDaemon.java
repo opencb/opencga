@@ -138,7 +138,7 @@ import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
  */
 public class JobDaemon extends MonitorParentDaemon {
 
-    public static final String OUTDIR_PARAM = "outdir";
+    public static final String OUTDIR_PARAM = ParamConstants.JOB_OUTDIR_PARAM;
     public static final int EXECUTION_RESULT_FILE_EXPIRATION_MINUTES = 10;
     public static final String REDACTED_TOKEN = "xxxxxxxxxxxxxxxxxxxxx";
     private final String internalCli;

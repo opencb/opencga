@@ -583,6 +583,9 @@ public class ParamConstants {
     public static final String JOB_EXECUTION_END_PARAM = "execution.end";
     public static final String JOB_EXECUTION_END_DESCRIPTION = "Execution end date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
 
+    // Parameter used by the daemon to provide the directory where the just must be executed
+    public static final String JOB_OUTDIR_PARAM = "outdir";
+
     public static final String VARIANTS_QUERY_DESCRIPTION = "Filter and fetch variants from indexed VCF files in the variant storage";
     public static final String OUTPUT_DIRECTORY_DESCRIPTION = "Output directory";
 

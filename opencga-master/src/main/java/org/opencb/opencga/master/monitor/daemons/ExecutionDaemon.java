@@ -488,7 +488,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private boolean canBeQueued(Execution execution) {
-        if (execution.getDependsOn() != null && !execution.getDependsOn().isEmpty()) {
+        if (CollectionUtils.isNotEmpty(execution.getDependsOn())) {
             for (Execution tmpExecution : execution.getDependsOn()) {
                 if (!Enums.ExecutionStatus.DONE.equals(tmpExecution.getInternal().getStatus().getName())) {
                     if (Enums.ExecutionStatus.ABORTED.equals(tmpExecution.getInternal().getStatus().getName())

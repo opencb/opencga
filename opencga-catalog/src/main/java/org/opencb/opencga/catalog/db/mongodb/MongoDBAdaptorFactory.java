@@ -261,7 +261,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
-    public ExecutionMongoDBAdaptor getExecutionDBAdaptor() {
+    public ExecutionMongoDBAdaptor getCatalogExecutionDBAdaptor() {
         return executionDBAdaptor;
     }
 

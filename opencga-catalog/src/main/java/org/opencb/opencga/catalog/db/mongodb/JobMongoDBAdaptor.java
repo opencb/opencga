@@ -146,7 +146,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 }
 
                 // Add job list to execution
-                dbAdaptorFactory.getExecutionDBAdaptor().updateJobList(clientSession, studyId, executionId, jobs);
+                dbAdaptorFactory.getCatalogExecutionDBAdaptor().updateJobList(clientSession, studyId, executionId, jobs);
 
                 return endWrite(tmpStartTime, jobs.size(), jobs.size(), 0, 0, null);
             });

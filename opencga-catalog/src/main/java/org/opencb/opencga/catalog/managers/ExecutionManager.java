@@ -21,6 +21,7 @@ import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exceptions.ToolException;
@@ -219,13 +220,13 @@ public class ExecutionManager extends ResourceManager<Execution> {
                 Pipeline pipeline = pipelineOpenCGAResult.first();
                 execution.setPipeline(pipeline);
                 execution.setIsPipeline(true);
-                autoCompleteNewExecution(study, execution, null, token);
+                autoCompleteNewExecution(study, execution, null, dependsOn, token);
             } else {
                 // Check that resourceId is an existing toolId
                 try {
                     new ToolFactory().getToolClass(resourceId);
-                    autoCompleteNewExecution(study, execution, resourceId, token);
-                    createJobExecution(study, execution, resourceId, dependsOn, token);
+                    autoCompleteNewExecution(study, execution, resourceId, dependsOn, token);
+                    createJobExecution(study, execution, resourceId, token);
                 } catch (ToolException e) {
                     throw new CatalogException("'" + resourceId + "' seems not to be a valid pipeline or toolId");
                 }
@@ -241,6 +242,13 @@ public class ExecutionManager extends ResourceManager<Execution> {
             File execFolder = catalogManager.getFileManager().createFolder(study.getFqn(), executionFolder, true,
                     execution.getDescription(), execution.getId(), QueryOptions.empty(), token).first();
             execution.setOutDir(execFolder);
+
+            if (CollectionUtils.isNotEmpty(execution.getJobs())) {
+                // Set outdir for each job
+                for (Job job : execution.getJobs()) {
+                    job.getParams().put(ParamConstants.JOB_OUTDIR_PARAM, execution.getOutDir().getPath() + job.getTool().getId());
+                }
+            }
 
             executionDBAdaptor.insert(study.getUid(), execution, new QueryOptions());
             OpenCGAResult<Execution> executionResult = executionDBAdaptor.get(execution.getUid(), new QueryOptions());
@@ -268,15 +276,11 @@ public class ExecutionManager extends ResourceManager<Execution> {
         }
     }
 
-    private void createJobExecution(Study study, Execution execution, String toolId, List<String> dependsOn, String token)
-            throws CatalogException {
+    private void createJobExecution(Study study, Execution execution, String toolId, String token) throws CatalogException {
         // Create job and validate it
         Job job = new Job("", "", execution.getDescription(), execution.getId(), new ToolInfo().setId(toolId), execution.getUserId(), null,
                 execution.getParams(), null, null, execution.getPriority(), null, null, null, null,
-                CollectionUtils.isNotEmpty(dependsOn)
-                        ? dependsOn.stream().map(dpo -> new Job().setId(dpo)).collect(Collectors.toList())
-                        : null,
-                execution.getTags(), null, false, null, null, 0, null, null);
+                Collections.emptyList(), execution.getTags(), null, false, null, null, 0, null, null);
         catalogManager.getJobManager().autoCompleteNewJob(study, job, token);
 
         // Change execution status to PROCESSED
@@ -286,7 +290,8 @@ public class ExecutionManager extends ResourceManager<Execution> {
         execution.setJobs(Collections.singletonList(job));
     }
 
-    private void autoCompleteNewExecution(Study study, Execution execution, String toolId, String token) throws CatalogException {
+    private void autoCompleteNewExecution(Study study, Execution execution, String toolId, List<String> dependsOn, String token)
+            throws CatalogException {
         ParamUtils.checkObj(execution, "Execution");
 
         // Auto generate id
@@ -328,32 +333,23 @@ public class ExecutionManager extends ResourceManager<Execution> {
         execution.setDependsOn(ParamUtils.defaultObject(execution.getDependsOn(), Collections::emptyList));
         execution.setAttributes(ParamUtils.defaultObject(execution.getAttributes(), HashMap::new));
 
-//        if (execution.getDependsOn() != null && !execution.getDependsOn().isEmpty()) {
-//            boolean uuidProvided = execution.getDependsOn().stream().map(Execution::getId).anyMatch(UuidUtils::isOpenCgaUuid);
-//
-//            try {
-//                // If uuid is provided, we will remove the study uid from the query so it can be searched across any study
-//                InternalGetDataResult<Job> dependsOnResult;
-//                if (uuidProvided) {
-//                    dependsOnResult = internalGet(0, execution.getDependsOn().stream().map(Execution::getId).collect(Collectors.toList()),
-//                            null, INCLUDE_JOB_IDS, execution.getUserId(), false);
-//                } else {
-//                    dependsOnResult = internalGet(study.getUid(), execution.getDependsOn().stream().map(Job::getId)
-//                    .collect(Collectors.toList()),
-//                            null, INCLUDE_JOB_IDS, execution.getUserId(), false);
-//                }
-//                execution.setDependsOn(dependsOnResult.getResults());
-//            } catch (CatalogException e) {
-//                throw new CatalogException("Unable to find the jobs this job depends on. " + e.getMessage(), e);
-//            }
-//
-//            execution.setInput(Collections.emptyList());
-//        } else {
-//            // We only check input files if the job does not depend on other job that might be creating the necessary file.
-//
-//            List<File> inputFiles = getJobInputFilesFromParams(study.getFqn(), execution, token);
-//            execution.setInput(inputFiles);
-//        }
+        if (CollectionUtils.isNotEmpty(dependsOn)) {
+            boolean uuidProvided = dependsOn.stream().anyMatch(UuidUtils::isOpenCgaUuid);
+
+            try {
+                // If uuid is provided, we will remove the study uid from the query so it can be searched across any study
+                InternalGetDataResult<Execution> dependsOnResult;
+                if (uuidProvided) {
+                    dependsOnResult = internalGet(0, dependsOn, null, INCLUDE_EXECUTION_IDS, execution.getUserId(), false);
+                } else {
+                    dependsOnResult = internalGet(study.getUid(), dependsOn, null, INCLUDE_EXECUTION_IDS, execution.getUserId(), false);
+                }
+                execution.setDependsOn(dependsOnResult.getResults());
+            } catch (CatalogException e) {
+                throw new CatalogException("Unable to find the executions this execution depends on. " + e.getMessage(), e);
+            }
+
+        }
     }
 
     public OpenCGAResult count(Query query, String token) throws CatalogException {

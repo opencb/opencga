@@ -88,7 +88,7 @@ public abstract class AbstractManager {
         this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
         this.individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
         this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
-        this.executionDBAdaptor = catalogDBAdaptorFactory.getExecutionDBAdaptor();
+        this.executionDBAdaptor = catalogDBAdaptorFactory.getCatalogExecutionDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
         this.familyDBAdaptor = catalogDBAdaptorFactory.getCatalogFamilyDBAdaptor();

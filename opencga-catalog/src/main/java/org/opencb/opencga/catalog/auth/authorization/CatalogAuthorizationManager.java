@@ -64,7 +64,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final ProjectDBAdaptor projectDBAdaptor;
     private final StudyDBAdaptor studyDBAdaptor;
     private final FileDBAdaptor fileDBAdaptor;
-    private final JobDBAdaptor jobDBAdaptor;
+    private final ExecutionDBAdaptor executionDBAdaptor;
     private final SampleDBAdaptor sampleDBAdaptor;
     private final IndividualDBAdaptor individualDBAdaptor;
     private final CohortDBAdaptor cohortDBAdaptor;
@@ -87,7 +87,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         projectDBAdaptor = dbFactory.getCatalogProjectDbAdaptor();
         studyDBAdaptor = dbFactory.getCatalogStudyDBAdaptor();
         fileDBAdaptor = dbFactory.getCatalogFileDBAdaptor();
-        jobDBAdaptor = dbFactory.getCatalogJobDBAdaptor();
+        executionDBAdaptor = dbFactory.getCatalogExecutionDBAdaptor();
         sampleDBAdaptor = dbFactory.getCatalogSampleDBAdaptor();
         individualDBAdaptor = dbFactory.getCatalogIndividualDBAdaptor();
         cohortDBAdaptor = dbFactory.getCatalogCohortDBAdaptor();
@@ -393,7 +393,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(userId, query, jobDBAdaptor)) {
+        if (checkUserPermission(userId, query, executionDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Job", jobId, null);

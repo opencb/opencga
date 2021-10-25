@@ -244,43 +244,51 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     @Test
     public void testDependsOnJobs() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
-        String job1 = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, token).first().getId();
-        String job2 = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, null, null,
-                Collections.singletonList(job1), null, token).first().getId();
+        String execution1 = catalogManager.getExecutionManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, token)
+                .first().getId();
+        String execution2 = catalogManager.getExecutionManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, null, null,
+                Collections.singletonList(execution1), null, token).first().getId();
 
+        executionDaemon.checkPendingExecutions();
         jobDaemon.checkPendingJobs();
 
-        OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, job1, QueryOptions.empty(), token);
-        assertEquals(1, jobOpenCGAResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.QUEUED, jobOpenCGAResult.first().getInternal().getStatus().getName());
+        OpenCGAResult<Execution> executionResult = catalogManager.getExecutionManager().get(studyFqn, execution1, QueryOptions.empty(), token);
+        assertEquals(1, executionResult.getNumResults());
+        assertEquals(Enums.ExecutionStatus.PROCESSED, executionResult.first().getInternal().getStatus().getName());
 
-        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, job2, QueryOptions.empty(), token);
-        assertEquals(1, jobOpenCGAResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PENDING, jobOpenCGAResult.first().getInternal().getStatus().getName());
+        OpenCGAResult<Job> jobResult = catalogManager.getJobManager().get(studyFqn, executionResult.first().getJobs().get(0).getId(), QueryOptions.empty(), token);
+        assertEquals(1, jobResult.getNumResults());
+        assertEquals(Enums.ExecutionStatus.QUEUED, jobResult.first().getInternal().getStatus().getName());
+
+        executionResult = catalogManager.getExecutionManager().get(studyFqn, execution2, QueryOptions.empty(), token);
+        assertEquals(1, executionResult.getNumResults());
+        assertEquals(Enums.ExecutionStatus.PENDING, executionResult.first().getInternal().getStatus().getName());
 
         // Set the status of job1 to ERROR
-        catalogManager.getJobManager().update(studyFqn, job1, new PrivateJobUpdateParams()
+        catalogManager.getJobManager().update(studyFqn, execution1, new PrivateJobUpdateParams()
                 .setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR))), QueryOptions.empty(), token);
+
+        executionDaemon.checkPendingExecutions();
 
         // The job that depended on job1 should be ABORTED because job1 execution "failed"
         jobDaemon.checkPendingJobs();
-        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, job2, QueryOptions.empty(), token);
-        assertEquals(1, jobOpenCGAResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.ABORTED, jobOpenCGAResult.first().getInternal().getStatus().getName());
-        assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getDescription().contains("depended on did not finish successfully"));
+        executionResult = catalogManager.getExecutionManager().get(studyFqn, execution2, QueryOptions.empty(), token);
+        assertEquals(1, executionResult.getNumResults());
+        assertEquals(Enums.ExecutionStatus.ABORTED, executionResult.first().getInternal().getStatus().getName());
+        assertTrue(executionResult.first().getInternal().getStatus().getDescription().contains("depended on did not finish successfully"));
 
         // Set status of job1 to DONE to simulate it finished successfully
-        catalogManager.getJobManager().update(studyFqn, job1, new PrivateJobUpdateParams()
+        catalogManager.getJobManager().update(studyFqn, execution1, new PrivateJobUpdateParams()
                 .setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE))), QueryOptions.empty(), token);
 
         // And create a new job to simulate a normal successfully dependency
         String job3 = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, null, null,
-                Collections.singletonList(job1), null, token).first().getId();
+                Collections.singletonList(execution1), null, token).first().getId();
         jobDaemon.checkPendingJobs();
 
-        jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, job3, QueryOptions.empty(), token);
-        assertEquals(1, jobOpenCGAResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.QUEUED, jobOpenCGAResult.first().getInternal().getStatus().getName());
+        executionResult = catalogManager.getExecutionManager().get(studyFqn, job3, QueryOptions.empty(), token);
+        assertEquals(1, executionResult.getNumResults());
+        assertEquals(Enums.ExecutionStatus.QUEUED, executionResult.first().getInternal().getStatus().getName());
     }
 
     @Test
