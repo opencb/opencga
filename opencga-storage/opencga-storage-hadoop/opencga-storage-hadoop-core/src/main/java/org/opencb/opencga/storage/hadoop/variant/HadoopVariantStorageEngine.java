@@ -576,9 +576,21 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         final int studyId = metadataManager.getStudyId(study);
         samples = new ArrayList<>(samples);
         Set<Integer> sampleIds = new HashSet<>(samples.size());
+        List<String> samplesAlreadyDeletedOrMissing = new ArrayList<>();
         for (String sample : samples) {
-            sampleIds.add(metadataManager.getSampleId(studyId, sample));
+            Integer sampleId = metadataManager.getSampleId(studyId, sample);
+            sampleIds.add(sampleId);
+            if (sampleId == null) {
+                samplesAlreadyDeletedOrMissing.add(sample);
+            } else if (!metadataManager.getSampleMetadata(studyId, sampleId).isIndexed()) {
+                samplesAlreadyDeletedOrMissing.add(sample);
+            }
         }
+        if (!samplesAlreadyDeletedOrMissing.isEmpty()) {
+            throw new StorageEngineException("Unable to delete samples from variant storage. Already deleted or never loaded."
+                    + " Samples = " + samplesAlreadyDeletedOrMissing);
+        }
+
         // Check if any file is being completely deleted
         Set<Integer> partiallyDeletedFiles = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds);
         List<String> fullyDeletedFiles = new ArrayList<>();
