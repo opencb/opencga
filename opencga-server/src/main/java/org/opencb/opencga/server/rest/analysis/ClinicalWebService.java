@@ -196,6 +196,8 @@ public class ClinicalWebService extends AnalysisWebService {
             @QueryParam("flagsAction") ParamUtils.BasicUpdateAction flagsAction,
             @ApiParam(value = "Action to be performed if the array of files is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("filesAction") ParamUtils.BasicUpdateAction filesAction,
+            @ApiParam(value = "Action to be performed if the array of panels is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @QueryParam("panelsAction") ParamUtils.BasicUpdateAction panelsAction,
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true) ClinicalAnalysisUpdateParams params) {
         try {
             if (commentsAction == null) {
@@ -207,11 +209,15 @@ public class ClinicalWebService extends AnalysisWebService {
             if (filesAction == null) {
                 filesAction = ParamUtils.BasicUpdateAction.ADD;
             }
+            if (panelsAction == null) {
+                panelsAction = ParamUtils.BasicUpdateAction.ADD;
+            }
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), commentsAction);
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), flagsAction);
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), filesAction);
+            actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             return createOkResponse(clinicalManager.update(studyStr, getIdList(clinicalAnalysisStr), params, true, queryOptions, token));
