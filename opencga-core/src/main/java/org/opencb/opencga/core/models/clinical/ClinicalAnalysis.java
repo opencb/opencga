@@ -80,6 +80,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private ClinicalConsentAnnotation consent;
 
     private ClinicalAnalyst analyst;
+    private ClinicalReport report;
     private ClinicalPriorityAnnotation priority;
     private List<FlagAnnotation> flags;
 
@@ -138,9 +139,10 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
                             Family family, List<Panel> panels, boolean panelLock, boolean locked, Interpretation interpretation,
                             List<Interpretation> secondaryInterpretations, ClinicalConsentAnnotation consent, ClinicalAnalyst analyst,
-                            ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, String creationDate, String modificationDate,
-                            String dueDate, int release, List<ClinicalComment> comments, ClinicalAnalysisQualityControl qualityControl,
-                            List<ClinicalAudit> audit, ClinicalAnalysisInternal internal, Map<String, Object> attributes, Status status) {
+                            ClinicalReport report, ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, String creationDate,
+                            String modificationDate, String dueDate, int release, List<ClinicalComment> comments,
+                            ClinicalAnalysisQualityControl qualityControl, List<ClinicalAudit> audit, ClinicalAnalysisInternal internal,
+                            Map<String, Object> attributes, Status status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -155,6 +157,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.secondaryInterpretations = secondaryInterpretations;
         this.consent = consent;
         this.analyst = analyst;
+        this.report = report;
         this.priority = priority;
         this.flags = flags;
         this.creationDate = creationDate;
@@ -187,13 +190,14 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", consent=").append(consent);
         sb.append(", analyst=").append(analyst);
+        sb.append(", report=").append(report);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
-        sb.append(", qualityControl='").append(qualityControl).append('\'');
         sb.append(", release=").append(release);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", comments=").append(comments);
         sb.append(", audit=").append(audit);
         sb.append(", internal=").append(internal);
@@ -338,6 +342,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setAnalyst(ClinicalAnalyst analyst) {
         this.analyst = analyst;
+        return this;
+    }
+
+    public ClinicalReport getReport() {
+        return report;
+    }
+
+    public ClinicalAnalysis setReport(ClinicalReport report) {
+        this.report = report;
         return this;
     }
 
