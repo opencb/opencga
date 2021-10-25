@@ -2345,6 +2345,69 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void updatePanelsActionTest() throws CatalogException {
+        List<Panel> panels = createPanels(5);
+        Individual proband = catalogManager.getIndividualManager().create(STUDY,
+                new Individual()
+                        .setId("proband")
+                        .setSamples(Collections.singletonList(new Sample().setId("sample"))),
+                QueryOptions.empty(), sessionIdUser).first();
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setPanels(panels.subList(0, 2))
+                .setProband(proband);
+
+        OpenCGAResult<ClinicalAnalysis> result =
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals(2, result.first().getPanels().size());
+
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.ADD);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+                        .setPanels(Collections.singletonList(new PanelReferenceParam(panels.get(2).getId()))),
+                options, sessionIdUser);
+        result = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals(3, result.first().getPanels().size());
+        assertTrue(panels.subList(0, 3).stream().map(Panel::getId).collect(Collectors.toList()).containsAll(
+                result.first().getPanels().stream().map(Panel::getId).collect(Collectors.toList())));
+
+        actionMap = new HashMap<>();
+        actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+                        .setPanels(Arrays.asList(
+                                new PanelReferenceParam(panels.get(0).getId()),
+                                new PanelReferenceParam(panels.get(2).getId()))
+                        ),
+                options, sessionIdUser);
+        result = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals(1, result.first().getPanels().size());
+        assertEquals(panels.get(1).getId(), result.first().getPanels().get(0).getId());
+
+        actionMap = new HashMap<>();
+        actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.SET);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+                        .setPanels(Arrays.asList(
+                                new PanelReferenceParam(panels.get(3).getId()),
+                                new PanelReferenceParam(panels.get(4).getId()))
+                        ),
+                options, sessionIdUser);
+        result = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals(2, result.first().getPanels().size());
+        assertTrue(panels.subList(3, 5).stream().map(Panel::getId).collect(Collectors.toList()).containsAll(
+                result.first().getPanels().stream().map(Panel::getId).collect(Collectors.toList())));
+
+    }
+
+    @Test
     public void updatePanelsAndPanelLockFromClinicalAnalysisTest() throws CatalogException {
         List<Panel> panels = createPanels(2);
         Individual proband = catalogManager.getIndividualManager().create(STUDY,

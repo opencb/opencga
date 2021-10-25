@@ -341,8 +341,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     break;
                 case REMOVE:
                     fixPanelsForRemoval(parameters);
-                    filterObjectParams(parameters, document.getPullAll(), panelParams);
-                    clinicalConverter.validatePanelsToUpdate(document.getPullAll());
+                    filterObjectParams(parameters, document.getPull(), panelParams);
                     break;
                 case ADD:
                     filterObjectParams(parameters, document.getAddToSet(), panelParams);
@@ -432,10 +431,10 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             return;
         }
 
-        List<Panel> panelParamList = new LinkedList<>();
+        List<Document> panelParamList = new LinkedList<>();
         for (Object panel : parameters.getAsList(PANELS.key())) {
             if (panel instanceof Panel) {
-                panelParamList.add(new Panel().setId(((Panel) panel).getId()));
+                panelParamList.add(new Document("id", ((Panel) panel).getId()));
             }
         }
         parameters.put(PANELS.key(), panelParamList);
