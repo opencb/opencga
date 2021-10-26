@@ -44,7 +44,6 @@ class OpencgaCliShellExecutor extends CommandExecutor {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-
                     printlnGreen("Current study is " + arg);
                 } else {
                     printlnYellow("Invalid study");
@@ -172,7 +171,7 @@ class OpencgaCliShellExecutor extends CommandExecutor {
         printGreen("\tDescription: ");
         printlnYellow("\t\tBig Data platform for processing and analysing NGS data");
         System.out.println("");
-        System.out.println("");
+        System.out.println("\nTo close the application type \"exit\"");
         System.out.println("");
         System.out.println("");
         System.out.println("");

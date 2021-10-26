@@ -230,20 +230,20 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
     private String getShortCuts(Parameter parameter, CategoryConfig config) {
         if (parameter.isInnerParam()) {
             return "\"--" + getKebabCase(parameter.getParentParamName()) + "-" + getKebabCase(parameter.getName()) + "\""
-                    + getStringShortcuts(parameter, config);
+                    + getStringShortcuts(getKebabCase(parameter.getParentParamName()) + "-" + getKebabCase(parameter.getName()), config);
         } else {
-            return "\"--" + getKebabCase(parameter.getName()) + "\"" + getStringShortcuts(parameter, config);
+            return "\"--" + getKebabCase(parameter.getName()) + "\"" + getStringShortcuts(parameter.getName(), config);
         }
     }
 
-    public String getStringShortcuts(Parameter parameter, CategoryConfig categoryConfig) {
+    public String getStringShortcuts(String parameter, CategoryConfig categoryConfig) {
         String res = "";
         Set<String> scut = new HashSet<>();
 
         //Generic shortcuts
         if (config.getApiConfig().getShortcuts() != null) {
             for (Shortcut sc : config.getApiConfig().getShortcuts()) {
-                if (parameter.getName().equals(sc.getName()) && !scut.contains(sc.getShortcut())) {
+                if (parameter.equals(sc.getName()) && !scut.contains(sc.getShortcut())) {
                     scut.add(sc.getShortcut());
                     String dash = "-";
                     if (sc.getShortcut().length() > 1) {
@@ -257,7 +257,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         //category shortcuts
         if (categoryConfig.getShortcuts() != null) {
             for (Shortcut sc : categoryConfig.getShortcuts()) {
-                if (parameter.getName().equals(sc.getName()) && !scut.contains(sc.getShortcut())) {
+                if (parameter.equals(sc.getName()) && !scut.contains(sc.getShortcut())) {
                     scut.add(sc.getShortcut());
                     String dash = "-";
                     if (sc.getShortcut().length() > 1) {

@@ -45,9 +45,7 @@
  import javax.ws.rs.core.HttpHeaders;
  import javax.ws.rs.core.Response;
  import java.io.*;
- import java.net.HttpURLConnection;
- import java.net.URI;
- import java.net.URLConnection;
+ import java.net.*;
  import java.nio.channels.Channels;
  import java.nio.channels.ReadableByteChannel;
  import java.nio.file.Files;
@@ -251,7 +249,7 @@
                  path = path.path(id2);
              }
              path = path.path(action);
-
+             //logger.info("PATH ::: " + path);
              // Call REST
              RestResponse<T> batchRestResponse = callRest(path, params, clazz, method, action);
              batchNumResults = batchRestResponse.allResultsSize();
@@ -293,7 +291,13 @@
          RestResponse<T> batchRestResponse;
          switch (action) {
              case "upload":
-                 batchRestResponse = uploadFile(path, params, clazz);
+                 String filePath = ((String) params.get("file"));
+                 File binaryFile = new File(filePath);
+                 if (binaryFile.length() > 1024 * 1024 * 100) {
+                     batchRestResponse = uploadFile(path, params, clazz);
+                 } else {
+                     batchRestResponse = callUploadRest(path, params, clazz);
+                 }
                  break;
              case "download":
                  String destinyPath = params.getString("OPENCGA_DESTINY");
@@ -462,22 +466,29 @@
          String message = "";
          int responseCode = -1;
          try {
-             URLConnection connection = path.getUri().toURL().openConnection();
+             URL url = new URL(path.getUri().toURL().toString().replace("/rest/", "/UploadFileServlet/"));
+             logger.info("url ::: " + url.toString());
+             URLConnection connection = url.openConnection();
              connection.setDoOutput(true);
              connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
              OutputStream output = connection.getOutputStream();
+             StringBuilder buffer = new StringBuilder();
              PrintWriter writer = new PrintWriter(new OutputStreamWriter(output, charset), true);
 
              // Send binary file.
-             writer.append("--" + boundary).append(br);
-             writer.append("Content-Disposition: form-data; name=\"binaryFile\"; filename=\"" + binaryFile.getName() + "\"").append(br);
-             writer.append("Content-Type: " + URLConnection.guessContentTypeFromName(binaryFile.getName())).append(br);
-             writer.append("Content-Transfer-Encoding: binary").append(br);
-             writer.append(br).flush();
+             buffer.append("--" + boundary).append(br);
+             buffer.append("Content-Disposition: form-data; name=\"binaryFile\"; filename=\"" + binaryFile.getName() + "\"").append(br);
+             buffer.append("Content-Type: " + URLConnection.guessContentTypeFromName(binaryFile.getName())).append(br);
+             buffer.append("Content-Transfer-Encoding: binary").append(br);
+             buffer.append("Authorization: Bearer " + this.token).append(br);
+             buffer.append(getParams(params)).append(br);
+
+             buffer.append(br);
+             writer.append(buffer.toString()).flush();
+
              Files.copy(binaryFile.toPath(), output);
              output.flush(); // Important before continuing with writer!
              writer.append(br).flush(); // CRLF is important! It indicates end of boundary.
-
              // End of multipart/form-data.
              writer.append("--" + boundary + "--").append(br).flush();
              // Request is lazily fired whenever you need to obtain information about response.
@@ -486,6 +497,7 @@
              message = "File upload result: " + message;
          } catch (Exception e) {
              message = "OpenCga Connecting error";
+             e.printStackTrace();
          }
 
          RestResponse<T> restResponse = new RestResponse<>();
@@ -499,8 +511,29 @@
          }
          restResponse.setEvents(new ArrayList<>());
          restResponse.getEvents().add(event);
-
+         logger.info("RESPONSE CODE ::: " + responseCode);
          return restResponse;
+     }
+
+     private String getParams(Map<String, Object> params) throws UnsupportedEncodingException {
+         StringBuilder result = new StringBuilder();
+         boolean first = true;
+
+         for (String key : params.keySet()) {
+             if (!key.equals("file")) {
+                 if (first) {
+                     first = false;
+                 } else {
+                     result.append("&");
+                 }
+
+                 result.append(URLEncoder.encode(key, "UTF-8"));
+                 result.append("=");
+                 result.append(URLEncoder.encode(params.get(key).toString(), "UTF-8"));
+             }
+         }
+
+         return result.toString();
      }
 
      private <T> RestResponse<T> parseResult(Response response, Class<T> clazz) throws ClientException {

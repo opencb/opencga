@@ -33,10 +33,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.RestResponse;
 
-import java.beans.IntrospectionException;
-import java.beans.PropertyDescriptor;
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
@@ -274,17 +271,24 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     }
 
     public void invokeSetter(Object obj, String propertyName, Object variableValue) {
-        PropertyDescriptor pd;
-        try {
-            pd = new PropertyDescriptor(propertyName, obj.getClass());
-            Method setter = pd.getWriteMethod();
+        if (variableValue != null) {
             try {
+
+                Method setter = obj.getClass().getMethod(getAsSetterName(propertyName), variableValue.getClass());
                 setter.invoke(obj, variableValue);
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
-        } catch (IntrospectionException e) {
-            e.printStackTrace();
         }
+    }
+
+    private String getAsSetterName(String propertyName) {
+        return "set" + upperCaseFirst(propertyName);
+    }
+
+    public String upperCaseFirst(String val) {
+        char[] arr = val.toCharArray();
+        arr[0] = Character.toUpperCase(arr[0]);
+        return new String(arr);
     }
 }

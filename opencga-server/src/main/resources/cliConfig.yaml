@@ -48,10 +48,6 @@ apiConfig:
     - name: projects
       ignore: False
       key: Project
-      executorExtended: True
-      commands:
-        - name: create
-          executorExtended: True
     - name: studies
       executorExtended: True
       optionExtended: True
