@@ -36,8 +36,8 @@ public class OpencgaCliProcessor {
 
         console = getConsole();
         boolean invalidInput = false;
-        if (console == null) {
-            System.out.println("Couldn't get Console instance");
+        if (console == null && OpencgaMain.getSession().isShell()) {
+            System.out.println("Couldn't get console instance");
             System.exit(0);
         }
 

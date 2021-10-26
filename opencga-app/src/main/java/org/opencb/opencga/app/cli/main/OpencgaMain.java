@@ -25,10 +25,13 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 public class OpencgaMain {
 
     public static final String VERSION = GitRepositoryState.get().getBuildVersion();
+    private static Session session;
 
     public static void main(String[] args) {
+        session = new Session();
         if (args.length == 1 && "--shell".equals(args[0])) {
             OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
+            session.setShell(true);
             try {
                 shell.execute();
             } catch (Exception e) {
@@ -37,5 +40,14 @@ public class OpencgaMain {
         } else {
             OpencgaCliProcessor.process(args);
         }
+    }
+
+    public static Session getSession() {
+        return session;
+    }
+
+    public OpencgaMain setSession(Session session) {
+        this.session = session;
+        return this;
     }
 }
