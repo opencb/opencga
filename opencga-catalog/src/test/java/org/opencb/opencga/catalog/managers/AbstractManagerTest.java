@@ -53,6 +53,7 @@ public class AbstractManagerTest extends GenericTest {
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
 
     protected CatalogManager catalogManager;
+    protected String adminToken;
     protected String token;
     protected String sessionIdUser2;
     protected String sessionIdUser3;
@@ -84,6 +85,7 @@ public class AbstractManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
+        adminToken = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
 
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
         catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
@@ -225,7 +227,7 @@ public class AbstractManagerTest extends GenericTest {
         s_9 = catalogManager.getSampleManager().create(studyFqn, sample, new QueryOptions(), token).first().getId();
 
         catalogManager.getFileManager().update(studyFqn, test01k.getPath(), new FileUpdateParams()
-                        .setSampleIds(Arrays.asList(s_1, s_2, s_3, s_4, s_5)), new QueryOptions(), token);
+                .setSampleIds(Arrays.asList(s_1, s_2, s_3, s_4, s_5)), new QueryOptions(), token);
     }
 
 

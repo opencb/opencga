@@ -44,7 +44,6 @@ import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.JobResult;
 import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.master.monitor.executors.BatchExecutor;
-import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -242,7 +241,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testDependsOnJobs() throws Exception {
+    public void testDependsOnExecutions() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
         String execution1 = catalogManager.getExecutionManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, token)
                 .first().getId();
@@ -265,30 +264,19 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals(Enums.ExecutionStatus.PENDING, executionResult.first().getInternal().getStatus().getName());
 
         // Set the status of job1 to ERROR
-        catalogManager.getJobManager().update(studyFqn, execution1, new PrivateJobUpdateParams()
-                .setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR))), QueryOptions.empty(), token);
+        catalogManager.getJobManager().privateUpdate(studyFqn, jobResult.first().getId(),
+                new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR)), adminToken);
 
-        executionDaemon.checkPendingExecutions();
+        executionDaemon.checkExecutions();
+        executionResult = catalogManager.getExecutionManager().get(studyFqn, execution1, QueryOptions.empty(), token);
+        assertEquals(1, executionResult.getNumResults());
+        assertEquals(Enums.ExecutionStatus.ERROR, executionResult.first().getInternal().getStatus().getName());
 
-        // The job that depended on job1 should be ABORTED because job1 execution "failed"
-        jobDaemon.checkPendingJobs();
+        executionDaemon.checkExecutions();
         executionResult = catalogManager.getExecutionManager().get(studyFqn, execution2, QueryOptions.empty(), token);
         assertEquals(1, executionResult.getNumResults());
         assertEquals(Enums.ExecutionStatus.ABORTED, executionResult.first().getInternal().getStatus().getName());
-        assertTrue(executionResult.first().getInternal().getStatus().getDescription().contains("depended on did not finish successfully"));
-
-        // Set status of job1 to DONE to simulate it finished successfully
-        catalogManager.getJobManager().update(studyFqn, execution1, new PrivateJobUpdateParams()
-                .setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE))), QueryOptions.empty(), token);
-
-        // And create a new job to simulate a normal successfully dependency
-        String job3 = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, null, null,
-                Collections.singletonList(execution1), null, token).first().getId();
-        jobDaemon.checkPendingJobs();
-
-        executionResult = catalogManager.getExecutionManager().get(studyFqn, job3, QueryOptions.empty(), token);
-        assertEquals(1, executionResult.getNumResults());
-        assertEquals(Enums.ExecutionStatus.QUEUED, executionResult.first().getInternal().getStatus().getName());
+        assertTrue(executionResult.first().getInternal().getStatus().getDescription().contains("depended on"));
     }
 
     @Test

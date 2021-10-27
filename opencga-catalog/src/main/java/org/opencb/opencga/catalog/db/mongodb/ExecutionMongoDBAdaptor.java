@@ -337,8 +337,7 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
     private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, QueryOptions options) throws CatalogDBException {
         UpdateDocument document = new UpdateDocument();
 
-        String[] acceptedParams = {QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(), QueryParams.USER_ID.key(),
-                QueryParams.TOOL_ID.key()};
+        String[] acceptedParams = {QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(), QueryParams.TOOL_ID.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         String[] acceptedBooleanParams = {QueryParams.IS_PIPELINE.key(), QueryParams.VISITED.key()};

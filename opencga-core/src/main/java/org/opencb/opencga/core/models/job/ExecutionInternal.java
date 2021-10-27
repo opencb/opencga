@@ -11,6 +11,7 @@ import java.util.List;
 
 public class ExecutionInternal extends Internal implements Cloneable {
 
+    private String toolId;
     private Enums.ExecutionStatus status;
     private JobInternalWebhook webhook;
     private List<Event> events;
@@ -19,19 +20,20 @@ public class ExecutionInternal extends Internal implements Cloneable {
     }
 
     public ExecutionInternal(Enums.ExecutionStatus status) {
-        this(null, null, status, null, null);
+        this(null, null, null, status, null, null);
     }
 
-    public ExecutionInternal(String registrationDate, String lastModified, Enums.ExecutionStatus status, JobInternalWebhook webhook,
-                             List<Event> events) {
+    public ExecutionInternal(String toolId, String registrationDate, String lastModified, Enums.ExecutionStatus status,
+                             JobInternalWebhook webhook, List<Event> events) {
         super(null, registrationDate, lastModified);
+        this.toolId = toolId;
         this.status = status;
         this.webhook = webhook;
         this.events = events;
     }
 
     public static ExecutionInternal init() {
-        return new ExecutionInternal(TimeUtils.getTime(), TimeUtils.getTime(), new Enums.ExecutionStatus(), null, new ArrayList<>());
+        return new ExecutionInternal(null, TimeUtils.getTime(), TimeUtils.getTime(), new Enums.ExecutionStatus(), null, new ArrayList<>());
     }
 
     @Override
@@ -39,6 +41,7 @@ public class ExecutionInternal extends Internal implements Cloneable {
         final StringBuilder sb = new StringBuilder("ExecutionInternal{");
         sb.append("registrationDate='").append(registrationDate).append('\'');
         sb.append(", lastModified='").append(lastModified).append('\'');
+        sb.append(", toolId='").append(toolId).append('\'');
         sb.append(", status=").append(status);
         sb.append(", webhook=").append(webhook);
         sb.append(", events=").append(events);
@@ -48,7 +51,16 @@ public class ExecutionInternal extends Internal implements Cloneable {
 
     @Override
     public ExecutionInternal clone() throws CloneNotSupportedException {
-        return new ExecutionInternal(registrationDate, lastModified, status, webhook.clone(), new LinkedList<>(events));
+        return new ExecutionInternal(toolId, registrationDate, lastModified, status, webhook.clone(), new LinkedList<>(events));
+    }
+
+    public String getToolId() {
+        return toolId;
+    }
+
+    public ExecutionInternal setToolId(String toolId) {
+        this.toolId = toolId;
+        return this;
     }
 
     public Enums.ExecutionStatus getStatus() {

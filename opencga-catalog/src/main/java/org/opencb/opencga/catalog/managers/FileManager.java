@@ -496,9 +496,9 @@ public class FileManager extends AnnotationSetManager<File> {
         return getParents(fileDataResult.first().getStudyUid(), fileDataResult.first().getPath(), true, options);
     }
 
-    OpenCGAResult<File> createUserExecutionsFolder(Study study, QueryOptions options, String userId) throws CatalogException {
-        // Check if the user has access to the study
-        authorizationManager.checkCanViewStudy(study, userId);
+    public OpenCGAResult<File> createUserExecutionsFolder(String studyId, QueryOptions options, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId);
 
         String userPath = "JOBS/" + userId + "/";
         Query query = new Query()

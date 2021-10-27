@@ -26,9 +26,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ExecutionManager;
+import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.*;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.OpenCgaTool;
 import org.opencb.opencga.core.tools.ToolFactory;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
@@ -63,6 +67,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private final QueryOptions queryOptions;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    private static final Enums.ExecutionStatus PENDING_STATUS = new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING,
+            "Execution has been partially processed and a few jobs launched.");
+    private static final Enums.ExecutionStatus PROCESSED_STATUS = new Enums.ExecutionStatus(Enums.ExecutionStatus.PROCESSED,
+            "Execution has been processed and all jobs created");
 
     public ExecutionDaemon(int interval, String token, CatalogManager catalogManager) throws CatalogDBException {
         super(interval, token, catalogManager);
@@ -304,73 +313,141 @@ public class ExecutionDaemon extends MonitorParentDaemon {
      * @return 1 if the execution has changed the status, 0 otherwise.
      */
     protected int checkPendingExecution(Execution execution) {
-        if (StringUtils.isEmpty(execution.getStudy().getId())) {
+        String studyId = execution.getStudy().getId();
+        if (StringUtils.isEmpty(studyId)) {
             return abortExecution(execution, "Missing mandatory 'studyUuid' field");
-        }
-
-        if (execution.getPipeline() == null) {
-            return abortExecution(execution, "Execution doesn't look like a pipeline.");
         }
 
         if (!canBeQueued(execution)) {
             return 0;
         }
 
-        // Check job status
-        Set<String> allJobs = new HashSet<>();
-        Set<String> finishedJobs = new HashSet<>();
-        for (Job job : execution.getJobs()) {
-            String pipelineJobId = job.getTool().getId();
-            switch (job.getInternal().getStatus().getName()) {
-                case Enums.ExecutionStatus.ERROR:
-                case Enums.ExecutionStatus.ABORTED:
-                    return failExecution(execution, "Job '" + pipelineJobId + "' failed with description: "
-                            + job.getInternal().getStatus().getDescription());
-                case Enums.ExecutionStatus.DONE:
-                    finishedJobs.add(pipelineJobId);
-                    allJobs.add(pipelineJobId);
-                    break;
-                default:
-                    allJobs.add(pipelineJobId);
-                    break;
+        ExecutionUpdateParams updateParams = new ExecutionUpdateParams();
+        String toolId = execution.getInternal().getToolId();
+
+        if (CollectionUtils.isEmpty(execution.getJobs())) {
+            if (StringUtils.isEmpty(toolId)) {
+                return abortExecution(execution, "Missing mandatory 'internal.toolId' field");
+            }
+
+            // Check if resourceId might be a pipeline
+            try {
+                OpenCGAResult<Pipeline> pipelineOpenCGAResult = catalogManager.getPipelineManager()
+                        .get(studyId, toolId, QueryOptions.empty(), token);
+                Pipeline pipeline = pipelineOpenCGAResult.first();
+                execution.setPipeline(pipeline);
+
+                updateParams.setPipeline(pipeline);
+            } catch (CatalogException e1) {
+                // Check if resourceId is an existing toolId
+                try {
+                    new ToolFactory().getToolClass(toolId);
+                } catch (ToolException e2) {
+                    return abortExecution(execution, "'" + toolId + "' seems not to be a valid pipeline or toolId");
+                }
+            }
+
+            String userToken;
+            try {
+                userToken = catalogManager.getUserManager().getNonExpiringToken(execution.getUserId(), token);
+            } catch (CatalogException e) {
+                logger.error(e.getMessage(), e);
+                return abortExecution(execution, "Internal error. Could not obtain token for user '" + execution.getUserId() + "'");
+            }
+
+            // Ensure user has its own executions folder
+            try {
+                File userFolder = catalogManager.getFileManager().createUserExecutionsFolder(studyId, FileManager.INCLUDE_FILE_URI_PATH,
+                        userToken).first();
+                // Create a folder specific for this execution
+                String executionFolder = userFolder.getPath() + TimeUtils.getDay() + "/" + execution.getId();
+                logger.debug("Will create folder '{}' for execution '{}'", executionFolder, execution.getId());
+                File execFolder = catalogManager.getFileManager().createFolder(studyId, executionFolder, true,
+                        execution.getDescription(), execution.getId(), QueryOptions.empty(), token).first();
+
+                execution.setOutDir(execFolder);
+                updateParams.setOutDir(execFolder);
+            } catch (CatalogException e) {
+                return abortExecution(execution, "Could not create directory for user");
             }
         }
 
         List<Job> jobList = new LinkedList<>();
-        int skippedJobs = 0;
-        for (Map.Entry<String, Pipeline.PipelineJob> jobEntry : execution.getPipeline().getJobs().entrySet()) {
-            String toolId = getPipelineJobId(jobEntry.getKey(), jobEntry.getValue());
-            if (allJobs.contains(toolId)) {
-                // Skip job. This job was already processed and it is already registered
-                continue;
+        if (CollectionUtils.isEmpty(execution.getJobs()) && execution.getPipeline() == null) {
+            // Tool
+            Map<String, Object> params = new HashMap<>(execution.getParams());
+            // Add outdir param
+            params.put(JobDaemon.OUTDIR_PARAM, execution.getOutDir().getPath() + toolId);
+            Job job = createJobInstance(execution.getId(), toolId, "", execution.getPriority(), params, execution.getTags(),
+                    Collections.emptyList(), execution.getUserId());
+            jobList.add(job);
+
+            updateParams.setInternal(new ExecutionInternal(PROCESSED_STATUS));
+        } else {
+            // Pipeline
+
+            // Get information regarding processed jobs (if any)
+            Set<String> allJobs = new HashSet<>();
+            Set<String> finishedJobs = new HashSet<>();
+            for (Job job : execution.getJobs()) {
+                String pipelineJobId = job.getTool().getId();
+                switch (job.getInternal().getStatus().getName()) {
+                    case Enums.ExecutionStatus.ERROR:
+                    case Enums.ExecutionStatus.ABORTED:
+                        return failExecution(execution, "Job '" + pipelineJobId + "' failed with description: "
+                                + job.getInternal().getStatus().getDescription());
+                    case Enums.ExecutionStatus.DONE:
+                        finishedJobs.add(pipelineJobId);
+                        allJobs.add(pipelineJobId);
+                        break;
+                    default:
+                        allJobs.add(pipelineJobId);
+                        break;
+                }
             }
 
-            Pipeline.PipelineJob pipelineJob = jobEntry.getValue();
-            List<String> dependsOn = new ArrayList<>();
-            if (CollectionUtils.isNotEmpty(pipelineJob.getDependsOn())) {
-                boolean createJob = true;
-                for (String jobDependsOn : pipelineJob.getDependsOn()) {
-                    if (!finishedJobs.contains(jobDependsOn)) {
-                        createJob = false;
-                    }
-                }
-                if (!createJob) {
-                    skippedJobs++;
+            int skippedJobs = 0;
+            for (Map.Entry<String, Pipeline.PipelineJob> jobEntry : execution.getPipeline().getJobs().entrySet()) {
+                String pipelineJobId = getPipelineJobId(jobEntry.getKey(), jobEntry.getValue());
+                if (allJobs.contains(pipelineJobId)) {
+                    // Skip job. This job was already processed and it is already registered
                     continue;
                 }
+
+                Pipeline.PipelineJob pipelineJob = jobEntry.getValue();
+                List<String> dependsOn = new ArrayList<>();
+                if (CollectionUtils.isNotEmpty(pipelineJob.getDependsOn())) {
+                    boolean createJob = true;
+                    for (String jobDependsOn : pipelineJob.getDependsOn()) {
+                        if (!finishedJobs.contains(jobDependsOn)) {
+                            createJob = false;
+                        }
+                    }
+                    if (!createJob) {
+                        skippedJobs++;
+                        continue;
+                    }
+                }
+
+                Map<String, Object> jobParams;
+                try {
+                    jobParams = getJobParams(execution.getParams(), pipelineJob.getParams(), execution.getPipeline().getParams(),
+                            pipelineJobId);
+                } catch (ToolException e) {
+                    return abortExecution(execution, e.getMessage());
+                }
+                // Add execution outdir
+                jobParams.put(JobDaemon.OUTDIR_PARAM, execution.getOutDir().getPath() + pipelineJobId);
+                Job job = createJobInstance(execution.getId(), pipelineJobId, pipelineJob.getDescription(), execution.getPriority(),
+                        jobParams, execution.getTags(), dependsOn, execution.getUserId());
+                jobList.add(job);
             }
 
-            Map<String, Object> jobParams;
-            try {
-                jobParams = getJobParams(execution.getParams(), pipelineJob.getParams(), execution.getPipeline().getParams(), toolId);
-            } catch (ToolException e) {
-                return abortExecution(execution, e.getMessage());
+            if (skippedJobs == 0) {
+                updateParams.setInternal(new ExecutionInternal(PROCESSED_STATUS));
+            } else {
+                updateParams.setInternal(new ExecutionInternal(PENDING_STATUS));
             }
-            // Add execution outdir
-            jobParams.put(JobDaemon.OUTDIR_PARAM, execution.getOutDir().getPath() + toolId);
-            Job job = createJobInstance(execution.getId(), toolId, pipelineJob.getDescription(), execution.getPriority(), jobParams,
-                    execution.getTags(), dependsOn, execution.getUserId());
-            jobList.add(job);
         }
 
         if (!jobList.isEmpty()) {
@@ -380,14 +457,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 return abortExecution(execution, e.getMessage());
             }
 
-            if (skippedJobs == 0) {
-                // Update execution (new status and new list of jobs?)
-                setStatus(execution,
-                        new Enums.ExecutionStatus(Enums.ExecutionStatus.PROCESSED, "Execution has been processed and all jobs created"));
-            } else {
-                setStatus(execution,
-                        new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING, "Execution has been partially processed and a few jobs "
-                                + "launched. Number of unprocessed jobs: " + skippedJobs));
+            try {
+                updateExecution(execution, updateParams);
+            } catch (CatalogException e) {
+                logger.error("Critical error. Cannot update execution '{}'. {}", execution.getId(), e.getMessage(), e);
+                return 0;
             }
             return 1;
         }
@@ -563,20 +637,27 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private int setStatus(Execution execution, Enums.ExecutionStatus status) {
-        ExecutionInternal internal = new ExecutionInternal().setStatus(status);
+        ExecutionUpdateParams updateParams = new ExecutionUpdateParams();
+        updateParams.setInternal(new ExecutionInternal().setStatus(status));
 
         try {
-            executionManager.updateInternal(execution.getStudy().getId(), execution.getId(), internal, token);
+            updateExecution(execution, updateParams);
         } catch (CatalogException e) {
             logger.error("Unexpected error. Cannot update execution '{}' to status '{}'. {}", execution.getId(), status.getName(),
                     e.getMessage(), e);
             return 0;
         }
 
-        execution.getInternal().setStatus(status);
-        notifyStatusChange(execution);
-
         return 1;
+    }
+
+    private void updateExecution(Execution execution, ExecutionUpdateParams updateParams) throws CatalogException {
+        executionManager.privateUpdate(execution.getStudy().getId(), execution.getId(), updateParams, token);
+
+        if (!execution.getInternal().getStatus().getName().equals(updateParams.getInternal().getStatus().getName())) {
+            execution.getInternal().setStatus(updateParams.getInternal().getStatus());
+            notifyStatusChange(execution);
+        }
     }
 
     private void notifyStatusChange(Execution execution) {

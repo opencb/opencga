@@ -13,7 +13,6 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ExecutionDBAdaptor;
-import org.opencb.opencga.catalog.db.api.PipelineDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -21,18 +20,15 @@ import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
-import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.tools.ToolFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,8 +36,6 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class ExecutionManager extends ResourceManager<Execution> {
 
@@ -210,45 +204,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
 
         try {
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTE_JOBS);
-
-            // Check if resourceId might be a pipeline
-            Query query = new Query()
-                    .append(PipelineDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                    .append(PipelineDBAdaptor.QueryParams.ID.key(), resourceId);
-            OpenCGAResult<Pipeline> pipelineOpenCGAResult = pipelineDBAdaptor.get(query, QueryOptions.empty());
-            if (pipelineOpenCGAResult.getNumResults() == 1) {
-                Pipeline pipeline = pipelineOpenCGAResult.first();
-                execution.setPipeline(pipeline);
-                execution.setIsPipeline(true);
-                autoCompleteNewExecution(study, execution, null, dependsOn, token);
-            } else {
-                // Check that resourceId is an existing toolId
-                try {
-                    new ToolFactory().getToolClass(resourceId);
-                    autoCompleteNewExecution(study, execution, resourceId, dependsOn, token);
-                    createJobExecution(study, execution, resourceId, token);
-                } catch (ToolException e) {
-                    throw new CatalogException("'" + resourceId + "' seems not to be a valid pipeline or toolId");
-                }
-            }
-
-            // Ensure user has its own executions folder
-            File userFolder = catalogManager.getFileManager().createUserExecutionsFolder(study, FileManager.INCLUDE_FILE_URI_PATH, userId)
-                    .first();
-
-            // Create a folder specific for this execution
-            String executionFolder = userFolder.getPath() + TimeUtils.getDay() + "/" + execution.getId();
-            logger.debug("Will create folder '{}' for execution '{}'", executionFolder, execution.getId());
-            File execFolder = catalogManager.getFileManager().createFolder(study.getFqn(), executionFolder, true,
-                    execution.getDescription(), execution.getId(), QueryOptions.empty(), token).first();
-            execution.setOutDir(execFolder);
-
-            if (CollectionUtils.isNotEmpty(execution.getJobs())) {
-                // Set outdir for each job
-                for (Job job : execution.getJobs()) {
-                    job.getParams().put(ParamConstants.JOB_OUTDIR_PARAM, execution.getOutDir().getPath() + job.getTool().getId());
-                }
-            }
+            autoCompleteNewExecution(study, execution, resourceId, dependsOn, token);
 
             executionDBAdaptor.insert(study.getUid(), execution, new QueryOptions());
             OpenCGAResult<Execution> executionResult = executionDBAdaptor.get(execution.getUid(), new QueryOptions());
@@ -265,7 +221,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
             if (execution.getInternal() != null) {
                 execution.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
             } else {
-                execution.setInternal(new ExecutionInternal(TimeUtils.getTime(), TimeUtils.getTime(),
+                execution.setInternal(new ExecutionInternal(resourceId, TimeUtils.getTime(), TimeUtils.getTime(),
                         new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
                         new JobInternalWebhook(null, new HashMap<>()), Collections.emptyList()));
             }
@@ -274,20 +230,6 @@ public class ExecutionManager extends ResourceManager<Execution> {
 
             throw e;
         }
-    }
-
-    private void createJobExecution(Study study, Execution execution, String toolId, String token) throws CatalogException {
-        // Create job and validate it
-        Job job = new Job("", "", execution.getDescription(), execution.getId(), new ToolInfo().setId(toolId), execution.getUserId(), null,
-                execution.getParams(), null, null, execution.getPriority(), null, null, null, null,
-                Collections.emptyList(), execution.getTags(), null, false, null, null, 0, null, null);
-        catalogManager.getJobManager().autoCompleteNewJob(study, job, token);
-
-        // Change execution status to PROCESSED
-        execution.getInternal().getStatus().setName(Enums.ExecutionStatus.PROCESSED);
-
-        // Add job to execution
-        execution.setJobs(Collections.singletonList(job));
     }
 
     private void autoCompleteNewExecution(Study study, Execution execution, String toolId, List<String> dependsOn, String token)
@@ -327,6 +269,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
 
         // Set default internal
         execution.setInternal(ExecutionInternal.init());
+        execution.getInternal().setToolId(toolId);
         execution.getInternal().setWebhook(new JobInternalWebhook(study.getNotification().getWebhook(), new HashMap<>()));
 
         execution.setTags(ParamUtils.defaultObject(execution.getTags(), Collections::emptyList));
@@ -364,34 +307,33 @@ public class ExecutionManager extends ResourceManager<Execution> {
      *
      * @param studyStr    Study id.
      * @param executionId Execution id.
-     * @param internal    Internal field.
+     * @param params      Update params.
      * @param token       token.
      * @return an OpenCGAResult.
      * @throws CatalogException CatalogException.
      */
-    public OpenCGAResult<Execution> updateInternal(String studyStr, String executionId, ExecutionInternal internal, String token)
+    public OpenCGAResult<Execution> privateUpdate(String studyStr, String executionId, ExecutionUpdateParams params, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("executionId", executionId)
-                .append("internal", internal)
+                .append("params", params)
                 .append("token", token);
         try {
             authorizationManager.checkIsInstallationAdministrator(userId);
-            ParamUtils.checkObj(internal, "ExecutionInternal");
+            ParamUtils.checkObj(params, "ExecutionUpdateParams");
 
             Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
             Execution execution = internalGet(study.getUid(), executionId, INCLUDE_EXECUTION_IDS, userId).first();
 
             ObjectMap updateMap;
             try {
-                String jsonString = getUpdateObjectMapper().writeValueAsString(internal);
-                ObjectMap internalObjectMap = getUpdateObjectMapper().readValue(jsonString, ObjectMap.class);
-                updateMap = new ObjectMap(ExecutionDBAdaptor.QueryParams.INTERNAL.key(), internalObjectMap);
+                String jsonString = JacksonUtils.getDefaultNonNullObjectMapper().writeValueAsString(params);
+                updateMap = JacksonUtils.getDefaultNonNullObjectMapper().readValue(jsonString, ObjectMap.class);
             } catch (JsonProcessingException e) {
-                throw new CatalogException("Could not parse ExecutionInternal object: " + e.getMessage(), e);
+                throw new CatalogException("Could not parse ExecutionUpdateParams object: " + e.getMessage(), e);
             }
 
             OpenCGAResult<Execution> update = executionDBAdaptor.update(execution.getUid(), updateMap, QueryOptions.empty());

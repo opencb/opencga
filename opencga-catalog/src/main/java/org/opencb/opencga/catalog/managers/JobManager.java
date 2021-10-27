@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
@@ -1234,6 +1235,52 @@ public class JobManager extends ResourceManager<Job> {
 //        }
 
         return jobDBAdaptor.update(job.getUid(), updateMap, options);
+    }
+
+    /**
+     * Update Internal field of Job. Only opencga user is allowed to use this method.
+     *
+     * @param studyStr Study id.
+     * @param jobId    Job id.
+     * @param params   JobInternal params.
+     * @param token    token.
+     * @return an OpenCGAResult.
+     * @throws CatalogException CatalogException.
+     */
+    public OpenCGAResult<Job> privateUpdate(String studyStr, String jobId, JobInternal params, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("jobId", jobId)
+                .append("params", params)
+                .append("token", token);
+        try {
+            authorizationManager.checkIsInstallationAdministrator(userId);
+            ParamUtils.checkObj(params, "JobInternal");
+
+            Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+            Job job = internalGet(study.getUid(), jobId, INCLUDE_JOB_IDS, userId).first();
+
+            ObjectMap updateMap;
+            try {
+                String jsonString = JacksonUtils.getDefaultNonNullObjectMapper().writeValueAsString(params);
+                ObjectMap jsonMap = JacksonUtils.getDefaultNonNullObjectMapper().readValue(jsonString, ObjectMap.class);
+                updateMap = new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL.key(), jsonMap);
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse JobInternal object: " + e.getMessage(), e);
+            }
+
+            OpenCGAResult<Job> update = jobDBAdaptor.update(job.getUid(), updateMap, QueryOptions.empty());
+            auditManager.auditUpdate(userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return update;
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(userId, Enums.Resource.JOB, jobId, "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
     private File getFile(long studyUid, String path, String userId) throws CatalogException {
