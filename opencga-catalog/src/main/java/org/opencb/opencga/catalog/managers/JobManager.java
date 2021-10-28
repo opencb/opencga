@@ -164,7 +164,7 @@ public class JobManager extends ResourceManager<Job> {
             OpenCGAResult<Job> jobDataResult = jobDBAdaptor.get(queryCopy, options);
             for (Job job : jobDataResult.getResults()) {
                 // Check view permissions
-                authorizationManager.checkJobPermission(job.getStudyUid(), job.getUid(), user, JobAclEntry.JobPermissions.VIEW);
+                authorizationManager.checkJobPermission(job.getStudyUid(), job.getUid(), user, ExecutionAclEntry.ExecutionPermissions.VIEW);
             }
             return keepOriginalOrder(uniqueList, jobStringFunction, jobDataResult, ignoreException, false);
         }
@@ -249,7 +249,7 @@ public class JobManager extends ResourceManager<Job> {
                 .append("options", options)
                 .append("token", token);
         try {
-            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_EXECUTIONS);
 
             ParamUtils.checkObj(job, "Job");
             ParamUtils.checkIdentifier(job.getId(), "job id");
@@ -685,7 +685,8 @@ public class JobManager extends ResourceManager<Job> {
                 jobUuid = job.getUuid();
 
                 if (checkPermissions) {
-                    authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.DELETE);
+                    authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId,
+                            ExecutionAclEntry.ExecutionPermissions.DELETE);
                 }
 
                 // Check if the job can be deleted
@@ -756,7 +757,8 @@ public class JobManager extends ResourceManager<Job> {
 
             try {
                 if (checkPermissions) {
-                    authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.DELETE);
+                    authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId,
+                            ExecutionAclEntry.ExecutionPermissions.DELETE);
                 }
 
                 // Check if the job can be deleted
@@ -1088,7 +1090,7 @@ public class JobManager extends ResourceManager<Job> {
         }
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.WRITE);
+        authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, ExecutionAclEntry.ExecutionPermissions.WRITE);
 
 //        if (StringUtils.isNotEmpty(updateParams.getId())) {
 //            ParamUtils.checkAlias(updateParams.getId(), JobDBAdaptor.QueryParams.ID.key());
@@ -1234,7 +1236,7 @@ public class JobManager extends ResourceManager<Job> {
             try {
                 options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-                authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.WRITE);
+                authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, ExecutionAclEntry.ExecutionPermissions.WRITE);
 
                 OpenCGAResult updateResult = jobDBAdaptor.update(job.getUid(), parameters, options);
                 result.append(updateResult);
@@ -1442,7 +1444,7 @@ public class JobManager extends ResourceManager<Job> {
 
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
-        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
+        authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.VIEW_EXECUTIONS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -1575,7 +1577,7 @@ public class JobManager extends ResourceManager<Job> {
             List<String> permissions = Collections.emptyList();
             if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
                 permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
-                checkPermissions(permissions, JobAclEntry.JobPermissions::valueOf);
+                checkPermissions(permissions, ExecutionAclEntry.ExecutionPermissions::valueOf);
             }
 
             List<Job> jobList = internalGet(study.getUid(), jobStrList, INCLUDE_JOB_IDS, userId, false).getResults();

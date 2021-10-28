@@ -21,7 +21,7 @@ import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
 import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
-import org.opencb.opencga.core.models.job.JobAclEntry;
+import org.opencb.opencga.core.models.job.ExecutionAclEntry;
 import org.opencb.opencga.core.models.panel.PanelAclEntry;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -98,7 +98,7 @@ public final class Enums {
                     return EnumSet.allOf(FamilyAclEntry.FamilyPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
                 case EXECUTION:
                 case JOB:
-                    return EnumSet.allOf(JobAclEntry.JobPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
+                    return EnumSet.allOf(ExecutionAclEntry.ExecutionPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
                 case DISEASE_PANEL:
                     return EnumSet.allOf(PanelAclEntry.PanelPermissions.class).stream().map(String::valueOf).collect(Collectors.toList());
                 case CLINICAL_ANALYSIS:

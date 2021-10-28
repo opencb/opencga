@@ -24,7 +24,7 @@ import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
 import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
-import org.opencb.opencga.core.models.job.JobAclEntry;
+import org.opencb.opencga.core.models.job.ExecutionAclEntry;
 import org.opencb.opencga.core.models.panel.PanelAclEntry;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 
@@ -66,7 +66,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
 
     public static final int FILE = 1;
     public static final int SAMPLE = 2;
-    public static final int JOB = 3;
+    public static final int EXECUTION = 3;
     public static final int COHORT = 4;
     public static final int INDIVIDUAL = 5;
     public static final int DISEASE_PANEL = 7;
@@ -92,9 +92,10 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
 
         // JOBS
         EXECUTE_JOBS(Collections.emptyList()),
-        VIEW_JOBS(Collections.emptyList(), JobAclEntry.JobPermissions.VIEW.name(), JOB),
-        WRITE_JOBS(Collections.singletonList(VIEW_JOBS), JobAclEntry.JobPermissions.WRITE.name(), JOB),
-        DELETE_JOBS(Arrays.asList(VIEW_JOBS, WRITE_JOBS), JobAclEntry.JobPermissions.DELETE.name(), JOB),
+        VIEW_EXECUTIONS(Collections.emptyList(), ExecutionAclEntry.ExecutionPermissions.VIEW.name(), EXECUTION),
+        WRITE_EXECUTIONS(Collections.singletonList(VIEW_EXECUTIONS), ExecutionAclEntry.ExecutionPermissions.WRITE.name(), EXECUTION),
+        DELETE_EXECUTIONS(Arrays.asList(VIEW_EXECUTIONS, WRITE_EXECUTIONS), ExecutionAclEntry.ExecutionPermissions.DELETE.name(),
+                EXECUTION),
 
         // SAMPLES
         VIEW_SAMPLES(Collections.emptyList(), SampleAclEntry.SamplePermissions.VIEW.name(), SAMPLE),
@@ -155,6 +156,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE.name(), CLINICAL_ANALYSIS);
 
         private static Map<String, StudyPermissions> map;
+
         static {
             map = new LinkedMap();
             for (StudyPermissions params : StudyPermissions.values()) {

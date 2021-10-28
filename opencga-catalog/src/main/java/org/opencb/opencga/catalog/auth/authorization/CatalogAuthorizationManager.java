@@ -33,7 +33,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
 import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
-import org.opencb.opencga.core.models.job.JobAclEntry;
+import org.opencb.opencga.core.models.job.ExecutionAclEntry;
 import org.opencb.opencga.core.models.panel.PanelAclEntry;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Group;
@@ -387,7 +387,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkJobPermission(long studyId, long jobId, String userId, JobAclEntry.JobPermissions permission) throws CatalogException {
+    public void checkJobPermission(long studyId, long jobId, String userId, ExecutionAclEntry.ExecutionPermissions permission)
+            throws CatalogException {
         Query query = new Query()
                 .append(JobDBAdaptor.QueryParams.UID.key(), jobId)
                 .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
@@ -822,8 +823,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     case JOB:
                         allPermissions.addAll(aclParam.getPermissions()
                                 .stream()
-                                .map(JobAclEntry.JobPermissions::valueOf)
-                                .map(JobAclEntry.JobPermissions::getDependentPermissions)
+                                .map(ExecutionAclEntry.ExecutionPermissions::valueOf)
+                                .map(ExecutionAclEntry.ExecutionPermissions::getDependentPermissions)
                                 .flatMap(List::stream)
                                 .collect(Collectors.toSet())
                                 .stream().map(Enum::name)
@@ -936,8 +937,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 case JOB:
                     allPermissions.addAll(aclParam.getPermissions()
                             .stream()
-                            .map(JobAclEntry.JobPermissions::valueOf)
-                            .map(JobAclEntry.JobPermissions::getImplicitPermissions)
+                            .map(ExecutionAclEntry.ExecutionPermissions::valueOf)
+                            .map(ExecutionAclEntry.ExecutionPermissions::getImplicitPermissions)
                             .flatMap(List::stream)
                             .collect(Collectors.toSet())
                             .stream().map(Enum::name)
@@ -1048,8 +1049,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             case JOB:
                 allPermissions.addAll(permissions
                         .stream()
-                        .map(JobAclEntry.JobPermissions::valueOf)
-                        .map(JobAclEntry.JobPermissions::getImplicitPermissions)
+                        .map(ExecutionAclEntry.ExecutionPermissions::valueOf)
+                        .map(ExecutionAclEntry.ExecutionPermissions::getImplicitPermissions)
                         .flatMap(List::stream)
                         .collect(Collectors.toSet())
                         .stream().map(Enum::name)

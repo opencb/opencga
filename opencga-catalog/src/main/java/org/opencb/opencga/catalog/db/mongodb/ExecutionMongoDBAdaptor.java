@@ -29,8 +29,8 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.job.Execution;
+import org.opencb.opencga.core.models.job.ExecutionAclEntry;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.models.job.JobInternalWebhook;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -604,7 +604,7 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
             Document studyDocument = getStudyDocument(null, query.getLong(MongoDBAdaptor.PRIVATE_STUDY_UID));
 
             // Get the document query needed to check the permissions as well
-            andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, JobAclEntry.JobPermissions.VIEW.name(),
+            andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, ExecutionAclEntry.ExecutionPermissions.VIEW.name(),
                     Enums.Resource.EXECUTION, configuration));
 
             andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.EXECUTION, user,

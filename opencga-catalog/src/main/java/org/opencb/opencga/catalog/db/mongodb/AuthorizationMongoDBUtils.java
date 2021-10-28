@@ -102,9 +102,9 @@ public class AuthorizationMongoDBUtils {
     /**
      * Removes annotation sets from results if the user does not have the proper permissions.
      *
-     * @param study study document.
-     * @param entry Annotable document entry.
-     * @param user user.
+     * @param study           study document.
+     * @param entry           Annotable document entry.
+     * @param user            user.
      * @param studyPermission studyPermission to check.
      * @param entryPermission entry permission to check.
      * @return the document modified.
@@ -173,7 +173,7 @@ public class AuthorizationMongoDBUtils {
             case SAMPLE:
                 return StudyAclEntry.SAMPLE;
             case JOB:
-                return StudyAclEntry.JOB;
+                return StudyAclEntry.EXECUTION;
             case INDIVIDUAL:
                 return StudyAclEntry.INDIVIDUAL;
             case COHORT:
@@ -192,13 +192,13 @@ public class AuthorizationMongoDBUtils {
     /**
      * If query contains {@link ParamConstants#ACL_PARAM}, it will parse the value to generate the corresponding mongo query documents.
      *
-     * @param study Queried study document.
-     * @param query Original query.
+     * @param study    Queried study document.
+     * @param query    Original query.
      * @param resource Affected resource.
-     * @param user User performing the query.
+     * @param user     User performing the query.
      * @return A list of documents to satisfy the ACL query.
-     * @throws CatalogDBException when there is a DB error.
-     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogDBException            when there is a DB error.
+     * @throws CatalogParameterException     if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     public static List<Document> parseAclQuery(Document study, Query query, Enums.Resource resource, String user)
@@ -209,14 +209,14 @@ public class AuthorizationMongoDBUtils {
     /**
      * If query contains {@link ParamConstants#ACL_PARAM}, it will parse the value to generate the corresponding mongo query documents.
      *
-     * @param study Queried study document.
-     * @param query Original query.
-     * @param resource Affected resource.
-     * @param user User performing the query.
+     * @param study         Queried study document.
+     * @param query         Original query.
+     * @param resource      Affected resource.
+     * @param user          User performing the query.
      * @param configuration Configuration object.
      * @return A list of documents to satisfy the ACL query.
-     * @throws CatalogDBException when there is a DB error.
-     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogDBException            when there is a DB error.
+     * @throws CatalogParameterException     if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     public static List<Document> parseAclQuery(Document study, Query query, Enums.Resource resource, String user,
@@ -526,10 +526,10 @@ public class AuthorizationMongoDBUtils {
     /**
      * Creates a document with the corresponding query needed to retrieve results only from any authorised document.
      *
-     * @param user User asking for the entries.
-     * @param groups Group names where the user belongs to.
-     * @param permission Permission to be checked.
-     * @param isAnonymousPresent Boolean indicating whether the anonymous user has been registered in the @members group.
+     * @param user                    User asking for the entries.
+     * @param groups                  Group names where the user belongs to.
+     * @param permission              Permission to be checked.
+     * @param isAnonymousPresent      Boolean indicating whether the anonymous user has been registered in the @members group.
      * @param simplifyPermissionCheck Flag indicating whether permission check can be simplified because permissions were never denied at
      *                                any other entity level but study.
      * @return The document containing the query to be made in mongo database.
@@ -546,9 +546,9 @@ public class AuthorizationMongoDBUtils {
     /**
      * Creates a document with the corresponding query needed to retrieve results only from any authorised document.
      *
-     * @param user User asking for the entries.
-     * @param groups Group names where the user belongs to.
-     * @param permission Permission to be checked.
+     * @param user               User asking for the entries.
+     * @param groups             Group names where the user belongs to.
+     * @param permission         Permission to be checked.
      * @param isAnonymousPresent Boolean indicating whether the anonymous user has been registered in the @members group.
      * @return The document containing the query to be made in mongo database.
      */
@@ -582,9 +582,9 @@ public class AuthorizationMongoDBUtils {
     /**
      * Creates a document with the corresponding query needed to retrieve results only from any authorised document.
      *
-     * @param user User asking for the entries.
-     * @param groups Group names where the user belongs to.
-     * @param permission Permission to be checked.
+     * @param user               User asking for the entries.
+     * @param groups             Group names where the user belongs to.
+     * @param permission         Permission to be checked.
      * @param isAnonymousPresent Boolean indicating whether the anonymous user has been registered in the @members group.
      * @return The document containing the query to be made in mongo database.
      */
@@ -635,7 +635,7 @@ public class AuthorizationMongoDBUtils {
     /**
      * Creates a document with the corresponding query needed to retrieve results only from documents where no permissions are assigned.
      *
-     * @param user User asking for the entries.
+     * @param user   User asking for the entries.
      * @param groups Group names where the user belongs to.
      * @return The document containing the query to be made in mongo database.
      */

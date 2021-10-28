@@ -107,7 +107,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
                 // TODO: check Execution permissions?
                 // Check view permissions
                 authorizationManager.checkJobPermission(execution.getStudyUid(), execution.getUid(), user,
-                        JobAclEntry.JobPermissions.VIEW);
+                        ExecutionAclEntry.ExecutionPermissions.VIEW);
             }
             return keepOriginalOrder(uniqueList, executionStringFunction, executionDataResult, ignoreException, false);
         }
@@ -337,7 +337,8 @@ public class ExecutionManager extends ResourceManager<Execution> {
         try {
             Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
             Execution execution = internalGet(study.getUid(), executionId, INCLUDE_EXECUTION_IDS, userId).first();
-            authorizationManager.checkJobPermission(study.getUid(), execution.getUid(), userId, JobAclEntry.JobPermissions.WRITE);
+            authorizationManager.checkJobPermission(study.getUid(), execution.getUid(), userId,
+                    ExecutionAclEntry.ExecutionPermissions.WRITE);
 
             ParamUtils.checkObj(params, "ExecutionUpdateParams");
 

@@ -55,7 +55,7 @@ import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
-import org.opencb.opencga.core.models.job.JobAclEntry;
+import org.opencb.opencga.core.models.job.ExecutionAclEntry;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.*;
@@ -459,9 +459,9 @@ public class StudyManager extends AbstractManager {
     /**
      * Fetch a study from Catalog given a study id or alias.
      *
-     * @param studyStr  Study id or alias.
-     * @param options   Read options
-     * @param token sessionId
+     * @param studyStr Study id or alias.
+     * @param options  Read options
+     * @param token    sessionId
      * @return The specified object
      * @throws CatalogException CatalogException
      */
@@ -548,9 +548,9 @@ public class StudyManager extends AbstractManager {
     /**
      * Fetch all the study objects matching the query.
      *
-     * @param query     Query to catalog.
-     * @param options   Query options, like "include", "exclude", "limit" and "skip"
-     * @param token sessionId
+     * @param query   Query to catalog.
+     * @param options Query options, like "include", "exclude", "limit" and "skip"
+     * @param token   sessionId
      * @return All matching elements.
      * @throws CatalogException CatalogException
      */
@@ -598,10 +598,10 @@ public class StudyManager extends AbstractManager {
     /**
      * Update an existing catalog study.
      *
-     * @param studyId   Study id or alias.
+     * @param studyId    Study id or alias.
      * @param parameters Parameters to change.
      * @param options    options
-     * @param token  sessionId
+     * @param token      sessionId
      * @return The modified entry.
      * @throws CatalogException CatalogException
      */
@@ -812,10 +812,10 @@ public class StudyManager extends AbstractManager {
                 .setVariableSets(study.getVariableSets());
 
         Long nFiles = fileDBAdaptor.count(
-                new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                        .append(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.FILE)
-                        .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), "!=" + FileStatus.TRASHED + ";!="
-                                + FileStatus.DELETED))
+                        new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                                .append(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.FILE)
+                                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), "!=" + FileStatus.TRASHED + ";!="
+                                        + FileStatus.DELETED))
                 .getNumMatches();
         studySummary.setFiles(nFiles);
 
@@ -1101,7 +1101,7 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<?> updateSummaryIndex(String studyStr, RecessiveGeneSummaryIndex summaryIndex,
-                                                                       String token) throws CatalogException {
+                                               String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyStr, userId);
 
@@ -1751,7 +1751,7 @@ public class StudyManager extends AbstractManager {
                 validatePermissions(permissionRule.getPermissions(), FamilyAclEntry.FamilyPermissions::valueOf);
                 break;
             case JOBS:
-                validatePermissions(permissionRule.getPermissions(), JobAclEntry.JobPermissions::valueOf);
+                validatePermissions(permissionRule.getPermissions(), ExecutionAclEntry.ExecutionPermissions::valueOf);
                 break;
             case CLINICAL_ANALYSES:
                 validatePermissions(permissionRule.getPermissions(), ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions::valueOf);
@@ -1800,10 +1800,10 @@ public class StudyManager extends AbstractManager {
     /**
      * Upload a template file in Catalog.
      *
-     * @param studyStr        study where the file will be uploaded.
-     * @param filename        File name.
-     * @param inputStream     Input stream of the file to be uploaded (must be a .zip or .tar.gz file).
-     * @param token           Token of the user performing the upload.
+     * @param studyStr    study where the file will be uploaded.
+     * @param filename    File name.
+     * @param inputStream Input stream of the file to be uploaded (must be a .zip or .tar.gz file).
+     * @param token       Token of the user performing the upload.
      * @return an empty OpenCGAResult if it successfully uploaded.
      * @throws CatalogException if there is any issue with the upload.
      */
@@ -1893,9 +1893,9 @@ public class StudyManager extends AbstractManager {
     /**
      * Delete a template from Catalog.
      *
-     * @param studyStr        study where the template belongs to.
-     * @param templateId      Template id.
-     * @param token           Token of the user performing the upload.
+     * @param studyStr   study where the template belongs to.
+     * @param templateId Template id.
+     * @param token      Token of the user performing the upload.
      * @return an empty OpenCGAResult if it successfully uploaded.
      * @throws CatalogException if there is any issue with the upload.
      */

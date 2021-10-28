@@ -24,7 +24,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
 import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
-import org.opencb.opencga.core.models.job.JobAclEntry;
+import org.opencb.opencga.core.models.job.ExecutionAclEntry;
 import org.opencb.opencga.core.models.panel.PanelAclEntry;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.PermissionRule;
@@ -56,7 +56,7 @@ public interface AuthorizationManager {
 
     static EnumSet<StudyAclEntry.StudyPermissions> getAnalystAcls() {
         return EnumSet.of(WRITE_FILES, VIEW_FILE_HEADER, VIEW_FILE_CONTENT, VIEW_FILES, DOWNLOAD_FILES, UPLOAD_FILES,
-                EXECUTE_JOBS, WRITE_JOBS, VIEW_JOBS,
+                EXECUTE_JOBS, WRITE_EXECUTIONS, VIEW_EXECUTIONS,
                 WRITE_SAMPLES, VIEW_SAMPLES, WRITE_SAMPLE_ANNOTATIONS, VIEW_SAMPLE_ANNOTATIONS, VIEW_AGGREGATED_VARIANTS,
                 VIEW_SAMPLE_VARIANTS,
                 WRITE_INDIVIDUALS, VIEW_INDIVIDUALS, WRITE_INDIVIDUAL_ANNOTATIONS, VIEW_INDIVIDUAL_ANNOTATIONS,
@@ -68,7 +68,7 @@ public interface AuthorizationManager {
 
     static EnumSet<StudyAclEntry.StudyPermissions> getViewOnlyAcls() {
         return EnumSet.of(
-                VIEW_FILE_HEADER, VIEW_FILE_CONTENT, VIEW_FILES, DOWNLOAD_FILES, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS,
+                VIEW_FILE_HEADER, VIEW_FILE_CONTENT, VIEW_FILES, DOWNLOAD_FILES, VIEW_EXECUTIONS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS,
                 VIEW_INDIVIDUALS, VIEW_AGGREGATED_VARIANTS, VIEW_SAMPLE_VARIANTS, VIEW_INDIVIDUAL_ANNOTATIONS, VIEW_COHORTS,
                 VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_FAMILIES, VIEW_FAMILY_ANNOTATIONS, VIEW_CLINICAL_ANALYSIS, EXECUTE_JOBS);
     }
@@ -125,7 +125,8 @@ public interface AuthorizationManager {
     void checkIndividualPermission(long studyId, long individualId, String userId, IndividualAclEntry.IndividualPermissions permission)
             throws CatalogException;
 
-    void checkJobPermission(long studyId, long jobId, String userId, JobAclEntry.JobPermissions permission) throws CatalogException;
+    void checkJobPermission(long studyId, long jobId, String userId, ExecutionAclEntry.ExecutionPermissions permission)
+            throws CatalogException;
 
     void checkCohortPermission(long studyId, long cohortId, String userId, CohortAclEntry.CohortPermissions permission)
             throws CatalogException;
