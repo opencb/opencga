@@ -8,15 +8,15 @@ import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationRun;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobReferenceParam;
+import org.opencb.opencga.core.models.job.Execution;
+import org.opencb.opencga.core.models.job.ExecutionReferenceParam;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
 
-@Migration(id="new_clinical_significance_fields", description = "Add new clinical significance fields and combinations for variant storage and solr", version = "2.1.0",
+@Migration(id = "new_clinical_significance_fields", description = "Add new clinical significance fields and combinations for variant storage and solr", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
         patch = 1,
@@ -27,17 +27,17 @@ public class NewClinicalSignificanceFields extends StorageMigrationTool {
     protected void run() throws Exception {
 //        getVariantStorageManager().getStorageConfiguration().getVariantEngine().getEngine().equals("hadoop");
         MigrationRun migrationRun = getMigrationRun();
-        Map<String, Job> jobs = new HashMap<>();
-        for (JobReferenceParam jobReference : migrationRun.getJobs()) {
-            Job job = catalogManager.getJobManager().get(jobReference.getStudyId(), jobReference.getId(), new QueryOptions(), token)
+        Map<String, Execution> executions = new HashMap<>();
+        for (ExecutionReferenceParam executionReference : migrationRun.getExecutions()) {
+            Execution job = catalogManager.getExecutionManager().get(executionReference.getStudyId(), executionReference.getId(), new QueryOptions(), token)
                     .first();
-            jobs.put(job.getParams().get(ParamConstants.PROJECT_PARAM).toString(), job);
+            executions.put(job.getParams().get(ParamConstants.PROJECT_PARAM).toString(), job);
         }
         for (String project : getVariantStorageProjects()) {
-            Job job = jobs.get(project);
-            if (job != null) {
-                int patch = Integer.parseInt(job.getParams().get("patch").toString());
-                String status = job.getInternal().getStatus().getName();
+            Execution execution = executions.get(project);
+            if (execution != null) {
+                int patch = Integer.parseInt(execution.getParams().get("patch").toString());
+                String status = execution.getInternal().getStatus().getName();
                 if (status.equals(Enums.ExecutionStatus.DONE)) {
                     if (patch == getAnnotation().patch()) {
                         // Skip this project. Already migrated
@@ -49,17 +49,17 @@ public class NewClinicalSignificanceFields extends StorageMigrationTool {
                 } else if (status.equals(Enums.ExecutionStatus.ERROR) || status.equals(Enums.ExecutionStatus.ABORTED)) {
                     logger.info("Retry migration job for project {}", project);
                 } else {
-                    logger.info("Job {} for migrating project {} in status {}. Wait for completion", job.getId(), project, status);
+                    logger.info("Job {} for migrating project {} in status {}. Wait for completion", execution.getId(), project, status);
                     continue;
                 }
-                getMigrationRun().removeJob(job);
+                getMigrationRun().removeExecution(execution);
             }
 
             ObjectMap params = new ObjectMap()
                     .append(ParamConstants.PROJECT_PARAM, project)
                     .append("patch", getAnnotation().patch());
-            getMigrationRun().addJob(catalogManager.getJobManager().submitProject(project, VariantAnnotationRebuilderOperationTool.ID, Enums.Priority.MEDIUM, params,
-                    null, null, null, new ArrayList<>(), token).first());
+            getMigrationRun().addExecution(catalogManager.getExecutionManager().submitProject(project, VariantAnnotationRebuilderOperationTool.ID,
+                    Enums.Priority.MEDIUM, params, null, null, null, new ArrayList<>(), token).first());
 //            VariantStorageEngine storageEngine = getVariantStorageEngineByProject(project);
 //            getVariantStorageManager()
         }

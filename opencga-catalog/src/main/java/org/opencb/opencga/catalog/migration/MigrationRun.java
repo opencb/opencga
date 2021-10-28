@@ -1,7 +1,7 @@
 package org.opencb.opencga.catalog.migration;
 
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobReferenceParam;
+import org.opencb.opencga.core.models.job.Execution;
+import org.opencb.opencga.core.models.job.ExecutionReferenceParam;
 
 import java.util.Date;
 import java.util.LinkedList;
@@ -42,7 +42,7 @@ public class MigrationRun {
     /**
      * Migration jobs.
      */
-    private List<JobReferenceParam> jobs = new LinkedList<>();
+    private List<ExecutionReferenceParam> executions = new LinkedList<>();
 
     /**
      * Migration status.
@@ -173,27 +173,27 @@ public class MigrationRun {
         return this;
     }
 
-    public List<JobReferenceParam> getJobs() {
-        return jobs;
+    public List<ExecutionReferenceParam> getExecutions() {
+        return executions;
     }
 
-    public MigrationRun setJobs(List<JobReferenceParam> jobs) {
-        this.jobs = jobs;
+    public MigrationRun setExecutions(List<ExecutionReferenceParam> executions) {
+        this.executions = executions;
         return this;
     }
 
-    public void removeJob(Job job) {
-        if (this.jobs == null) {
-            this.jobs = new LinkedList<>();
+    public void removeExecution(Execution execution) {
+        if (this.executions == null) {
+            this.executions = new LinkedList<>();
         }
-        jobs.removeIf(j -> j.getUuid().equals(job.getUuid()));
+        executions.removeIf(j -> j.getUuid().equals(execution.getUuid()));
     }
 
-    public MigrationRun addJob(Job job) {
-        if (this.jobs == null) {
-            this.jobs = new LinkedList<>();
+    public MigrationRun addExecution(Execution execution) {
+        if (this.executions == null) {
+            this.executions = new LinkedList<>();
         }
-        this.jobs.add(new JobReferenceParam(job));
+        this.executions.add(new ExecutionReferenceParam(execution));
         return this;
     }
 

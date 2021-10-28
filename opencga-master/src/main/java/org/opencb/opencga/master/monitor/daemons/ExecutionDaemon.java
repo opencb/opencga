@@ -322,7 +322,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return 0;
         }
 
-        ExecutionUpdateParams updateParams = new ExecutionUpdateParams();
+        PrivateExecutionUpdateParams updateParams = new PrivateExecutionUpdateParams();
         String toolId = execution.getInternal().getToolId();
 
         if (CollectionUtils.isEmpty(execution.getJobs())) {
@@ -637,7 +637,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private int setStatus(Execution execution, Enums.ExecutionStatus status) {
-        ExecutionUpdateParams updateParams = new ExecutionUpdateParams();
+        PrivateExecutionUpdateParams updateParams = new PrivateExecutionUpdateParams();
         updateParams.setInternal(new ExecutionInternal().setStatus(status));
 
         try {
@@ -651,7 +651,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return 1;
     }
 
-    private void updateExecution(Execution execution, ExecutionUpdateParams updateParams) throws CatalogException {
+    private void updateExecution(Execution execution, PrivateExecutionUpdateParams updateParams) throws CatalogException {
         executionManager.privateUpdate(execution.getStudy().getId(), execution.getId(), updateParams, token);
 
         if (!execution.getInternal().getStatus().getName().equals(updateParams.getInternal().getStatus().getName())) {

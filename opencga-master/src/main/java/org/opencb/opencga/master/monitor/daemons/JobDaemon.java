@@ -26,7 +26,6 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.clinical.rga.AuxiliarRgaAnalysis;
 import org.opencb.opencga.analysis.clinical.rga.RgaAnalysis;
 import org.opencb.opencga.analysis.clinical.team.TeamInterpretationAnalysis;
@@ -77,22 +76,17 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
-import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileAclEntry;
-import org.opencb.opencga.core.models.file.FileAclParams;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
@@ -129,7 +123,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.opencb.opencga.catalog.utils.ParamUtils.AclAction.SET;
 import static org.opencb.opencga.core.api.ParamConstants.JOB_PARAM;
 import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
 
@@ -673,75 +666,75 @@ public class JobDaemon extends MonitorParentDaemon {
         return outDir;
     }
 
-    private File getValidInternalOutDir(String study, Job job, String outDirPath, String userToken) throws CatalogException {
-        File outDir;
-        try {
-            outDir = fileManager.get(study, outDirPath, FileManager.INCLUDE_FILE_URI_PATH, token).first();
-        } catch (CatalogException e) {
-            // Directory not found. Will try to create using user's token
-            boolean parents = (boolean) job.getAttributes().getOrDefault(Job.OPENCGA_PARENTS, false);
-            try {
-                outDir = fileManager.createFolder(study, outDirPath, parents, "", FileManager.INCLUDE_FILE_URI_PATH,
-                        userToken).first();
-                IOManager ioManager = catalogManager.getIoManagerFactory().get(outDir.getUri());
-                ioManager.createDirectory(outDir.getUri(), true);
-            } catch (CatalogException | IOException e1) {
-                throw new CatalogException("Cannot create output directory. " + e1.getMessage(), e1.getCause());
-            }
-        }
-
-        // Ensure the directory is empty
-        IOManager ioManager;
-        try {
-            ioManager = catalogManager.getIoManagerFactory().get(outDir.getUri());
-        } catch (IOException e) {
-            throw CatalogIOException.ioManagerException(outDir.getUri(), e);
-        }
-        if (!ioManager.isDirectory(outDir.getUri())) {
-            throw new CatalogException(OUTDIR_PARAM + " seems not to be a directory");
-        }
-        if (!ioManager.listFiles(outDir.getUri()).isEmpty()) {
-            throw new CatalogException(OUTDIR_PARAM + " " + outDirPath + " is not an empty directory");
-        }
-
-        return outDir;
-    }
-
-    private File getValidDefaultOutDir(Job job) throws CatalogException {
-        File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + job.getUserId() + "/" + TimeUtils.getDay() + "/"
-                + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token).first();
-
-        // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
-        try {
-            catalogManager.getIoManagerFactory().get(folder.getUri()).createDirectory(folder.getUri(), true);
-        } catch (CatalogIOException | IOException e) {
-            // Submit job to delete job folder
-            ObjectMap params = new ObjectMap()
-                    .append("files", folder.getUuid())
-                    .append("study", job.getStudy().getId())
-                    .append(Constants.SKIP_TRASH, true);
-            jobManager.submit(job.getStudy().getId(), FileDeleteTask.ID, Enums.Priority.LOW, params, token);
-            throw new CatalogException("Cannot create job directory '" + folder.getUri() + "' for path '" + folder.getPath() + "'");
-        }
-
-        // Check if the user already has permissions set in his folder
-        OpenCGAResult<Map<String, List<String>>> result = fileManager.getAcls(job.getStudy().getId(),
-                Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(), true, token);
-        if (result.getNumResults() == 0 || result.first().isEmpty() || ListUtils.isEmpty(result.first().get(job.getUserId()))) {
-            // Add permissions to do anything under that path to the user launching the job
-            String allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
-                    .stream()
-                    .map(FileAclEntry.FilePermissions::toString)
-                    .collect(Collectors.joining(","));
-            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
-                    new FileAclParams(null, allFilePermissions), SET, token);
-            // Remove permissions to the @members group
-            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"),
-                    StudyManager.MEMBERS, new FileAclParams(null, ""), SET, token);
-        }
-
-        return folder;
-    }
+//    private File getValidInternalOutDir(String study, Job job, String outDirPath, String userToken) throws CatalogException {
+//        File outDir;
+//        try {
+//            outDir = fileManager.get(study, outDirPath, FileManager.INCLUDE_FILE_URI_PATH, token).first();
+//        } catch (CatalogException e) {
+//            // Directory not found. Will try to create using user's token
+//            boolean parents = (boolean) job.getAttributes().getOrDefault(Job.OPENCGA_PARENTS, false);
+//            try {
+//                outDir = fileManager.createFolder(study, outDirPath, parents, "", FileManager.INCLUDE_FILE_URI_PATH,
+//                        userToken).first();
+//                IOManager ioManager = catalogManager.getIoManagerFactory().get(outDir.getUri());
+//                ioManager.createDirectory(outDir.getUri(), true);
+//            } catch (CatalogException | IOException e1) {
+//                throw new CatalogException("Cannot create output directory. " + e1.getMessage(), e1.getCause());
+//            }
+//        }
+//
+//        // Ensure the directory is empty
+//        IOManager ioManager;
+//        try {
+//            ioManager = catalogManager.getIoManagerFactory().get(outDir.getUri());
+//        } catch (IOException e) {
+//            throw CatalogIOException.ioManagerException(outDir.getUri(), e);
+//        }
+//        if (!ioManager.isDirectory(outDir.getUri())) {
+//            throw new CatalogException(OUTDIR_PARAM + " seems not to be a directory");
+//        }
+//        if (!ioManager.listFiles(outDir.getUri()).isEmpty()) {
+//            throw new CatalogException(OUTDIR_PARAM + " " + outDirPath + " is not an empty directory");
+//        }
+//
+//        return outDir;
+//    }
+//
+//    private File getValidDefaultOutDir(Job job) throws CatalogException {
+//        File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + job.getUserId() + "/" + TimeUtils.getDay() + "/"
+//                + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token).first();
+//
+//        // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
+//        try {
+//            catalogManager.getIoManagerFactory().get(folder.getUri()).createDirectory(folder.getUri(), true);
+//        } catch (CatalogIOException | IOException e) {
+//            // Submit job to delete job folder
+//            ObjectMap params = new ObjectMap()
+//                    .append("files", folder.getUuid())
+//                    .append("study", job.getStudy().getId())
+//                    .append(Constants.SKIP_TRASH, true);
+//            jobManager.submit(job.getStudy().getId(), FileDeleteTask.ID, Enums.Priority.LOW, params, token);
+//            throw new CatalogException("Cannot create job directory '" + folder.getUri() + "' for path '" + folder.getPath() + "'");
+//        }
+//
+//        // Check if the user already has permissions set in his folder
+//        OpenCGAResult<Map<String, List<String>>> result = fileManager.getAcls(job.getStudy().getId(),
+//                Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(), true, token);
+//        if (result.getNumResults() == 0 || result.first().isEmpty() || ListUtils.isEmpty(result.first().get(job.getUserId()))) {
+//            // Add permissions to do anything under that path to the user launching the job
+//            String allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
+//                    .stream()
+//                    .map(FileAclEntry.FilePermissions::toString)
+//                    .collect(Collectors.joining(","));
+//            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
+//                    new FileAclParams(null, allFilePermissions), SET, token);
+//            // Remove permissions to the @members group
+//            fileManager.updateAcl(job.getStudy().getId(), Collections.singletonList("JOBS/" + job.getUserId() + "/"),
+//                    StudyManager.MEMBERS, new FileAclParams(null, ""), SET, token);
+//        }
+//
+//        return folder;
+//    }
 
     public static String buildCli(String internalCli, Job job) {
         String toolId = job.getTool().getId();

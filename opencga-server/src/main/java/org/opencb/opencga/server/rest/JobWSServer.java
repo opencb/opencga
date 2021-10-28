@@ -78,14 +78,14 @@ public class JobWSServer extends OpenCGAWSServer {
     @POST
     @Path("/retry")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Relaunch a failed job", response = Job.class)
+    @ApiOperation(value = "Relaunch a failed execution", response = Job.class)
     public Response retryJob(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobId,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTagsStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = "job", required = true) JobRetryParams params
+            @ApiParam(value = "job", required = true) ExecutionRetryParams params
 
     ) {
         try {
@@ -102,8 +102,8 @@ public class JobWSServer extends OpenCGAWSServer {
             } else {
                 jobTags = Collections.emptyList();
             }
-            OpenCGAResult<Job> result = catalogManager.getJobManager().retry(study, params,
-                    null, jobId, jobDescription, jobDependsOn, jobTags, token);
+            OpenCGAResult<Execution> result = catalogManager.getExecutionManager().retry(study, params, null, jobId, jobDescription,
+                    jobDependsOn, jobTags, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

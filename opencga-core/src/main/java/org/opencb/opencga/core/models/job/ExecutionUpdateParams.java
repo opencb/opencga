@@ -4,19 +4,17 @@ import org.opencb.opencga.core.models.file.File;
 
 public class ExecutionUpdateParams {
 
-    private Pipeline pipeline;
-    private Boolean visited;
-    private File outDir;
-    private ExecutionInternal internal;
+    protected Pipeline pipeline;
+    protected Boolean visited;
+    protected File outDir;
 
     public ExecutionUpdateParams() {
     }
 
-    public ExecutionUpdateParams(Pipeline pipeline, Boolean visited, File outDir, ExecutionInternal internal) {
+    public ExecutionUpdateParams(Pipeline pipeline, Boolean visited, File outDir) {
         this.pipeline = pipeline;
         this.visited = visited;
         this.outDir = outDir;
-        this.internal = internal;
     }
 
     @Override
@@ -25,7 +23,6 @@ public class ExecutionUpdateParams {
         sb.append("pipeline=").append(pipeline);
         sb.append(", visited=").append(visited);
         sb.append(", outDir=").append(outDir);
-        sb.append(", internal=").append(internal);
         sb.append('}');
         return sb.toString();
     }
@@ -57,13 +54,5 @@ public class ExecutionUpdateParams {
         return this;
     }
 
-    public ExecutionInternal getInternal() {
-        return internal;
-    }
-
-    public ExecutionUpdateParams setInternal(ExecutionInternal internal) {
-        this.internal = internal;
-        return this;
-    }
 }
 

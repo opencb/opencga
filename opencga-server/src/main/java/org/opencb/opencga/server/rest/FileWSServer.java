@@ -35,6 +35,7 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.*;
+import org.opencb.opencga.core.models.job.Execution;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -695,7 +696,8 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap params = new ObjectMap()
                     .append("files", files)
                     .append("study", studyStr);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, "files-unlink", Enums.Priority.MEDIUM, params, token);
+            OpenCGAResult<Execution> result = catalogManager.getExecutionManager().submit(studyStr, "files-unlink", Enums.Priority.MEDIUM,
+                    params, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -902,8 +904,8 @@ public class FileWSServer extends OpenCGAWSServer {
                     .append("files", files)
                     .append("study", studyStr)
                     .append(Constants.SKIP_TRASH, skipTrash);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, FileDeleteTask.ID, Enums.Priority.MEDIUM, params,
-                    token);
+            OpenCGAResult<Execution> result = catalogManager.getExecutionManager().submit(studyStr, FileDeleteTask.ID,
+                    Enums.Priority.MEDIUM, params, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

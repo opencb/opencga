@@ -10,8 +10,10 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.ExecutionReferenceParam;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobReferenceParam;
+import org.opencb.opencga.core.models.job.JobInternal;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -21,7 +23,7 @@ import static org.junit.Assert.*;
 
 public class MigrationManagerTest extends AbstractManagerTest {
 
-    @Migration(id ="test-1", version = "0.0.1", description = "", domain = Migration.MigrationDomain.CATALOG,
+    @Migration(id = "test-1", version = "0.0.1", description = "", domain = Migration.MigrationDomain.CATALOG,
             language = Migration.MigrationLanguage.JAVA, rank = 1)
     public static class Migration1 extends MigrationTool {
         @Override
@@ -30,7 +32,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         }
     }
 
-    @Migration(id ="test-2", version = "0.0.1", description = "", domain = Migration.MigrationDomain.CATALOG,
+    @Migration(id = "test-2", version = "0.0.1", description = "", domain = Migration.MigrationDomain.CATALOG,
             language = Migration.MigrationLanguage.JAVA, rank = 2)
     public static class Migration2 extends MigrationTool {
         @Override
@@ -39,7 +41,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         }
     }
 
-    @Migration(id ="test2-1", version = "0.1.0", description = "", domain = Migration.MigrationDomain.CATALOG,
+    @Migration(id = "test2-1", version = "0.1.0", description = "", domain = Migration.MigrationDomain.CATALOG,
             language = Migration.MigrationLanguage.JAVA, rank = 1)
     public static class Migration3 extends MigrationTool {
         @Override
@@ -48,7 +50,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         }
     }
 
-    @Migration(id ="test2-2", version = "0.1.0", description = "", domain = Migration.MigrationDomain.CATALOG,
+    @Migration(id = "test2-2", version = "0.1.0", description = "", domain = Migration.MigrationDomain.CATALOG,
             language = Migration.MigrationLanguage.JAVA, rank = 2)
     public static class Migration4 extends MigrationTool {
         @Override
@@ -57,7 +59,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         }
     }
 
-    @Migration(id ="test3-1", version = "0.2.0", description = "", domain = Migration.MigrationDomain.CATALOG,
+    @Migration(id = "test3-1", version = "0.2.0", description = "", domain = Migration.MigrationDomain.CATALOG,
             language = Migration.MigrationLanguage.JAVA, rank = 1)
     public static class Migration5 extends MigrationTool {
         @Override
@@ -66,7 +68,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         }
     }
 
-    @Migration(id ="test3-2", version = "0.2.0", description = "", domain = Migration.MigrationDomain.CATALOG,
+    @Migration(id = "test3-2", version = "0.2.0", description = "", domain = Migration.MigrationDomain.CATALOG,
             language = Migration.MigrationLanguage.JAVA, rank = 2)
     public static class Migration6 extends MigrationTool {
         @Override
@@ -75,7 +77,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         }
     }
 
-    @Migration(id ="test4-1-manual", version = "0.2.1", description = "", domain = Migration.MigrationDomain.CATALOG,
+    @Migration(id = "test4-1-manual", version = "0.2.1", description = "", domain = Migration.MigrationDomain.CATALOG,
             language = Migration.MigrationLanguage.JAVA, rank = 1, manual = true)
     public static class Migration7 extends MigrationTool {
         @Override
@@ -86,7 +88,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         }
     }
 
-    @Migration(id ="test4-2", version = "0.2.2", description = "", domain = Migration.MigrationDomain.CATALOG,
+    @Migration(id = "test4-2", version = "0.2.2", description = "", domain = Migration.MigrationDomain.CATALOG,
             language = Migration.MigrationLanguage.JAVA, rank = 1)
     public static class Migration8 extends MigrationTool {
         @Override
@@ -95,7 +97,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         }
     }
 
-    @Migration(id ="test4-3", version = "0.2.3", description = "", domain = Migration.MigrationDomain.CATALOG,
+    @Migration(id = "test4-3", version = "0.2.3", description = "", domain = Migration.MigrationDomain.CATALOG,
             language = Migration.MigrationLanguage.JAVA, rank = 1)
     public static class Migration9 extends MigrationTool {
         @Override
@@ -104,15 +106,15 @@ public class MigrationManagerTest extends AbstractManagerTest {
         }
     }
 
-    @Migration(id ="test-with-jobs", version = "1.0.0", description = "", domain = Migration.MigrationDomain.CATALOG,
+    @Migration(id = "test-with-jobs", version = "1.0.0", description = "", domain = Migration.MigrationDomain.CATALOG,
             language = Migration.MigrationLanguage.JAVA, rank = 1)
     public static class MigrationWithJobs extends MigrationTool {
         @Override
         protected void run() throws Exception {
             String fqn = catalogManager.getProjectManager().get(new Query(), new QueryOptions(), token).first().getFqn();
-            getMigrationRun().getJobs().clear();
+            getMigrationRun().getExecutions().clear();
 
-            getMigrationRun().addJob(catalogManager.getJobManager().submitProject(fqn, "my-tool", null, Collections.emptyMap(), null, null, null, null, token).first());
+            getMigrationRun().addExecution(catalogManager.getExecutionManager().submitProject(fqn, "my-tool", null, Collections.emptyMap(), null, null, null, null, token).first());
         }
     }
 
@@ -217,7 +219,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "OtherValue"), token);
         assertEquals(MigrationRun.MigrationStatus.ERROR, migrationRun.getStatus());
 
-        migrationRun= catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
+        migrationRun = catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
         assertEquals(MigrationRun.MigrationStatus.DONE, migrationRun.getStatus());
     }
 
@@ -233,18 +235,19 @@ public class MigrationManagerTest extends AbstractManagerTest {
         MigrationRun migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token).stream().filter(p1 -> p1.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
         assertEquals(MigrationRun.MigrationStatus.ON_HOLD, migrationRun.getStatus());
         Date start = migrationRun.getStart();
-        JobReferenceParam j = migrationRun.getJobs().get(0);
+        ExecutionReferenceParam j = migrationRun.getExecutions().get(0);
 
         // RUN. Migration run does not get triggered
         catalogManager.getMigrationManager().runMigration("1.0.0", Collections.emptySet(), Collections.emptySet(), "", token);
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token).stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
         assertEquals(MigrationRun.MigrationStatus.ON_HOLD, migrationRun.getStatus());
         assertEquals(start, migrationRun.getStart());
-        assertEquals(j, migrationRun.getJobs().get(0));
+        assertEquals(j, migrationRun.getExecutions().get(0));
 
         // Update job with ERROR. Migration gets updated to ERROR.
         Job job = catalogManager.getJobManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
-        catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(), new ObjectMap("internal.status.name", "ERROR"), new QueryOptions(), token);
+        catalogManager.getJobManager().privateUpdate(job.getStudy().getId(), job.getId(),
+                new JobInternal(new Enums.ExecutionStatus("ERROR")), token);
 
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
@@ -257,9 +260,10 @@ public class MigrationManagerTest extends AbstractManagerTest {
         assertEquals(MigrationRun.MigrationStatus.ON_HOLD, migrationRun.getStatus());
 
         // Update job with DONE. Migration gets updated to DONE.
-        j = migrationRun.getJobs().get(0);
+        j = migrationRun.getExecutions().get(0);
         job = catalogManager.getJobManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
-        catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(), new ObjectMap("internal.status.name", "DONE"), new QueryOptions(), token);
+        catalogManager.getJobManager().privateUpdate(job.getStudy().getId(), job.getId(),
+                new JobInternal(new Enums.ExecutionStatus("DONE")), token);
 
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();

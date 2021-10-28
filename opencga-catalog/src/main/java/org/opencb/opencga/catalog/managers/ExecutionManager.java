@@ -156,6 +156,19 @@ public class ExecutionManager extends ResourceManager<Execution> {
 //        return submitTool(studies.get(0), toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, token);
 //    }
 
+    public OpenCGAResult<Execution> retry(String studyStr, ExecutionRetryParams executionRetry, Enums.Priority priority,
+                                          String executionId, String description, List<String> dependsOn, List<String> tags, String token)
+            throws CatalogException {
+        Execution execution = get(studyStr, executionRetry.getExecution(), new QueryOptions(), token).first();
+        if (execution.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.ERROR)
+                || execution.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.ABORTED)) {
+            return submit(studyStr, execution.getInternal().getToolId(), priority, execution.getParams(), executionId, description,
+                    dependsOn, tags, token);
+        } else {
+            throw new CatalogException("Unable to retry execution with status " + execution.getInternal().getStatus().getName());
+        }
+    }
+
     public OpenCGAResult<Execution> submitProject(String projectStr, String resourceId, Enums.Priority priority, Map<String, Object> params,
                                                   String id, String description, List<String> dependsOn, List<String> tags, String token)
             throws CatalogException {
@@ -303,7 +316,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
     }
 
     /**
-     * Update Internal field of Execution. Only opencga user is allowed to use this method.
+     * Update fields of a Execution.
      *
      * @param studyStr    Study id.
      * @param executionId Execution id.
@@ -312,7 +325,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
      * @return an OpenCGAResult.
      * @throws CatalogException CatalogException.
      */
-    public OpenCGAResult<Execution> privateUpdate(String studyStr, String executionId, ExecutionUpdateParams params, String token)
+    public OpenCGAResult<Execution> update(String studyStr, String executionId, ExecutionUpdateParams params, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
 
@@ -322,6 +335,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
                 .append("params", params)
                 .append("token", token);
         try {
+            // TODO: Change auth check
             authorizationManager.checkIsInstallationAdministrator(userId);
             ParamUtils.checkObj(params, "ExecutionUpdateParams");
 
@@ -334,6 +348,52 @@ public class ExecutionManager extends ResourceManager<Execution> {
                 updateMap = JacksonUtils.getDefaultNonNullObjectMapper().readValue(jsonString, ObjectMap.class);
             } catch (JsonProcessingException e) {
                 throw new CatalogException("Could not parse ExecutionUpdateParams object: " + e.getMessage(), e);
+            }
+
+            OpenCGAResult<Execution> update = executionDBAdaptor.update(execution.getUid(), updateMap, QueryOptions.empty());
+            auditManager.auditUpdate(userId, Enums.Resource.EXECUTION, execution.getId(), execution.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return update;
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(userId, Enums.Resource.EXECUTION, executionId, "", "", "", auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
+    /**
+     * Update Internal field of Execution. Only opencga user is allowed to use this method.
+     *
+     * @param studyStr    Study id.
+     * @param executionId Execution id.
+     * @param params      Update params.
+     * @param token       token.
+     * @return an OpenCGAResult.
+     * @throws CatalogException CatalogException.
+     */
+    public OpenCGAResult<Execution> privateUpdate(String studyStr, String executionId, PrivateExecutionUpdateParams params, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("executionId", executionId)
+                .append("params", params)
+                .append("token", token);
+        try {
+            authorizationManager.checkIsInstallationAdministrator(userId);
+            ParamUtils.checkObj(params, "PrivateExecutionUpdateParams");
+
+            Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+            Execution execution = internalGet(study.getUid(), executionId, INCLUDE_EXECUTION_IDS, userId).first();
+
+            ObjectMap updateMap;
+            try {
+                String jsonString = JacksonUtils.getDefaultNonNullObjectMapper().writeValueAsString(params);
+                updateMap = JacksonUtils.getDefaultNonNullObjectMapper().readValue(jsonString, ObjectMap.class);
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse PrivateExecutionUpdateParams object: " + e.getMessage(), e);
             }
 
             OpenCGAResult<Execution> update = executionDBAdaptor.update(execution.getUid(), updateMap, QueryOptions.empty());

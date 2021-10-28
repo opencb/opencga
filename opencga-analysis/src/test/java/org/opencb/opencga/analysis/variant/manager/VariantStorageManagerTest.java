@@ -25,7 +25,7 @@ import org.opencb.opencga.analysis.variant.manager.operations.AbstractVariantOpe
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.Execution;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -86,7 +86,7 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
     @Test
     public void testConfigureSampleIndex() throws Exception {
         SampleIndexConfiguration conf = getRandomConf();
-        OpenCGAResult<Job> result = variantManager.configureSampleIndex(studyId, conf, true, sessionId);
+        OpenCGAResult<Execution> result = variantManager.configureSampleIndex(studyId, conf, true, sessionId);
         assertEquals(0, result.getResults().size());
         SampleIndexConfiguration actual = catalogManager.getStudyManager().get(studyId, null, sessionId).first().getInternal().getConfiguration().getVariantEngine().getSampleIndex();
         assertEquals(conf, actual);
@@ -110,7 +110,7 @@ public class VariantStorageManagerTest extends AbstractVariantOperationManagerTe
         assertEquals(new HashSet<>(file.getSampleIds()), variantManager.getIndexedSamples(studyId, sessionId));
 
         Study studyNew = catalogManager.getStudyManager().create(projectId, "sNew", "sNew", "sNew",
-                "Study New", null, null, null, null, null, sessionId)
+                        "Study New", null, null, null, null, null, sessionId)
                 .first();
         assertEquals(Collections.emptySet(), variantManager.getIndexedSamples(studyNew.getId(), sessionId));
     }

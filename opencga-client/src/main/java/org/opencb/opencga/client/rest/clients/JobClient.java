@@ -22,12 +22,7 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.models.file.FileContent;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobAclUpdateParams;
-import org.opencb.opencga.core.models.job.JobCreateParams;
-import org.opencb.opencga.core.models.job.JobRetryParams;
-import org.opencb.opencga.core.models.job.JobTop;
-import org.opencb.opencga.core.models.job.JobUpdateParams;
+import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -156,7 +151,7 @@ public class JobClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> retry(JobRetryParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> retry(ExecutionRetryParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("jobs", null, null, null, "retry", params, POST, Job.class);

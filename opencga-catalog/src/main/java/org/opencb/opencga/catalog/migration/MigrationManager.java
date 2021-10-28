@@ -18,8 +18,8 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.ExecutionReferenceParam;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobReferenceParam;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
@@ -283,7 +283,7 @@ public class MigrationManager {
             throws CatalogException {
         boolean allDone = true;
         boolean anyError = false;
-        for (JobReferenceParam jobR : migrationRun.getJobs()) {
+        for (ExecutionReferenceParam jobR : migrationRun.getExecutions()) {
             Job job = catalogManager.getJobManager()
                     .get(jobR.getStudyId(), jobR.getId(), new QueryOptions(QueryOptions.INCLUDE, "id,internal"), token).first();
             String jobStatus = job.getInternal().getStatus().getName();
@@ -536,7 +536,7 @@ public class MigrationManager {
             migrationTool.execute();
             logger.info("------------------------------------------------------");
             MigrationRun.MigrationStatus status;
-            if (migrationRun.getJobs().isEmpty()) {
+            if (migrationRun.getExecutions().isEmpty()) {
                 status = MigrationRun.MigrationStatus.DONE;
             } else {
                 status = getOnHoldMigrationRunStatus(migrationTool.getAnnotation(), migrationRun, token);

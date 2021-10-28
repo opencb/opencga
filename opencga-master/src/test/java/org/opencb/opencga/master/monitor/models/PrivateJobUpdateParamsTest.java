@@ -24,15 +24,19 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.Execution;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobStudyParam;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.opencb.opencga.core.models.common.Enums.Priority.HIGH;
 
 public class PrivateJobUpdateParamsTest extends AbstractManagerTest {
 
@@ -63,8 +67,14 @@ public class PrivateJobUpdateParamsTest extends AbstractManagerTest {
 
     @Test
     public void updateJobInformation() throws CatalogException {
-        OpenCGAResult<Job> jobResult = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.HIGH,
-                new HashMap<>(), token);
+        Execution execution = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", HIGH, new HashMap<>(),
+                token).first();
+        Job job = new Job()
+                .setTool(new ToolInfo().setId("variant-index"))
+                .setExecutionId(execution.getId())
+                .setParams(new HashMap<>())
+                .setPriority(Enums.Priority.HIGH);
+        OpenCGAResult<Job> jobResult = catalogManager.getJobManager().submit(studyFqn, Collections.singletonList(job), adminToken);
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setCommandLine("myCommandLine");
         catalogManager.getJobManager().update(studyFqn, jobResult.first().getId(), updateParams, QueryOptions.empty(), token);
@@ -73,9 +83,9 @@ public class PrivateJobUpdateParamsTest extends AbstractManagerTest {
         assertEquals("myCommandLine", jobResult.first().getCommandLine());
 
         updateParams.setOutDir(new File()
-                .setUid(1)
-                .setPath("/tmp/path")
-                .setId("myJobId"))
+                        .setUid(1)
+                        .setPath("/tmp/path")
+                        .setId("myJobId"))
                 .setStudy(new JobStudyParam(studyFqn, Arrays.asList(studyFqn2, studyFqn3)));
         catalogManager.getJobManager().update(studyFqn, jobResult.first().getId(), updateParams, QueryOptions.empty(), token);
         jobResult = catalogManager.getJobManager().get(studyFqn, jobResult.first().getId(), QueryOptions.empty(), token);

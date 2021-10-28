@@ -126,7 +126,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, commandOptions.description);
         params.putIfNotNull(ParamConstants.JOB_TAGS, commandOptions.jobTags);
 
-        return openCGAClient.getJobClient().retry(new JobRetryParams(commandOptions.jobToRetry), params);
+        return openCGAClient.getJobClient().retry(new ExecutionRetryParams(commandOptions.jobToRetry), params);
     }
 
     private RestResponse<Job> info() throws ClientException {

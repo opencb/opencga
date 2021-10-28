@@ -489,8 +489,8 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
      * @throws CatalogException       on catalog errors
      * @throws StorageEngineException on storage engine errors
      */
-    public OpenCGAResult<Job> configureSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration,
-                                                   boolean skipRebuild, String token)
+    public OpenCGAResult<Execution> configureSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration,
+                                                         boolean skipRebuild, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
             sampleIndexConfiguration.validate();
@@ -505,7 +505,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 // If changes, launch sample-index-run
                 VariantSampleIndexParams params =
                         new VariantSampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, false);
-                return catalogManager.getJobManager().submit(studyFqn, VariantSampleIndexOperationTool.ID, null,
+                return catalogManager.getExecutionManager().submit(studyFqn, VariantSampleIndexOperationTool.ID, null,
                         params.toParams(STUDY_PARAM, studyFqn), token);
             }
         });

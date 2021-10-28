@@ -797,64 +797,64 @@ public class CatalogManagerTest extends AbstractManagerTest {
      * Job methods ***************************
      */
 
-    @Test
-    public void testCreateJob() throws CatalogException {
-        Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
-        String studyId = catalogManager.getStudyManager().search(query, null, token).first().getId();
-
-        catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), token);
-        catalogManager.getJobManager().submit(studyId, "command-subcommand2", null, Collections.emptyMap(), token);
-
-        catalogManager.getJobManager().create(studyId,
-                new Job().setId("job1").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE))),
-                QueryOptions.empty(), token);
-        catalogManager.getJobManager().create(studyId,
-                new Job().setId("job2").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR))),
-                QueryOptions.empty(), token);
-        catalogManager.getJobManager().create(studyId,
-                new Job().setId("job3").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.UNREGISTERED))),
-                QueryOptions.empty(), token);
-
-        query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
-        DataResult<Job> unfinishedJobs = catalogManager.getJobManager().search(String.valueOf(studyId), query, null, token);
-        assertEquals(2, unfinishedJobs.getNumResults());
-
-        DataResult<Job> allJobs = catalogManager.getJobManager().search(String.valueOf(studyId), (Query) null, null, token);
-        assertEquals(5, allJobs.getNumResults());
-
-        thrown.expectMessage("status different");
-        thrown.expect(CatalogException.class);
-        catalogManager.getJobManager().create(studyId,
-                new Job().setId("job5").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING))),
-                QueryOptions.empty(), token);
-    }
-
+//    @Test
+//    public void testCreateJob() throws CatalogException {
+//        Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
+//        String studyId = catalogManager.getStudyManager().search(query, null, token).first().getId();
+//
+//        catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), token);
+//        catalogManager.getJobManager().submit(studyId, "command-subcommand2", null, Collections.emptyMap(), token);
+//
+//        catalogManager.getJobManager().create(studyId,
+//                new Job().setId("job1").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE))),
+//                QueryOptions.empty(), token);
+//        catalogManager.getJobManager().create(studyId,
+//                new Job().setId("job2").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR))),
+//                QueryOptions.empty(), token);
+//        catalogManager.getJobManager().create(studyId,
+//                new Job().setId("job3").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.UNREGISTERED))),
+//                QueryOptions.empty(), token);
+//
+//        query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
+//        DataResult<Job> unfinishedJobs = catalogManager.getJobManager().search(String.valueOf(studyId), query, null, token);
+//        assertEquals(2, unfinishedJobs.getNumResults());
+//
+//        DataResult<Job> allJobs = catalogManager.getJobManager().search(String.valueOf(studyId), (Query) null, null, token);
+//        assertEquals(5, allJobs.getNumResults());
+//
+//        thrown.expectMessage("status different");
+//        thrown.expect(CatalogException.class);
+//        catalogManager.getJobManager().create(studyId,
+//                new Job().setId("job5").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING))),
+//                QueryOptions.empty(), token);
+//    }
     @Test
     public void submitJobWithDependenciesFromDifferentStudies() throws CatalogException {
-        Execution first = catalogManager.getExecutionManager().submit(studyFqn, "command-subcommand", null, Collections.emptyMap(), token)
+        Execution first = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", null, Collections.emptyMap(), token)
                 .first();
-        Execution second = catalogManager.getExecutionManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null,
+        Execution second = catalogManager.getExecutionManager().submit(studyFqn2, "variant-index", null, Collections.emptyMap(), null,
                 "", Collections.singletonList(first.getUuid()), null, token).first();
         assertEquals(first.getId(), second.getDependsOn().get(0).getId());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
-        catalogManager.getExecutionManager().submit(studyFqn2, "command-subcommand2", null, Collections.emptyMap(), null, "",
+        catalogManager.getExecutionManager().submit(studyFqn2, "variant-index", null, Collections.emptyMap(), null, "",
                 Collections.singletonList(first.getId()), null, token);
     }
 
     @Test
-    public void testGetAllJobs() throws CatalogException {
+    public void testGetAllExecutions() throws CatalogException {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
         String studyId = catalogManager.getStudyManager().search(query, null, token).first().getId();
 
-        catalogManager.getJobManager().create(studyId, new Job().setId("myErrorJob"), null, token);
+        catalogManager.getExecutionManager().submit(studyFqn2, "variant-index", null, Collections.emptyMap(), null,
+                "", Collections.emptyList(), null, token);
 
         QueryOptions options = new QueryOptions(QueryOptions.COUNT, true);
-        DataResult<Job> allJobs = catalogManager.getJobManager().search(studyId, null, options, token);
+        DataResult<Execution> allExecutions = catalogManager.getExecutionManager().search(studyId, null, options, token);
 
-        assertEquals(1, allJobs.getNumMatches());
-        assertEquals(1, allJobs.getNumResults());
+        assertEquals(1, allExecutions.getNumMatches());
+        assertEquals(1, allExecutions.getNumResults());
     }
 
     @Test
@@ -880,8 +880,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 default:
                     throw new IllegalArgumentException();
             }
-            catalogManager.getJobManager().update(studyId, id, new ObjectMap("internal",
-                    new JobInternal(new Enums.ExecutionStatus(status))), new QueryOptions(), token);
+            catalogManager.getJobManager().privateUpdate(studyId, id, new JobInternal(new Enums.ExecutionStatus(status)), adminToken);
         }
 
         int limit = 20;
@@ -894,62 +893,40 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void submitJobOwner() throws CatalogException {
-        OpenCGAResult<Job> job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
-                token);
-
-        assertEquals(1, job.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PENDING, job.first().getInternal().getStatus().getName());
-    }
-
-    @Test
-    public void submitJobFromAdminsGroup() throws CatalogException {
-        // Add user to admins group
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
-                new GroupUpdateParams(Collections.singletonList("user3")), token);
-
-        OpenCGAResult<Job> job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
-                token);
-
-        assertEquals(1, job.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PENDING, job.first().getInternal().getStatus().getName());
-    }
-
-    @Test
-    public void submitJobWithoutPermissions() throws CatalogException {
+    public void submitExecutionWithoutPermissions() throws CatalogException {
         // Check there are no ABORTED jobs
-        Query query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.ABORTED);
-        assertEquals(0, catalogManager.getJobManager().count(studyFqn, query, token).getNumMatches());
+        Query query = new Query(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.ABORTED);
+        assertEquals(0, catalogManager.getExecutionManager().count(studyFqn, query, token).getNumMatches());
 
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
                 new StudyAclParams("", "view-only"), ParamUtils.AclAction.SET, token);
 
         try {
-            catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), sessionIdUser3);
+            catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), sessionIdUser3);
             fail("Sumbmission should have failed with a message saying the user does not have EXECUTION permissions");
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("Permission denied"));
         }
 
         // The previous execution should have created an ABORTED job
-        OpenCGAResult<Job> search = catalogManager.getJobManager().search(studyFqn, query, null, token);
+        OpenCGAResult<Execution> search = catalogManager.getExecutionManager().search(studyFqn, query, null, token);
         assertEquals(1, search.getNumResults());
-        assertEquals("variant-index", search.first().getTool().getId());
+        assertEquals("variant-index", search.first().getInternal().getToolId());
     }
 
     @Test
-    public void submitJobWithPermissions() throws CatalogException {
+    public void submitExecutionWithPermissions() throws CatalogException {
         // Check there are no ABORTED jobs
-        Query query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.ABORTED);
-        assertEquals(0, catalogManager.getJobManager().count(studyFqn, query, token).getNumMatches());
+        Query query = new Query(ExecutionDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.ABORTED);
+        assertEquals(0, catalogManager.getExecutionManager().count(studyFqn, query, token).getNumMatches());
 
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
                 new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), "view-only"), ParamUtils.AclAction.SET, token);
 
-        OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
-                sessionIdUser3);
+        OpenCGAResult<Execution> search = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM,
+                new ObjectMap(), sessionIdUser3);
         assertEquals(1, search.getNumResults());
         assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getName());
     }
@@ -960,47 +937,43 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
                 new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), "view-only"), ParamUtils.AclAction.SET, token);
 
-        OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
-                sessionIdUser3);
+        OpenCGAResult<Execution> search = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM,
+                new ObjectMap(), sessionIdUser3);
         assertEquals(1, search.getNumResults());
         assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getName());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("stop the job");
-        catalogManager.getJobManager().delete(studyFqn, Collections.singletonList(search.first().getId()), QueryOptions.empty(), token);
+        catalogManager.getExecutionManager().delete(studyFqn, Collections.singletonList(search.first().getId()), QueryOptions.empty(), token);
     }
 
     @Test
-    public void visitJob() throws CatalogException {
-        Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token)
+    public void visitExecution() throws CatalogException {
+        Execution execution = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), token)
                 .first();
 
-        Query query = new Query(JobDBAdaptor.QueryParams.VISITED.key(), false);
-        assertEquals(1, catalogManager.getJobManager().count(studyFqn, query, token).getNumMatches());
+        Query query = new Query(ExecutionDBAdaptor.QueryParams.VISITED.key(), false);
+        assertEquals(1, catalogManager.getExecutionManager().count(studyFqn, query, token).getNumMatches());
 
         // Now we visit the job
-        catalogManager.getJobManager().visit(studyFqn, job.getId(), token);
-        assertEquals(0, catalogManager.getJobManager().count(studyFqn, query, token).getNumMatches());
+        ExecutionUpdateParams updateParams = new ExecutionUpdateParams().setVisited(true);
+        catalogManager.getExecutionManager().update(studyFqn, execution.getId(), updateParams, token);
+        assertEquals(0, catalogManager.getExecutionManager().count(studyFqn, query, token).getNumMatches());
 
-        query.put(JobDBAdaptor.QueryParams.VISITED.key(), true);
-        assertEquals(1, catalogManager.getJobManager().count(studyFqn, query, token).getNumMatches());
+        query.put(ExecutionDBAdaptor.QueryParams.VISITED.key(), true);
+        assertEquals(1, catalogManager.getExecutionManager().count(studyFqn, query, token).getNumMatches());
 
         // Now we update setting job to visited false again
-        JobUpdateParams updateParams = new JobUpdateParams().setVisited(false);
-        catalogManager.getJobManager().update(studyFqn, job.getId(), updateParams, QueryOptions.empty(), token);
-        assertEquals(0, catalogManager.getJobManager().count(studyFqn, query, token).getNumMatches());
+        updateParams = new ExecutionUpdateParams().setVisited(false);
+        catalogManager.getExecutionManager().update(studyFqn, execution.getId(), updateParams, token);
+        assertEquals(0, catalogManager.getExecutionManager().count(studyFqn, query, token).getNumMatches());
 
-        query = new Query(JobDBAdaptor.QueryParams.VISITED.key(), false);
-        assertEquals(1, catalogManager.getJobManager().count(studyFqn, query, token).getNumMatches());
+        query = new Query(ExecutionDBAdaptor.QueryParams.VISITED.key(), false);
+        assertEquals(1, catalogManager.getExecutionManager().count(studyFqn, query, token).getNumMatches());
     }
 
     /**
-     * <<<<<<< HEAD
      * VariableSet methods
-     * ***************************
-     * =======
-     * VariableSet methods ***************************
-     * >>>>>>> develop
      */
 
     @Test
