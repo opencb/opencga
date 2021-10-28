@@ -662,6 +662,7 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
                     case PRIORITY:
                     case RELEASE:
                     case TAGS:
+                    case VISITED:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

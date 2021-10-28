@@ -18,8 +18,8 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Execution;
 import org.opencb.opencga.core.models.job.ExecutionReferenceParam;
-import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
@@ -284,9 +284,9 @@ public class MigrationManager {
         boolean allDone = true;
         boolean anyError = false;
         for (ExecutionReferenceParam jobR : migrationRun.getExecutions()) {
-            Job job = catalogManager.getJobManager()
+            Execution execution = catalogManager.getExecutionManager()
                     .get(jobR.getStudyId(), jobR.getId(), new QueryOptions(QueryOptions.INCLUDE, "id,internal"), token).first();
-            String jobStatus = job.getInternal().getStatus().getName();
+            String jobStatus = execution.getInternal().getStatus().getName();
             if (jobStatus.equals(Enums.ExecutionStatus.ERROR)
                     || jobStatus.equals(Enums.ExecutionStatus.ABORTED)) {
                 anyError = true;

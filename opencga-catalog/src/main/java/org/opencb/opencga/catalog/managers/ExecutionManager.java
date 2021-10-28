@@ -335,12 +335,11 @@ public class ExecutionManager extends ResourceManager<Execution> {
                 .append("params", params)
                 .append("token", token);
         try {
-            // TODO: Change auth check
-            authorizationManager.checkIsInstallationAdministrator(userId);
-            ParamUtils.checkObj(params, "ExecutionUpdateParams");
-
             Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
             Execution execution = internalGet(study.getUid(), executionId, INCLUDE_EXECUTION_IDS, userId).first();
+            authorizationManager.checkJobPermission(study.getUid(), execution.getUid(), userId, JobAclEntry.JobPermissions.WRITE);
+
+            ParamUtils.checkObj(params, "ExecutionUpdateParams");
 
             ObjectMap updateMap;
             try {
@@ -470,7 +469,30 @@ public class ExecutionManager extends ResourceManager<Execution> {
 
     @Override
     public OpenCGAResult<Execution> count(String studyId, Query query, String token) throws CatalogException {
-        throw new NotImplementedException("Count operation not implemented");
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("query", new Query(query))
+                .append("token", token);
+        try {
+            fixQueryObject(query);
+            query.put(ExecutionDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+            OpenCGAResult<Long> queryResult = executionDBAdaptor.count(query, userId);
+            auditManager.auditCount(userId, Enums.Resource.EXECUTION, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return new OpenCGAResult<>(queryResult.getTime(), queryResult.getEvents(), 0, Collections.emptyList(),
+                    queryResult.getNumMatches());
+        } catch (CatalogException e) {
+            auditManager.auditCount(userId, Enums.Resource.EXECUTION, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
     @Override

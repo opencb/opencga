@@ -25,7 +25,6 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.models.user.UserInternal;
@@ -94,9 +93,6 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         user = catalogUserDBAdaptor.get(user3.getId(), new QueryOptions("exclude", Arrays.asList("projects")));
         assertEquals(null, user.first().getProjects());
-
-        thrown.expect(CatalogDBException.class);
-        catalogUserDBAdaptor.get("NonExistingUser", null);
     }
 
     @Test
@@ -190,7 +186,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void setConfigTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         ObjectMap objectMap = new ObjectMap()
-                .append("key1", Arrays.asList(1,2,3,4,5))
+                .append("key1", Arrays.asList(1, 2, 3, 4, 5))
                 .append("key2", new ObjectMap("key21", 21).append("key22", 22));
 
         DataResult writeResult = catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
@@ -217,7 +213,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void deleteConfigTest() throws CatalogDBException, IOException {
         ObjectMap objectMap = new ObjectMap()
-                .append("key1", Arrays.asList(1,2,3,4,5))
+                .append("key1", Arrays.asList(1, 2, 3, 4, 5))
                 .append("key2", new ObjectMap("key21", 21).append("key22", 22));
 
         catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);

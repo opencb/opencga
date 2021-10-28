@@ -847,7 +847,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
         String studyId = catalogManager.getStudyManager().search(query, null, token).first().getId();
 
-        catalogManager.getExecutionManager().submit(studyFqn2, "variant-index", null, Collections.emptyMap(), null,
+        catalogManager.getExecutionManager().submit(studyId, "variant-index", null, Collections.emptyMap(), null,
                 "", Collections.emptyList(), null, token);
 
         QueryOptions options = new QueryOptions(QueryOptions.COUNT, true);
@@ -932,7 +932,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void deleteJobTest() throws CatalogException {
+    public void deleteExecutionTest() throws CatalogException {
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
                 new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), "view-only"), ParamUtils.AclAction.SET, token);

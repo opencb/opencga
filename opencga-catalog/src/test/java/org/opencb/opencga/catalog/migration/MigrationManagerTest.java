@@ -11,9 +11,10 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Execution;
+import org.opencb.opencga.core.models.job.ExecutionInternal;
 import org.opencb.opencga.core.models.job.ExecutionReferenceParam;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobInternal;
+import org.opencb.opencga.core.models.job.PrivateExecutionUpdateParams;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -114,7 +115,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
             String fqn = catalogManager.getProjectManager().get(new Query(), new QueryOptions(), token).first().getFqn();
             getMigrationRun().getExecutions().clear();
 
-            getMigrationRun().addExecution(catalogManager.getExecutionManager().submitProject(fqn, "my-tool", null, Collections.emptyMap(), null, null, null, null, token).first());
+            getMigrationRun().addExecution(catalogManager.getExecutionManager().submitProject(fqn, "variant-index", null, Collections.emptyMap(), null, null, null, null, token).first());
         }
     }
 
@@ -245,9 +246,9 @@ public class MigrationManagerTest extends AbstractManagerTest {
         assertEquals(j, migrationRun.getExecutions().get(0));
 
         // Update job with ERROR. Migration gets updated to ERROR.
-        Job job = catalogManager.getJobManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
-        catalogManager.getJobManager().privateUpdate(job.getStudy().getId(), job.getId(),
-                new JobInternal(new Enums.ExecutionStatus("ERROR")), token);
+        Execution execution = catalogManager.getExecutionManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
+        catalogManager.getExecutionManager().privateUpdate(execution.getStudy().getId(), execution.getId(),
+                new PrivateExecutionUpdateParams().setInternal(new ExecutionInternal(new Enums.ExecutionStatus("ERROR"))), token);
 
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
@@ -261,15 +262,14 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
         // Update job with DONE. Migration gets updated to DONE.
         j = migrationRun.getExecutions().get(0);
-        job = catalogManager.getJobManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
-        catalogManager.getJobManager().privateUpdate(job.getStudy().getId(), job.getId(),
-                new JobInternal(new Enums.ExecutionStatus("DONE")), token);
+        execution = catalogManager.getExecutionManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
+        catalogManager.getExecutionManager().privateUpdate(execution.getStudy().getId(), execution.getId(),
+                new PrivateExecutionUpdateParams().setInternal(new ExecutionInternal(new Enums.ExecutionStatus("DONE"))), token);
 
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
         assertEquals(MigrationRun.MigrationStatus.DONE, migrationRun.getStatus());
     }
-
 
     @Test
     public void testMigrationVersionOrder() {
