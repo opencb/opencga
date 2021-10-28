@@ -48,6 +48,7 @@
  import java.net.*;
  import java.nio.channels.Channels;
  import java.nio.channels.ReadableByteChannel;
+ import java.nio.charset.StandardCharsets;
  import java.nio.file.Files;
  import java.nio.file.Paths;
  import java.security.KeyManagementException;
@@ -55,6 +56,7 @@
  import java.security.SecureRandom;
  import java.security.cert.X509Certificate;
  import java.util.*;
+ import java.util.stream.Collectors;
 
  /**
   * Created by imedina on 04/05/16.
@@ -230,7 +232,6 @@
                      .path("rest")
                      .path("v2")
                      .path(category1);
-
              // Select batch. Either by ID or with limit/skip
              if (CollectionUtils.isNotEmpty(id1)) {
                  // Select batch of IDs
@@ -291,9 +292,7 @@
          RestResponse<T> batchRestResponse;
          switch (action) {
              case "upload":
-                 String filePath = ((String) params.get("file"));
-                 File binaryFile = new File(filePath);
-                 if (binaryFile.length() > 1024 * 1024 * 100) {
+                 if (isFileUploadServlet(params)) {
                      batchRestResponse = uploadFile(path, params, clazz);
                  } else {
                      batchRestResponse = callUploadRest(path, params, clazz);
@@ -310,6 +309,11 @@
                  break;
          }
          return batchRestResponse;
+     }
+
+     private boolean isFileUploadServlet(ObjectMap params) {
+         return params != null && params.containsKey("uploadServlet") && Boolean.parseBoolean(String.valueOf(params.get(
+                 "uploadServlet")));
      }
 
      /**
@@ -465,24 +469,26 @@
          File binaryFile = new File(filePath);
          String message = "";
          int responseCode = -1;
+
          try {
              URL url = new URL(path.getUri().toURL().toString().replace("/rest/", "/UploadFileServlet/"));
-             logger.info("url ::: " + url.toString());
+             logger.info("url ::: " + url);
              URLConnection connection = url.openConnection();
              connection.setDoOutput(true);
              connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+             connection.setRequestProperty("Authorization", "Bearer " + token);
+             for (String key : params.keySet()) {
+                 connection.setRequestProperty(key, String.valueOf(params.get(key)));
+             }
              OutputStream output = connection.getOutputStream();
              StringBuilder buffer = new StringBuilder();
-             PrintWriter writer = new PrintWriter(new OutputStreamWriter(output, charset), true);
-
+             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(output, charset));
+             getParams(params);
              // Send binary file.
              buffer.append("--" + boundary).append(br);
              buffer.append("Content-Disposition: form-data; name=\"binaryFile\"; filename=\"" + binaryFile.getName() + "\"").append(br);
              buffer.append("Content-Type: " + URLConnection.guessContentTypeFromName(binaryFile.getName())).append(br);
              buffer.append("Content-Transfer-Encoding: binary").append(br);
-             buffer.append("Authorization: Bearer " + this.token).append(br);
-             buffer.append(getParams(params)).append(br);
-
              buffer.append(br);
              writer.append(buffer.toString()).flush();
 
@@ -493,11 +499,14 @@
              writer.append("--" + boundary + "--").append(br).flush();
              // Request is lazily fired whenever you need to obtain information about response.
              responseCode = ((HttpURLConnection) connection).getResponseCode();
-             message = ((HttpURLConnection) connection).getResponseMessage();
-             message = "File upload result: " + message;
+             InputStream inputStream = connection.getInputStream();
+             message = new BufferedReader(
+                     new InputStreamReader(inputStream, StandardCharsets.UTF_8))
+                     .lines()
+                     .collect(Collectors.joining("\n"));
+             //  message = "File upload result: " + message;
          } catch (Exception e) {
              message = "OpenCga Connecting error";
-             e.printStackTrace();
          }
 
          RestResponse<T> restResponse = new RestResponse<>();
@@ -526,7 +535,7 @@
                  } else {
                      result.append("&");
                  }
-
+                 logger.info(key + " ::: " + params.get(key).toString());
                  result.append(URLEncoder.encode(key, "UTF-8"));
                  result.append("=");
                  result.append(URLEncoder.encode(params.get(key).toString(), "UTF-8"));

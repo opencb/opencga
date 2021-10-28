@@ -61,6 +61,8 @@ apiConfig:
       key: File
       executorExtended: True
       optionExtended: True
+      addedMethods:
+        - upload
       commands:
         - name: upload
           executorExtended: True

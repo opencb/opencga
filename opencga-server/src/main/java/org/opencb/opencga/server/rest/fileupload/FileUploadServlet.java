@@ -3,13 +3,17 @@ package org.opencb.opencga.server.rest.fileupload;
 import org.glassfish.jersey.server.ParamException;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -17,7 +21,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import javax.ws.rs.core.Response;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,13 +52,20 @@ public class FileUploadServlet extends HttpServlet {
     /**
      * Name of the directory where uploaded files will be saved, relative to the web application directory.
      */
-    private static final String SAVE_DIR = "uploadFiles";
+    private static final int DEFAULT_BUFFER_SIZE = 1024;
 
     private long startTime;
-    private Logger logger;
+    private Logger logger = LoggerFactory.getLogger(this.getClass().toString());
 
     protected void doGet(HttpServletRequest request,
                          HttpServletResponse response) throws ServletException, IOException {
+        logger.info("doGet :::: " + request);
+        doPost(request, response);
+    }
+
+    protected void doPut(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        logger.info("doPut :::: " + request);
         doPost(request, response);
     }
 
@@ -62,47 +78,54 @@ public class FileUploadServlet extends HttpServlet {
         OpenCGAResult<org.opencb.opencga.core.models.file.File> result = null;
         // take the time for calculating the whole duration of the call
         startTime = System.currentTimeMillis();
-        logger.info("DoPost :::: " + request);
-       /* try {
-            this.logger = LoggerFactory.getLogger(this.getClass().toString());
+        try {
+            String token = request.getHeader("Authorization").replaceAll("Bearer ", "");
+            String studyId = request.getHeader("study");
+            String path = request.getHeader("relativeFilePath");
+            logger.info("Trying to update file for study " + studyId);
             CatalogManager catalogManager = new CatalogManager(OpenCGAWSServer.getConfiguration());
-            for (String key : request.getParameterMap().keySet()) {
-                logger.info(key + " :::: " + request.getParameterMap().get(key));
-            }
-
-            String token = verifyHeaders(request);
-            String studyId = request.getParameter("study");
-            String path = request.getParameter("path");
-
             catalogManager.getStudyManager().get(studyId, QueryOptions.empty(), token);
 
             // Temporal folder
-            File temp = File.createTempFile("temp", Long.toString(System.nanoTime()));
+            Path temp = Files.createTempDirectory("temp");
             String savePath = temp + File.separator;
 
             // File source
+
             for (Part part : request.getParts()) {
+
                 String fileName = extractFileName(part);
                 // refines the fileName in case it is an absolute path
-                File file = new File(fileName);
-                fileName = file.getName();
-                part.write(savePath + fileName);
-                Path filePath = Paths.get(file.getPath());
-                result = catalogManager.getFileManager().moveAndRegister(studyId, filePath, null, path, token);
+                File file = new File(savePath + fileName);
+                InputStream fileContent = part.getInputStream();
+                copyInputStreamToFile(fileContent, file);
+                logger.info("File uploaded " + file.getAbsolutePath());
+                result = catalogManager.getFileManager().moveAndRegister(studyId,
+                        file.toPath(), null, path != null ? path : "/", token);
+                logger.info("Registered file " + file.getName() + " to " + studyId);
             }
-            PrintWriter out = response.getWriter();
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            out.print(createOkResponse(result, request.getRequestURI()));
-            out.flush();
 
-            // Move file to final destiny
-            // We need to know: study, path
-
+            response.setContentType("text/plain;charset=UTF-8");
+            ServletOutputStream sout = response.getOutputStream();
+            sout.print("File upload success");
         } catch (CatalogException e) {
-            PrintWriter err = response.getWriter();
-            err.print(createErrorResponse(e, request.getRequestURI()));
-        }*/
+            response.setContentType("text/plain;charset=UTF-8");
+            ServletOutputStream sout = response.getOutputStream();
+            sout.print("File upload fail");
+        }
+    }
+
+    private void copyInputStreamToFile(InputStream inputStream, File file)
+            throws IOException {
+
+        // append = false
+        try (FileOutputStream outputStream = new FileOutputStream(file, false)) {
+            int read;
+            byte[] bytes = new byte[DEFAULT_BUFFER_SIZE];
+            while ((read = inputStream.read(bytes)) != -1) {
+                outputStream.write(bytes, 0, read);
+            }
+        }
     }
 
     private Response createErrorResponse(CatalogException e, String uri) {
@@ -145,19 +168,6 @@ public class FileUploadServlet extends HttpServlet {
             }
         }
         return "";
-    }
-
-    private String verifyHeaders(HttpServletRequest request) {
-        String token = "";
-        String authorization = request.getHeader("Authorization");
-        if (authorization != null && authorization.length() > 7) {
-            token = authorization;
-            if (!token.startsWith("Bearer ")) {
-                throw new ParamException.HeaderParamException(new Throwable("Authorization header must start with Bearer JWToken"),
-                        "Bearer", "");
-            }
-        }
-        return token;
     }
 
     protected Response createOkResponse(Object obj, String uri) {

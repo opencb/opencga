@@ -52,6 +52,7 @@ public abstract class ParentFilesCommandExecutor extends OpencgaCommandExecutor 
         params.putIfNotEmpty("description", commandOptions.description);
         params.putIfNotEmpty("fileName", commandOptions.fileName);
         params.putIfNotEmpty("file", commandOptions.inputFile);
+        params.put("uploadServlet", new Boolean(true));
 
         return openCGAClient.getFileClient().upload(params);
     }

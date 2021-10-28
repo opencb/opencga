@@ -35,7 +35,6 @@ public class OpencgaCliProcessor {
     public static void process(String[] args) {
 
         console = getConsole();
-        boolean invalidInput = false;
         if (console == null && OpencgaMain.getSession().isShell()) {
             System.out.println("Couldn't get console instance");
             System.exit(0);
@@ -61,7 +60,8 @@ public class OpencgaCliProcessor {
         }
 
         //login The first if clause is for scripting login method and the else clause is for the shell login
-        if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1]) && argsContains(args, "--user-password")) {
+        if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1]) && argsContains(args, "--user-password")
+                && !OpencgaMain.getSession().isShell()) {
             if (!argsContains(args, "--help") && !argsContains(args, "-h")) {
                 args = getUserPasswordArgs(args, "--user-password");
             }
@@ -72,110 +72,109 @@ public class OpencgaCliProcessor {
             }
         }
 
-        if (!invalidInput) {
-            cliOptionsParser = getCliOptionsParser();
+        cliOptionsParser = getCliOptionsParser();
 
-            try {
-                cliOptionsParser.parse(args);
+        try {
+            cliOptionsParser.parse(args);
 
-                String parsedCommand = cliOptionsParser.getCommand();
-                if (parsedCommand == null || parsedCommand.isEmpty()) {
-                    if (cliOptionsParser.getGeneralOptions().version) {
-                        System.out.println("");
-                        OpencgaCliShellExecutor.printGreen("\tOpenCGA CLI version: ");
-                        OpencgaCliShellExecutor.printlnYellow("\t" + GitRepositoryState.get().getBuildVersion());
-                        OpencgaCliShellExecutor.printGreen("\tGit version:");
-                        OpencgaCliShellExecutor.printlnYellow("\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
-                        OpencgaCliShellExecutor.printGreen("\tProgram:");
-                        OpencgaCliShellExecutor.printlnYellow("\t\tOpenCGA (OpenCB)");
-                        OpencgaCliShellExecutor.printGreen("\tDescription: ");
-                        OpencgaCliShellExecutor.printlnYellow("\t\tBig Data platform for processing and analysing NGS data");
-                        System.out.println("");
-                    } else if (cliOptionsParser.getGeneralOptions().help) {
-                        cliOptionsParser.printUsage();
-                        // System.exit(0);
-                    } else {
-                        cliOptionsParser.printUsage();
-                        //  System.exit(1);
-                    }
+            String parsedCommand = cliOptionsParser.getCommand();
+            if (parsedCommand == null || parsedCommand.isEmpty()) {
+                if (cliOptionsParser.getGeneralOptions().version) {
+                    System.out.println("");
+                    OpencgaCliShellExecutor.printGreen("\tOpenCGA CLI version: ");
+                    OpencgaCliShellExecutor.printlnYellow("\t" + GitRepositoryState.get().getBuildVersion());
+                    OpencgaCliShellExecutor.printGreen("\tGit version:");
+                    OpencgaCliShellExecutor.printlnYellow("\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+                    OpencgaCliShellExecutor.printGreen("\tProgram:");
+                    OpencgaCliShellExecutor.printlnYellow("\t\tOpenCGA (OpenCB)");
+                    OpencgaCliShellExecutor.printGreen("\tDescription: ");
+                    OpencgaCliShellExecutor.printlnYellow("\t\tBig Data platform for processing and analysing NGS data");
+                    System.out.println("");
+                } else if (cliOptionsParser.getGeneralOptions().help) {
+                    cliOptionsParser.printUsage();
+                    // System.exit(0);
                 } else {
-                    CommandExecutor commandExecutor = null;
+                    cliOptionsParser.printUsage();
+                    //  System.exit(1);
+                }
+            } else {
+                CommandExecutor commandExecutor = null;
 
-                    // Check if any command -h option is present
-                    if (cliOptionsParser.isHelp()) {
+                // Check if any command -h option is present
+                if (cliOptionsParser.isHelp()) {
+                    cliOptionsParser.printUsage();
+                    //System.exit(0);
+                } else {
+                    String parsedSubCommand = cliOptionsParser.getSubCommand();
+                    if (parsedSubCommand == null || parsedSubCommand.isEmpty()) {
                         cliOptionsParser.printUsage();
-                        //System.exit(0);
                     } else {
-                        String parsedSubCommand = cliOptionsParser.getSubCommand();
-                        if (parsedSubCommand == null || parsedSubCommand.isEmpty()) {
-                            cliOptionsParser.printUsage();
-                        } else {
-                            switch (parsedCommand) {
-                                case "users":
-                                    commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
-                                    break;
-                                case "projects":
-                                    commandExecutor = new ProjectsCommandExecutor(cliOptionsParser.getProjectsCommandOptions());
-                                    break;
-                                case "studies":
-                                    commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getStudiesCommandOptions());
-                                    break;
-                                case "files":
 
-                                    commandExecutor = new FilesCommandExecutor(cliOptionsParser.getFilesCommandOptions());
-                                    break;
-                                case "jobs":
-                                    commandExecutor = new JobsCommandExecutor(cliOptionsParser.getJobsCommandOptions());
-                                    break;
-                                case "individuals":
-                                    commandExecutor = new IndividualsCommandExecutor(cliOptionsParser.getIndividualsCommandOptions());
-                                    break;
-                                case "samples":
-                                    commandExecutor = new SamplesCommandExecutor(cliOptionsParser.getSamplesCommandOptions());
-                                    break;
-                                case "cohorts":
-                                    commandExecutor = new CohortsCommandExecutor(cliOptionsParser.getCohortsCommandOptions());
-                                    break;
-                                case "panels":
-                                    commandExecutor = new DiseasePanelsCommandExecutor(cliOptionsParser.getDiseasePanelsCommandOptions());
-                                    break;
-                                case "families":
-                                    commandExecutor = new FamiliesCommandExecutor(cliOptionsParser.getFamiliesCommandOptions());
-                                    break;
-                                case "alignments":
-                                    commandExecutor =
-                                            new AnalysisAlignmentCommandExecutor(cliOptionsParser.getAnalysisAlignmentCommandOptions());
-                                    break;
-                                case "variant":
-                                    commandExecutor =
-                                            new AnalysisVariantCommandExecutor(cliOptionsParser.getAnalysisVariantCommandOptions());
-                                    break;
-                                case "clinical":
-                                    commandExecutor =
-                                            new AnalysisClinicalCommandExecutor(cliOptionsParser.getAnalysisClinicalCommandOptions());
-                                    break;
-                                case "operations":
-                                    commandExecutor =
-                                            new OperationsVariantStorageCommandExecutor(cliOptionsParser.getOperationsVariantStorageCommandOptions());
-                                    break;
-                                case "meta":
-                                    commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
-                                    break;
-                                default:
-                                    OpencgaCliShellExecutor.printlnRed("ERROR: not valid command passed: '" + parsedCommand + "'");
-                                    break;
-                            }
+                        switch (parsedCommand) {
+                            case "users":
+                                commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                                break;
+                            case "projects":
+                                commandExecutor = new ProjectsCommandExecutor(cliOptionsParser.getProjectsCommandOptions());
+                                break;
+                            case "studies":
+                                commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getStudiesCommandOptions());
+                                break;
+                            case "files":
 
-                            executeCommand(commandExecutor);
+                                commandExecutor = new FilesCommandExecutor(cliOptionsParser.getFilesCommandOptions());
+                                break;
+                            case "jobs":
+                                commandExecutor = new JobsCommandExecutor(cliOptionsParser.getJobsCommandOptions());
+                                break;
+                            case "individuals":
+                                commandExecutor = new IndividualsCommandExecutor(cliOptionsParser.getIndividualsCommandOptions());
+                                break;
+                            case "samples":
+                                commandExecutor = new SamplesCommandExecutor(cliOptionsParser.getSamplesCommandOptions());
+                                break;
+                            case "cohorts":
+                                commandExecutor = new CohortsCommandExecutor(cliOptionsParser.getCohortsCommandOptions());
+                                break;
+                            case "panels":
+                                commandExecutor = new DiseasePanelsCommandExecutor(cliOptionsParser.getDiseasePanelsCommandOptions());
+                                break;
+                            case "families":
+                                commandExecutor = new FamiliesCommandExecutor(cliOptionsParser.getFamiliesCommandOptions());
+                                break;
+                            case "alignments":
+                                commandExecutor =
+                                        new AnalysisAlignmentCommandExecutor(cliOptionsParser.getAnalysisAlignmentCommandOptions());
+                                break;
+                            case "variant":
+                                commandExecutor =
+                                        new AnalysisVariantCommandExecutor(cliOptionsParser.getAnalysisVariantCommandOptions());
+                                break;
+                            case "clinical":
+                                commandExecutor =
+                                        new AnalysisClinicalCommandExecutor(cliOptionsParser.getAnalysisClinicalCommandOptions());
+                                break;
+                            case "operations":
+                                commandExecutor =
+                                        new OperationsVariantStorageCommandExecutor(cliOptionsParser.getOperationsVariantStorageCommandOptions());
+                                break;
+                            case "meta":
+                                commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
+                                break;
+                            default:
+                                OpencgaCliShellExecutor.printlnRed("ERROR: not valid command passed: '" + parsedCommand + "'");
+                                break;
                         }
+
+                        executeCommand(commandExecutor);
                     }
                 }
-            } catch (ParameterException e) {
-                OpencgaCliShellExecutor.printlnRed("\n" + e.getMessage());
-                cliOptionsParser.printUsage();
-                // e.printStackTrace();
-                //System.exit(1);
             }
+        } catch (ParameterException e) {
+            OpencgaCliShellExecutor.printlnYellow("\n" + e.getMessage());
+            cliOptionsParser.printUsage();
+            // e.printStackTrace();
+            //System.exit(1);
         }
     }
 
