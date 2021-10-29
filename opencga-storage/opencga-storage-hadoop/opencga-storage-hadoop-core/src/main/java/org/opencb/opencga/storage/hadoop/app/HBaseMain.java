@@ -2,14 +2,11 @@ package org.opencb.opencga.storage.hadoop.app;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
-//import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.Admin;
-//import org.apache.hadoop.hbase.client.RegionInfo;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.exceptions.IllegalArgumentIOException;
-//import org.apache.hadoop.hbase.util.Bytes;
-//import org.apache.hadoop.hbase.util.Pair;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -23,13 +20,14 @@ import java.util.stream.Collectors;
 
 public class HBaseMain extends AbstractMain {
 
-
-    public static final String REASSIGN_TABLE_REGIONS = "reassign-table-regions";
     public static final String MOVE_TABLE_REGIONS = "move-table-regions";
+    public static final String REASSIGN_TABLES_WITH_REGIONS_ON_DEAD_SERVERS = "reassign-tables-with-regions-on-dead-servers";
     public static final String CHECK_TABLES_WITH_REGIONS_ON_DEAD_SERVERS = "check-tables-with-regions-on-dead-servers";
     public static final String BALANCE_TABLE_REGIONS = "balance-table-regions";
     public static final String LIST_TABLES = "list-tables";
     public static final String REGIONS_PER_TABLE = "regions-per-table";
+    public static final String CLONE_TABLES = "clone-tables";
+    public static final String SNAPSHOT_TABLES = "snapshot-tables";
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(HBaseMain.class);
     private final HBaseManager hBaseManager;
@@ -50,8 +48,8 @@ public class HBaseMain extends AbstractMain {
         String command = getArg(args, 0, "help");
 
         switch (command) {
-            case REASSIGN_TABLE_REGIONS:
-                reasignTableRegions(args);
+            case REASSIGN_TABLES_WITH_REGIONS_ON_DEAD_SERVERS:
+                reassignTablesWithRegionsOnDeadServers(args);
                 break;
             case CHECK_TABLES_WITH_REGIONS_ON_DEAD_SERVERS:
                 checkTablesWithRegionsOnDeadServers(args);
@@ -60,7 +58,7 @@ public class HBaseMain extends AbstractMain {
                 moveTableRegions(args);
                 break;
             case BALANCE_TABLE_REGIONS:
-                balanceTableRegions(getArg(args, 1), getArgsMap(args, 2));
+                balanceTableRegions(getArg(args, 1), getArgsMap(args, 2, "maxMoves"));
                 break;
             case LIST_TABLES:
                 print(listTables(getArg(args, 1, "")).stream().map(TableName::getNameWithNamespaceInclAsString).iterator());
@@ -68,15 +66,40 @@ public class HBaseMain extends AbstractMain {
             case REGIONS_PER_TABLE:
                 regionsPerTable(getArg(args, 1));
                 break;
+            case CLONE_TABLES: {
+                ObjectMap argsMap = getArgsMap(args, 3, "keepSnapshots", "snapshotSuffix", "dryRun");
+                cloneTables(getArg(args, 1), getArg(args, 2),
+                        argsMap.getBoolean("keepSnapshots"),
+                        argsMap.getString("snapshotSuffix", "_SNAPSHOT_" + TimeUtils.getTime()),
+                        argsMap.getBoolean("dryRun"));
+                break;
+            }
+            case SNAPSHOT_TABLES: {
+                ObjectMap argsMap = getArgsMap(args, 2, "snapshotSuffix", "dryRun");
+                snapshotTables(getArg(args, 1),
+                        argsMap.getString("snapshotSuffix", "_SNAPSHOT_" + TimeUtils.getTime()),
+                        argsMap.getBoolean("dryRun"));
+                break;
+            }
             case "help":
             default:
                 System.out.println("Commands:");
                 System.out.println("  " + LIST_TABLES + " [<table-name-regex>]");
                 System.out.println("  " + CHECK_TABLES_WITH_REGIONS_ON_DEAD_SERVERS + " [ <table-name-regex> ]");
-                System.out.println("  " + REASSIGN_TABLE_REGIONS + " <table-name-regex>");
+                System.out.println("      Get the list of regions on dead servers for all selected tables");
+                System.out.println("  " + REASSIGN_TABLES_WITH_REGIONS_ON_DEAD_SERVERS + " <table-name-regex>");
+                System.out.println("      Reassign all regions from tables with regions on dead servers");
+                System.out.println("        (see " + CHECK_TABLES_WITH_REGIONS_ON_DEAD_SERVERS + ") by creating a temporary snapshot");
                 System.out.println("  " + MOVE_TABLE_REGIONS + " <table-name-regex>");
-                System.out.println("  " + BALANCE_TABLE_REGIONS + " <table-name> [--maxMoves N]");
-                System.out.println("  " + REGIONS_PER_TABLE + " <table-name>");
+                System.out.println("      Move all regions from selected tables to new random nodes.");
+//                System.out.println("  " + BALANCE_TABLE_REGIONS + " <table-name> [--maxMoves N]"); // FIXME
+//                System.out.println("  " + REGIONS_PER_TABLE + " <table-name>"); // FIXME
+                System.out.println("  " + CLONE_TABLES + " <table-name-prefix> <new-table-name-prefix> "
+                                        + "[--keepSnapshots] [--dryRun] [--snapshotSuffix <snapshotNameSuffix>]");
+                System.out.println("      Clone all selected tables by creating an intermediate snapshot.");
+                System.out.println("        Optionally remove the intermediate snapshot.");
+                System.out.println("  " + SNAPSHOT_TABLES + " <table-name-prefix> [--dryRun] [--snapshotSuffix <snapshotNameSuffix>]");
+                System.out.println("      Create a sapshot for all selected tables.");
                 break;
         }
 
@@ -125,7 +148,7 @@ public class HBaseMain extends AbstractMain {
 //        return tableRegionsAndLocations;
 //    }
 
-    private void reasignTableRegions(String[] args) throws Exception {
+    private void reassignTablesWithRegionsOnDeadServers(String[] args) throws Exception {
         String tableNameFilter = getArg(args, 1);
         List<TableName> tables = listTables(tableNameFilter);
         List<String> corruptedTables = checkTablesWithRegionsOnDeadServers(tables);
@@ -310,5 +333,55 @@ public class HBaseMain extends AbstractMain {
         });
     }
 
+    private void snapshotTables(String tableNamePrefix, String snapshotSuffix, boolean dryRun) throws IOException {
+        Connection connection = hBaseManager.getConnection();
+        try (Admin admin = connection.getAdmin()) {
+            for (TableName tableName : listTables(tableNamePrefix + ".*")) {
+                String snapshotName = tableName + snapshotSuffix;
+                LOGGER.info("Create snapshot '" + snapshotName + "' from table " + tableName);
+                if (dryRun) {
+                    LOGGER.info("admin.snapshot('{}', '{}');", snapshotName, tableName);
+                } else {
+                    admin.snapshot(snapshotName, tableName);
+                }
+            }
+        }
+    }
+
+    private void cloneTables(String tableNamePrefix, String newTableNamePrefix, boolean keepSnapshot, String snapshotSuffix, boolean dryRun)
+            throws IOException {
+        if (newTableNamePrefix.startsWith(tableNamePrefix)) {
+            throw new IllegalArgumentIOException("New tableNamePrefix can't have the old prefix as a prefix!");
+        }
+        Connection connection = hBaseManager.getConnection();
+        try (Admin admin = connection.getAdmin()) {
+            for (TableName tableName : listTables(tableNamePrefix + ".*")) {
+                String snapshotName = tableName.getNameAsString() + snapshotSuffix;
+                String newTableName = tableName.getNameAsString().replace(tableNamePrefix, newTableNamePrefix);
+                LOGGER.info("Create snapshot '" + snapshotName + "' from table " + tableName.getNameAsString());
+                if (dryRun) {
+                    LOGGER.info("admin.snapshot('{}', '{}');", snapshotName, tableName);
+                } else {
+                    admin.snapshot(snapshotName, tableName);
+                }
+                LOGGER.info("Clone snapshot '" + snapshotName + "' into table " + newTableName);
+                if (dryRun) {
+                    LOGGER.info("admin.cloneSnapshot('{}', '{}')", snapshotName, newTableName);
+                } else {
+                    admin.cloneSnapshot(snapshotName, TableName.valueOf(tableName.getNamespaceAsString(), newTableName));
+                }
+                if (keepSnapshot) {
+                    LOGGER.info("Keep snapshot '" + snapshotName + "'");
+                } else {
+                    LOGGER.info("Delete snapshot '" + snapshotName + "'");
+                    if (dryRun) {
+                        LOGGER.info("admin.deleteSnapshot('{}');", snapshotName);
+                    } else {
+                        admin.deleteSnapshot(snapshotName);
+                    }
+                }
+            }
+        }
+    }
 
 }

@@ -1,10 +1,9 @@
 package org.opencb.opencga.app.cli.main.options;
 
 import com.beust.jcommander.*;
+import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.opencga.analysis.variant.operations.VariantFileIndexJobLauncherTool;
-import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
-import org.opencb.opencga.analysis.variant.operations.VariantStatsIndexOperationTool;
+import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GenericJulieRunCommandOptions;
@@ -36,6 +35,7 @@ public class OperationsCommandOptions {
     public static final String VARIANT_CONFIGURE = "variant-configure";
     public static final String VARIANT_INDEX = "variant-index";
     public static final String VARIANT_DELETE = "variant-delete";
+    public static final String VARIANT_SAMPLE_DELETE = "variant-sample-delete";
     public static final String VARIANT_INDEX_LAUNCHER = "variant-index-launcher";
 
     public static final String VARIANT_STATS_INDEX = "variant-stats-index";
@@ -61,6 +61,7 @@ public class OperationsCommandOptions {
     public final VariantConfigureCommandOptions variantConfigure;
     public final VariantIndexCommandOptions variantIndex;
     public final VariantFileDeleteCommandOptions variantFileDelete;
+    public final VariantSampleDeleteCommandOptions variantSampleDelete;
     public final VariantIndexLauncherCommandOptions variantIndexLauncher;
 
     public final VariantStatsIndexCommandOptions variantStatsIndex;
@@ -106,6 +107,7 @@ public class OperationsCommandOptions {
         variantConfigure = new VariantConfigureCommandOptions();
         variantIndex = new VariantIndexCommandOptions();
         variantFileDelete = new VariantFileDeleteCommandOptions();
+        variantSampleDelete = new VariantSampleDeleteCommandOptions();
         variantIndexLauncher = new VariantIndexLauncherCommandOptions();
         variantStatsIndex = new VariantStatsIndexCommandOptions();
         variantSecondaryIndex = new VariantSecondaryIndexCommandOptions();
@@ -189,11 +191,28 @@ public class OperationsCommandOptions {
 
     }
 
-    @Parameters(commandNames = {VARIANT_DELETE_COMMAND}, commandDescription = VARIANT_DELETE_COMMAND_DESCRIPTION)
+    @Parameters(commandNames = {VARIANT_DELETE}, commandDescription = VariantFileDeleteOperationTool.DESCRIPTION)
     public class VariantFileDeleteCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GenericVariantDeleteOptions genericVariantDeleteOptions = new GenericVariantDeleteOptions();
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+    }
+
+    @Parameters(commandNames = {VARIANT_SAMPLE_DELETE}, commandDescription = VariantSampleDeleteOperationTool.DESCRIPTION)
+    public class VariantSampleDeleteCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @Parameter(names = {"--sample"}, description = "Samples to be removed from storage. Type 'all' to remove the whole study",
+                required = true)
+        public List<String> sample = null;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
+        public boolean resume;
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;

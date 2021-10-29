@@ -733,8 +733,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        VariantSearchManager variantSearchManager = new VariantSearchManager(solrUrl, dbName);
 //        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
 //                variantStorageEngine.getCellBaseUtils(), variantStorageEngine.getConfiguration());
-        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getMetadataManager(),
-                variantStorageEngine.getConfiguration());
+        VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
         boolean querying = true;
         QueryOptions options = new QueryOptions();
         options.putAll(searchOptions.commonOptions.params);
