@@ -48,12 +48,14 @@ public class AuthorizationMongoDBUtils {
 
     private static final String PERMISSION_DELIMITER = "__";
 
-    private static final String ANONYMOUS = "*";
+    private static final String ANONYMOUS = ParamConstants.ANONYMOUS_USER_ID;
+    private static final String REGISTERED_USERS = ParamConstants.REGISTERED_USERS;
 
-    private static final String MEMBERS = "@members";
-    private static final String ADMINS = "@admins";
+    private static final String MEMBERS = ParamConstants.MEMBERS_GROUP;
+    private static final String ADMINS = ParamConstants.ADMINS_GROUP;
 
     private static final Pattern MEMBERS_PATTERN = Pattern.compile("^" + MEMBERS);
+    private static final Pattern REGISTERED_USERS_PATTERN = Pattern.compile("^" + REGISTERED_USERS);
     private static final Pattern ANONYMOUS_PATTERN = Pattern.compile("^\\" + ANONYMOUS);
 
     public static boolean checkCanViewStudy(Document study, String user) {
@@ -102,9 +104,9 @@ public class AuthorizationMongoDBUtils {
     /**
      * Removes annotation sets from results if the user does not have the proper permissions.
      *
-     * @param study study document.
-     * @param entry Annotable document entry.
-     * @param user user.
+     * @param study           study document.
+     * @param entry           Annotable document entry.
+     * @param user            user.
      * @param studyPermission studyPermission to check.
      * @param entryPermission entry permission to check.
      * @return the document modified.
@@ -192,13 +194,13 @@ public class AuthorizationMongoDBUtils {
     /**
      * If query contains {@link ParamConstants#ACL_PARAM}, it will parse the value to generate the corresponding mongo query documents.
      *
-     * @param study Queried study document.
-     * @param query Original query.
+     * @param study    Queried study document.
+     * @param query    Original query.
      * @param resource Affected resource.
-     * @param user User performing the query.
+     * @param user     User performing the query.
      * @return A list of documents to satisfy the ACL query.
-     * @throws CatalogDBException when there is a DB error.
-     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogDBException            when there is a DB error.
+     * @throws CatalogParameterException     if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     public static List<Document> parseAclQuery(Document study, Query query, Enums.Resource resource, String user)
@@ -209,14 +211,14 @@ public class AuthorizationMongoDBUtils {
     /**
      * If query contains {@link ParamConstants#ACL_PARAM}, it will parse the value to generate the corresponding mongo query documents.
      *
-     * @param study Queried study document.
-     * @param query Original query.
-     * @param resource Affected resource.
-     * @param user User performing the query.
+     * @param study         Queried study document.
+     * @param query         Original query.
+     * @param resource      Affected resource.
+     * @param user          User performing the query.
      * @param configuration Configuration object.
      * @return A list of documents to satisfy the ACL query.
-     * @throws CatalogDBException when there is a DB error.
-     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogDBException            when there is a DB error.
+     * @throws CatalogParameterException     if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     public static List<Document> parseAclQuery(Document study, Query query, Enums.Resource resource, String user,
@@ -266,12 +268,14 @@ public class AuthorizationMongoDBUtils {
         }
 
         boolean isAnonymousPresent = false;
+        boolean isRegisteredUsersPresent = false;
         List<String> groups;
         boolean hasStudyPermissions;
 
         if (!affectedUser.equals(ANONYMOUS)) {
             // 0. Check if anonymous has any permission defined (just for performance)
-            isAnonymousPresent = isUserInMembers(study, ANONYMOUS);
+            isAnonymousPresent = isAnonymousInMembers(study);
+            isRegisteredUsersPresent = isRegisteredUsersInMembers(study);
 
             // 1. We obtain the groups of the user
             groups = getGroups(study, affectedUser);
@@ -295,7 +299,8 @@ public class AuthorizationMongoDBUtils {
                 break;
             }
 
-            Document queryDocument = getAuthorisedEntries(affectedUser, groups, permission, isAnonymousPresent, simplifyPermissionCheck);
+            Document queryDocument = getAuthorisedEntries(affectedUser, groups, permission, isRegisteredUsersPresent, isAnonymousPresent,
+                    simplifyPermissionCheck);
             if (hasStudyPermissions) {
                 // The user has permissions defined globally, so we also have to check the entries where the user/groups/members/* have no
                 // permissions defined as the user will also be allowed to see them
@@ -346,12 +351,13 @@ public class AuthorizationMongoDBUtils {
 
         String studyPermission = StudyAclEntry.StudyPermissions.getStudyPermission(permission, getPermissionType(resource)).name();
 
-        boolean isAnonymousPresent = false;
+        // 0. Check if anonymous has any permission defined (just for performance)
+        boolean isAnonymousPresent = isAnonymousInMembers(study);
+        boolean isRegisteredUsersPresent = false;
         List<String> groups;
         boolean hasStudyPermissions;
         if (!user.equals(ANONYMOUS)) {
-            // 0. Check if anonymous has any permission defined (just for performance)
-            isAnonymousPresent = isUserInMembers(study, ANONYMOUS);
+            isRegisteredUsersPresent = isRegisteredUsersInMembers(study);
 
             // 1. We obtain the groups of the user
             groups = getGroups(study, user);
@@ -370,7 +376,8 @@ public class AuthorizationMongoDBUtils {
             return new Document();
         }
 
-        Document queryDocument = getAuthorisedEntries(user, groups, permission, isAnonymousPresent, simplifyPermissionCheck);
+        Document queryDocument = getAuthorisedEntries(user, groups, permission, isRegisteredUsersPresent, isAnonymousPresent,
+                simplifyPermissionCheck);
         if (hasStudyPermissions && !simplifyPermissionCheck) {
             // The user has permissions defined globally, so we also have to check the entries where the user/groups/members/* have no
             // permissions defined as the user will also be allowed to see them
@@ -383,17 +390,28 @@ public class AuthorizationMongoDBUtils {
         return queryDocument;
     }
 
+    public static boolean isAnonymousInMembers(Document study) {
+        return isUserInMembers(study, ANONYMOUS);
+    }
+
+    public static boolean isRegisteredUsersInMembers(Document study) {
+        return isUserInMembers(study, REGISTERED_USERS);
+    }
+
     public static boolean isUserInMembers(Document study, String user) {
         List<Document> groupDocumentList = study.get(StudyDBAdaptor.QueryParams.GROUPS.key(), ArrayList.class);
+        boolean isAnonymousUser = ANONYMOUS.equals(user);
         if (groupDocumentList != null && !groupDocumentList.isEmpty()) {
             for (Document group : groupDocumentList) {
                 if ((MEMBERS).equals(group.getString("id"))) {
                     List<String> userIds = group.get("userIds", ArrayList.class);
-                    for (String userId : userIds) {
-                        if (userId.equals(user)) {
+                    for (String thisUser : userIds) {
+                        if (thisUser.equals(user) || ANONYMOUS.equals(thisUser)
+                                || (!isAnonymousUser && REGISTERED_USERS.equals(thisUser))) {
                             return true;
                         }
                     }
+                    return false;
                 }
             }
         }
@@ -431,12 +449,16 @@ public class AuthorizationMongoDBUtils {
 
     public static boolean checkAnonymousHasPermission(Document study, String studyPermission) {
         List<String> aclList = study.get(PRIVATE_ACL, ArrayList.class);
-        Map<String, Set<String>> permissionMap = parsePermissions(aclList, "*", Collections.emptyList());
+        Map<String, Set<String>> permissionMap = parsePermissions(aclList, ANONYMOUS, Collections.emptyList());
 
         // We now check if the anonymous user has the permission defined at the study level
         boolean hasStudyPermissions = false;
         if (permissionMap.get("user") != null) {
             hasStudyPermissions = permissionMap.get("user").contains(studyPermission);
+        } else if (permissionMap.get("members") != null) {
+            hasStudyPermissions = permissionMap.get("members").contains(studyPermission);
+        } else if (permissionMap.get(ANONYMOUS) != null) {
+            hasStudyPermissions = permissionMap.get(ANONYMOUS).contains(studyPermission);
         }
         return hasStudyPermissions;
     }
@@ -454,6 +476,8 @@ public class AuthorizationMongoDBUtils {
             hasPermission = permissionMap.get("group").contains(permission);
         } else if (permissionMap.get("members") != null) {
             hasPermission = permissionMap.get("members").contains(permission);
+        } else if (permissionMap.get(REGISTERED_USERS) != null) {
+            hasPermission = permissionMap.get(REGISTERED_USERS).contains(permission);
         } else if (permissionMap.get(ANONYMOUS) != null) {
             hasPermission = permissionMap.get(ANONYMOUS).contains(permission);
         }
@@ -506,8 +530,8 @@ public class AuthorizationMongoDBUtils {
                     member = "group";
                 } else if (MEMBERS.equals(split[0])) {
                     member = "members";
-                } else if ("*".equals(split[0])) {
-                    member = "*";
+                } else if (ANONYMOUS.equals(split[0])) {
+                    member = ANONYMOUS;
                 }
                 if (member != null) {
                     if (!permissions.containsKey(member)) {
@@ -526,33 +550,38 @@ public class AuthorizationMongoDBUtils {
     /**
      * Creates a document with the corresponding query needed to retrieve results only from any authorised document.
      *
-     * @param user User asking for the entries.
-     * @param groups Group names where the user belongs to.
-     * @param permission Permission to be checked.
-     * @param isAnonymousPresent Boolean indicating whether the anonymous user has been registered in the @members group.
-     * @param simplifyPermissionCheck Flag indicating whether permission check can be simplified because permissions were never denied at
-     *                                any other entity level but study.
+     * @param user                     User asking for the entries.
+     * @param groups                   Group names where the user belongs to.
+     * @param permission               Permission to be checked.
+     * @param isRegisteredUsersPresent Boolean indicating whether a flag indicating "all registered users" has been registered in
+     *                                 the @members group.
+     * @param isAnonymousPresent       Boolean indicating whether the anonymous user has been registered in the @members group.
+     * @param simplifyPermissionCheck  Flag indicating whether permission check can be simplified because permissions were never denied at
+     *                                 any other entity level but study.
      * @return The document containing the query to be made in mongo database.
      */
-    public static Document getAuthorisedEntries(String user, List<String> groups, String permission, boolean isAnonymousPresent,
-                                                boolean simplifyPermissionCheck) {
+    public static Document getAuthorisedEntries(String user, List<String> groups, String permission, boolean isRegisteredUsersPresent,
+                                                boolean isAnonymousPresent, boolean simplifyPermissionCheck) {
         if (simplifyPermissionCheck) {
-            return getSimplifiedPermissionCheck(user, groups, permission, isAnonymousPresent);
+            return getSimplifiedPermissionCheck(user, groups, permission, isRegisteredUsersPresent, isAnonymousPresent);
         } else {
-            return getComplexPermissionCheck(user, groups, permission, isAnonymousPresent);
+            return getComplexPermissionCheck(user, groups, permission, isRegisteredUsersPresent, isAnonymousPresent);
         }
     }
 
     /**
      * Creates a document with the corresponding query needed to retrieve results only from any authorised document.
      *
-     * @param user User asking for the entries.
-     * @param groups Group names where the user belongs to.
-     * @param permission Permission to be checked.
-     * @param isAnonymousPresent Boolean indicating whether the anonymous user has been registered in the @members group.
+     * @param user                     User asking for the entries.
+     * @param groups                   Group names where the user belongs to.
+     * @param permission               Permission to be checked.
+     * @param isRegisteredUsersPresent Boolean indicating whether a flag indicating "all registered users" has been registered in
+     *                                 the @members group.
+     * @param isAnonymousPresent       Boolean indicating whether the anonymous user has been registered in the @members group.
      * @return The document containing the query to be made in mongo database.
      */
-    public static Document getSimplifiedPermissionCheck(String user, List<String> groups, String permission, boolean isAnonymousPresent) {
+    public static Document getSimplifiedPermissionCheck(String user, List<String> groups, String permission,
+                                                        boolean isRegisteredUsersPresent, boolean isAnonymousPresent) {
         List<String> permissionList = new LinkedList<>();
 
         // Add current user
@@ -570,6 +599,11 @@ public class AuthorizationMongoDBUtils {
                 permissionList.add(MEMBERS + PERMISSION_DELIMITER + permission);
             }
 
+            // Add any registered user
+            if (isRegisteredUsersPresent) {
+                permissionList.add(REGISTERED_USERS + PERMISSION_DELIMITER + permission);
+            }
+
             // Add anonymous user
             if (isAnonymousPresent) {
                 permissionList.add(ANONYMOUS + PERMISSION_DELIMITER + permission);
@@ -582,13 +616,16 @@ public class AuthorizationMongoDBUtils {
     /**
      * Creates a document with the corresponding query needed to retrieve results only from any authorised document.
      *
-     * @param user User asking for the entries.
-     * @param groups Group names where the user belongs to.
-     * @param permission Permission to be checked.
-     * @param isAnonymousPresent Boolean indicating whether the anonymous user has been registered in the @members group.
+     * @param user                     User asking for the entries.
+     * @param groups                   Group names where the user belongs to.
+     * @param permission               Permission to be checked.
+     * @param isRegisteredUsersPresent Boolean indicating whether a flag indicating "all registered users" has been registered in
+     *                                 the @members group.
+     * @param isAnonymousPresent       Boolean indicating whether the anonymous user has been registered in the @members group.
      * @return The document containing the query to be made in mongo database.
      */
-    public static Document getComplexPermissionCheck(String user, List<String> groups, String permission, boolean isAnonymousPresent) {
+    public static Document getComplexPermissionCheck(String user, List<String> groups, String permission, boolean isRegisteredUsersPresent,
+                                                     boolean isAnonymousPresent) {
         List<Document> queryList = new ArrayList<>();
         // 1. Check if the user has the permission
         queryList.add(new Document(PRIVATE_ACL, user + PERMISSION_DELIMITER + permission));
@@ -618,11 +655,22 @@ public class AuthorizationMongoDBUtils {
                     new Document(PRIVATE_ACL, "@members" + PERMISSION_DELIMITER + permission),
                     new Document(PRIVATE_ACL, new Document("$nin", patternList)))));
 
+            patternList = new ArrayList<>(patternList);
+            patternList.add(MEMBERS_PATTERN);
+
+            if (isRegisteredUsersPresent) {
+                // If flag for any registered user is not present in the study, this query will not be needed
+                // 4. Check if the "any registed user" flag have the permission (& not the user & not the groups & not @members)
+                queryList.add(new Document("$and", Arrays.asList(
+                        new Document(PRIVATE_ACL, REGISTERED_USERS + PERMISSION_DELIMITER + permission),
+                        new Document(PRIVATE_ACL, new Document("$nin", patternList)))));
+                patternList = new ArrayList<>(patternList);
+                patternList.add(REGISTERED_USERS_PATTERN);
+            }
+
             if (isAnonymousPresent) {
                 // If anonymous is not present in the study, this query will not be needed
                 // 4. Check if the anonymous user have the permission (& not the user & not the groups & not @members)
-                patternList = new ArrayList<>(patternList);
-                patternList.add(MEMBERS_PATTERN);
                 queryList.add(new Document("$and", Arrays.asList(
                         new Document(PRIVATE_ACL, ANONYMOUS + PERMISSION_DELIMITER + permission),
                         new Document(PRIVATE_ACL, new Document("$nin", patternList)))));
@@ -635,7 +683,7 @@ public class AuthorizationMongoDBUtils {
     /**
      * Creates a document with the corresponding query needed to retrieve results only from documents where no permissions are assigned.
      *
-     * @param user User asking for the entries.
+     * @param user   User asking for the entries.
      * @param groups Group names where the user belongs to.
      * @return The document containing the query to be made in mongo database.
      */
@@ -649,6 +697,7 @@ public class AuthorizationMongoDBUtils {
             }
 
             patternList.add(MEMBERS_PATTERN);
+            patternList.add(REGISTERED_USERS_PATTERN);
         }
         patternList.add(ANONYMOUS_PATTERN);
 
