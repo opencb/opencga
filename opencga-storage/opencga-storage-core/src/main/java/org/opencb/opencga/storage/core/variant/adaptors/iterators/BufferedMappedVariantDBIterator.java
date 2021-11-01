@@ -2,10 +2,7 @@ package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 
 import org.opencb.biodata.models.variant.Variant;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.function.UnaryOperator;
 
 public class BufferedMappedVariantDBIterator extends DelegatedVariantDBIterator {
@@ -21,7 +18,7 @@ public class BufferedMappedVariantDBIterator extends DelegatedVariantDBIterator 
         this.map = map;
         this.batchSize = batchSize;
         buffer = new ArrayList<>(batchSize);
-        bufferIterator = buffer.iterator();
+        bufferIterator = Collections.emptyIterator();
     }
 
     @Override
@@ -31,17 +28,19 @@ public class BufferedMappedVariantDBIterator extends DelegatedVariantDBIterator 
 
     @Override
     public boolean hasNext() {
-        if (bufferIterator.hasNext()) {
-            return true;
-        } else {
+        while (!bufferIterator.hasNext()) {
+            if (!getDelegated().hasNext()) {
+                return false;
+            }
             // Read new buffer
             buffer.clear();
             for (int i = 0; i < batchSize && getDelegated().hasNext(); i++) {
                 buffer.add(getDelegated().next());
             }
+            // Mapper might clear up the buffer. In that case, need to fetch more items
             bufferIterator = map.apply(buffer).iterator();
-            return bufferIterator.hasNext();
         }
+        return true;
     }
 
     @Override

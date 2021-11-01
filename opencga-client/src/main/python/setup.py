@@ -18,7 +18,7 @@ setup(
     description='A REST client for OpenCGA REST web services',
     long_description=long_description,
     long_description_content_type='text/x-rst',
-    url='https://github.com/opencb/opencga/tree/develop/opencga-client/src/main/python/pyOpenCGA',
+    url='https://github.com/opencb/opencga/tree/develop/opencga-client/src/main/python/pyopencga',
     packages=['pyopencga', 'pyopencga.rest_clients'],
     license='Apache Software License',
     author='David Gomez-Peregrina, Pablo Marin-Garcia, Daniel Perez-Gil',
@@ -42,7 +42,7 @@ setup(
     ],
     project_urls={
         'Documentation': 'http://docs.opencb.org/display/opencga/Python',
-        'Source': 'https://github.com/opencb/opencga/tree/develop/opencga-client/src/main/python/pyOpenCGA',
+        'Source': 'https://github.com/opencb/opencga/tree/develop/opencga-client/src/main/python/pyopencga',
         'OpenCGA': 'https://github.com/opencb/opencga',
         'OpenCGA Documentation': 'http://docs.opencb.org/display/opencga',
         'Bug Reports': 'https://github.com/opencb/opencga/issues',

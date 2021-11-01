@@ -103,7 +103,7 @@ public class VariantExportOperationManager extends OperationManager {
         if (regions == null || regions.size() != 1) {
             return fileName + "export";
         } else {
-            return fileName + regions.get(0).toString() + ".export";
+            return fileName + regions.get(0).toString().replace(":", "_") + ".export";
         }
     }
 

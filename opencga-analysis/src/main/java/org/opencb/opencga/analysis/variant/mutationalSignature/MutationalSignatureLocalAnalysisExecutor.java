@@ -228,24 +228,23 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
             // Read mutation context from reference genome (.gz, .gz.fai and .gz.gzi files)
             String base = refGenomePath.toAbsolutePath().toString();
-            BlockCompressedIndexedFastaSequenceFile indexed = new BlockCompressedIndexedFastaSequenceFile(refGenomePath,
-                    new FastaSequenceIndex(new File(base + ".fai")), GZIIndex.loadIndex(Paths.get(base + ".gzi")));
 
-            PrintWriter pw = new PrintWriter(indexFile);
-            while (iterator.hasNext()) {
-                Variant variant = iterator.next();
+            try (PrintWriter pw = new PrintWriter(indexFile);
+                 BlockCompressedIndexedFastaSequenceFile indexed = new BlockCompressedIndexedFastaSequenceFile(refGenomePath,
+                         new FastaSequenceIndex(new File(base + ".fai")), GZIIndex.loadIndex(Paths.get(base + ".gzi")))) {
+                while (iterator.hasNext()) {
+                    Variant variant = iterator.next();
 
-                // Accessing to the context sequence and write it into the context index file
-                ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), variant.getStart() - 1,
-                        variant.getEnd() + 1);
-                String sequence = new String(refSeq.getBases());
+                    // Accessing to the context sequence and write it into the context index file
+                    ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), variant.getStart() - 1,
+                            variant.getEnd() + 1);
+                    String sequence = new String(refSeq.getBases());
 
-                // Write context index
-                pw.println(variant.toString() + "\t" + sequence);
+                    // Write context index
+                    pw.println(variant.toString() + "\t" + sequence);
+                }
             }
 
-            // Close context index file
-            pw.close();
         } catch (IOException | CatalogException | ToolException | StorageEngineException e) {
             throw new ToolExecutorException(e);
         }

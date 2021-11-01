@@ -91,6 +91,22 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testCreateAnonymousUser() throws Exception {
+        thrown.expect(CatalogParameterException.class);
+        thrown.expectMessage(containsString("reserved"));
+        catalogManager.getUserManager().create(ParamConstants.ANONYMOUS_USER_ID, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null,
+                Account.AccountType.FULL, null);
+    }
+
+    @Test
+    public void testCreateRegisteredUser() throws Exception {
+        thrown.expect(CatalogParameterException.class);
+        thrown.expectMessage(containsString("reserved"));
+        catalogManager.getUserManager().create(ParamConstants.REGISTERED_USERS, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null,
+                Account.AccountType.FULL, null);
+    }
+
+    @Test
     public void testLogin() throws Exception {
         catalogManager.getUserManager().login("user", PASSWORD);
 
@@ -1013,7 +1029,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     /**
+     * <<<<<<< HEAD
      * VariableSet methods ***************************
+     * =======
+     * VariableSet methods
+     * ***************************
+     * >>>>>>> release-2.1.x
      */
 
     @Test
@@ -1532,8 +1553,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_2", "INDIVIDUAL_3")));
 
         individuals = catalogManager.getIndividualManager().search(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
-                        variableSet.getId() + ":AGE>10;" + variableSet.getId()
-                                + ":PHEN=CASE"), null, token)
+                        variableSet.getId() + ":AGE>10;" + variableSet.getId() + ":PHEN=CASE"), null, token)
                 .getResults().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_3")));
     }

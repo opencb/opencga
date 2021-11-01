@@ -19,7 +19,6 @@ package org.opencb.opencga.core.models.clinical;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.file.FileReferenceParam;
 import org.opencb.opencga.core.models.panel.Panel;
@@ -49,6 +48,7 @@ public class ClinicalAnalysisUpdateParams {
 
     private Boolean locked;
     private ClinicalAnalystParam analyst;
+    private ClinicalReport report;
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
     private ClinicalConsentAnnotationParam consent;
@@ -69,10 +69,10 @@ public class ClinicalAnalysisUpdateParams {
     public ClinicalAnalysisUpdateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
                                         List<PanelReferenceParam> panels, Boolean panelLock, Boolean locked, ClinicalAnalystParam analyst,
-                                        ClinicalAnalysisQualityControlUpdateParam qualityControl, ClinicalConsentAnnotationParam consent,
-                                        String creationDate, String modificationDate, String dueDate, List<ClinicalCommentParam> comments,
-                                        PriorityParam priority, List<FlagValueParam> flags, Map<String, Object> attributes,
-                                        StatusParam status) {
+                                        ClinicalReport report, ClinicalAnalysisQualityControlUpdateParam qualityControl,
+                                        ClinicalConsentAnnotationParam consent, String creationDate, String modificationDate,
+                                        String dueDate, List<ClinicalCommentParam> comments, PriorityParam priority,
+                                        List<FlagValueParam> flags, Map<String, Object> attributes, StatusParam status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -84,6 +84,7 @@ public class ClinicalAnalysisUpdateParams {
         this.panelLock = panelLock;
         this.locked = locked;
         this.analyst = analyst;
+        this.report = report;
         this.qualityControl = qualityControl;
         this.consent = consent;
         this.creationDate = creationDate;
@@ -112,13 +113,12 @@ public class ClinicalAnalysisUpdateParams {
                 locked == null ? false : locked,
                 null, null,
                 consent != null ? consent.toClinicalConsentAnnotation() : null,
-                analyst != null ? analyst.toClinicalAnalyst() : null,
+                analyst != null ? analyst.toClinicalAnalyst() : null, report,
                 priority != null ? priority.toClinicalPriorityAnnotation() : null,
-                flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null,
-                creationDate, modificationDate, dueDate, 1,
+                flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
+                1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
-                qualityControl != null ? qualityControl.toClinicalQualityControl() : null,
-                null, null, attributes, status != null ? status.toCustomStatus() : null);
+                qualityControl != null ? qualityControl.toClinicalQualityControl() : null, null, null, attributes, status != null ? status.toCustomStatus() : null);
     }
 
     @Override
@@ -135,6 +135,7 @@ public class ClinicalAnalysisUpdateParams {
         sb.append(", family=").append(family);
         sb.append(", locked=").append(locked);
         sb.append(", analyst=").append(analyst);
+        sb.append(", report=").append(report);
         sb.append(", qualityControl=").append(qualityControl);
         sb.append(", consent=").append(consent);
         sb.append(", creationDate='").append(creationDate).append('\'');
