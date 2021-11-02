@@ -50,6 +50,10 @@ import org.opencb.opencga.core.models.common.FlagValue;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.common.StatusValue;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.file.FileReferenceParam;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
@@ -178,6 +182,25 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         return catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, createDefaultInterpretation,
                 QueryOptions.empty(), sessionIdUser);
+    }
+
+    private List<File> registerDummyFiles() throws CatalogException {
+        List<File> files = new LinkedList<>();
+
+        String vcfFile = getClass().getResource("/biofiles/variant-test-file.vcf.gz").getFile();
+        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(vcfFile, "", "", "", null, null, null,
+                null), false, sessionIdUser).first());
+        vcfFile = getClass().getResource("/biofiles/family.vcf").getFile();
+        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(vcfFile, "", "", "", null, null, null,
+                null), false, sessionIdUser).first());
+        String bamFile = getClass().getResource("/biofiles/HG00096.chrom20.small.bam").getFile();
+        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFile, "", "", "", null, null, null,
+                null), false, sessionIdUser).first());
+        bamFile = getClass().getResource("/biofiles/NA19600.chrom20.small.bam").getFile();
+        files.add(catalogManager.getFileManager().link(STUDY, new FileLinkParams(bamFile, "", "", "", null, null, null,
+                null), false, sessionIdUser).first());
+
+        return files;
     }
 
     @Test
@@ -2630,5 +2653,89 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 sessionIdUser).first();
 
         assertEquals(3, interpretation.getPanels().size());
+    }
+
+    @Test
+    public void createClinicalAnalysisWithFiles() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(STUDY, individual, QueryOptions.empty(), sessionIdUser);
+
+        // Register and associate files to sample "sample"
+        List<File> files = registerDummyFiles();
+        for (File file : files) {
+            catalogManager.getFileManager().update(STUDY, file.getPath(),
+                    new FileUpdateParams().setSampleIds(Collections.singletonList("sample")), QueryOptions.empty(), sessionIdUser);
+        }
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(individual);
+        OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis,
+                QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, clinical.getNumResults());
+        assertEquals(4, clinical.first().getFiles().size());
+        for (File file : clinical.first().getFiles()) {
+            assertNotNull(file.getPath());
+            assertNotNull(file.getName());
+        }
+    }
+
+    @Test
+    public void updateClinicalAnalysisFiles() throws CatalogException {
+        Individual individual = new Individual()
+                .setId("proband")
+                .setSamples(Collections.singletonList(new Sample().setId("sample")));
+        catalogManager.getIndividualManager().create(STUDY, individual, QueryOptions.empty(), sessionIdUser);
+
+        // Register and associate files to sample "sample"
+        List<File> files = registerDummyFiles();
+        for (File file : files) {
+            catalogManager.getFileManager().update(STUDY, file.getPath(),
+                    new FileUpdateParams().setSampleIds(Collections.singletonList("sample")), QueryOptions.empty(), sessionIdUser);
+        }
+        List<FileReferenceParam> fileRefs = files.stream().map(f -> new FileReferenceParam(f.getPath())).collect(Collectors.toList());
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("Clinical")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(individual);
+        OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis,
+                QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, clinical.getNumResults());
+        assertEquals(4, clinical.first().getFiles().size());
+
+        // Remove first and last file
+        ObjectMap actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setFiles(Arrays.asList(fileRefs.get(0), fileRefs.get(3))), options, sessionIdUser);
+        ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(),
+                sessionIdUser).first();
+        assertEquals(2, ca.getFiles().size());
+        assertTrue(files.subList(1, 3).stream().map(File::getPath).collect(Collectors.toSet())
+                .containsAll(ca.getFiles().stream().map(File::getPath).collect(Collectors.toSet())));
+
+        // Add first file again
+        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), ParamUtils.BasicUpdateAction.ADD);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setFiles(Collections.singletonList(fileRefs.get(0))), options, sessionIdUser);
+        ca = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(3, ca.getFiles().size());
+        assertTrue(files.subList(0, 3).stream().map(File::getPath).collect(Collectors.toSet())
+                .containsAll(ca.getFiles().stream().map(File::getPath).collect(Collectors.toSet())));
+
+        // Set file 3 and 4
+        actionMap = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), ParamUtils.BasicUpdateAction.SET);
+        options = new QueryOptions(Constants.ACTIONS, actionMap);
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams().setFiles(Arrays.asList(fileRefs.get(2), fileRefs.get(3))), options, sessionIdUser);
+        ca = catalogManager.getClinicalAnalysisManager().get(STUDY, clinicalAnalysis.getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(2, ca.getFiles().size());
+        assertTrue(files.subList(2, 4).stream().map(File::getPath).collect(Collectors.toSet())
+                .containsAll(ca.getFiles().stream().map(File::getPath).collect(Collectors.toSet())));
     }
 }
