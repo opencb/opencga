@@ -13,11 +13,11 @@ import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
 
-@Migration(id="rename_variableset_field",
+@Migration(id = "rename_variableset_field",
         description = "Rename Variable variableSet field to variables #1823", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        rank = 6)
+        date = 20210920)
 public class renameVariableSetFieldFromVariable extends MigrationTool {
 
     @Override

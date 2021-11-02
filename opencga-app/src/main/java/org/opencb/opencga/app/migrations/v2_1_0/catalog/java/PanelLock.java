@@ -10,12 +10,12 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 
 import static com.mongodb.client.model.Filters.eq;
 
-@Migration(id="add_panel_lock",
+@Migration(id = "add_panel_lock",
         description = "Add new panelLock to ClinicalAnalysis #1802", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         patch = 1,
-        rank = 21)
+        date = 20210713)
 public class PanelLock extends MigrationTool {
 
     @Override

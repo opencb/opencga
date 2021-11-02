@@ -20,7 +20,7 @@ import static com.mongodb.client.model.Filters.eq;
         description = "Quality control normalize comments and fields #1826", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        rank = 7)
+        date = 20211001)
 public class ImproveFileQualityControl extends MigrationTool {
 
     @Override

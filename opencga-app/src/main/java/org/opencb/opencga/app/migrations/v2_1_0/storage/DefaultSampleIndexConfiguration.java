@@ -20,11 +20,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 
-@Migration(id="default_sample_index_configuration", description = "Add a default backward compatible sample index configuration", version = "2.1.0",
+@Migration(id = "default_sample_index_configuration", description = "Add a default backward compatible sample index configuration", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
         patch = 7,
-        rank = 16) // Needs to run after StudyClinicalConfigurationRelocation
+        date = 20210721) // Needs to run after StudyClinicalConfigurationRelocation
 public class DefaultSampleIndexConfiguration extends StorageMigrationTool {
 
     @Override

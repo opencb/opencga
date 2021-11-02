@@ -13,8 +13,9 @@ import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
 
-@Migration(id="add_registrationDate_to_project.internal", description = "Add registrationDate to Project #1804", version = "2.2.0",
-        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG)
+@Migration(id = "add_registrationDate_to_project.internal", description = "Add registrationDate to Project #1804", version = "2.2.0",
+        language = Migration.MigrationLanguage.JAVA, domain = Migration.MigrationDomain.CATALOG,
+        date = 20210720)
 public class AddRegistrationDateToProjectInternal extends MigrationTool {
 
     @Override

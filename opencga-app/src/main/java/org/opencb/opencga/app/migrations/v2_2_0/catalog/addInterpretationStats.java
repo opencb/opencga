@@ -15,12 +15,12 @@ import org.opencb.opencga.core.models.clinical.InterpretationStats;
 
 import static com.mongodb.client.model.Filters.eq;
 
-@Migration(id="add_interpretation_stats",
+@Migration(id = "add_interpretation_stats",
         description = "Add interpretation stats #1819", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         patch = 2,
-        rank = 4)
+        date = 20210908)
 public class addInterpretationStats extends MigrationTool {
 
     public addInterpretationStats() {

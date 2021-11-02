@@ -16,11 +16,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-@Migration(id="new_clinical_significance_fields", description = "Add new clinical significance fields and combinations for variant storage and solr", version = "2.1.0",
+@Migration(id = "new_clinical_significance_fields", description = "Add new clinical significance fields and combinations for variant storage and solr", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
         patch = 1,
-        rank = 15)
+        date = 20210708)
 public class NewClinicalSignificanceFields extends StorageMigrationTool {
 
     @Override

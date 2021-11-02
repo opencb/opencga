@@ -23,7 +23,7 @@ import java.util.Arrays;
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
         patch = 1,
-        rank = 9)
+        date = 20210614)
 public class VariantFileStatsRelocation extends MigrationTool {
 
     private static final String FILE_VARIANT_STATS_VARIABLE_SET = "opencga_file_variant_stats";

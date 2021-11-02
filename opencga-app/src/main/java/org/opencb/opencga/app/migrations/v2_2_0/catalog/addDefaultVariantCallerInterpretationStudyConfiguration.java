@@ -8,11 +8,11 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 
 import java.util.Collections;
 
-@Migration(id="add_variant_caller_interpretation_configuration",
+@Migration(id = "add_variant_caller_interpretation_configuration",
         description = "Add default variant caller Interpretation Study configuration #1822", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        rank = 5)
+        date = 20210916)
 public class addDefaultVariantCallerInterpretationStudyConfiguration extends MigrationTool {
 
     @Override
