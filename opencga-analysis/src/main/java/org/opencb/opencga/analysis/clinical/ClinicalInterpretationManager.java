@@ -366,15 +366,28 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
             for (ConsequenceType ct: variant.getAnnotation().getConsequenceTypes()) {
-                gFeature = new GenomicFeature(ct.getGeneId(), "GENE", ct.getTranscriptId(), ct.getGeneName(),
-                        ct.getSequenceOntologyTerms(), null);
+                String geneId = StringUtils.isEmpty(ct.getGeneId()) ? ct.getEnsemblGeneId() : ct.getGeneId();
+                String transcriptId = StringUtils.isEmpty(ct.getTranscriptId()) ? ct.getEnsemblTranscriptId() : ct.getTranscriptId();
+                String featureType = "GENE";
+                if (StringUtils.isEmpty(ct.getGeneName())) {
+                    featureType = "INTERGENIC";
+                    if (CollectionUtils.isNotEmpty(ct.getSequenceOntologyTerms())) {
+                        for (SequenceOntologyTerm soTerm : ct.getSequenceOntologyTerms()) {
+                            if ("regulatory_region_variant".equals(soTerm.getName())) {
+                                featureType = "REGULATORY";
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                gFeature = new GenomicFeature(geneId, featureType, transcriptId, ct.getGeneName(), ct.getSequenceOntologyTerms(), null);
                 panelIds = null;
-                if (genePanelMap.containsKey(ct.getGeneId())) {
-                    panelIds = new ArrayList<>(genePanelMap.get(ct.getGeneId()));
+                if (genePanelMap.containsKey(geneId)) {
+                    panelIds = new ArrayList<>(genePanelMap.get(geneId));
                 } else if (genePanelMap.containsKey(ct.getGeneName())) {
                     panelIds = new ArrayList<>(genePanelMap.get(ct.getGeneName()));
                 }
-
 
                 ClinicalVariantEvidence evidence;
                 if (CollectionUtils.isNotEmpty(panelIds)) {
