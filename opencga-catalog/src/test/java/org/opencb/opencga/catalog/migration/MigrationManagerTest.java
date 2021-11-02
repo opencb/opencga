@@ -25,7 +25,7 @@ import static org.junit.Assert.*;
 public class MigrationManagerTest extends AbstractManagerTest {
 
     @Migration(id = "test-1", version = "0.0.1", description = "", domain = Migration.MigrationDomain.CATALOG,
-            language = Migration.MigrationLanguage.JAVA, rank = 1)
+            language = Migration.MigrationLanguage.JAVA, date = 20180501)
     public static class Migration1 extends MigrationTool {
         @Override
         protected void run() throws MigrationException {
@@ -34,7 +34,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     }
 
     @Migration(id = "test-2", version = "0.0.1", description = "", domain = Migration.MigrationDomain.CATALOG,
-            language = Migration.MigrationLanguage.JAVA, rank = 2)
+            language = Migration.MigrationLanguage.JAVA, date = 20180502)
     public static class Migration2 extends MigrationTool {
         @Override
         protected void run() throws MigrationException {
@@ -43,7 +43,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     }
 
     @Migration(id = "test2-1", version = "0.1.0", description = "", domain = Migration.MigrationDomain.CATALOG,
-            language = Migration.MigrationLanguage.JAVA, rank = 1)
+            language = Migration.MigrationLanguage.JAVA, date = 20180501)
     public static class Migration3 extends MigrationTool {
         @Override
         protected void run() throws MigrationException {
@@ -52,7 +52,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     }
 
     @Migration(id = "test2-2", version = "0.1.0", description = "", domain = Migration.MigrationDomain.CATALOG,
-            language = Migration.MigrationLanguage.JAVA, rank = 2)
+            language = Migration.MigrationLanguage.JAVA, date = 20180501)
     public static class Migration4 extends MigrationTool {
         @Override
         protected void run() throws MigrationException {
@@ -61,7 +61,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     }
 
     @Migration(id = "test3-1", version = "0.2.0", description = "", domain = Migration.MigrationDomain.CATALOG,
-            language = Migration.MigrationLanguage.JAVA, rank = 1)
+            language = Migration.MigrationLanguage.JAVA, date = 20190401)
     public static class Migration5 extends MigrationTool {
         @Override
         protected void run() throws MigrationException {
@@ -70,7 +70,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     }
 
     @Migration(id = "test3-2", version = "0.2.0", description = "", domain = Migration.MigrationDomain.CATALOG,
-            language = Migration.MigrationLanguage.JAVA, rank = 2)
+            language = Migration.MigrationLanguage.JAVA, date = 20190403)
     public static class Migration6 extends MigrationTool {
         @Override
         protected void run() throws MigrationException {
@@ -79,7 +79,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     }
 
     @Migration(id = "test4-1-manual", version = "0.2.1", description = "", domain = Migration.MigrationDomain.CATALOG,
-            language = Migration.MigrationLanguage.JAVA, rank = 1, manual = true)
+            language = Migration.MigrationLanguage.JAVA, date = 20200401, manual = true)
     public static class Migration7 extends MigrationTool {
         @Override
         protected void run() throws MigrationException {
@@ -90,7 +90,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     }
 
     @Migration(id = "test4-2", version = "0.2.2", description = "", domain = Migration.MigrationDomain.CATALOG,
-            language = Migration.MigrationLanguage.JAVA, rank = 1)
+            language = Migration.MigrationLanguage.JAVA, date = 20200401)
     public static class Migration8 extends MigrationTool {
         @Override
         protected void run() throws MigrationException {
@@ -99,7 +99,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     }
 
     @Migration(id = "test4-3", version = "0.2.3", description = "", domain = Migration.MigrationDomain.CATALOG,
-            language = Migration.MigrationLanguage.JAVA, rank = 1)
+            language = Migration.MigrationLanguage.JAVA, date = 20200401)
     public static class Migration9 extends MigrationTool {
         @Override
         protected void run() throws MigrationException {
@@ -108,7 +108,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     }
 
     @Migration(id = "test-with-jobs", version = "1.0.0", description = "", domain = Migration.MigrationDomain.CATALOG,
-            language = Migration.MigrationLanguage.JAVA, rank = 1)
+            language = Migration.MigrationLanguage.JAVA, date = 20200401)
     public static class MigrationWithJobs extends MigrationTool {
         @Override
         protected void run() throws Exception {

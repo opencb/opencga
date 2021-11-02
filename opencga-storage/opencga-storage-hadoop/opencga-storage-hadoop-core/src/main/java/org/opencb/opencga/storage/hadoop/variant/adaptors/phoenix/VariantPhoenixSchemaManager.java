@@ -124,6 +124,9 @@ public class VariantPhoenixSchemaManager {
     }
 
     public void dropFiles(int studyId, List<Integer> fileIds) throws SQLException {
+        if (fileIds == null || fileIds.isEmpty()) {
+            return;
+        }
         List<Integer> sampleIds = new ArrayList<>();
         for (Integer fileId : fileIds) {
             sampleIds.addAll(metadataManager.getFileMetadata(studyId, fileId).getSamples());
@@ -134,6 +137,28 @@ public class VariantPhoenixSchemaManager {
         }
         for (Integer sampleId : sampleIds) {
             columns.add(buildSampleColumnKey(studyId, sampleId, new StringBuilder()));
+        }
+        phoenixHelper.dropColumns(con, variantsTableName, columns, DEFAULT_TABLE_TYPE);
+        con.commit();
+    }
+
+    /**
+     * Drop sample columns on all their files. Does not drop any file column.
+     *
+     * @param studyId Study id
+     * @param sampleIds List of sample ids
+     * @throws SQLException on error
+     */
+    public void dropSamples(int studyId, List<Integer> sampleIds) throws SQLException {
+        if (sampleIds == null || sampleIds.isEmpty()) {
+            return;
+        }
+        List<CharSequence> columns = new ArrayList<>(sampleIds.size());
+        for (Integer sampleId : sampleIds) {
+            SampleMetadata sm = metadataManager.getSampleMetadata(studyId, sampleId);
+            for (PhoenixHelper.Column sampleColumn : getSampleColumns(sm)) {
+                columns.add(sampleColumn.column());
+            }
         }
         phoenixHelper.dropColumns(con, variantsTableName, columns, DEFAULT_TABLE_TYPE);
         con.commit();

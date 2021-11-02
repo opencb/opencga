@@ -31,16 +31,20 @@ public abstract class AbstractHBaseDataWriter<T, M extends Mutation> implements 
         this.tableName = tableName;
     }
 
-    protected abstract List<M> convert(List<T> batch);
+    protected abstract List<M> convert(List<T> batch) throws IOException;
 
     @Override
     public boolean open() {
         try {
-            mutator = hBaseManager.getConnection().getBufferedMutator(TableName.valueOf(tableName));
+            mutator = hBaseManager.getConnection().getBufferedMutator(buildBufferedMutatorParams());
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to connect to Hbase", e);
         }
         return true;
+    }
+
+    protected BufferedMutatorParams buildBufferedMutatorParams() {
+        return new BufferedMutatorParams(TableName.valueOf(tableName));
     }
 
     @Override

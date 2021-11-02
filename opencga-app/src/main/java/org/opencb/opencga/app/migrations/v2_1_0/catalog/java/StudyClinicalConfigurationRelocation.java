@@ -10,12 +10,12 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 
 import static com.mongodb.client.model.Filters.eq;
 
-@Migration(id="move_study_clinical_config_to_internal",
+@Migration(id = "move_study_clinical_config_to_internal",
         description = "Move Study ClinicalConfiguration to internal.configuration", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         patch = 1,
-        rank = 14)
+        date = 20210708)
 public class StudyClinicalConfigurationRelocation extends MigrationTool {
 
     @Override
@@ -39,10 +39,10 @@ public class StudyClinicalConfigurationRelocation extends MigrationTool {
                     internal.put("configuration", configuration);
 
                     bulk.add(new UpdateOneModel<>(
-                            eq("_id", study.get("_id")),
-                            new Document()
-                                    .append("$set", new Document("internal", internal))
-                                    .append("$unset", new Document("configuration", ""))
+                                    eq("_id", study.get("_id")),
+                                    new Document()
+                                            .append("$set", new Document("internal", internal))
+                                            .append("$unset", new Document("configuration", ""))
                             )
                     );
                 }

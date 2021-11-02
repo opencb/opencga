@@ -15,7 +15,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.concurrent.TimeUnit;
 
-@Migration(id="recalculate_roles", description = "Recalculate roles from Family #1763", version = "2.0.3", rank = 1)
+@Migration(id = "recalculate_roles", description = "Recalculate roles from Family #1763", version = "2.0.3", date = 20210528)
 public class Migration1 extends MigrationTool {
 
     @Override
@@ -54,7 +54,7 @@ public class Migration1 extends MigrationTool {
 
                         logger.info("Updated {} families in study '{}' in {} seconds", skip, study.getFqn(),
                                 stopWatch.getTime(TimeUnit.SECONDS));
-                    } while(more);
+                    } while (more);
 
                     stopWatch.stop();
                     stopWatch.reset();

@@ -100,7 +100,8 @@ public class ParamConstants {
     public static final String ADMIN_PROJECT = "admin";
     public static final String ADMIN_STUDY = "admin";
     public static final String ADMIN_STUDY_FQN = OPENCGA_USER_ID + USER_PROJECT_SEPARATOR + ADMIN_PROJECT + PROJECT_STUDY_SEPARATOR + ADMIN_STUDY;
-    public static final String ANONYMOUS_USER_ID = "*";
+    public static final String ANONYMOUS_USER_ID = "*";         // Any user, authenticated or not
+    public static final String REGISTERED_USERS = "REGISTERED"; // Any authenticated user
     public static final String MEMBERS_GROUP = "@members";
     public static final String ADMINS_GROUP = "@admins";
     // -------------------- AUDIT -------------------------

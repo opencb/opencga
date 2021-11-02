@@ -49,16 +49,25 @@ public abstract class OperationManager {
         this.variantStorageEngine = variantStorageEngine;
     }
 
-    public final StudyMetadata synchronizeCatalogStudyFromStorage(String study, String sessionId)
+    public final StudyMetadata synchronizeCatalogStudyFromStorage(String study, String token)
+            throws CatalogException, StorageEngineException {
+        return synchronizeCatalogStudyFromStorage(study, token, false);
+    }
+
+    public final StudyMetadata synchronizeCatalogStudyFromStorage(String study, String token, boolean failIfNotExist)
             throws CatalogException, StorageEngineException {
         VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
         CatalogStorageMetadataSynchronizer metadataSynchronizer
                 = new CatalogStorageMetadataSynchronizer(catalogManager, metadataManager);
 
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
-        if (studyMetadata != null) {
+        if (studyMetadata == null) {
+            if (failIfNotExist) {
+                throw new CatalogException("Study '" + study + "' does not exist on the VariantStorage");
+            }
+        } else {
             // Update Catalog file and cohort status.
-            metadataSynchronizer.synchronizeCatalogStudyFromStorage(studyMetadata, sessionId);
+            metadataSynchronizer.synchronizeCatalogStudyFromStorage(studyMetadata, token);
         }
         return studyMetadata;
     }

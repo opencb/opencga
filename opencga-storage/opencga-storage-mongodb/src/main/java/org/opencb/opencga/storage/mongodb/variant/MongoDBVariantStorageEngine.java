@@ -184,7 +184,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
 
-        TaskMetadata task = preRemoveFiles(study, files);
+        TaskMetadata task = preRemove(study, files, Collections.emptyList());
         List<Integer> fileIds = task.getFileIds();
 
         ObjectMap options = new ObjectMap(getOptions());
@@ -196,9 +196,9 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         try {
             Runtime.getRuntime().addShutdownHook(hook);
             getDBAdaptor().removeFiles(study, files, task.getTimestamp(), new QueryOptions(options));
-            postRemoveFiles(study, fileIds, task.getId(), false);
+            postRemoveFiles(study, fileIds, Collections.emptyList(), task.getId(), false);
         } catch (Exception e) {
-            postRemoveFiles(study, fileIds, task.getId(), true);
+            postRemoveFiles(study, fileIds, Collections.emptyList(), task.getId(), true);
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);

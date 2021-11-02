@@ -26,7 +26,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -40,6 +39,7 @@ import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -93,8 +93,8 @@ public class StudyManager extends AbstractManager {
     private final CatalogIOManager catalogIOManager;
     private final IOManagerFactory ioManagerFactory;
 
-    public static final String MEMBERS = "@members";
-    public static final String ADMINS = "@admins";
+    public static final String MEMBERS = ParamConstants.MEMBERS_GROUP;
+    public static final String ADMINS = ParamConstants.ADMINS_GROUP;
     //[A-Za-z]([-_.]?[A-Za-z0-9]
     private static final String USER_PATTERN = "[A-Za-z][[-_.]?[A-Za-z0-9]?]*";
     private static final String PROJECT_PATTERN = "[A-Za-z0-9][[-_.]?[A-Za-z0-9]?]*";
@@ -1040,12 +1040,15 @@ public class StudyManager extends AbstractManager {
 
             authorizationManager.checkUpdateGroupPermissions(study.getUid(), userId, groupId, action);
 
-            if (ListUtils.isNotEmpty(updateParams.getUsers())) {
+            if (CollectionUtils.isNotEmpty(updateParams.getUsers())) {
                 List<String> tmpUsers = updateParams.getUsers();
                 if (groupId.equals(MEMBERS) || groupId.equals(ADMINS)) {
                     // Remove anonymous user if present for the checks.
                     // Anonymous user is only allowed in MEMBERS group, otherwise we keep it as if it is present it should fail.
-                    tmpUsers = updateParams.getUsers().stream().filter(user -> !user.equals(ANONYMOUS)).collect(Collectors.toList());
+                    tmpUsers = updateParams.getUsers().stream()
+                            .filter(user -> !user.equals(ParamConstants.ANONYMOUS_USER_ID))
+                            .filter(user -> !user.equals(ParamConstants.REGISTERED_USERS))
+                            .collect(Collectors.toList());
                 }
                 if (tmpUsers.size() > 0) {
                     userDBAdaptor.checkIds(tmpUsers);
@@ -1571,8 +1574,8 @@ public class StudyManager extends AbstractManager {
                         studyPermissions = AuthorizationManager.getViewOnlyAcls();
                         break;
                     default:
-                        studyPermissions = null;
-                        break;
+                        throw new CatalogException("Admissible template ids are: " + AuthorizationManager.ROLE_ADMIN + ", "
+                                + AuthorizationManager.ROLE_ANALYST + ", " + AuthorizationManager.ROLE_VIEW_ONLY);
                 }
 
                 if (studyPermissions != null) {

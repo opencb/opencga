@@ -22,7 +22,7 @@ import java.util.List;
 
 public class VariantFileDeleteParams extends ToolParams {
 
-    public static final String DESCRIPTION = "Variant delete params";
+    public static final String DESCRIPTION = "Variant delete file params";
 
     public VariantFileDeleteParams() {
     }

@@ -91,6 +91,22 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testCreateAnonymousUser() throws Exception {
+        thrown.expect(CatalogParameterException.class);
+        thrown.expectMessage(containsString("reserved"));
+        catalogManager.getUserManager().create(ParamConstants.ANONYMOUS_USER_ID, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null,
+                Account.AccountType.FULL, null);
+    }
+
+    @Test
+    public void testCreateRegisteredUser() throws Exception {
+        thrown.expect(CatalogParameterException.class);
+        thrown.expectMessage(containsString("reserved"));
+        catalogManager.getUserManager().create(ParamConstants.REGISTERED_USERS, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null,
+                Account.AccountType.FULL, null);
+    }
+
+    @Test
     public void testLogin() throws Exception {
         catalogManager.getUserManager().login("user", PASSWORD);
 
@@ -973,7 +989,16 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     /**
+<<<<<<< HEAD
      * VariableSet methods
+=======
+     * <<<<<<< HEAD
+     * VariableSet methods ***************************
+     * =======
+     * VariableSet methods
+     * ***************************
+     * >>>>>>> release-2.1.x
+>>>>>>> develop
      */
 
     @Test

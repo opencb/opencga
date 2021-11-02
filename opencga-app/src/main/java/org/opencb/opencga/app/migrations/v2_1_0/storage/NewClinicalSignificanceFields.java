@@ -20,7 +20,7 @@ import java.util.Map;
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
         patch = 1,
-        rank = 15)
+        date = 20210708)
 public class NewClinicalSignificanceFields extends StorageMigrationTool {
 
     @Override

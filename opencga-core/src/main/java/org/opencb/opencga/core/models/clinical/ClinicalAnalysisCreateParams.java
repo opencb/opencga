@@ -48,6 +48,7 @@ public class ClinicalAnalysisCreateParams {
     private Boolean panelLock;
 
     private ClinicalAnalystParam analyst;
+    private ClinicalReport report;
     private InterpretationCreateParams interpretation;
     private ClinicalAnalysisQualityControlUpdateParam qualityControl;
 
@@ -69,8 +70,9 @@ public class ClinicalAnalysisCreateParams {
     public ClinicalAnalysisCreateParams(String id, String description, ClinicalAnalysis.Type type, DisorderReferenceParam disorder,
                                         List<FileReferenceParam> files, ProbandParam proband, FamilyParam family,
                                         List<PanelReferenceParam> panels, Boolean panelLock, ClinicalAnalystParam analyst,
-                                        InterpretationCreateParams interpretation, ClinicalConsentAnnotationParam consent,
-                                        String creationDate, String modificationDate, String dueDate, List<ClinicalCommentParam> comments,
+                                        ClinicalReport report, InterpretationCreateParams interpretation,
+                                        ClinicalConsentAnnotationParam consent, String creationDate, String modificationDate,
+                                        String dueDate, List<ClinicalCommentParam> comments,
                                         ClinicalAnalysisQualityControlUpdateParam qualityControl, PriorityParam priority,
                                         List<FlagValueParam> flags, Map<String, Object> attributes, StatusParam status) {
         this.id = id;
@@ -82,6 +84,7 @@ public class ClinicalAnalysisCreateParams {
         this.family = family;
         this.panels = panels;
         this.panelLock = panelLock;
+        this.report = report;
         this.analyst = analyst;
         this.interpretation = interpretation;
         this.consent = consent;
@@ -109,6 +112,7 @@ public class ClinicalAnalysisCreateParams {
                         : null,
                 clinicalAnalysis.isPanelLock(),
                 clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
+                clinicalAnalysis.getReport(),
                 clinicalAnalysis.getInterpretation() != null
                         ? InterpretationCreateParams.of(clinicalAnalysis.getInterpretation())
                         : null,
@@ -140,6 +144,7 @@ public class ClinicalAnalysisCreateParams {
         sb.append(", panels=").append(panels);
         sb.append(", panelLock=").append(panelLock);
         sb.append(", analyst=").append(analyst);
+        sb.append(", report=").append(report);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", qualityControl=").append(qualityControl);
         sb.append(", consent=").append(consent);
@@ -206,13 +211,12 @@ public class ClinicalAnalysisCreateParams {
         return new ClinicalAnalysis(id, description, type, disorder != null ? disorder.toDisorder() : null, caFiles, individual, f,
                 diseasePanelList, panelLock != null ? panelLock : false, false, primaryInterpretation, new LinkedList<>(),
                 consent != null ? consent.toClinicalConsentAnnotation() : null,
-                new ClinicalAnalyst(assignee, assignee, "", "", TimeUtils.getTime()),
+                new ClinicalAnalyst(assignee, assignee, "", "", TimeUtils.getTime()), report,
                 priority != null ? priority.toClinicalPriorityAnnotation() : null,
-                flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null ,
-                creationDate, modificationDate, dueDate, 1,
-                comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
-                qualityControl != null ? qualityControl.toClinicalQualityControl() : null, new LinkedList<>(), null, attributes,
-                status != null ? status.toCustomStatus() : null);
+                flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
+                1,
+                comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null, qualityControl != null ? qualityControl.toClinicalQualityControl() : null, new LinkedList<>(), null,
+                attributes, status != null ? status.toCustomStatus() : null);
     }
 
     public String getId() {
@@ -302,6 +306,15 @@ public class ClinicalAnalysisCreateParams {
 
     public ClinicalAnalysisCreateParams setAnalyst(ClinicalAnalystParam analyst) {
         this.analyst = analyst;
+        return this;
+    }
+
+    public ClinicalReport getReport() {
+        return report;
+    }
+
+    public ClinicalAnalysisCreateParams setReport(ClinicalReport report) {
+        this.report = report;
         return this;
     }
 
