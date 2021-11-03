@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.hadoop.utils;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
@@ -284,7 +283,7 @@ public class HBaseLockManager {
 
     private Boolean tryToPutToken(String token, long lockDuration, byte[] row, byte[] qualifier, byte[] lockValue, String type)
             throws IOException {
-        return HBaseManager.act(getConnection(), tableName, table -> {
+        return hbaseManager.act(tableName, table -> {
             Put put = new Put(row)
                     .addColumn(columnFamily, qualifier, Bytes.toBytes(
                             type
@@ -296,7 +295,7 @@ public class HBaseLockManager {
     }
 
     private boolean clearLock(byte[] row, byte[] qualifier, byte[] lockValue) throws IOException {
-        return HBaseManager.act(getConnection(), tableName, table -> {
+        return hbaseManager.act(tableName, table -> {
             Put put = new Put(row)
                     .addColumn(columnFamily, qualifier, Bytes.toBytes(""));
             return table.checkAndPut(row, columnFamily, qualifier, CompareFilter.CompareOp.EQUAL, lockValue, put);
@@ -365,7 +364,7 @@ public class HBaseLockManager {
 
     private byte[] readLockValue(byte[] row, byte[] qualifier) throws IOException {
         byte[] lockValue;
-        lockValue = HBaseManager.act(getConnection(), tableName, table -> {
+        lockValue = hbaseManager.act(tableName, table -> {
             byte[] columnFamily = this.columnFamily;
 
             Result result = table.get(new Get(row).addColumn(columnFamily, qualifier));
@@ -376,10 +375,6 @@ public class HBaseLockManager {
             }
         });
         return lockValue;
-    }
-
-    private Connection getConnection() {
-        return hbaseManager.getConnection();
     }
 
     public static class IllegalLockStatusException extends IllegalStateException {

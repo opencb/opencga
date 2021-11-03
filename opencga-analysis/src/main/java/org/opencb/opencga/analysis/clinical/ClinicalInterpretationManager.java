@@ -366,15 +366,28 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
             for (ConsequenceType ct: variant.getAnnotation().getConsequenceTypes()) {
-                gFeature = new GenomicFeature(ct.getGeneId(), "GENE", ct.getTranscriptId(), ct.getGeneName(),
-                        ct.getSequenceOntologyTerms(), null);
+                String geneId = StringUtils.isEmpty(ct.getGeneId()) ? ct.getEnsemblGeneId() : ct.getGeneId();
+                String transcriptId = StringUtils.isEmpty(ct.getTranscriptId()) ? ct.getEnsemblTranscriptId() : ct.getTranscriptId();
+                String featureType = "GENE";
+                if (StringUtils.isEmpty(ct.getGeneName())) {
+                    featureType = "INTERGENIC";
+                    if (CollectionUtils.isNotEmpty(ct.getSequenceOntologyTerms())) {
+                        for (SequenceOntologyTerm soTerm : ct.getSequenceOntologyTerms()) {
+                            if ("regulatory_region_variant".equals(soTerm.getName())) {
+                                featureType = "REGULATORY";
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                gFeature = new GenomicFeature(geneId, featureType, transcriptId, ct.getGeneName(), ct.getSequenceOntologyTerms(), null);
                 panelIds = null;
-                if (genePanelMap.containsKey(ct.getGeneId())) {
-                    panelIds = new ArrayList<>(genePanelMap.get(ct.getGeneId()));
+                if (genePanelMap.containsKey(geneId)) {
+                    panelIds = new ArrayList<>(genePanelMap.get(geneId));
                 } else if (genePanelMap.containsKey(ct.getGeneName())) {
                     panelIds = new ArrayList<>(genePanelMap.get(ct.getGeneName()));
                 }
-
 
                 ClinicalVariantEvidence evidence;
                 if (CollectionUtils.isNotEmpty(panelIds)) {
@@ -1213,7 +1226,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     private void checkInterpretationPermissions(String study, long interpretationId, String token)
             throws CatalogException, ClinicalVariantException {
         // Get user ID from token and study numeric ID
-        String studyId = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_ID, token).first().getFqn();
+        String studyId = catalogManager.getStudyManager().get(study, StudyManager.INCLUDE_STUDY_IDS, token).first().getFqn();
 
         // This checks that the user has permission to this interpretation
         Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(), interpretationId);
@@ -1232,7 +1245,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         if (query != null && query.containsKey(ClinicalVariantEngine.QueryParams.STUDY.key())) {
             String study = query.getString(ClinicalVariantEngine.QueryParams.STUDY.key());
             List<String> studies = Arrays.asList(study.split(","));
-            studyIds = catalogManager.getStudyManager().get(studies, StudyManager.INCLUDE_STUDY_ID, false, userId)
+            studyIds = catalogManager.getStudyManager().get(studies, StudyManager.INCLUDE_STUDY_IDS, false, userId)
                     .getResults()
                     .stream()
                     .map(Study::getFqn)

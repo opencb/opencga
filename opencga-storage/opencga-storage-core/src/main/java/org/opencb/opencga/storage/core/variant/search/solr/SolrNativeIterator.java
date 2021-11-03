@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant.search.solr;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CursorMarkParams;
@@ -44,11 +45,6 @@ public class SolrNativeIterator implements Iterator<VariantSearchModel>, AutoClo
     private int remaining;
 
     private static final int BATCH_SIZE = 100;
-
-    @Deprecated
-    public SolrNativeIterator(Iterator<VariantSearchModel> solrIterator) {
-        this.solrIterator = solrIterator;
-    }
 
     public SolrNativeIterator(SolrClient solrClient, String collection, SolrQuery solrQuery) throws SolrServerException {
         this.solrClient = solrClient;
@@ -103,7 +99,7 @@ public class SolrNativeIterator implements Iterator<VariantSearchModel>, AutoClo
                 solrQuery.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
 
                 // Execute the query and fetch setRows records, we will iterate over this list
-                solrResponse = solrClient.query(collection, solrQuery);
+                solrResponse = solrClient.query(collection, solrQuery, SolrRequest.METHOD.POST);
 
                 // When the number of returned elements is less than setRows it means there are no enough elements in the server
                 if (solrResponse.getResults().size() < BATCH_SIZE) {
@@ -116,7 +112,7 @@ public class SolrNativeIterator implements Iterator<VariantSearchModel>, AutoClo
                 solrIterator = solrResponse.getBeans(VariantSearchModel.class).iterator();
                 return solrIterator.hasNext();
             } catch (SolrServerException | IOException e) {
-                throw new VariantQueryException("Error searching more variants", e);
+                throw new VariantQueryException("Error fetching more solr documents", e);
             }
         }
     }

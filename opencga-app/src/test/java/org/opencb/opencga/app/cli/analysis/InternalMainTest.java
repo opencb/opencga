@@ -42,6 +42,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -230,10 +231,12 @@ public class InternalMainTest {
                 "-o", opencga.createTmpOutdir(studyId, "stats_all", sessionId));
         assertEquals(CohortStatus.READY, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId).first().getInternal().getStatus().getName());
 
-        catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh1", Enums.CohortType.CONTROL_SET, "",
-                file1.getSampleIds(), null, null, null), null, null, null, sessionId);
-        catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh2", Enums.CohortType.CONTROL_SET, "",
-                file2.getSampleIds(), null, null, null), null, null, null, sessionId);
+        catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh1", Enums.CohortType.CONTROL_SET, "", null, null,
+                file1.getSampleIds().stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()), null, null, null),
+                null, null, null, sessionId);
+        catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh2", Enums.CohortType.CONTROL_SET, "", null, null,
+                file2.getSampleIds().stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()), null, null, null),
+                null, null, null, sessionId);
 
         execute("variant", "stats",
                 "--session-id", sessionId,
@@ -257,15 +260,17 @@ public class InternalMainTest {
         DataResult<Sample> allSamples = catalogManager.getSampleManager().search(studyId, new Query(), new QueryOptions(), sessionId);
         List<String> sampleIds = allSamples.getResults().stream().map(Sample::getId).collect(Collectors.toList());
 
-        String c1 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C1", Enums.CohortType.CONTROL_SET, "",
-                sampleIds.subList(0, allSamples.getResults().size() / 2), null, null, null), null, null, null, sessionId).first().getId();
-        String c2 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C2", Enums.CohortType.CONTROL_SET, "",
-                sampleIds.subList(sampleIds.size() / 2 + 1, allSamples.getResults().size()), null, null, null), null, null, null, sessionId).first().getId();
-        String c3 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C3", Enums.CohortType.CONTROL_SET, "",
-                sampleIds.subList(0, 1), null, null, null), null, null, null, sessionId).first().getId();
+        String c1 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C1", Enums.CohortType.CONTROL_SET, "", null,
+                null, sampleIds.subList(0, allSamples.getResults().size() / 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()),
+                null, null, null), null, null, null, sessionId).first().getId();
+        String c2 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C2", Enums.CohortType.CONTROL_SET, "", null,
+                null, sampleIds.subList(sampleIds.size() / 2 + 1, allSamples.getResults().size()).stream()
+                        .map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()), null, null, null), null, null, null, sessionId).first().getId();
+        String c3 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C3", Enums.CohortType.CONTROL_SET, "", null,
+                null, sampleIds.subList(0, 1).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList()), null, null, null), null, null, null, sessionId).first().getId();
         Sample sample = catalogManager.getSampleManager().create(studyId, new Sample().setId("Sample"), null, sessionId).first();
-        String c4 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C4", Enums.CohortType.CONTROL_SET, "",
-                Collections.singletonList(sample.getId()), null, null, null), null, null, null, sessionId).first().getId();
+        String c4 = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("C4", Enums.CohortType.CONTROL_SET, "", null,
+                null, Collections.singletonList(new SampleReferenceParam().setId(sample.getId())), null, null, null), null, null, null, sessionId).first().getId();
 
         // Index file1
         execute("variant", "index",

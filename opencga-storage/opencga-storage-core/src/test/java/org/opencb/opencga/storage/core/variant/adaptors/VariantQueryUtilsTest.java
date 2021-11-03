@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -363,6 +364,9 @@ public class VariantQueryUtilsTest extends GenericTest {
         checkParseFileData(new Query(FILE_DATA.key(), "f1.vcf : DP < 10 , FILTER = \"LowGQX;LowMQ\""),
                 null,
                 "f1.vcf", "DP<10,FILTER=\"LowGQX;LowMQ\"");
+        checkParseFileData(new Query(FILE_DATA.key(), "f1.vcf : Key = v1 , v2"),
+                null,
+                "f1.vcf", "Key=v1,v2");
     }
 
     protected void checkParseFileData(Query query, QueryOperation expectedOperation, String ...expected) {
@@ -428,6 +432,30 @@ public class VariantQueryUtilsTest extends GenericTest {
             expected = false;
         }
         assertEquals(v, expected, actual);
+    }
+
+    @Test
+    public void testBuildClinicalCombinationFilter() {
+        VariantAnnotation va = new VariantAnnotation();
+        assertEquals(Collections.emptyList(), buildClinicalCombinations(va));
+        va.setTraitAssociation(new ArrayList<>());
+        EvidenceEntry e = new EvidenceEntry();
+        e.setSource(new EvidenceSource("clinVar", "", ""));
+        e.setVariantClassification(new VariantClassification(ClinicalSignificance.benign, null, null, null, null));
+        va.getTraitAssociation().add(e);
+        e = new EvidenceEntry();
+        e.setSource(new EvidenceSource("CosMic", "", ""));
+        e.setAdditionalProperties(Arrays.asList(
+                new Property("FATHMM_PREDICTION", "FATHMM Prediction", "PATHOGENIC"),
+                new Property("MUTATION_SOMATIC_STATUS", "MUTATION somatic status", "Confirmed somatic variant")
+        ));
+        va.getTraitAssociation().add(e);
+        assertEquals(
+                new HashSet<>(Arrays.asList(
+                        "clinvar", "benign", "clinvar_benign",
+                        "cosmic", "pathogenic", "cosmic_pathogenic",
+                        "confirmed", "cosmic_confirmed", "cosmic_pathogenic_confirmed", "pathogenic_confirmed")),
+                new HashSet<>(buildClinicalCombinations(va)));
     }
 
 }

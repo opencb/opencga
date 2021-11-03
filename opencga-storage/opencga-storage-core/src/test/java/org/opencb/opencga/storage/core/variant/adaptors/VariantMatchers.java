@@ -68,7 +68,7 @@ public class VariantMatchers {
         return new FeatureMatcher<DataResult<?>, Long>(subMatcher, "a queryResult with numTotalResults", "NumTotalResults") {
             @Override
             protected Long featureValueOf(DataResult<?> actual) {
-                return actual.getNumTotalResults();
+                return actual.getNumMatches();
             }
         };
     }
@@ -151,6 +151,24 @@ public class VariantMatchers {
             @Override
             public void describeTo(Description description) {
                 description.appendText("overlaps with region " + region + (inclusive? " inclusively" : " non inclusively"));
+            }
+        };
+    }
+
+    public static Matcher<Variant> withFilter(Predicate<Variant> filter) {
+        return withFilter(filter, "");
+    }
+
+    public static Matcher<Variant> withFilter(Predicate<Variant> filter, final String message) {
+        return new TypeSafeDiagnosingMatcher<Variant>() {
+            @Override
+            protected boolean matchesSafely(Variant item, Description mismatchDescription) {
+                return filter.test(item);
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("Passes filter" + (message == null ? "" : (":" + message)));
             }
         };
     }

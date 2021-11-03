@@ -20,7 +20,7 @@ public @interface Migration {
     String description();
 
     /**
-     * @return OpenCGA Version. Allowed formats: 1.2.3, 1.1.0-RC1
+     * @return OpenCGA Version. Must contain 3 numbers separated by dots, nothing else: 1.2.3 , 1.3.15 ...
      */
     String version();
 
@@ -35,9 +35,9 @@ public @interface Migration {
     MigrationLanguage language() default MigrationLanguage.JAVA;
 
     /**
-     * @return rank to know the execution order.
+     * @return Migration script creation date [Format: YYYYMMDD].
      */
-    int rank();
+    int date();
 
     /**
      * @return migration patch.

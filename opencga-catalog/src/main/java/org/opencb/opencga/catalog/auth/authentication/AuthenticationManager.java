@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.auth.authentication;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -38,6 +39,9 @@ public abstract class AuthenticationManager {
     protected JwtManager jwtManager;
 
     protected Logger logger;
+
+    protected int DEFAULT_CONNECTION_TIMEOUT = 500; // In milliseconds
+    protected int DEFAULT_READ_TIMEOUT = 1000; // In milliseconds
 
     AuthenticationManager() {
         // Any class extending this one must properly initialise JwtManager
@@ -78,7 +82,7 @@ public abstract class AuthenticationManager {
      */
     public String getUserId(String token) throws CatalogAuthenticationException {
         if (StringUtils.isEmpty(token) || "null".equalsIgnoreCase(token)) {
-            return "*";
+            return ParamConstants.ANONYMOUS_USER_ID;
         }
 
         return jwtManager.getUser(token);

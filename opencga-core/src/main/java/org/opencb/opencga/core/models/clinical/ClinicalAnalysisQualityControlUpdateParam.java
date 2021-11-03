@@ -1,33 +1,51 @@
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.opencga.core.common.TimeUtils;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class ClinicalAnalysisQualityControlUpdateParam {
 
     private ClinicalAnalysisQualityControl.QualityControlSummary summary;
-    private String comment;
+    private List<String> comments;
 
     public ClinicalAnalysisQualityControlUpdateParam() {
     }
 
-    public ClinicalAnalysisQualityControlUpdateParam(ClinicalAnalysisQualityControl.QualityControlSummary summary, String comment) {
+    public ClinicalAnalysisQualityControlUpdateParam(ClinicalAnalysisQualityControl.QualityControlSummary summary, List<String> comments) {
         this.summary = summary;
-        this.comment = comment;
-    }
-
-    public ClinicalAnalysisQualityControl toClinicalQualityControl() {
-        return new ClinicalAnalysisQualityControl(summary, comment, "", TimeUtils.getDate());
+        this.comments = comments;
     }
 
     public static ClinicalAnalysisQualityControlUpdateParam of(ClinicalAnalysisQualityControl qualityControl) {
-        return new ClinicalAnalysisQualityControlUpdateParam(qualityControl.getSummary(), qualityControl.getComment());
+        List<String> tmpComments = new ArrayList<>();
+        if (qualityControl.getComments() != null) {
+            for (ClinicalComment comment : qualityControl.getComments()) {
+                tmpComments.add(comment.getMessage());
+            }
+        }
+
+        return new ClinicalAnalysisQualityControlUpdateParam(qualityControl.getSummary(), tmpComments);
+    }
+
+    public ClinicalAnalysisQualityControl toClinicalQualityControl() {
+        List<ClinicalComment> tmpComments = new ArrayList<>();
+        if (comments != null) {
+            for (String comment : comments) {
+                tmpComments.add(new ClinicalComment("", comment, Collections.emptyList(), TimeUtils.getTime()));
+            }
+        }
+        return new ClinicalAnalysisQualityControl(summary, tmpComments);
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysisQualityControlUpdateParam{");
         sb.append("summary=").append(summary);
-        sb.append(", comment='").append(comment).append('\'');
+        sb.append(", comments=").append(comments);
         sb.append('}');
         return sb.toString();
     }
@@ -38,15 +56,6 @@ public class ClinicalAnalysisQualityControlUpdateParam {
 
     public ClinicalAnalysisQualityControlUpdateParam setSummary(ClinicalAnalysisQualityControl.QualityControlSummary summary) {
         this.summary = summary;
-        return this;
-    }
-
-    public String getComment() {
-        return comment;
-    }
-
-    public ClinicalAnalysisQualityControlUpdateParam setComment(String comment) {
-        this.comment = comment;
         return this;
     }
 }

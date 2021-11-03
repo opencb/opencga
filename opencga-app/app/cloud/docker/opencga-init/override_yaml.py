@@ -10,6 +10,7 @@ parser.add_argument("--database-prefix", required=False)
 parser.add_argument("--search-hosts", required=True)
 parser.add_argument("--clinical-hosts", required=True)
 parser.add_argument("--cellbase-rest-url", required=False, help="Cellbase rest server hosting the cellbase service")
+parser.add_argument("--cellbase-version", required=False, help="Cellbase rest server version (v4, v5..)")
 parser.add_argument("--catalog-database-hosts", required=True)
 parser.add_argument("--catalog-database-user", required=True)
 parser.add_argument("--catalog-database-password", required=True)
@@ -76,8 +77,10 @@ for i, clinical_host in enumerate(clinical_hosts):
 # Inject cellbase rest host, if set
 if args.cellbase_rest_url is not None and args.cellbase_rest_url != "":
     cellbase_rest_url = args.cellbase_rest_url.replace('\"', '').replace('[','').replace(']','')
-    storage_config["cellbase"]["rest"] = cellbase_rest_url
-    
+    storage_config["cellbase"]["url"] = cellbase_rest_url
+if args.cellbase_version is not None and args.cellbase_version != "":
+    storage_config["cellbase"]["version"] = args.cellbase_version
+
 # set default engine
 storage_config["variant"]["defaultEngine"] = args.variant_default_engine
 storage_config["variant"]["options"]["annotator"] = "cellbase"

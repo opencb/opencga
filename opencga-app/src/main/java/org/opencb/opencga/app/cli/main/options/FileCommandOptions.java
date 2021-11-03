@@ -279,14 +279,14 @@ public class FileCommandOptions {
         @Parameter(names = {"--offset"}, description = "Starting byte from which the file will be read", arity = 1)
         public long offset;
 
-        @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned", arity = 1)
+        @Parameter(names = {"--lines"}, description = ParamConstants.MAXIMUM_LINES_CONTENT_DESCRIPTION, arity = 1)
         public Integer lines;
     }
 
     @Parameters(commandNames = {"tail"}, commandDescription = "Show the last lines of a file (up to a limit)")
     public class TailCommandOptions extends BaseFileCommand{
 
-        @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned", arity = 1)
+        @Parameter(names = {"--lines"}, description = ParamConstants.MAXIMUM_LINES_CONTENT_DESCRIPTION, arity = 1)
         public Integer lines;
     }
 
@@ -519,6 +519,9 @@ public class FileCommandOptions {
 
     @Parameters
     public class FetchCommandOptions extends StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = new GeneralCliOptions.JobOptions();
 
         @Parameter(names = {"--" + ParamConstants.FILE_PATH_PARAM},
                 description = "Folder path where the downloaded file will be registered", required = true, arity = 1)

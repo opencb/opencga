@@ -16,10 +16,32 @@
 
 package org.opencb.opencga.core.models.common;
 
+/**
+ * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh interdum
+ * finibus.
+ */
 public class CustomStatus {
 
+    /**
+     * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh
+     * interdum finibus.
+     *
+     * @apiNote Required, Immutable
+     */
     private String name;
+    /**
+     * Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui
+     * dignissim leo, quis ullamcorper felis elit a augue.
+     *
+     * @apiNote Required
+     */
     private String description;
+    /**
+     * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
+     * lectus, ut ultrices nunc vulputate ac.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private String date;
 
     public CustomStatus() {

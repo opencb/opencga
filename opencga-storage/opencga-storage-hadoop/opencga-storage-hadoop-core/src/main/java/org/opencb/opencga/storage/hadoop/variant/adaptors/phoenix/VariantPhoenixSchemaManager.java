@@ -1,9 +1,9 @@
 package org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.NamespaceExistException;
+import org.apache.hadoop.util.StopWatch;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.util.SchemaUtil;
@@ -14,7 +14,6 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLockManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -125,6 +124,9 @@ public class VariantPhoenixSchemaManager {
     }
 
     public void dropFiles(int studyId, List<Integer> fileIds) throws SQLException {
+        if (fileIds == null || fileIds.isEmpty()) {
+            return;
+        }
         List<Integer> sampleIds = new ArrayList<>();
         for (Integer fileId : fileIds) {
             sampleIds.addAll(metadataManager.getFileMetadata(studyId, fileId).getSamples());
@@ -135,6 +137,28 @@ public class VariantPhoenixSchemaManager {
         }
         for (Integer sampleId : sampleIds) {
             columns.add(buildSampleColumnKey(studyId, sampleId, new StringBuilder()));
+        }
+        phoenixHelper.dropColumns(con, variantsTableName, columns, DEFAULT_TABLE_TYPE);
+        con.commit();
+    }
+
+    /**
+     * Drop sample columns on all their files. Does not drop any file column.
+     *
+     * @param studyId Study id
+     * @param sampleIds List of sample ids
+     * @throws SQLException on error
+     */
+    public void dropSamples(int studyId, List<Integer> sampleIds) throws SQLException {
+        if (sampleIds == null || sampleIds.isEmpty()) {
+            return;
+        }
+        List<CharSequence> columns = new ArrayList<>(sampleIds.size());
+        for (Integer sampleId : sampleIds) {
+            SampleMetadata sm = metadataManager.getSampleMetadata(studyId, sampleId);
+            for (PhoenixHelper.Column sampleColumn : getSampleColumns(sm)) {
+                columns.add(sampleColumn.column());
+            }
         }
         phoenixHelper.dropColumns(con, variantsTableName, columns, DEFAULT_TABLE_TYPE);
         con.commit();
@@ -173,16 +197,8 @@ public class VariantPhoenixSchemaManager {
             columns.add(getFileColumn(studyId, fileId));
         }
         for (Integer sampleId : newSamples) {
-            columns.add(getSampleColumn(studyId, sampleId));
-        }
-        for (Integer sampleId : newSamples) {
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
-            if (VariantStorageEngine.SplitData.MULTI.equals(sampleMetadata.getSplitData())) {
-                // If multi file load, register all secondary sample columns
-                for (Integer fileId : sampleMetadata.getFiles().subList(1, sampleMetadata.getFiles().size())) {
-                    columns.add(getSampleColumn(studyId, sampleId, fileId));
-                }
-            }
+            columns.addAll(getSampleColumns(sampleMetadata));
         }
         return columns;
     }
@@ -214,7 +230,8 @@ public class VariantPhoenixSchemaManager {
 
         Lock lock = null;
         try {
-            StopWatch stopWatch = StopWatch.createStarted();
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
             int attempt = 0;
             Set<PhoenixHelper.Column> pendingColumns;
             do {
@@ -232,17 +249,18 @@ public class VariantPhoenixSchemaManager {
                 pendingColumns = updatePendingColumns(columns);
             }
 
+            stopWatch.stop();
             String msg;
             if (pendingColumns.isEmpty()) {
-                msg = "Columns already in phoenix. Nothing to do! Had to wait " + TimeUtils.durationToString(stopWatch);
+                msg = "Columns already in phoenix. Nothing to do! Had to wait " + TimeUtils.durationToString(stopWatch.now());
             } else {
                 phoenixHelper
                         .addMissingColumns(con, variantsTableName, pendingColumns, DEFAULT_TABLE_TYPE, Collections.emptySet());
                 // Final update to remove new added columns
                 removeAddedColumnsFromPending(pendingColumns);
-                msg = "Added new columns to Phoenix in " + TimeUtils.durationToString(stopWatch);
+                msg = "Added new columns to Phoenix in " + TimeUtils.durationToString(stopWatch.now());
             }
-            if (stopWatch.getTime(TimeUnit.SECONDS) < 10) {
+            if (stopWatch.now(TimeUnit.SECONDS) < 10) {
                 logger.info(msg);
             } else {
                 logger.warn("Slow phoenix response");

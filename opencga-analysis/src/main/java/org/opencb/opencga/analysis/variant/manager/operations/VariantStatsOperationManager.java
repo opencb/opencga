@@ -240,7 +240,8 @@ public class VariantStatsOperationManager extends OperationManager {
         for (String cohortName : cohortNames) {
             if (!catalogCohorts.contains(cohortName)) {
                 DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams(cohortName,
-                        Enums.CohortType.COLLECTION, "", Collections.emptyList(), null, null, null), null, null, null, sessionId);
+                        Enums.CohortType.COLLECTION, "", null, null, Collections.emptyList(), null, null, null), null, null, null,
+                        sessionId);
                 logger.info("Creating cohort {}", cohortName);
                 cohorts.add(cohort.first().getId());
             } else {
@@ -274,7 +275,7 @@ public class VariantStatsOperationManager extends OperationManager {
         return new StorageEngineException("Unable to calculate stats for cohort "
                 + "{ uid: " + cohort.getUid() + " id: \"" + cohort.getId() + "\" }"
                 + " with status \"" + cohort.getInternal().getStatus().getName() + "\". "
-                + "Resume or update stats for continue calculation");
+                + "Resume or overwrite stats for continue calculation");
     }
 
     public static StorageEngineException unableToCalculateCohortCalculating(Cohort cohort) {

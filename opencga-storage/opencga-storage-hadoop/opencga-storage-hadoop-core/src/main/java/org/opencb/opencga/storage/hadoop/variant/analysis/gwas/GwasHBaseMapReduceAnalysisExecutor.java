@@ -48,7 +48,7 @@ public class GwasHBaseMapReduceAnalysisExecutor extends GwasAnalysisExecutor imp
                     studyId,
                     null,
                     params
-            ), engine.getOptions(), "Calculate sample variant stats");
+            ), "Calculate sample variant stats");
         } catch (VariantQueryException | StorageEngineException e) {
             throw new ToolExecutorException(e);
         }

@@ -40,7 +40,7 @@ public class JulieHBaseMapReduceToolExecutor extends JulieToolExecutor implement
             engine.getMRExecutor().run(JulieToolDriver.class, JulieToolDriver.buildArgs(
                     dbAdaptor.getVariantTable(),
                     params
-            ), engine.getOptions(), "Execute Julie Tool");
+            ), "Execute Julie Tool");
         } catch (VariantQueryException | StorageEngineException e) {
             throw new ToolExecutorException(e);
         }

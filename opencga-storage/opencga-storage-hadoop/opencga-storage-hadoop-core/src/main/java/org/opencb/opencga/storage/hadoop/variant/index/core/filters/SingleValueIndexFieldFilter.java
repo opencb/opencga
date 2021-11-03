@@ -4,6 +4,8 @@ import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.core.CategoricalIndexField;
 
+import java.util.Objects;
+
 public class SingleValueIndexFieldFilter extends IndexFieldFilter {
 
     private final int expectedCode;
@@ -38,6 +40,28 @@ public class SingleValueIndexFieldFilter extends IndexFieldFilter {
         return getClass().getSimpleName() + "{"
                 + getIndex().getId()
                 + " (offset=" + getIndex().getBitOffset() + ", length=" + getIndex().getBitLength() + ")"
-                + " : [ " + IndexUtils.binaryToString(expectedCode, getIndex().getBitLength()) + " ] }";
+                + " : [ "
+                + IndexUtils.binaryToString(expectedCode, getIndex().getBitLength()) + " (" + getIndex().decode(expectedCode)
+                + ") ] "
+                + "}";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        SingleValueIndexFieldFilter that = (SingleValueIndexFieldFilter) o;
+        return getIndex().getId().equals(that.getIndex().getId())
+                && expectedCode == that.expectedCode
+                && exactFilter == that.exactFilter;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(expectedCode, exactFilter);
     }
 }

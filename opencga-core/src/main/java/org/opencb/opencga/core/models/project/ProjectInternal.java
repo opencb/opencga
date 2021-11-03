@@ -16,34 +16,38 @@
 
 package org.opencb.opencga.core.models.project;
 
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
+import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.Status;
 
-public class ProjectInternal {
+public class ProjectInternal extends Internal {
 
     private Datastores datastores;
     private CellBaseConfiguration cellbase;
-    private Status status;
 
     public ProjectInternal() {
     }
 
-    public ProjectInternal(Datastores datastores, Status status) {
-        this.datastores = datastores;
-        this.status = status;
-    }
-
-    public ProjectInternal(Datastores datastores, CellBaseConfiguration cellbase, Status status) {
+    public ProjectInternal(Status status, String registrationDate, String modificationDate, Datastores datastores,
+                           CellBaseConfiguration cellbase) {
+        super(status, registrationDate, modificationDate);
         this.datastores = datastores;
         this.cellbase = cellbase;
-        this.status = status;
+    }
+
+    public static ProjectInternal init() {
+        return new ProjectInternal(new Status(), TimeUtils.getTime(), TimeUtils.getTime(), new Datastores(), new CellBaseConfiguration());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ProjectInternal{");
-        sb.append("datastores=").append(datastores);
-        sb.append(", status=").append(status);
+        sb.append("status=").append(status);
+        sb.append(", registrationDate='").append(registrationDate).append('\'');
+        sb.append(", modificationDate='").append(lastModified).append('\'');
+        sb.append(", datastores=").append(datastores);
+        sb.append(", cellbase=").append(cellbase);
         sb.append('}');
         return sb.toString();
     }
@@ -72,6 +76,24 @@ public class ProjectInternal {
 
     public ProjectInternal setStatus(Status status) {
         this.status = status;
+        return this;
+    }
+
+    public String getRegistrationDate() {
+        return registrationDate;
+    }
+
+    public ProjectInternal setRegistrationDate(String registrationDate) {
+        this.registrationDate = registrationDate;
+        return this;
+    }
+
+    public String getLastModified() {
+        return lastModified;
+    }
+
+    public ProjectInternal setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 }

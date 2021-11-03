@@ -26,13 +26,12 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
@@ -62,7 +61,8 @@ import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescripto
 import org.opencb.opencga.storage.core.variant.search.SamplesSearchIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.search.SearchIndexVariantQueryExecutor;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadListener;
+import org.opencb.opencga.storage.core.variant.search.VariantSecondaryIndexFilter;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrInputDocumentDataWriter;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -614,10 +614,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         // then, load variants
         queryOptions.put(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_SAMPLES, VariantField.STUDIES_FILES));
-        try (VariantDBIterator iterator = getVariantsToIndex(overwrite, query, queryOptions, dbAdaptor)) {
-            ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:");
-            VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, progressLogger,
-                    newVariantSearchLoadListener(overwrite));
+        try (VariantDBIterator iterator = getVariantsToSecondaryIndex(overwrite, query, queryOptions, dbAdaptor)) {
+            VariantSearchLoadResult load = variantSearchManager.load(dbName, iterator, newVariantSearchDataWriter(dbName));
 
             if (isValidParam(query, VariantQueryParam.REGION)) {
                 logger.info("Partial secondary index. Do not update {} timestamp", SEARCH_INDEX_LAST_TIMESTAMP.key());
@@ -630,19 +628,21 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             }
 
             return load;
-        } catch (StorageEngineException | IOException | RuntimeException e) {
+        } catch (StorageEngineException e) {
             throw e;
         } catch (Exception e) {
-            throw new StorageEngineException("Exception closing VariantDBIterator", e);
+            throw new StorageEngineException("Exception building secondary index", e);
         }
     }
 
-    protected VariantDBIterator getVariantsToIndex(boolean overwrite, Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor)
+    protected VariantDBIterator getVariantsToSecondaryIndex(boolean overwrite, Query query, QueryOptions queryOptions,
+                                                            VariantDBAdaptor dbAdaptor)
             throws StorageEngineException {
         if (!overwrite) {
             query.put(VariantQueryUtils.VARIANTS_TO_INDEX.key(), true);
         }
-        return dbAdaptor.iterator(query, queryOptions);
+        VariantSecondaryIndexFilter filter = new VariantSecondaryIndexFilter(getMetadataManager().getStudies());
+        return dbAdaptor.iterator(query, queryOptions).mapBuffered(filter, 10);
     }
 
     protected void searchIndexLoadedFiles(List<URI> inputFiles, ObjectMap options) throws StorageEngineException {
@@ -655,8 +655,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    protected VariantSearchLoadListener newVariantSearchLoadListener(boolean overwrite) throws StorageEngineException {
-        return VariantSearchLoadListener.empty(overwrite);
+    protected SolrInputDocumentDataWriter newVariantSearchDataWriter(String collection) throws StorageEngineException {
+        return new SolrInputDocumentDataWriter(collection,
+                getVariantSearchManager().getSolrClient(),
+                getVariantSearchManager().getInsertBatchSize());
     }
 
     public void secondaryIndexSamples(String study, List<String> samples)
@@ -687,8 +689,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
                 VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
 
-                ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:", () -> dbAdaptor.count(query).first(), 200);
-                variantSearchManager.load(collectionName, iterator, progressLogger, VariantSearchLoadListener.empty(false));
+                variantSearchManager.load(collectionName, iterator,
+                        new SolrInputDocumentDataWriter(collectionName,
+                                variantSearchManager.getSolrClient(),
+                                variantSearchManager.getInsertBatchSize()));
             } else {
                 throw new StorageEngineException("Solr is not alive!");
             }
@@ -760,31 +764,43 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * Removes a file from the Variant Storage.
      *
      * @param study  StudyName or StudyId
-     * @param fileId FileId
+     * @param file   FileName
      * @throws StorageEngineException If the file can not be removed or there was some problem deleting it.
      */
-    public void removeFile(String study, int fileId) throws StorageEngineException {
-        removeFiles(study, Collections.singletonList(String.valueOf(fileId)));
+    public void removeFile(String study, String file) throws StorageEngineException {
+        removeFiles(study, Collections.singletonList(file));
     }
 
     /**
-     * Removes a file from the Variant Storage.
+     * Removes files from the Variant Storage.
      *
      * @param study  StudyName or StudyId
      * @param files Files to remove
-     * @throws StorageEngineException If the file can not be removed  or there was some problem deleting it.
+     * @throws StorageEngineException If the files can not be removed or there was some problem deleting it.
      */
     public abstract void removeFiles(String study, List<String> files) throws StorageEngineException;
+
+    /**
+     * Removes samples from the Variant Storage.
+     *
+     * @param study  StudyName or StudyId
+     * @param samples Samples to remove
+     * @throws StorageEngineException If the samples can not be removed or there was some problem deleting it.
+     */
+    public void removeSamples(String study, List<String> samples) throws StorageEngineException {
+        throw new UnsupportedOperationException("Unsupported remove sample operation at storage engine " + getStorageEngineId());
+    }
 
     /**
      * Atomically updates the storage metadata before removing samples.
      *
      * @param study    Study
-     * @param files    Files to remove
+     * @param files     Files to fully delete, including all their samples.
+     * @param samples   Samples to remove, leaving partial files.
      * @return FileIds to remove
      * @throws StorageEngineException StorageEngineException
      */
-    protected TaskMetadata preRemoveFiles(String study, List<String> files) throws StorageEngineException {
+    protected TaskMetadata preRemove(String study, List<String> files, List<String> samples) throws StorageEngineException {
         AtomicReference<TaskMetadata> batchFileOperation = new AtomicReference<>();
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         metadataManager.updateStudyMetadata(study, studyMetadata -> {
@@ -823,16 +839,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *    Removes the samples removed from the default cohort {@link StudyEntry#DEFAULT_COHORT}
      *      * Be aware that some samples can be in multiple files.
      *    Invalidates the cohorts with removed samples
+     *    Removes partially removed samples from their files
      * If error:
      *    Updates remove status with ERROR
      *
-     * @param study    Study
-     * @param fileIds  Removed file ids
-     * @param taskId   Remove task id
-     * @param error    If the remove operation succeeded
+     * @param study      Study
+     * @param fileIds    Files to fully delete, including all their samples.
+     * @param sampleIds  Samples to remove, leaving partial files.
+     * @param taskId     Remove task id
+     * @param error      If the remove operation succeeded
      * @throws StorageEngineException StorageEngineException
      */
-    protected void postRemoveFiles(String study, List<Integer> fileIds, int taskId, boolean error) throws StorageEngineException {
+    protected void postRemoveFiles(String study, List<Integer> fileIds, List<Integer> sampleIds, int taskId, boolean error)
+            throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         metadataManager.updateStudyMetadata(study, studyMetadata -> {
             if (error) {
@@ -841,10 +860,31 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 metadataManager.setStatus(studyMetadata.getId(), taskId, TaskMetadata.Status.READY);
                 metadataManager.removeIndexedFiles(studyMetadata.getId(), fileIds);
 
-                Set<Integer> removedSamples = new HashSet<>();
-                for (Integer fileId : fileIds) {
-                    removedSamples.addAll(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getSamples());
+                for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds)) {
+                    metadataManager.updateFileMetadata(studyMetadata.getId(), fileId, f -> {
+                        f.getSamples().removeAll(sampleIds);
+                        return f;
+                    });
                 }
+                for (Integer sampleId : sampleIds) {
+                    metadataManager.updateSampleMetadata(studyMetadata.getId(), sampleId, s -> {
+                        s.setIndexStatus(TaskMetadata.Status.NONE);
+                        s.setAnnotationStatus(TaskMetadata.Status.NONE);
+                        s.setFamilyIndexStatus(TaskMetadata.Status.NONE);
+                        s.setMendelianErrorStatus(TaskMetadata.Status.NONE);
+                        s.setFiles(Collections.emptyList());
+                        s.setCohorts(Collections.emptySet());
+                        return s;
+                    });
+                }
+
+                Set<Integer> removedSamples = new HashSet<>(sampleIds);
+                Set<Integer> removedSamplesFromFiles = new HashSet<>();
+                for (Integer fileId : fileIds) {
+                    removedSamplesFromFiles.addAll(metadataManager.getFileMetadata(studyMetadata.getId(), fileId).getSamples());
+                }
+                removedSamples.addAll(removedSamplesFromFiles);
+
                 List<Integer> cohortsToInvalidate = new LinkedList<>();
                 for (CohortMetadata cohort : metadataManager.getCalculatedCohorts(studyMetadata.getId())) {
                     for (Integer removedSample : removedSamples) {
@@ -871,7 +911,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
 
                 for (Integer fileId : fileIds) {
-                    getDBAdaptor().getMetadataManager().removeVariantFileMetadata(studyMetadata.getId(), fileId);
+                    metadataManager.removeVariantFileMetadata(studyMetadata.getId(), fileId);
                 }
             }
             return studyMetadata;
@@ -953,7 +993,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             synchronized (variantSearchManager) {
                 if (variantSearchManager.get() == null) {
                     // TODO One day we should use reflection here reading from storage-configuration.yml
-                    variantSearchManager.set(new VariantSearchManager(getMetadataManager(), configuration));
+                    variantSearchManager.set(new VariantSearchManager(getMetadataManager(), configuration, getOptions()));
                 }
             }
         }
@@ -1006,6 +1046,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
+        query = VariantQueryUtils.copy(query);
+        options = VariantQueryUtils.copy(options);
         query = preProcessQuery(query, options);
         return getVariantQueryExecutor(query, options).iterator(query, options);
     }
@@ -1026,6 +1068,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
         executors.add(new CompoundHeterozygousQueryExecutor(
                 getMetadataManager(), getStorageEngineId(), getOptions(), this));
+        executors.add(new BreakendVariantQueryExecutor(
+                getMetadataManager(), getStorageEngineId(), getOptions(), new DBAdaptorVariantQueryExecutor(
+                getDBAdaptor(), getStorageEngineId(), getOptions()), getDBAdaptor()));
         executors.add(new SamplesSearchIndexVariantQueryExecutor(
                 getDBAdaptor(), getVariantSearchManager(), getStorageEngineId(), dbName, configuration, getOptions()));
         executors.add(new SearchIndexVariantQueryExecutor(
@@ -1105,8 +1150,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
 
 
-    public DataResult<SampleVariantStats> sampleStatsQuery(String studyStr, String sample, Query query) throws StorageEngineException {
-        return new SampleVariantStatsAggregationQuery(this).sampleStatsQuery(studyStr, sample, query);
+    public DataResult<SampleVariantStats> sampleStatsQuery(String studyStr, String sample, Query query, QueryOptions options)
+            throws StorageEngineException {
+        return new SampleVariantStatsAggregationQuery(this).sampleStatsQuery(studyStr, sample, query, options);
     }
 
     /**
@@ -1123,6 +1169,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         options.put(QueryOptions.INCLUDE, VariantField.ID.fieldName());
         addDefaultLimit(options, getOptions());
         query = preProcessQuery(query, options);
+//        logger.info("Filter transcript = {} (raw: '{}')",
+//                options.getBoolean("filterTranscript", false), options.get("filterTranscript"));
         return getVariantAggregationExecutor(query, options).aggregation(query, options);
     }
 

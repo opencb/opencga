@@ -10,6 +10,7 @@ import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -20,6 +21,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -29,8 +31,10 @@ import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdapt
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry;
 
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -100,9 +104,9 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.CHROMOSOME);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22.variant-test-file.vcf.gz")),
-                outputUri, true, true, true);
+                outputUri);
 
-        for (Variant variant : variantStorageEngine) {
+        for (Variant variant : variantStorageEngine.iterable(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL), null)) {
             String expectedFile = "chr" + variant.getChromosome() + ".variant-test-file.vcf.gz";
             assertEquals(1, variant.getStudies().get(0).getFiles().size());
             assertEquals(expectedFile, variant.getStudies().get(0).getFiles().get(0).getFileId());
@@ -194,15 +198,22 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
 
         for (String file : files) {
-            variantStorageEngine.index(Collections.singletonList(getResourceUri(file)),
-                    outDir, true, true, true);
+            variantStorageEngine.index(Collections.singletonList(getResourceUri(file)), outDir);
         }
+
+        variantStorageEngine.removeFile(STUDY_NAME, Paths.get(files[0]).getFileName().toString());
+        variantStorageEngine.removeFile(STUDY_NAME, Paths.get(files[2]).getFileName().toString());
+        variantStorageEngine.removeFile(STUDY_NAME, Paths.get(files[3]).getFileName().toString());
+        variantStorageEngine.index(Collections.singletonList(getResourceUri(files[2])), outDir);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri(files[3])), outDir);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri(files[0])), outDir);
 
         VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
         int studyId = metadataManager.getStudyId(STUDY_NAME);
 
         Variant v = variantStorageEngine.get(new Query()
                 .append(VariantQueryParam.ID.key(), "22:44681612:A:G")
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL)
                 .append(VariantQueryParam.INCLUDE_SAMPLE_ID.key(), true), new QueryOptions()).first();
         System.out.println("v.toJson() = " + v.toJson());
         checkIssueEntries_22_44681612_A_G(v);
@@ -327,27 +338,61 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME + "_split");
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")),
-                outDir, true, true, true);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")), outDir);
 
         int studyId_actual = mm.getStudyId(STUDY_NAME + "_split");
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.REGION);
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz")),
-                outputUri, true, true, true);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz")), outputUri);
 
         variantStorageEngine.removeFiles(STUDY_NAME + "_split", Collections.singletonList("chr22_1-2.variant-test-file.vcf.gz"));
 
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), null);
         variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
-        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")),
-                outDir, true, true, true);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz")), outDir);
 
         int studyId_expected = mm.getStudyId(STUDY_NAME);
 
         checkVariantsTable(studyId_actual, studyId_expected, new Query(VariantQueryParam.FILE.key(), "chr22_1-1.variant-test-file.vcf.gz"),
                 new QueryOptions());
+        checkSampleIndex(studyId_actual, studyId_expected);
+    }
+
+    @Test
+    public void testLoadAndRemoveSamples() throws Exception {
+        URI outDir = newOutputUri();
+
+        VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
+
+        String study_actual = "study_actual";
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), study_actual);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_HOM_REF.key(), true);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22.variant-test-file.vcf.gz")), outDir);
+
+        variantStorageEngine.removeSamples(study_actual, Arrays.asList("NA19600", "NA19660"));
+
+        for (Variant variant : variantStorageEngine.iterable(new VariantQuery()
+                .includeSample(ParamConstants.ALL)
+                .includeSampleId(true), new QueryOptions())) {
+            List<String> samplesName = variant.getStudies().get(0).getOrderedSamplesName();
+            assertEquals(samplesName, Arrays.asList("NA19661", "NA19685"));
+        }
+
+        int studyId_actual = mm.getStudyId(study_actual);
+        assertEquals(2, mm.getIndexedSamples(studyId_actual).size());
+
+        String study_expected = "study_expected";
+        variantStorageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), study_expected);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_HOM_REF.key(), true);
+        variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22.variant-test-file.s3s4.vcf.gz")), outDir);
+
+        int studyId_expected = mm.getStudyId(study_expected);
+
+        checkVariantsTable(studyId_actual, studyId_expected,
+                new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), "NA19661,NA19685"), new QueryOptions(),
+                v -> v.getStudies().get(0).getFiles().get(0).setFileId("")
+        );
         checkSampleIndex(studyId_actual, studyId_expected);
     }
 
@@ -377,16 +422,22 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
     }
 
     public void checkVariantsTable(int studyIdActual, int studyIdExpected, Query query, QueryOptions options) throws Exception {
+        checkVariantsTable(studyIdActual, studyIdExpected, query, options, v -> {});
+    }
+
+    public void checkVariantsTable(int studyIdActual, int studyIdExpected, Query query, QueryOptions options, Consumer<Variant> mapper)
+            throws Exception {
         VariantHadoopDBAdaptor dbAdaptor = (VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor();
 
         VariantDBIterator itAct = dbAdaptor.iterator(new Query(query).append(VariantQueryParam.STUDY.key(), studyIdActual), options);
         VariantDBIterator itExp = dbAdaptor.iterator(new Query(query).append(VariantQueryParam.STUDY.key(), studyIdExpected), options);
-
         while (itExp.hasNext()) {
             assertTrue(itAct.hasNext());
             Variant exp = itExp.next();
+            mapper.accept(exp);
             exp.getStudies().get(0).setStudyId("");
             Variant act = itAct.next();
+            mapper.accept(act);
             act.getStudies().get(0).setStudyId("");
             assertEquals(exp.toJson(), act.toJson());
         }
@@ -401,18 +452,21 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
                 dbAdaptor.getTableNameGenerator(),
                 dbAdaptor.getMetadataManager());
         VariantStorageMetadataManager mm = variantStorageEngine.getMetadataManager();
-        for (Integer sampleId : mm.getIndexedSamples(studyIdExpected)) {
-            Iterator<SampleIndexEntry> itExp = sampleIndexDBAdaptor.rawIterator(studyIdExpected, sampleId);
-            Iterator<SampleIndexEntry> itAct = sampleIndexDBAdaptor.rawIterator(studyIdActual, sampleId);
+        for (Integer sampleIdExpected : mm.getIndexedSamples(studyIdExpected)) {
+            String sampleName = mm.getSampleName(studyIdExpected, sampleIdExpected);
+            Iterator<SampleIndexEntry> itExp = sampleIndexDBAdaptor.rawIterator(studyIdExpected, sampleIdExpected);
+            Iterator<SampleIndexEntry> itAct = sampleIndexDBAdaptor.rawIterator(studyIdActual, mm.getSampleId(studyIdActual, sampleName));
 
             while (itExp.hasNext()) {
                 assertTrue(itAct.hasNext());
                 SampleIndexEntry exp = itExp.next();
                 SampleIndexEntry act = itAct.next();
+                exp.setSampleId(0); // sample id might be different
+                act.setSampleId(0); // sample id might be different
+                assertEquals(exp, act);
                 for (String gt : exp.getGts().keySet()) {
                     assertEquals(gt, exp.getGtEntry(gt), act.getGtEntry(gt));
                 }
-                assertEquals(exp, act);
             }
             assertFalse(itAct.hasNext());
         }

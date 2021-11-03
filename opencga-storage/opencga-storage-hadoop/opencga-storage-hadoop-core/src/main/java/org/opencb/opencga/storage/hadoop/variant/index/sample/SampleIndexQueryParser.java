@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -18,7 +19,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.*;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.CtBtCombinationIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.CtBtFtCombinationIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
@@ -163,6 +164,7 @@ public class SampleIndexQueryParser {
 
         Set<String> mendelianErrorSet = new HashSet<>();
         boolean onlyDeNovo = false;
+        boolean partialGtIndex = false;
 
         // Extract sample and genotypes to filter
         if (isValidParam(query, GENOTYPE)) {
@@ -215,7 +217,6 @@ public class SampleIndexQueryParser {
                 parentsSet.addAll(parentsMap.get(child));
             }
 
-            boolean partialGtIndex = false;
             for (Map.Entry<String, List<String>> entry : gtMap.entrySet()) {
                 String sampleName = entry.getKey();
                 if (queryOperation != QueryOperation.OR && parentsSet.contains(sampleName) && !childrenSet.contains(sampleName)) {
@@ -315,7 +316,7 @@ public class SampleIndexQueryParser {
             }
 
             if (!isValidParam(query, SAMPLE_DATA)) {
-                // Do not remove FORMAT
+                // Do not remove if SAMPLE_DATA filter is present
                 query.remove(SAMPLE.key());
             }
         } else if (isValidParam(query, SAMPLE_MENDELIAN_ERROR)) {
@@ -377,13 +378,8 @@ public class SampleIndexQueryParser {
             }
 
         }
-        Map<String, Values<SampleFileIndexQuery>> fileIndexMap = new HashMap<>(samplesMap.size());
-        for (String sample : samplesMap.keySet()) {
-            Values<SampleFileIndexQuery> fileIndexQuery =
-                    parseFilesQuery(query, studyId, sample, multiFileSamples.contains(sample), partialFilesIndex);
-
-            fileIndexMap.put(sample, fileIndexQuery);
-        }
+        Map<String, Values<SampleFileIndexQuery>> fileIndexMap
+                = parseSampleSpecificQuery(query, studyId, queryOperation, samplesMap, multiFileSamples, partialGtIndex, partialFilesIndex);
 
         int sampleIndexVersion = defaultStudy.getSampleIndexConfigurationLatest().getVersion();
         boolean allSamplesAnnotated = true;
@@ -574,57 +570,292 @@ public class SampleIndexQueryParser {
     }
 
 
-    protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, int studyId, String sample,
-                                                         boolean multiFileSample, boolean partialFilesIndex) {
-        return parseFilesQuery(query, sample, multiFileSample, partialFilesIndex, s -> {
-            Integer sampleId = metadataManager.getSampleId(studyId, s);
-            List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId);
-            List<String> fileNames = new ArrayList<>(fileIds.size());
-            for (Integer fileId : fileIds) {
-                fileNames.add(metadataManager.getFileName(studyId, fileId));
+
+    private Map<String, Values<SampleFileIndexQuery>> parseSampleSpecificQuery(Query query, int studyId, QueryOperation queryOperation,
+                                                                               Map<String, List<String>> samplesMap,
+                                                                               Set<String> multiFileSamples,
+                                                                               boolean partialGtIndex, boolean partialFilesIndex) {
+        // 1. Split query -- getQueriesPerSample
+        // 2. Parse Files Query
+        //   2.1. Parse File query
+        // 3. Rebuild Query with covered/non-covered params
+
+        Map<String, Values<SampleFileIndexQuery>> fileIndexMap = new HashMap<>(samplesMap.size());
+
+        Query nonCoveredQuery = new Query();
+        Map<String, Query> queriesPerSample = getQueriesPerSample(studyId, query, queryOperation, samplesMap.keySet(), nonCoveredQuery);
+        for (String sample : samplesMap.keySet()) {
+            Query sampleQuery = queriesPerSample.get(sample);
+            Values<SampleFileIndexQuery> fileIndexQuery =
+                    parseFilesQuery(sampleQuery, studyId, sample, multiFileSamples.contains(sample), partialGtIndex, partialFilesIndex);
+            fileIndexMap.put(sample, fileIndexQuery);
+        }
+
+
+        // -- Check for covered filters --
+        // Filters need to be checked for every sample, as each sample may provide different set of variants.
+        //
+        // Sample INTERSECTION (AND)
+        //   If any sample covers a filter from QUERY it doesn't need to be even checked on any other sample.
+        //   That query will be then removed from the QUERY object.
+        //   We can share the same QUERY object.
+        //
+        //   e.g.
+        //   QUERY = samples = (S1 AND S2) AND type = SNV AND (S1:DP>10 OR S2:DP>30)
+        //     SampleFileIndexQuery[0] = S1 , type = SNV , DP>10
+        //     SampleFileIndexQuery[1] = S2 , type = SNV , DP>30
+        //
+        // Sample UNION (OR)
+        //   A filter will be covered if it's covered by ALL samples.
+        //   If a sample covers a filter, it will be removed from the QUERY.
+        //   If all samples remove one particular filter from QUERY (i.e. all samples cover that filter)
+        //   it is definitely covered, and can be removed from the final query
+        //
+        //   e.g.
+        //   QUERY = samples = (S1 OR S2) AND type = SNV AND (S1:DP>10 OR S2:DP>30)
+        //     SampleFileIndexQuery[0] = S1 , type = SNV , DP>10
+        //     SampleFileIndexQuery[1] = S2 , type = SNV , DP>30
+        //     Query is covered
+        //
+        //   QUERY = samples = (S1 OR S2) AND file=file_S1.vcf.gz
+        //     SampleFileIndexQuery[0] = S1 , file = file_S1.vcf.gz
+        //     SampleFileIndexQuery[1] = S2
+        //     Query is NOT covered. Still need to filter by "file=file_S1.vcf.gz", as it was not covered by S2
+
+
+        List<String> coveredParams = new ArrayList<>(query.size());
+        for (String queryParam : query.keySet()) {
+            boolean queryParamCoveredOnAllSamples = true;
+            if (nonCoveredQuery.get(queryParam) != null) {
+                queryParamCoveredOnAllSamples = false;
             }
-            return fileNames;
-        });
+            for (Query sampleQuery : queriesPerSample.values()) {
+                if (sampleQuery.containsKey(queryParam)) {
+                    // This sample does not cover this query param, so it's not covered on ALL samples.
+                    queryParamCoveredOnAllSamples = false;
+                    break;
+                }
+            }
+            if (queryParamCoveredOnAllSamples) {
+                // This query param is covered on ALL samples. We can remove it.
+                coveredParams.add(queryParam);
+            }
+        }
+        for (String coveredParam : coveredParams) {
+            query.remove(coveredParam);
+        }
+
+        return fileIndexMap;
     }
 
-    protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, String sample, boolean multiFileSample, boolean partialFilesIndex,
-                                                         Function<String, List<String>> filesFromSample) {
+    private Map<String, Query> getQueriesPerSample(int studyId, Query query, QueryOperation queryOperation, Collection<String> samples,
+                                                   Query nonCoveredQuery) {
+        Map<String, Query> queriesPerSample = new HashMap<>(samples.size());
+
+        // Non processed query params.
+        // This method will remove elements from these ParsedQueries when they are processed by any sample.
+        // If any of these values keep any element at the end of the method, will mean that the filter param is not being fully used.
+        // Therefore, it's added to "nonCovered"
+        ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> unprocessedFileDataParsedQuery = parseFileData(query);
+        ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> unprocessedSampleDataParsedQuery = parseSampleData(query);
+        ParsedQuery<String> unprocessedFilesQuery = splitValue(query, FILE);
+
+        for (String sample : samples) {
+            Query sampleQuery = new Query(query);
+            List<String> filesFromSample = getFilesFromSample(studyId, sample);
+
+            if (queryOperation == QueryOperation.OR) {
+                // This new sampleQuery will process all file and fileData elements.
+                unprocessedFilesQuery.getValues().clear();
+                unprocessedFileDataParsedQuery.getValues().clear();
+            } else {
+//                if (isValidParam(sampleQuery, TYPE)) {
+//                    List<VariantType> types = query.getAsStringList(VariantQueryParam.TYPE.key())
+//                            .stream()
+//                            .map(t -> VariantType.valueOf(t.toUpperCase()))
+//                            .collect(Collectors.toList());
+//                    if (schema.getFileIndex().getTypeIndex().buildFilter(QueryOperation.OR, types).isExactFilter()) {
+//                        query.remove(TYPE.key());
+//                    }
+//                }
+                if (isValidParam(sampleQuery, FILE)) {
+                    ParsedQuery<String> filesQuery = splitValue(query, FILE);
+                    boolean processFileQuery = false;
+                    if (filesQuery.getOperation() == QueryOperation.AND || filesQuery.getOperation() == null) {
+                        // FILE filter with AND (or just one file) can be processed by this sample, and potentially be split
+                        processFileQuery = true;
+                    } else if (filesQuery.getOperation() == QueryOperation.OR && filesFromSample.containsAll(filesQuery.getValues())) {
+                        // FILE filter with OR where all files are from THIS sample, can be processed
+                        processFileQuery = true;
+                    }
+                    if (processFileQuery) {
+                        filesQuery.getValues().removeIf(file -> !filesFromSample.contains(file));
+                        if (filesQuery.isEmpty()) {
+                            sampleQuery.remove(FILE.key());
+                        } else {
+                            unprocessedFilesQuery.getValues().removeAll(filesQuery.getValues());
+                            sampleQuery.put(FILE.key(), filesQuery.toQuery());
+                        }
+                    }
+                }
+                if (isValidParam(sampleQuery, FILE_DATA)) {
+                    ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileDataParsedQuery = parseFileData(query);
+//                    System.out.println(fileDataParsedQuery.describe());
+
+                    ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> subFilter
+                            = fileDataParsedQuery.filter(p -> filesFromSample.contains(p.getKey()));
+                    if (subFilter.getValues().isEmpty()) {
+                        // FileData not found for this sample.
+                        sampleQuery.remove(FILE_DATA.key());
+                    } else {
+                        // FileData found. Remove from input query.
+                        for (KeyValues<String, KeyOpValue<String, String>> value : subFilter.getValues()) {
+                            unprocessedFileDataParsedQuery.getValues()
+                                    .removeIf(inputFileDataQuery -> inputFileDataQuery.getKey().equals(value.getKey()));
+                        }
+                        fileDataParsedQuery.getValues().removeAll(subFilter.getValues());
+//                        query.put(FILE_DATA.key(), fileDataParsedQuery.toQuery());
+                        sampleQuery.put(FILE_DATA.key(), subFilter.toQuery());
+                    }
+                }
+            }
+
+            if (isValidParam(sampleQuery, SAMPLE_DATA)) {
+                ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> sampleDataParsedQuery = parseSampleData(query);
+//                System.out.println(sampleDataParsedQuery.describe());
+
+                KeyValues<String, KeyOpValue<String, String>> kv = sampleDataParsedQuery.getValue(p -> p.getKey().equals(sample));
+                if (kv == null) {
+                    // SampleData not found for this sample.
+                    sampleQuery.remove(SAMPLE_DATA.key());
+                } else {
+                    // SampleData found. Remove from query.
+                    sampleDataParsedQuery.getValues().remove(kv);
+                    unprocessedSampleDataParsedQuery.getValues().removeIf(thisKv -> thisKv.getKey().equals(kv.getKey()));
+//                        query.put(SAMPLE_DATA.key(), sampleDataParsedQuery.toQuery());
+                    sampleQuery.put(SAMPLE_DATA.key(), kv.toQuery());
+                }
+            }
+
+            queriesPerSample.put(sample, sampleQuery);
+        }
+
+        if (unprocessedFileDataParsedQuery.isNotEmpty()) {
+            nonCoveredQuery.put(FILE_DATA.key(), query.get(FILE_DATA.key()));
+        }
+        if (unprocessedSampleDataParsedQuery.isNotEmpty()) {
+            nonCoveredQuery.put(SAMPLE_DATA.key(), query.get(SAMPLE_DATA.key()));
+        }
+        if (unprocessedFilesQuery.isNotEmpty()) {
+            nonCoveredQuery.put(FILE.key(), query.get(FILE.key()));
+        }
+
+        return queriesPerSample;
+    }
+
+
+    protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, int studyId, String sample,
+                                                           boolean multiFileSample, boolean partialGtIndex, boolean partialFilesIndex) {
+        return parseFilesQuery(query, sample, multiFileSample, partialGtIndex, partialFilesIndex, s -> getFilesFromSample(studyId, s));
+    }
+
+    private List<String> getFilesFromSample(int studyId, String s) {
+        Integer sampleId = metadataManager.getSampleId(studyId, s);
+        List<Integer> fileIds = metadataManager.getFileIdsFromSampleId(studyId, sampleId);
+        List<String> fileNames = new ArrayList<>(fileIds.size());
+        for (Integer fileId : fileIds) {
+            fileNames.add(metadataManager.getFileName(studyId, fileId));
+        }
+        return fileNames;
+    }
+
+    protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, String sample, boolean multiFileSample,
+                                                           boolean partialGtIndex, boolean partialFilesIndex,
+                                                           Function<String, List<String>> filesFromSample) {
         ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileDataParsedQuery = parseFileData(query);
-        List<String> filesFromFileData = fileDataParsedQuery.getValues(KeyValues::getKey);
+        QueryOperation filesOperation;
+        List<String> filesFromQuery;
+        if (fileDataParsedQuery.isEmpty()) {
+            ParsedQuery<String> files = splitValue(query, FILE);
+            filesOperation = files.getOperation();
+            filesFromQuery = files.getValues();
+        } else {
+            filesOperation = fileDataParsedQuery.getOperation();
+            filesFromQuery = fileDataParsedQuery.mapValues(KeyValues::getKey);
+        }
+
 
         boolean splitFileDataQuery = false;
-        if (fileDataParsedQuery.getOperation() == QueryOperation.AND) {
+        if (filesOperation == QueryOperation.AND) {
             splitFileDataQuery = true;
-        } else if (fileDataParsedQuery.getOperation() == QueryOperation.OR && multiFileSample) {
+        } else if (filesOperation == QueryOperation.OR && multiFileSample) {
             List<String> files = filesFromSample.apply(sample);
-            if (files.containsAll(filesFromFileData)) {
+            if (files.containsAll(filesFromQuery)) {
                 // All samples from the query are from the same sample (aka multi-query sample)
                 splitFileDataQuery = true;
             }
         }
         if (splitFileDataQuery) {
-            List<SampleFileIndexQuery> fileIndexQueries = new ArrayList<>(filesFromFileData.size());
+            List<SampleFileIndexQuery> fileIndexQueries = new ArrayList<>(filesFromQuery.size());
             boolean fileDataCovered = true;
-            for (String fileFromFileData : filesFromFileData) {
+            boolean fileCovered = true;
+            boolean typeCovered = true;
+            boolean filterCovered = true;
+            boolean qualCovered = true;
+            for (String fileFromQuery : filesFromQuery) {
                 Query subQuery = new Query(query);
 //                    subQuery.remove(FILE.key());
-                subQuery.put(FILE_DATA.key(), fileDataParsedQuery.getValue(kv -> kv.getKey().equals(fileFromFileData)).toQuery());
-                fileIndexQueries.add(parseFileQuery(subQuery, sample, multiFileSample, partialFilesIndex, filesFromSample));
+                KeyValues<String, KeyOpValue<String, String>> fileDataQuery =
+                        fileDataParsedQuery.getValue(kv -> kv.getKey().equals(fileFromQuery));
+                if (fileDataQuery == null) {
+                    subQuery.put(FILE.key(), fileFromQuery);
+                } else {
+                    subQuery.put(FILE_DATA.key(), fileDataQuery.toQuery());
+                }
+                fileIndexQueries.add(parseFileQuery(subQuery, sample, multiFileSample, partialGtIndex, partialFilesIndex, filesFromSample));
                 if (isValidParam(subQuery, FILE_DATA)) {
                     // This subquery did not remove the fileData, so it's not fully covered. Can't remove the fileData filter.
                     fileDataCovered = false;
                 }
+                if (isValidParam(subQuery, TYPE)) {
+                    typeCovered = false;
+                }
+                if (isValidParam(subQuery, FILE)) {
+                    fileCovered = false;
+                }
+                if (isValidParam(subQuery, FILTER)) {
+                    filterCovered = false;
+                }
+                if (isValidParam(subQuery, QUAL)) {
+                    qualCovered = false;
+                }
             }
-            if (fileDataCovered && !partialFilesIndex) {
-                query.remove(FILE_DATA.key());
+            if (!partialFilesIndex) {
+                if (fileDataCovered) {
+                    query.remove(FILE_DATA.key());
+                }
+                if (fileCovered) {
+                    query.remove(FILE.key());
+                }
+                if (filterCovered) {
+                    query.remove(FILTER.key());
+                }
+                if (qualCovered) {
+                    query.remove(QUAL.key());
+                }
             }
-            return new Values<>(fileDataParsedQuery.getOperation(), fileIndexQueries);
+            if (typeCovered) {
+                query.remove(TYPE.key());
+            }
+            return new Values<>(filesOperation, fileIndexQueries);
+        } else {
+            return new Values<>(null, Collections.singletonList(
+                    parseFileQuery(query, sample, multiFileSample, partialGtIndex, partialFilesIndex, filesFromSample)));
         }
-        return new Values<>(null,
-                Collections.singletonList(parseFileQuery(query, sample, multiFileSample, partialFilesIndex, filesFromSample)));
     }
 
-    protected SampleFileIndexQuery parseFileQuery(Query query, String sample, boolean multiFileSample, boolean partialFilesIndex,
+    protected SampleFileIndexQuery parseFileQuery(Query query, String sample, boolean multiFileSample,
+                                                  boolean partialGtIndex, boolean partialFilesIndex,
                                                   Function<String, List<String>> filesFromSample) {
 
         List<String> files = null;
@@ -651,26 +882,57 @@ public class SampleIndexQueryParser {
             if (files == null) {
                 files = filesFromSample.apply(sample);
             }
-            List<String> filesFromQuery;
+            final List<String> filesFromQuery;
+            final QueryOperation filesOperation;
             if (isValidParam(query, FILE)) {
                 ParsedQuery<String> filesQuery = splitValue(query, FILE);
                 filesFromQuery = filesQuery.getValues();
+                filesOperation = filesQuery.getOperation();
+                if (files.containsAll(filesFromQuery)) {
+                    query.remove(FILE.key());
+                }
             } else if (isValidParam(query, FILE_DATA)) {
                 ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileData = parseFileData(query);
-                filesFromQuery = fileData.getValues(KeyValues::getKey);
+                filesFromQuery = fileData.mapValues(KeyValues::getKey);
+                filesOperation = fileData.getOperation();
             } else {
                 filesFromQuery = null;
+                filesOperation = null;
             }
             if (filesFromQuery != null) {
-                for (String file : filesFromQuery) {
-                    int indexOf = files.indexOf(file);
-                    if (indexOf >= 0) {
-                        sampleFilesFilter.add(indexOf);
+                if (CollectionUtils.containsAll(files, filesFromQuery)
+                        || CollectionUtils.containsAny(files, filesFromQuery) && filesOperation == QueryOperation.AND) {
+                    for (String file : filesFromQuery) {
+                        int indexOf = files.indexOf(file);
+                        if (indexOf >= 0) {
+                            sampleFilesFilter.add(indexOf);
+                        }
+                    }
+                    IndexFieldFilter filePositionFilter =
+                            schema.getFileIndex().getFilePositionIndex().buildFilter(QueryOperation.OR, sampleFilesFilter);
+                    filtersList.add(filePositionFilter);
+                }
+
+            }
+        } else {
+            if (isValidParam(query, FILE)) {
+                ParsedQuery<String> filesQuery = splitValue(query, FILE);
+                // Conditions for having a covered file query param
+                // 1. Filter by one single file
+                //   In case of filtering my multiple samples, the upper layer should have
+                //   been able to remove some of them if affecting to other samples
+                // 2. Sample present in one single file
+                //   This block has already discarded the "multi-file-sample" scenario, but
+                //   we could still be in a "SplitData.REGION" scenario
+                if (filesQuery.size() == 1) {
+                    // Lazy get files from sample
+                    if (files == null) {
+                        files = filesFromSample.apply(sample);
+                    }
+                    if (files.size() == 1 && files.equals(filesQuery.getValues())) {
+                        query.remove(FILE.key());
                     }
                 }
-                IndexFieldFilter filePositionFilter =
-                        schema.getFileIndex().getFilePositionIndex().buildFilter(QueryOperation.OR, sampleFilesFilter);
-                filtersList.add(filePositionFilter);
             }
         }
 
@@ -727,7 +989,9 @@ public class SampleIndexQueryParser {
                             // Unknown key
                             fileDataCovered = false;
                         } else {
-                            IndexFieldFilter indexFieldFilter = fileDataIndexField.buildFilter(keyOpValue);
+                            Values<String> values = splitValues(keyOpValue.getValue());
+                            IndexFieldFilter indexFieldFilter =
+                                    fileDataIndexField.buildFilter(values.getOperation(), keyOpValue.getOp(), values.getValues());
                             filtersList.add(indexFieldFilter);
                             if (!indexFieldFilter.isExactFilter()) {
                                 fileDataCovered = false;
@@ -763,6 +1027,10 @@ public class SampleIndexQueryParser {
                 if (!partialFilesIndex) {
                     if (sampleDataQuery.isEmpty()) {
                         query.remove(SAMPLE_DATA.key());
+                        if (!partialGtIndex) {
+                            query.remove(GENOTYPE.key());
+                            query.remove(SAMPLE.key());
+                        }
                     } else {
                         query.put(SAMPLE_DATA.key(), sampleDataQuery.toQuery());
                     }
@@ -799,7 +1067,8 @@ public class SampleIndexQueryParser {
         byte annotationIndex = 0;
         IndexFieldFilter biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
         IndexFieldFilter consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();
-        CtBtCombinationIndexSchema.Filter ctBtFilter = schema.getCtBtIndex().getField().noOpFilter();
+        IndexFieldFilter tfFilter = schema.getTranscriptFlagIndexSchema().getField().noOpFilter();
+        CtBtFtCombinationIndexSchema.Filter ctBtTfFilter = schema.getCtBtTfIndex().getField().noOpFilter();
         IndexFilter clinicalFilter = schema.getClinicalIndexSchema().noOpFilter();
 
         Boolean intergenic = null;
@@ -815,9 +1084,12 @@ public class SampleIndexQueryParser {
             }
         }
 
-        BiotypeConsquenceTypeFlagCombination combination = BiotypeConsquenceTypeFlagCombination.fromQuery(query);
+//        BiotypeConsquenceTypeFlagCombination combination = BiotypeConsquenceTypeFlagCombination
+//                .fromQuery(query, Arrays.asList(schema.getTranscriptFlagIndexSchema().getField().getConfiguration().getValues()));
+        BiotypeConsquenceTypeFlagCombination combination = BiotypeConsquenceTypeFlagCombination.fromQuery(query, null);
         boolean btCovered = false;
         boolean ctCovered = false;
+        boolean tfCovered = false;
 
         if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE)) {
             List<String> soNames = query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
@@ -831,26 +1103,26 @@ public class SampleIndexQueryParser {
                 intergenic = false;
             } else if (soNames.size() == 1 && soNames.contains(VariantAnnotationConstants.INTERGENIC_VARIANT)) {
                 intergenic = true;
-            }
+            } // else, leave undefined : intergenic = null
             boolean ctFilterCoveredBySummary = false;
             boolean ctBtCombinationCoveredBySummary = false;
-            if (LOF_SET.containsAll(soNames)) {
-                ctFilterCoveredBySummary = soNames.size() == LOF_SET.size();
-                annotationIndex |= LOF_MASK;
+            if (SampleIndexSchema.CUSTOM_LOF.containsAll(soNames)) {
+                ctFilterCoveredBySummary = soNames.size() == SampleIndexSchema.CUSTOM_LOF.size();
+                annotationIndex |= CUSTOM_LOF_MASK;
                 // If all present, remove consequenceType filter
-                if (completeIndex && LOF_SET.size() == soNames.size()) {
+                if (completeIndex && SampleIndexSchema.CUSTOM_LOF.size() == soNames.size()) {
                     // Ensure not filtering by gene, and not combining with other params
                     if (!isValidParam(query, GENE) && simpleCombination(combination)) {
                         query.remove(ANNOT_CONSEQUENCE_TYPE.key());
                     }
                 }
             }
-            if (LOF_EXTENDED_SET.containsAll(soNames)) {
+            if (SampleIndexSchema.CUSTOM_LOFE.containsAll(soNames)) {
                 boolean proteinCodingOnly = query.getString(ANNOT_BIOTYPE.key()).equals(VariantAnnotationConstants.PROTEIN_CODING);
-                ctFilterCoveredBySummary = soNames.size() == LOF_EXTENDED_SET.size();
-                annotationIndex |= LOF_EXTENDED_MASK;
+                ctFilterCoveredBySummary = soNames.size() == SampleIndexSchema.CUSTOM_LOFE.size();
+                annotationIndex |= CUSTOM_LOFE_MASK;
                 // If all present, remove consequenceType filter
-                if (LOF_EXTENDED_SET.size() == soNames.size()) {
+                if (SampleIndexSchema.CUSTOM_LOFE.size() == soNames.size()) {
                     // Ensure not filtering by gene, and not combining with other params
                     if (completeIndex && !isValidParam(query, GENE)) {
                         if (simpleCombination(combination)) {
@@ -863,7 +1135,7 @@ public class SampleIndexQueryParser {
                     }
                 }
                 if (proteinCodingOnly) {
-                    annotationIndex |= LOFE_PROTEIN_CODING_MASK;
+                    annotationIndex |= CUSTOM_LOFE_PROTEIN_CODING_MASK;
                 }
             }
             if (soNames.size() == 1 && soNames.get(0).equals(VariantAnnotationConstants.MISSENSE_VARIANT)) {
@@ -882,7 +1154,10 @@ public class SampleIndexQueryParser {
             // Use the ctIndex if:
             // - The CtFilter is not covered by the summary
             // - The query has the combination CT+BT , and it is not covered by the summary
-            boolean useCtIndexFilter = !ctFilterCoveredBySummary || (!ctBtCombinationCoveredBySummary && combination.isBiotype());
+            // - The query has the combination CT+TF
+            boolean useCtIndexFilter = !ctFilterCoveredBySummary
+                    || (!ctBtCombinationCoveredBySummary && combination.isBiotype())
+                    || combination.isFlag();
             if (useCtIndexFilter) {
                 ctCovered = completeIndex;
                 consequenceTypeFilter = schema.getCtIndex().getField().buildFilter(new OpValue<>("=", soNames));
@@ -913,11 +1188,10 @@ public class SampleIndexQueryParser {
                 }
             }
 
-            boolean useBtIndexFilter = !biotypeFilterCoveredBySummary || combination.isConsequenceType();
+            boolean useBtIndexFilter = !biotypeFilterCoveredBySummary || combination.numParams() > 1;
             if (useBtIndexFilter) {
-                btCovered = completeIndex;
                 biotypeFilter = schema.getBiotypeIndex().getField().buildFilter(new OpValue<>("=", biotypes));
-                btCovered &= biotypeFilter.isExactFilter();
+                btCovered = completeIndex & biotypeFilter.isExactFilter();
                 // Biotype filter is covered by index
                 if (btCovered) {
                     if (!isValidParam(query, GENE) && simpleCombination(combination)) {
@@ -927,13 +1201,54 @@ public class SampleIndexQueryParser {
             }
         }
 
-        if (!consequenceTypeFilter.isNoOp() && !biotypeFilter.isNoOp()) {
-            ctBtFilter = schema.getCtBtIndex().getField().buildFilter(consequenceTypeFilter, biotypeFilter);
+        if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+            List<String> transcriptFlags = query.getAsStringList(ANNOT_TRANSCRIPT_FLAG.key());
+            tfFilter = schema.getTranscriptFlagIndexSchema().getField().buildFilter(new OpValue<>("=", transcriptFlags));
+            tfCovered = completeIndex & tfFilter.isExactFilter();
+            // Transcript flags are in transcripts/genes. (i.e. non-intergenic)
+            intergenic = false;
+            // TranscriptFlag filter is covered by index
+            if (tfCovered) {
+                if (!isValidParam(query, GENE) && simpleCombination(combination)) {
+                    query.remove(ANNOT_TRANSCRIPT_FLAG.key());
+                }
+            }
         }
-        if (completeIndex && btCovered && ctCovered && !isValidParam(query, GENE)
-                && combination.equals(BiotypeConsquenceTypeFlagCombination.BIOTYPE_CT)) {
-            query.remove(ANNOT_BIOTYPE.key());
-            query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+
+        if (combination.numParams() > 1 && schema.getConfiguration().getAnnotationIndexConfiguration().getTranscriptCombination()) {
+            ctBtTfFilter = schema.getCtBtTfIndex().getField().buildFilter(consequenceTypeFilter, biotypeFilter, tfFilter);
+
+            if (completeIndex && !isValidParam(query, GENE)) {
+                switch (combination) {
+                    case BIOTYPE_CT:
+                        if (btCovered && ctCovered) {
+                            query.remove(ANNOT_BIOTYPE.key());
+                            query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                        }
+                    break;
+                    case CT_FLAG:
+                        if (ctCovered && tfCovered) {
+                            query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                            query.remove(ANNOT_TRANSCRIPT_FLAG.key());
+                        }
+                    break;
+                    case BIOTYPE_FLAG:
+                        if (btCovered && tfCovered) {
+                            query.remove(ANNOT_BIOTYPE.key());
+                            query.remove(ANNOT_TRANSCRIPT_FLAG.key());
+                        }
+                    break;
+                    case BIOTYPE_CT_FLAG:
+                        if (btCovered && ctCovered && tfCovered) {
+                            query.remove(ANNOT_BIOTYPE.key());
+                            query.remove(ANNOT_CONSEQUENCE_TYPE.key());
+                            query.remove(ANNOT_TRANSCRIPT_FLAG.key());
+                        }
+                    break;
+                    default:
+                        throw new IllegalStateException("Unexpected value: " + combination);
+                }
+            }
         }
 
         // If filter by proteinSubstitution, without filter << or >>, add ProteinCodingMask
@@ -941,19 +1256,36 @@ public class SampleIndexQueryParser {
         if (StringUtils.isNotEmpty(proteinSubstitution)
                 && !proteinSubstitution.contains("<<")
                 && !proteinSubstitution.contains(">>")) {
-            annotationIndex |= LOF_EXTENDED_MASK;
+            annotationIndex |= CUSTOM_LOFE_MASK;
         }
 
-        if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
+        List<IndexFieldFilter> clinicalFieldFilters = new ArrayList<>();
+        if (isValidParam(query, ANNOT_CLINICAL)) {
             annotationIndex |= CLINICAL_MASK;
-            clinicalFilter = schema.getClinicalIndexSchema().buildFilter(schema.getClinicalIndexSchema().getClinicalSignificanceField()
-                    .buildFilter(new OpValue<>("=", query.getAsStringList(ANNOT_CLINICAL_SIGNIFICANCE.key()))));
+            Values<String> sources = splitValues(query.getString(ANNOT_CLINICAL.key()));
+
+            clinicalFieldFilters.add(schema.getClinicalIndexSchema().getSourceField().buildFilter(
+                    new Values<>(sources.getOperation(), sources.mapValues(s -> new OpValue<>("=", Collections.singletonList(s))))));
+        }
+        if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE) || isValidParam(query, ANNOT_CLINICAL_CONFIRMED_STATUS)) {
+            annotationIndex |= CLINICAL_MASK;
+            List<List<String>> clinicalLists = VariantQueryParser.parseClinicalCombination(query, true);
+
+            clinicalFieldFilters.add(schema.getClinicalIndexSchema().getClinicalSignificanceField()
+                    .buildFilter(new Values<>(QueryOperation.AND, clinicalLists.stream()
+                            .map(l -> new OpValue<>("=", l)).collect(Collectors.toList()))));
+        }
+        if (!clinicalFieldFilters.isEmpty()) {
+            clinicalFilter = schema.getClinicalIndexSchema().buildFilter(clinicalFieldFilters, QueryOperation.AND);
+
             boolean clinicalCovered = clinicalFilter.isExactFilter();
             if (!clinicalCovered) {
                 // Not all values are covered by the index. Unable to filter using this index, as it may return less values than required.
                 clinicalFilter = schema.getClinicalIndexSchema().noOpFilter();
             }
             if (completeIndex && clinicalCovered) {
+                query.remove(ANNOT_CLINICAL.key());
+                query.remove(ANNOT_CLINICAL_CONFIRMED_STATUS.key());
                 query.remove(ANNOT_CLINICAL_SIGNIFICANCE.key());
             }
         }
@@ -1064,12 +1396,11 @@ public class SampleIndexQueryParser {
         }
 
         return new SampleAnnotationIndexQuery(new byte[]{annotationIndexMask, annotationIndex},
-                consequenceTypeFilter, biotypeFilter, ctBtFilter, clinicalFilter, populationFrequencyFilter);
+                consequenceTypeFilter, biotypeFilter, tfFilter, ctBtTfFilter, clinicalFilter, populationFrequencyFilter);
     }
 
     private boolean simpleCombination(BiotypeConsquenceTypeFlagCombination combination) {
-        return combination.equals(BiotypeConsquenceTypeFlagCombination.BIOTYPE)
-                || combination.equals(BiotypeConsquenceTypeFlagCombination.CT);
+        return combination.numParams() == 1;
     }
 
     @Deprecated

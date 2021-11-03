@@ -21,7 +21,6 @@ import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.bson.Document;
@@ -30,7 +29,6 @@ import org.bson.json.JsonWriterSettings;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -332,23 +330,19 @@ public class VariantMongoDBQueryParser {
                         + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, builder, QueryOperation.AND);
             }
 
-            if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
+            List<List<String>> clinicalCombinationFilter = VariantQueryParser.parseClinicalCombination(query);
+            if (!clinicalCombinationFilter.isEmpty()) {
                 String key = DocumentToVariantConverter.ANNOTATION_FIELD
-                        + '.' + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD
-                        + '.' + "variantClassification"
-                        + '.' + "clinicalSignificance";
-                ParsedQuery<String> values = splitValue(query, ANNOT_CLINICAL_SIGNIFICANCE);
-                List<DBObject> list = new ArrayList<>(values.getValues().size());
-                for (String clinicalSignificance : values) {
-                    ClinicalSignificance enumValue = EnumUtils.getEnum(ClinicalSignificance.class, clinicalSignificance);
-                    list.add(new QueryBuilder().and(key).is(enumValue.toString()).get());
-                }
-                if (QueryOperation.OR.equals(values.getOperation())) {
-                    builder.or(list.toArray(new DBObject[0]));
+                        + '.' + DocumentToVariantAnnotationConverter.CLINICAL_COMBINATIONS_FIELD;
+                if (clinicalCombinationFilter.size() == 1) {
+                    builder.and(key).in(clinicalCombinationFilter.get(0));
                 } else {
-                    builder.and(list.toArray(new DBObject[0]));
+                    List<DBObject> subQueries = new ArrayList<>(clinicalCombinationFilter.size());
+                    for (List<String> clinicalCombination : clinicalCombinationFilter) {
+                        subQueries.add(new QueryBuilder().and(key).in(clinicalCombination).get());
+                    }
+                    builder.and(subQueries.toArray(new DBObject[0]));
                 }
-
             }
 
             if (isValidParam(query, ANNOT_HPO)) {

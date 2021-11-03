@@ -19,7 +19,7 @@
     "rank" : 0,
     "dependsOn" : null,
     "description" : "Number of variants in the variant set",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "sampleCount",
@@ -34,7 +34,7 @@
     "rank" : 1,
     "dependsOn" : null,
     "description" : "Number of samples in the variant set",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "filterCount",
@@ -49,7 +49,7 @@
     "rank" : 2,
     "dependsOn" : null,
     "description" : "The number of occurrences for each FILTER value in files from this set..  Each file can contain more than one filter value (usually separated by ';').. ",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "filesCount",
@@ -64,7 +64,7 @@
     "rank" : 3,
     "dependsOn" : null,
     "description" : "Number of files in the variant set",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "tiTvRatio",
@@ -79,7 +79,7 @@
     "rank" : 4,
     "dependsOn" : null,
     "description" : "TiTvRatio = num. transitions / num. transversions",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "qualityAvg",
@@ -94,7 +94,7 @@
     "rank" : 5,
     "dependsOn" : null,
     "description" : "Mean Quality for all the variants with quality",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "qualityStdDev",
@@ -109,7 +109,7 @@
     "rank" : 6,
     "dependsOn" : null,
     "description" : "Standard Deviation of the quality",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "typeCount",
@@ -124,7 +124,7 @@
     "rank" : 7,
     "dependsOn" : null,
     "description" : "Variants count group by type. e.g. SNP, INDEL, MNP, SNV, ...",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "biotypeCount",
@@ -139,7 +139,7 @@
     "rank" : 8,
     "dependsOn" : null,
     "description" : "Variants count group by biotype. e.g. protein-coding, miRNA, lncRNA, ....  Each counter is increased at most one per variant. If multiple overlapping genes have the same biotypes, it will count as one.",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "consequenceTypeCount",
@@ -154,7 +154,7 @@
     "rank" : 9,
     "dependsOn" : null,
     "description" : "Variants count group by consequence type. e.g. synonymous_variant, missense_variant, stop_lost, ...",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "chromosomeCount",
@@ -169,7 +169,7 @@
     "rank" : 10,
     "dependsOn" : null,
     "description" : "Number of variants per chromosome",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   }, {
     "id" : "chromosomeDensity",
@@ -184,7 +184,7 @@
     "rank" : 11,
     "dependsOn" : null,
     "description" : "Total density of variants within the chromosome. counts / chromosome.length",
-    "variableSet" : null,
+    "variables" : null,
     "attributes" : null
   } ],
   "entities" : [ "COHORT" ],

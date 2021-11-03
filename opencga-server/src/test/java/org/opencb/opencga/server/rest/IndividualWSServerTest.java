@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
@@ -170,7 +171,7 @@ public class IndividualWSServerTest {
         assertEquals(0, response.getResponse().get(0).getNumResults());
 
         // We update to make the individual in1 be the child of in2
-        IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams().setFather("in2");
+        IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams().setFather(new IndividualReferenceParam("in2", ""));
         OpenCGAWSServer.catalogManager.getIndividualManager().update(String.valueOf(studyId), "in1",
                 individualUpdateParams, QueryOptions.empty(), sessionId);
         // and query again. We look for an individual with father "in2"

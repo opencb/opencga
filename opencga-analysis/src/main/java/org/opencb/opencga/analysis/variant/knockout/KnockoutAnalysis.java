@@ -95,7 +95,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
 
         String ct = analysisParams.getConsequenceType();
         if (StringUtils.isEmpty(ct)) {
-            ct = VariantQueryUtils.LOF + "," + VariantAnnotationConstants.MISSENSE_VARIANT;
+            ct = VariantQueryUtils.PROTEIN_ALTERING;
         }
         analysisParams.setConsequenceType(String.join(",", VariantQueryUtils.parseConsequenceTypes(ct)));
 

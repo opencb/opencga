@@ -1,11 +1,14 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.opencb.biodata.models.variant.avro.*;
+import org.apache.commons.lang3.tuple.Triple;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.PopulationFrequency;
+import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.core.CombinationTripleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.index.core.IndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
@@ -28,15 +31,15 @@ public class AnnotationIndexConverter {
     public static final Set<String> POP_FREQ_ANY_001_FILTERS = new HashSet<>();
 
     public static final byte PROTEIN_CODING_MASK =               (byte) (1 << 0);
-    public static final byte LOF_MASK =                          (byte) (1 << 1);
+    public static final byte CUSTOM_LOF_MASK =                   (byte) (1 << 1);
     public static final byte MISSENSE_VARIANT_MASK =             (byte) (1 << 2);
-    public static final byte LOFE_PROTEIN_CODING_MASK =          (byte) (1 << 3);
-    public static final byte LOF_EXTENDED_MASK =                 (byte) (1 << 4);
+    public static final byte CUSTOM_LOFE_PROTEIN_CODING_MASK =   (byte) (1 << 3);
+    public static final byte CUSTOM_LOFE_MASK =                  (byte) (1 << 4);
     public static final byte POP_FREQ_ANY_001_MASK =             (byte) (1 << 5);
     public static final byte CLINICAL_MASK =                     (byte) (1 << 6);
     public static final byte INTERGENIC_MASK =                   (byte) (1 << 7);  // INTERGENIC (and maybe regulatory)
 
-    public static final String TRANSCRIPT_FLAG_BASIC = "basic";
+
 
     static {
         BIOTYPE_SET = Collections.singleton(PROTEIN_CODING);
@@ -68,28 +71,39 @@ public class AnnotationIndexConverter {
 
     public AnnotationIndexEntry convert(VariantAnnotation variantAnnotation) {
         if (variantAnnotation == null) {
-            return AnnotationIndexEntry.empty();
+            return AnnotationIndexEntry.empty(schema);
         }
         byte b = 0;
         BitBuffer ctIndex = new BitBuffer(schema.getCtIndex().getBitsLength());
         BitBuffer btIndex = new BitBuffer(schema.getBiotypeIndex().getBitsLength());
+        BitBuffer tfIndex = new BitBuffer(schema.getTranscriptFlagIndexSchema().getBitsLength());
         BitBuffer clinicalIndex = new BitBuffer(schema.getClinicalIndexSchema().getBitsLength());
         BitBuffer popFreq = new BitBuffer(schema.getPopFreqIndex().getBitsLength());
 
         boolean intergenic = false;
         boolean clinical = false;
 
-        List<Pair<String, String>> ctBtPair = new LinkedList<>();
-        AnnotationIndexEntry.CtBtCombination ctBtCombination = null;
+        CombinationTripleIndexSchema.CombinationTriple ctBtTfCombination = null;
         if (variantAnnotation.getConsequenceTypes() != null) {
+            List<Triple<String, String, String>> ctBtTfTriples = new LinkedList<>();
             Set<String> biotypes = new HashSet<>();
             Set<String> cts = new HashSet<>();
+            Set<String> flags = new HashSet<>();
+
             for (ConsequenceType ct : variantAnnotation.getConsequenceTypes()) {
                 String biotype = ct.getBiotype();
                 if (BIOTYPE_SET.contains(biotype)) {
                     b |= PROTEIN_CODING_MASK;
                 }
                 biotypes.add(biotype);
+                List<String> ctTranscriptFlags = ct.getTranscriptFlags();
+                if (ctTranscriptFlags == null) {
+                    ctTranscriptFlags = ct.getTranscriptAnnotationFlags();
+                    if (ctTranscriptFlags == null) {
+                        ctTranscriptFlags = Collections.singletonList("OTHER");
+                    }
+                }
+                flags.addAll(ctTranscriptFlags);
 
                 boolean proteinCoding = PROTEIN_CODING.equals(biotype);
                 for (SequenceOntologyTerm sequenceOntologyTerm : ct.getSequenceOntologyTerms()) {
@@ -99,26 +113,32 @@ public class AnnotationIndexConverter {
                     }
 
                     cts.add(soName);
-                    ctBtPair.add(Pair.of(soName, biotype));
 
-                    if (VariantQueryUtils.LOF_SET.contains(soName)) {
-                        b |= LOF_MASK;
-                        b |= LOF_EXTENDED_MASK;
+                    for (String transcriptFlag : ctTranscriptFlags) {
+                        ctBtTfTriples.add(Triple.of(soName, biotype, transcriptFlag));
+                    }
+
+                    if (SampleIndexSchema.CUSTOM_LOF.contains(soName)) {
+                        b |= CUSTOM_LOF_MASK;
+                        b |= CUSTOM_LOFE_MASK;
                         if (proteinCoding) {
-                            b |= LOFE_PROTEIN_CODING_MASK;
+                            b |= CUSTOM_LOFE_PROTEIN_CODING_MASK;
                         }
                     } else if (MISSENSE_VARIANT.equals(soName)) {
                         b |= MISSENSE_VARIANT_MASK;
-                        b |= LOF_EXTENDED_MASK;
+                        b |= CUSTOM_LOFE_MASK;
                         if (proteinCoding) {
-                            b |= LOFE_PROTEIN_CODING_MASK;
+                            b |= CUSTOM_LOFE_PROTEIN_CODING_MASK;
                         }
                     }
                 }
             }
-            schema.getBiotypeIndex().getField().write(new ArrayList<>(biotypes), btIndex);
-            schema.getCtIndex().getField().write(new ArrayList<>(cts), ctIndex);
-            ctBtCombination = schema.getCtBtIndex().getField().getCtBtCombination(ctBtPair, ctIndex, btIndex);
+            if (!intergenic) {
+                schema.getBiotypeIndex().getField().write(new ArrayList<>(biotypes), btIndex);
+                schema.getCtIndex().getField().write(new ArrayList<>(cts), ctIndex);
+                schema.getTranscriptFlagIndexSchema().getField().write(new ArrayList<>(flags), tfIndex);
+                ctBtTfCombination = schema.getCtBtTfIndex().getField().getCombination(ctBtTfTriples, ctIndex, btIndex, tfIndex);
+            }
         }
         if (intergenic) {
             b |= INTERGENIC_MASK;
@@ -149,26 +169,35 @@ public class AnnotationIndexConverter {
         if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
             b |= CLINICAL_MASK;
             clinical = true;
-            Set<String> clinicalSignificances = new HashSet<>();
-            Set<String> clinicalSource = new HashSet<>();
-            for (EvidenceEntry evidenceEntry : variantAnnotation.getTraitAssociation()) {
-                if (evidenceEntry.getSource() != null && StringUtils.isNotEmpty(evidenceEntry.getSource().getName())) {
-                    clinicalSource.add(evidenceEntry.getSource().getName().toLowerCase());
-                }
-                if (evidenceEntry.getVariantClassification() != null) {
-                    ClinicalSignificance clinicalSignificance = evidenceEntry.getVariantClassification().getClinicalSignificance();
-                    if (clinicalSignificance != null) {
-                        if (clinicalSignificance.equals(ClinicalSignificance.VUS)) {
-                            clinicalSignificance = ClinicalSignificance.uncertain_significance;
-                        }
-                        clinicalSignificances.add(clinicalSignificance.toString());
-                    }
+            List<String> combinations = VariantQueryUtils.buildClinicalCombinations(variantAnnotation);
+            Set<String> source = new HashSet<>();
+//            for (EvidenceEntry evidenceEntry : variantAnnotation.getTraitAssociation()) {
+//                if (evidenceEntry.getSource() != null && StringUtils.isNotEmpty(evidenceEntry.getSource().getName())) {
+//                    clinicalSource.add(evidenceEntry.getSource().getName().toLowerCase());
+//                }
+//                if (evidenceEntry.getVariantClassification() != null) {
+//                    ClinicalSignificance clinicalSignificance = evidenceEntry.getVariantClassification().getClinicalSignificance();
+//                    if (clinicalSignificance != null) {
+//                        if (clinicalSignificance.equals(ClinicalSignificance.VUS)) {
+//                            clinicalSignificance = ClinicalSignificance.uncertain_significance;
+//                        }
+//                        clinicalSignificances.add(clinicalSignificance.toString());
+//                    }
+//                }
+//            }
+
+            for (String combination : combinations) {
+                if (combination.startsWith("cosmic")) {
+                    source.add("cosmic");
+                } else if (combination.startsWith("clinvar")) {
+                    source.add("clinvar");
                 }
             }
-            schema.getClinicalIndexSchema().getClinicalSignificanceField().write(new ArrayList<>(clinicalSignificances), clinicalIndex);
-            schema.getClinicalIndexSchema().getSourceField().write(new ArrayList<>(clinicalSource), clinicalIndex);
+            schema.getClinicalIndexSchema().getSourceField().write(new ArrayList<>(source), clinicalIndex);
+            schema.getClinicalIndexSchema().getClinicalSignificanceField().write(combinations, clinicalIndex);
         }
-        return new AnnotationIndexEntry(b, intergenic, ctIndex.toInt(), btIndex.toInt(), ctBtCombination, popFreq, clinical, clinicalIndex);
+        return new AnnotationIndexEntry(b, intergenic, ctIndex.toInt(), btIndex.toInt(), tfIndex.toInt(),
+                ctBtTfCombination, popFreq, clinical, clinicalIndex);
     }
     protected void addPopFreqIndex(BitBuffer bitBuffer, PopulationFrequency populationFrequency) {
         IndexField<Double> field = schema.getPopFreqIndex()

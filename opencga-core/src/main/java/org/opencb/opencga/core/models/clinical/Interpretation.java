@@ -21,7 +21,9 @@ import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
+import org.opencb.opencga.core.models.panel.Panel;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +33,9 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
     private long studyUid;
     private long uid;
 
+    private List<Panel> panels;
+
+    private InterpretationStats stats;
     private InterpretationInternal internal;
     private int release;
 
@@ -40,17 +45,18 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
 
     public Interpretation(String id, String description, String clinicalAnalysisId, ClinicalAnalyst analyst,
                           List<InterpretationMethod> methods, String creationDate, String modificationDate,
-                          List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings, List<ClinicalComment> comments,
-                          Map<String, Object> attributes) {
-        super(id, "", description, clinicalAnalysisId, analyst, methods, primaryFindings, secondaryFindings, comments, null, creationDate,
-                modificationDate, 0, attributes);
+                          List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings, List<Panel> panels,
+                          List<ClinicalComment> comments, Map<String, Object> attributes) {
+        super(id, "", description, clinicalAnalysisId, analyst, methods, primaryFindings, secondaryFindings, comments, null,
+                creationDate, modificationDate, 0, attributes);
+        this.panels = panels;
     }
 
     public Interpretation(org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation) {
         this(interpretation.getId(), interpretation.getDescription(), interpretation.getClinicalAnalysisId(), interpretation.getAnalyst(),
                 interpretation.getMethods(), interpretation.getCreationDate(), interpretation.getModificationDate(),
-                interpretation.getPrimaryFindings(), interpretation.getSecondaryFindings(), interpretation.getComments(),
-                interpretation.getAttributes());
+                interpretation.getPrimaryFindings(), interpretation.getSecondaryFindings(), Collections.emptyList(),
+                interpretation.getComments(), interpretation.getAttributes());
     }
 
     @Override
@@ -58,6 +64,8 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
         final StringBuilder sb = new StringBuilder("Interpretation{");
         sb.append("studyUid=").append(studyUid);
         sb.append(", uid=").append(uid);
+        sb.append(", panels=").append(panels);
+        sb.append(", stats=").append(stats);
         sb.append(", internal=").append(internal);
         sb.append(", release=").append(release);
         sb.append('}');
@@ -89,6 +97,24 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
     @Override
     public Interpretation setUid(long uid) {
         this.uid = uid;
+        return this;
+    }
+
+    public List<Panel> getPanels() {
+        return panels;
+    }
+
+    public Interpretation setPanels(List<Panel> panels) {
+        this.panels = panels;
+        return this;
+    }
+
+    public InterpretationStats getStats() {
+        return stats;
+    }
+
+    public Interpretation setStats(InterpretationStats stats) {
+        this.stats = stats;
         return this;
     }
 

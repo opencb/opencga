@@ -16,17 +16,25 @@
 
 package org.opencb.opencga.core.models.cohort;
 
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.Internal;
+
 import java.util.Objects;
 
-public class CohortInternal {
+public class CohortInternal extends Internal {
 
     private CohortStatus status;
 
     public CohortInternal() {
     }
 
-    public CohortInternal(CohortStatus status) {
+    public CohortInternal(String registrationDate, String modificationDate, CohortStatus status) {
+        super(null, registrationDate, modificationDate);
         this.status = status;
+    }
+
+    public static CohortInternal init() {
+        return new CohortInternal(TimeUtils.getTime(), TimeUtils.getTime(), new CohortStatus());
     }
 
     @Override

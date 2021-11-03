@@ -650,13 +650,13 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
                         }
                         break;
                     case "ensemblGene":
-                        if (consequenceType.getEnsemblGeneId() != null) {
-                            stringBuilder.append(consequenceType.getEnsemblGeneId());
+                        if (consequenceType.getGeneId() != null) {
+                            stringBuilder.append(consequenceType.getGeneId());
                         }
                         break;
                     case "ensemblTranscript":
-                        if (consequenceType.getEnsemblTranscriptId() != null) {
-                            stringBuilder.append(consequenceType.getEnsemblTranscriptId());
+                        if (consequenceType.getTranscriptId() != null) {
+                            stringBuilder.append(consequenceType.getTranscriptId());
                         }
                         break;
                     case "biotype":

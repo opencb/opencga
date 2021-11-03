@@ -69,8 +69,7 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
 
     protected static void writeCountMap(Map<String, Map<String, Double>> map, File outputFile) throws ToolException {
         double sum = sumFreqMap(map);
-        try {
-            PrintWriter pw = new PrintWriter(outputFile);
+        try (PrintWriter pw = new PrintWriter(outputFile)) {
             pw.println("Substitution Type\tTrinucleotide\tSomatic Mutation Type\tCount\tNormalized Count");
             for (String firstKey : FIRST_LEVEL_KEYS) {
                 String[] secondLevelKeys = firstKey.startsWith("C") ? SECOND_LEVEL_KEYS_C : SECOND_LEVEL_KEYS_T;
@@ -80,7 +79,6 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
                             + (map.get(firstKey).get(secondKey) / sum));
                 }
             }
-            pw.close();
         } catch (Exception e) {
             throw new ToolException("Error writing output file: " + outputFile.getName(), e);
         }

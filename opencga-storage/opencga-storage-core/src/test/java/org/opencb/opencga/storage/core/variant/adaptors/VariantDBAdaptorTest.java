@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
-import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.CoreMatchers;
@@ -48,6 +47,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.filters.VariantFilterBuilder;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,10 +126,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                     .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
             params.putAll(getOtherParams());
             FORMAT = new HashSet<>();
-            if (!params.getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
-                    VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue())) {
-                FORMAT.add("GT");
-            }
+            FORMAT.add("GT");
             FORMAT.addAll(params.getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key()));
 
             StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata, params);
@@ -566,7 +563,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                         hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
                                 with("UniprotName", ProteinVariantAnnotation::getUniprotAccession, is("Q9BY64")))))),
                 hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
-                        hasItem(with("EnsemblGene", ConsequenceType::getEnsemblGeneId, is("ENSG00000250026"))))),
+                        hasItem(with("EnsemblGene", ConsequenceType::getGeneId, is("ENSG00000250026"))))),
                 hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
                         hasItem(with("GeneName", ConsequenceType::getGeneName, is("TMPRSS11B")))))
 //                hasAnnotation(with("VariantTraitAssociation", VariantAnnotation::getVariantTraitAssociation,
@@ -1938,34 +1935,36 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
             if (clinicalSignificance != ClinicalSignificance.pathogenic) {
                 query = new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificance + OR + ClinicalSignificance.pathogenic);
-                queryResult = query(query, new QueryOptions());
-                System.out.println(query.toJson() + " --> " + queryResult.getNumResults());
-                assertThat(queryResult, everyResult(allVariantsSummary,
-                        hasAnnotation(
-                                withClinicalSignificance(
-                                        anyOf(
-                                                hasItem(clinicalSignificance),
-                                                hasItem(ClinicalSignificance.pathogenic)
-                                        )
-                                )
-                        )
-                ));
+                testQuery(query);
 
-                query = new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificance + AND + ClinicalSignificance.pathogenic);
-                queryResult = query(query, new QueryOptions());
-                System.out.println(query.toJson() + " --> " + queryResult.getNumResults());
-                assertThat(queryResult, everyResult(allVariantsSummary,
-                        hasAnnotation(
-                                withClinicalSignificance(
-                                        allOf(
-                                                hasItem(clinicalSignificance),
-                                                hasItem(ClinicalSignificance.pathogenic)
-                                        )
-                                )
-                        )
-                ));
+//                query = new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificance + AND + ClinicalSignificance.pathogenic);
+//                queryResult = query(query, new QueryOptions());
+//                System.out.println(query.toJson() + " --> " + queryResult.getNumResults());
+//                assertThat(queryResult, everyResult(allVariantsSummary,
+//                        hasAnnotation(
+//                                withClinicalSignificance(
+//                                        allOf(
+//                                                hasItem(clinicalSignificance),
+//                                                hasItem(ClinicalSignificance.pathogenic)
+//                                        )
+//                                )
+//                        )
+//                ));
             }
         }
+        testQuery(new Query(ANNOT_CLINICAL.key(), "clinvar;cosmic"));
+        testQuery(new Query(ANNOT_CLINICAL.key(), "clinvar;cosmic").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic,benign"));
+        testQuery(new Query(ANNOT_CLINICAL.key(), "clinvar;cosmic").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true));
+        testQuery(new Query(ANNOT_CLINICAL.key(), "clinvar;cosmic").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true));
+
+        testQuery(new Query(ANNOT_CLINICAL.key(), "clinvar"));
+        testQuery(new Query(ANNOT_CLINICAL.key(), "cosmic"));
+        testQuery(new Query(ANNOT_CLINICAL.key(), "cosmic").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic"));
+        testQuery(new Query(ANNOT_CLINICAL.key(), "clinvar,cosmic").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic,likely_pathogenic"));
+        testQuery(new Query(ANNOT_CLINICAL.key(), "clinvar").append(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true));
+        testQuery(new Query(ANNOT_CLINICAL.key(), "cosmic").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true));
+        testQuery(new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign").append(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true));
+        testQuery(new Query(ANNOT_CLINICAL_CONFIRMED_STATUS.key(), true));
     }
 
     @Test
@@ -1997,7 +1996,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
             QueryOptions queryOptions = new QueryOptions("limit", 1).append("skipCount", false);
             DataResult<Variant> queryResult3 = query(new Query(GENE.key(), id), queryOptions);
-            assertEquals("Count for ID " + id, counts.get(id).longValue(), queryResult3.getNumTotalResults());
+            assertEquals("Count for ID " + id, counts.get(id).longValue(), queryResult3.getNumMatches());
             assertEquals(1, queryResult3.getNumResults());
         }
     }
@@ -2054,7 +2053,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         DataResult<Variant> queryResult;
         long numResults;
 //        numResults = dbAdaptor.count(new Query(STATS_MAF.key(), ">0.2")).first();
-//        System.out.println("queryResult.getNumTotalResults() = " + numResults);
+//        System.out.println("queryResult.getNumMatches() = " + numResults);
 
         queryResult = query(new Query(STATS_MAF.key(), STUDY_NAME + ":" + StudyEntry.DEFAULT_COHORT + ">0.2"), null);
         assertThat(queryResult, everyResult(allVariantsSummary, withStudy(STUDY_NAME, withStats(StudyEntry.DEFAULT_COHORT, withMaf(gt(0.2))))));
@@ -2333,7 +2332,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             assertThat(variant.getStudies(), is(Collections.emptyList()));
             assertNotNull(variant.getAnnotation());
         }
-
     }
 
     @Test
@@ -2364,6 +2362,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         assertEquals("", variant.getStudies().get(0).getSampleDataKeysAsString());
     }
 
+    private void testQuery(Query query) {
+        testQuery(query, new QueryOptions());
+    }
+
+    private void testQuery(Query query, QueryOptions options) {
+        queryResult = query(query, options);
+        System.out.println(query.toJson() + " --> " + queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariantsSummary, withFilter(query)));
+    }
+
+    private Matcher<Variant> withFilter(Query query) {
+        return VariantMatchers.withFilter(new VariantFilterBuilder(metadataManager).buildFilter(query, null), query.toJson());
+    }
 /*
     @Test
     public void testGetAllVariants() {

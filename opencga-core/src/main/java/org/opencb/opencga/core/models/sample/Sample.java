@@ -32,8 +32,8 @@ import java.util.*;
 public class Sample extends Annotable {
 
     /**
-     * Unique Sample ID in the study, this can be repeated across different studies. This is a mandatory parameter in the creation and
-     * cannot be changed at the moment.
+     * Sample ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter
+     * when creating a new sample, this ID cannot be changed at the moment.
      *
      * @apiNote Required, Immutable, Unique
      */
@@ -46,14 +46,32 @@ public class Sample extends Annotable {
      */
     private String uuid;
 
+    /**
+     * Describes how the sample was processed in the lab.
+     */
     private SampleProcessing processing;
+
+    /**
+     * Describes how the sample was collected.
+     *
+     * @apiNote
+     * @implNote The sample collection is a list of samples
+     * @since 2.1
+     */
     private SampleCollection collection;
 
+    /**
+     * Contains different metrics to evaluate the quality of the sample.
+     *
+     * @apiNote
+     * @implNote The sample collection is a list of samples
+     * @see [ZetaGenomics] (https://www.zettagenomics.com)
+     * @since 2.1
+     */
     private SampleQualityControl qualityControl;
 
     /**
-     * Generic: Release when the entry was registered in OpenCGA. This matches with the currentRelease value of the project this entry
-     * belongs to.
+     * An integer describing the current data release.
      *
      * @apiNote Immutable
      */
@@ -85,6 +103,12 @@ public class Sample extends Annotable {
      * Generic: Users may provide a description for the entry.
      */
     private String description;
+
+    /**
+     * Indicates if the sample is somatic or germline (default)
+     *
+     * @apiNote
+     */
     private boolean somatic;
     private List<Phenotype> phenotypes;
 
@@ -122,29 +146,30 @@ public class Sample extends Annotable {
                 new CustomStatus(), null, new LinkedList<>(), new HashMap<>());
     }
 
-    public Sample(String id, String individualId, SampleProcessing processing, SampleCollection collection, int release, int version,
-                  String description, boolean somatic, List<Phenotype> phenotypes, List<AnnotationSet> annotationSets, CustomStatus status,
-                  SampleInternal internal, Map<String, Object> attributes) {
-        this(id, null, processing, collection, release, version, "", "", description, somatic, phenotypes, individualId, new LinkedList<>(),
-                status, internal, annotationSets, attributes);
+    public Sample(String id, String creationDate, String modificationDate, String individualId, SampleProcessing processing,
+                  SampleCollection collection, int release, int version, String description, boolean somatic, List<Phenotype> phenotypes,
+                  List<AnnotationSet> annotationSets, CustomStatus status, SampleInternal internal, Map<String, Object> attributes) {
+        this(id, null, processing, collection, release, version, creationDate, modificationDate, description, somatic, phenotypes,
+                individualId, new LinkedList<>(), status, internal, annotationSets, attributes);
     }
 
     public Sample(String id, String uuid, SampleProcessing processing, SampleCollection collection, int release, int version,
                   String creationDate, String modificationDate, String description, boolean somatic, List<Phenotype> phenotypes,
                   String individualId, List<String> fileIds, CustomStatus status, SampleInternal internal,
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, uuid, processing, collection, release, version, creationDate, modificationDate, description, somatic,
-                phenotypes, individualId, Collections.emptyList(), fileIds, status, internal, annotationSets, attributes);
+        this(id, uuid, processing, collection, null, release, version, creationDate, modificationDate, description,
+                somatic, phenotypes, individualId, Collections.emptyList(), fileIds, status, internal, annotationSets, attributes);
     }
 
-    public Sample(String id, String uuid, SampleProcessing processing, SampleCollection collection, int release, int version,
-                  String creationDate, String modificationDate, String description, boolean somatic, List<Phenotype> phenotypes,
-                  String individualId, List<String> cohortIds, List<String> fileIds, CustomStatus status, SampleInternal internal,
-                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public Sample(String id, String uuid, SampleProcessing processing, SampleCollection collection, SampleQualityControl qualityControl,
+                  int release, int version, String creationDate, String modificationDate, String description, boolean somatic,
+                  List<Phenotype> phenotypes, String individualId, List<String> cohortIds, List<String> fileIds, CustomStatus status,
+                  SampleInternal internal, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
         this.processing = processing;
         this.collection = collection;
+        this.qualityControl = qualityControl;
         this.release = release;
         this.version = version;
         this.creationDate = creationDate;

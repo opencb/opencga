@@ -347,7 +347,6 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty("fileName", commandOptions.fileName);
         params.putIfNotEmpty("file", commandOptions.inputFile);
 
-
         return openCGAClient.getFileClient().upload(params);
     }
 
@@ -489,6 +488,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty("study", commandOptions.study);
+        addJobParams(commandOptions.jobOptions, params);
 
         FileFetch data = new FileFetch(commandOptions.url, commandOptions.path);
 

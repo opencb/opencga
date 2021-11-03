@@ -46,7 +46,7 @@ public abstract class OpenCgaToolScopeStudy extends OpenCgaTool {
     }
 
     protected final String getStudyFqn() throws CatalogException {
-        return getCatalogManager().getStudyManager().get(getParams().getString(ParamConstants.STUDY_PARAM), StudyManager.INCLUDE_STUDY_ID,
+        return getCatalogManager().getStudyManager().get(getParams().getString(ParamConstants.STUDY_PARAM), StudyManager.INCLUDE_STUDY_IDS,
                 getToken()).first().getFqn();
     }
 

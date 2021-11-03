@@ -16,27 +16,29 @@
 
 package org.opencb.opencga.core.models.individual;
 
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.Status;
 
-public class IndividualInternal {
-
-    private Status status;
+public class IndividualInternal extends Internal {
 
     public IndividualInternal() {
     }
 
-    public IndividualInternal(Status status) {
-        this.status = status;
+    public IndividualInternal(Status status, String registrationDate, String modificationDate) {
+        super(status, registrationDate, modificationDate);
     }
 
     public static IndividualInternal init() {
-        return new IndividualInternal(new Status(Status.READY));
+        return new IndividualInternal(new Status(Status.READY), TimeUtils.getTime(), TimeUtils.getTime());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualInternal{");
         sb.append("status=").append(status);
+        sb.append(", registrationDate='").append(registrationDate).append('\'');
+        sb.append(", modificationDate='").append(lastModified).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -47,6 +49,24 @@ public class IndividualInternal {
 
     public IndividualInternal setStatus(Status status) {
         this.status = status;
+        return this;
+    }
+
+    public String getRegistrationDate() {
+        return registrationDate;
+    }
+
+    public IndividualInternal setRegistrationDate(String registrationDate) {
+        this.registrationDate = registrationDate;
+        return this;
+    }
+
+    public String getLastModified() {
+        return lastModified;
+    }
+
+    public IndividualInternal setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 

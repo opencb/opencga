@@ -24,7 +24,6 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -37,14 +36,16 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
-import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.*;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.Variable;
@@ -178,11 +179,21 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             ParamUtils.checkIdentifier(cohortParams.getId(), "id");
 
             if (CollectionUtils.isNotEmpty(cohortParams.getSamples())) {
-                List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), cohortParams.getSamples(),
+                List<String> sampleIds = new ArrayList<>(cohortParams.getSamples().size());
+                for (SampleReferenceParam sample : cohortParams.getSamples()) {
+                    if (StringUtils.isNotEmpty(sample.getId())) {
+                        sampleIds.add(sample.getId());
+                    } else if (StringUtils.isNotEmpty(sample.getUuid())) {
+                        sampleIds.add(sample.getUuid());
+                    } else {
+                        throw new CatalogParameterException("Found samples with missing id and uuid.");
+                    }
+                }
+                List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), sampleIds,
                         SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
-                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(), sampleList, 0,
-                        cohortParams.getAnnotationSets(), 1,
-                        cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
+                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
+                        cohortParams.getModificationDate(), cohortParams.getDescription(), sampleList, 0, cohortParams.getAnnotationSets(),
+                        1, cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
                         cohortParams.getAttributes()));
 
             } else if (StringUtils.isNotEmpty(variableSetId)) {
@@ -219,15 +230,17 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                             new Query(Constants.ANNOTATION, variableSetId + ":" + variableId + "=" + value),
                             SampleManager.INCLUDE_SAMPLE_IDS, token);
 
-                    cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(),
-                            sampleResults.getResults(), 0, cohortParams.getAnnotationSets(), 1,
+                    cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
+                            cohortParams.getModificationDate(), cohortParams.getDescription(), sampleResults.getResults(), 0,
+                            cohortParams.getAnnotationSets(), 1,
                             cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
                             cohortParams.getAttributes()));
                 }
             } else {
                 //Create empty cohort
-                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(),
-                        Collections.emptyList(), cohortParams.getAnnotationSets(), -1, null));
+                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
+                        cohortParams.getModificationDate(), cohortParams.getDescription(), Collections.emptyList(),
+                        cohortParams.getAnnotationSets(), -1, null));
             }
         } catch (CatalogException e) {
             auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, "", "", study.getId(),
@@ -352,14 +365,15 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         ParamUtils.checkParameter(cohort.getId(), "id");
         ParamUtils.checkObj(cohort.getSamples(), "Sample list");
         cohort.setType(ParamUtils.defaultObject(cohort.getType(), Enums.CohortType.COLLECTION));
-        cohort.setCreationDate(TimeUtils.getTime());
-        cohort.setModificationDate(TimeUtils.getTime());
+        cohort.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(cohort.getCreationDate(),
+                CohortDBAdaptor.QueryParams.CREATION_DATE.key()));
+        cohort.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(cohort.getModificationDate(),
+                CohortDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         cohort.setDescription(ParamUtils.defaultString(cohort.getDescription(), ""));
         cohort.setAnnotationSets(ParamUtils.defaultObject(cohort.getAnnotationSets(), Collections::emptyList));
         cohort.setAttributes(ParamUtils.defaultObject(cohort.getAttributes(), HashMap::new));
         cohort.setRelease(studyManager.getCurrentRelease(study));
-        cohort.setInternal(ParamUtils.defaultObject(cohort.getInternal(), CohortInternal::new));
-        cohort.getInternal().setStatus(ParamUtils.defaultObject(cohort.getInternal().getStatus(), CohortStatus::new));
+        cohort.setInternal(CohortInternal.init());
         cohort.setSamples(ParamUtils.defaultObject(cohort.getSamples(), Collections::emptyList));
         cohort.setStatus(ParamUtils.defaultObject(cohort.getStatus(), CustomStatus::new));
         cohort.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.COHORT));
@@ -503,15 +517,16 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);
+        changeQueryId(query, ParamConstants.COHORT_INTERNAL_STATUS_PARAM, CohortDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
 
-        if (query.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())) {
+        if (query.containsKey(ParamConstants.COHORT_SAMPLES_PARAM)) {
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
 
             // First look for the sample ids.
             List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(),
-                    query.getAsStringList(CohortDBAdaptor.QueryParams.SAMPLES.key()), SampleManager.INCLUDE_SAMPLE_IDS, userId, true)
+                            query.getAsStringList(ParamConstants.COHORT_SAMPLES_PARAM), SampleManager.INCLUDE_SAMPLE_IDS, userId, true)
                     .getResults();
-            if (ListUtils.isNotEmpty(sampleList)) {
+            if (CollectionUtils.isNotEmpty(sampleList)) {
                 query.append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleList.stream().map(Sample::getUid)
                         .collect(Collectors.toList()));
             } else {
@@ -519,7 +534,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 query.append(CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), -1);
             }
 
-            query.remove(CohortDBAdaptor.QueryParams.SAMPLES.key());
+            query.remove(ParamConstants.COHORT_SAMPLES_PARAM);
         }
     }
 
@@ -827,13 +842,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     /**
      * Update a Cohort from catalog.
      *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param cohortIds  List of cohort ids. Could be either the id or uuid.
-     * @param updateParams Data model filled only with the parameters to be updated.
+     * @param studyStr             Study id in string format. Could be one of [studyId|projectId:studyId|user@projectId:studyId].
+     * @param cohortIds            List of cohort ids. Could be either the id or uuid.
+     * @param updateParams         Data model filled only with the parameters to be updated.
      * @param allowModifyCohortAll Boolean indicating whether we should not raise an exception if the cohort ALL is to be updated.
-     * @param ignoreException Boolean indicating whether to ignore the exception in case of an error.
-     * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
+     * @param ignoreException      Boolean indicating whether to ignore the exception in case of an error.
+     * @param options              QueryOptions object.
+     * @param token                Session id of the user logged in.
      * @return A list of DataResults with the object updated.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
@@ -901,11 +916,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     /**
      * Update a Cohort from catalog.
      *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param query  Query object.
+     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param query        Query object.
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
+     * @param token        Session id of the user logged in.
      * @return A OpenCGAResult with the object updated.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
@@ -980,6 +995,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                                          QueryOptions options, String userId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
+        if (StringUtils.isNotEmpty(updateParams.getCreationDate())) {
+            ParamUtils.checkDateFormat(updateParams.getCreationDate(), CohortDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (StringUtils.isNotEmpty(updateParams.getModificationDate())) {
+            ParamUtils.checkDateFormat(updateParams.getModificationDate(), CohortDBAdaptor.QueryParams.MODIFICATION_DATE.key());
+        }
+
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {
             try {
@@ -1034,14 +1056,23 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     break;
             }
 
-            if (ListUtils.isNotEmpty(updateParams.getSamples())) {
+            if (CollectionUtils.isNotEmpty(updateParams.getSamples())) {
                 // Remove possible duplications
-                updateParams.setSamples(updateParams.getSamples().stream().distinct().collect(Collectors.toList()));
+                Set<String> sampleIds = new HashSet<>(updateParams.getSamples().size());
+                for (SampleReferenceParam sample : updateParams.getSamples()) {
+                    if (StringUtils.isNotEmpty(sample.getId())) {
+                        sampleIds.add(sample.getId());
+                    } else if (StringUtils.isNotEmpty(sample.getUuid())) {
+                        sampleIds.add(sample.getUuid());
+                    } else {
+                        throw new CatalogParameterException("Found samples with missing id and uuid.");
+                    }
+                }
 
                 InternalGetDataResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(),
-                        updateParams.getSamples(), SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
+                        new ArrayList<>(sampleIds), SampleManager.INCLUDE_SAMPLE_IDS, userId, false);
 
-                if (sampleResult.getNumResults() != updateParams.getSamples().size()) {
+                if (sampleResult.getNumResults() != sampleIds.size()) {
                     throw new CatalogException("Could not find all the samples introduced. Update was not performed.");
                 }
 

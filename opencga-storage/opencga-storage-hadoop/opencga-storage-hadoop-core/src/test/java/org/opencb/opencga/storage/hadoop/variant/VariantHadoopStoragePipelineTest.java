@@ -154,7 +154,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
                 if (geneName != null) {
                     genesInVariant.add(geneName);
                 }
-                geneName = consequenceType.getEnsemblGeneId();
+                geneName = consequenceType.getGeneId();
                 if (geneName != null) {
                     genesInVariant.add(geneName);
                 }

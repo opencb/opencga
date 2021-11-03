@@ -32,7 +32,7 @@ import java.util.Map;
  */
 public class VariantSearchModel {
 
-    @Field
+    @Field("id")
     private String id;
 
     @Field("variantId")
@@ -539,4 +539,5 @@ public class VariantSearchModel {
         this.fileInfo = fileInfo;
         return this;
     }
+
 }

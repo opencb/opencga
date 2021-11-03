@@ -1802,6 +1802,20 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
+    public void clearCaches() {
+        sampleIdCache.clear();
+        sampleNameCache.clear();
+        sampleIdIndexedCache.clear();
+        sampleIdsFromFileIdCache.clear();
+        splitDataCache.clear();
+        fileIdCache.clear();
+        fileNameCache.clear();
+        fileIdIndexedCache.clear();
+        fileIdsFromSampleIdCache.clear();
+        cohortIdCache.clear();
+        cohortNameCache.clear();
+    }
+
     @Override
     public void close() throws IOException {
         studyDBAdaptor.close();

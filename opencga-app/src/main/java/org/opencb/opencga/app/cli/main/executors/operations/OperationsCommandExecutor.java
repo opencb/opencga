@@ -10,12 +10,11 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
-import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.variant.VariantStatsIndexParams;
+import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
@@ -41,14 +40,23 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing variant command line");
 
         String subCommandString = getParsedSubCommand(operationsCommandOptions.jCommander);
-        RestResponse queryResponse = null;
+        RestResponse<?> queryResponse = null;
         switch (subCommandString) {
+            case CELLBASE_CONFIGURE:
+                queryResponse = cellbaseConfigure();
+                break;
             case VARIANT_CONFIGURE:
                 queryResponse = variantConfigure();
                 break;
-//            case VARIANT_INDEX:
-//                queryResponse = variantIndex();
-//                break;
+            case VARIANT_INDEX:
+                queryResponse = variantIndex();
+                break;
+            case VARIANT_DELETE:
+                queryResponse = variantFileDelete();
+                break;
+            case VARIANT_SAMPLE_DELETE:
+                queryResponse = variantSampleDelete();
+                break;
             case VARIANT_INDEX_LAUNCHER:
                 queryResponse = variantIndexLauncher();
                 break;
@@ -106,12 +114,79 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
+    private RestResponse<Job> cellbaseConfigure() throws ClientException {
+        OperationsCommandOptions.CellbaseConfigureCommandOptions cliOptions = operationsCommandOptions.cellbaseConfigure;
+
+        ObjectMap params = getParams(cliOptions.project, null);
+        params.put("annotationUpdate", cliOptions.annotationUpdate);
+        params.putIfNotNull("annotationSaveId", cliOptions.annotationSaveId);
+        return openCGAClient.getVariantOperationClient().configureCellbase(
+                new CellBaseConfiguration(cliOptions.url, cliOptions.version),
+                params);
+    }
+
+
     private RestResponse<ObjectMap> variantConfigure() throws ClientException {
         OperationsCommandOptions.VariantConfigureCommandOptions cliOptions = operationsCommandOptions.variantConfigure;
 
         ObjectMap params = getParams(cliOptions.project, cliOptions.study);
 
         return openCGAClient.getVariantOperationClient().configureVariant(new ObjectMap(cliOptions.commonOptions.params), params);
+    }
+
+    private RestResponse<Job> variantIndex() throws ClientException {
+        OperationsCommandOptions.VariantIndexCommandOptions cliOptions = operationsCommandOptions.variantIndex;
+        return openCGAClient.getVariantOperationClient().indexVariant(
+                new VariantIndexParams(
+                        cliOptions.fileId,
+                        cliOptions.genericVariantIndexOptions.resume,
+                        null,
+                        cliOptions.genericVariantIndexOptions.transform,
+                        cliOptions.genericVariantIndexOptions.gvcf,
+                        cliOptions.genericVariantIndexOptions.normalizationSkip,
+                        cliOptions.genericVariantIndexOptions.referenceGenome,
+                        cliOptions.genericVariantIndexOptions.family,
+                        cliOptions.genericVariantIndexOptions.somatic,
+                        cliOptions.genericVariantIndexOptions.load,
+                        cliOptions.genericVariantIndexOptions.loadSplitData,
+                        cliOptions.genericVariantIndexOptions.loadMultiFileData,
+                        cliOptions.genericVariantIndexOptions.loadSampleIndex,
+                        cliOptions.genericVariantIndexOptions.loadArchive,
+                        cliOptions.genericVariantIndexOptions.loadHomRef,
+                        cliOptions.genericVariantIndexOptions.postLoadCheck,
+                        cliOptions.genericVariantIndexOptions.includeGenotype,
+                        cliOptions.genericVariantIndexOptions.includeSampleData,
+                        cliOptions.genericVariantIndexOptions.merge,
+                        cliOptions.genericVariantIndexOptions.deduplicationPolicy,
+                        cliOptions.genericVariantIndexOptions.calculateStats,
+                        cliOptions.genericVariantIndexOptions.aggregated,
+                        cliOptions.genericVariantIndexOptions.aggregationMappingFile,
+                        cliOptions.genericVariantIndexOptions.annotate,
+                        cliOptions.genericVariantIndexOptions.annotator,
+                        cliOptions.genericVariantIndexOptions.overwriteAnnotations,
+                        cliOptions.genericVariantIndexOptions.indexSearch,
+                        cliOptions.skipIndexedFiles),
+                getParams(cliOptions));
+    }
+
+    private RestResponse<Job> variantFileDelete() throws ClientException {
+        OperationsCommandOptions.VariantFileDeleteCommandOptions cliOptions = operationsCommandOptions.variantFileDelete;
+
+        return openCGAClient.getVariantOperationClient().deleteVariant(
+                new VariantFileDeleteParams(
+                        cliOptions.genericVariantDeleteOptions.file,
+                        cliOptions.genericVariantDeleteOptions.resume),
+                getParams(cliOptions));
+    }
+
+    private RestResponse<Job> variantSampleDelete() throws ClientException {
+        OperationsCommandOptions.VariantSampleDeleteCommandOptions cliOptions = operationsCommandOptions.variantSampleDelete;
+
+        return openCGAClient.getVariantOperationClient().deleteVariantSample(
+                new VariantSampleDeleteParams(
+                        cliOptions.sample,
+                        cliOptions.resume),
+                getParams(cliOptions));
     }
 
     private RestResponse<Job> variantIndexLauncher() throws ClientException {
@@ -156,7 +231,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                         cliOptions.overwrite), params);
     }
 
-    private RestResponse variantSecondaryIndexDelete() throws ClientException {
+    private RestResponse<Job> variantSecondaryIndexDelete() throws ClientException {
         OperationsCommandOptions.VariantSecondaryIndexDeleteCommandOptions cliOptions = operationsCommandOptions.variantSecondaryIndexDelete;
 
         ObjectMap params = getParams(cliOptions)
@@ -186,7 +261,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantOperationClient().indexVariantAnnotation(body, params);
     }
 
-    private RestResponse variantAnnotationSave() throws ClientException {
+    private RestResponse<Job> variantAnnotationSave() throws ClientException {
         OperationsCommandOptions.VariantAnnotationSaveCommandOptions cliOptions = operationsCommandOptions.variantAnnotationSave;
 
         ObjectMap params = getParams(cliOptions.project, null);
@@ -194,7 +269,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantOperationClient().saveVariantAnnotation(new VariantAnnotationSaveParams(cliOptions.annotationId), params);
     }
 
-    private RestResponse variantAnnotationDelete() throws ClientException {
+    private RestResponse<Job> variantAnnotationDelete() throws ClientException {
         OperationsCommandOptions.VariantAnnotationDeleteCommandOptions cliOptions = operationsCommandOptions.variantAnnotationDelete;
 
         ObjectMap params = getParams(cliOptions.project, null)
@@ -203,7 +278,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantOperationClient().deleteVariantAnnotation(params);
     }
 
-    private RestResponse variantScoreIndex() throws ClientException {
+    private RestResponse<Job> variantScoreIndex() throws ClientException {
         OperationsCommandOptions.VariantScoreIndexCommandOptions cliOptions = operationsCommandOptions.variantScoreIndex;
 
         ObjectMap params = getParams(cliOptions.study);
@@ -219,7 +294,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 ), params);
     }
 
-    private RestResponse variantScoreDelete() throws ClientException {
+    private RestResponse<Job> variantScoreDelete() throws ClientException {
         OperationsCommandOptions.VariantScoreDeleteCommandOptions cliOptions = operationsCommandOptions.variantScoreDelete;
 
         ObjectMap params = getParams(cliOptions.study)
@@ -262,14 +337,19 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         OperationsCommandOptions.VariantSampleIndexConfigureCommandOptions cliOptions = operationsCommandOptions.variantSampleIndexConfigure;
 
         ObjectMap params = getParams(cliOptions);
+        params.put("skipRebuild", cliOptions.skipRebuild);
 
-
-        Path sampleIndexFile = Paths.get(cliOptions.sampleIndex);
-        if (!sampleIndexFile.toFile().exists()) {
-            throw new IOException("File '" + sampleIndexFile + "' not found!");
+        SampleIndexConfiguration sampleIndex;
+        if (cliOptions.sampleIndex.equals("default")) {
+            sampleIndex = SampleIndexConfiguration.defaultConfiguration();
+        } else {
+            Path sampleIndexFile = Paths.get(cliOptions.sampleIndex);
+            if (!sampleIndexFile.toFile().exists()) {
+                throw new IOException("File '" + sampleIndexFile + "' not found!");
+            }
+            sampleIndex = JacksonUtils.getDefaultObjectMapper().readValue(sampleIndexFile.toFile(),
+                    SampleIndexConfiguration.class);
         }
-        SampleIndexConfiguration sampleIndex = JacksonUtils.getDefaultObjectMapper().readValue(sampleIndexFile.toFile(),
-                SampleIndexConfiguration.class);
 
         return openCGAClient.getVariantOperationClient().configureSampleIndex(sampleIndex, params);
     }

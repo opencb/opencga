@@ -16,10 +16,13 @@
 
 package org.opencb.opencga.core.models.file;
 
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.Internal;
+
 import java.util.HashMap;
 import java.util.Map;
 
-public class FileInternal {
+public class FileInternal extends Internal {
 
     private FileStatus status;
     private FileIndex index;
@@ -29,19 +32,18 @@ public class FileInternal {
     public FileInternal() {
     }
 
-    public FileInternal(Map<String, String> sampleMap) {
-        this.sampleMap = sampleMap;
-    }
-
-    public FileInternal(FileStatus status, FileIndex index, Map<String, String> sampleMap, MissingSamples missingSamples) {
+    public FileInternal(String registrationDate, String modificationDate, FileStatus status, FileIndex index, Map<String, String> sampleMap,
+                        MissingSamples missingSamples) {
+        super(null, registrationDate, modificationDate);
         this.status = status;
         this.index = index;
         this.sampleMap = sampleMap;
         this.missingSamples = missingSamples;
     }
 
-    public static FileInternal initialize() {
-        return new FileInternal(new FileStatus(FileStatus.READY), FileIndex.initialize(), new HashMap<>(), MissingSamples.initialize());
+    public static FileInternal init() {
+        return new FileInternal(TimeUtils.getTime(), TimeUtils.getTime(), new FileStatus(FileStatus.READY), FileIndex.initialize(),
+                new HashMap<>(), MissingSamples.initialize());
     }
 
     @Override

@@ -1,9 +1,9 @@
 package org.opencb.opencga.app.cli.main.options;
 
 import com.beust.jcommander.*;
+import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.opencga.analysis.variant.operations.VariantFileIndexJobLauncherTool;
-import org.opencb.opencga.analysis.variant.operations.VariantStatsIndexOperationTool;
+import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GenericJulieRunCommandOptions;
@@ -23,13 +23,19 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAggregateCommandOptions.AGGREGATE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND_DESCRIPTION;
 
 @Parameters(commandNames = {OperationsCommandOptions.OPERATIONS_COMMAND}, commandDescription = "Operations commands")
 public class OperationsCommandOptions {
 
     public static final String OPERATIONS_COMMAND = "operations";
 
+    public static final String CELLBASE_CONFIGURE = "cellbase-configure";
     public static final String VARIANT_CONFIGURE = "variant-configure";
+    public static final String VARIANT_INDEX = "variant-index";
+    public static final String VARIANT_DELETE = "variant-delete";
+    public static final String VARIANT_SAMPLE_DELETE = "variant-sample-delete";
     public static final String VARIANT_INDEX_LAUNCHER = "variant-index-launcher";
 
     public static final String VARIANT_STATS_INDEX = "variant-stats-index";
@@ -51,7 +57,11 @@ public class OperationsCommandOptions {
     public static final String VARIANT_FAMILY_AGGREGATE = "variant-family-aggregate";
     public static final String VARIANT_AGGREGATE = "variant-aggregate";
 
+    public final CellbaseConfigureCommandOptions cellbaseConfigure;
     public final VariantConfigureCommandOptions variantConfigure;
+    public final VariantIndexCommandOptions variantIndex;
+    public final VariantFileDeleteCommandOptions variantFileDelete;
+    public final VariantSampleDeleteCommandOptions variantSampleDelete;
     public final VariantIndexLauncherCommandOptions variantIndexLauncher;
 
     public final VariantStatsIndexCommandOptions variantStatsIndex;
@@ -93,7 +103,11 @@ public class OperationsCommandOptions {
         this.jCommander = jCommander;
         commonJobOptions = new GeneralCliOptions.JobOptions();
 
+        cellbaseConfigure = new CellbaseConfigureCommandOptions();
         variantConfigure = new VariantConfigureCommandOptions();
+        variantIndex = new VariantIndexCommandOptions();
+        variantFileDelete = new VariantFileDeleteCommandOptions();
+        variantSampleDelete = new VariantSampleDeleteCommandOptions();
         variantIndexLauncher = new VariantIndexLauncherCommandOptions();
         variantStatsIndex = new VariantStatsIndexCommandOptions();
         variantSecondaryIndex = new VariantSecondaryIndexCommandOptions();
@@ -111,14 +125,100 @@ public class OperationsCommandOptions {
         julieRun = new JulieRunCommandOptions();
     }
 
+    @Parameters(commandNames = CELLBASE_CONFIGURE,
+            commandDescription = "Update Cellbase configuration for one specific project")
+    public class CellbaseConfigureCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC)
+        public String project;
+
+        @Parameter(names = {"--cellbase-url"}, required = true, description = "New CellBase url")
+        public String url;
+
+        @Parameter(names = {"--cellbase-version"}, required = true, description = "New CellBase version")
+        public String version;
+
+        @Parameter(names = {"--annotation-update"}, description = "Create and load variant annotations into the database.")
+        public boolean annotationUpdate;
+
+        @Parameter(names = {"--annotation-save-id"}, description = "Save a copy of the current variant annotation at the database.")
+        public String annotationSaveId;
+    }
+
     @Parameters(commandNames = {VARIANT_CONFIGURE}, commandDescription = "Modify variant storage configuration")
     public class VariantConfigureCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-p", "--project"}, description = "Project to index.", arity = 1)
+        @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
         public String project;
+    }
+
+    @Parameters(commandNames = {VARIANT_INDEX}, commandDescription = VariantIndexOperationTool.DESCRIPTION)
+    public class VariantIndexCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GenericVariantIndexOptions genericVariantIndexOptions = new GenericVariantIndexOptions();
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+
+        @Parameter(names = {"--file"}, description = "List of files to be indexed.", required = true, arity = 1)
+        public String fileId = null;
+
+        @Parameter(names = {"--skip-indexed-files"}, description = "Do not fail if any of the input files was already indexed.")
+        public boolean skipIndexedFiles;
+
+//        @Parameter(names = {"--transformed-files"}, description = "CSV of paths corresponding to the location of the transformed files.",
+//                arity = 1)
+//        public String transformedPaths = null;
+//
+//        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
+//        public String outdir = null;
+//
+//        @Parameter(names = {"--stdin"}, description = "Read the variants file from the standard input")
+//        public boolean stdin;
+//
+//        @Parameter(names = {"--stdout"}, description = "Write the transformed variants file to the standard output")
+//        public boolean stdout;
+
+    }
+
+    @Parameters(commandNames = {VARIANT_DELETE}, commandDescription = VariantFileDeleteOperationTool.DESCRIPTION)
+    public class VariantFileDeleteCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GenericVariantDeleteOptions genericVariantDeleteOptions = new GenericVariantDeleteOptions();
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+    }
+
+    @Parameters(commandNames = {VARIANT_SAMPLE_DELETE}, commandDescription = VariantSampleDeleteOperationTool.DESCRIPTION)
+    public class VariantSampleDeleteCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @Parameter(names = {"--sample"}, description = "Samples to be removed from storage. Type 'all' to remove the whole study",
+                required = true)
+        public List<String> sample = null;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
+        public boolean resume;
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
     }
 
     @Parameters(commandNames = {VARIANT_INDEX_LAUNCHER}, commandDescription = VariantFileIndexJobLauncherTool.DESCRIPTION)
@@ -317,8 +417,12 @@ public class OperationsCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--sample-index-configuration-file"}, required = true, description = "File containing the new SampleIndexConfiguration to upload in JSON format.")
+        @Parameter(names = {"--sample-index-configuration-file"}, required = true, description
+                = "File containing the new SampleIndexConfiguration to upload in JSON format.")
         public String sampleIndex;
+
+        @Parameter(names = {"--skip-rebuild"}, arity = 0, description = "Do not launch sample index rebuild jobs.")
+        public boolean skipRebuild;
     }
 
     @Parameters(commandNames = {VARIANT_FAMILY_INDEX}, commandDescription = FAMILY_INDEX_COMMAND_DESCRIPTION)

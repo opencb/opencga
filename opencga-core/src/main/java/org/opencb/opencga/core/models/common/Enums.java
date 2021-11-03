@@ -112,6 +112,7 @@ public final class Enums {
         GENERATE,
         CLEAR,
         UPDATE,
+        UPDATE_INTERNAL,
         MERGE,
         INFO,
         SEARCH,
@@ -151,6 +152,10 @@ public final class Enums {
         DELETE_VARIABLE_SET,
         ADD_VARIABLE_TO_VARIABLE_SET,
         REMOVE_VARIABLE_FROM_VARIABLE_SET,
+
+        UPLOAD_TEMPLATE,
+        RUN_TEMPLATE,
+        DELETE_TEMPLATE,
 
         AGGREGATION_STATS,
 

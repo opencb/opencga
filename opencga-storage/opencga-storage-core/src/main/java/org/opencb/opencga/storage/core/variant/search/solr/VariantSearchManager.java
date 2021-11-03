@@ -16,8 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.search.solr;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -26,46 +25,38 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.core.result.CellBaseDataResponse;
 import org.opencb.commons.ProgressLogger;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
+import org.opencb.opencga.storage.core.variant.search.VariantToSolrBeanConverterTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -76,10 +67,11 @@ public class VariantSearchManager {
 
     private SolrManager solrManager;
     private CellBaseClient cellBaseClient;
+    private final ObjectMap options;
     private SolrQueryParser solrQueryParser;
-    private StorageConfiguration storageConfiguration;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
-    private int insertBatchSize;
+    private final int insertBatchSize;
+    private final String configSet;
 
     private Logger logger;
 
@@ -88,12 +80,14 @@ public class VariantSearchManager {
     public static final String USE_SEARCH_INDEX = "useSearchIndex";
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
 
-    public VariantSearchManager(VariantStorageMetadataManager variantStorageMetadataManager, StorageConfiguration storageConfiguration) {
-        this.storageConfiguration = storageConfiguration;
+    public VariantSearchManager(VariantStorageMetadataManager variantStorageMetadataManager,
+                                StorageConfiguration storageConfiguration, ObjectMap options) {
 
         this.solrQueryParser = new SolrQueryParser(variantStorageMetadataManager);
         this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
+        this.options = options;
         this.variantSearchToVariantConverter = new VariantSearchToVariantConverter();
+        this.configSet = storageConfiguration.getSearch().getConfigSet();
 
         this.solrManager = new SolrManager(storageConfiguration.getSearch().getHosts(), storageConfiguration.getSearch().getMode(),
                 storageConfiguration.getSearch().getTimeout());
@@ -112,7 +106,7 @@ public class VariantSearchManager {
 
     public void create(String dbName) throws VariantSearchException {
         try {
-            solrManager.create(dbName, this.storageConfiguration.getSearch().getConfigSet());
+            solrManager.create(dbName, configSet);
         } catch (SolrException e) {
             throw new VariantSearchException("Error creating Solr collection '" + dbName + "'", e);
         }
@@ -189,80 +183,43 @@ public class VariantSearchManager {
     }
 
     /**
-     * Load a Solr core/collection from a Avro or JSON file.
-     *
-     * @param collection Collection name
-     * @param uri        Path to the file to load
-     * @param variantReaderUtils Variant reader utils
-     * @throws VariantSearchException VariantSearchException
-     * @throws IOException            IOException
-     */
-    public void load(String collection, URI uri, VariantReaderUtils variantReaderUtils) throws VariantSearchException, IOException {
-        // TODO: can we use VariantReaderUtils as implemented in the function load00 below ?
-        // TODO: VarriantReaderUtils supports JSON, AVRO and VCF file formats.
-
-        String fileName = UriUtils.fileName(uri);
-        if (fileName.endsWith("json") || fileName.endsWith("json.gz")) {
-            try {
-                loadJson(collection, uri, variantReaderUtils);
-            } catch (SolrServerException e) {
-                throw new VariantSearchException("Error loading variants from JSON file.", e);
-            }
-        } else if (fileName.endsWith("avro") || fileName.endsWith("avro.gz")) {
-            try {
-                loadAvro(collection, uri, variantReaderUtils);
-            } catch (StorageEngineException | SolrServerException e) {
-                throw new VariantSearchException("Error loading variants from AVRO file.", e);
-            }
-        } else {
-            throw new VariantSearchException("File format " + uri + " not supported. Please, use Avro or JSON file formats.");
-        }
-    }
-
-    /**
      * Load a Solr core/collection from a variant DB iterator.
      *
      * @param collection        Collection name
      * @param variantDBIterator Iterator to retrieve the variants to load
-     * @param progressLogger    Progress logger
-     * @param loadListener      Load listener
+     * @param writer Data Writer
      * @return VariantSearchLoadResult
      * @throws VariantSearchException VariantSearchException
      */
-    public VariantSearchLoadResult load(String collection, VariantDBIterator variantDBIterator, ProgressLogger progressLogger,
-                                        VariantSearchLoadListener loadListener) throws VariantSearchException {
+    public VariantSearchLoadResult load(String collection,
+                                        VariantDBIterator variantDBIterator,
+                                        SolrInputDocumentDataWriter writer)
+            throws VariantSearchException {
         if (variantDBIterator == null) {
             throw new VariantSearchException("Missing variant DB iterator when loading Solr variant collection");
         }
+        getSolrManager().checkExists(collection);
 
-        AtomicInteger count = new AtomicInteger();
-        AtomicInteger numLoadedVariants = new AtomicInteger();
+        int batchSize = options.getInt(
+                VariantStorageOptions.SEARCH_LOAD_BATCH_SIZE.key(),
+                VariantStorageOptions.SEARCH_LOAD_BATCH_SIZE.defaultValue());
+        int numThreads = options.getInt(
+                VariantStorageOptions.SEARCH_LOAD_THREADS.key(),
+                VariantStorageOptions.SEARCH_LOAD_THREADS.defaultValue());
 
-        ParallelTaskRunner<Variant, Variant> ptr = new ParallelTaskRunner<>((n) -> {
-            List<Variant> batch = new ArrayList<>(n);
-            while (batch.size() < n && variantDBIterator.hasNext()) {
-                batch.add(variantDBIterator.next());
-            }
-            count.addAndGet(batch.size());
-            return batch;
-        }, batch -> {
-            progressLogger.increment(batch.size(), () -> "up to position " + batch.get(batch.size() - 1).toString());
-            return batch;
-        }, batch -> {
-            try {
-                loadListener.preLoad(batch);
-                numLoadedVariants.addAndGet(batch.size());
-                insert(collection, batch);
-                loadListener.postLoad(batch);
-            } catch (SolrServerException | IOException e) {
-                throw new RuntimeException(e);
-            }
-            return true;
-        }, ParallelTaskRunner.Config.builder()
-                .setBatchSize(insertBatchSize)
-                .setCapacity(2)
-                .setNumTasks(1)
-                .build());
+        ProgressLogger progressLogger = new ProgressLogger("Variants loaded in Solr:");
+
+        ParallelTaskRunner<Variant, SolrInputDocument> ptr = new ParallelTaskRunner<>(
+                new VariantDBReader(variantDBIterator),
+                progressLogger
+                        .<Variant>asTask(d -> "up to position " + d)
+                        .then(new VariantToSolrBeanConverterTask(solrManager.getSolrClient().getBinder())),
+                writer,
+                ParallelTaskRunner.Config.builder()
+                        .setBatchSize(batchSize)
+                        .setCapacity(2)
+                        .setNumTasks(numThreads)
+                        .build());
 
         StopWatch stopWatch = StopWatch.createStarted();
         try {
@@ -271,10 +228,9 @@ public class VariantSearchManager {
             throw new VariantSearchException("Error loading secondary index", e);
         }
 
-        loadListener.close();
-
-        logger.info("Variant Search loading done. " + numLoadedVariants + " variants indexed in " + TimeUtils.durationToString(stopWatch));
-        return new VariantSearchLoadResult(count.get(), numLoadedVariants.get(), 0);
+        int count = variantDBIterator.getCount();
+        logger.info("Variant Search loading done. " + count + " variants indexed in " + TimeUtils.durationToString(stopWatch));
+        return new VariantSearchLoadResult(count, count, 0);
     }
 
 
@@ -555,58 +511,6 @@ public class VariantSearchManager {
      *  P R I V A T E    M E T H O D S
      -------------------------------------*/
 
-    /**
-     * Load a JSON file into the Solr core/collection.
-     *
-     * @param uri Path to the JSON file
-     * @throws IOException
-     * @throws SolrException
-     */
-    private void loadJson(String collection, URI uri, VariantReaderUtils utils) throws IOException, SolrServerException {
-        // This opens json and json.gz files automatically
-        try (BufferedReader bufferedReader = new BufferedReader(
-                new InputStreamReader(utils.getIOConnectorProvider().newInputStream(uri)))) {
-            // TODO: get the buffer size from configuration file
-            List<Variant> variants = new ArrayList<>(insertBatchSize);
-            int count = 0;
-            String line;
-            ObjectReader objectReader = new ObjectMapper().readerFor(Variant.class);
-            while ((line = bufferedReader.readLine()) != null) {
-                Variant variant = objectReader.readValue(line);
-                variants.add(variant);
-                count++;
-                if (count % insertBatchSize == 0) {
-                    logger.debug("Loading variants from '{}', {} variants loaded", uri.toString(), count);
-                    insert(collection, variants);
-                    variants.clear();
-                }
-            }
-
-            // Insert the remaining variants
-            if (CollectionUtils.isNotEmpty(variants)) {
-                logger.debug("Loading remaining variants from '{}', {} variants loaded", uri.toString(), count);
-                insert(collection, variants);
-            }
-        }
-    }
-
-    private void loadAvro(String collection, URI uri, VariantReaderUtils variantReaderUtils)
-            throws StorageEngineException, IOException, SolrServerException {
-        // reader
-        VariantReader reader = variantReaderUtils.getVariantReader(uri, null);
-
-        // TODO: get the buffer size from configuration file
-        int bufferSize = 10000;
-
-        List<Variant> variants;
-        do {
-            variants = reader.read(bufferSize);
-            insert(collection, variants);
-        } while (CollectionUtils.isNotEmpty(variants));
-
-        reader.close();
-    }
-
     private void delete(String collection, List<String> variants) throws IOException, SolrServerException {
         if (CollectionUtils.isNotEmpty(variants)) {
             UpdateResponse updateResponse = solrManager.getSolrClient().deleteById(collection, variants);
@@ -759,18 +663,6 @@ public class VariantSearchManager {
      *  toString and GETTERS and SETTERS
      -------------------------------------*/
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("VariantSearchManager{");
-        sb.append("solrManager=").append(solrManager);
-        sb.append(", solrQueryParser=").append(solrQueryParser);
-        sb.append(", storageConfiguration=").append(storageConfiguration);
-        sb.append(", variantSearchToVariantConverter=").append(variantSearchToVariantConverter);
-        sb.append(", insertBatchSize=").append(insertBatchSize);
-        sb.append('}');
-        return sb.toString();
-    }
-
     public SolrManager getSolrManager() {
         return solrManager;
     }
@@ -798,15 +690,6 @@ public class VariantSearchManager {
         return this;
     }
 
-    public StorageConfiguration getStorageConfiguration() {
-        return storageConfiguration;
-    }
-
-    public VariantSearchManager setStorageConfiguration(StorageConfiguration storageConfiguration) {
-        this.storageConfiguration = storageConfiguration;
-        return this;
-    }
-
     public VariantSearchToVariantConverter getVariantSearchToVariantConverter() {
         return variantSearchToVariantConverter;
     }
@@ -820,8 +703,4 @@ public class VariantSearchManager {
         return insertBatchSize;
     }
 
-    public VariantSearchManager setInsertBatchSize(int insertBatchSize) {
-        this.insertBatchSize = insertBatchSize;
-        return this;
-    }
 }

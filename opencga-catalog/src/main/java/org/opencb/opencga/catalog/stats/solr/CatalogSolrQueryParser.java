@@ -344,8 +344,8 @@ public class CatalogSolrQueryParser {
                         variableMap.put(fullVariablePath, auxVariableMap);
                         break;
                     case OBJECT:
-                        if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
-                            for (Variable nestedVariable : variable.getVariableSet()) {
+                        if (variable.getVariables() != null && !variable.getVariables().isEmpty()) {
+                            for (Variable nestedVariable : variable.getVariables()) {
                                 ObjectMap nestedAuxiliarVariable = new ObjectMap()
                                         .append("variable", nestedVariable)
                                         .append("fullVariablePath", fullVariablePath)

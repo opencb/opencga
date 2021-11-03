@@ -59,11 +59,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(project, new ProjectCreateParams());
 
-            OpenCGAResult<Project> queryResult = catalogManager.getProjectManager()
-                    .create(project.getId(), project.getName(), project.getDescription(),
-                            project.getOrganism() != null ? project.getOrganism().getScientificName() : null,
-                            project.getOrganism() != null ? project.getOrganism().getCommonName() : null,
-                            project.getOrganism() != null ? project.getOrganism().getAssembly() : null, queryOptions, token);
+            OpenCGAResult<Project> queryResult = catalogManager.getProjectManager().create(project, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();

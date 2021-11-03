@@ -20,6 +20,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -65,6 +66,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -176,9 +178,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (StringUtils.isEmpty(family.getUuid())) {
             family.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FAMILY));
         }
-        if (StringUtils.isEmpty(family.getCreationDate())) {
-            family.setCreationDate(TimeUtils.getTime());
-        }
 
         Document familyDocument = familyConverter.convertToStorageType(family, variableSetList);
 
@@ -186,8 +185,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         familyDocument.put(RELEASE_FROM_VERSION, Arrays.asList(family.getRelease()));
         familyDocument.put(LAST_OF_VERSION, true);
         familyDocument.put(LAST_OF_RELEASE, true);
-        familyDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(family.getCreationDate()));
-        familyDocument.put(PRIVATE_MODIFICATION_DATE, familyDocument.get(PRIVATE_CREATION_DATE));
+        familyDocument.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(family.getCreationDate()) ? TimeUtils.toDate(family.getCreationDate()) : TimeUtils.getDate());
+        familyDocument.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(family.getModificationDate())
+                ? TimeUtils.toDate(family.getModificationDate()) : TimeUtils.getDate());
         familyDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting family '{}' ({})...", family.getId(), family.getUid());
@@ -494,6 +495,64 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
     }
 
+    void updateIndividualIdFromFamilies(ClientSession clientSession, long studyUid, long memberUid, String oldIndividualId,
+                                        String newIndividualId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        if (StringUtils.isEmpty(oldIndividualId)) {
+            throw new CatalogDBException("Empty old individual ID");
+        }
+        if (StringUtils.isEmpty(newIndividualId)) {
+            throw new CatalogDBException("Empty new individual ID");
+        }
+
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.MEMBER_UID.key(), memberUid);
+
+        // We need to update the roles so it reflects the new individual id
+        DBIterator<Family> iterator = iterator(clientSession, query, new QueryOptions(QueryParams.UID.key(), QueryParams.ROLES.key()));
+        while (iterator.hasNext()) {
+            Family family = iterator.next();
+
+            if (family.getRoles() != null) {
+                boolean changed = false;
+                Map<String, Map<String, Family.FamiliarRelationship>> roles = new HashMap<>();
+
+                for (Map.Entry<String, Map<String, Family.FamiliarRelationship>> entry : family.getRoles().entrySet()) {
+                    if (oldIndividualId.equals(entry.getKey())) {
+                        roles.put(newIndividualId, entry.getValue());
+                        changed = true;
+                    } else {
+                        if (entry.getValue() == null) {
+                            roles.put(entry.getKey(), entry.getValue());
+                        } else {
+                            Map<String, Family.FamiliarRelationship> relationshipMap = new HashMap<>();
+                            for (Map.Entry<String, Family.FamiliarRelationship> entry2 : entry.getValue().entrySet()) {
+                                if (oldIndividualId.equals(entry2.getKey())) {
+                                    relationshipMap.put(newIndividualId, entry2.getValue());
+                                    changed = true;
+                                } else {
+                                    relationshipMap.put(entry.getKey(), entry2.getValue());
+                                }
+                            }
+                            roles.put(entry.getKey(), relationshipMap);
+                        }
+                    }
+                }
+
+                if (changed) {
+                    Bson bsonQuery = parseQuery(new Query()
+                            .append(QueryParams.STUDY_UID.key(), studyUid)
+                            .append(QueryParams.UID.key(), family.getUid())
+                    );
+                    Bson update = Updates.set(QueryParams.ROLES.key(), getMongoDBDocument(roles, QueryParams.ROLES.key()));
+                    familyCollection.update(clientSession, bsonQuery, update, QueryOptions.empty());
+                }
+            }
+
+        }
+    }
+
     private void createNewVersion(ClientSession clientSession, long studyUid, long familyUid)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query()
@@ -514,6 +573,19 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
@@ -565,11 +637,14 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         familyConverter.validateDocumentToUpdate(document.getSet());
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
-            // Update modificationDate param
             String time = TimeUtils.getTime();
-            Date date = TimeUtils.toDate(time);
-            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
-            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
         }
 
         return document;
@@ -956,25 +1031,25 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
-            if (containsAnnotationQuery(query)) {
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                        FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.FAMILY, configuration));
-            } else {
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FamilyAclEntry.FamilyPermissions.VIEW.name(),
-                        Enums.Resource.FAMILY, configuration));
-            }
 
-            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FAMILY, user, configuration));
+            if (query.containsKey(ParamConstants.ACL_PARAM)) {
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.FAMILY, user,
+                        configuration));
+            } else {
+                if (containsAnnotationQuery(query)) {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
+                            FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.FAMILY, configuration));
+                } else {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, FamilyAclEntry.FamilyPermissions.VIEW.name(),
+                            Enums.Resource.FAMILY, configuration));
+                }
+            }
 
             query.remove(ParamConstants.ACL_PARAM);
         }
 
         Query queryCopy = new Query(query);
         queryCopy.remove(QueryParams.DELETED.key());
-
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
 
         if ("all".equalsIgnoreCase(queryCopy.getString(QueryParams.VERSION.key()))) {
             queryCopy.put(Constants.ALL_VERSIONS, true);
@@ -1001,17 +1076,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         break;
                     case STUDY_UID:
                         addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case PHENOTYPES:
                     case DISORDERS:
@@ -1048,16 +1112,11 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                     case UUID:
                     case ID:
                     case NAME:
-                    case DESCRIPTION:
                     case EXPECTED_SIZE:
                     case RELEASE:
                     case VERSION:
                     case PHENOTYPES_ID:
                     case PHENOTYPES_NAME:
-                    case PHENOTYPES_SOURCE:
-                    case INTERNAL_STATUS_MSG:
-                    case INTERNAL_STATUS_DATE:
-//                    case ANNOTATION_SETS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

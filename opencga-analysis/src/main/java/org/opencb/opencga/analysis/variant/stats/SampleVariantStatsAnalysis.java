@@ -143,8 +143,8 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
             if (!toolParams.isIndexOverwrite()) {
                 List<String> alreadyIndexedSamples = getCatalogManager().getSampleManager().search(study,
                         new Query(SampleDBAdaptor.QueryParams.ID.key(), allSamples)
-                                .append(SampleDBAdaptor.STATS_ID, toolParams.getIndexId())
-                                .append(SampleDBAdaptor.STATS_VARIANT_COUNT, ">=0"),
+                                .append(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, toolParams.getIndexId())
+                                .append(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM, ">=0"),
                         new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), getToken())
                         .getResults()
                         .stream()
@@ -282,7 +282,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                             SampleQualityControl qualityControl = getCatalogManager()
                                     .getSampleManager()
                                     .get(getStudy(), sampleVariantStats.getId(),
-                                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.QUALITY_CONTORL.key()), getToken())
+                                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.QUALITY_CONTROL.key()), getToken())
                                     .first()
                                     .getQualityControl();
     //                        SampleUpdateParams updateParams = new SampleUpdateParams()

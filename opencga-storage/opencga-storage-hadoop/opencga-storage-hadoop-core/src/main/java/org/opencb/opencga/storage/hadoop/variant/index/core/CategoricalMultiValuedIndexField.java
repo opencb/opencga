@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<List<T>> {
 
     private final int numBits;
-    private boolean withOthers;
 
     public static CategoricalMultiValuedIndexField<String> createMultiValued(IndexFieldConfiguration configuration, int bitOffset) {
         return new CategoricalMultiValuedIndexField<>(
@@ -32,14 +31,17 @@ public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<L
     }
 
     public CategoricalMultiValuedIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values) {
-        this(configuration, bitOffset, values, null);
+        this(configuration, bitOffset, values, (Map<T, List<T>>) null);
     }
 
     public CategoricalMultiValuedIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values,
                                             Map<T, List<T>> valuesMapping) {
-        super(configuration, bitOffset, values.length, new MaskValueCodec<>(values, valuesMapping, configuration.getNullable()));
-        withOthers = configuration.getNullable();
-        numBits = values.length + (withOthers ? 1 : 0);
+        this(configuration, bitOffset, values, new MaskValueCodec<>(values, valuesMapping, configuration.getNullable()));
+    }
+
+    private CategoricalMultiValuedIndexField(IndexFieldConfiguration configuration, int bitOffset, T[] values, MaskValueCodec<T> codec) {
+        super(configuration, bitOffset, values.length, codec);
+        numBits = codec.numBits;
     }
 
     @Override
@@ -76,9 +78,9 @@ public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<L
         MaskValueCodec(T[] values, Map<T, List<T>> valuesMapping, boolean withOther) {
             if (withOther) {
                 numBits = values.length + 1;
+                this.otherValuePosition = values.length;
                 this.values = Arrays.copyOf(values, values.length + 1);
-                this.values[values.length] = null;
-                this.otherValuePosition = numBits;
+                this.values[otherValuePosition] = null;
             } else {
                 this.values = values;
                 numBits = values.length;
@@ -100,6 +102,9 @@ public class CategoricalMultiValuedIndexField<T> extends CategoricalIndexField<L
                         valuesPosition.put(valueAlias, pos);
                     }
                 }
+            }
+            if (otherValuePosition != null) {
+                ambiguousValues |= 1 << otherValuePosition;
             }
             this.ambiguousValues = ambiguousValues;
             if (values.length > Integer.SIZE) {

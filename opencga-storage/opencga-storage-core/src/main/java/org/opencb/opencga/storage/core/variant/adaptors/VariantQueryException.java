@@ -221,7 +221,11 @@ public class VariantQueryException extends IllegalArgumentException {
         if (e instanceof VariantQueryException) {
             return ((VariantQueryException) e);
         } else {
-            return new VariantQueryException("Internal exception: " + e.getMessage(), e);
+            String message = e.getMessage();
+            if (StringUtils.isEmpty(message)) {
+                message = e.toString();
+            }
+            return new VariantQueryException("Internal exception: " + message, e);
         }
     }
 

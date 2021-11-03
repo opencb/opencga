@@ -16,21 +16,31 @@
 
 package org.opencb.opencga.core.models.family;
 
-public class FamilyInternal {
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.Internal;
+
+public class FamilyInternal extends Internal {
 
     private FamilyStatus status;
 
     public FamilyInternal() {
     }
 
-    public FamilyInternal(FamilyStatus status) {
+    public FamilyInternal(String registrationDate, String modificationDate, FamilyStatus status) {
+        super(null, registrationDate, modificationDate);
         this.status = status;
+    }
+
+    public static FamilyInternal init() {
+        return new FamilyInternal(TimeUtils.getTime(), TimeUtils.getTime(), new FamilyStatus());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilyInternal{");
-        sb.append("status=").append(status);
+        sb.append("registrationDate='").append(registrationDate).append('\'');
+        sb.append(", modificationDate='").append(lastModified).append('\'');
+        sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
@@ -41,6 +51,24 @@ public class FamilyInternal {
 
     public FamilyInternal setStatus(FamilyStatus status) {
         this.status = status;
+        return this;
+    }
+
+    public String getRegistrationDate() {
+        return registrationDate;
+    }
+
+    public FamilyInternal setRegistrationDate(String registrationDate) {
+        this.registrationDate = registrationDate;
+        return this;
+    }
+
+    public String getLastModified() {
+        return lastModified;
+    }
+
+    public FamilyInternal setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 }

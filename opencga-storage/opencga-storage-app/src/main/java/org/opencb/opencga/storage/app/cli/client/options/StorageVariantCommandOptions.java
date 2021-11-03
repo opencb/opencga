@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.app.cli.client.options;
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -100,10 +101,12 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--deduplication-policy"}, description = "Specify how duplicated variants should be handled. Available policies: \"discard\", \"maxQual\"")
         public String deduplicationPolicy = "maxQual";
 
-        @Parameter(names = {"--exclude-genotypes"}, description = "Do not load the genotype data for the current file. "
+        @Parameter(names = {"--include-genotypes"}, description = "Load the genotype data for the current file. "
                 + "This only applies to the GT field from the FORMAT. All the rest of fields from the INFO and FORMAT will be loaded. "
-                + "Use this parameter to load data when the GT field is not reliable, or its only value across the file is \"./.\"")
-        public boolean excludeGenotype;
+                + "Use this parameter skip load data when the GT field is not reliable, or its only value across the file is \"./.\". "
+                + "If \"auto\", genotypes will be automatically excluded if all genotypes are either missing, ./. or 0/0. "
+                + "(yes, no, auto)")
+        public String includeGenotype;
 
         @Parameter(names = {"--include-sample-data"}, description = "Index including other sample data fields (i.e. FORMAT fields)."
                 + " Use \"" + VariantQueryUtils.ALL + "\", \"" + VariantQueryUtils.NONE + "\", or CSV with the fields to load.")
@@ -489,8 +492,14 @@ public class StorageVariantCommandOptions {
 
         public String xref;
 
+        @Parameter(names = {"--clinical"}, description = ANNOT_CLINICAL_DESCR)
+        public String clinical;
+
         @Parameter(names = {"--clinical-significance"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
         public String clinicalSignificance;
+
+        @Parameter(names = {"--clinical-confirmed-status"}, description = ANNOT_CLINICAL_CONFIRMED_STATUS_DESCR)
+        public boolean clinicalConfirmedStatus;
 
         @Parameter(names = {"--sample-metadata"}, description = SAMPLE_METADATA_DESCR)
         public boolean samplesMetadata;

@@ -22,9 +22,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.TimeUtils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -115,6 +118,9 @@ public class ParamUtils {
         if (userId == null || userId.isEmpty()) {
             throw new CatalogParameterException("Missing user id.");
         }
+        if (userId.equals(ParamConstants.ANONYMOUS_USER_ID) || userId.equals(ParamConstants.REGISTERED_USERS)) {
+            throw new CatalogParameterException("User id cannot be one of the reserved OpenCGA users.");
+        }
         if (!userId.matches("^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*$")) {
             throw new CatalogParameterException("Invalid user id. Id needs to start by any character and might contain single '-', '_', "
                     + "'.', symbols followed by any character or number.");
@@ -150,6 +156,27 @@ public class ParamUtils {
             }
         } else {
             throw new CatalogParameterException("ID is null or Empty");
+        }
+    }
+
+    public static void checkDateFormat(String creationDate, String param) throws CatalogParameterException {
+        if (StringUtils.isEmpty(creationDate)) {
+            throw new CatalogParameterException("'" + param + "' is null or empty");
+        } else {
+            // Validate creationDate can be parsed and has the proper format
+            Date date = TimeUtils.toDate(creationDate);
+            if (date == null || creationDate.length() != 14) {
+                throw new CatalogParameterException("Unexpected '" + param + "' format. Expected format is 'yyyyMMddHHmmss'");
+            }
+        }
+    }
+
+    public static String checkDateOrGetCurrentDate(String date, String param) throws CatalogParameterException {
+        if (StringUtils.isEmpty(date)) {
+            return TimeUtils.getTime();
+        } else {
+            checkDateFormat(date, param);
+            return date;
         }
     }
 

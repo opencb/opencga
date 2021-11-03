@@ -17,7 +17,6 @@
 package org.opencb.opencga.core.models.study;
 
 import org.opencb.opencga.core.models.common.CustomStatusParams;
-import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 
 import java.util.Map;
 
@@ -26,22 +25,23 @@ public class StudyUpdateParams {
     private String name;
     private String alias;
     private String description;
+    private String creationDate;
+    private String modificationDate;
     private StudyNotification notification;
-
-    private StudyConfiguration configuration;
     private Map<String, Object> attributes;
     private CustomStatusParams status;
 
     public StudyUpdateParams() {
     }
 
-    public StudyUpdateParams(String name, String alias, String description, StudyNotification notification,
-                             StudyConfiguration configuration, Map<String, Object> attributes, CustomStatusParams status) {
+    public StudyUpdateParams(String name, String alias, String description, String creationDate, String modificationDate,
+                             StudyNotification notification, Map<String, Object> attributes, CustomStatusParams status) {
         this.name = name;
         this.alias = alias;
         this.description = description;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.notification = notification;
-        this.configuration = configuration;
         this.attributes = attributes;
         this.status = status;
     }
@@ -52,8 +52,9 @@ public class StudyUpdateParams {
         sb.append("name='").append(name).append('\'');
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", notification=").append(notification);
-        sb.append(", configuration=").append(configuration);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
         sb.append('}');
@@ -87,21 +88,30 @@ public class StudyUpdateParams {
         return this;
     }
 
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public StudyUpdateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public StudyUpdateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
+        return this;
+    }
+
     public StudyNotification getNotification() {
         return notification;
     }
 
     public StudyUpdateParams setNotification(StudyNotification notification) {
         this.notification = notification;
-        return this;
-    }
-
-    public StudyConfiguration getConfiguration() {
-        return configuration;
-    }
-
-    public StudyUpdateParams setConfiguration(StudyConfiguration configuration) {
-        this.configuration = configuration;
         return this;
     }
 

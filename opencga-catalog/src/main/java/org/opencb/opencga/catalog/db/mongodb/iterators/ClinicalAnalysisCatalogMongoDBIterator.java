@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -41,10 +40,12 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
     private long studyUid;
     private String user;
 
+    private FileDBAdaptor fileDBAdaptor;
     private FamilyDBAdaptor familyDBAdaptor;
     private IndividualDBAdaptor individualDBAdaptor;
     private InterpretationDBAdaptor interpretationDBAdaptor;
     private PanelDBAdaptor panelDBAdaptor;
+    private QueryOptions fileQueryOptions;
     private QueryOptions familyQueryOptions;
     private QueryOptions individualQueryOptions;
     private QueryOptions interpretationQueryOptions;
@@ -77,11 +78,13 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
 
         this.options = options;
 
+        this.fileDBAdaptor = dbAdaptorFactory.getCatalogFileDBAdaptor();
         this.familyDBAdaptor = dbAdaptorFactory.getCatalogFamilyDBAdaptor();
         this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
         this.interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
         this.panelDBAdaptor = dbAdaptorFactory.getCatalogPanelDBAdaptor();
         this.interpretationQueryOptions = createInnerQueryOptions(INTERPRETATION.key(), false);
+        this.fileQueryOptions = createInnerQueryOptions(FILES.key(), false);
         this.familyQueryOptions = createInnerQueryOptions(FAMILY.key(), false);
         this.individualQueryOptions = createInnerQueryOptions(PROBAND.key(), false);
         this.panelQueryOptions = createInnerQueryOptions(PANELS.key(), false);
@@ -117,6 +120,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
     }
 
     private void fetchNextBatch() {
+        Set<Long> fileSet = new HashSet<>();
         Set<String> interpretationSet = new HashSet<>();
         Set<String> familySet = new HashSet<>();
         Set<String> individualSet = new HashSet<>();
@@ -138,6 +142,16 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
                 extractFamilyInfo((Document) clinicalDocument.get(FAMILY.key()), familySet);
                 extractIndividualInfo((Document) clinicalDocument.get(PROBAND.key()), individualSet);
 
+                // Extract the files
+                List<Document> files = clinicalDocument.getList(FILES.key(), Document.class);
+                if (CollectionUtils.isNotEmpty(files)) {
+                    for (Document file : files) {
+                        if (file != null && file.get(UID, Number.class).longValue() > 0) {
+                            fileSet.add(file.get(UID, Number.class).longValue());
+                        }
+                    }
+                }
+
                 // Extract the panels
                 List<Document> panels = clinicalDocument.getList(PANELS.key(), Document.class);
                 if (CollectionUtils.isNotEmpty(panels)) {
@@ -155,7 +169,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
                 }
 
                 List<Document> secondaryInterpretations = (List<Document>) clinicalDocument.get(SECONDARY_INTERPRETATIONS.key());
-                if (ListUtils.isNotEmpty(secondaryInterpretations)) {
+                if (CollectionUtils.isNotEmpty(secondaryInterpretations)) {
                     for (Document interpretation : secondaryInterpretations) {
                         interpretationSet.add(interpretation.get(UID) + UID_VERSION_SEP + interpretation.get(VERSION));
                     }
@@ -164,6 +178,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         }
 
         Map<String, Document> interpretationMap = fetchInterpretations(interpretationSet);
+        Map<Long, Document> fileMap = fetchFiles(fileSet);
         Map<String, Document> familyMap = fetchFamilies(familySet);
         Map<String, Document> individualMap = fetchIndividuals(individualSet);
         Map<String, Document> panelMap = fetchPanels(panelSet);
@@ -172,6 +187,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             // Fill data in clinical analyses
             clinicalAnalysisListBuffer.forEach(clinicalAnalysis -> {
                 fillInterpretationData(clinicalAnalysis, interpretationMap);
+                fillFiles(clinicalAnalysis, fileMap);
                 fillPanels(clinicalAnalysis, panelMap);
                 clinicalAnalysis.put(FAMILY.key(), fillFamilyData((Document) clinicalAnalysis.get(FAMILY.key()), familyMap));
                 clinicalAnalysis.put(PROBAND.key(), fillIndividualData((Document) clinicalAnalysis.get(PROBAND.key()), individualMap));
@@ -263,15 +279,17 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         }
 
         List<Document> origSecondaryInterpretations = (List<Document>) clinicalAnalysis.get(SECONDARY_INTERPRETATIONS.key());
-        List<Document> secondaryInterpretations = new ArrayList<>();
-        // If the interpretations have been returned... (it might have not been fetched due to permissions issues)
-        for (Document origInterpretation : origSecondaryInterpretations) {
-            String interpretationId = origInterpretation.get(UID) + UID_VERSION_SEP + origInterpretation.get(VERSION);
-            if (interpretationMap.containsKey(interpretationId)) {
-                secondaryInterpretations.add(new Document(interpretationMap.get(interpretationId)));
+        if (CollectionUtils.isNotEmpty(origSecondaryInterpretations)) {
+            List<Document> secondaryInterpretations = new ArrayList<>();
+            // If the interpretations have been returned... (it might have not been fetched due to permissions issues)
+            for (Document origInterpretation : origSecondaryInterpretations) {
+                String interpretationId = origInterpretation.get(UID) + UID_VERSION_SEP + origInterpretation.get(VERSION);
+                if (interpretationMap.containsKey(interpretationId)) {
+                    secondaryInterpretations.add(new Document(interpretationMap.get(interpretationId)));
+                }
             }
+            clinicalAnalysis.put(SECONDARY_INTERPRETATIONS.key(), secondaryInterpretations);
         }
-        clinicalAnalysis.put(SECONDARY_INTERPRETATIONS.key(), secondaryInterpretations);
     }
 
     private void fillPanels(Document clinicalAnalysis, Map<String, Document> panelMap) {
@@ -290,6 +308,53 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             }
             clinicalAnalysis.put(PANELS.key(), targetPanels);
         }
+    }
+
+    private void fillFiles(Document clinicalAnalysis, Map<Long, Document> fileMap) {
+        if (fileMap.isEmpty()) {
+            return;
+        }
+
+        List<Document> sourceFiles = clinicalAnalysis.getList(FILES.key(), Document.class);
+        if (sourceFiles != null) {
+            List<Document> targetFiles = new ArrayList<>(sourceFiles.size());
+            for (Document file : sourceFiles) {
+                long fileUid = file.get(UID, Number.class).longValue();
+                if (fileMap.containsKey(fileUid)) {
+                    targetFiles.add(fileMap.get(fileUid));
+                }
+            }
+            clinicalAnalysis.put(FILES.key(), targetFiles);
+        }
+    }
+
+    private Map<Long, Document> fetchFiles(Set<Long> fileSet) {
+        Map<Long, Document> fileMap = new HashMap<>();
+
+        if (fileSet.isEmpty()) {
+            return fileMap;
+        }
+
+        // Build query object
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.UID.key(), new ArrayList<>(fileSet));
+
+        List<Document> fileList;
+        try {
+            if (user != null) {
+                query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+                fileList = fileDBAdaptor.nativeGet(studyUid, query, fileQueryOptions, user).getResults();
+            } else {
+                fileList = fileDBAdaptor.nativeGet(query, fileQueryOptions).getResults();
+            }
+        } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
+            logger.warn("Could not obtain the files associated to the clinical analyses: {}", e.getMessage(), e);
+            return fileMap;
+        }
+
+        // Map each file uid to the file entry
+        fileList.forEach(file -> fileMap.put(file.get(UID, Number.class).longValue(), file));
+        return fileMap;
     }
 
     private Map<String, Document> fetchFamilies(Set<String> familySet) {

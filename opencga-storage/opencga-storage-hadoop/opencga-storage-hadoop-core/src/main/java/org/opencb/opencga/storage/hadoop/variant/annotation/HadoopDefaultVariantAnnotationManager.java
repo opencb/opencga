@@ -98,18 +98,28 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
     }
 
     @Override
-    protected void preAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params) throws StorageEngineException {
+    protected boolean doBatchAnnotation(ObjectMap params) {
+        // Batch annotation can be run if not skipping the discoverPendingVariantsToAnnotate
+        boolean skipDiscoverPendingVariantsToAnnotate = skipDiscoverPendingVariantsToAnnotate(params);
+        // In this case, don't need to check the "overwrite" param, as all variants will be populated in the pending variants list,
+        // and will be removed once they are annotated
+        return !skipDiscoverPendingVariantsToAnnotate;
+    }
+
+    @Override
+    protected void preAnnotate(Query query, boolean doCreate, boolean doLoad, ObjectMap params)
+            throws StorageEngineException, VariantAnnotatorException {
         super.preAnnotate(query, doCreate, doLoad, params);
 
         if (doCreate) {
             Set<VariantQueryParam> queryParams = VariantQueryUtils.validParams(query, true);
             queryParams.remove(VariantQueryParam.ANNOTATION_EXISTS);
             boolean annotateAll = queryParams.isEmpty();
+            boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
 
             if (skipDiscoverPendingVariantsToAnnotate(params)) {
                 logger.info("Skip MapReduce to discover variants to annotate.");
             } else {
-                boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
                 AnnotationPendingVariantsManager pendingVariantsManager = new AnnotationPendingVariantsManager(dbAdaptor);
                 ProjectMetadata projectMetadata = dbAdaptor.getMetadataManager().getProjectMetadata();
                 long lastLoadedFileTs = projectMetadata.getAttributes()
@@ -143,6 +153,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                             pm.getAttributes().put(HadoopVariantStorageEngine.LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS, ts);
                             return pm;
                         });
+                        updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
                     }
                 }
             }
@@ -270,7 +281,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 dbAdaptor.getTableNameGenerator().getVariantTableName(),
                 columnsToCopyMap, options);
 
-        mrExecutor.run(CopyHBaseColumnDriver.class, args, options, "Create new annotation snapshot with name '" + name + '\'');
+        mrExecutor.run(CopyHBaseColumnDriver.class, args, "Create new annotation snapshot with name '" + name + '\'');
     }
 
     @Override
@@ -287,7 +298,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 dbAdaptor.getTableNameGenerator().getVariantTableName(),
                 Collections.singletonList(columnFamily + ':' + targetColumn), options);
 
-        mrExecutor.run(DeleteHBaseColumnDriver.class, args, options, "Delete annotation snapshot '" + name + '\'');
+        mrExecutor.run(DeleteHBaseColumnDriver.class, args, "Delete annotation snapshot '" + name + '\'');
 
         dbAdaptor.getMetadataManager().updateProjectMetadata(project -> {
             removeAnnotationSnapshot(name, project);

@@ -27,7 +27,7 @@ search:
   configSet: "${OPENCGA.STORAGE.SEARCH.CONFIG_SET}"
   mode: "cloud"
   timeout: ${OPENCGA.STORAGE.SEARCH.TIMEOUT}
-  insertBatchSize: 10000
+  insertBatchSize: 5000
 
 ## Clinical database for indexing the pathogenic variants reported.
 clinical:
@@ -174,7 +174,8 @@ variant:
         # Hadoop executable file. Used to lunch MapReduce applications
         storage.hadoop.bin: "hadoop"
 
-        storage.hadoop.mr.jarWithDependencies: "opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"
+        ## If undefined, it will be generated based on the build version.
+        #storage.hadoop.mr.jarWithDependencies: "opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"
 
         # Define the MapReduce job executor.
         storage.hadoop.mr.executor: "system"  # Either "system" or "ssh".

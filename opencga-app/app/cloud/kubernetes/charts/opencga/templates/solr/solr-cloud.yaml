@@ -1,13 +1,12 @@
 {{- if .Values.solr.deploy.enabled -}}
-apiVersion: solr.bloomberg.com/v1beta1
-#apiVersion: solr.apache.org/v1beta1
+apiVersion: solr.apache.org/v1beta1
 kind: SolrCloud
 metadata:
   name: {{ .Values.solr.deploy.name }}
 spec:
   dataStorage:
     persistent:
-      reclaimPolicy: Delete
+      reclaimPolicy: Retain
       pvcTemplate:
         spec:
           resources:
@@ -21,7 +20,7 @@ spec:
   solrImage:
 #    repository: {{ .Values.solr.deploy.image.repository }}
     tag: {{ .Values.solr.deploy.image.tag }}
-#    imagePullSecret: {{ .Values.solr.deploy.image.imagePullSecret }}
+    imagePullSecret: {{ .Values.solr.deploy.image.imagePullSecret }}
 
   solrJavaMem: {{ .Values.solr.deploy.javaMem }}
   solrOpts: {{ .Values.solr.deploy.opts }}
@@ -35,6 +34,8 @@ spec:
     managed:
       maxPodsUnavailable: 1
 
+  busyBoxImage:
+    imagePullSecret: {{ .Values.solr.deploy.image.imagePullSecret }}
 
   customSolrKubeOptions:
     podOptions:
@@ -90,8 +91,11 @@ spec:
   # The information for the Zookeeper this SolrCloud should connect to Can be a zookeeper that is running, or one that is created by the solr operator
   zookeeperRef:
     provided:
+      image:
+        imagePullSecret: "{{ .Values.solr.deploy.image.imagePullSecret }}"
       chroot: "/"
       persistence:
+        reclaimPolicy: Retain
         spec:
 #          storageClassName: "hostpath"
           storageClassName: "default"

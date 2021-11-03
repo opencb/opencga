@@ -16,11 +16,14 @@ import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.variant.VariantFileQualityControl;
 
-@Migration(id="move_variant_file_stats_to_qc", description = "Move opencga_file_variant_stats annotation set from variable sets to FileQualityControl", version = "2.1.0",
+import java.util.Arrays;
+
+@Migration(id = "move_variant_file_stats_to_qc", description = "Move opencga_file_variant_stats annotation set from variable sets to " +
+        "FileQualityControl", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
         patch = 1,
-        rank = 9)
+        date = 20210614)
 public class VariantFileStatsRelocation extends MigrationTool {
 
     private static final String FILE_VARIANT_STATS_VARIABLE_SET = "opencga_file_variant_stats";
@@ -29,11 +32,16 @@ public class VariantFileStatsRelocation extends MigrationTool {
     protected void run() throws Exception {
         for (Study study : catalogManager.getStudyManager().search(new Query(), new QueryOptions(), token).getResults()) {
             Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.VCF);
-            QueryOptions options = new QueryOptions();
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                    Arrays.asList(
+                            FileDBAdaptor.QueryParams.ID.key(),
+                            FileDBAdaptor.QueryParams.QUALITY_CONTROL.key(),
+                            FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()
+                    ));
 
             ObjectMapper objectMapper = new ObjectMapper(new JsonFactory());
             logger.info("Updating files from study {}", study.getFqn());
-            try (DBIterator<File> it = catalogManager.getFileManager().iterator(study.getFqn(), query, options, token)) {
+            try (DBIterator<File> it = catalogManager.getFileManager().iterator(study.getFqn(), query, new QueryOptions(options), token)) {
                 while (it.hasNext()) {
                     File file = it.next();
                     if (file.getQualityControl() != null
@@ -52,8 +60,8 @@ public class VariantFileStatsRelocation extends MigrationTool {
                         logger.info("Relocating variant stats from file {}", file.getId());
                         catalogManager.getFileManager().update(study.getFqn(), file.getId(),
                                 new FileUpdateParams().setQualityControl(
-                                        new FileQualityControl().setVariant(new VariantFileQualityControl(variantSetStats))),
-                                new QueryOptions(), token);
+                                        new FileQualityControl().setVariant(new VariantFileQualityControl(variantSetStats, null))),
+                                new QueryOptions(options), token);
                     }
                 }
             }

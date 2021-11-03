@@ -43,6 +43,8 @@ public enum VariantStorageOptions implements ConfigurationOption {
     LOAD_HOM_REF("load.homRef", YesNoAuto.AUTO),
     POST_LOAD_CHECK("load.postLoadCheck", YesNoAuto.AUTO),
 
+    DELETE_PARALLEL("delete.parallel", false),
+
     STATS_DEFAULT_GENOTYPE("stats.defaultGenotype", "0/0"), // Default genotype to be used for calculating stats.
     STATS_MULTI_ALLELIC("stats.multiAllelic", false),  // Include secondary alternates in the variant stats calculation
     STATS_CALCULATE("stats.calculate", false),          //Calculate stats on the postLoad step
@@ -72,7 +74,8 @@ public enum VariantStorageOptions implements ConfigurationOption {
     ANNOTATOR_CELLBASE_USE_CACHE("annotator.cellbase.useCache"),
     ANNOTATOR_CELLBASE_INCLUDE("annotator.cellbase.include"),
     ANNOTATOR_CELLBASE_EXCLUDE("annotator.cellbase.exclude"),
-    ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD("annotator.cellbase.variantLengthThreshold", Integer.MAX_VALUE), // by default: no limit
+    // by default, undefined, no limit
+    ANNOTATOR_CELLBASE_VARIANT_LENGTH_THRESHOLD("annotator.cellbase.variantLengthThreshold", Integer.MAX_VALUE),
     ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS("annotator.cellbase.impreciseVariants", true),
     ANNOTATOR_CELLBASE_STAR_ALTERNATE("annotator.cellbase.starAlternate", false),
 
@@ -92,6 +95,8 @@ public enum VariantStorageOptions implements ConfigurationOption {
     INTERSECT_ACTIVE("search.intersect.active", true),                       // Allow intersect queries with the SearchEngine (Solr)
     INTERSECT_ALWAYS("search.intersect.always", false),                      // Force intersect queries
     INTERSECT_PARAMS_THRESHOLD("search.intersect.params.threshold", 3),      // Minimum number of QueryParams in the query to intersect
+    SEARCH_LOAD_BATCH_SIZE("search.load.batchSize", 100),
+    SEARCH_LOAD_THREADS("search.load.numThreads", 2),
 
     APPROXIMATE_COUNT_SAMPLING_SIZE("approximateCountSamplingSize", 1000),
     @Deprecated
@@ -99,7 +104,9 @@ public enum VariantStorageOptions implements ConfigurationOption {
 
     // Do not store genotypes from the current file.
     // Not stored anymore in StudyMetadata
+    @Deprecated
     EXCLUDE_GENOTYPES("exclude.genotypes", false),
+    INCLUDE_GENOTYPE("include.genotype", YesNoAuto.AUTO),
 
     /////////////
     // These params are stored in {@link org.opencb.opencga.storage.core.metadata.models.StudyMetadata#getAttributes}.

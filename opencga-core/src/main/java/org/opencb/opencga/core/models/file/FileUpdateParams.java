@@ -32,6 +32,8 @@ public class FileUpdateParams {
 
     private String name;
     private String description;
+    private String creationDate;
+    private String modificationDate;
 
     private List<String> sampleIds;
 
@@ -56,13 +58,15 @@ public class FileUpdateParams {
     public FileUpdateParams() {
     }
 
-    public FileUpdateParams(String name, String description, List<String> sampleIds, String checksum, File.Format format,
-                            File.Bioformat bioformat, Software software, FileExperiment experiment, List<String> tags,
-                            SmallFileInternal internal, Long size, List<SmallRelatedFileParams> relatedFiles, CustomStatusParams status,
-                            List<AnnotationSet> annotationSets, FileQualityControl qualityControl, Map<String, Object> stats,
-                            Map<String, Object> attributes) {
+    public FileUpdateParams(String name, String description, String creationDate, String modificationDate, List<String> sampleIds,
+                            String checksum, File.Format format, File.Bioformat bioformat, Software software, FileExperiment experiment,
+                            List<String> tags, SmallFileInternal internal, Long size, List<SmallRelatedFileParams> relatedFiles,
+                            CustomStatusParams status, List<AnnotationSet> annotationSets, FileQualityControl qualityControl,
+                            Map<String, Object> stats, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.sampleIds = sampleIds;
         this.checksum = checksum;
         this.format = format;
@@ -101,6 +105,8 @@ public class FileUpdateParams {
         final StringBuilder sb = new StringBuilder("FileUpdateParams{");
         sb.append("name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", sampleIds=").append(sampleIds);
         sb.append(", checksum='").append(checksum).append('\'');
         sb.append(", format=").append(format);
@@ -135,6 +141,24 @@ public class FileUpdateParams {
 
     public FileUpdateParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public FileUpdateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public FileUpdateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

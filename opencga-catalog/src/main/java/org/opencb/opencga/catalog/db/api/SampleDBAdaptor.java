@@ -97,7 +97,14 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         UID("uid", LONG, ""),
         UUID("uuid", TEXT, ""),
         PROCESSING("processing", TEXT_ARRAY, ""),
+        PROCESSING_PRODUCT("processing.product", TEXT, ""),
+        PROCESSING_PREPARATION_METHOD("processing.preparationMethod", TEXT, ""),
+        PROCESSING_EXTRACTION_METHOD("processing.extractionMethod", TEXT, ""),
+        PROCESSING_LAB_SAMPLE_ID("processing.labSampleId", TEXT, ""),
         COLLECTION("collection", TEXT_ARRAY, ""),
+        COLLECTION_TISSUE("collection.tissue", TEXT, ""),
+        COLLECTION_ORGAN("collection.organ", TEXT, ""),
+        COLLECTION_METHOD("collection.method", TEXT, ""),
         INDIVIDUAL("individual", TEXT, ""),
         INDIVIDUAL_UID("individual.uid", INTEGER_ARRAY, ""),
         INDIVIDUAL_ID("individualId", TEXT, ""),
@@ -128,7 +135,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 
-        QUALITY_CONTORL("qualityControl", TEXT_ARRAY, ""),
+        QUALITY_CONTROL("qualityControl", TEXT_ARRAY, ""),
         PHENOTYPES("phenotypes", TEXT_ARRAY, ""),
         PHENOTYPES_ID("phenotypes.id", TEXT, ""),
         PHENOTYPES_NAME("phenotypes.name", TEXT, ""),

@@ -18,11 +18,11 @@ package org.opencb.opencga.core.models.clinical;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.StatusParam;
+import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 
 import java.util.List;
 import java.util.Map;
@@ -36,8 +36,10 @@ public class InterpretationUpdateParams {
     private ClinicalAnalystParam analyst;
     private List<InterpretationMethod> methods;
     private String creationDate;
+    private String modificationDate;
     private List<ClinicalVariant> primaryFindings;
     private List<ClinicalVariant> secondaryFindings;
+    private List<PanelReferenceParam> panels;
     private List<ClinicalCommentParam> comments;
     private Map<String, Object> attributes;
     private StatusParam status;
@@ -46,21 +48,26 @@ public class InterpretationUpdateParams {
     }
 
     public InterpretationUpdateParams(String description, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
-                                      String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
+                                      String creationDate, String modificationDate, List<ClinicalVariant> primaryFindings,
+                                      List<ClinicalVariant> secondaryFindings, List<PanelReferenceParam> panels,
                                       List<ClinicalCommentParam> comments, Map<String, Object> attributes, StatusParam status) {
-        this(null, description, analyst, methods, creationDate, primaryFindings, secondaryFindings, comments, attributes, status);
+        this(null, description, analyst, methods, creationDate, modificationDate, primaryFindings, secondaryFindings, panels, comments,
+                attributes, status);
     }
 
     public InterpretationUpdateParams(String id, String description, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
-                                      String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
+                                      String creationDate, String modificationDate, List<ClinicalVariant> primaryFindings,
+                                      List<ClinicalVariant> secondaryFindings, List<PanelReferenceParam> panels,
                                       List<ClinicalCommentParam> comments, Map<String, Object> attributes, StatusParam status) {
         this.id = id;
         this.description = description;
         this.analyst = analyst;
         this.methods = methods;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.primaryFindings = primaryFindings;
         this.secondaryFindings = secondaryFindings;
+        this.panels = panels;
         this.comments = comments;
         this.attributes = attributes;
         this.status = status;
@@ -79,8 +86,10 @@ public class InterpretationUpdateParams {
         sb.append(", analyst=").append(analyst);
         sb.append(", methods=").append(methods);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", primaryFindings=").append(primaryFindings);
         sb.append(", secondaryFindings=").append(secondaryFindings);
+        sb.append(", panels=").append(panels);
         sb.append(", comments=").append(comments);
         sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
@@ -133,6 +142,15 @@ public class InterpretationUpdateParams {
         return this;
     }
 
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public InterpretationUpdateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
+        return this;
+    }
+
     public List<ClinicalVariant> getPrimaryFindings() {
         return primaryFindings;
     }
@@ -148,6 +166,15 @@ public class InterpretationUpdateParams {
 
     public InterpretationUpdateParams setSecondaryFindings(List<ClinicalVariant> secondaryFindings) {
         this.secondaryFindings = secondaryFindings;
+        return this;
+    }
+
+    public List<PanelReferenceParam> getPanels() {
+        return panels;
+    }
+
+    public InterpretationUpdateParams setPanels(List<PanelReferenceParam> panels) {
+        this.panels = panels;
         return this;
     }
 

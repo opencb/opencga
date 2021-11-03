@@ -16,21 +16,31 @@
 
 package org.opencb.opencga.core.models.clinical;
 
-public class ClinicalAnalysisInternal {
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.Internal;
+
+public class ClinicalAnalysisInternal extends Internal {
 
     private ClinicalAnalysisStatus status;
 
     public ClinicalAnalysisInternal() {
     }
 
-    public ClinicalAnalysisInternal(ClinicalAnalysisStatus status) {
+    public ClinicalAnalysisInternal(String registrationDate, String modificationDate, ClinicalAnalysisStatus status) {
+        super(null, registrationDate, modificationDate);
         this.status = status;
+    }
+
+    public static ClinicalAnalysisInternal init() {
+        return new ClinicalAnalysisInternal(TimeUtils.getTime(), TimeUtils.getTime(), new ClinicalAnalysisStatus());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysisInternal{");
         sb.append("status=").append(status);
+        sb.append(", registrationDate='").append(registrationDate).append('\'');
+        sb.append(", modificationDate='").append(lastModified).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -41,6 +51,24 @@ public class ClinicalAnalysisInternal {
 
     public ClinicalAnalysisInternal setStatus(ClinicalAnalysisStatus status) {
         this.status = status;
+        return this;
+    }
+
+    public String getRegistrationDate() {
+        return registrationDate;
+    }
+
+    public ClinicalAnalysisInternal setRegistrationDate(String registrationDate) {
+        this.registrationDate = registrationDate;
+        return this;
+    }
+
+    public String getLastModified() {
+        return lastModified;
+    }
+
+    public ClinicalAnalysisInternal setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 }

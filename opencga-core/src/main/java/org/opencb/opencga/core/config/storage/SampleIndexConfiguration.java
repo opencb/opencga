@@ -125,6 +125,15 @@ public class SampleIndexConfiguration {
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setConsequenceType(consequenceType);
 
+        sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptFlagIndexConfiguration(
+                new IndexFieldConfiguration(
+                        IndexFieldConfiguration.Source.ANNOTATION,
+                        "transcriptFlag",
+                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
+                        "do_not_use"
+                ).setNullable(false));
+        sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptCombination(false);
+
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSource(
                 new IndexFieldConfiguration(
                         IndexFieldConfiguration.Source.ANNOTATION, "clinicalSource",
@@ -244,23 +253,52 @@ public class SampleIndexConfiguration {
 
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setConsequenceType(consequenceType);
 
-        sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSignificance(
-                        new IndexFieldConfiguration(
-                                IndexFieldConfiguration.Source.ANNOTATION, "clinicalSignificance",
-                                IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
-                                ClinicalSignificance.benign.toString(),
-                                ClinicalSignificance.likely_benign.toString(),
-//                                ClinicalSignificance.VUS.toString(),
-                                ClinicalSignificance.uncertain_significance.toString(),
-                                ClinicalSignificance.likely_pathogenic.toString(),
-                                ClinicalSignificance.pathogenic.toString())
-                                .setNullable(false));
+        sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptFlagIndexConfiguration(
+                new IndexFieldConfiguration(
+                        IndexFieldConfiguration.Source.ANNOTATION,
+                        "transcriptFlag",
+                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
+                        "canonical",
+                        "MANE Select",
+                        "MANE Plus Clinical",
+                        "CCDS",
+                        "basic",
+                        "LRG",
+                        "EGLH_HaemOnc",
+                        "TSO500"
+                        ).setNullable(true));
+        sampleIndexConfiguration.getAnnotationIndexConfiguration().setTranscriptCombination(true);
+
         sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSource(
                 new IndexFieldConfiguration(
                         IndexFieldConfiguration.Source.ANNOTATION, "clinicalSource",
                         IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
                         "clinvar",
                         "cosmic")
+                        .setNullable(false)
+        );
+
+        sampleIndexConfiguration.getAnnotationIndexConfiguration().setClinicalSignificance(
+                new IndexFieldConfiguration(
+                        IndexFieldConfiguration.Source.ANNOTATION, "clinicalSignificance",
+                        IndexFieldConfiguration.Type.CATEGORICAL_MULTI_VALUE,
+                        "clinvar_" + ClinicalSignificance.benign.toString(),
+                        "clinvar_" + ClinicalSignificance.likely_benign.toString(),
+                        "clinvar_" + ClinicalSignificance.uncertain_significance.toString(),
+                        "clinvar_" + ClinicalSignificance.likely_pathogenic.toString(),
+                        "clinvar_" + ClinicalSignificance.pathogenic.toString(),
+
+                        "clinvar_" + ClinicalSignificance.benign.toString() + "_confirmed",
+                        "clinvar_" + ClinicalSignificance.likely_benign.toString() + "_confirmed",
+                        "clinvar_" + ClinicalSignificance.uncertain_significance.toString() + "_confirmed",
+                        "clinvar_" + ClinicalSignificance.likely_pathogenic.toString() + "_confirmed",
+                        "clinvar_" + ClinicalSignificance.pathogenic.toString() + "_confirmed",
+
+                        "cosmic_" + ClinicalSignificance.benign.toString(),
+                        "cosmic_" + ClinicalSignificance.pathogenic.toString(),
+
+                        "cosmic_" + ClinicalSignificance.benign.toString() + "_confirmed",
+                        "cosmic_" + ClinicalSignificance.pathogenic.toString() + "_confirmed")
                         .setNullable(false)
         );
 
@@ -278,6 +316,7 @@ public class SampleIndexConfiguration {
         }
         annotationIndexConfiguration.biotype.validate();
         annotationIndexConfiguration.consequenceType.validate();
+        annotationIndexConfiguration.transcriptFlagIndexConfiguration.validate();
         annotationIndexConfiguration.clinicalSignificance.validate();
         annotationIndexConfiguration.clinicalSource.validate();
     }
@@ -302,6 +341,13 @@ public class SampleIndexConfiguration {
         }
         if (annotationIndexConfiguration.consequenceType == null) {
             annotationIndexConfiguration.consequenceType = defaultConfiguration.annotationIndexConfiguration.consequenceType;
+        }
+        if (annotationIndexConfiguration.transcriptFlagIndexConfiguration == null) {
+            annotationIndexConfiguration.transcriptFlagIndexConfiguration = defaultConfiguration.annotationIndexConfiguration
+                    .transcriptFlagIndexConfiguration;
+        }
+        if (annotationIndexConfiguration.transcriptCombination == null) {
+            annotationIndexConfiguration.transcriptCombination = defaultConfiguration.annotationIndexConfiguration.transcriptCombination;
         }
         if (annotationIndexConfiguration.clinicalSignificance == null) {
             annotationIndexConfiguration.clinicalSignificance = defaultConfiguration.annotationIndexConfiguration.clinicalSignificance;
@@ -381,8 +427,10 @@ public class SampleIndexConfiguration {
         private PopulationFrequencyIndexConfiguration populationFrequency = new PopulationFrequencyIndexConfiguration();
         private IndexFieldConfiguration biotype;
         private IndexFieldConfiguration consequenceType;
-        private IndexFieldConfiguration clinicalSignificance;
         private IndexFieldConfiguration clinicalSource;
+        private IndexFieldConfiguration clinicalSignificance;
+        private IndexFieldConfiguration transcriptFlagIndexConfiguration;
+        private Boolean transcriptCombination;
 
         public PopulationFrequencyIndexConfiguration getPopulationFrequency() {
             return populationFrequency;
@@ -411,6 +459,23 @@ public class SampleIndexConfiguration {
             return this;
         }
 
+        public IndexFieldConfiguration getTranscriptFlagIndexConfiguration() {
+            return transcriptFlagIndexConfiguration;
+        }
+
+        public void setTranscriptFlagIndexConfiguration(IndexFieldConfiguration transcriptFlagIndexConfiguration) {
+            this.transcriptFlagIndexConfiguration = transcriptFlagIndexConfiguration;
+        }
+
+        public IndexFieldConfiguration getClinicalSource() {
+            return clinicalSource;
+        }
+
+        public AnnotationIndexConfiguration setClinicalSource(IndexFieldConfiguration clinicalSource) {
+            this.clinicalSource = clinicalSource;
+            return this;
+        }
+
         public IndexFieldConfiguration getClinicalSignificance() {
             return clinicalSignificance;
         }
@@ -420,12 +485,12 @@ public class SampleIndexConfiguration {
             return this;
         }
 
-        public IndexFieldConfiguration getClinicalSource() {
-            return clinicalSource;
+        public Boolean getTranscriptCombination() {
+            return transcriptCombination;
         }
 
-        public AnnotationIndexConfiguration setClinicalSource(IndexFieldConfiguration clinicalSource) {
-            this.clinicalSource = clinicalSource;
+        public AnnotationIndexConfiguration setTranscriptCombination(Boolean transcriptCombination) {
+            this.transcriptCombination = transcriptCombination;
             return this;
         }
 
@@ -441,13 +506,14 @@ public class SampleIndexConfiguration {
             return Objects.equals(populationFrequency, that.populationFrequency)
                     && Objects.equals(biotype, that.biotype)
                     && Objects.equals(consequenceType, that.consequenceType)
+                    && Objects.equals(transcriptFlagIndexConfiguration, that.transcriptFlagIndexConfiguration)
                     && Objects.equals(clinicalSignificance, that.clinicalSignificance)
                     && Objects.equals(clinicalSource, that.clinicalSource);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(populationFrequency, biotype, consequenceType, clinicalSignificance, clinicalSource);
+            return Objects.hash(populationFrequency, biotype, consequenceType, transcriptFlagIndexConfiguration, clinicalSignificance, clinicalSource);
         }
     }
 

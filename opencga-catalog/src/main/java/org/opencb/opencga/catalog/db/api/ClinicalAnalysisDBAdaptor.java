@@ -63,15 +63,18 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         QUALITY_CONTROL("qualityControl", OBJECT, ""),
+        QUALITY_CONTROL_SUMMARY("qualityControl.summary", TEXT, ""),
         CONSENT("consent", OBJECT, ""),
         PRIORITY("priority", OBJECT, ""),
         PRIORITY_ID("priority.id", TEXT, ""),
         ANALYST("analyst", TEXT_ARRAY, ""),
         ANALYST_ID("analyst.id", TEXT, ""),
         ANALYST_ASSIGNED_BY("analyst.assignedBy", TEXT, ""),
+        REPORT("report", OBJECT, ""),
         FLAGS("flags", OBJECT, ""),
         FLAGS_ID("flags.id", TEXT, ""),
         RELEASE("release", INTEGER, ""),
+        PANEL_LOCK("panelLock", BOOLEAN, ""),
         LOCKED("locked", BOOLEAN, ""),
 
         SAMPLE("sample", TEXT_ARRAY, ""), // Alias to search for samples within proband.samples or family.members.samples
@@ -79,17 +82,19 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
 
         FAMILY("family", TEXT_ARRAY, ""),
         FAMILY_ID("family.id", TEXT, ""),
-        FAMILY_UID("family.uid", INTEGER, ""),
-        FAMILY_MEMBERS_UID("family.members.uid", INTEGER_ARRAY, ""),
-        FAMILY_MEMBERS_SAMPLES_UID("family.members.samples.uid", INTEGER_ARRAY, ""),
+        FAMILY_UID("family.uid", LONG, ""),
+        FAMILY_MEMBERS_UID("family.members.uid", LONG_ARRAY, ""),
+        FAMILY_MEMBERS_SAMPLES_UID("family.members.samples.uid", LONG_ARRAY, ""),
         FILES("files", TEXT_ARRAY, ""),
+        FILES_UID("files.uid", LONG_ARRAY, ""),
         PANELS("panels", TEXT_ARRAY, ""),
+        PANELS_UID("panels.uid", LONG_ARRAY, ""),
         COMMENTS("comments", TEXT_ARRAY, ""),
         COMMENTS_DATE("comments.date", TEXT, ""),
         ALERTS("alerts", TEXT_ARRAY, ""),
         PROBAND("proband", TEXT_ARRAY, ""),
         PROBAND_ID("proband.id", TEXT, ""),
-        PROBAND_UID("proband.uid", INTEGER, ""),
+        PROBAND_UID("proband.uid", LONG, ""),
         PROBAND_SAMPLES_ID("proband.samples.id", TEXT_ARRAY, ""),
         PROBAND_SAMPLES_UID("proband.samples.uid", INTEGER, ""),
         INTERPRETATION("interpretation", TEXT, ""),
@@ -104,13 +109,10 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, ""),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
-        STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
-
-        ACL("acl", TEXT_ARRAY, ""),
-        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
-        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, "");
+        STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
 
         private static Map<String, QueryParams> map;
+
         static {
             map = new LinkedMap();
             for (QueryParams params : QueryParams.values()) {
@@ -187,8 +189,8 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
     OpenCGAResult<?> delete(ClinicalAnalysis id, List<ClinicalAudit> clinicalAuditList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-     OpenCGAResult<ClinicalAnalysis> delete(Query query, List<ClinicalAudit> clinicalAuditList)
-             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
+    OpenCGAResult<ClinicalAnalysis> delete(Query query, List<ClinicalAudit> clinicalAuditList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     long getStudyId(long clinicalAnalysisId) throws CatalogDBException;
 
@@ -196,7 +198,7 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
      * be applied.
      *
-     * @param studyId study id containing the entries affected.
+     * @param studyId          study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
      * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.

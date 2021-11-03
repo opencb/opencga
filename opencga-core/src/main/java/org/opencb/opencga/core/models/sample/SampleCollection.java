@@ -39,7 +39,6 @@ public class SampleCollection {
         this.attributes = attributes;
     }
 
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleCollection{");

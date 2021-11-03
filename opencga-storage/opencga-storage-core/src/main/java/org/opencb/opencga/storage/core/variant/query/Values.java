@@ -53,7 +53,16 @@ public class Values<V> implements QueryElement, Iterable<V> {
         return values;
     }
 
-    public <R> List<R> getValues(Function<V, R> function) {
+    public List<V> getValues(Predicate<V> selector) {
+        return values.stream().filter(selector).collect(Collectors.toList());
+    }
+
+    public Values<V> filter(Predicate<V> selector) {
+        List<V> values = getValues(selector);
+        return new Values<V>(values.size() <= 1 ? null : operation, values);
+    }
+
+    public <R> List<R> mapValues(Function<V, R> function) {
         return values.stream().map(function).collect(Collectors.toList());
     }
 

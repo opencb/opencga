@@ -4,6 +4,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.mapreduce.Job;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
@@ -35,6 +36,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
     private boolean multiFileSamples;
     private AnnotationIndexConverter converter;
     private int firstSampleId;
+    private SampleIndexSchema schema;
 
     public static void setHasGenotype(Job job, boolean hasGenotype) {
         job.getConfiguration().setBoolean(HAS_GENOTYPE, hasGenotype);
@@ -62,15 +64,19 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
         for (int i = 0; i < annotationIndices.length; i++) {
             annotationIndices[i] = new HashMap<>();
         }
-        converter = new AnnotationIndexConverter(
-                new SampleIndexSchema(VariantMapReduceUtil.getSampleIndexConfiguration(context.getConfiguration())));
+        schema = new SampleIndexSchema(VariantMapReduceUtil.getSampleIndexConfiguration(context.getConfiguration()));
+        converter = new AnnotationIndexConverter(schema);
     }
 
     @Override
     protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
         VariantRow variantRow = new VariantRow(result);
         context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variants").increment(1);
-        AnnotationIndexEntry indexEntry = converter.convert(variantRow.getVariantAnnotation());
+        VariantAnnotation variantAnnotation = variantRow.getVariantAnnotation();
+        if (variantAnnotation == null) {
+            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "variantsAnnotationNull").increment(1);
+        }
+        AnnotationIndexEntry indexEntry = converter.convert(variantAnnotation);
         // TODO Get stats given index values
 
         Set<String> samples = multiFileSamples ? new HashSet<>(result.rawCells().length) : null;
@@ -95,7 +101,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
             if (samples == null || samples.add(sampleId + "_" + gt)) {
                 if (validGt) {
                     annotationIndices[sampleId - firstSampleId]
-                            .computeIfAbsent(gt, k -> new AnnotationIndexPutBuilder()).add(indexEntry);
+                            .computeIfAbsent(gt, k -> new AnnotationIndexPutBuilder(schema)).add(indexEntry);
                 }
             }
         }).walk();

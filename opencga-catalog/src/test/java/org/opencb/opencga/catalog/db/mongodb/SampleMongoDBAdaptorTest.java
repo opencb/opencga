@@ -87,12 +87,10 @@ public class SampleMongoDBAdaptorTest {
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        catalogSampleDBAdaptor.insert(studyId, new Sample("s1", null, null, null, 1, 1, "", false,
-                        Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()),
-                Collections.emptyList(), null);
-        catalogSampleDBAdaptor.insert(studyId, new Sample("s2", null, null, null, 1, 1, "", false,
-                        Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()),
-                Collections.emptyList(), null);
+        catalogSampleDBAdaptor.insert(studyId, new Sample("s1", null, null, null, null, null, 1, 1, "", false,
+                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()), Collections.emptyList(), null);
+        catalogSampleDBAdaptor.insert(studyId, new Sample("s2", null, null, null, null, null, 1, 1, "", false,
+                Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()), Collections.emptyList(), null);
     }
 
     DataResult<Sample> getSample(long studyUid, String sampleId, QueryOptions options) throws CatalogDBException,
@@ -281,7 +279,7 @@ public class SampleMongoDBAdaptorTest {
 
         List<Sample> samples = new ArrayList<>();
         samples.add(sample);
-        Cohort cohort = new Cohort("id_cohort_1", Enums.CohortType.CASE_CONTROL, "20210702",
+        Cohort cohort = new Cohort("id_cohort_1", Enums.CohortType.CASE_CONTROL, "20210702", "20210702",
                 "Test cohort", samples, 5, Collections.emptyMap());
 
         dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(studyId, cohort, Collections.emptyList(), null);
@@ -359,6 +357,83 @@ public class SampleMongoDBAdaptorTest {
         sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
         assertEquals(1, sampleDataResult.getNumResults());
         assertEquals("sample1", sampleDataResult.first().getId());
+    }
+
+    @Test
+    public void caseInsensitiveSearchTest() throws Exception {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
+
+        Sample sample1 = new Sample("sample1", null, "A description", 1);
+        Sample sample2 = new Sample("sample2", null, "A description", 1);
+        Sample sample2Ext = new Sample("sample2Ext", null, "A description", 1);
+
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, sample1, null, null);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, sample2, null, null);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, sample2Ext, null, null);
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
+
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/SAMpl*/i");
+        DataResult<Sample> sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(3, sampleDataResult.getNumResults());
+        assertTrue(Arrays.asList("sample1", "sample2", "sample2Ext")
+                .containsAll(sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList())));
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/SAMpl*/");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(0, sampleDataResult.getNumResults());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/SAMple2ext/");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(0, sampleDataResult.getNumResults());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/SAMple2ext/i");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("sample2Ext", sampleDataResult.first().getId());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/^SAMple/i");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(3, sampleDataResult.getNumResults());
+        assertTrue(Arrays.asList("sample1", "sample2", "sample2Ext")
+                .containsAll(sampleDataResult.getResults().stream().map(Sample::getId).collect(Collectors.toList())));
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/^SAMple/");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(0, sampleDataResult.getNumResults());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/^AMple/i");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(0, sampleDataResult.getNumResults());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/eXt$/i");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("sample2Ext", sampleDataResult.first().getId());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "~/^Sam\\w+eXt$/i");
+        sampleDataResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("sample2Ext", sampleDataResult.first().getId());
+
     }
 
     // Test if we can search for samples of an individual
@@ -454,7 +529,7 @@ public class SampleMongoDBAdaptorTest {
         dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, Collections.emptyList(), null);
         Sample sample = getSample(studyId, "HG0097", SampleManager.INCLUDE_SAMPLE_IDS).first();
 
-        dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(studyId, new Cohort("Cohort", Enums.CohortType.COLLECTION, "", "",
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(studyId, new Cohort("Cohort", Enums.CohortType.COLLECTION, "", "", "",
                 Collections.singletonList(sample), 1, null), null, null);
 
         thrown.expect(CatalogDBException.class);
@@ -476,7 +551,7 @@ public class SampleMongoDBAdaptorTest {
                 threads.add(new Thread(() -> {
                     try {
                         dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(studyId, new Cohort(cohortName, Enums.CohortType.COLLECTION,
-                                "", "", Collections.emptyList(), 1, null), null, null);
+                                "", "", "", Collections.emptyList(), 1, null), null, null);
                     } catch (CatalogException ignore) {
                         numFailures.incrementAndGet();
                     }

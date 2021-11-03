@@ -82,6 +82,7 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
  * Created by pfurio on 23/11/16.
@@ -320,6 +321,10 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory. [STDOUT]", arity = 1)
         public String outdir;
+
+        @Parameter(names = {"--compress", "-z"}, description = "Compress output file.", arity = 0)
+        public boolean compress;
+
     }
 
     @Parameters(commandNames = {VariantExportCommandOptions.EXPORT_RUN_COMMAND}, commandDescription = VariantExportTool.DESCRIPTION)
@@ -346,9 +351,6 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--output-file-name"}, description = "Output file name.", arity = 1)
         public String outputFileName;
-
-        @Parameter(names = {"--compress", "-z"}, description = "Compress output file.", arity = 0)
-        public boolean compress;
 
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;
@@ -379,6 +381,12 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = PANEL_MOI_DESC, arity = 1)
+        public String panelModeOfInheritance;
+        @Parameter(names = {"--panel-confidence"}, description = PANEL_CONFIDENCE_DESC, arity = 1)
+        public String panelConfidence;
+        @Parameter(names = {"--panel-role-in-cancer"}, description = PANEL_ROLE_IN_CANCER_DESC, arity = 1)
+        public String panelRoleInCancer;
 
         @Parameter(names = {"--saved-filter"}, description = SAVED_FILTER_DESCR, arity = 1)
         public String savedFilter;
@@ -863,6 +871,24 @@ public class VariantCommandOptions {
             return super.setPanel(panel);
         }
 
+        @Parameter(names = {"--panel-mode-of-inheritance"}, description = PANEL_MOI_DESC)
+        @Override
+        public AnnotationVariantQueryParams setPanelModeOfInheritance(String panelModeOfInheritance) {
+            return super.setPanelModeOfInheritance(panelModeOfInheritance);
+        }
+
+        @Parameter(names = {"--panel-confidence"}, description = PANEL_CONFIDENCE_DESC)
+        @Override
+        public AnnotationVariantQueryParams setPanelConfidence(String panelConfidence) {
+            return super.setPanelConfidence(panelConfidence);
+        }
+
+        @Parameter(names = {"--panel-role-in-cancer"}, description = PANEL_ROLE_IN_CANCER_DESC)
+        @Override
+        public AnnotationVariantQueryParams setPanelRoleInCancer(String panelRoleInCancer) {
+            return super.setPanelRoleInCancer(panelRoleInCancer);
+        }
+
         @Parameter(names = {"--cohort-stats-ref"}, description = VariantQueryParam.STATS_REF_DESCR)
         @Override
         public AnnotationVariantQueryParams setCohortStatsRef(String cohortStatsRef) {
@@ -941,10 +967,22 @@ public class VariantCommandOptions {
             return super.setFunctionalScore(functionalScore);
         }
 
-        @Parameter(names = {"--clinical-significance"}, description = VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        @Parameter(names = {"--clinical"}, description = ANNOT_CLINICAL_DESCR)
         @Override
-        public AnnotationVariantQueryParams setClinicalSignificance(String clinicalSignificance) {
-            return super.setClinicalSignificance(clinicalSignificance);
+        public AnnotationVariantQueryParams setClinical(String clinical) {
+            return super.setClinical(clinical);
+        }
+
+//        @Parameter(names = {"--clinical-significance"}, description = VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+//        @Override
+//        public AnnotationVariantQueryParams setClinicalSignificance(String clinicalSignificance) {
+//            return super.setClinicalSignificance(clinicalSignificance);
+//        }
+
+        @Parameter(names = {"--clinical-confirmed-status"}, description = ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        @Override
+        public AnnotationVariantQueryParams setClinicalConfirmedStatus(String clinicalConfirmedStatus) {
+            return super.setClinicalConfirmedStatus(clinicalConfirmedStatus);
         }
     }
 
@@ -1080,7 +1118,7 @@ public class VariantCommandOptions {
         public boolean indexOverwrite;
     }
 
-    @Parameters(commandNames = SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND, commandDescription = "Read precomputed sample variant stats")
+    @Parameters(commandNames = SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND, commandDescription = "Obtain sample variant stats from a sample.")
     public class SampleVariantStatsQueryCommandOptions {
         public static final String SAMPLE_VARIANT_STATS_QUERY_COMMAND = "sample-stats-query";
 
@@ -1089,9 +1127,6 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public Object jobOptions = commonJobOptionsObject;
-
-        @ParametersDelegate
-        public Object internalJobOptions = internalJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;

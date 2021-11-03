@@ -13,6 +13,7 @@ import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
@@ -20,6 +21,8 @@ import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverte
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -67,7 +70,11 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
         if (!valid) {
             return null;
         }
-        return calculate(variant, partial);
+        System.out.println("[" + variant + "] partial.gtCountMap = " + partial.gtCountMap);
+        VariantStats calculate = calculate(variant, partial);
+        System.out.println("[" + variant + "] calculate.getGenotypeCount() = " + calculate.getGenotypeCount());
+        System.out.println("[" + variant + "] calculate.getSampleCount() = " + calculate.getSampleCount());
+        return calculate;
     }
 
     protected void convert(Result result, Variant variant, VariantStatsPartial partial) {
@@ -109,6 +116,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
         private final boolean statsMultiAllelic;
         private final int studyId;
         private String defaultGenotype;
+        protected final Logger logger = LoggerFactory.getLogger(HBaseToGenotypeCountConverter.class);
 
         private HBaseToGenotypeCountConverter(VariantStorageMetadataManager metadataManager,
                                               boolean statsMultiAllelic, String unknownGenotype) {
@@ -167,8 +175,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
 
                             String gt = sample.getGT();
                             if (gt == null || gt.isEmpty()) {
-                                // This is a really weird situation, most likely due to errors in the input files
-                                logger.error("Empty genotype at sample " + sampleId + " in variant " + variant);
+                                sampleToGT.put(sampleId, null);
                             } else {
                                 sampleToGT.put(sampleId, gt);
                             }
@@ -257,7 +264,12 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                 }
             }
 
-            gtStrCount.forEach((str, count) -> partial.gtCountMap.merge(new Genotype(str), count, Integer::sum));
+            for (Map.Entry<String, Integer> entry : gtStrCount.entrySet()) {
+                Genotype gt = entry.getKey() == null
+                        ? null
+                        : new Genotype(entry.getKey());
+                partial.gtCountMap.merge(gt, entry.getValue(), Integer::sum);
+            }
 
             return true;
         }
@@ -295,7 +307,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                 for (Integer fileId : entry.getValue()) {
                     for (Integer sampleId : samplesInFile.get(fileId)) {
                         String gt = sampleToGT.get(sampleId);
-                        if (gt != null) {
+                        if (gt != null && !gt.equals(GenotypeClass.NA_GT_VALUE)) {
                             try {
                                 Genotype newGt = rearranger.rearrangeGenotype(new Genotype(gt));
                                 sampleToGT.put(sampleId, newGt.toString());

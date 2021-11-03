@@ -38,8 +38,26 @@ import java.util.Map;
  */
 public class ClinicalAnalysis extends PrivateStudyUid {
 
+    /**
+     * ClinicalAnalysis ID is a mandatory parameter when creating a new ClinicalAnalysis, this ID cannot be changed at the moment.
+     *
+     * @apiNote Required, Immutable, Unique
+     */
     private String id;
+
+    /**
+     * Global unique ID at the whole OpenCGA installation. This is automatically created during the ClinicalAnalysis creation and cannot be
+     * changed.
+     *
+     * @apiNote Internal, Unique, Immutable
+     */
     private String uuid;
+
+    /**
+     * An string to describe the properties of the ClinicalAnalysis.
+     *
+     * @apiNote
+     */
     private String description;
     private Type type;
 
@@ -52,6 +70,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private Family family;
 
     private List<Panel> panels;
+    private boolean panelLock;
 
     private boolean locked;
 
@@ -61,37 +80,69 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private ClinicalConsentAnnotation consent;
 
     private ClinicalAnalyst analyst;
+    private ClinicalReport report;
     private ClinicalPriorityAnnotation priority;
     private List<FlagAnnotation> flags;
 
+    /**
+     * String representing when the sample was created, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String creationDate;
+
+    /**
+     * String representing when was the last time the sample was modified, this is automatically set by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private String modificationDate;
+
     private String dueDate;
+
+    /**
+     * An integer describing the current data release.
+     *
+     * @apiNote Internal
+     */
     private int release;
 
     private ClinicalAnalysisQualityControl qualityControl;
 
     private List<ClinicalComment> comments;
     private List<ClinicalAudit> audit;
+
+    /**
+     * An object describing the internal information of the ClinicalAnalysis. This is managed by OpenCGA.
+     *
+     * @apiNote Internal
+     */
     private ClinicalAnalysisInternal internal;
+
+    /**
+     * You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.
+     *
+     * @apiNote
+     */
     private Map<String, Object> attributes;
 
+    /**
+     * An object describing the status of the ClinicalAnalysis.
+     *
+     * @apiNote
+     */
     private Status status;
-
-    public enum Type {
-        SINGLE, FAMILY, CANCER, COHORT, AUTOCOMPARATIVE
-    }
 
     public ClinicalAnalysis() {
     }
 
-
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, List<File> files, Individual proband,
-                            Family family, List<Panel> panels, boolean locked, Interpretation interpretation,
+                            Family family, List<Panel> panels, boolean panelLock, boolean locked, Interpretation interpretation,
                             List<Interpretation> secondaryInterpretations, ClinicalConsentAnnotation consent, ClinicalAnalyst analyst,
-                            ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, String creationDate, String modificationDate,
-                            String dueDate, int release, List<ClinicalComment> comments, ClinicalAnalysisQualityControl qualityControl,
-                            List<ClinicalAudit> audit, ClinicalAnalysisInternal internal, Map<String, Object> attributes, Status status) {
+                            ClinicalReport report, ClinicalPriorityAnnotation priority, List<FlagAnnotation> flags, String creationDate,
+                            String modificationDate, String dueDate, int release, List<ClinicalComment> comments,
+                            ClinicalAnalysisQualityControl qualityControl, List<ClinicalAudit> audit, ClinicalAnalysisInternal internal,
+                            Map<String, Object> attributes, Status status) {
         this.id = id;
         this.description = description;
         this.type = type;
@@ -100,11 +151,13 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         this.proband = proband;
         this.family = family;
         this.panels = panels;
+        this.panelLock = panelLock;
         this.locked = locked;
         this.interpretation = interpretation;
         this.secondaryInterpretations = secondaryInterpretations;
         this.consent = consent;
         this.analyst = analyst;
+        this.report = report;
         this.priority = priority;
         this.flags = flags;
         this.creationDate = creationDate;
@@ -131,18 +184,20 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         sb.append(", proband=").append(proband);
         sb.append(", family=").append(family);
         sb.append(", panels=").append(panels);
+        sb.append(", panelLock=").append(panelLock);
         sb.append(", locked=").append(locked);
         sb.append(", interpretation=").append(interpretation);
         sb.append(", secondaryInterpretations=").append(secondaryInterpretations);
         sb.append(", consent=").append(consent);
         sb.append(", analyst=").append(analyst);
+        sb.append(", report=").append(report);
         sb.append(", priority=").append(priority);
         sb.append(", flags=").append(flags);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", dueDate='").append(dueDate).append('\'');
-        sb.append(", qualityControl='").append(qualityControl).append('\'');
         sb.append(", release=").append(release);
+        sb.append(", qualityControl=").append(qualityControl);
         sb.append(", comments=").append(comments);
         sb.append(", audit=").append(audit);
         sb.append(", internal=").append(internal);
@@ -236,6 +291,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
+    public boolean isPanelLock() {
+        return panelLock;
+    }
+
+    public ClinicalAnalysis setPanelLock(boolean panelLock) {
+        this.panelLock = panelLock;
+        return this;
+    }
+
     public boolean isLocked() {
         return locked;
     }
@@ -278,6 +342,15 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis setAnalyst(ClinicalAnalyst analyst) {
         this.analyst = analyst;
+        return this;
+    }
+
+    public ClinicalReport getReport() {
+        return report;
+    }
+
+    public ClinicalAnalysis setReport(ClinicalReport report) {
+        this.report = report;
         return this;
     }
 
@@ -387,5 +460,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     public ClinicalAnalysis setStatus(Status status) {
         this.status = status;
         return this;
+    }
+
+    public enum Type {
+        SINGLE, FAMILY, CANCER, COHORT, AUTOCOMPARATIVE
     }
 }

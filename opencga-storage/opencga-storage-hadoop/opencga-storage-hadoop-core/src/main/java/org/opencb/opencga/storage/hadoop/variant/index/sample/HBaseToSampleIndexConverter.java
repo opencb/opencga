@@ -68,9 +68,12 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
                 } else if (columnStartsWith(cell, ANNOTATION_BT_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, ANNOTATION_BT_PREFIX_BYTES))
                             .setBiotypeIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
-                } else if (columnStartsWith(cell, ANNOTATION_CT_BT_PREFIX_BYTES)) {
-                    entry.getGtEntry(getGt(cell, ANNOTATION_CT_BT_PREFIX_BYTES))
-                            .setCtBtIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+                } else if (columnStartsWith(cell, ANNOTATION_TF_PREFIX_BYTES)) {
+                    entry.getGtEntry(getGt(cell, ANNOTATION_TF_PREFIX_BYTES))
+                            .setTranscriptFlagIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+                } else if (columnStartsWith(cell, ANNOTATION_CT_BT_TF_PREFIX_BYTES)) {
+                    entry.getGtEntry(getGt(cell, ANNOTATION_CT_BT_TF_PREFIX_BYTES))
+                            .setCtBtTfIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 } else if (columnStartsWith(cell, ANNOTATION_POP_FREQ_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, ANNOTATION_POP_FREQ_PREFIX_BYTES))
                             .setPopulationFrequencyIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());

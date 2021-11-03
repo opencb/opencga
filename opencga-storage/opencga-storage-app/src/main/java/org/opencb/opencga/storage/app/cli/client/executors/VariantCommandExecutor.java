@@ -247,7 +247,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         params.put(VariantStorageOptions.DEDUPLICATION_POLICY.key(), indexVariantsCommandOptions.deduplicationPolicy);
         params.put(VariantStorageOptions.STUDY.key(), indexVariantsCommandOptions.study);
         params.put(VariantStorageOptions.STATS_CALCULATE.key(), indexVariantsCommandOptions.calculateStats);
-        params.put(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.excludeGenotype);
+        params.put(VariantStorageOptions.INCLUDE_GENOTYPE.key(), indexVariantsCommandOptions.includeGenotype);
         params.put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), indexVariantsCommandOptions.includeSampleData);
 //        variantOptions.put(VariantStorageEngine.Options.INCLUDE_SRC.key(), indexVariantsCommandOptions.includeSrc);
 //        variantOptions.put(VariantStorageEngine.Options.COMPRESS_GENOTYPES.key(), indexVariantsCommandOptions.compressGenotypes);
@@ -733,8 +733,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        VariantSearchManager variantSearchManager = new VariantSearchManager(solrUrl, dbName);
 //        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getStudyConfigurationManager(),
 //                variantStorageEngine.getCellBaseUtils(), variantStorageEngine.getConfiguration());
-        VariantSearchManager variantSearchManager = new VariantSearchManager(variantStorageEngine.getMetadataManager(),
-                variantStorageEngine.getConfiguration());
+        VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
         boolean querying = true;
         QueryOptions options = new QueryOptions();
         options.putAll(searchOptions.commonOptions.params);

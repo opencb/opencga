@@ -92,40 +92,40 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
-    @Deprecated
-    @POST
-    @Path("/{user}/login")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Get identified and gain access to the system",
-            notes = "Login method is implemented using JSON Web Tokens that use the standard RFC 7519. The provided tokens are not " +
-                    "stored by OpenCGA so there is not a logout method anymore. Tokens are provided with an expiration time that, once " +
-                    "finished, will no longer be valid.\nIf password is provided it will attempt to login the user. If no password is " +
-                    "provided and a valid token is given, a new token will be provided extending the expiration time.",
-            response = AuthenticationResponse.class, hidden = true)
-    public Response deprecatedLogin(
-            @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-            @ApiParam(value = "JSON containing the parameter 'password'") LoginParams login) {
-        try {
-            if (login == null) {
-                login = new LoginParams();
-            }
-            AuthenticationResponse authenticationResponse;
-            if (StringUtils.isNotEmpty(login.getPassword())) {
-                authenticationResponse = catalogManager.getUserManager().login(userId, login.getPassword());
-            } else if (StringUtils.isNotEmpty(this.token)) {
-                authenticationResponse = catalogManager.getUserManager().refreshToken(this.token);
-            } else {
-                throw new Exception("Neither a password nor a token was provided.");
-            }
-
-            OpenCGAResult<AuthenticationResponse> response = new OpenCGAResult<>(0, Collections.emptyList(), 1,
-                    Collections.singletonList(authenticationResponse), 1);
-
-            return createOkResponse(response);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @Deprecated
+//    @POST
+//    @Path("/{user}/login")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "Get identified and gain access to the system",
+//            notes = "Login method is implemented using JSON Web Tokens that use the standard RFC 7519. The provided tokens are not " +
+//                    "stored by OpenCGA so there is not a logout method anymore. Tokens are provided with an expiration time that, once " +
+//                    "finished, will no longer be valid.\nIf password is provided it will attempt to login the user. If no password is " +
+//                    "provided and a valid token is given, a new token will be provided extending the expiration time.",
+//            response = AuthenticationResponse.class, hidden = true)
+//    public Response deprecatedLogin(
+//            @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
+//            @ApiParam(value = "JSON containing the parameter 'password'") LoginParams login) {
+//        try {
+//            if (login == null) {
+//                login = new LoginParams();
+//            }
+//            AuthenticationResponse authenticationResponse;
+//            if (StringUtils.isNotEmpty(login.getPassword())) {
+//                authenticationResponse = catalogManager.getUserManager().login(userId, login.getPassword());
+//            } else if (StringUtils.isNotEmpty(this.token)) {
+//                authenticationResponse = catalogManager.getUserManager().refreshToken(this.token);
+//            } else {
+//                throw new Exception("Neither a password nor a token was provided.");
+//            }
+//
+//            OpenCGAResult<AuthenticationResponse> response = new OpenCGAResult<>(0, Collections.emptyList(), 1,
+//                    Collections.singletonList(authenticationResponse), 1);
+//
+//            return createOkResponse(response);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/login")
@@ -163,23 +163,23 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
-    @Deprecated
-    @POST
-    @Path("/{user}/password")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Change the password of a user",
-            notes = "Only for local users. Not available for users belonging to external authentication origins.", response = User.class,
-            hidden = true)
-    public Response deprecatedChangePasswordPost(
-            @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-            @ApiParam(value = "JSON containing the change of password parameters", required = true) PasswordChangeParams params) {
-        try {
-            catalogManager.getUserManager().changePassword(userId, params.getPassword(), params.getNewPassword());
-            return createOkResponse(DataResult.empty());
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @Deprecated
+//    @POST
+//    @Path("/{user}/password")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "Change the password of a user",
+//            notes = "Only for local users. Not available for users belonging to external authentication origins.", response = User.class,
+//            hidden = true)
+//    public Response deprecatedChangePasswordPost(
+//            @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
+//            @ApiParam(value = "JSON containing the change of password parameters", required = true) PasswordChangeParams params) {
+//        try {
+//            catalogManager.getUserManager().changePassword(userId, params.getPassword(), params.getNewPassword());
+//            return createOkResponse(DataResult.empty());
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @POST
     @Path("/password")
@@ -196,18 +196,18 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{user}/reset-password")
-    @ApiOperation(value = "Reset password", hidden = true,
-            notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.", response = User.class)
-    public Response resetPassword(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
-        try {
-            OpenCGAResult<User> result = catalogManager.getUserManager().resetPassword(userId, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/{user}/reset-password")
+//    @ApiOperation(value = "Reset password", hidden = true,
+//            notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.", response = User.class)
+//    public Response resetPassword(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
+//        try {
+//            OpenCGAResult<User> result = catalogManager.getUserManager().resetPassword(userId, token);
+//            return createOkResponse(result);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @GET
     @Path("/{user}/projects")

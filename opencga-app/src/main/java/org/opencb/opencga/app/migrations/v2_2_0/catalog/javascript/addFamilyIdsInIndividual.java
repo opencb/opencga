@@ -6,8 +6,8 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 
 import java.nio.file.Path;
 
-@Migration(id="add_familyIds_in_individual", description = "Add new list of familyIds in Individual #1795", version = "2.2.0",
-        language = Migration.MigrationLanguage.JAVASCRIPT, rank = 1)
+@Migration(id = "add_familyIds_in_individual", description = "Add new list of familyIds in Individual #1795", version = "2.2.0",
+        language = Migration.MigrationLanguage.JAVASCRIPT, date = 20210630)
 public class addFamilyIdsInIndividual extends MigrationTool {
 
     @Override

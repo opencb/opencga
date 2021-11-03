@@ -45,6 +45,7 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
@@ -119,6 +120,22 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public static final String PANEL_DESC = "Filter by genes from the given disease panel";
     public static final QueryParam PANEL =
             QueryParam.create("panel", PANEL_DESC, QueryParam.Type.TEXT);
+    public static final String PANEL_MOI_DESC = "Filter genes from specific panels that match certain mode of inheritance. " +
+                    "Accepted values : "
+                    + "[ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, "
+                    + "deNovo, mendelianError, compoundHeterozygous ]";
+    public static final QueryParam PANEL_MODE_OF_INHERITANCE =
+            QueryParam.create("panelModeOfInheritance", PANEL_MOI_DESC
+                    , QueryParam.Type.TEXT);
+    public static final String PANEL_CONFIDENCE_DESC = "Filter genes from specific panels that match certain confidence. " +
+            "Accepted values : [ high, medium, low, rejected ]";
+    public static final QueryParam PANEL_CONFIDENCE =
+            QueryParam.create("panelConfidence", PANEL_CONFIDENCE_DESC, QueryParam.Type.TEXT);
+
+    public static final String PANEL_ROLE_IN_CANCER_DESC = "Filter genes from specific panels that match certain role in cancer. " +
+            "Accepted values : [ both, oncogene, tumorSuppressorGene, fusion ]";
+    public static final QueryParam PANEL_ROLE_IN_CANCER =
+            QueryParam.create("panelRoleInCancer", PANEL_ROLE_IN_CANCER_DESC, QueryParam.Type.TEXT);
 
     public static final List<QueryParam> VARIANT_CATALOG_QUERY_PARAMS = Arrays.asList(
             SAMPLE_ANNOTATION,
@@ -129,6 +146,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             FAMILY_PROBAND,
             FAMILY_SEGREGATION,
             PANEL,
+            PANEL_MODE_OF_INHERITANCE,
+            PANEL_CONFIDENCE,
+            PANEL_ROLE_IN_CANCER,
             SAVED_FILTER
             );
 
@@ -610,14 +630,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             Set<String> variants = new HashSet<>();
             List<String> panels = query.getAsStringList(PANEL.key());
             for (String panelId : panels) {
-                org.opencb.opencga.core.models.panel.Panel panel = getPanel(defaultStudyStr, panelId, token);
-                for (GenePanel genePanel : panel.getGenes()) {
-                    String gene = genePanel.getName();
-                    if (StringUtils.isEmpty(gene)) {
-                        gene = genePanel.getId();
-                    }
-                    geneNames.add(gene);
-                }
+                Panel panel = getPanel(defaultStudyStr, panelId, token);
+                geneNames.addAll(getGenesFromPanel(query, panel));
 
                 if (CollectionUtils.isNotEmpty(panel.getRegions()) || CollectionUtils.isNotEmpty(panel.getVariants())) {
                     if (assembly == null) {
@@ -628,7 +642,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     if (panel.getRegions() != null) {
                         for (DiseasePanel.RegionPanel region : panel.getRegions()) {
                             for (DiseasePanel.Coordinate coordinate : region.getCoordinates()) {
-                                if (coordinate.getAssembly().equalsIgnoreCase(assembly)) {
+                                if (coordinate  .getAssembly().equalsIgnoreCase(assembly)) {
                                     regions.add(Region.parseRegion(coordinate.getLocation()));
                                 }
                             }
@@ -659,11 +673,67 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             }
             query.put(GENE.key(), geneNames);
             query.put(SKIP_MISSING_GENES, true);
+        } else {
+            if (isValidParam(query, PANEL_CONFIDENCE)) {
+                throw VariantQueryException.malformedParam(PANEL_CONFIDENCE, query.getString(PANEL_CONFIDENCE.key()),
+                        "Require parameter \"" + PANEL.key() + "\" to use \"" + PANEL_CONFIDENCE.toString() + "\".");
+            }
+            if (isValidParam(query, PANEL_MODE_OF_INHERITANCE)) {
+                throw VariantQueryException.malformedParam(PANEL_MODE_OF_INHERITANCE, query.getString(PANEL_MODE_OF_INHERITANCE.key()),
+                        "Require parameter \"" + PANEL.key() + "\" to use \"" + PANEL_MODE_OF_INHERITANCE.toString() + "\".");
+            }
+            if (isValidParam(query, PANEL_ROLE_IN_CANCER)) {
+                throw VariantQueryException.malformedParam(PANEL_ROLE_IN_CANCER, query.getString(PANEL_ROLE_IN_CANCER.key()),
+                        "Require parameter \"" + PANEL.key() + "\" to use \"" + PANEL_ROLE_IN_CANCER.toString() + "\".");
+            }
         }
 
         logger.debug("Catalog parsed query : " + VariantQueryUtils.printQuery(query));
 
         return query;
+    }
+
+    protected static Set<String> getGenesFromPanel(Query query, Panel panel) {
+        Set<String> geneNames = new HashSet<>();
+        Set<ClinicalProperty.Confidence> panelConfidence =
+                new HashSet<>(getAsEnumList(query, PANEL_CONFIDENCE, ClinicalProperty.Confidence.class));
+        Set<ClinicalProperty.ModeOfInheritance> panelModeOfInheritance =
+                query.getAsStringList(PANEL_MODE_OF_INHERITANCE.key())
+                        .stream()
+                        .map(ClinicalProperty.ModeOfInheritance::parse)
+                        .collect(Collectors.toSet());
+        Set<ClinicalProperty.RoleInCancer> panelRoleInCancer =
+                new HashSet<>(getAsEnumList(query, PANEL_ROLE_IN_CANCER, ClinicalProperty.RoleInCancer.class));
+
+        for (GenePanel genePanel : panel.getGenes()) {
+            // Do not filter out if undefined
+            if (!panelConfidence.isEmpty()
+                    && genePanel.getConfidence() != null
+                    && !panelConfidence.contains(genePanel.getConfidence())) {
+                // Discard this gene
+                continue;
+            }
+            // Do not filter out if undefined
+            if (!panelModeOfInheritance.isEmpty()
+                    && genePanel.getModeOfInheritance() != null
+                    && !panelModeOfInheritance.contains(genePanel.getModeOfInheritance())) {
+                // Discard this gene
+                continue;
+            }
+            // Do not filter out if undefined
+            if (!panelRoleInCancer.isEmpty()
+                    && genePanel.getCancer() != null && genePanel.getCancer().getRole() != null
+                    && !panelRoleInCancer.contains(genePanel.getCancer().getRole())) {
+                // Discard this gene
+                continue;
+            }
+            String gene = genePanel.getName();
+            if (StringUtils.isEmpty(gene)) {
+                gene = genePanel.getId();
+            }
+            geneNames.add(gene);
+        }
+        return geneNames;
     }
 
     /**
@@ -907,8 +977,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
      * @return The panel
      * @throws CatalogException if the panel does not exist, or the user does not have permissions to see it.
      */
-    public org.opencb.opencga.core.models.panel.Panel getPanel(String studyId, String panelId, String sessionId) throws CatalogException {
-        org.opencb.opencga.core.models.panel.Panel panel = null;
+    public Panel getPanel(String studyId, String panelId, String sessionId) throws CatalogException {
+        Panel panel = null;
         if (StringUtils.isNotEmpty(studyId)) {
             try {
                 panel = catalogManager.getPanelManager().get(studyId, panelId, null, sessionId).first();
@@ -1156,7 +1226,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
                                         String sessionId) throws CatalogException {
             if (release == null) {
-                List<Study> studies = catalogManager.getStudyManager().get(values, StudyManager.INCLUDE_STUDY_ID, false, sessionId)
+                List<Study> studies = catalogManager.getStudyManager().get(values, StudyManager.INCLUDE_STUDY_IDS, false, sessionId)
                         .getResults();
                 return studies.stream().map(Study::getFqn).collect(Collectors.toList());
             } else {

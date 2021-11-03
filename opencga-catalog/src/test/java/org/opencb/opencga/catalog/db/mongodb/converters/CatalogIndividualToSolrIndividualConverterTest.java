@@ -48,7 +48,7 @@ public class CatalogIndividualToSolrIndividualConverterTest {
         Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         Individual individual = new Individual("Id", "individual", new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, "Spanish", new IndividualPopulation("valencian", "", ""), null, "",
-                        Collections.emptyList(), false, 2, AnnotationHelper.createAnnotation(), Collections.emptyList(), Collections.emptyList(), null);
+                Collections.emptyList(), false, 2, AnnotationHelper.createAnnotation(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null);
 
         individual.setUid(300)
                 .setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).setVersion(4).setInternal(IndividualInternal.init())

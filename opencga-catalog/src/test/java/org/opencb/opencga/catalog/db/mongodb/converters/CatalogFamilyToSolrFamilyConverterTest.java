@@ -43,7 +43,7 @@ public class CatalogFamilyToSolrFamilyConverterTest {
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         Family family = new Family("id", "family", null, null,
                 Arrays.asList(new Individual().setId("I1"), new Individual().setId("I2")), "test", 1000, AnnotationHelper.createAnnotation(), null);
-        family.setUid(100).setInternal(new FamilyInternal(new FamilyStatus("READY"))).setRelease(1).setVersion(2);
+        family.setUid(100).setInternal(FamilyInternal.init()).setRelease(1).setVersion(2);
         FamilySolrModel familySolrModel = new CatalogFamilyToSolrFamilyConverter(study).convertToStorageType(family);
 
         assertEquals(familySolrModel.getUid(), family.getUid());

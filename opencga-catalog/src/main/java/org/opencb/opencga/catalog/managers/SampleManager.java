@@ -36,12 +36,16 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
-import org.opencb.opencga.core.models.common.*;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.CustomStatus;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
@@ -106,27 +110,18 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw new CatalogException("Only one sample allowed when requesting multiple versions");
         }
 
-        Function<Sample, String> sampleStringFunction = Sample::getId;
-        SampleDBAdaptor.QueryParams idQueryParam = null;
-        for (String entry : uniqueList) {
-            SampleDBAdaptor.QueryParams param = SampleDBAdaptor.QueryParams.ID;
-            if (UuidUtils.isOpenCgaUuid(entry)) {
-                param = SampleDBAdaptor.QueryParams.UUID;
-                sampleStringFunction = Sample::getUuid;
-            }
-            if (idQueryParam == null) {
-                idQueryParam = param;
-            }
-            if (idQueryParam != param) {
-                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
-            }
-        }
+        SampleDBAdaptor.QueryParams idQueryParam = getFieldFilter(uniqueList);
         queryCopy.put(idQueryParam.key(), uniqueList);
 
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
         OpenCGAResult<Sample> sampleDataResult = sampleDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
+
+        Function<Sample, String> sampleStringFunction = Sample::getId;
+        if (idQueryParam.equals(SampleDBAdaptor.QueryParams.UUID)) {
+            sampleStringFunction = Sample::getUuid;
+        }
 
         if (ignoreException || sampleDataResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, sampleStringFunction, sampleDataResult, ignoreException, versioned);
@@ -139,6 +134,23 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         } else {
             throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see some or none of the samples.");
         }
+    }
+
+    SampleDBAdaptor.QueryParams getFieldFilter(List<String> idList) throws CatalogException {
+        SampleDBAdaptor.QueryParams idQueryParam = null;
+        for (String entry : idList) {
+            SampleDBAdaptor.QueryParams param = SampleDBAdaptor.QueryParams.ID;
+            if (UuidUtils.isOpenCgaUuid(entry)) {
+                param = SampleDBAdaptor.QueryParams.UUID;
+            }
+            if (idQueryParam == null) {
+                idQueryParam = param;
+            }
+            if (idQueryParam != param) {
+                throw new CatalogException("Found uuids and ids in the same query. Please, choose one or do two different queries.");
+            }
+        }
+        return idQueryParam;
     }
 
     private OpenCGAResult<Sample> getSample(long studyUid, String sampleUuid, QueryOptions options) throws CatalogException {
@@ -180,8 +192,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setProcessing(ParamUtils.defaultObject(sample.getProcessing(), SampleProcessing::new));
         sample.setCollection(ParamUtils.defaultObject(sample.getCollection(), SampleCollection::new));
         sample.setQualityControl(ParamUtils.defaultObject(sample.getQualityControl(), SampleQualityControl::new));
-        sample.setCreationDate(ParamUtils.defaultString(sample.getCreationDate(), TimeUtils.getTime()));
-        sample.setModificationDate(TimeUtils.getTime());
+        sample.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(sample.getCreationDate(),
+                SampleDBAdaptor.QueryParams.CREATION_DATE.key()));
+        sample.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(sample.getModificationDate(),
+                SampleDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         sample.setDescription(ParamUtils.defaultString(sample.getDescription(), ""));
         sample.setPhenotypes(ParamUtils.defaultObject(sample.getPhenotypes(), Collections.emptyList()));
 
@@ -189,8 +203,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setFileIds(ParamUtils.defaultObject(sample.getFileIds(), Collections.emptyList()));
 
         sample.setStatus(ParamUtils.defaultObject(sample.getStatus(), CustomStatus::new));
-        sample.setInternal(ParamUtils.defaultObject(sample.getInternal(), SampleInternal::init));
-        sample.getInternal().setStatus(new Status());
+        sample.setInternal(SampleInternal.init());
         sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
 
         sample.setAnnotationSets(ParamUtils.defaultObject(sample.getAnnotationSets(), Collections.emptyList()));
@@ -319,6 +332,18 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
+        changeQueryId(query, ParamConstants.SAMPLE_RGA_STATUS_PARAM, SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key());
+        changeQueryId(query, ParamConstants.SAMPLE_PROCESSING_PRODUCT_PARAM, SampleDBAdaptor.QueryParams.PROCESSING_PRODUCT.key());
+        changeQueryId(query, ParamConstants.SAMPLE_PROCESSING_PREPARATION_METHOD_PARAM,
+                SampleDBAdaptor.QueryParams.PROCESSING_PREPARATION_METHOD.key());
+        changeQueryId(query, ParamConstants.SAMPLE_PROCESSING_EXTRACTION_METHOD_PARAM,
+                SampleDBAdaptor.QueryParams.PROCESSING_EXTRACTION_METHOD.key());
+        changeQueryId(query, ParamConstants.SAMPLE_PROCESSING_LAB_SAMPLE_ID_PARAM,
+                SampleDBAdaptor.QueryParams.PROCESSING_LAB_SAMPLE_ID.key());
+        changeQueryId(query, ParamConstants.SAMPLE_COLLECTION_TISSUE_PARAM, SampleDBAdaptor.QueryParams.COLLECTION_TISSUE.key());
+        changeQueryId(query, ParamConstants.SAMPLE_COLLECTION_ORGAN_PARAM, SampleDBAdaptor.QueryParams.COLLECTION_ORGAN.key());
+        changeQueryId(query, ParamConstants.SAMPLE_COLLECTION_METHOD_PARAM, SampleDBAdaptor.QueryParams.COLLECTION_METHOD.key());
+
         fixQualityControlQuery(query);
         super.fixQueryObject(query);
 
@@ -1008,6 +1033,15 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             }
         }
 
+        if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.CREATION_DATE.key()))) {
+            ParamUtils.checkDateFormat(parameters.getString(SampleDBAdaptor.QueryParams.CREATION_DATE.key()),
+                    SampleDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.MODIFICATION_DATE.key()))) {
+            ParamUtils.checkDateFormat(parameters.getString(SampleDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
+                    SampleDBAdaptor.QueryParams.MODIFICATION_DATE.key());
+        }
+
         if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
             ParamUtils.checkUpdateParametersMap(parameters);
         }
@@ -1427,14 +1461,19 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     private void fixQualityControlQuery(Query query) {
         String variableSetId = "opencga_sample_variant_stats";
-        List<String> simpleStatsKeys = Arrays.asList(SampleDBAdaptor.STATS_VARIANT_COUNT,
-                "stats.tiTvRatio", "stats.qualityAvg", "stats.qualityStdDev", "stats.heterozygosityRate");
 
-        List<String> mapStatsKeys = Arrays.asList("stats.chromosomeCount", "stats.typeCount", "stats.genotypeCount", "stats.depthCount",
-                "stats.biotypeCount", "stats.clinicalSignificanceCount", "stats.consequenceTypeCount");
+        List<String> simpleStatsKeys = Arrays.asList(ParamConstants.SAMPLE_VARIANT_STATS_COUNT_PARAM,
+                ParamConstants.SAMPLE_VARIANT_STATS_TI_TV_RATIO_PARAM, ParamConstants.SAMPLE_VARIANT_STATS_QUALITY_AVG_PARAM,
+                ParamConstants.SAMPLE_VARIANT_STATS_QUALITY_STD_DEV_PARAM, ParamConstants.SAMPLE_VARIANT_STATS_HETEROZYGOSITY_RATE_PARAM);
+
+        List<String> mapStatsKeys = Arrays.asList(ParamConstants.SAMPLE_VARIANT_STATS_CHROMOSOME_COUNT_PARAM,
+                ParamConstants.SAMPLE_VARIANT_STATS_TYPE_COUNT_PARAM, ParamConstants.SAMPLE_VARIANT_STATS_GENOTYPE_COUNT_PARAM,
+                ParamConstants.SAMPLE_VARIANT_STATS_DEPTH_COUNT_PARAM, ParamConstants.SAMPLE_VARIANT_STATS_BIOTYPE_COUNT_PARAM,
+                ParamConstants.SAMPLE_VARIANT_STATS_CLINICAL_SIGNIFICANCE_COUNT_PARAM,
+                ParamConstants.SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_PARAM);
 
         // Default annotation set id
-        String id = query.getString(SampleDBAdaptor.STATS_ID, "ALL");
+        String id = query.getString(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM, "ALL");
 
         List<String> annotationList = new LinkedList<>();
         for (String statsKey : simpleStatsKeys) {
@@ -1445,19 +1484,30 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 }
 
                 query.remove(statsKey);
-                annotationList.add(variableSetId + "__" + id + "@" + variableSetId + ":" + statsKey.replace("stats.", "") + value);
+
+                // Remove prefix stats
+                String field = statsKey.replace("stats", "");
+                // Convert it to cammel case again
+                field = Character.toLowerCase(field.charAt(0)) + field.substring(1);
+
+                annotationList.add(variableSetId + "__" + id + "@" + variableSetId + ":" + field + value);
             }
         }
         for (String statsKey : mapStatsKeys) {
             String value = query.getString(statsKey);
             if (StringUtils.isNotEmpty(value)) {
                 query.remove(statsKey);
-                annotationList.add(variableSetId + "__" + id + "@" + variableSetId + ":" + statsKey.replace("stats.", "") + "." + value);
+
+                // Remove prefix stats
+                String field = statsKey.replace("stats", "");
+                // Convert it to cammel case again
+                field = Character.toLowerCase(field.charAt(0)) + field.substring(1);
+                annotationList.add(variableSetId + "__" + id + "@" + variableSetId + ":" + field + "." + value);
             }
         }
 
         if (!annotationList.isEmpty()) {
-            query.remove(SampleDBAdaptor.STATS_ID);
+            query.remove(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM);
             query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
         }
     }
