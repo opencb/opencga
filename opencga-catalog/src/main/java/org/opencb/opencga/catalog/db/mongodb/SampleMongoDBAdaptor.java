@@ -373,7 +373,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return endWrite(tmpStartTime, 1, 1, events);
     }
 
-    void updateCohortReferences(ClientSession clientSession, long studyUid, List<String> sampleIds, String cohortId,
+    void updateCohortReferences(ClientSession clientSession, long studyUid, List<Long> sampleUids, String cohortId,
                                 ParamUtils.BasicUpdateAction action)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
 
@@ -392,7 +392,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyUid)
-                .append(QueryParams.ID.key(), sampleIds);
+                .append(QueryParams.UID.key(), sampleUids);
         Bson bsonQuery = parseQuery(query);
 
         DataResult update = sampleCollection.update(clientSession, bsonQuery, bsonUpdate,

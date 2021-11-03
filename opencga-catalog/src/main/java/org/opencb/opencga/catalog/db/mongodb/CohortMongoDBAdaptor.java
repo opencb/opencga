@@ -123,8 +123,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         }
         if (CollectionUtils.isNotEmpty(cohort.getSamples())) {
             // Add Cohort reference to samples
-            List<String> sampleIds = cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
-            dbAdaptorFactory.getCatalogSampleDBAdaptor().updateCohortReferences(clientSession, cohort.getStudyUid(), sampleIds,
+            List<Long> sampleUids = cohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().updateCohortReferences(clientSession, cohort.getStudyUid(), sampleUids,
                     cohort.getId(), ParamUtils.BasicUpdateAction.ADD);
         }
 
@@ -318,8 +318,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             if (parameters.containsKey(SAMPLES.key())) {
                 // Update numSamples field
                 QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(UID.key(), SAMPLES.key() + "." + UID.key()));
-                MongoDBIterator<Cohort> iterator = cohortCollection.iterator(clientSession, finalQuery, null,
-                        cohortConverter, options);
+                MongoDBIterator<Cohort> iterator = cohortCollection.iterator(clientSession, finalQuery, null, cohortConverter, options);
                 while (iterator.hasNext()) {
                     Cohort tmpCohort = iterator.next();
                     Bson bsonQuery = parseQuery(new Query(UID.key(), tmpCohort.getUid()));
@@ -328,8 +327,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 }
 
                 // Update sample references of cohort
-                updateCohortReferenceInSamples(clientSession, cohort, parameters.getAsList(QueryParams.SAMPLES.key(),
-                        Sample.class), (ParamUtils.BasicUpdateAction) parseUpdateDocument.getAttributes().get(SAMPLES.key()));
+                updateCohortReferenceInSamples(clientSession, cohort, parameters.getAsList(QueryParams.SAMPLES.key(), Sample.class),
+                        (ParamUtils.BasicUpdateAction) parseUpdateDocument.getAttributes().get(SAMPLES.key()));
             }
 
             logger.debug("Cohort {} successfully updated", cohort.getId());
@@ -360,19 +359,18 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     private void addSamples(ClientSession clientSession, Cohort cohort, List<Sample> samples) throws CatalogParameterException,
             CatalogDBException, CatalogAuthorizationException {
+        List<Long> newSampleUids = new ArrayList<>();
 
-        List<String> newSampleIds = new ArrayList<>();
-
-        Set<String> currentSampleIds = cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toSet());
+        Set<Long> currentSampleUids = cohort.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet());
 
         for (Sample sample : samples) {
-            String sampleId = sample.getId();
-            if (!currentSampleIds.contains(sampleId)) {
-                newSampleIds.add(sampleId);
+            long sampleUid = sample.getUid();
+            if (!currentSampleUids.contains(sampleUid)) {
+                newSampleUids.add(sampleUid);
             }
         }
-        if (!newSampleIds.isEmpty()) {
-            dbAdaptorFactory.getCatalogSampleDBAdaptor().updateCohortReferences(clientSession, cohort.getStudyUid(), newSampleIds,
+        if (!newSampleUids.isEmpty()) {
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().updateCohortReferences(clientSession, cohort.getStudyUid(), newSampleUids,
                     cohort.getId(), ParamUtils.BasicUpdateAction.ADD);
         }
     }
@@ -388,24 +386,24 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
      */
     private void removeSamples(ClientSession clientSession, Cohort cohort, List<Sample> samples, boolean remove)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
-        List<String> sampleIdsToRemove = new ArrayList<>();
+        List<Long> sampleUidsToRemove = new ArrayList<>();
 
-        Set<String> finalSampleSet = samples.stream().map(Sample::getId).collect(Collectors.toSet());
+        Set<Long> finalSampleSet = samples.stream().map(Sample::getUid).collect(Collectors.toSet());
 
-        for (Sample member : cohort.getSamples()) {
+        for (Sample sample : cohort.getSamples()) {
             if (remove) {
-                if (finalSampleSet.contains(member.getId())) {
-                    sampleIdsToRemove.add(member.getId());
+                if (finalSampleSet.contains(sample.getUid())) {
+                    sampleUidsToRemove.add(sample.getUid());
                 }
             } else {
-                if (!finalSampleSet.contains(member.getId())) {
-                    sampleIdsToRemove.add(member.getId());
+                if (!finalSampleSet.contains(sample.getUid())) {
+                    sampleUidsToRemove.add(sample.getUid());
                 }
             }
         }
-        if (!sampleIdsToRemove.isEmpty()) {
+        if (!sampleUidsToRemove.isEmpty()) {
             dbAdaptorFactory.getCatalogSampleDBAdaptor().updateCohortReferences(clientSession, cohort.getStudyUid(),
-                    sampleIdsToRemove, cohort.getId(), ParamUtils.BasicUpdateAction.REMOVE);
+                    sampleUidsToRemove, cohort.getId(), ParamUtils.BasicUpdateAction.REMOVE);
         }
     }
 

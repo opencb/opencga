@@ -483,14 +483,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 null, null, token).first().getId();
 
         assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getStudyManager().search(new Query(StudyDBAdaptor.QueryParams
-                .GROUP_USER_IDS.key(), "user2"), null, token).getResults().stream().map(Study::getId)
+                        .GROUP_USER_IDS.key(), "user2"), null, token).getResults().stream().map(Study::getId)
                 .collect(Collectors.toSet()));
 
 //        catalogManager.getStudyManager().createGroup(Long.toString(study_4), "admins", "user3", sessionIdUser);
         catalogManager.getStudyManager().updateGroup(study_4, "admins", ParamUtils.BasicUpdateAction.SET,
                 new GroupUpdateParams(Collections.singletonList("user3")), token);
         assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getStudyManager().search(new Query(StudyDBAdaptor.QueryParams
-                .GROUP_USER_IDS.key(), "user3"), null, token).getResults().stream().map(Study::getId)
+                        .GROUP_USER_IDS.key(), "user3"), null, token).getResults().stream().map(Study::getId)
                 .collect(Collectors.toSet()));
 
         assertEquals(new HashSet<>(Arrays.asList("phase1", "phase3", "study_1", "study_2", "study_3", "study_4")),
@@ -500,7 +500,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 catalogManager.getStudyManager().search(new Query(), null, token).getResults().stream().map(Study::getId)
                         .collect(Collectors.toSet()));
         assertEquals(new HashSet<>(Arrays.asList("study_1", "study_2", "study_3", "study_4")), catalogManager.getStudyManager().search(new
-                Query(StudyDBAdaptor.QueryParams.ID.key(), "~^study"), null, token).getResults().stream()
+                        Query(StudyDBAdaptor.QueryParams.ID.key(), "~^study"), null, token).getResults().stream()
                 .map(Study::getId).collect(Collectors.toSet()));
         assertEquals(Collections.singleton("s1"), catalogManager.getStudyManager().search(new Query(), null, sessionIdUser2).getResults()
                 .stream()
@@ -1104,7 +1104,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(1, numResults);
 
         numResults = catalogManager.getStudyManager().searchVariableSets(study.getFqn(),
-                new Query(StudyDBAdaptor.VariableSetParams.ID.key(), "vs1,vs2"), QueryOptions.empty(), token)
+                        new Query(StudyDBAdaptor.VariableSetParams.ID.key(), "vs1,vs2"), QueryOptions.empty(), token)
                 .getNumResults();
         assertEquals(2, numResults);
 
@@ -1188,9 +1188,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 token).first();
         Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
                 token).first();
-        Cohort myCohort1 = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
                 .setSamples(Arrays.asList(sampleId1, sampleId2)), null, token).first();
-        Cohort myCohort2 = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort2")
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort2")
                 .setSamples(Arrays.asList(sampleId2, sampleId3)), null, token).first();
 
         List<String> ids = new ArrayList<>();
@@ -1203,7 +1203,6 @@ public class CatalogManagerTest extends AbstractManagerTest {
         OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(studyFqn, ids, options, token);
         assertEquals(3, sampleDataResult.getNumResults());
         for (Sample sample : sampleDataResult.getResults()) {
-
             switch (sample.getId()) {
                 case "SAMPLE_1":
                     assertEquals(1, sample.getCohortIds().size());
@@ -1211,7 +1210,6 @@ public class CatalogManagerTest extends AbstractManagerTest {
                     break;
                 case "SAMPLE_2":
                     assertEquals(2, sample.getCohortIds().size());
-
                     assertTrue(sample.getCohortIds().containsAll(Arrays.asList("MyCohort1", "MyCohort2")));
                     break;
                 case "SAMPLE_3":
@@ -1232,9 +1230,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 token).first();
         Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
                 token).first();
-        Cohort myCohort1 = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
                 .setSamples(Arrays.asList(sampleId1)), null, token).first();
-        Cohort myCohort2 = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort2")
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort2")
                 .setSamples(Arrays.asList(sampleId2, sampleId3)), null, token).first();
 
         catalogManager.getCohortManager().update(studyFqn, "MyCohort1",
@@ -1285,9 +1283,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 token).first();
         Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
                 token).first();
-        Cohort myCohort1 = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
                 .setSamples(Arrays.asList(sampleId1)), null, token).first();
-        Cohort myCohort2 = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort2")
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort2")
                 .setSamples(Arrays.asList(sampleId2, sampleId3)), null, token).first();
 
         catalogManager.getCohortManager().update(studyFqn, "MyCohort1",
@@ -1344,7 +1342,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 token).first();
         Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
                 token).first();
-        Cohort myCohort1 = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
                 .setSamples(Arrays.asList(sampleId1)), null, token).first();
 
         Map<String, Object> actionMap = new HashMap<>();
@@ -1693,18 +1691,18 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         List<String> individuals;
         individuals = catalogManager.getIndividualManager().search(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
-                variableSet.getId() + ":NAME=~^INDIVIDUAL_"), null, token)
+                        variableSet.getId() + ":NAME=~^INDIVIDUAL_"), null, token)
                 .getResults().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_1", "INDIVIDUAL_2", "INDIVIDUAL_3")));
 
         individuals = catalogManager.getIndividualManager().search(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
-                variableSet.getId() + ":AGE>10"), null, token)
+                        variableSet.getId() + ":AGE>10"), null, token)
                 .getResults().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_2", "INDIVIDUAL_3")));
 
         individuals = catalogManager.getIndividualManager().search(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
-                variableSet.getId() + ":AGE>10;" + variableSet.getId()
-                        + ":PHEN=CASE"), null, token)
+                        variableSet.getId() + ":AGE>10;" + variableSet.getId()
+                                + ":PHEN=CASE"), null, token)
                 .getResults().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_3")));
     }
