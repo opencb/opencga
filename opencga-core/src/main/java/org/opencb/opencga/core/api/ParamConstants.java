@@ -251,6 +251,8 @@ public class ParamConstants {
     public static final String SAMPLE_VARIANT_STATS_BIOTYPE_COUNT_DESCRIPTION = "Sample variant stats BiotypeCount";
     public static final String SAMPLE_VARIANT_STATS_CLINICAL_SIGNIFICANCE_COUNT_DESCRIPTION = "Sample variant stats ClinicalSignificanceCount";
     public static final String SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_DESCRIPTION = "Sample variant stats ConsequenceTypeCount";
+    public static final String SAMPLE_COHORT_IDS_PARAM = "cohortIds";
+    public static final String SAMPLE_COHORT_IDS_DESCRIPTION = "Comma separated list of cohort IDs";
 
     public static final String SAMPLE_INCLUDE_INDIVIDUAL_PARAM = "includeIndividual";
     public static final String SAMPLE_INCLUDE_INDIVIDUAL_DESCRIPTION = "Include Individual object as an attribute";

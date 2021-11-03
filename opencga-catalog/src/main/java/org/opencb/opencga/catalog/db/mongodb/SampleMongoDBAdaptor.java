@@ -79,12 +79,11 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
  */
 public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> implements SampleDBAdaptor {
 
+    private static final String PRIVATE_INDIVIDUAL_UID = "_individualUid";
     private final MongoDBCollection sampleCollection;
     private final MongoDBCollection deletedSampleCollection;
     private SampleConverter sampleConverter;
     private IndividualMongoDBAdaptor individualDBAdaptor;
-
-    private static final String PRIVATE_INDIVIDUAL_UID = "_individualUid";
 
     public SampleMongoDBAdaptor(MongoDBCollection sampleCollection, MongoDBCollection deletedSampleCollection, Configuration configuration,
                                 MongoDBAdaptorFactory dbAdaptorFactory) {
@@ -92,8 +91,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.sampleCollection = sampleCollection;
         this.deletedSampleCollection = deletedSampleCollection;
-        this.sampleConverter = new SampleConverter();
-        this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
+        sampleConverter = new SampleConverter();
+        individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
     }
 
     @Override
@@ -373,6 +372,35 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
 
         return endWrite(tmpStartTime, 1, 1, events);
+    }
+
+    void updateCohortReferences(ClientSession clientSession, long studyUid, List<Long> sampleUids, String cohortId,
+                                ParamUtils.BasicUpdateAction action)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+
+        Bson bsonUpdate;
+        switch (action) {
+            case ADD:
+                bsonUpdate = Updates.addToSet(SampleDBAdaptor.QueryParams.COHORT_IDS.key(), cohortId);
+                break;
+            case REMOVE:
+                bsonUpdate = Updates.pull(SampleDBAdaptor.QueryParams.COHORT_IDS.key(), cohortId);
+                break;
+            case SET:
+            default:
+                throw new IllegalArgumentException("Unexpected action '" + action + "'");
+        }
+
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.UID.key(), sampleUids);
+        Bson bsonQuery = parseQuery(query);
+
+        DataResult update = sampleCollection.update(clientSession, bsonQuery, bsonUpdate,
+                new QueryOptions(MongoDBCollection.MULTI, true));
+        if (update.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not update cohort references in samples");
+        }
     }
 
     /**
@@ -1334,6 +1362,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     case COLLECTION_METHOD:
                     case RELEASE:
                     case FILE_IDS:
+                    case COHORT_IDS:
                     case VERSION:
                     case INDIVIDUAL_ID:
                     case INTERNAL_RGA_STATUS:

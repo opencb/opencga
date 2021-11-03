@@ -989,16 +989,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     /**
-<<<<<<< HEAD
-     * VariableSet methods
-=======
-     * <<<<<<< HEAD
-     * VariableSet methods ***************************
-     * =======
      * VariableSet methods
      * ***************************
-     * >>>>>>> release-2.1.x
->>>>>>> develop
      */
 
     @Test
@@ -1185,6 +1177,216 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals("description", myCohort.getStatus().getDescription());
     }
 
+    @Test
+    public void createSampleCohortTest() throws Exception {
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
+                token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), new QueryOptions(),
+                token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
+                token).first();
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
+                .setSamples(Arrays.asList(sampleId1, sampleId2)), null, token).first();
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort2")
+                .setSamples(Arrays.asList(sampleId2, sampleId3)), null, token).first();
+
+        List<String> ids = new ArrayList<>();
+        ids.add("SAMPLE_1");
+        ids.add("SAMPLE_2");
+        ids.add("SAMPLE_3");
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.COHORT_IDS.key());
+
+        OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(studyFqn, ids, options, token);
+        assertEquals(3, sampleDataResult.getNumResults());
+        for (Sample sample : sampleDataResult.getResults()) {
+            switch (sample.getId()) {
+                case "SAMPLE_1":
+                    assertEquals(1, sample.getCohortIds().size());
+                    assertEquals("MyCohort1", sample.getCohortIds().get(0));
+                    break;
+                case "SAMPLE_2":
+                    assertEquals(2, sample.getCohortIds().size());
+                    assertTrue(sample.getCohortIds().containsAll(Arrays.asList("MyCohort1", "MyCohort2")));
+                    break;
+                case "SAMPLE_3":
+                    assertEquals(1, sample.getCohortIds().size());
+                    assertEquals("MyCohort2", sample.getCohortIds().get(0));
+                    break;
+                default:
+                    fail();
+            }
+        }
+    }
+
+    @Test
+    public void updateSampleCohortTest() throws Exception {
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
+                token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), new QueryOptions(),
+                token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
+                token).first();
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
+                .setSamples(Arrays.asList(sampleId1)), null, token).first();
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort2")
+                .setSamples(Arrays.asList(sampleId2, sampleId3)), null, token).first();
+
+        catalogManager.getCohortManager().update(studyFqn, "MyCohort1",
+                new CohortUpdateParams().setSamples(Collections.singletonList(new SampleReferenceParam().setId(sampleId3.getId()))),
+                QueryOptions.empty(), token);
+
+        List<String> ids = new ArrayList<>();
+        ids.add("SAMPLE_1");
+        ids.add("SAMPLE_2");
+        ids.add("SAMPLE_3");
+
+        QueryOptions optionsSample = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.COHORT_IDS.key());
+        QueryOptions optionsCohort = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key());
+
+        OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(studyFqn, ids, optionsSample, token);
+
+        Cohort cohortResult = catalogManager.getCohortManager().get(studyFqn, "MyCohort1", optionsCohort, token).first();
+
+        assertEquals(2, cohortResult.getSamples().size());
+        assertTrue(cohortResult.getSamples().stream().map(Sample::getId).collect(Collectors.toSet())
+                .containsAll(Arrays.asList("SAMPLE_1", "SAMPLE_3")));
+
+        for (Sample sample : sampleDataResult.getResults()) {
+
+            switch (sample.getId()) {
+                case "SAMPLE_1":
+                    assertEquals(1, sample.getCohortIds().size());
+                    assertEquals("MyCohort1", sample.getCohortIds().get(0));
+                    break;
+                case "SAMPLE_2":
+                    assertEquals(1, sample.getCohortIds().size());
+                    assertTrue(sample.getCohortIds().containsAll(Arrays.asList("MyCohort2")));
+                    break;
+                case "SAMPLE_3":
+                    assertEquals(2, sample.getCohortIds().size());
+                    assertTrue(sample.getCohortIds().containsAll(Arrays.asList("MyCohort1", "MyCohort2")));
+                    break;
+                default:
+                    fail();
+            }
+        }
+    }
+
+    @Test
+    public void deleteSampleCohortTest() throws Exception {
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
+                token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), new QueryOptions(),
+                token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
+                token).first();
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
+                .setSamples(Arrays.asList(sampleId1)), null, token).first();
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort2")
+                .setSamples(Arrays.asList(sampleId2, sampleId3)), null, token).first();
+
+        catalogManager.getCohortManager().update(studyFqn, "MyCohort1",
+                new CohortUpdateParams().setSamples(Arrays.asList(new SampleReferenceParam().setId(sampleId3.getId()))),
+                QueryOptions.empty(), token);
+
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(Constants.ACTIONS, actionMap);
+        catalogManager.getCohortManager().update(studyFqn, "MyCohort1",
+                new CohortUpdateParams().setSamples(Arrays.asList(new SampleReferenceParam().setId(sampleId1.getId()))),
+                queryOptions, token);
+
+        List<String> ids = new ArrayList<>();
+        ids.add("SAMPLE_1");
+        ids.add("SAMPLE_2");
+        ids.add("SAMPLE_3");
+
+        QueryOptions optionsSample = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.COHORT_IDS.key());
+        QueryOptions optionsCohort = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key());
+
+        OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(studyFqn, ids, optionsSample, token);
+
+        Cohort cohortResult = catalogManager.getCohortManager().get(studyFqn, "MyCohort1", optionsCohort, token).first();
+
+        assertEquals(1, cohortResult.getSamples().size());
+        assertTrue(cohortResult.getSamples().stream().map(Sample::getId).collect(Collectors.toSet())
+                .containsAll(Arrays.asList("SAMPLE_3")));
+
+        for (Sample sample : sampleDataResult.getResults()) {
+
+            switch (sample.getId()) {
+                case "SAMPLE_1":
+                    assertEquals(0, sample.getCohortIds().size());
+                    break;
+                case "SAMPLE_2":
+                    assertEquals(1, sample.getCohortIds().size());
+                    assertTrue(sample.getCohortIds().containsAll(Arrays.asList("MyCohort2")));
+                    break;
+                case "SAMPLE_3":
+                    assertEquals(2, sample.getCohortIds().size());
+                    assertTrue(sample.getCohortIds().containsAll(Arrays.asList("MyCohort1", "MyCohort2")));
+                    break;
+                default:
+                    fail();
+            }
+        }
+    }
+
+    @Test
+    public void setSampleCohortTest() throws Exception {
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
+                token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), new QueryOptions(),
+                token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
+                token).first();
+        catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
+                .setSamples(Arrays.asList(sampleId1)), null, token).first();
+
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(CohortDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.SET);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(Constants.ACTIONS, actionMap);
+        catalogManager.getCohortManager().update(studyFqn, "MyCohort1",
+                new CohortUpdateParams().setSamples(Arrays.asList(
+                        new SampleReferenceParam().setId(sampleId2.getId()),
+                        new SampleReferenceParam().setId(sampleId3.getId()))),
+                queryOptions, token);
+
+        List<String> ids = new ArrayList<>();
+        ids.add("SAMPLE_1");
+        ids.add("SAMPLE_2");
+        ids.add("SAMPLE_3");
+
+        QueryOptions optionsSample = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.COHORT_IDS.key());
+        QueryOptions optionsCohort = new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key());
+
+        OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().get(studyFqn, ids, optionsSample, token);
+
+        Cohort cohortResult = catalogManager.getCohortManager().get(studyFqn, "MyCohort1", optionsCohort, token).first();
+
+        assertEquals(2, cohortResult.getSamples().size());
+        assertTrue(cohortResult.getSamples().stream().map(Sample::getId).collect(Collectors.toSet())
+                .containsAll(Arrays.asList("SAMPLE_2", "SAMPLE_3")));
+
+        for (Sample sample : sampleDataResult.getResults()) {
+
+            switch (sample.getId()) {
+                case "SAMPLE_1":
+                    assertEquals(0, sample.getCohortIds().size());
+                    break;
+                case "SAMPLE_2":
+                case "SAMPLE_3":
+                    assertEquals(1, sample.getCohortIds().size());
+                    assertTrue(sample.getCohortIds().containsAll(Arrays.asList("MyCohort1")));
+                    break;
+                default:
+                    fail();
+            }
+        }
+    }
 //    @Test
 //    public void createIndividualWithSamples() throws CatalogException {
 //        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create("user@1000G:phase1", "sample1", "", "", null,
