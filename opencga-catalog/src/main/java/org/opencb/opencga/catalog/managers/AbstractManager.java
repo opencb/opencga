@@ -95,7 +95,7 @@ public abstract class AbstractManager {
         this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
         this.clinicalDBAdaptor = catalogDBAdaptorFactory.getClinicalAnalysisDBAdaptor();
         this.interpretationDBAdaptor = catalogDBAdaptorFactory.getInterpretationDBAdaptor();
-        this.pipelineDBAdaptor = catalogDBAdaptorFactory.getPipelineDBAdaptor();
+        this.pipelineDBAdaptor = catalogDBAdaptorFactory.getCatalogPipelineDBAdaptor();
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
         this.catalogManager = catalogManager;
 

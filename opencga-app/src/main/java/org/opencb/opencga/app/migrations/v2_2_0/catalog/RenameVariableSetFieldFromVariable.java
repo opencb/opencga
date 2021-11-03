@@ -18,7 +18,7 @@ import static com.mongodb.client.model.Filters.eq;
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         date = 20210920)
-public class renameVariableSetFieldFromVariable extends MigrationTool {
+public class RenameVariableSetFieldFromVariable extends MigrationTool {
 
     @Override
     protected void run() throws Exception {

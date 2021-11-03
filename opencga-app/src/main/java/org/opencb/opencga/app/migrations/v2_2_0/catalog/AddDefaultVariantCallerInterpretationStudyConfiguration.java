@@ -13,7 +13,7 @@ import java.util.Collections;
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         date = 20210916)
-public class addDefaultVariantCallerInterpretationStudyConfiguration extends MigrationTool {
+public class AddDefaultVariantCallerInterpretationStudyConfiguration extends MigrationTool {
 
     @Override
     protected void run() throws Exception {

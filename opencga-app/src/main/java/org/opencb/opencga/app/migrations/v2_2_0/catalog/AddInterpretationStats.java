@@ -21,9 +21,9 @@ import static com.mongodb.client.model.Filters.eq;
         domain = Migration.MigrationDomain.CATALOG,
         patch = 2,
         date = 20210908)
-public class addInterpretationStats extends MigrationTool {
+public class AddInterpretationStats extends MigrationTool {
 
-    public addInterpretationStats() {
+    public AddInterpretationStats() {
         // Batch size in this case will be 50
         super(50);
     }

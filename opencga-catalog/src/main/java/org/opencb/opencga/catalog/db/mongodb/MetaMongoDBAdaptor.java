@@ -118,6 +118,8 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         createIndexes(dbAdaptorFactory.getCatalogIndividualDBAdaptor().getIndividualCollection(), indexes.get("individual"));
         createIndexes(dbAdaptorFactory.getCatalogFileDBAdaptor().getCollection(), indexes.get("file"));
         createIndexes(dbAdaptorFactory.getCatalogCohortDBAdaptor().getCohortCollection(), indexes.get("cohort"));
+        createIndexes(dbAdaptorFactory.getCatalogPipelineDBAdaptor().getPipelineCollection(), indexes.get("pipeline"));
+        createIndexes(dbAdaptorFactory.getCatalogExecutionDBAdaptor().getExecutionCollection(), indexes.get("execution"));
         createIndexes(dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection(), indexes.get("job"));
         createIndexes(dbAdaptorFactory.getCatalogFamilyDBAdaptor().getFamilyCollection(), indexes.get("family"));
         createIndexes(dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelCollection(), indexes.get("panel"));

@@ -153,6 +153,7 @@ public interface JobDBAdaptor extends CoreDBAdaptor<Job> {
         DEPENDS_ON("dependsOn", TEXT_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
 
+        EXECUTION_ID("executionId", TEXT, ""),
         EXECUTION("execution", OBJECT, ""),
         EXECUTION_START("execution.start", DATE, ""),
         EXECUTION_END("execution.end", DATE, ""),

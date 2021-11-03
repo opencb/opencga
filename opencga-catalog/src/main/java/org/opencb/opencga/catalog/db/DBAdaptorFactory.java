@@ -97,7 +97,7 @@ public interface DBAdaptorFactory extends AutoCloseable {
 
     InterpretationDBAdaptor getInterpretationDBAdaptor();
 
-    PipelineDBAdaptor getPipelineDBAdaptor();
+    PipelineDBAdaptor getCatalogPipelineDBAdaptor();
 
     Map<String, MongoDBCollection> getMongoDBCollectionMap();
 }

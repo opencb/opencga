@@ -93,7 +93,7 @@ public class ExecutionMongoDBAdaptor extends MongoDBAdaptor implements Execution
         }
     }
 
-    long insert(ClientSession clientSession, long studyUid, Execution execution) throws CatalogDBException {
+    public long insert(ClientSession clientSession, long studyUid, Execution execution) throws CatalogDBException {
         List<Bson> filterList = new ArrayList<>();
         filterList.add(Filters.eq(QueryParams.ID.key(), execution.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyUid));

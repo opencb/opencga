@@ -34,6 +34,14 @@
 {"collection": "job", "fields": {"studyUid": 1, "_acl": 1}, "options": {"background": true}}
 {"collection": "job", "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
 
+{"collection": "execution", "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
+{"collection": "execution", "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
+{"collection": "execution", "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
+
+{"collection": "pipeline", "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
+{"collection": "pipeline", "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
+{"collection": "pipeline", "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
+
 {"collection": "file", "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "file", "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "file", "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}

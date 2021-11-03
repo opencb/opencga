@@ -16,7 +16,7 @@ import static com.mongodb.client.model.Filters.eq;
         domain = Migration.MigrationDomain.CATALOG,
         patch = 1,
         date = 20210719)
-public class addRgaIndexToStudyInternal extends MigrationTool {
+public class AddRgaIndexToStudyInternal extends MigrationTool {
 
     @Override
     protected void run() throws Exception {
