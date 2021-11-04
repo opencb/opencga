@@ -1719,7 +1719,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             String clinicalId = id;
             String clinicalUuid = "";
             try {
-                OpenCGAResult<ClinicalAnalysis> internalResult = internalGet(study.getUid(), id, INCLUDE_CLINICAL_INTERPRETATION_IDS,
+                OpenCGAResult<ClinicalAnalysis> internalResult = internalGet(study.getUid(), id,
+                        keepFieldsInQueryOptions(INCLUDE_CLINICAL_INTERPRETATION_IDS, Arrays.asList(
+                                ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key() + "."
+                                        + InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(),
+                                ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key() + "."
+                                        + InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key())),
                         userId);
                 if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Clinical Analysis '" + id + "' not found");

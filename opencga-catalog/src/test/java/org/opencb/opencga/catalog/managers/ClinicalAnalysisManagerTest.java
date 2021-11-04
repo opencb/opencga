@@ -31,6 +31,7 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -1991,6 +1992,45 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void deleteClinicalAnalysisWithEmptyInterpretations() throws CatalogException {
+        ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
+
+        Interpretation interpretation = new Interpretation().setId("interpretation1");
+        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.PRIMARY,
+                QueryOptions.empty(), sessionIdUser);
+
+        interpretation.setId("interpretation2");
+        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.SECONDARY,
+                QueryOptions.empty(), sessionIdUser);
+
+        interpretation.setId("interpretation3");
+        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.SECONDARY,
+                QueryOptions.empty(), sessionIdUser);
+
+        interpretation.setId("interpretation4");
+        catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.SECONDARY,
+                QueryOptions.empty(), sessionIdUser);
+
+        catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(ca.getId()), null, sessionIdUser);
+
+        assertEquals(0,
+                catalogManager.getClinicalAnalysisManager().search(STUDY, new Query(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(),
+                        ca.getId()), QueryOptions.empty(), sessionIdUser).getNumResults());
+        assertEquals(0,
+                catalogManager.getInterpretationManager().search(STUDY, new Query(InterpretationDBAdaptor.QueryParams.ID.key(),
+                        "interpretation1"), QueryOptions.empty(), sessionIdUser).getNumResults());
+        assertEquals(0,
+                catalogManager.getInterpretationManager().search(STUDY, new Query(InterpretationDBAdaptor.QueryParams.ID.key(),
+                        "interpretation2"), QueryOptions.empty(), sessionIdUser).getNumResults());
+        assertEquals(0,
+                catalogManager.getInterpretationManager().search(STUDY, new Query(InterpretationDBAdaptor.QueryParams.ID.key(),
+                        "interpretation3"), QueryOptions.empty(), sessionIdUser).getNumResults());
+        assertEquals(0,
+                catalogManager.getInterpretationManager().search(STUDY, new Query(InterpretationDBAdaptor.QueryParams.ID.key(),
+                        "interpretation4"), QueryOptions.empty(), sessionIdUser).getNumResults());
+    }
+
+    @Test
     public void deleteClinicalAnalysisWithInterpretations() throws CatalogException {
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
 
@@ -2010,11 +2050,27 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation, ParamUtils.SaveInterpretationAs.SECONDARY,
                 QueryOptions.empty(), sessionIdUser);
 
+        // Add finding to interpretation
+        catalogManager.getInterpretationManager().update(STUDY, ca.getId(), "interpretation1",
+                new InterpretationUpdateParams().setPrimaryFindings(Collections.singletonList(
+                        new ClinicalVariant(VariantAvro.newBuilder()
+                                .setChromosome("1")
+                                .setStart(100)
+                                .setEnd(100)
+                                .setLength(1)
+                                .setReference("C")
+                                .setAlternate("T")
+                                .setId("1:100:C:T")
+                                .setType(VariantType.SNV)
+                                .setStudies(Collections.emptyList())
+                                .build())
+                )), null, QueryOptions.empty(), sessionIdUser);
+
         try {
             catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(ca.getId()), null, sessionIdUser);
-            fail("It should not allow deleting Clinical Analyses with interpretations");
+            fail("It should not allow deleting Clinical Analyses with interpretations containing primary findings");
         } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("interpretation"));
+            assertTrue(e.getMessage().contains("findings"));
         }
 
         OpenCGAResult delete = catalogManager.getClinicalAnalysisManager().delete(STUDY, Collections.singletonList(ca.getId()),
