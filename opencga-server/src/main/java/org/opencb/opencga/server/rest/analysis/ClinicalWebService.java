@@ -137,12 +137,12 @@ public class ClinicalWebService extends AnalysisWebService {
     @ApiOperation(value = "Create a new clinical analysis", response = ClinicalAnalysis.class)
     public Response create(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.CLINICAL_ANALYSIS_CREATE_DEFAULT_DESCRIPTION)
-            @QueryParam(ParamConstants.CLINICAL_ANALYSIS_CREATE_DEFAULT_PARAM) boolean createDefaultInterpretation,
+            @ApiParam(value = ParamConstants.CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_DESCRIPTION)
+            @QueryParam(ParamConstants.CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_PARAM) Boolean skipCreateInterpretation,
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
                     ClinicalAnalysisCreateParams params) {
         try {
-            return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), createDefaultInterpretation, queryOptions,
+            return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), skipCreateInterpretation, queryOptions,
                     token));
         } catch (Exception e) {
             return createErrorResponse(e);

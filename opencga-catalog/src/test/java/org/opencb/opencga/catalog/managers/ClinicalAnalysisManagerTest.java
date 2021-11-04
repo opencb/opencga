@@ -180,7 +180,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         clinicalAnalysis.setFamily(new Family().setId("family")
                 .setMembers(Arrays.asList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
 
-        return catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, createDefaultInterpretation,
+        return catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, !createDefaultInterpretation,
                 QueryOptions.empty(), sessionIdUser);
     }
 
@@ -204,7 +204,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
-    public void createAndUpdateClinicalAnalysisWithQualityControl() throws CatalogException {
+    public void createAndUpdateClinicalAnalysisWithQualityControl() throws CatalogException, InterruptedException {
         Individual individual = new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2")));
         catalogManager.getIndividualManager().create(STUDY, individual, null, sessionIdUser);
 
@@ -216,7 +216,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                         Collections.singletonList(comment)))
                 .setProband(individual);
 
-        ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, false, QueryOptions.empty(),
+        ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, true, QueryOptions.empty(),
                 sessionIdUser).first();
 
         assertEquals(ClinicalAnalysisQualityControl.QualityControlSummary.LOW, ca.getQualityControl().getSummary());
@@ -226,6 +226,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
         String date = ca.getQualityControl().getComments().get(0).getDate();
 
+        // Sleep 1 second so the date field can be different
+        Thread.sleep(1000);
         ClinicalAnalysisQualityControlUpdateParam qualityControlUpdateParam =
                 new ClinicalAnalysisQualityControlUpdateParam(ClinicalAnalysisQualityControl.QualityControlSummary.HIGH,
                         Collections.singletonList("other"));
@@ -2445,7 +2447,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setProband(proband);
 
         OpenCGAResult<ClinicalAnalysis> result =
-                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, true, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(0, result.first().getPanels().size());
         assertFalse(result.first().isPanelLock());
@@ -2475,7 +2477,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setProband(proband);
 
         OpenCGAResult<ClinicalAnalysis> result =
-                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, true, QueryOptions.empty(), sessionIdUser);
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, null, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(0, result.first().getPanels().size());
         assertFalse(result.first().isPanelLock());

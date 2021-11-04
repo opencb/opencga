@@ -216,18 +216,19 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     @Override
     public OpenCGAResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis, QueryOptions options, String token)
             throws CatalogException {
-        return create(studyStr, clinicalAnalysis, false, options, token);
+        return create(studyStr, clinicalAnalysis, null, options, token);
     }
 
-    public OpenCGAResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis, boolean createDefaultInterpretation,
-                                                  QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis,
+                                                  Boolean skipCreateDefaultInterpretation, QueryOptions options, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("clinicalAnalysis", clinicalAnalysis)
-                .append("createDefaultInterpretation", createDefaultInterpretation)
+                .append("skipCreateDefaultInterpretation", skipCreateDefaultInterpretation)
                 .append("options", options)
                 .append("token", token);
         try {
@@ -244,13 +245,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ParamUtils.checkIdentifier(clinicalAnalysis.getId(), "id");
             ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
             ParamUtils.checkObj(clinicalAnalysis.getProband(), "proband");
-
-            if (clinicalAnalysis.getInterpretation() != null && StringUtils.isNotEmpty(clinicalAnalysis.getInterpretation().getId())
-                    && createDefaultInterpretation) {
-                throw new CatalogException("createDefaultInterpretation flag passed together with interpretation '"
-                        + clinicalAnalysis.getInterpretation().getId() + "'. Please, choose between initialising a default interpretation "
-                        + "or passing an interpretation id");
-            }
 
             clinicalAnalysis.setStatus(ParamUtils.defaultObject(clinicalAnalysis.getStatus(), Status::new));
             clinicalAnalysis.setInternal(ClinicalAnalysisInternal.init());
@@ -534,10 +528,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             sortMembersFromFamily(clinicalAnalysis);
 
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
-            if (createDefaultInterpretation) {
+            if (clinicalAnalysis.getInterpretation() == null
+                    && (skipCreateDefaultInterpretation == null || !skipCreateDefaultInterpretation)) {
                 clinicalAnalysis.setInterpretation(ParamUtils.defaultObject(clinicalAnalysis.getInterpretation(), Interpretation::new));
-                clinicalAnalysis.getInterpretation().setId(ParamUtils.defaultString(clinicalAnalysis.getInterpretation().getId(),
-                        clinicalAnalysis.getId() + ".1"));
             }
 
             if (clinicalAnalysis.getInterpretation() != null) {
@@ -1773,8 +1766,16 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         if (options.getBoolean(Constants.FORCE)) {
             return;
         }
-        if (clinicalAnalysis.getInterpretation() != null || CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
-            throw new CatalogException("Deleting a Clinical Analysis containing interpretations is forbidden.");
+        if (clinicalAnalysis.getInterpretation() != null
+                && CollectionUtils.isNotEmpty(clinicalAnalysis.getInterpretation().getPrimaryFindings())) {
+            throw new CatalogException("Deleting a Clinical Analysis containing interpretations with findings is forbidden.");
+        }
+        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+            for (Interpretation interpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                if (interpretation != null && CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
+                    throw new CatalogException("Deleting a Clinical Analysis containing interpretations with findings is forbidden.");
+                }
+            }
         }
         if (clinicalAnalysis.isLocked()) {
             throw new CatalogException("Deleting a locked Clinical Analysis is forbidden.");

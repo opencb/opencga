@@ -210,7 +210,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         try {
             QueryOptions clinicalOptions = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
                     Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(),
-                            ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key()));
+                            ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key(),
+                            ClinicalAnalysisDBAdaptor.QueryParams.AUDIT.key()));
             ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), clinicalAnalysisStr,
                     clinicalOptions, userId).first();
 
@@ -251,6 +252,16 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         ParamUtils.checkObj(interpretation, "Interpretation");
         ParamUtils.checkParameter(clinicalAnalysis.getId(), "ClinicalAnalysisId");
 
+        if (StringUtils.isEmpty(interpretation.getId())) {
+            // Assign id automatically by counting the number of Interpretations that have been created already in the CA
+            int count = 1;
+            for (ClinicalAudit clinicalAudit : clinicalAnalysis.getAudit()) {
+                if (clinicalAudit.getAction().equals(ClinicalAudit.Action.CREATE_INTERPRETATION)) {
+                    count++;
+                }
+            }
+            interpretation.setId(clinicalAnalysis.getId() + "." + count);
+        }
         ParamUtils.checkIdentifier(interpretation.getId(), "id");
 
         interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());
