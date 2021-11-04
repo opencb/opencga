@@ -1573,9 +1573,13 @@ public class StudyManager extends AbstractManager {
                     case AuthorizationManager.ROLE_VIEW_ONLY:
                         studyPermissions = AuthorizationManager.getViewOnlyAcls();
                         break;
+                    case AuthorizationManager.ROLE_LOCKED:
+                        studyPermissions = AuthorizationManager.getLockedAcls();
+                        break;
                     default:
                         throw new CatalogException("Admissible template ids are: " + AuthorizationManager.ROLE_ADMIN + ", "
-                                + AuthorizationManager.ROLE_ANALYST + ", " + AuthorizationManager.ROLE_VIEW_ONLY);
+                                + AuthorizationManager.ROLE_ANALYST + ", " + AuthorizationManager.ROLE_VIEW_ONLY + ", "
+                                + AuthorizationManager.ROLE_LOCKED);
                 }
 
                 if (studyPermissions != null) {

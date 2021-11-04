@@ -26,6 +26,7 @@ import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -916,7 +917,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
-                new StudyAclParams("", "view-only"), ParamUtils.AclAction.SET, token);
+                new StudyAclParams("", AuthorizationManager.ROLE_VIEW_ONLY), ParamUtils.AclAction.SET, token);
 
         try {
             catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), sessionIdUser3);
@@ -939,7 +940,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
-                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), "view-only"), ParamUtils.AclAction.SET, token);
+                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), AuthorizationManager.ROLE_VIEW_ONLY),
+                ParamUtils.AclAction.SET, token);
 
         OpenCGAResult<Execution> search = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM,
                 new ObjectMap(), sessionIdUser3);
@@ -951,7 +953,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void deleteExecutionTest() throws CatalogException {
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
-                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), "view-only"), ParamUtils.AclAction.SET, token);
+                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), AuthorizationManager.ROLE_VIEW_ONLY),
+                ParamUtils.AclAction.SET, token);
 
         OpenCGAResult<Execution> search = catalogManager.getExecutionManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM,
                 new ObjectMap(), sessionIdUser3);
