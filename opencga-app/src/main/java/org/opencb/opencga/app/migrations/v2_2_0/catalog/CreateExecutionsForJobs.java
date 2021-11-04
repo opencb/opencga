@@ -10,9 +10,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.ExecutionDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.ExecutionMongoDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.JobMongoDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.mongodb.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.ExecutionConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -47,16 +45,38 @@ public class CreateExecutionsForJobs extends MigrationTool {
                 job.getStudy(), job.getAttributes());
     }
 
-    private void addJobToExecution(ClientSession clientSession, long executionUid, Job job) throws CatalogDBException {
+    private void addJobToExecution(Job job, MongoDBAdaptor.UpdateDocument updateDocument) {
         List<Job> jobList = Collections.singletonList(job);
         List<Document> documentList = executionConverter.convertExecutionsOrJobsToDocument(jobList);
+        updateDocument.getAddToSet().put(ExecutionDBAdaptor.QueryParams.JOBS.key(), documentList);
+    }
+
+    private void replicatePermissions(Document jobDoc, MongoDBAdaptor.UpdateDocument updateDocument) {
+        updateDocument.getSet().put(MongoDBAdaptor.PERMISSION_RULES_APPLIED, jobDoc.get(MongoDBAdaptor.PERMISSION_RULES_APPLIED));
+        if (jobDoc.get(AuthorizationMongoDBAdaptor.QueryParams.ACL.key()) != null) {
+            updateDocument.getSet().put(AuthorizationMongoDBAdaptor.QueryParams.ACL.key(),
+                    jobDoc.get(AuthorizationMongoDBAdaptor.QueryParams.ACL.key()));
+        }
+        if (jobDoc.get(AuthorizationMongoDBAdaptor.QueryParams.USER_DEFINED_ACLS.key()) != null) {
+            updateDocument.getSet().put(AuthorizationMongoDBAdaptor.QueryParams.USER_DEFINED_ACLS.key(),
+                    jobDoc.get(AuthorizationMongoDBAdaptor.QueryParams.USER_DEFINED_ACLS.key()));
+        }
+    }
+
+    private void completeExecutionDocument(ClientSession clientSession, long executionUid, Document jobDoc, Job job)
+            throws CatalogDBException {
+        MongoDBAdaptor.UpdateDocument updateDocument = new MongoDBAdaptor.UpdateDocument();
+
+        addJobToExecution(job, updateDocument);
+        replicatePermissions(jobDoc, updateDocument);
+        Document update = updateDocument.toFinalUpdateDocument();
+
         Bson bsonQuery = Filters.eq(ExecutionDBAdaptor.QueryParams.UID.key(), executionUid);
 
-        Bson update = Updates.addEachToSet(ExecutionDBAdaptor.QueryParams.JOBS.key(), documentList);
         DataResult<?> result = executionDBAdaptor.getExecutionCollection().update(clientSession, bsonQuery, update, QueryOptions.empty());
 
-        if (result.getNumMatches() == 0) {
-            throw new CatalogDBException("Could not update list of jobs. Execution uid '" + executionUid + "' not found.");
+        if (result.getNumUpdated() == 0) {
+            throw new CatalogDBException("Could not update execution. Execution uid '" + executionUid + "' not found.");
         }
     }
 
@@ -94,10 +114,10 @@ public class CreateExecutionsForJobs extends MigrationTool {
                     // Insert execution with NO jobs
                     executionDBAdaptor.insert(clientSession, execution.getStudyUid(), execution);
 
-                    // Update execution to contain the job
-                    addJobToExecution(clientSession, execution.getUid(), job);
+                    // Update execution to contain job and job acls
+                    completeExecutionDocument(clientSession, execution.getUid(), jobDoc, job);
 
-                    // Update job to have the executionId reference
+                    // Update job to have the executionId reference and remove acls
                     addExecutionReferenceToJob(clientSession, job.getUid(), execution.getId());
 
                     return true;

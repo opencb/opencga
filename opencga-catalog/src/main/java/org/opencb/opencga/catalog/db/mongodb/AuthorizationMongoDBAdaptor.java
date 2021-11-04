@@ -70,7 +70,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         initCollectionConnections();
     }
 
-    enum QueryParams implements QueryParam {
+    public enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
         ACL("_acl", TEXT_ARRAY, ""),
         USER_DEFINED_ACLS("_userAcls", TEXT_ARRAY, "");
@@ -156,9 +156,9 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
      * Internal method to fetch the permissions of every user. Permissions are splitted and returned in a map of user -> list of
      * permissions.
      *
-     * @param resourceId Resource id being queried.
+     * @param resourceId  Resource id being queried.
      * @param membersList Members for which we want to fetch the permissions. If empty, it should return the permissions for all members.
-     * @param entry     Entity where the query will be performed.
+     * @param entry       Entity where the query will be performed.
      * @return A map of [acl, user_defined_acl] -> user -> List of permissions and the string id of the resource queried.
      */
     private EntryPermission internalGet(long resourceId, List<String> membersList, Enums.Resource entry) {
