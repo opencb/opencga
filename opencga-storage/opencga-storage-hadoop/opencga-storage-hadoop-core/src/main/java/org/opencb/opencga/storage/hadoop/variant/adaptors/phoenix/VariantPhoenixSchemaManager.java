@@ -252,13 +252,14 @@ public class VariantPhoenixSchemaManager {
             stopWatch.stop();
             String msg;
             if (pendingColumns.isEmpty()) {
-                msg = "Columns already in phoenix. Nothing to do! Had to wait " + TimeUtils.durationToString(stopWatch.now());
+                msg = "Columns already in phoenix. Nothing to do! Had to wait "
+                        + TimeUtils.durationToString(stopWatch.now(TimeUnit.MILLISECONDS));
             } else {
                 phoenixHelper
                         .addMissingColumns(con, variantsTableName, pendingColumns, DEFAULT_TABLE_TYPE, Collections.emptySet());
                 // Final update to remove new added columns
                 removeAddedColumnsFromPending(pendingColumns);
-                msg = "Added new columns to Phoenix in " + TimeUtils.durationToString(stopWatch.now());
+                msg = "Added new columns to Phoenix in " + TimeUtils.durationToString(stopWatch.now(TimeUnit.MILLISECONDS));
             }
             if (stopWatch.now(TimeUnit.SECONDS) < 10) {
                 logger.info(msg);
