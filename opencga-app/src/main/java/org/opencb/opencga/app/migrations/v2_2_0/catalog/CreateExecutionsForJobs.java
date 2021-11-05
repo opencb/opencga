@@ -1,9 +1,11 @@
 package org.opencb.opencga.app.migrations.v2_2_0.catalog;
 
 import com.mongodb.client.ClientSession;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.collections4.CollectionUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.DataResult;
@@ -20,6 +22,7 @@ import org.opencb.opencga.core.models.job.Execution;
 import org.opencb.opencga.core.models.job.ExecutionInternal;
 import org.opencb.opencga.core.models.job.Job;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -90,12 +93,48 @@ public class CreateExecutionsForJobs extends MigrationTool {
         }
     }
 
+    // Replaces VIEW_JOBS, WRITE_JOBS and DELETE_JOBS for VIEW_EXECUTION, WRITE_EXECUTIONS, DELETE_EXECUTIONS
+    private void replaceAclPermissionString(Document studyDocument, String key, MongoDBAdaptor.UpdateDocument updateDocument) {
+        List<String> aclList = studyDocument.getList(key, String.class);
+        if (CollectionUtils.isNotEmpty(aclList)) {
+            List<String> newList = new ArrayList<>(aclList.size());
+            for (String acl : aclList) {
+                String newAcl = acl.replace("__VIEW_JOBS", "__VIEW_EXECUTIONS")
+                        .replace("__WRITE_JOBS", "__WRITE_EXECUTIONS")
+                        .replace("__DELETE_JOBS", "__DELETE_EXECUTIONS");
+                newList.add(newAcl);
+            }
+            updateDocument.getSet().put(key, newList);
+        }
+    }
+
     @Override
     protected void run() throws Exception {
         this.executionConverter = new ExecutionConverter();
         this.jobConverter = new JobConverter();
         this.executionDBAdaptor = dbAdaptorFactory.getCatalogExecutionDBAdaptor();
         this.jobDBAdaptor = dbAdaptorFactory.getCatalogJobDBAdaptor();
+
+        // Change jobAcls for Execution Acls
+        MongoCollection<Document> studyCollection = getMongoCollection(MongoDBAdaptorFactory.STUDY_COLLECTION);
+        try (MongoCursor<Document> it = studyCollection
+                .find(new Document(AuthorizationMongoDBAdaptor.QueryParams.ACL.key(), new Document("$exists", true)))
+                .projection(new Document(AuthorizationMongoDBAdaptor.QueryParams.ACL.key(), 1)
+                        .append(AuthorizationMongoDBAdaptor.QueryParams.USER_DEFINED_ACLS.key(), 1))
+                .cursor()) {
+            while (it.hasNext()) {
+                Document studyDoc = it.next();
+                MongoDBAdaptor.UpdateDocument updateDocument = new MongoDBAdaptor.UpdateDocument();
+                replaceAclPermissionString(studyDoc, AuthorizationMongoDBAdaptor.QueryParams.ACL.key(), updateDocument);
+                replaceAclPermissionString(studyDoc, AuthorizationMongoDBAdaptor.QueryParams.USER_DEFINED_ACLS.key(), updateDocument);
+
+                Document update = updateDocument.toFinalUpdateDocument();
+                if (!update.isEmpty()) {
+                    Document query = new Document("_id", studyDoc.get("_id"));
+                    studyCollection.updateOne(query, update);
+                }
+            }
+        }
 
         // Create missing indexes (creates indexes for new Execution and Pipeline collections)
         catalogManager.installIndexes(token);
