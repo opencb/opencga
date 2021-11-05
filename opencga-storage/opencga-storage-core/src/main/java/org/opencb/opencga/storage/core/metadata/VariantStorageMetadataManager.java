@@ -1746,12 +1746,12 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                 case RUNNING:
                     if (!resume) {
                         if (task.sameOperation(fileIds, type, jobOperationName)) {
-                            throw StorageEngineException.currentOperationInProgressException(task);
+                            throw StorageEngineException.currentOperationInProgressException(task, this);
                         } else {
                             if (allowConcurrent.test(task)) {
                                 break;
                             } else {
-                                throw StorageEngineException.otherOperationInProgressException(task, jobOperationName, fileIds);
+                                throw StorageEngineException.otherOperationInProgressException(task, jobOperationName, fileIds, this);
                             }
                         }
                     }
@@ -1761,7 +1761,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                         if (allowConcurrent.test(task)) {
                             break;
                         } else {
-                            throw StorageEngineException.otherOperationInProgressException(task, jobOperationName, fileIds, resume);
+                            throw StorageEngineException.otherOperationInProgressException(task, jobOperationName, fileIds, this, resume);
                         }
                     } else {
                         logger.info("Resuming last batch operation \"" + task.getName() + "\" due to error.");
