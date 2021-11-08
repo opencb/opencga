@@ -156,6 +156,103 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
      * Internal method to fetch the permissions of every user. Permissions are splitted and returned in a map of user -> list of
      * permissions.
      *
+     * @param studyUid    Study uid.
+     * @param resourceId  Resource id being queried.
+     * @param membersList Members for which we want to fetch the permissions. If empty, it should return the permissions for all members.
+     * @param entry       Entity where the query will be performed.
+     * @return A map of [acl, user_defined_acl] -> user -> List of permissions and the string id of the resource queried.
+     */
+    private EntryPermission internalGet(long studyUid, String resourceId, List<String> membersList, Enums.Resource entry) {
+        EntryPermission entryPermission = new EntryPermission();
+
+        List<String> members = (membersList == null ? Collections.emptyList() : membersList);
+
+        MongoDBCollection collection = dbCollectionMap.get(entry);
+
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(Filters.and(
+                Filters.eq(PRIVATE_ID, resourceId),
+                Filters.eq(PRIVATE_STUDY_UID, studyUid))));
+        aggregation.add(Aggregates.project(
+                Projections.include(QueryParams.ID.key(), QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key())));
+
+        List<Bson> filters = new ArrayList<>();
+        if (CollectionUtils.isNotEmpty(members)) {
+            List<Pattern> regexMemberList = new ArrayList<>(members.size());
+            for (String member : members) {
+                if (!member.equals(ANONYMOUS)) {
+                    regexMemberList.add(Pattern.compile("^" + member));
+                } else {
+                    regexMemberList.add(Pattern.compile("^\\*"));
+                }
+            }
+            filters.add(Filters.in(QueryParams.ACL.key(), regexMemberList));
+        }
+
+        if (CollectionUtils.isNotEmpty(filters)) {
+            Bson filter = filters.size() == 1 ? filters.get(0) : Filters.and(filters);
+            aggregation.add(Aggregates.match(filter));
+        }
+
+        for (Bson bson : aggregation) {
+            logger.debug("Get Acl: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        }
+
+        DataResult<Document> aggregate = collection.aggregate(aggregation, null);
+
+        Map<String, Map<String, List<String>>> permissions = entryPermission.getPermissions();
+
+        if (aggregate.getNumResults() > 0) {
+            Set<String> memberSet = new HashSet<>();
+            memberSet.addAll(members);
+
+            // TODO: Consider that there are some collections supporting versions !!!!
+            Document document = aggregate.first();
+            entryPermission.setId(document.getString(QueryParams.ID.key()));
+
+            List<String> aclList = (List<String>) document.get(QueryParams.ACL.key());
+            if (aclList != null) {
+                // If _acl was not previously defined, it can be null the first time
+                for (String memberPermission : aclList) {
+                    String[] split = StringUtils.splitByWholeSeparatorPreserveAllTokens(memberPermission, INTERNAL_DELIMITER, 2);
+//                    String[] split = memberPermission.split(INTERNAL_DELIMITER, 2);
+                    if (memberSet.isEmpty() || memberSet.contains(split[0])) {
+                        if (!permissions.get(QueryParams.ACL.key()).containsKey(split[0])) {
+                            permissions.get(QueryParams.ACL.key()).put(split[0], new ArrayList<>());
+                        }
+                        if (!("NONE").equals(split[1])) {
+                            permissions.get(QueryParams.ACL.key()).get(split[0]).add(split[1]);
+                        }
+                    }
+                }
+            }
+
+            List<String> userDefinedAcls = (List<String>) document.get(QueryParams.USER_DEFINED_ACLS.key());
+            if (userDefinedAcls != null) {
+                // If _acl was not previously defined, it can be null the first time
+                for (String memberPermission : userDefinedAcls) {
+                    String[] split = StringUtils.splitByWholeSeparatorPreserveAllTokens(memberPermission, INTERNAL_DELIMITER, 2);
+//                    String[] split = memberPermission.split(INTERNAL_DELIMITER, 2);
+                    if (memberSet.isEmpty() || memberSet.contains(split[0])) {
+                        if (!permissions.get(QueryParams.USER_DEFINED_ACLS.key()).containsKey(split[0])) {
+                            permissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(split[0], new ArrayList<>());
+                        }
+                        if (!("NONE").equals(split[1])) {
+                            permissions.get(QueryParams.USER_DEFINED_ACLS.key()).get(split[0]).add(split[1]);
+                        }
+                    }
+                }
+            }
+        }
+
+        return entryPermission;
+    }
+
+    @Deprecated // Start using internalGet that uses id instead of uid
+    /**
+     * Internal method to fetch the permissions of every user. Permissions are splitted and returned in a map of user -> list of
+     * permissions.
+     *
      * @param resourceId  Resource id being queried.
      * @param membersList Members for which we want to fetch the permissions. If empty, it should return the permissions for all members.
      * @param entry       Entity where the query will be performed.
@@ -287,6 +384,17 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         long startTime = startQuery();
 
         EntryPermission entryPermission = internalGet(resourceId, members, entry);
+        Map<String, List<String>> myMap = entryPermission.getPermissions().get(QueryParams.ACL.key());
+        return endQuery(startTime, myMap.isEmpty() ? Collections.emptyList() : Collections.singletonList(myMap));
+    }
+
+    @Override
+    public OpenCGAResult<Map<String, List<String>>> get(long studyUid, String resourceId, List<String> members, Enums.Resource entry)
+            throws CatalogException {
+        validateEntry(entry);
+        long startTime = startQuery();
+
+        EntryPermission entryPermission = internalGet(studyUid, resourceId, members, entry);
         Map<String, List<String>> myMap = entryPermission.getPermissions().get(QueryParams.ACL.key());
         return endQuery(startTime, myMap.isEmpty() ? Collections.emptyList() : Collections.singletonList(myMap));
     }
@@ -590,6 +698,50 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         return OpenCGAResult.empty();
     }
+
+    // TODO: Make this method transactional
+    @Override
+    public OpenCGAResult<Map<String, List<String>>> setAcls(long studyUid, List<String> resourceIds, Map<String, List<String>> acls,
+                                                            Enums.Resource resource) throws CatalogDBException {
+        validateEntry(resource);
+        MongoDBCollection collection = dbCollectionMap.get(resource);
+
+        for (String resourceId : resourceIds) {
+            // Get current permissions for resource and override with new ones set for members (already existing or not)
+            Map<String, Map<String, List<String>>> currentPermissions = internalGet(studyUid, resourceId, Collections.emptyList(), resource)
+                    .getPermissions();
+            for (Map.Entry<String, List<String>> entry : acls.entrySet()) {
+                // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
+                List<String> permissions = new ArrayList<>(entry.getValue());
+                permissions.add("NONE");
+                currentPermissions.get(QueryParams.ACL.key()).put(entry.getKey(), permissions);
+                currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()).put(entry.getKey(), permissions);
+            }
+            List<String> permissionArray = createPermissionArray(currentPermissions.get(QueryParams.ACL.key()));
+            List<String> manualPermissionArray = createPermissionArray(currentPermissions.get(QueryParams.USER_DEFINED_ACLS.key()));
+
+            Document queryDocument = new Document()
+                    .append(PRIVATE_STUDY_UID, studyUid)
+                    .append(PRIVATE_ID, resourceId);
+            Document update;
+            if (isPermissionRuleEntity(resource)) {
+                update = new Document("$set", new Document()
+                        .append(QueryParams.ACL.key(), permissionArray)
+                        .append(QueryParams.USER_DEFINED_ACLS.key(), manualPermissionArray));
+            } else {
+                update = new Document("$set", new Document(QueryParams.ACL.key(), permissionArray));
+            }
+
+            logger.debug("Set Acls (set): Query {}, Push {}",
+                    queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+            collection.update(queryDocument, update, new QueryOptions(MongoDBCollection.MULTI, true));
+        }
+
+        return OpenCGAResult.empty();
+    }
+
 
     private void setMembersHaveInternalPermissionsDefined(long studyId, List<String> members, List<String> permissions, String entity,
                                                           ClientSession clientSession) {

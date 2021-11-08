@@ -125,7 +125,10 @@ public interface AuthorizationManager {
     void checkIndividualPermission(long studyId, long individualId, String userId, IndividualAclEntry.IndividualPermissions permission)
             throws CatalogException;
 
-    void checkJobPermission(long studyId, long jobId, String userId, ExecutionAclEntry.ExecutionPermissions permission)
+    void checkJobPermission(long studyId, long jobUid, String userId, ExecutionAclEntry.ExecutionPermissions permission)
+            throws CatalogException;
+
+    void checkExecutionPermission(long studyId, long executionUid, String userId, ExecutionAclEntry.ExecutionPermissions permission)
             throws CatalogException;
 
     void checkCohortPermission(long studyId, long cohortId, String userId, CohortAclEntry.CohortPermissions permission)
@@ -320,6 +323,33 @@ public interface AuthorizationManager {
 
     //------------------------- End of panel ACL ----------------------
 
+    //------------------------- Execution ACL -----------------------------
+
+    /**
+     * Return all the ACLs defined for the execution.
+     *
+     * @param studyId     study id.
+     * @param executionId execution id.
+     * @param userId      user id asking for the ACLs.
+     * @return a list of ExecutionAcls.
+     * @throws CatalogException when the user asking to retrieve all the ACLs defined in the execution does not have proper permissions.
+     */
+    OpenCGAResult<Map<String, List<String>>> getAllExecutionAcls(long studyId, String executionId, String userId) throws CatalogException;
+
+    /**
+     * Return the ACL defined for the member.
+     *
+     * @param studyId     study id.
+     * @param executionId execution id.
+     * @param userId      user asking for the ACL.
+     * @param member      member whose permissions will be retrieved.
+     * @return the ExecutionAcl for the member.
+     * @throws CatalogException if the user does not have proper permissions to see the member permissions.
+     */
+    OpenCGAResult<Map<String, List<String>>> getExecutionAcl(long studyId, String executionId, String userId, String member)
+            throws CatalogException;
+
+    //------------------------- End of Execution ACL ----------------------
     //------------------------- Job ACL -----------------------------
 
     /**
@@ -428,8 +458,11 @@ public interface AuthorizationManager {
 
     OpenCGAResult<Map<String, List<String>>> removeAcls(List<String> members, List<CatalogAclParams> aclParams) throws CatalogException;
 
-    OpenCGAResult<Map<String, List<String>>> replicateAcls(long studyId, List<Long> ids, Map<String, List<String>> aclEntries,
-                                                           Enums.Resource resource)
+    default void replicateAcls(long studyId, String sourceId, List<String> targetIds, Enums.Resource resource) throws CatalogException {
+        replicateAcls(studyId, sourceId, targetIds, resource, resource);
+    }
+
+    void replicateAcls(long studyId, String sourceId, List<String> targetIds, Enums.Resource sourceResource, Enums.Resource targetResource)
             throws CatalogException;
 
     void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException;

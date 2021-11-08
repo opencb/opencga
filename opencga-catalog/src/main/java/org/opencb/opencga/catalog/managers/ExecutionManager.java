@@ -5,14 +5,17 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ExecutionDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -23,6 +26,7 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.*;
@@ -37,6 +41,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+
 public class ExecutionManager extends ResourceManager<Execution> {
 
     protected static Logger logger = LoggerFactory.getLogger(ExecutionManager.class);
@@ -49,6 +55,9 @@ public class ExecutionManager extends ResourceManager<Execution> {
             Arrays.asList(ExecutionDBAdaptor.QueryParams.ID.key(), ExecutionDBAdaptor.QueryParams.UID.key(),
                     ExecutionDBAdaptor.QueryParams.UUID.key(), ExecutionDBAdaptor.QueryParams.STUDY_UID.key(),
                     ExecutionDBAdaptor.QueryParams.INTERNAL.key()));
+    public static final QueryOptions INCLUDE_EXECUTION_AND_JOB_IDS = keepFieldsInQueryOptions(INCLUDE_EXECUTION_IDS, Arrays.asList(
+            ExecutionDBAdaptor.QueryParams.JOBS.key() + "." + JobDBAdaptor.QueryParams.ID.key(),
+            ExecutionDBAdaptor.QueryParams.JOBS.key() + "." + JobDBAdaptor.QueryParams.UID.key()));
 
     ExecutionManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                      DBAdaptorFactory catalogDBAdaptorFactory, IOManagerFactory ioManagerFactory, Configuration configuration) {
@@ -106,7 +115,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
             for (Execution execution : executionDataResult.getResults()) {
                 // TODO: check Execution permissions?
                 // Check view permissions
-                authorizationManager.checkJobPermission(execution.getStudyUid(), execution.getUid(), user,
+                authorizationManager.checkExecutionPermission(execution.getStudyUid(), execution.getUid(), user,
                         ExecutionAclEntry.ExecutionPermissions.VIEW);
             }
             return keepOriginalOrder(uniqueList, executionStringFunction, executionDataResult, ignoreException, false);
@@ -337,7 +346,7 @@ public class ExecutionManager extends ResourceManager<Execution> {
         try {
             Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
             Execution execution = internalGet(study.getUid(), executionId, INCLUDE_EXECUTION_IDS, userId).first();
-            authorizationManager.checkJobPermission(study.getUid(), execution.getUid(), userId,
+            authorizationManager.checkExecutionPermission(study.getUid(), execution.getUid(), userId,
                     ExecutionAclEntry.ExecutionPermissions.WRITE);
 
             ParamUtils.checkObj(params, "ExecutionUpdateParams");
@@ -517,4 +526,174 @@ public class ExecutionManager extends ResourceManager<Execution> {
             throws CatalogException {
         throw new NotImplementedException("GroupBy operation not implemented");
     }
+
+    // **************************   ACLs  ******************************** //
+    public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> executionList, String member,
+                                                            boolean ignoreException, String token) throws CatalogException {
+        String user = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, user);
+
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("executionList", executionList)
+                .append("member", member)
+                .append("ignoreException", ignoreException)
+                .append("token", token);
+        try {
+            OpenCGAResult<Map<String, List<String>>> executionAclList = OpenCGAResult.empty();
+            InternalGetDataResult<Execution> queryResult = internalGet(study.getUid(), executionList, INCLUDE_EXECUTION_IDS, user,
+                    ignoreException);
+
+            Map<String, InternalGetDataResult.Missing> missingMap = new HashMap<>();
+            if (queryResult.getMissing() != null) {
+                missingMap = queryResult.getMissing().stream()
+                        .collect(Collectors.toMap(InternalGetDataResult.Missing::getId, Function.identity()));
+            }
+            int counter = 0;
+            for (String executionId : executionList) {
+                if (!missingMap.containsKey(executionId)) {
+                    Execution execution = queryResult.getResults().get(counter);
+                    try {
+                        OpenCGAResult<Map<String, List<String>>> allExecutionAcls;
+                        if (StringUtils.isNotEmpty(member)) {
+                            allExecutionAcls = authorizationManager.getExecutionAcl(study.getUid(), execution.getId(), user, member);
+                        } else {
+                            allExecutionAcls = authorizationManager.getAllExecutionAcls(study.getUid(), execution.getId(), user);
+                        }
+                        executionAclList.append(allExecutionAcls);
+                        auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.EXECUTION, execution.getId(),
+                                execution.getUuid(), study.getId(), study.getUuid(), auditParams,
+                                new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
+                    } catch (CatalogException e) {
+                        auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.EXECUTION, execution.getId(),
+                                execution.getUuid(), study.getId(), study.getUuid(), auditParams,
+                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
+                        if (!ignoreException) {
+                            throw e;
+                        } else {
+                            Event event = new Event(Event.Type.ERROR, executionId, missingMap.get(executionId).getErrorMsg());
+                            executionAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
+                                    Collections.singletonList(Collections.emptyMap()), 0));
+                        }
+                    }
+                    counter += 1;
+                } else {
+                    Event event = new Event(Event.Type.ERROR, executionId, missingMap.get(executionId).getErrorMsg());
+                    executionAclList.append(new OpenCGAResult<>(0, Collections.singletonList(event), 0,
+                            Collections.singletonList(Collections.emptyMap()), 0));
+
+                    auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.EXECUTION, executionId, "", study.getId(),
+                            study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                                    new Error(0, "", missingMap.get(executionId).getErrorMsg())), new ObjectMap());
+                }
+            }
+            return executionAclList;
+        } catch (CatalogException e) {
+            for (String jobId : executionList) {
+                auditManager.audit(operationId, user, Enums.Action.FETCH_ACLS, Enums.Resource.EXECUTION, jobId, "", study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()),
+                        new ObjectMap());
+            }
+            throw e;
+        }
+    }
+
+    public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> executionStrList, String memberList,
+                                                              AclParams aclParams, ParamUtils.AclAction action, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("executionStrList", executionStrList)
+                .append("memberList", memberList)
+                .append("aclParams", aclParams)
+                .append("action", action)
+                .append("token", token);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
+
+        try {
+            if (executionStrList == null || executionStrList.isEmpty()) {
+                throw new CatalogException("Missing execution parameter");
+            }
+
+            if (action == null) {
+                throw new CatalogException("Invalid action found. Please choose a valid action to be performed.");
+            }
+
+            List<String> permissions = Collections.emptyList();
+            if (StringUtils.isNotEmpty(aclParams.getPermissions())) {
+                permissions = Arrays.asList(aclParams.getPermissions().trim().replaceAll("\\s", "").split(","));
+                checkPermissions(permissions, ExecutionAclEntry.ExecutionPermissions::valueOf);
+            }
+
+            List<Execution> executionList = internalGet(study.getUid(), executionStrList, INCLUDE_EXECUTION_AND_JOB_IDS, userId, false)
+                    .getResults();
+
+            authorizationManager.checkCanAssignOrSeePermissions(study.getUid(), userId);
+
+            // Validate that the members are actually valid members
+            List<String> members;
+            if (memberList != null && !memberList.isEmpty()) {
+                members = Arrays.asList(memberList.split(","));
+            } else {
+                members = Collections.emptyList();
+            }
+            authorizationManager.checkNotAssigningPermissionsToAdminsGroup(members);
+            checkMembers(study.getUid(), members);
+
+            // Propagate permissions to corresponding jobs
+            AuthorizationManager.CatalogAclParams executionAclParams = new AuthorizationManager.CatalogAclParams(new LinkedList<>(),
+                    permissions, Enums.Resource.EXECUTION);
+            AuthorizationManager.CatalogAclParams jobAclParams = new AuthorizationManager.CatalogAclParams(new LinkedList<>(),
+                    permissions, Enums.Resource.JOB);
+            for (Execution execution : executionList) {
+                executionAclParams.getIds().add(execution.getUid());
+                if (CollectionUtils.isNotEmpty(execution.getJobs())) {
+                    jobAclParams.getIds().addAll(execution.getJobs().stream().map(Job::getUid).collect(Collectors.toList()));
+                }
+            }
+            List<AuthorizationManager.CatalogAclParams> aclParamsList = Arrays.asList(executionAclParams, jobAclParams);
+
+            OpenCGAResult<Map<String, List<String>>> queryResultList;
+            switch (action) {
+                case SET:
+                    queryResultList = authorizationManager.setAcls(study.getUid(), members, aclParamsList);
+                    break;
+                case ADD:
+                    queryResultList = authorizationManager.addAcls(study.getUid(), members, aclParamsList);
+                    break;
+                case REMOVE:
+                    queryResultList = authorizationManager.removeAcls(members, aclParamsList);
+                    break;
+                case RESET:
+                    for (AuthorizationManager.CatalogAclParams catalogAclParams : aclParamsList) {
+                        catalogAclParams.setPermissions(null);
+                    }
+                    queryResultList = authorizationManager.removeAcls(members, aclParamsList);
+                    break;
+                default:
+                    throw new CatalogException("Unexpected error occurred. No valid action found.");
+            }
+
+            for (Execution execution : executionList) {
+                auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.EXECUTION, execution.getId(),
+                        execution.getUuid(), study.getId(), study.getUuid(), auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
+            }
+            return queryResultList;
+        } catch (CatalogException e) {
+            if (executionStrList != null) {
+                for (String executionId : executionStrList) {
+                    auditManager.audit(operationId, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.EXECUTION, executionId, "",
+                            study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
+                                    e.getError()), new ObjectMap());
+                }
+            }
+            throw e;
+        }
+    }
+
 }

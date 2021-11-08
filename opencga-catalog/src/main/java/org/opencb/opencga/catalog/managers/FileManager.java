@@ -727,22 +727,26 @@ public class FileManager extends AnnotationSetManager<File> {
         checkHooks(file, study.getFqn(), HookConfiguration.Stage.CREATE);
     }
 
+    private String getFileIdFromPath(String path) {
+        return path.replace("/", ":");
+    }
+
     private OpenCGAResult<File> register(Study study, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples,
                                          boolean parents, QueryOptions options, String userId) throws CatalogException {
-        long studyId = study.getUid();
+        long studyUid = study.getUid();
 
         //Find parent. If parents == true, create folders.
         String parentPath = getParentPath(file.getPath());
 
-        long parentFileId = fileDBAdaptor.getId(studyId, parentPath);
+        long parentFileUid = fileDBAdaptor.getId(studyUid, parentPath);
         boolean newParent = false;
-        if (parentFileId < 0 && StringUtils.isNotEmpty(parentPath)) {
+        if (parentFileUid < 0 && StringUtils.isNotEmpty(parentPath)) {
             if (parents) {
                 newParent = true;
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, parentPath, "", FileInternal.init(),
                         0, Collections.emptyList(), null, "", new FileQualityControl(), Collections.emptyMap(), Collections.emptyMap());
                 validateNewFile(study, parentFile, false);
-                parentFileId = register(study, parentFile, existingSamples, nonExistingSamples, parents, options, userId)
+                parentFileUid = register(study, parentFile, existingSamples, nonExistingSamples, parents, options, userId)
                         .first().getUid();
             } else {
                 throw new CatalogDBException("Directory not found " + parentPath);
@@ -750,24 +754,22 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         //Check permissions
-        if (parentFileId < 0) {
+        if (parentFileUid < 0) {
             throw new CatalogException("Unable to create file without a parent file");
         } else {
             if (!newParent) {
                 //If parent has been created, for sure we have permissions to create the new file.
-                authorizationManager.checkFilePermission(studyId, parentFileId, userId, FileAclEntry.FilePermissions.WRITE);
+                authorizationManager.checkFilePermission(studyUid, parentFileUid, userId, FileAclEntry.FilePermissions.WRITE);
             }
         }
 
-        fileDBAdaptor.insert(studyId, file, existingSamples, nonExistingSamples, study.getVariableSets(), options);
-        OpenCGAResult<File> queryResult = getFile(studyId, file.getUuid(), options);
-        // We obtain the permissions set in the parent folder and set them to the file or folder being created
-        OpenCGAResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(studyId, parentFileId);
-        // Propagate ACLs
-        if (allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(studyId, Arrays.asList(queryResult.first().getUid()), allFileAcls.getResults().get(0),
-                    Enums.Resource.FILE);
-        }
+        fileDBAdaptor.insert(studyUid, file, existingSamples, nonExistingSamples, study.getVariableSets(), options);
+        OpenCGAResult<File> queryResult = getFile(studyUid, file.getUuid(), options);
+
+        String parentFileId = getFileIdFromPath(parentPath);
+        // Replicate ACLs
+        authorizationManager.replicateAcls(studyUid, parentFileId, Collections.singletonList(queryResult.first().getId()),
+                Enums.Resource.FILE);
 
         matchUpVariantFiles(study.getFqn(), queryResult.getResults(), userId);
 
@@ -3198,9 +3200,7 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         String parentPath = getParentPath(stringPath);
-        long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
-        // We obtain the permissions set in the parent folder and set them to the file or folder being created
-        OpenCGAResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId);
+        long parentFileUid = fileDBAdaptor.getId(study.getUid(), parentPath);
 
         URI completeURI = Paths.get(studyURI).resolve(path).toUri();
 
@@ -3214,11 +3214,11 @@ public class FileManager extends AnnotationSetManager<File> {
         fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
                 new QueryOptions());
         OpenCGAResult<File> queryResult = getFile(study.getUid(), folder.getUuid(), QueryOptions.empty());
-        // Propagate ACLs
-        if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()), allFileAcls.getResults().get(0),
-                    Enums.Resource.FILE);
-        }
+
+        String parentFileId = getFileIdFromPath(parentPath);
+        // Replicate ACLs
+        authorizationManager.replicateAcls(study.getUid(), parentFileId, Collections.singletonList(queryResult.first().getId()),
+                Enums.Resource.FILE);
     }
 
     private OpenCGAResult<File> privateLink(Study study, FileLinkParams params, boolean parents, String token)
@@ -3401,14 +3401,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         // If the folder does not exist, we create it
 
                         String parentPath = getParentPath(destinyPath);
-                        long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
-                        // We obtain the permissions set in the parent folder and set them to the file or folder being created
-                        OpenCGAResult<Map<String, List<String>>> allFileAcls;
-                        try {
-                            allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId);
-                        } catch (CatalogException e) {
-                            throw new RuntimeException(e);
-                        }
+                        long parentFileUid = fileDBAdaptor.getId(study.getUid(), parentPath);
 
                         File folder = new File(Paths.get(dir).getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
                                 File.Bioformat.NONE, dir, destinyPath, null, creationDate, modificationDate,
@@ -3423,11 +3416,10 @@ public class FileManager extends AnnotationSetManager<File> {
                                 Collections.emptyList(), new QueryOptions());
                         OpenCGAResult<File> queryResult = getFile(study.getUid(), folder.getUuid(), QueryOptions.empty());
 
-                        // Propagate ACLs
-                        if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-                            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()),
-                                    allFileAcls.getResults().get(0), Enums.Resource.FILE);
-                        }
+                        String parentFileId = getFileIdFromPath(parentPath);
+                        // Replicate ACLs
+                        authorizationManager.replicateAcls(study.getUid(), parentFileId,
+                                Collections.singletonList(queryResult.first().getId()), Enums.Resource.FILE);
                     }
                 } catch (CatalogException e) {
                     logger.error("An error occurred when trying to create folder {}", dir.toString());
@@ -3452,17 +3444,8 @@ public class FileManager extends AnnotationSetManager<File> {
 
                     if (fileDBAdaptor.count(query).getNumMatches() == 0) {
                         long size = ioManager.getFileSize(fileUri);
-                        // If the file does not exist, we create it
-                        String parentPath = getParentPath(destinyPath);
-                        long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
-                        // We obtain the permissions set in the parent folder and set them to the file or folder being created
-                        OpenCGAResult<Map<String, List<String>>> allFileAcls;
-                        try {
-                            allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId);
-                        } catch (CatalogException e) {
-                            throw new RuntimeException(e);
-                        }
 
+                        // If the file does not exist, we create it
                         FileInternal internal = FileInternal.init();
                         if (params.getInternal() != null) {
                             internal.setSampleMap(params.getInternal().getSampleMap());
@@ -3489,11 +3472,12 @@ public class FileManager extends AnnotationSetManager<File> {
                                 new QueryOptions());
                         subfile = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty()).first();
 
-                        // Propagate ACLs
-                        if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-                            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(subfile.getUid()),
-                                    allFileAcls.getResults().get(0), Enums.Resource.FILE);
-                        }
+                        String parentPath = getParentPath(destinyPath);
+                        String parentFileId = getFileIdFromPath(parentPath);
+                        long parentFileUid = fileDBAdaptor.getId(study.getUid(), parentPath);
+                        // Replicate ACLs
+                        authorizationManager.replicateAcls(study.getUid(), parentFileId, Collections.singletonList(subfile.getId()),
+                                Enums.Resource.FILE);
 
                         if (isTransformedFile(subfile.getName())) {
                             logger.info("Detected transformed file {}", subfile.getPath());
@@ -3554,11 +3538,6 @@ public class FileManager extends AnnotationSetManager<File> {
         // The file is not registered in Catalog, so we will register it
         long size = ioManager.getFileSize(fileUri);
 
-        String parentPath = getParentPath(filePath);
-        File parentFile = internalGet(study.getUid(), parentPath, INCLUDE_FILE_URI_PATH, userId).first();
-        // We obtain the permissions set in the parent folder and set them to the file or folder being created
-        OpenCGAResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFile.getUid());
-
         File subfile = new File(Paths.get(filePath).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                 File.Bioformat.NONE, fileUri, filePath, "", TimeUtils.getTime(), TimeUtils.getTime(),
                 "", isExternal(study, filePath, fileUri), size, new Software(), new FileExperiment(), Collections.emptyList(),
@@ -3577,11 +3556,10 @@ public class FileManager extends AnnotationSetManager<File> {
         OpenCGAResult<File> result = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty());
         subfile = result.first();
 
-        // Propagate ACLs
-        if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(subfile.getUid()), allFileAcls.getResults().get(0),
-                    Enums.Resource.FILE);
-        }
+        String parentPath = getParentPath(filePath);
+        String parentFileId = getFileIdFromPath(parentPath);
+        // Replicate ACLs
+        authorizationManager.replicateAcls(study.getUid(), parentFileId, Collections.singletonList(subfile.getId()), Enums.Resource.FILE);
 
         // If it is a transformed file, we will try to link it with the correspondent original file
         try {

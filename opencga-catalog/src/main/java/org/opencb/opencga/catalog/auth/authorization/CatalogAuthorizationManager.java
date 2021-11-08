@@ -64,6 +64,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final ProjectDBAdaptor projectDBAdaptor;
     private final StudyDBAdaptor studyDBAdaptor;
     private final FileDBAdaptor fileDBAdaptor;
+    private final JobDBAdaptor jobDBAdaptor;
     private final ExecutionDBAdaptor executionDBAdaptor;
     private final SampleDBAdaptor sampleDBAdaptor;
     private final IndividualDBAdaptor individualDBAdaptor;
@@ -87,6 +88,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         projectDBAdaptor = dbFactory.getCatalogProjectDbAdaptor();
         studyDBAdaptor = dbFactory.getCatalogStudyDBAdaptor();
         fileDBAdaptor = dbFactory.getCatalogFileDBAdaptor();
+        jobDBAdaptor = dbFactory.getCatalogJobDBAdaptor();
         executionDBAdaptor = dbFactory.getCatalogExecutionDBAdaptor();
         sampleDBAdaptor = dbFactory.getCatalogSampleDBAdaptor();
         individualDBAdaptor = dbFactory.getCatalogIndividualDBAdaptor();
@@ -387,17 +389,31 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkJobPermission(long studyId, long jobId, String userId, ExecutionAclEntry.ExecutionPermissions permission)
+    public void checkJobPermission(long studyId, long jobUid, String userId, ExecutionAclEntry.ExecutionPermissions permission)
             throws CatalogException {
         Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.UID.key(), jobId)
+                .append(JobDBAdaptor.QueryParams.UID.key(), jobUid)
                 .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
+
+        if (checkUserPermission(userId, query, dbAdaptorFactory.getCatalogJobDBAdaptor())) {
+            return;
+        }
+        throw CatalogAuthorizationException.deny(userId, permission.toString(), "Job", jobUid, null);
+    }
+
+    @Override
+    public void checkExecutionPermission(long studyId, long executionUid, String userId, ExecutionAclEntry.ExecutionPermissions permission)
+            throws CatalogException {
+        Query query = new Query()
+                .append(ExecutionDBAdaptor.QueryParams.UID.key(), executionUid)
+                .append(ExecutionDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
         if (checkUserPermission(userId, query, executionDBAdaptor)) {
             return;
         }
-        throw CatalogAuthorizationException.deny(userId, permission.toString(), "Job", jobId, null);
+        throw CatalogAuthorizationException.deny(userId, permission.toString(), "Execution", executionUid, null);
     }
 
     @Override
@@ -626,6 +642,34 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         return aclDBAdaptor.get(panelId, memberList, Enums.Resource.DISEASE_PANEL);
+    }
+
+    @Override
+    public OpenCGAResult<Map<String, List<String>>> getAllExecutionAcls(long studyId, String executionId, String userId)
+            throws CatalogException {
+        checkCanAssignOrSeePermissions(studyId, userId);
+        return aclDBAdaptor.get(studyId, executionId, null, Enums.Resource.EXECUTION);
+    }
+
+    @Override
+    public OpenCGAResult<Map<String, List<String>>> getExecutionAcl(long studyId, String executionId, String userId, String member)
+            throws CatalogException {
+        try {
+            checkCanAssignOrSeePermissions(studyId, userId);
+        } catch (CatalogException e) {
+            // It will be OK if the userId asking for the ACLs wants to see its own permissions
+            checkAskingOwnPermissions(userId, member, studyId);
+        }
+
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) {
+            // If member is a user, we will also add all the groups the user might belong to
+            OpenCGAResult<Group> groups = getGroupBelonging(studyId, member);
+            memberList.addAll(groups.getResults().stream().map(Group::getId).collect(Collectors.toList()));
+        }
+
+        return aclDBAdaptor.get(studyId, executionId, memberList, Enums.Resource.EXECUTION);
     }
 
     @Override
@@ -1132,20 +1176,18 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public OpenCGAResult<Map<String, List<String>>> replicateAcls(long studyId, List<Long> ids, Map<String, List<String>> aclEntries,
-                                                                  Enums.Resource resource) throws CatalogException {
-        if (ids == null || ids.isEmpty()) {
-            throw new CatalogDBException("Missing identifiers to set acls");
+    public void replicateAcls(long studyUid, String sourceId, List<String> targetIds, Enums.Resource sourceResource,
+                              Enums.Resource targetResource) throws CatalogException {
+        if (org.apache.commons.collections4.CollectionUtils.isEmpty(targetIds)) {
+            throw new CatalogDBException("Missing identifiers to set ACLs");
         }
 
-        long startTime = System.currentTimeMillis();
-        aclDBAdaptor.setAcls(ids, aclEntries, resource);
-        int dbTime = (int) (System.currentTimeMillis() - startTime);
-
-        OpenCGAResult result = getAcls(ids, null, resource);
-        result.setTime(result.getTime() + dbTime);
-
-        return result;
+        // Obtain all ACLs from source
+        OpenCGAResult<Map<String, List<String>>> aclResult = aclDBAdaptor.get(studyUid, sourceId, null, sourceResource);
+        if (aclResult.getNumResults() == 1) {
+            // Set those same ACLs on targets
+            aclDBAdaptor.setAcls(studyUid, targetIds, aclResult.first(), targetResource);
+        }
     }
 
     @Override
