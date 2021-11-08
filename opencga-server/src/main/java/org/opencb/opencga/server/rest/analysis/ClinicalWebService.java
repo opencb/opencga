@@ -137,12 +137,12 @@ public class ClinicalWebService extends AnalysisWebService {
     @ApiOperation(value = "Create a new clinical analysis", response = ClinicalAnalysis.class)
     public Response create(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.CLINICAL_ANALYSIS_CREATE_DEFAULT_DESCRIPTION)
-            @QueryParam(ParamConstants.CLINICAL_ANALYSIS_CREATE_DEFAULT_PARAM) boolean createDefaultInterpretation,
+            @ApiParam(value = ParamConstants.CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_DESCRIPTION)
+            @QueryParam(ParamConstants.CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_PARAM) Boolean skipCreateInterpretation,
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true)
                     ClinicalAnalysisCreateParams params) {
         try {
-            return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), createDefaultInterpretation, queryOptions,
+            return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), skipCreateInterpretation, queryOptions,
                     token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -196,6 +196,8 @@ public class ClinicalWebService extends AnalysisWebService {
             @QueryParam("flagsAction") ParamUtils.BasicUpdateAction flagsAction,
             @ApiParam(value = "Action to be performed if the array of files is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("filesAction") ParamUtils.BasicUpdateAction filesAction,
+            @ApiParam(value = "Action to be performed if the array of panels is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @QueryParam("panelsAction") ParamUtils.BasicUpdateAction panelsAction,
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true) ClinicalAnalysisUpdateParams params) {
         try {
             if (commentsAction == null) {
@@ -207,11 +209,15 @@ public class ClinicalWebService extends AnalysisWebService {
             if (filesAction == null) {
                 filesAction = ParamUtils.BasicUpdateAction.ADD;
             }
+            if (panelsAction == null) {
+                panelsAction = ParamUtils.BasicUpdateAction.ADD;
+            }
 
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.COMMENTS.key(), commentsAction);
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(), flagsAction);
             actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(), filesAction);
+            actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             return createOkResponse(clinicalManager.update(studyStr, getIdList(clinicalAnalysisStr), params, true, queryOptions, token));

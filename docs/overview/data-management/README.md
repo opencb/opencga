@@ -1,2 +1,0 @@
-# Metadata and Data Models
-

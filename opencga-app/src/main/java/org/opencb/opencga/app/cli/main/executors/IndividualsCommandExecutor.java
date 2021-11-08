@@ -410,9 +410,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(location, "state", commandOptions.locationState);
         invokeSetter(location, "country", commandOptions.locationCountry);
 
-        IndividualQualityControl individualQualityControl= new IndividualQualityControl();
-        invokeSetter(individualQualityControl, "sampleId", commandOptions.qualityControlSampleId);
-
         IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams()
             .setId(commandOptions.id)
             .setName(commandOptions.name)

@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 /**
@@ -177,6 +178,16 @@ public abstract class VariantDBIterator extends CloseableIterator<Variant> {
 
     public VariantDBIterator mapBuffered(UnaryOperator<List<Variant>> map, int batchSize) {
         return new BufferedMappedVariantDBIterator(this, map, batchSize);
+    }
+
+    public VariantDBIterator filter(Predicate<Variant> filter) {
+        return new BufferedMappedVariantDBIterator(this, variants -> {
+            if (filter.test(variants.get(0))) {
+                return variants;
+            } else {
+                return Collections.emptyList();
+            }
+        }, 1);
     }
 
     public VariantDBIterator localSkip(int skip) {

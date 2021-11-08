@@ -2,6 +2,7 @@
 ## Overview
 
 ### Summary 
+<<<<<<< HEAD
 | Field | create | update | unique | required|
 | :--- | :---: | :---: |:---: |:---: |
 | id | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MUIJxAzWl_EP6qG2ieO%2F-MUINo9MnIFaaG1iqqOY%2Fimage.png?alt=media&token=c9d3c9c2-573e-4f96-bfae-3a81506d07da" width="16px" heigth="16px"> |
@@ -16,6 +17,22 @@
 | modificationDate | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
 | release | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
 | internal | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |<img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> | <img src="https://firebasestorage.googleapis.com/v0/b/gitbook-28427.appspot.com/o/assets%2F-MHDrUHq_ezb3NU4DSwA%2F-MfbZE39Donn34_d_VBp%2F-MfbZwelCGkwfxQfbxmv%2Ferror.png?alt=media&token=5234ec5c-ae30-45b7-aa51-51469162a633" width="16px" heigth="16px"> |
+=======
+| Field | Create | Update | Unique | Required|
+| :--- | :---: | :---: |:---: |:---: |
+| id | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |
+| type | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| description | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| samples | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| numSamples | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| status | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| attributes | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| uuid | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| creationDate | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| modificationDate | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| release | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| internal | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+>>>>>>> develop
 
 ## Data Model
 ### Cohort
@@ -43,6 +60,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **name**<br> *String* <br> | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p>_Tags_: _required, immutable_ |
 | **description**<br> *String* <br> | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p>_Tags_: _required_ |
 | **date**<br> *String* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p>_Tags_: _internal, unique, immutable_ |
+<<<<<<< HEAD
 ### Enum Enums.CohortType
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/CohortType.java).
@@ -59,6 +77,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **FAMILY** <br> | <p></p> |
 | **TRIO** <br> | <p></p> |
 | **COLLECTION** <br> | <p></p> |
+=======
+>>>>>>> develop
 ### Sample
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
 
@@ -82,6 +102,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **status**<br>*<a href="cohort.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>Generic: Object to define the status of the entry.</p> |
 | **internal**<br>*<a href="cohort.md#SampleInternal"><em>SampleInternal</em></a>* <br> | <p>Generic: Field automatically managed by OpenCGA containing relevant information of the entry. This field is used for internal<br> purposes and is visible for users.</p>_Tags_: _immutable_ |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p>Dictionary that can be customised by users to store any additional information users may require.</p>_Note_: _This field is not meant to be queried. It should only contain extra information. To store additional information meant to<br> be queried, please use annotationSets._ |
+<<<<<<< HEAD
 ### SampleProcessing
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleProcessing.java).
 
@@ -92,6 +113,17 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **extractionMethod**<br> *String* <br> | <p></p> |
 | **labSampleId**<br> *String* <br> | <p></p> |
 | **quantity**<br> *String* <br> | <p></p> |
+=======
+### SampleCollection
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
+
+| Field | Description |
+| :---  | :--- |
+| **tissue**<br> *String* <br> | <p></p> |
+| **organ**<br> *String* <br> | <p></p> |
+| **quantity**<br> *String* <br> | <p></p> |
+| **method**<br> *String* <br> | <p></p> |
+>>>>>>> develop
 | **date**<br> *String* <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
 ### SampleQualityControl
@@ -99,7 +131,11 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 
 | Field | Description |
 | :---  | :--- |
+<<<<<<< HEAD
 | **files**<br> List<*String*> <br> | <p></p> |
+=======
+| **fileIds**<br> List<*String*> <br> | <p></p> |
+>>>>>>> develop
 | **comments**<br> List<*ClinicalComment*> <br> | <p></p> |
 | **variant**<br>*<a href="cohort.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>* <br> | <p></p> |
 ### SampleVariantQualityControlMetrics
@@ -110,6 +146,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **variantStats**<br> List<*SampleQcVariantStats*> <br> | <p></p> |
 | **signatures**<br> List<*Signature*> <br> | <p></p> |
 | **genomePlots**<br> List<*GenomePlot*> <br> | <p></p> |
+<<<<<<< HEAD
 ### SampleCollection
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
 
@@ -119,6 +156,18 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **organ**<br> *String* <br> | <p></p> |
 | **quantity**<br> *String* <br> | <p></p> |
 | **method**<br> *String* <br> | <p></p> |
+=======
+### SampleProcessing
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleProcessing.java).
+
+| Field | Description |
+| :---  | :--- |
+| **product**<br> *String* <br> | <p></p> |
+| **preparationMethod**<br> *String* <br> | <p></p> |
+| **extractionMethod**<br> *String* <br> | <p></p> |
+| **labSampleId**<br> *String* <br> | <p></p> |
+| **quantity**<br> *String* <br> | <p></p> |
+>>>>>>> develop
 | **date**<br> *String* <br> | <p></p> |
 | **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
 ### SampleInternal
@@ -145,6 +194,25 @@ You can find the Java code [here](https://github.com/opencb/opencga/blob/master/
 | **INVALID_PERMISSIONS** <br> | <p></p> |
 | **INVALID_METADATA** <br> | <p></p> |
 | **INVALID** <br> | <p></p> |
+<<<<<<< HEAD
+=======
+### Enum Enums.CohortType
+_Enumeration class._
+You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/CohortType.java).
+
+| Field | Description |
+| :---  | :--- |
+| **CASE_CONTROL** <br> | <p></p> |
+| **CASE_SET** <br> | <p></p> |
+| **CONTROL_SET** <br> | <p></p> |
+| **PAIRED** <br> | <p></p> |
+| **PAIRED_TUMOR** <br> | <p></p> |
+| **AGGREGATE** <br> | <p></p> |
+| **TIME_SERIES** <br> | <p></p> |
+| **FAMILY** <br> | <p></p> |
+| **TRIO** <br> | <p></p> |
+| **COLLECTION** <br> | <p></p> |
+>>>>>>> develop
 ### CohortInternal
 You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/CohortInternal.java).
 

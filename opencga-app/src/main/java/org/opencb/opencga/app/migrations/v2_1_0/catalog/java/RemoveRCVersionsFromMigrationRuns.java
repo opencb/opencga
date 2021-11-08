@@ -9,12 +9,12 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Updates.set;
 
-@Migration(id="remove_rc_version_from_migration_runs",
+@Migration(id = "remove_rc_version_from_migration_runs",
         description = "Remove RC versions from migration runs stored in catalog", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         patch = 1,
-        rank = 20)
+        date = 20210723)
 public class RemoveRCVersionsFromMigrationRuns extends MigrationTool {
 
     @Override

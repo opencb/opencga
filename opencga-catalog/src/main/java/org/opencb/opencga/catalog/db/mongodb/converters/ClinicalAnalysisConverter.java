@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.bson.Document;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 
@@ -54,6 +55,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         validateFamilyToUpdate(document);
         validateProbandToUpdate(document);
         validatePanelsToUpdate(document);
+        validateFilesToUpdate(document);
     }
 
     public void validateInterpretationToUpdate(Document document) {
@@ -137,6 +139,30 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
         }
     }
 
+    public void validateFilesToUpdate(Document document) {
+        List<Document> files = (List) document.get(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key());
+        if (files != null) {
+            // We make sure we don't store duplicates
+            Map<Long, File> fileMap = new HashMap<>();
+            for (Document file : files) {
+                long uid = file.getInteger(FileDBAdaptor.QueryParams.UID.key()).longValue();
+                if (uid > 0) {
+                    File tmpFile = new File()
+                            .setPath(file.getString(FileDBAdaptor.QueryParams.PATH.key()))
+                            .setUid(uid);
+                    fileMap.put(uid, tmpFile);
+                }
+            }
+
+            document.put(ClinicalAnalysisDBAdaptor.QueryParams.FILES.key(),
+                    fileMap.entrySet().stream()
+                            .map(entry -> new Document()
+                                    .append(FileDBAdaptor.QueryParams.PATH.key(), entry.getValue().getPath())
+                                    .append(FileDBAdaptor.QueryParams.UID.key(), entry.getValue().getUid()))
+                            .collect(Collectors.toList()));
+        }
+    }
+
     public void validateProbandToUpdate(Document document) {
         Document proband = (Document) document.get(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key());
         if (proband == null) {
@@ -167,12 +193,14 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
 
         document.put(FamilyDBAdaptor.QueryParams.MEMBERS.key(),
                 members.stream().map(entry -> new Document()
-                        .append(IndividualDBAdaptor.QueryParams.UID.key(),
-                                ((Number) entry.get(IndividualDBAdaptor.QueryParams.UID.key())).longValue())
-                        .append(IndividualDBAdaptor.QueryParams.ID.key(), entry.getString(IndividualDBAdaptor.QueryParams.ID.key()))
-                        .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(), entry.get(IndividualDBAdaptor.QueryParams.SAMPLES.key()))
-                )
-                .collect(Collectors.toList()));
+                                .append(IndividualDBAdaptor.QueryParams.UID.key(),
+                                        ((Number) entry.get(IndividualDBAdaptor.QueryParams.UID.key())).longValue())
+                                .append(IndividualDBAdaptor.QueryParams.ID.key(),
+                                        entry.getString(IndividualDBAdaptor.QueryParams.ID.key()))
+                                .append(IndividualDBAdaptor.QueryParams.SAMPLES.key(),
+                                        entry.get(IndividualDBAdaptor.QueryParams.SAMPLES.key()))
+                        )
+                        .collect(Collectors.toList()));
     }
 
     public void validateFamilyToUpdate(Document document) {

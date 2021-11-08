@@ -37,7 +37,7 @@ import org.opencb.opencga.app.cli.main.options.*;
 * Manual changes to this file may cause unexpected behavior in your application.
 * Manual changes to this file will be overwritten if the code is regenerated.
 *    Command line version: 2.2.0-SNAPSHOT
-*    Command line commit: 1b9e8ceff73fec207923027b8b9c04dce9ff7975
+*    Command line commit: 2f6018030c68ea6826cfa33ead0c14f5b51f91cf
 */
 
 public class OpencgaCliOptionsParser extends CliOptionsParser {
@@ -329,6 +329,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         operationsVariantStorageSubCommands.addCommand("run-variant-julie", operationsVariantStorageCommandOptions.runVariantJulieCommandOptions);
         operationsVariantStorageSubCommands.addCommand("repair-variant-metadata", operationsVariantStorageCommandOptions.repairVariantMetadataCommandOptions);
         operationsVariantStorageSubCommands.addCommand("synchronize-variant-metadata", operationsVariantStorageCommandOptions.synchronizeVariantMetadataCommandOptions);
+        operationsVariantStorageSubCommands.addCommand("delete-variant-sample", operationsVariantStorageCommandOptions.deleteVariantSampleCommandOptions);
         operationsVariantStorageSubCommands.addCommand("index-variant-sample", operationsVariantStorageCommandOptions.indexVariantSampleCommandOptions);
         operationsVariantStorageSubCommands.addCommand("configure-sample-index", operationsVariantStorageCommandOptions.configureSampleIndexCommandOptions);
         operationsVariantStorageSubCommands.addCommand("delete-variant-score", operationsVariantStorageCommandOptions.deleteVariantScoreCommandOptions);

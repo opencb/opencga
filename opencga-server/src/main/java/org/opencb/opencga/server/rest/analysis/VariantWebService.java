@@ -63,6 +63,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
@@ -953,10 +954,11 @@ public class VariantWebService extends AnalysisWebService {
             }
 
             // Create temporal directory
-            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + System.nanoTime()).toFile();
-            outDir.mkdir();
-            if (!outDir.exists()) {
-                return createErrorResponse(new Exception("Error creating temporal directory for mutational-signature/query analysis"));
+            outDir = Paths.get(configuration.getAnalysis().getScratchDir(), "mutational-signature-" + TimeUtils.getTimeMillis()).toFile();
+            try {
+                FileUtils.forceMkdir(outDir);
+            } catch (IOException e) {
+                throw new IOException("Error creating temporal directory for mutational-signature/query analysis. " + e.getMessage(), e);
             }
 
             MutationalSignatureAnalysisParams params = new MutationalSignatureAnalysisParams();

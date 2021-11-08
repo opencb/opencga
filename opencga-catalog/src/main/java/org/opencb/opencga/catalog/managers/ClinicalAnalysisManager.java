@@ -78,11 +78,6 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
  */
 public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
-    private UserManager userManager;
-    private StudyManager studyManager;
-
-    protected static Logger logger = LoggerFactory.getLogger(ClinicalAnalysisManager.class);
-
     public static final QueryOptions INCLUDE_CLINICAL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key(), ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(),
@@ -105,6 +100,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key()));
+    protected static Logger logger = LoggerFactory.getLogger(ClinicalAnalysisManager.class);
+    private UserManager userManager;
+    private StudyManager studyManager;
 
     ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                             DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -218,18 +216,19 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     @Override
     public OpenCGAResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis, QueryOptions options, String token)
             throws CatalogException {
-        return create(studyStr, clinicalAnalysis, false, options, token);
+        return create(studyStr, clinicalAnalysis, null, options, token);
     }
 
-    public OpenCGAResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis, boolean createDefaultInterpretation,
-                                                  QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis,
+                                                  Boolean skipCreateDefaultInterpretation, QueryOptions options, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("clinicalAnalysis", clinicalAnalysis)
-                .append("createDefaultInterpretation", createDefaultInterpretation)
+                .append("skipCreateDefaultInterpretation", skipCreateDefaultInterpretation)
                 .append("options", options)
                 .append("token", token);
         try {
@@ -247,13 +246,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
             ParamUtils.checkObj(clinicalAnalysis.getProband(), "proband");
 
-            if (clinicalAnalysis.getInterpretation() != null && StringUtils.isNotEmpty(clinicalAnalysis.getInterpretation().getId())
-                    && createDefaultInterpretation) {
-                throw new CatalogException("createDefaultInterpretation flag passed together with interpretation '"
-                        + clinicalAnalysis.getInterpretation().getId() + "'. Please, choose between initialising a default interpretation "
-                        + "or passing an interpretation id");
-            }
-
             clinicalAnalysis.setStatus(ParamUtils.defaultObject(clinicalAnalysis.getStatus(), Status::new));
             clinicalAnalysis.setInternal(ClinicalAnalysisInternal.init());
             clinicalAnalysis.setDisorder(ParamUtils.defaultObject(clinicalAnalysis.getDisorder(),
@@ -266,8 +258,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     ClinicalAnalysisQualityControl::new));
             clinicalAnalysis.setPanels(ParamUtils.defaultObject(clinicalAnalysis.getPanels(), Collections.emptyList()));
 
-            clinicalAnalysis.getQualityControl().setUser(userId);
-            clinicalAnalysis.getQualityControl().setDate(TimeUtils.getDate());
+            if (clinicalAnalysis.getQualityControl().getComments() != null) {
+                for (ClinicalComment comment : clinicalAnalysis.getQualityControl().getComments()) {
+                    comment.setDate(TimeUtils.getTime());
+                    comment.setAuthor(userId);
+                }
+            }
 
             if (!clinicalAnalysis.getComments().isEmpty()) {
                 // Fill author and date
@@ -504,7 +500,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     }
                 }
             }
-
             if (clinicalAnalysis.getFiles() != null && !clinicalAnalysis.getFiles().isEmpty()) {
                 validateFiles(study, clinicalAnalysis, userId);
             } else {
@@ -533,10 +528,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             sortMembersFromFamily(clinicalAnalysis);
 
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
-            if (createDefaultInterpretation) {
+            if (clinicalAnalysis.getInterpretation() == null
+                    && (skipCreateDefaultInterpretation == null || !skipCreateDefaultInterpretation)) {
                 clinicalAnalysis.setInterpretation(ParamUtils.defaultObject(clinicalAnalysis.getInterpretation(), Interpretation::new));
-                clinicalAnalysis.getInterpretation().setId(ParamUtils.defaultString(clinicalAnalysis.getInterpretation().getId(),
-                        clinicalAnalysis.getId() + ".1"));
             }
 
             if (clinicalAnalysis.getInterpretation() != null) {
@@ -625,7 +619,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 consentList.add(new ClinicalConsentParam(consent.getId(), consent.getName(), consent.getDescription(),
                         ClinicalConsentParam.Value.UNKNOWN));
             }
-
         } else {
             // Adding all consents to UNKNOWN
             for (ClinicalConsent consent : consentMap.values()) {
@@ -750,8 +743,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), new ArrayList<>(sampleSet))
-                .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.ALIGNMENT, File.Bioformat.VARIANT,
-                        File.Bioformat.COVERAGE));
+                .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.ALIGNMENT, File.Bioformat.VARIANT));
         OpenCGAResult<File> fileResults = fileDBAdaptor.get(study.getUid(), query, new QueryOptions(), userId);
 
         Map<String, List<File>> fileMap = new HashMap<>();
@@ -1242,8 +1234,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
         if (parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL.key()) != null) {
             ClinicalAnalysisQualityControl qualityControl = updateParams.getQualityControl().toClinicalQualityControl();
-            qualityControl.setUser(userId);
-            qualityControl.setDate(TimeUtils.getDate());
+            if (qualityControl.getComments() != null) {
+                for (ClinicalComment comment : qualityControl.getComments()) {
+                    comment.setDate(TimeUtils.getTime());
+                    comment.setAuthor(userId);
+                }
+            }
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL.key(), qualityControl);
         }
 
@@ -1254,28 +1250,59 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             validateFiles(study, clinicalAnalysis, userId);
         }
 
-        if (CollectionUtils.isNotEmpty(updateParams.getPanels()) || updateParams.getPanelLock() != null) {
-            // Check the Clinical Analysis have no interpretations
-            Query query = new Query()
-                    .append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                    .append(InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(), clinicalAnalysis.getId());
-            OpenCGAResult<Long> count = interpretationDBAdaptor.count(query);
-            if (count.getNumMatches() > 0) {
-                throw new CatalogException("Cannot update ClinicalAnalysis '" + clinicalAnalysis.getId()
-                        + "'. Updating 'panels' or 'panelLocked' fields is forbidden when the Clinical Analysis contains Interpretations");
+        if (CollectionUtils.isNotEmpty(updateParams.getPanels()) && updateParams.getPanelLock() != null && updateParams.getPanelLock()
+                && (clinicalAnalysis.getInterpretation() != null
+                || CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations()))) {
+            throw new CatalogException("Updating the list of panels and setting 'panelLock' to true at the same time is not allowed "
+                    + " when the ClinicalAnalysis has Interpretations.");
+        }
+
+        if (CollectionUtils.isNotEmpty(updateParams.getPanels())) {
+            if (clinicalAnalysis.isPanelLock()) {
+                throw new CatalogException("Cannot update panels from ClinicalAnalysis '" + clinicalAnalysis.getId() + "'. "
+                        + "'panelLocked' field from ClinicalAnalysis is set to true.");
             }
 
-            if (CollectionUtils.isNotEmpty(updateParams.getPanels())) {
-                // Validate and get panels
-                List<String> panelIds = updateParams.getPanels().stream().map(PanelReferenceParam::getId).collect(Collectors.toList());
-                query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
-                OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
-                        panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
-                if (panelResult.getNumResults() < panelIds.size()) {
-                    throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
-                }
+            // Validate and get panels
+            List<String> panelIds = updateParams.getPanels().stream().map(PanelReferenceParam::getId).collect(Collectors.toList());
+            Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
+            OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
+                    panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
+            if (panelResult.getNumResults() < panelIds.size()) {
+                throw new CatalogException("Some panels were not found or user doesn't have permissions to see them.");
+            }
 
-                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelResult.getResults());
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelResult.getResults());
+        }
+
+        if (updateParams.getPanelLock() != null && updateParams.getPanelLock() && !clinicalAnalysis.isPanelLock()) {
+            // if user wants to set panelLock to true
+            // We need to check if the CA has interpretations. If so, the interpretations should contain exactly the same panels in order
+            // to set panelLock to true. Otherwise, that action is not allowed.
+            Set<String> panelIds = clinicalAnalysis.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
+            CatalogException exception = new CatalogException("The panels of the ClinicalAnalysis are different from the ones of at "
+                    + "least one Interpretation. 'panelLock' can only be set to true if the Interpretations use exactly the same panels");
+            if (clinicalAnalysis.getInterpretation() != null) {
+                if (clinicalAnalysis.getInterpretation().getPanels().size() != panelIds.size()) {
+                    throw exception;
+                }
+                for (Panel panel : clinicalAnalysis.getInterpretation().getPanels()) {
+                    if (!panelIds.contains(panel.getId())) {
+                        throw exception;
+                    }
+                }
+            }
+            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+                for (Interpretation interpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                    if (interpretation.getPanels().size() != panelIds.size()) {
+                        throw exception;
+                    }
+                    for (Panel panel : interpretation.getPanels()) {
+                        if (!panelIds.contains(panel.getId())) {
+                            throw exception;
+                        }
+                    }
+                }
             }
         }
 
@@ -1692,7 +1719,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             String clinicalId = id;
             String clinicalUuid = "";
             try {
-                OpenCGAResult<ClinicalAnalysis> internalResult = internalGet(study.getUid(), id, INCLUDE_CLINICAL_INTERPRETATION_IDS,
+                OpenCGAResult<ClinicalAnalysis> internalResult = internalGet(study.getUid(), id,
+                        keepFieldsInQueryOptions(INCLUDE_CLINICAL_INTERPRETATION_IDS, Arrays.asList(
+                                ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key() + "."
+                                        + InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(),
+                                ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key() + "."
+                                        + InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key())),
                         userId);
                 if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Clinical Analysis '" + id + "' not found");
@@ -1739,8 +1771,16 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         if (options.getBoolean(Constants.FORCE)) {
             return;
         }
-        if (clinicalAnalysis.getInterpretation() != null || CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
-            throw new CatalogException("Deleting a Clinical Analysis containing interpretations is forbidden.");
+        if (clinicalAnalysis.getInterpretation() != null
+                && CollectionUtils.isNotEmpty(clinicalAnalysis.getInterpretation().getPrimaryFindings())) {
+            throw new CatalogException("Deleting a Clinical Analysis containing interpretations with findings is forbidden.");
+        }
+        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+            for (Interpretation interpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                if (interpretation != null && CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
+                    throw new CatalogException("Deleting a Clinical Analysis containing interpretations with findings is forbidden.");
+                }
+            }
         }
         if (clinicalAnalysis.isLocked()) {
             throw new CatalogException("Deleting a locked Clinical Analysis is forbidden.");

@@ -13,6 +13,7 @@ import java.util.List;
 
 import org.opencb.opencga.app.cli.main.options.AnalysisClinicalCommandOptions;
 
+import org.opencb.opencga.core.models.clinical.ClinicalReport;
 import org.opencb.opencga.core.models.clinical.ProbandParam;
 import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
@@ -233,7 +234,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotNull("createDefaultInterpretation", commandOptions.createDefaultInterpretation);
+        queryParams.putIfNotNull("skipCreateDefaultInterpretation", commandOptions.skipCreateDefaultInterpretation);
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", CliSession.getInstance().getCurrentStudy());
         }
@@ -242,11 +243,17 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         PriorityParam priorityParam= new PriorityParam();
         invokeSetter(priorityParam, "id", commandOptions.priorityId);
 
+        ClinicalReport clinicalReport= new ClinicalReport();
+        invokeSetter(clinicalReport, "title", commandOptions.reportTitle);
+        invokeSetter(clinicalReport, "overview", commandOptions.reportOverview);
+        invokeSetter(clinicalReport, "discussion", commandOptions.reportDiscussion);
+        invokeSetter(clinicalReport, "logo", commandOptions.reportLogo);
+        invokeSetter(clinicalReport, "signedBy", commandOptions.reportSignedBy);
+        invokeSetter(clinicalReport, "signature", commandOptions.reportSignature);
+        invokeSetter(clinicalReport, "date", commandOptions.reportDate);
+
         StatusParam statusParam= new StatusParam();
         invokeSetter(statusParam, "id", commandOptions.statusId);
-
-        ClinicalAnalysisQualityControlUpdateParam clinicalAnalysisQualityControlUpdateParam= new ClinicalAnalysisQualityControlUpdateParam();
-        invokeSetter(clinicalAnalysisQualityControlUpdateParam, "comment", commandOptions.qualityControlComment);
 
         ProbandParam probandParam= new ProbandParam();
         invokeSetter(probandParam, "id", commandOptions.probandId);
@@ -1018,6 +1025,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("commentsAction", commandOptions.commentsAction);
         queryParams.putIfNotNull("flagsAction", commandOptions.flagsAction);
         queryParams.putIfNotNull("filesAction", commandOptions.filesAction);
+        queryParams.putIfNotNull("panelsAction", commandOptions.panelsAction);
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", CliSession.getInstance().getCurrentStudy());
         }
@@ -1026,11 +1034,17 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         PriorityParam priorityParam= new PriorityParam();
         invokeSetter(priorityParam, "id", commandOptions.priorityId);
 
+        ClinicalReport clinicalReport= new ClinicalReport();
+        invokeSetter(clinicalReport, "title", commandOptions.reportTitle);
+        invokeSetter(clinicalReport, "overview", commandOptions.reportOverview);
+        invokeSetter(clinicalReport, "discussion", commandOptions.reportDiscussion);
+        invokeSetter(clinicalReport, "logo", commandOptions.reportLogo);
+        invokeSetter(clinicalReport, "signedBy", commandOptions.reportSignedBy);
+        invokeSetter(clinicalReport, "signature", commandOptions.reportSignature);
+        invokeSetter(clinicalReport, "date", commandOptions.reportDate);
+
         StatusParam statusParam= new StatusParam();
         invokeSetter(statusParam, "id", commandOptions.statusId);
-
-        ClinicalAnalysisQualityControlUpdateParam clinicalAnalysisQualityControlUpdateParam= new ClinicalAnalysisQualityControlUpdateParam();
-        invokeSetter(clinicalAnalysisQualityControlUpdateParam, "comment", commandOptions.qualityControlComment);
 
         ProbandParam probandParam= new ProbandParam();
         invokeSetter(probandParam, "id", commandOptions.probandId);

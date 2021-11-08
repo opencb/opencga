@@ -70,6 +70,7 @@ public interface ClinicalAnalysisDBAdaptor extends CoreDBAdaptor<ClinicalAnalysi
         ANALYST("analyst", TEXT_ARRAY, ""),
         ANALYST_ID("analyst.id", TEXT, ""),
         ANALYST_ASSIGNED_BY("analyst.assignedBy", TEXT, ""),
+        REPORT("report", OBJECT, ""),
         FLAGS("flags", OBJECT, ""),
         FLAGS_ID("flags.id", TEXT, ""),
         RELEASE("release", INTEGER, ""),

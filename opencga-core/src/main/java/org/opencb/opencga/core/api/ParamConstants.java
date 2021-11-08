@@ -30,7 +30,8 @@ public class ParamConstants {
     public static final String COUNT_DESCRIPTION = "Get the total number of results matching the query. Deactivated by default.";
     public static final String CREATION_DATE_DESCRIPTION = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
     public static final String CREATION_DATE_PARAM = "creationDate";
-    public static final String MODIFICATION_DATE_DESCRIPTION = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
+    public static final String MODIFICATION_DATE_DESCRIPTION = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, " +
+            "<201805";
     public static final String MODIFICATION_DATE_PARAM = "modificationDate";
     public static final String RELEASE_PARAM = "release";
     public static final String RELEASE_DESCRIPTION = "Release when it was created";
@@ -76,11 +77,13 @@ public class ParamConstants {
     public static final String ANNOTATION_AS_MAP_DESCRIPTION = "Indicates whether to show the annotations as key-value";
     public static final String ANNOTATION_SET_ID = "AnnotationSet ID to be updated.";
     public static final String ANNOTATION_SET_NAME = "Annotation set name. If provided, only chosen annotation set will be shown";
-    public static final String ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing "
+    public static final String ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION = "Action to be performed: ADD to add new annotations; REPLACE to" +
+            " replace the value of an already existing "
             + "annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some "
             + "annotations; RESET to set some annotations to the default value configured in the corresponding variables of the "
             + "VariableSet if any.";
-    public static final String ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION = "Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key "
+    public static final String ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION = "Json containing the map of annotations when the action is ADD," +
+            " SET or REPLACE, a json with only the key "
             + "'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json "
             + "with only the key 'reset' containing the comma separated variables that will be set to the default value"
             + " when the action is RESET";
@@ -92,15 +95,16 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-
     public static final String USER_PROJECT_SEPARATOR = "@";
     // ---------------------------------------------
     public static final String PROJECT_STUDY_SEPARATOR = ":";
     public static final String OPENCGA_USER_ID = "opencga";
     public static final String ADMIN_PROJECT = "admin";
     public static final String ADMIN_STUDY = "admin";
-    public static final String ADMIN_STUDY_FQN = OPENCGA_USER_ID + USER_PROJECT_SEPARATOR + ADMIN_PROJECT + PROJECT_STUDY_SEPARATOR + ADMIN_STUDY;
-    public static final String ANONYMOUS_USER_ID = "*";
+    public static final String ADMIN_STUDY_FQN =
+            OPENCGA_USER_ID + USER_PROJECT_SEPARATOR + ADMIN_PROJECT + PROJECT_STUDY_SEPARATOR + ADMIN_STUDY;
+    public static final String ANONYMOUS_USER_ID = "*";         // Any user, authenticated or not
+    public static final String REGISTERED_USERS = "REGISTERED"; // Any authenticated user
     public static final String MEMBERS_GROUP = "@members";
     public static final String ADMINS_GROUP = "@admins";
     // -------------------- AUDIT -------------------------
@@ -148,7 +152,6 @@ public class ParamConstants {
     public static final String SILENT_DESCRIPTION = "Boolean to retrieve all possible entries that are queried for, false to raise an "
             + "exception whenever one of the entries looked for cannot be shown for whichever reason";
 
-
     // ---------------------------------------------
 
     public static final String FILES_DESCRIPTION = "Comma separated list of file IDs or names" + UP_TO_100;
@@ -167,7 +170,8 @@ public class ParamConstants {
     public static final String FILE_TYPE_DESCRIPTION = "File type, either FILE or DIRECTORY";
     public static final String FILE_FORMAT_DESCRIPTION = "Comma separated Format values. For existing Formats see files/formats";
     public static final String FILE_EXTERNAL_DESCRIPTION = "Boolean field indicating whether to filter by external or non external files";
-    public static final String FILE_BIOFORMAT_DESCRIPTION = "Comma separated Bioformat values. For existing Bioformats see files/bioformats";
+    public static final String FILE_BIOFORMAT_DESCRIPTION = "Comma separated Bioformat values. For existing Bioformats see " +
+            "files/bioformats";
 
     public static final String FILE_STATUS_DESCRIPTION = "File status";
     public static final String FILE_DESCRIPTION_DESCRIPTION = "Description";
@@ -254,9 +258,11 @@ public class ParamConstants {
     public static final String SAMPLE_VARIANT_STATS_HETEROZYGOSITY_RATE_DESCRIPTION = "Sample variant stats HeterozygosityRate";
     public static final String SAMPLE_VARIANT_STATS_DEPTH_COUNT_DESCRIPTION = "Sample variant stats DepthCount";
     public static final String SAMPLE_VARIANT_STATS_BIOTYPE_COUNT_DESCRIPTION = "Sample variant stats BiotypeCount";
-    public static final String SAMPLE_VARIANT_STATS_CLINICAL_SIGNIFICANCE_COUNT_DESCRIPTION = "Sample variant stats ClinicalSignificanceCount";
+    public static final String SAMPLE_VARIANT_STATS_CLINICAL_SIGNIFICANCE_COUNT_DESCRIPTION = "Sample variant stats " +
+            "ClinicalSignificanceCount";
     public static final String SAMPLE_VARIANT_STATS_CONSEQUENCE_TYPE_COUNT_DESCRIPTION = "Sample variant stats ConsequenceTypeCount";
-
+    public static final String SAMPLE_COHORT_IDS_PARAM = "cohortIds";
+    public static final String SAMPLE_COHORT_IDS_DESCRIPTION = "Comma separated list of cohort IDs";
 
     public static final String SAMPLE_INCLUDE_INDIVIDUAL_PARAM = "includeIndividual";
     public static final String SAMPLE_INCLUDE_INDIVIDUAL_DESCRIPTION = "Include Individual object as an attribute";
@@ -270,7 +276,6 @@ public class ParamConstants {
             + "individuals or cohorts.";
     public static final String SAMPLES_ACTION_PARAM = "samplesAction";
     public static final String SAMPLES_ACTION_DESCRIPTION = "Action to be performed if the array of samples is being updated.";
-
 
     // ---------------------------------------------
 
@@ -463,9 +468,10 @@ public class ParamConstants {
 
     public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of clinical analysis IDs or names" + UP_TO_100;
     public static final String CLINICAL_ANALYSES_PARAM = "clinicalAnalyses";
-    public static final String CLINICAL_ANALYSIS_CREATE_DEFAULT_PARAM = "createDefaultInterpretation";
-    public static final String CLINICAL_ANALYSIS_CREATE_DEFAULT_DESCRIPTION = "Flag to create and initialise a default primary "
-            + "interpretation (Id will be '{clinicalAnalysisId}.1')";
+    public static final String CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_PARAM = "skipCreateDefaultInterpretation";
+    public static final String CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_DESCRIPTION = "Flag to skip creating and initialise "
+            + "an empty default primary interpretation (Id will be '{clinicalAnalysisId}.1'). This flag is only considered if no "
+            + "Interpretation object is passed.";
 
     // ---------------------------------------------
 
@@ -539,7 +545,6 @@ public class ParamConstants {
     public static final String PANEL_VERSION_DESCRIPTION = "Comma separated list of panel versions. 'all' to get all the "
             + "panel versions. Not supported if multiple panel ids are provided";
 
-
     public static final String PANEL_SOURCE = "source";
     public static final String PANEL_SOURCE_DESCRIPTION = "Comma separated list of sources to import panels from. Current supported "
             + "sources are 'panelapp' and 'cancer-gene-census'";
@@ -550,7 +555,6 @@ public class ParamConstants {
     public static final String PANEL_VERSION_PARAM = "version";
 
     // ---------------------------------------------
-
 
     public static final String JOBS_DESCRIPTION = "Comma separated list of job IDs or UUIDs" + UP_TO_100;
     public static final String JOB_IDS_DESCRIPTION = "Comma separated list of job IDs" + UP_TO_100;
@@ -596,9 +600,11 @@ public class ParamConstants {
     public static final String JOB_OUTPUT_FILES_PARAM = "output";
     public static final String JOB_OUTPUT_FILES_DESCRIPTION = "Comma separated list of file IDs used as output.";
     public static final String JOB_EXECUTION_START_PARAM = "execution.start";
-    public static final String JOB_EXECUTION_START_DESCRIPTION = "Execution start date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
+    public static final String JOB_EXECUTION_START_DESCRIPTION = "Execution start date. Format: yyyyMMddHHmmss. Examples: >2018, " +
+            "2017-2018, <201805";
     public static final String JOB_EXECUTION_END_PARAM = "execution.end";
-    public static final String JOB_EXECUTION_END_DESCRIPTION = "Execution end date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
+    public static final String JOB_EXECUTION_END_DESCRIPTION = "Execution end date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, " +
+            "<201805";
 
     public static final String VARIANTS_QUERY_DESCRIPTION = "Filter and fetch variants from indexed VCF files in the variant storage";
     public static final String OUTPUT_DIRECTORY_DESCRIPTION = "Output directory";
@@ -620,10 +626,12 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String ALIGNMENT_COVERAGE_RATIO_DESCRIPTION = "Compute coverage ratio from file #1 vs file #2, (e.g. somatic vs germline)";
+    public static final String ALIGNMENT_COVERAGE_RATIO_DESCRIPTION = "Compute coverage ratio from file #1 vs file #2, (e.g. somatic vs " +
+            "germline)";
 
     // ---------------------------------------------
-    public static final String ALIGNMENT_QC_DESCRIPTION = "Compute quality control (QC) metrics for a given alignment file (including samtools stats, samtools flag stats, FastQC and HS metrics)";
+    public static final String ALIGNMENT_QC_DESCRIPTION = "Compute quality control (QC) metrics for a given alignment file (including " +
+            "samtools stats, samtools flag stats, FastQC and HS metrics)";
 
     public static final String ALIGNMENT_STATS_DESCRIPTION = "Compute stats (based on samtools/stats command) for a given alignment file";
     public static final String ALIGNMENT_FLAG_STATS_DESCRIPTION = "Compute flag stats (based on samtools/flagstat command) for a given " +
@@ -641,7 +649,8 @@ public class ParamConstants {
     public static final String ALIGNMENT_QC_SAMTOOLS_FLAG_STATS_DESCRIPTION = "Compute samtools flag stats";
     public static final String ALIGNMENT_QC_FASTQC_DESCRIPTION = "Compute FastQC";
 
-    public static final String ALIGNMENT_QC_HS_METRICS_DESCRIPTION = "Compute hybrid-selection (HS) metrics based on the Picard/HsMetrics command";
+    public static final String ALIGNMENT_QC_HS_METRICS_DESCRIPTION = "Compute hybrid-selection (HS) metrics based on the Picard/HsMetrics" +
+            " command";
 
     public static final String MINIMUM_MAPPING_QUALITY_DESCRIPTION = "Minimum mapping quality";
     public static final String MINIMUM_MAPPING_QUALITY_PARAM = "minMappingQuality";
@@ -683,8 +692,8 @@ public class ParamConstants {
     public static final String COVERAGE_WINDOW_SIZE_DEFAULT = "1";
     public static final String ALIGNMENT_COVERAGE_STATS_DESCRIPTION = "Compute coverage stats per transcript for a list of genes.";
 
-    public static final String LOW_COVERAGE_REGION_THRESHOLD_DESCRIPTION = "Only regions whose coverage depth is under this threshold will be reported.";
-
+    public static final String LOW_COVERAGE_REGION_THRESHOLD_DESCRIPTION = "Only regions whose coverage depth is under this threshold " +
+            "will be reported.";
 
     // ---------------------------------------------
     // alignment coverage
@@ -710,8 +719,8 @@ public class ParamConstants {
     public static final String READS_UNMAPPED_DESCRIPTION = "Reads unmapped: [<|>|<=|>=]{number}, e.g. >=1000";
     public static final String READS_PROPERLY_PAIRED = "readsProperlyPaired";
 
-    public static final String READS_PROPERLY_PAIRED_DESCRIPTION = "Reads properly paired (proper-pair bit set: [<|>|<=|>=]{number}, e.g. >=1000";
-
+    public static final String READS_PROPERLY_PAIRED_DESCRIPTION = "Reads properly paired (proper-pair bit set: [<|>|<=|>=]{number}, e.g." +
+            " >=1000";
 
     // ---------------------------------------------
     // alignment stats query
@@ -733,7 +742,8 @@ public class ParamConstants {
     public static final String AVERAGE_LENGTH = "averageLength";
     public static final String AVERAGE_LENGTH_DESCRIPTION = "Average_length: [<|>|<=|>=]{number}, e.g. >=90.0";
     public static final String AVERAGE_FIRST_FRAGMENT_LENGTH = "averageFirstFragmentLength";
-    public static final String AVERAGE_FIRST_FRAGMENT_LENGTH_DESCRIPTION = "Average first fragment length: [<|>|<=|>=]{number}, e.g. >=90.0";
+    public static final String AVERAGE_FIRST_FRAGMENT_LENGTH_DESCRIPTION = "Average first fragment length: [<|>|<=|>=]{number}, e.g. >=90" +
+            ".0";
     public static final String AVERAGE_LAST_FRAGMENT_LENGTH = "averageLastFragmentLength";
     public static final String AVERAGE_LAST_FRAGMENT_LENGTH_DESCRIPTION = "Average_last_fragment_length: [<|>|<=|>=]{number}, e.g. >=90.0";
     public static final String AVERAGE_QUALITY = "averageQuality";
@@ -741,13 +751,16 @@ public class ParamConstants {
     public static final String INSERT_SIZE_AVERAGE = "insertSizeAverage";
     public static final String INSERT_SIZE_AVERAGE_DESCRIPTION = "Insert size average: [<|>|<=|>=]{number}, e.g. >=100.0";
     public static final String INSERT_SIZE_STANDARD_DEVIATION = "insertSizeStandardDeviation";
-    public static final String INSERT_SIZE_STANDARD_DEVIATION_DESCRIPTION = "Insert size standard deviation: [<|>|<=|>=]{number}, e.g. <=1.5";
+    public static final String INSERT_SIZE_STANDARD_DEVIATION_DESCRIPTION = "Insert size standard deviation: [<|>|<=|>=]{number}, e.g. " +
+            "<=1.5";
     public static final String PAIRS_WITH_OTHER_ORIENTATION = "pairsWithOtherOrientation";
     public static final String PAIRS_WITH_OTHER_ORIENTATION_DESCRIPTION = "Pairs with other orientation: [<|>|<=|>=]{number}, e.g. >=1000";
     public static final String PAIRS_ON_DIFFERENT_CHROMOSOMES = "pairsOnDifferentChromosomes";
-    public static final String PAIRS_ON_DIFFERENT_CHROMOSOMES_DESCRIPTION = "Pairs on different chromosomes: [<|>|<=|>=]{number}, e.g. >=1000";
+    public static final String PAIRS_ON_DIFFERENT_CHROMOSOMES_DESCRIPTION = "Pairs on different chromosomes: [<|>|<=|>=]{number}, e.g. " +
+            ">=1000";
     public static final String PERCENTAGE_OF_PROPERLY_PAIRED_READS = "percentageOfProperlyPairedReads";
-    public static final String PERCENTAGE_OF_PROPERLY_PAIRED_READS_DESCRIPTION = "Percentage of properly paired reads: [<|>|<=|>=]{number}, e.g. >=96.5";
+    public static final String PERCENTAGE_OF_PROPERLY_PAIRED_READS_DESCRIPTION = "Percentage of properly paired reads: " +
+            "[<|>|<=|>=]{number}, e.g. >=96.5";
     public static final String INPUT_FILE_DESCRIPTION = FILE_ID_DESCRIPTION + " (input file)";
     public static final String SAMTOOLS_COMMANDS_SUPPORTED = "sort, index, view, stats, flagstat, dict, faidx, depth, plot-bamstats";
     public static final String SAMTOOLS_COMMAND_DESCRIPTION = "Supported Samtools commands: " + SAMTOOLS_COMMANDS_SUPPORTED;
@@ -1517,13 +1530,9 @@ public class ParamConstants {
     public static final String ADMIN_CATALOG_INSTALL_ORGANIZATION = "The body web service organization parameter";
     public static final String ADMIN_CATALOG_JWT_SECRETKEY = "The body web service secretKey parameter";
     // ---------------------------------------------
-     public static final String PROJECTS_DESCRIPTION = "Comma separated list of projects [user@]project" + UP_TO_100;
+    public static final String PROJECTS_DESCRIPTION = "Comma separated list of projects [user@]project" + UP_TO_100;
     // ---------------------------------------------
     public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[user@]project:]study where study and project can " +
             "be either the ID or UUID" + UP_TO_100;
     public static final String PANELS_DESCRIPTION = "Comma separated list of panel IDs" + UP_TO_100;
-
-
-
-
 }

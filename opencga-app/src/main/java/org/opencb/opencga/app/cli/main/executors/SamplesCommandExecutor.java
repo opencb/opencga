@@ -235,6 +235,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("somatic", commandOptions.somatic);
         queryParams.putIfNotEmpty("individualId", commandOptions.individualId);
         queryParams.putIfNotEmpty("fileIds", commandOptions.fileIds);
+        queryParams.putIfNotEmpty("cohortIds", commandOptions.cohortIds);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
@@ -309,6 +310,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("somatic", commandOptions.somatic);
         queryParams.putIfNotEmpty("individualId", commandOptions.individualId);
         queryParams.putIfNotEmpty("fileIds", commandOptions.fileIds);
+        queryParams.putIfNotEmpty("cohortIds", commandOptions.cohortIds);
         queryParams.putIfNotEmpty("creationDate", commandOptions.creationDate);
         queryParams.putIfNotEmpty("modificationDate", commandOptions.modificationDate);
         queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);

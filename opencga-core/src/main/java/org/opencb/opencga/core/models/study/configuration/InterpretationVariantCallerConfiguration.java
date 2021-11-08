@@ -1,18 +1,25 @@
 package org.opencb.opencga.core.models.study.configuration;
 
+import org.opencb.biodata.models.variant.avro.VariantType;
+
 import java.util.List;
 
 public class InterpretationVariantCallerConfiguration {
 
     private String id;
+    private boolean somatic;
+    private List<VariantType> types;
     private List<String> columns;
     private List<DataFilter> dataFilters;
 
     public InterpretationVariantCallerConfiguration() {
     }
 
-    public InterpretationVariantCallerConfiguration(String id, List<String> columns, List<DataFilter> dataFilters) {
+    public InterpretationVariantCallerConfiguration(String id, boolean somatic, List<VariantType> types, List<String> columns,
+                                                    List<DataFilter> dataFilters) {
         this.id = id;
+        this.somatic = somatic;
+        this.types = types;
         this.columns = columns;
         this.dataFilters = dataFilters;
     }
@@ -21,6 +28,8 @@ public class InterpretationVariantCallerConfiguration {
     public String toString() {
         final StringBuilder sb = new StringBuilder("InterpretationVariantCallerConfiguration{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", somatic=").append(somatic);
+        sb.append(", types=").append(types);
         sb.append(", columns=").append(columns);
         sb.append(", dataFilters=").append(dataFilters);
         sb.append('}');
@@ -33,6 +42,24 @@ public class InterpretationVariantCallerConfiguration {
 
     public InterpretationVariantCallerConfiguration setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public boolean isSomatic() {
+        return somatic;
+    }
+
+    public InterpretationVariantCallerConfiguration setSomatic(boolean somatic) {
+        this.somatic = somatic;
+        return this;
+    }
+
+    public List<VariantType> getTypes() {
+        return types;
+    }
+
+    public InterpretationVariantCallerConfiguration setTypes(List<VariantType> types) {
+        this.types = types;
         return this;
     }
 

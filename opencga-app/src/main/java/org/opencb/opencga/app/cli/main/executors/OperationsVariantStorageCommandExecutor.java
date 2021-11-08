@@ -27,6 +27,7 @@ import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParam
 import org.opencb.opencga.core.models.variant.VariantStatsIndexParams;
 import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.opencga.core.models.variant.VariantSampleDeleteParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
@@ -112,6 +113,9 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
                 break;
             case "synchronize-variant-metadata":
                 queryResponse = synchronizeVariantMetadata();
+                break;
+            case "delete-variant-sample":
+                queryResponse = deleteVariantSample();
                 break;
             case "index-variant-sample":
                 queryResponse = indexVariantSample();
@@ -504,6 +508,29 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setStudy(commandOptions.bodyStudy)
             .setFiles(CommandLineUtils.getListValues(commandOptions.files));
         return openCGAClient.getVariantOperationClient().synchronizeVariantMetadata(variantStorageMetadataSynchronizeParams, queryParams);
+    }
+
+    private RestResponse<Job> deleteVariantSample() throws Exception {
+
+        logger.debug("Executing deleteVariantSample in Operations - Variant Storage command line");
+
+        OperationsVariantStorageCommandOptions.DeleteVariantSampleCommandOptions commandOptions = operationsVariantStorageCommandOptions.deleteVariantSampleCommandOptions;
+
+        ObjectMap queryParams = new ObjectMap();
+        queryParams.putIfNotEmpty("jobId", commandOptions.jobId);
+        queryParams.putIfNotEmpty("jobDescription", commandOptions.jobDescription);
+        queryParams.putIfNotEmpty("jobDependsOn", commandOptions.jobDependsOn);
+        queryParams.putIfNotEmpty("jobTags", commandOptions.jobTags);
+        queryParams.putIfNotEmpty("study", commandOptions.study);
+        if(queryParams.get("study")==null){
+                queryParams.putIfNotEmpty("study", CliSession.getInstance().getCurrentStudy());
+        }
+
+
+        VariantSampleDeleteParams variantSampleDeleteParams = new VariantSampleDeleteParams()
+            .setSample(CommandLineUtils.getListValues(commandOptions.sample))
+            .setResume(commandOptions.resume);
+        return openCGAClient.getVariantOperationClient().deleteVariantSample(variantSampleDeleteParams, queryParams);
     }
 
     private RestResponse<Job> indexVariantSample() throws Exception {

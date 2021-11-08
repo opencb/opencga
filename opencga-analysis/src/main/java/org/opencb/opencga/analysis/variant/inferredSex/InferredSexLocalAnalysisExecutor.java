@@ -53,14 +53,22 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
                 alignmentStorageManager,
                 getToken());
 
-        // TODO infer sex from ratios
-        String inferredKaryotypicSex = "";
+        // TODO: infer sex from ratios but we need karyotypic sex tyhresholds
+        String inferredKaryotypicSex = "UNKNOWN";
+//        double xAuto = ratios[0];
+//        double yAuto = ratios[1];
+//        if (MapUtils.isEmpty(karyotypicSexThresholds)) {
+//            addWarning("Impossible to infer karyotypic sex beacause sex thresholds are empty");
+//        } else {
+//            inferredKaryotypicSex = InferredSexComputation.inferKaryotypicSex(xAuto, yAuto, karyotypicSexThresholds);
+//        }
 
         Map<String, Object> values = new HashMap<>();
         values.put("ratioX", ratios[0]);
         values.put("ratioY", ratios[1]);
 
-        // Set inferred sex report (individual fields will be set later)
-        setInferredSexReport(new InferredSexReport("", "CoverageRatio", inferredKaryotypicSex, values, Collections.emptyList()));
+        // Set inferred sex report (we assume sample and individual have the same ID)
+        setInferredSexReport(new InferredSexReport(getIndividualId(), "CoverageRatio", inferredKaryotypicSex, values,
+                Collections.emptyList()));
     }
 }

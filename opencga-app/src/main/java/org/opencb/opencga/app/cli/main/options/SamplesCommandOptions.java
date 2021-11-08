@@ -262,6 +262,9 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--file-ids"}, description = "Comma separated list of file IDs, paths or UUIDs", required = false, arity = 1)
         public String fileIds; 
     
+        @Parameter(names = {"--cohort-ids"}, description = "Comma separated list of cohort IDs", required = false, arity = 1)
+        public String cohortIds; 
+    
         @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String creationDate; 
     
@@ -419,6 +422,9 @@ public class SamplesCommandOptions {
     
         @Parameter(names = {"--file-ids"}, description = "Comma separated list of file IDs, paths or UUIDs", required = false, arity = 1)
         public String fileIds; 
+    
+        @Parameter(names = {"--cohort-ids"}, description = "Comma separated list of cohort IDs", required = false, arity = 1)
+        public String cohortIds; 
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String creationDate; 

@@ -193,7 +193,7 @@ public class MigrationManager {
 
         List<Pair<Migration, MigrationRun>> pairs = new ArrayList<>(map.values());
         pairs.sort(Comparator.<Pair<Migration, MigrationRun>, String>comparing(p -> p.getKey().version())
-                .thenComparing(p -> p.getKey().rank()));
+                .thenComparing(p -> p.getKey().date()));
         return pairs;
     }
 
@@ -365,27 +365,20 @@ public class MigrationManager {
 
         // Validate unique ids and rank
         Map<String, Set<String>> versionIdMap = new HashMap<>();
-        Map<String, Set<Integer>> versionRankMap = new HashMap<>();
 
         for (Class<? extends MigrationTool> migration : migrations) {
             Migration annotation = getMigrationAnnotation(migration);
 
             if (!versionIdMap.containsKey(annotation.version())) {
                 versionIdMap.put(annotation.version(), new HashSet<>());
-                versionRankMap.put(annotation.version(), new HashSet<>());
             }
             if (versionIdMap.get(annotation.version()).contains(annotation.id())) {
                 throw new IllegalStateException("Found duplicated migration id '" + annotation.id() + "' in version "
                         + annotation.version());
             }
-            // Exclude default rank -1
-            if (annotation.rank() != -1) {
-                if (versionRankMap.get(annotation.version()).contains(annotation.rank())) {
-                    throw new IllegalStateException("Found duplicated migration rank " + annotation.rank() + " in version "
-                            + annotation.version());
-                }
-
-                versionRankMap.get(annotation.version()).add(annotation.rank());
+            if (String.valueOf(annotation.date()).length() != 8) {
+                throw new IllegalStateException("Found unexpected date '" + annotation.date() + "' in migration '" + annotation.id()
+                        + "' from version " + annotation.version() + ". Date format is YYYYMMDD.");
             }
             versionIdMap.get(annotation.version()).add(annotation.id());
         }
@@ -424,17 +417,14 @@ public class MigrationManager {
         }
 
         // Rank
-        if (m1Annotation.rank() > m2Annotation.rank()) {
+        if (m1Annotation.date() > m2Annotation.date()) {
             return 1;
-        } else if (m1Annotation.rank() < m2Annotation.rank()) {
+        } else if (m1Annotation.date() < m2Annotation.date()) {
             return -1;
-        } else if (m1Annotation.rank() == -1) {
-            // If rank is -1 is because the order doesn't really matter so we simply prioritise the first migration found
+        } else {
+            // They are from the same date so it doesn't really matter which one goes first
             return 1;
         }
-
-        throw new IllegalStateException("Found migration '" + m1Annotation.id() + "' and '" + m2Annotation.id() + "' with same rank "
-                + m1Annotation.rank() + " for same version " + m1Annotation.version());
     }
 
     protected static int compareVersion(String version1, String version2) {

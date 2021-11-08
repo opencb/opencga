@@ -70,22 +70,20 @@ import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorization
  */
 public class SampleManager extends AnnotationSetManager<Sample> {
 
-    protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
-    private UserManager userManager;
-    private StudyManager studyManager;
-
-    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;somatic";
-
     public static final QueryOptions INCLUDE_SAMPLE_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.UUID.key(),
             SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key()));
+    protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
+    private final String defaultFacet = "creationYear>>creationMonth;status;phenotypes;somatic";
+    private UserManager userManager;
+    private StudyManager studyManager;
 
     SampleManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                   DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, configuration);
 
-        this.userManager = catalogManager.getUserManager();
-        this.studyManager = catalogManager.getStudyManager();
+        userManager = catalogManager.getUserManager();
+        studyManager = catalogManager.getStudyManager();
     }
 
     @Override
@@ -183,6 +181,12 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             // Just in case the user provided a uuid or other kind of individual identifier, we set again the id value
             sample.setIndividualId(individualDataResult.first().getId());
+        }
+
+        if (CollectionUtils.isNotEmpty(sample.getCohortIds())) {
+            throw new CatalogException("'cohortIds' list is not empty");
+        } else {
+            sample.setCohortIds(Collections.emptyList());
         }
 
         sample.setProcessing(ParamUtils.defaultObject(sample.getProcessing(), SampleProcessing::new));
@@ -1400,7 +1404,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                 throw e;
             }
-
         } while (numProcessed < sampleList.size());
 
         return aclResultList;
@@ -1507,7 +1510,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             query.remove(ParamConstants.SAMPLE_VARIANT_STATS_ID_PARAM);
             query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
         }
-
     }
 
     private void fixQualityControlUpdateParams(SampleUpdateParams sampleUpdateParams, QueryOptions options) throws CatalogException {
@@ -1535,7 +1537,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             sampleUpdateParams.setAnnotationSets(Collections.singletonList(new AnnotationSet().setVariableSetId(variableSetId)));
             return;
         }
-
 
         List<AnnotationSet> annotationSetList = new LinkedList<>();
         if (sampleUpdateParams.getQualityControl().getVariant() != null) {

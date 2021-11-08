@@ -12,7 +12,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public abstract class AbstractMain {
@@ -83,7 +86,8 @@ public abstract class AbstractMain {
         }
     }
 
-    protected ObjectMap getArgsMap(String[] args, int firstIdx) {
+    protected ObjectMap getArgsMap(String[] args, int firstIdx, String... keys) {
+        Set<String> acceptedKeys = new HashSet<>(Arrays.asList(keys));
         ObjectMap argsMap;
         argsMap = new ObjectMap();
         int i = firstIdx;
@@ -91,6 +95,11 @@ public abstract class AbstractMain {
             String key = args[i];
             while (key.startsWith("-")) {
                 key = key.substring(1);
+            }
+            if (!acceptedKeys.isEmpty()) {
+                if (!acceptedKeys.contains(key)) {
+                    throw new IllegalArgumentException("Unknown argument '" + args[i] + "'");
+                }
             }
             String value = safeArg(args, i + 1);
             if (value == null || value.startsWith("-")) {

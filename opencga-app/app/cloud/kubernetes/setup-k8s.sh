@@ -223,11 +223,11 @@ function deploySolrOperator() {
   #helm repo add solr-operator https://bloomberg.github.io/solr-operator/charts
   helm repo add apache-solr https://solr.apache.org/charts
 
-  SOLR_OPERATOR_VERSION="v0.2.8"
+  SOLR_OPERATOR_VERSION="${SOLR_OPERATOR_VERSION:-v0.4.0}"
 
   helm upgrade ${NAME} apache-solr/solr-operator \
     --kube-context "${K8S_CONTEXT}" --namespace "${K8S_NAMESPACE}" --version "${SOLR_OPERATOR_VERSION}" \
-    -f charts/solr/values.yaml \
+    -f charts/solr-operator/values.yaml \
     --values "${HELM_VALUES_FILE}" \
     --install --wait --timeout 10m ${HELM_OPTS}
 }

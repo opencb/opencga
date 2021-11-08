@@ -72,6 +72,7 @@
 {"collection": "sample", "fields": {"phenotypes.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"phenotypes.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"fileIds": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "sample", "fields": {"cohortIds": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"individualId": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}

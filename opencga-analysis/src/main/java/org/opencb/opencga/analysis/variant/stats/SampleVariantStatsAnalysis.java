@@ -282,7 +282,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                             SampleQualityControl qualityControl = getCatalogManager()
                                     .getSampleManager()
                                     .get(getStudy(), sampleVariantStats.getId(),
-                                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.QUALITY_CONTORL.key()), getToken())
+                                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.QUALITY_CONTROL.key()), getToken())
                                     .first()
                                     .getQualityControl();
     //                        SampleUpdateParams updateParams = new SampleUpdateParams()

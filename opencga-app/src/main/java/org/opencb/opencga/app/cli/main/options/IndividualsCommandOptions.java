@@ -603,9 +603,6 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
     
-        @Parameter(names = {"--quality-control-sample-id"}, description = "The body web service sampleId parameter", required = false, arity = 1)
-        public String qualityControlSampleId;
-    
   }
     @Parameters(commandNames = {"relatives"}, commandDescription ="Get individual relatives")
     public class RelativesCommandOptions {

@@ -50,6 +50,7 @@ import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -259,7 +260,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.DISORDER.key(), QUALITY_CONTROL.key(),
                 QueryParams.PROBAND.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(), QueryParams.PRIORITY.key(),
-                QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key()};
+                QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key(),
+                REPORT.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (parameters.containsKey(INTERPRETATION.key()) && parameters.get(INTERPRETATION.key()) == null) {
@@ -302,12 +304,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         switch (operation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
+                clinicalConverter.validateFilesToUpdate(document.getSet());
                 break;
             case REMOVE:
-                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                fixFilesForRemoval(parameters);
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
                 break;
             case ADD:
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                clinicalConverter.validateFilesToUpdate(document.getAddToSet());
                 break;
             default:
                 throw new IllegalStateException("Unknown operation " + basicOperation);
@@ -341,8 +346,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     break;
                 case REMOVE:
                     fixPanelsForRemoval(parameters);
-                    filterObjectParams(parameters, document.getPullAll(), panelParams);
-                    clinicalConverter.validatePanelsToUpdate(document.getPullAll());
+                    filterObjectParams(parameters, document.getPull(), panelParams);
                     break;
                 case ADD:
                     filterObjectParams(parameters, document.getAddToSet(), panelParams);
@@ -432,13 +436,27 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             return;
         }
 
-        List<Panel> panelParamList = new LinkedList<>();
+        List<Document> panelParamList = new LinkedList<>();
         for (Object panel : parameters.getAsList(PANELS.key())) {
             if (panel instanceof Panel) {
-                panelParamList.add(new Panel().setId(((Panel) panel).getId()));
+                panelParamList.add(new Document("id", ((Panel) panel).getId()));
             }
         }
         parameters.put(PANELS.key(), panelParamList);
+    }
+
+    static void fixFilesForRemoval(ObjectMap parameters) {
+        if (parameters.get(FILES.key()) == null) {
+            return;
+        }
+
+        List<Document> fileParamList = new LinkedList<>();
+        for (Object file : parameters.getAsList(FILES.key())) {
+            if (file instanceof File) {
+                fileParamList.add(new Document("uid", ((File) file).getUid()));
+            }
+        }
+        parameters.put(FILES.key(), fileParamList);
     }
 
     @Override

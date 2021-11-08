@@ -321,6 +321,19 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     }
 
     @POST
+    @Path("/variant/sample/delete")
+    @ApiOperation(value = VariantSampleDeleteOperationTool.DESCRIPTION, response = Job.class)
+    public Response variantSampleDelete(
+            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = VariantSampleDeleteParams.DESCRIPTION) VariantSampleDeleteParams params) {
+        return submitOperation(VariantSampleDeleteOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
+    @POST
     @Path("/variant/family/genotype/index")
     @ApiOperation(value = VariantFamilyIndexOperationTool.DESCRIPTION, response = Job.class, hidden = true)
     @Deprecated

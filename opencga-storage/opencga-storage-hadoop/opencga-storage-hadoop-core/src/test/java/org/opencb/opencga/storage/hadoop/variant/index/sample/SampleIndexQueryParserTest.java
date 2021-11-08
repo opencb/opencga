@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -98,7 +97,8 @@ public class SampleIndexQueryParserTest {
         mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "FILE_MULTI_S1_S2", Arrays.asList("MULTI_S1", "MULTI_S2"))));
         mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "FILE_MULTI_S1_S3", Arrays.asList("MULTI_S1", "MULTI_S3"))));
         mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "FILE_MULTI_S2_S3", Arrays.asList("MULTI_S2", "MULTI_S3"))));
-        for (int i = 1; i <= 3; i++) {
+        mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "FILE_MULTI_S2_S4", Arrays.asList("MULTI_S2", "MULTI_S4"))));
+        for (int i = 1; i <= 4; i++) {
             mm.updateSampleMetadata(studyId, mm.getSampleIdOrFail(studyId, "MULTI_S" + i), s -> {
                 s.setSplitData(VariantStorageEngine.SplitData.MULTI);
                 return s;
@@ -355,25 +355,6 @@ public class SampleIndexQueryParserTest {
     @Test
     public void parseFileDPTest() {
         SampleFileIndexQuery fileQuery;
-        for (Double dp : Arrays.asList(3.0, 5.0, 10.0, 15.0, 20.0, 30.0, 35.0)) {
-            for (Pair<String, String> pair : Arrays.asList(/*Pair.of(FILE_DATA.key(), "F1"), */Pair.of(SAMPLE_DATA.key(), "S1"))) {
-                fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP=" + dp), "S1", n -> Collections.singletonList("F1"));
-                checkDPFilter("=" + dp, dp, dp + DELTA, fileQuery);
-
-                fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP<=" + dp), "S1", n -> Collections.singletonList("F1"));
-                checkDPFilter("<=" + dp, Double.MIN_VALUE, dp + DELTA, fileQuery);
-
-                fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP<" + dp), "S1", n -> Collections.singletonList("F1"));
-                checkDPFilter("<" + dp, Double.MIN_VALUE, dp, fileQuery);
-
-                fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP>=" + dp), "S1", n -> Collections.singletonList("F1"));
-                checkDPFilter(">=" + dp, dp, RangeIndexField.MAX, fileQuery);
-
-                fileQuery = parseFileQuery(new Query(pair.getKey(), pair.getValue() + ":DP>" + dp), "S1", n -> Collections.singletonList("F1"));
-                checkDPFilter(">" + dp, dp + DELTA, RangeIndexField.MAX, fileQuery);
-            }
-        }
-
 
         Query query = new Query(SAMPLE_DATA.key(), "S1:DP>=15");
         fileQuery = parseFileQuery(query, "S1", n -> Collections.singletonList("F1"));
@@ -567,6 +548,38 @@ public class SampleIndexQueryParserTest {
         assertNull(fileQuery.getFilePositionFilter());
         assertEquals(Collections.singleton(FILE), validParams(query, true));
 //        assertEquals("FILE_MULTI_S1_S2", query.getString(FILE.key())); // FIXME
+
+        // Query with two files (OR), both from him
+        //   Sample Index : Should filter by FILE
+        //   DBAdaptor : Nothing
+        query = new Query()
+                .append(FILE.key(), "FILE_MULTI_S1_S2,FILE_MULTI_S1_S3")
+                .append(SAMPLE.key(), "MULTI_S1");
+        sampleIndexQuery = parse(query);
+        SampleIndexDBAdaptor.printQuery(sampleIndexQuery, query);
+        assertEquals(2, sampleIndexQuery.getSampleFileIndexQuery("MULTI_S1").size());
+        assertEquals(QueryOperation.OR, sampleIndexQuery.getSampleFileIndexQuery("MULTI_S1").getOperation());
+        fileQuery = sampleIndexQuery.getSampleFileIndexQuery("MULTI_S1").get(0);
+        assertNotNull(fileQuery.getFilePositionFilter());
+        fileQuery = sampleIndexQuery.getSampleFileIndexQuery("MULTI_S1").get(1);
+        assertNotNull(fileQuery.getFilePositionFilter());
+        assertEquals(Collections.emptySet(), validParams(query, true));
+
+        // Query with two files (AND), both from him
+        //   Sample Index : Should filter by FILE
+        //   DBAdaptor : Nothing
+        query = new Query()
+                .append(FILE.key(), "FILE_MULTI_S1_S2;FILE_MULTI_S1_S3")
+                .append(SAMPLE.key(), "MULTI_S1");
+        sampleIndexQuery = parse(query);
+        SampleIndexDBAdaptor.printQuery(sampleIndexQuery, query);
+        assertEquals(2, sampleIndexQuery.getSampleFileIndexQuery("MULTI_S1").size());
+        assertEquals(QueryOperation.AND, sampleIndexQuery.getSampleFileIndexQuery("MULTI_S1").getOperation());
+        fileQuery = sampleIndexQuery.getSampleFileIndexQuery("MULTI_S1").get(0);
+        assertNotNull(fileQuery.getFilePositionFilter());
+        fileQuery = sampleIndexQuery.getSampleFileIndexQuery("MULTI_S1").get(1);
+        assertNotNull(fileQuery.getFilePositionFilter());
+        assertEquals(Collections.emptySet(), validParams(query, true));
     }
 
     @Test
@@ -862,7 +875,7 @@ public class SampleIndexQueryParserTest {
     public void parseFileTest_samples_and_files_extra() {
         Query query = new Query()
                 .append(TYPE.key(), "SNV")
-                .append(FILE.key(), "FILE_MULTI_S1_S3;FILE_MULTI_S2_S3;FILE_MULTI_S2_S3")
+                .append(FILE.key(), "FILE_MULTI_S1_S3;FILE_MULTI_S2_S3;FILE_MULTI_S2_S4")
                 .append(SAMPLE.key(), "MULTI_S1;MULTI_S2");
         SampleIndexQuery sampleIndexQuery = parse(query);
         SampleIndexDBAdaptor.printQuery(sampleIndexQuery, query);
@@ -875,10 +888,14 @@ public class SampleIndexQueryParserTest {
         assertTrue(fileQueries.get(0).getVariantTypeFilter().isExactFilter());
 
         fileQueries = sampleIndexQuery.getSampleFileIndexQuery("MULTI_S2");
-        assertEquals(1, fileQueries.size());
-        assertEquals(2, fileQueries.get(0).getFilters().size());
-        assertNotNull(fileQueries.get(0).getVariantTypeFilter());
-        assertTrue(fileQueries.get(0).getVariantTypeFilter().isExactFilter());
+        assertEquals(2, fileQueries.size());
+        assertEquals(QueryOperation.AND, fileQueries.getOperation());
+        for (SampleFileIndexQuery fileQuery : fileQueries) {
+            assertEquals(2, fileQuery.getFilters().size());
+            assertNotNull(fileQuery.getVariantTypeFilter());
+            assertTrue(fileQuery.getVariantTypeFilter().isExactFilter());
+        }
+        assertNotEquals(fileQueries.get(0).getFilePositionFilter(), fileQueries.get(1).getFilePositionFilter());
 
         assertNull(sampleIndexQuery.getVariantTypes());
     }
@@ -1357,83 +1374,6 @@ public class SampleIndexQueryParserTest {
 
     @Test
     public void parsePopFreqQueryTest() {
-        double[] default_ranges = configuration.getAnnotationIndexConfiguration().getPopulationFrequency().getThresholds();
-        for (int i = 0; i < default_ranges.length; i++) {
-            RangeIndexFieldFilter q;
-            double r = default_ranges[i];
-//            System.out.println("--------------");
-//            System.out.println(r);
-
-            final double d = DELTA * 10;
-
-            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<" + (r - d))).getPopulationFrequencyFilter().getFilters().get(0);
-//            System.out.println(q);
-            assertEquals(0, q.getMinCodeInclusive());
-            assertEquals(i + 1, q.getMaxCodeExclusive());
-//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
-
-            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<=" + (r - d))).getPopulationFrequencyFilter().getFilters().get(0);
-//            System.out.println(q);
-            assertEquals(0, q.getMinCodeInclusive());
-            assertEquals(i + 1, q.getMaxCodeExclusive());
-//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
-
-            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<" + r)).getPopulationFrequencyFilter().getFilters().get(0);
-//            System.out.println(q);
-            assertEquals(0, q.getMinCodeInclusive());
-            assertEquals(i + 1, q.getMaxCodeExclusive());
-//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
-
-            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<=" + r)).getPopulationFrequencyFilter().getFilters().get(0);
-//            System.out.println(q);
-            assertEquals(0, q.getMinCodeInclusive());
-            assertEquals(i + 2, q.getMaxCodeExclusive());
-//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
-
-            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL<" + (r + d))).getPopulationFrequencyFilter().getFilters().get(0);
-//            System.out.println(q);
-            assertEquals(0, q.getMinCodeInclusive());
-            assertEquals(i + 2, q.getMaxCodeExclusive());
-//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
-
-
-            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>=" + r)).getPopulationFrequencyFilter().getFilters().get(0);
-//            System.out.println(q);
-            assertEquals(i + 1, q.getMinCodeInclusive());
-            assertEquals(4, q.getMaxCodeExclusive());
-//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
-
-            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>" + r)).getPopulationFrequencyFilter().getFilters().get(0);
-//            System.out.println(q);
-            assertEquals(i + 1, q.getMinCodeInclusive());
-            assertEquals(4, q.getMaxCodeExclusive());
-//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
-
-            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>" + (r + d))).getPopulationFrequencyFilter().getFilters().get(0);
-//            System.out.println(q);
-            assertEquals(i + 1, q.getMinCodeInclusive());
-            assertEquals(4, q.getMaxCodeExclusive());
-//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
-
-            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>=" + (r + d))).getPopulationFrequencyFilter().getFilters().get(0);
-//            System.out.println(q);
-            assertEquals(i + 1, q.getMinCodeInclusive());
-            assertEquals(4, q.getMaxCodeExclusive());
-//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
-
-            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>" + (r - d))).getPopulationFrequencyFilter().getFilters().get(0);
-//            System.out.println(q);
-            assertEquals(i, q.getMinCodeInclusive());
-            assertEquals(4, q.getMaxCodeExclusive());
-//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
-
-            q = (RangeIndexFieldFilter) parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s" + (i % 4 + 1) + ":ALL>=" + (r - d))).getPopulationFrequencyFilter().getFilters().get(0);
-//            System.out.println(q);
-            assertEquals(i, q.getMinCodeInclusive());
-            assertEquals(4, q.getMaxCodeExclusive());
-//            assertEquals(i % 4 + 1 + 1, q.getPosition()); //FIXME _ 20210608
-
-        }
         SampleAnnotationIndexQuery q = parseAnnotationIndexQuery(new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "s8:NONE>0.1"));
         assertEquals(0, q.getPopulationFrequencyFilter().getFilters().size());
 
@@ -1662,23 +1602,23 @@ public class SampleIndexQueryParserTest {
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
         assertEquals(1, indexQuery.getPopulationFrequencyFilter().getFilters().size());
-        assertTrue(query.isEmpty());
+        assertEquals(Collections.emptySet(), validParams(query, true));
 
         // Partial summary usage, filter more restrictive. Also use PopFreqIndex. Clear query
-        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "GNOMAD_GENOMES:ALL<" + POP_FREQ_THRESHOLD_001 / 2);
+        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "GNOMAD_GENOMES:ALL<" + POP_FREQ_THRESHOLD_001 / 3);
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
         assertEquals(1, indexQuery.getPopulationFrequencyFilter().getFilters().size());
-        assertFalse(query.isEmpty());
+        assertEquals(Collections.singleton(ANNOT_POPULATION_ALTERNATE_FREQUENCY), validParams(query, true));
 
         // Summary filter less restrictive. Do not use summary. Only use PopFreqIndex. Do not clear query
-        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "GNOMAD_GENOMES:ALL<" + POP_FREQ_THRESHOLD_001 * 2);
+        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "GNOMAD_GENOMES:ALL<" + POP_FREQ_THRESHOLD_001 * 3);
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
         assertEquals(1, indexQuery.getPopulationFrequencyFilter().getFilters().size());
-        assertFalse(query.isEmpty());
+        assertEquals(Collections.singleton(ANNOT_POPULATION_ALTERNATE_FREQUENCY), validParams(query, true));
 
         // Summary index query plus a new filter. Use only popFreqIndex
         query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(OR, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)) + OR + "s1:ALL<0.005");
@@ -1687,7 +1627,7 @@ public class SampleIndexQueryParserTest {
         assertEquals(EMPTY_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
         assertEquals(QueryOperation.OR, indexQuery.getPopulationFrequencyFilter().getOp());
         assertEquals(3, indexQuery.getPopulationFrequencyFilter().getFilters().size());
-        assertTrue(query.isEmpty());
+        assertEquals(Collections.emptySet(), validParams(query, true));
 
         // Summary index query with AND instead of OR filter. Use both, summary and popFreqIndex
         query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(AND, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)));
@@ -1696,19 +1636,21 @@ public class SampleIndexQueryParserTest {
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
         assertEquals(QueryOperation.AND, indexQuery.getPopulationFrequencyFilter().getOp());
         assertEquals(2, indexQuery.getPopulationFrequencyFilter().getFilters().size());
-        assertTrue(query.isEmpty());
+        assertEquals(Collections.emptySet(), validParams(query, true));
 
-        // Summary index query with AND instead of OR filter plus a new filter. Use both, summary and popFreqIndex. Leave eextra filter in query
-        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(AND, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)) + AND + "s1:ALL<0.05");
+        // Summary index query with AND instead of OR filter plus a new filter. Use both, summary and popFreqIndex. Leave extra filter in query
+        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
+                String.join(AND, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)) + AND + "s1:ALL<0.065132");
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);
         assertEquals(QueryOperation.AND, indexQuery.getPopulationFrequencyFilter().getOp());
         assertEquals(3, indexQuery.getPopulationFrequencyFilter().getFilters().size());
-        assertEquals("s1:ALL<0.05", query.getString(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key()));
+        assertEquals("s1:ALL<0.065132", query.getString(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key()));
 
         // Summary index query with AND instead of OR filter plus a new filter. Use both, summary and popFreqIndex. Clear covered query
-        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), String.join(AND, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)) + AND + "s1:ALL<0.005");
+        query = new Query().append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
+                String.join(AND, new ArrayList<>(AnnotationIndexConverter.POP_FREQ_ANY_001_FILTERS)) + AND + "s1:ALL<0.005");
         indexQuery = parseAnnotationIndexQuery(query, true);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndexMask() & POP_FREQ_ANY_001_MASK);
         assertEquals(POP_FREQ_ANY_001_MASK, indexQuery.getAnnotationIndex() & POP_FREQ_ANY_001_MASK);

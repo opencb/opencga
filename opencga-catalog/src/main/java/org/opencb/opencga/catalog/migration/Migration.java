@@ -35,9 +35,9 @@ public @interface Migration {
     MigrationLanguage language() default MigrationLanguage.JAVA;
 
     /**
-     * @return rank to know the execution order.
+     * @return Migration script creation date [Format: YYYYMMDD].
      */
-    int rank() default -1;
+    int date();
 
     /**
      * @return migration patch.

@@ -126,7 +126,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     @Override
     public OpenCGAResult<User> get(String userId, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        checkId(userId);
         Query query = new Query(QueryParams.ID.key(), userId);
         return get(query, options);
     }

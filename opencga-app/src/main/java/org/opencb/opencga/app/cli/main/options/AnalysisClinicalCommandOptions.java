@@ -142,8 +142,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--create-default-interpretation"}, description = "Flag to create and initialise a default primary interpretation (Id will be '{clinicalAnalysisId}.1')", required = false, arity = 1)
-        public Boolean createDefaultInterpretation; 
+        @Parameter(names = {"--skip-create-default-interpretation"}, description = "Flag to skip creating and initialise an empty default primary interpretation (Id will be '{clinicalAnalysisId}.1'). This flag is only considered if no Interpretation object is passed.", required = false, arity = 1)
+        public Boolean skipCreateDefaultInterpretation; 
     
         @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
         public String id;
@@ -166,6 +166,27 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--analyst-id"}, description = "The body web service id parameter", required = true, arity = 1)
         public String analystId;
     
+        @Parameter(names = {"--report-title"}, description = "The body web service title parameter", required = false, arity = 1)
+        public String reportTitle;
+    
+        @Parameter(names = {"--report-overview"}, description = "The body web service overview parameter", required = false, arity = 1)
+        public String reportOverview;
+    
+        @Parameter(names = {"--report-discussion"}, description = "The body web service discussion parameter", required = false, arity = 1)
+        public String reportDiscussion;
+    
+        @Parameter(names = {"--report-logo"}, description = "The body web service logo parameter", required = false, arity = 1)
+        public String reportLogo;
+    
+        @Parameter(names = {"--report-signed-by"}, description = "The body web service signedBy parameter", required = false, arity = 1)
+        public String reportSignedBy;
+    
+        @Parameter(names = {"--report-signature"}, description = "The body web service signature parameter", required = false, arity = 1)
+        public String reportSignature;
+    
+        @Parameter(names = {"--report-date"}, description = "The body web service date parameter", required = false, arity = 1)
+        public String reportDate;
+    
         @Parameter(names = {"--interpretation-id"}, description = "The body web service id parameter", required = true, arity = 1)
         public String interpretationId;
     
@@ -180,9 +201,6 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--interpretation-modification-date"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String interpretationModificationDate;
-    
-        @Parameter(names = {"--quality-control-comment"}, description = "The body web service comment parameter", required = false, arity = 1)
-        public String qualityControlComment;
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
         public String creationDate;
@@ -1661,6 +1679,9 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--files-action"}, description = "Action to be performed if the array of files is being updated.", required = false, arity = 1)
         public String filesAction; 
     
+        @Parameter(names = {"--panels-action"}, description = "Action to be performed if the array of panels is being updated.", required = false, arity = 1)
+        public String panelsAction; 
+    
         @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String id;
     
@@ -1685,8 +1706,26 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--analyst-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String analystId;
     
-        @Parameter(names = {"--quality-control-comment"}, description = "The body web service comment parameter", required = false, arity = 1)
-        public String qualityControlComment;
+        @Parameter(names = {"--report-title"}, description = "The body web service title parameter", required = false, arity = 1)
+        public String reportTitle;
+    
+        @Parameter(names = {"--report-overview"}, description = "The body web service overview parameter", required = false, arity = 1)
+        public String reportOverview;
+    
+        @Parameter(names = {"--report-discussion"}, description = "The body web service discussion parameter", required = false, arity = 1)
+        public String reportDiscussion;
+    
+        @Parameter(names = {"--report-logo"}, description = "The body web service logo parameter", required = false, arity = 1)
+        public String reportLogo;
+    
+        @Parameter(names = {"--report-signed-by"}, description = "The body web service signedBy parameter", required = false, arity = 1)
+        public String reportSignedBy;
+    
+        @Parameter(names = {"--report-signature"}, description = "The body web service signature parameter", required = false, arity = 1)
+        public String reportSignature;
+    
+        @Parameter(names = {"--report-date"}, description = "The body web service date parameter", required = false, arity = 1)
+        public String reportDate;
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
         public String creationDate;
