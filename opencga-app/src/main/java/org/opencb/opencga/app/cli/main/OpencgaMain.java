@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main;
 
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 /**
@@ -26,12 +27,15 @@ public class OpencgaMain {
 
     public static final String VERSION = GitRepositoryState.get().getBuildVersion();
     private static Session session;
+    private static boolean DEBUG = false;
 
     public static void main(String[] args) {
         session = new Session();
-        if (args.length == 1 && "--shell".equals(args[0])) {
+        if (args.length == 1 && "--shell".equals(args[0]) || (args.length == 2 && "--shell".equals(args[0]) && "--debug".equals(args[1]))) {
             OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
-            session.setShell(true);
+            DEBUG = (args.length == 2 && "--shell".equals(args[0]) && "--debug".equals(args[1]));
+            session.setShell(shell);
+
             try {
                 shell.execute();
             } catch (Exception e) {
@@ -39,6 +43,24 @@ public class OpencgaMain {
             }
         } else {
             OpencgaCliProcessor.process(args);
+        }
+    }
+
+    public static void printErrorMessage(String s, Throwable e) {
+        if (session != null && session.isShell()) {
+            session.getShell().printlnRed(s);
+            if (e != null) {
+                if (DEBUG) {
+                    session.getShell().printlnYellow("TRACE:::\n" + ExceptionUtils.prettyExceptionStackTrace(e));
+                } else {
+                    session.getShell().printlnRed(e.getMessage());
+                }
+            }
+        } else {
+            System.err.println(s);
+            if (e != null) {
+                System.err.println(e.getMessage());
+            }
         }
     }
 

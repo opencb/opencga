@@ -23,7 +23,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.AzureADAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
@@ -37,9 +36,11 @@ import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Group;
@@ -72,7 +73,7 @@ public class UserManager extends AbstractManager {
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
 
     static final QueryOptions INCLUDE_ACCOUNT = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-      UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.ACCOUNT.key()));
+            UserDBAdaptor.QueryParams.ID.key(), UserDBAdaptor.QueryParams.ACCOUNT.key()));
 
     UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                 DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManager catalogIOManager, Configuration configuration)
@@ -199,6 +200,9 @@ public class UserManager extends AbstractManager {
         user.getAccount().setCreationDate(TimeUtils.getTime());
 
         try {
+            if (!PasswordUtils.isStrongPassword(password)) {
+                throw new CatalogException("Invalid password. Check password strength for user " + user);
+            }
             if (user.getProjects() != null && !user.getProjects().isEmpty()) {
                 throw new CatalogException("Creating user and projects in a single transaction is forbidden");
             }
@@ -211,7 +215,7 @@ public class UserManager extends AbstractManager {
 
             return userDBAdaptor.get(user.getId(), QueryOptions.empty());
         } catch (CatalogIOException | CatalogDBException e) {
-            if (!userDBAdaptor.exists(user.getId())) {
+            if (userDBAdaptor.exists(user.getId())) {
                 logger.error("ERROR! DELETING USER! " + user.getId());
                 catalogIOManager.deleteUser(user.getId());
             }
@@ -232,7 +236,7 @@ public class UserManager extends AbstractManager {
      * @param password     Encrypted Password
      * @param organization Optional organization
      * @param quota        Maximum user disk quota
-     * @param type  User account type. Full or guest.
+     * @param type         User account type. Full or guest.
      * @param token        JWT token.
      * @return The created user
      * @throws CatalogException If user already exists, or unable to create a new user.
@@ -310,12 +314,12 @@ public class UserManager extends AbstractManager {
      * Register all the users belonging to a remote group. If internalGroup and study are not null, it will also associate the remote group
      * to the internalGroup defined.
      *
-     * @param authOrigin Authentication origin.
-     * @param remoteGroup Group name of the remote authentication origin.
+     * @param authOrigin    Authentication origin.
+     * @param remoteGroup   Group name of the remote authentication origin.
      * @param internalGroup Group name in Catalog that will be associated to the remote group.
-     * @param study Study where the internal group will be associated.
-     * @param sync Boolean indicating whether the remote group will be synced with the internal group or not.
-     * @param token JWT token. The token should belong to the root user.
+     * @param study         Study where the internal group will be associated.
+     * @param sync          Boolean indicating whether the remote group will be synced with the internal group or not.
+     * @param token         JWT token. The token should belong to the root user.
      * @throws CatalogException If any of the parameters is wrong or there is any internal error.
      */
     public void importRemoteGroupOfUsers(String authOrigin, String remoteGroup, @Nullable String internalGroup, @Nullable String study,
@@ -365,7 +369,7 @@ public class UserManager extends AbstractManager {
                 OpenCGAResult<Group> groupResult = catalogManager.getStudyManager().getGroup(study, internalGroup, token);
                 if (groupResult.getNumResults() == 1) {
                     logger.error("Cannot synchronise with group {}. The group already exists and is already in use.", internalGroup);
-                    throw new CatalogException("Cannot synchronise with group " +  internalGroup
+                    throw new CatalogException("Cannot synchronise with group " + internalGroup
                             + ". The group already exists and is already in use.");
                 }
 
@@ -398,12 +402,12 @@ public class UserManager extends AbstractManager {
     /**
      * Register all the ids. If internalGroup and study are not null, it will also associate the users to the internalGroup defined.
      *
-     * @param authOrigin Authentication origin.
-     * @param idList List of entity ids existing in the authentication origin.
+     * @param authOrigin    Authentication origin.
+     * @param idList        List of entity ids existing in the authentication origin.
      * @param isApplication boolean indicating whether the id list belong to external applications or users.
      * @param internalGroup Group name in Catalog that will be associated to the remote group.
-     * @param study Study where the internal group will be associated.
-     * @param token JWT token. The token should belong to the root user.
+     * @param study         Study where the internal group will be associated.
+     * @param token         JWT token. The token should belong to the root user.
      * @throws CatalogException If any of the parameters is wrong or there is any internal error.
      */
     public void importRemoteEntities(String authOrigin, List<String> idList, boolean isApplication, @Nullable String internalGroup,
@@ -485,9 +489,9 @@ public class UserManager extends AbstractManager {
     /**
      * Gets the user information.
      *
-     * @param userId       User id
-     * @param options      QueryOptions
-     * @param token    SessionId of the user performing this operation.
+     * @param userId  User id
+     * @param options QueryOptions
+     * @param token   SessionId of the user performing this operation.
      * @return The requested user
      * @throws CatalogException CatalogException
      */
@@ -531,9 +535,9 @@ public class UserManager extends AbstractManager {
     /**
      * Gets the user information.
      *
-     * @param userIdList   List of user id
-     * @param options      QueryOptions
-     * @param token        Token belonging to the user itself or administrator of any study shared with the user list requested.
+     * @param userIdList List of user id
+     * @param options    QueryOptions
+     * @param token      Token belonging to the user itself or administrator of any study shared with the user list requested.
      * @return The requested users
      * @throws CatalogException CatalogException
      */
@@ -555,7 +559,7 @@ public class UserManager extends AbstractManager {
             OpenCGAResult<User> userDataResult;
 
             if (userIdList.size() == 1 && userId.equals(userIdList.get(0))) {
-                 userDataResult = userDBAdaptor.get(userId, options);
+                userDataResult = userDBAdaptor.get(userId, options);
                 auditManager.auditInfo(operationUuid, userId, Enums.Resource.USER, userId, "", "", "", auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
                 return userDataResult;
@@ -564,7 +568,7 @@ public class UserManager extends AbstractManager {
             QueryOptions adminOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                     UserDBAdaptor.QueryParams.PROJECTS.key() + "." + ProjectDBAdaptor.QueryParams.STUDIES.key() + "."
                             + StudyDBAdaptor.QueryParams.GROUPS.key(), UserDBAdaptor.QueryParams.SHARED_PROJECTS.key() + "."
-                    + ProjectDBAdaptor.QueryParams.STUDIES.key() + "." + StudyDBAdaptor.QueryParams.GROUPS.key()));
+                            + ProjectDBAdaptor.QueryParams.STUDIES.key() + "." + StudyDBAdaptor.QueryParams.GROUPS.key()));
             userDataResult = userDBAdaptor.get(userId, adminOptions);
             User admin = userDataResult.first();
 
@@ -769,7 +773,8 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "token");
         try {
-            userId = getCatalogUserId(userId, token);
+            String authenticatedUserId = getUserId(token);
+            authorizationManager.checkIsInstallationAdministrator(authenticatedUserId);
             String authOrigin = getAuthenticationOriginId(userId);
             OpenCGAResult writeResult = authenticationManagerMap.get(authOrigin).resetPassword(userId);
             auditManager.auditUser(userId, Enums.Action.RESET_USER_PASSWORD, userId,
@@ -854,7 +859,7 @@ public class UserManager extends AbstractManager {
     /**
      * Create a new token if the token provided corresponds to the user and it is not expired yet.
      *
-     * @param token  active token.
+     * @param token active token.
      * @return a new AuthenticationResponse object.
      * @throws CatalogException if the token does not correspond to the user or the token is expired.
      */
@@ -890,8 +895,8 @@ public class UserManager extends AbstractManager {
     /**
      * This method will be only callable by the system. It generates a new session id for the user.
      *
-     * @param userId           user id for which a session will be generated.
-     * @param token Password or active session of the OpenCGA admin.
+     * @param userId user id for which a session will be generated.
+     * @param token  Password or active session of the OpenCGA admin.
      * @return an objectMap containing the new sessionId
      * @throws CatalogException if the password is not correct or the userId does not exist.
      */
@@ -910,13 +915,14 @@ public class UserManager extends AbstractManager {
     /**
      * Add a new filter to the user account.
      * <p>
+     *
      * @param userId       user id to whom the filter will be associated.
      * @param id           Filter id.
      * @param description  Filter description.
      * @param resource     Resource where the filter should be applied.
      * @param query        Query object.
      * @param queryOptions Query options object.
-     * @param token    session id of the user asking to store the filter.
+     * @param token        session id of the user asking to store the filter.
      * @return the created filter.
      * @throws CatalogException if there already exists a filter with that same name for the user or if the user corresponding to the
      *                          session id is not the same as the provided user id.
@@ -967,10 +973,11 @@ public class UserManager extends AbstractManager {
     /**
      * Update the filter information.
      * <p>
-     * @param userId    user id to whom the filter should be updated.
-     * @param name      Filter name.
-     * @param params    Map containing the parameters to be updated.
-     * @param token session id of the user asking to update the filter.
+     *
+     * @param userId user id to whom the filter should be updated.
+     * @param name   Filter name.
+     * @param params Map containing the parameters to be updated.
+     * @param token  session id of the user asking to update the filter.
      * @return the updated filter.
      * @throws CatalogException if the filter could not be updated because the filter name is not correct or if the user corresponding to
      *                          the session id is not the same as the provided user id.
@@ -1014,12 +1021,13 @@ public class UserManager extends AbstractManager {
     /**
      * Delete the filter.
      * <p>
-     * @param userId    user id to whom the filter should be deleted.
-     * @param name      filter name to be deleted.
-     * @param token session id of the user asking to delete the filter.
+     *
+     * @param userId user id to whom the filter should be deleted.
+     * @param name   filter name to be deleted.
+     * @param token  session id of the user asking to delete the filter.
      * @return the deleted filter.
-     * @throws CatalogException when the filter cannot be removed or the name is not correct or if the user corresponding to the
-     *                          session id is not the same as the provided user id.
+     * @throws CatalogException when the filter cannot be removed or the name is not correct or if the user corresponding to the session id
+     *                          is not the same as the provided user id.
      */
     public OpenCGAResult<UserFilter> deleteFilter(String userId, String name, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
@@ -1053,9 +1061,10 @@ public class UserManager extends AbstractManager {
     /**
      * Retrieves a filter.
      * <p>
-     * @param userId    user id having the filter stored.
-     * @param name      Filter name to be fetched.
-     * @param token session id of the user fetching the filter.
+     *
+     * @param userId user id having the filter stored.
+     * @param name   Filter name to be fetched.
+     * @param token  session id of the user fetching the filter.
      * @return the filter.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
@@ -1091,8 +1100,8 @@ public class UserManager extends AbstractManager {
     /**
      * Retrieves all the user filters.
      *
-     * @param userId    user id having the filters.
-     * @param token session id of the user fetching the filters.
+     * @param userId user id having the filters.
+     * @param token  session id of the user fetching the filters.
      * @return the filters.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
@@ -1131,10 +1140,11 @@ public class UserManager extends AbstractManager {
     /**
      * Creates or updates a configuration.
      * <p>
-     * @param userId    user id to whom the config will be associated.
-     * @param name      Name of the configuration (normally, name of the application).
-     * @param config    Configuration to be stored.
-     * @param token session id of the user asking to store the config.
+     *
+     * @param userId user id to whom the config will be associated.
+     * @param name   Name of the configuration (normally, name of the application).
+     * @param config Configuration to be stored.
+     * @param token  session id of the user asking to store the config.
      * @return the set configuration.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
@@ -1169,12 +1179,13 @@ public class UserManager extends AbstractManager {
     /**
      * Deletes a configuration.
      * <p>
-     * @param userId    user id to whom the configuration should be deleted.
-     * @param name      Name of the configuration to be deleted (normally, name of the application).
-     * @param token session id of the user asking to delete the configuration.
+     *
+     * @param userId user id to whom the configuration should be deleted.
+     * @param name   Name of the configuration to be deleted (normally, name of the application).
+     * @param token  session id of the user asking to delete the configuration.
      * @return the deleted configuration.
-     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
-     *                          did not exist.
+     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration did
+     *                          not exist.
      */
     public OpenCGAResult deleteConfig(String userId, String name, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
@@ -1218,9 +1229,10 @@ public class UserManager extends AbstractManager {
     /**
      * Retrieves a configuration.
      * <p>
-     * @param userId    user id having the configuration stored.
-     * @param name      Name of the configuration to be fetched (normally, name of the application).
-     * @param token session id of the user attempting to fetch the configuration.
+     *
+     * @param userId user id having the configuration stored.
+     * @param name   Name of the configuration to be fetched (normally, name of the application).
+     * @param token  session id of the user attempting to fetch the configuration.
      * @return the configuration.
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
      *                          does not exist.
@@ -1264,7 +1276,6 @@ public class UserManager extends AbstractManager {
         }
     }
 
-
     private UserFilter getFilter(String userId, String name) throws CatalogException {
         Query query = new Query()
                 .append(UserDBAdaptor.QueryParams.ID.key(), userId);
@@ -1302,7 +1313,6 @@ public class UserManager extends AbstractManager {
         return user.first().getAccount().getAuthentication().getId();
     }
 
-
     static void checkEmail(String email) throws CatalogParameterException {
         if (email == null || !EMAILPATTERN.matcher(email).matches()) {
             throw new CatalogParameterException("Email '" + email + "' not valid");
@@ -1310,12 +1320,12 @@ public class UserManager extends AbstractManager {
     }
 
     /**
-     * Extracts the user id from the token. If it doesn't match the userId provided and the userId provided is actually an email,
-     * it will fetch the user of the token from Catalog and check whether the email matches. If it matches, it will return the
-     * corresponding user id.
+     * Extracts the user id from the token. If it doesn't match the userId provided and the userId provided is actually an email, it will
+     * fetch the user of the token from Catalog and check whether the email matches. If it matches, it will return the corresponding user
+     * id.
      *
      * @param userId User id provided by the user.
-     * @param token Token.
+     * @param token  Token.
      * @return A valid user id for the user and token provided.
      * @throws CatalogException if the user cannot be retrieved for whatever reason.
      */
@@ -1363,5 +1373,4 @@ public class UserManager extends AbstractManager {
         // We make this call again to get the original exception
         return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
     }
-
 }

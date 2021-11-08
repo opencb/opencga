@@ -20,10 +20,9 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.rules.ExternalResource;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
-import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.server.RestServer;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.server.RestServer;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -41,7 +40,6 @@ public class WorkEnvironmentTest extends ExternalResource {
     protected OpenCGAClient openCGAClient;
     protected Path opencgaHome;
     protected CatalogManager catalogManager;
-    protected ClientConfiguration clientConfiguration;
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
     protected RestServer restServer;
@@ -79,7 +77,8 @@ public class WorkEnvironmentTest extends ExternalResource {
         inputStream = new FileInputStream("../opencga-app/app/misc/examples/20130606_g1k.ped");
         Files.copy(inputStream, opencgaHome.resolve("examples").resolve("20130606_g1k.ped"), StandardCopyOption.REPLACE_EXISTING);
 
-        inputStream = new FileInputStream("../opencga-app/app/misc/examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+        inputStream = new FileInputStream("../opencga-app/app/misc/examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502" +
+                ".genotypes.vcf.gz");
         Files.copy(inputStream, opencgaHome.resolve("examples")
                 .resolve("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), StandardCopyOption.REPLACE_EXISTING);
 
@@ -91,8 +90,7 @@ public class WorkEnvironmentTest extends ExternalResource {
         restServer.start();
 
 //        catalogManager = new CatalogManager(configuration);
-        clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
-        openCGAClient = new OpenCGAClient("user1", "user1_pass", clientConfiguration);
+        openCGAClient = new OpenCGAClient("user1", "user1_pass");
     }
 
     @Override
@@ -105,5 +103,4 @@ public class WorkEnvironmentTest extends ExternalResource {
             e.printStackTrace();
         }
     }
-
 }

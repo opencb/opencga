@@ -1,11 +1,10 @@
 import os
 import re
-from abc import ABC, abstractmethod
-from datetime import datetime
-
 import requests
 import sys
 import yaml
+from abc import ABC, abstractmethod
+from datetime import datetime
 
 
 class RestClientGenerator(ABC):
@@ -52,7 +51,7 @@ class RestClientGenerator(ABC):
         ]
 
     def read_yaml(self):
-        yaml_file = open("config.yaml", 'r')
+        yaml_file = open("opencga-app/app/misc/clients/wsclient/config.yaml", 'r')
         yaml_content = yaml.load(yaml_file, Loader=yaml.FullLoader)
         options = yaml_content["options"]
         if "ignore_types" in options.keys():
@@ -307,9 +306,9 @@ class RestClientGenerator(ABC):
                 for endpoint in category['endpoints']:
                     # We update the dictionary of parameters of the endpoint
                     self.parameters = {}
-                    if self.get_endpoint_path(endpoint) != 'files/upload':
-                        for parameter in endpoint['parameters']:
-                            self.parameters[parameter['name'] if parameter['name'] != 'body' else 'data'] = parameter
+                    # if self.get_endpoint_path(endpoint) != 'files/upload':
+                    for parameter in endpoint['parameters']:
+                        self.parameters[parameter['name'] if parameter['name'] != 'body' else 'data'] = parameter
 
                     # We extract the resources of the endpoint
                     self.parse_resources(category, endpoint)

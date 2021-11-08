@@ -66,7 +66,6 @@
      protected final Client client;
 
      private String token;
-     private final ClientConfiguration configuration;
      private boolean throwExceptionOnError = false;
 
      protected final ObjectMapper jsonObjectMapper;
@@ -81,33 +80,31 @@
 
      protected Logger logger;
 
-     protected AbstractParentClient(String token, ClientConfiguration configuration) {
-         Objects.requireNonNull(configuration);
-         Objects.requireNonNull(configuration.getRest());
+     protected AbstractParentClient(String token) {
+
          this.logger = LoggerFactory.getLogger(this.getClass().toString());
          this.token = token;
-         this.configuration = configuration;
-         this.client = newClient(configuration);
+         this.client = newClient();
 
          jsonObjectMapper = new ObjectMapper();
          jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-         if (configuration.getRest().getTimeout() > 0) {
-             timeout = configuration.getRest().getTimeout();
+         if (ClientConfiguration.getInstance().getRest().getTimeout() > 0) {
+             timeout = ClientConfiguration.getInstance().getRest().getTimeout();
          }
-         if (configuration.getRest().getQuery().getBatchSize() > 0) {
-             batchSize = configuration.getRest().getQuery().getBatchSize();
+         if (ClientConfiguration.getInstance().getRest().getQuery().getBatchSize() > 0) {
+             batchSize = ClientConfiguration.getInstance().getRest().getQuery().getBatchSize();
          }
-         if (configuration.getRest().getQuery().getLimit() > 0) {
-             defaultLimit = configuration.getRest().getQuery().getLimit();
+         if (ClientConfiguration.getInstance().getRest().getQuery().getLimit() > 0) {
+             defaultLimit = ClientConfiguration.getInstance().getRest().getQuery().getLimit();
          }
      }
 
-     private Client newClient(ClientConfiguration configuration) {
+     private Client newClient() {
          ClientBuilder clientBuilder = ClientBuilder.newBuilder();
          clientBuilder.register(JacksonUtils.ObjectMapperProvider.class);
 
-         if (configuration.getRest().isTlsAllowInvalidCertificates()) {
+         if (ClientConfiguration.getInstance().getRest().isTlsAllowInvalidCertificates()) {
              logger.debug("Using custom SSLContext to allow invalid certificates");
              try {
                  TrustManager[] trustAllCerts = new TrustManager[]{
@@ -131,7 +128,7 @@
                  sc.init(null, trustAllCerts, new SecureRandom());
 
                  HostnameVerifier verifier = new HostnameVerifier() {
-                     private String hostname = URI.create(configuration.getRest().getHost()).getHost();
+                     private String hostname = URI.create(ClientConfiguration.getInstance().getRest().getHost()).getHost();
 
                      @Override
                      public boolean verify(String hostname, SSLSession sslSession) {
@@ -227,7 +224,7 @@
 
              // Build URL
              WebTarget path = client
-                     .target(configuration.getRest().getHost())
+                     .target(ClientConfiguration.getInstance().getRest().getHost())
                      .path("webservices")
                      .path("rest")
                      .path("v2")

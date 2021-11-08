@@ -24,14 +24,6 @@ api:
   Files:
     ignore: False
     key: File
-    commands:
-      upload:
-        ignore: True
-        subcommands:
-          hash:
-            ignore: True
-          serialVersionUID:
-            ignore: True
     shortcuts:
       study: s
   Jobs:

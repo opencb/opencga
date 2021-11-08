@@ -20,7 +20,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
-import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.clients.*;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -41,23 +40,21 @@ public class OpenCGAClient {
     private String userId;
     private String token;
     private String refreshToken;
-    private final ClientConfiguration clientConfiguration;
 
     private final Map<String, AbstractParentClient> clients;
     private boolean throwExceptionOnError;
 
-    public OpenCGAClient(ClientConfiguration clientConfiguration) {
-        this(null, clientConfiguration);
+    public OpenCGAClient() {
+        this(null);
     }
 
-    public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) throws ClientException {
-        this(null, clientConfiguration);
+    public OpenCGAClient(String user, String password) throws ClientException {
+        this(null);
         login(user, password);
     }
 
-    public OpenCGAClient(AuthenticationResponse authenticationTokens, ClientConfiguration clientConfiguration) {
+    public OpenCGAClient(AuthenticationResponse authenticationTokens) {
         this.clients = new HashMap<>(20);
-        this.clientConfiguration = clientConfiguration;
 
         init(authenticationTokens);
     }
@@ -75,72 +72,71 @@ public class OpenCGAClient {
         // https://github.com/jwtk/jjwt/issues/86
         // https://stackoverflow.com/questions/34998859/android-jwt-parsing-payload-claims-when-signed
         String withoutSignature = token.substring(0, token.lastIndexOf('.') + 1);
-        Claims claims = (Claims)  Jwts.parser()
+        Claims claims = (Claims) Jwts.parser()
                 .setAllowedClockSkewSeconds(TimeUnit.DAYS.toSeconds(3650))
                 .parse(withoutSignature)
                 .getBody();
         return claims.getSubject();
     }
 
-
     public UserClient getUserClient() {
-        return getClient(UserClient.class, () -> new UserClient(token, clientConfiguration));
+        return getClient(UserClient.class, () -> new UserClient(token));
     }
 
     public ProjectClient getProjectClient() {
-        return getClient(ProjectClient.class, () -> new ProjectClient(token, clientConfiguration));
+        return getClient(ProjectClient.class, () -> new ProjectClient(token));
     }
 
     public StudyClient getStudyClient() {
-        return getClient(StudyClient.class, () -> new StudyClient(token, clientConfiguration));
+        return getClient(StudyClient.class, () -> new StudyClient(token));
     }
 
     public FileClient getFileClient() {
-        return getClient(FileClient.class, () -> new FileClient(token, clientConfiguration));
+        return getClient(FileClient.class, () -> new FileClient(token));
     }
 
     public JobClient getJobClient() {
-        return getClient(JobClient.class, () -> new JobClient(token, clientConfiguration));
+        return getClient(JobClient.class, () -> new JobClient(token));
     }
 
     public IndividualClient getIndividualClient() {
-        return getClient(IndividualClient.class, () -> new IndividualClient(token, clientConfiguration));
+        return getClient(IndividualClient.class, () -> new IndividualClient(token));
     }
 
     public SampleClient getSampleClient() {
-        return getClient(SampleClient.class, () -> new SampleClient(token, clientConfiguration));
+        return getClient(SampleClient.class, () -> new SampleClient(token));
     }
 
     public CohortClient getCohortClient() {
-        return getClient(CohortClient.class, () -> new CohortClient(token, clientConfiguration));
+        return getClient(CohortClient.class, () -> new CohortClient(token));
     }
 
-    public ClinicalClient getClinicalAnalysisClient() {
-        return getClient(ClinicalClient.class, () -> new ClinicalClient(token, clientConfiguration));
+    public ClinicalAnalysisClient getClinicalAnalysisClient() {
+        return getClient(ClinicalAnalysisClient.class, () -> new ClinicalAnalysisClient(token));
     }
 
     public DiseasePanelClient getDiseasePanelClient() {
-        return getClient(DiseasePanelClient.class, () -> new DiseasePanelClient(token, clientConfiguration));
+        return getClient(DiseasePanelClient.class, () -> new DiseasePanelClient(token));
     }
 
     public FamilyClient getFamilyClient() {
-        return getClient(FamilyClient.class, () -> new FamilyClient(token, clientConfiguration));
+        return getClient(FamilyClient.class, () -> new FamilyClient(token));
     }
 
     public AlignmentClient getAlignmentClient() {
-        return getClient(AlignmentClient.class, () -> new AlignmentClient(token, clientConfiguration));
+        return getClient(AlignmentClient.class, () -> new AlignmentClient(token));
     }
 
     public VariantClient getVariantClient() {
-        return getClient(VariantClient.class, () -> new VariantClient(token, clientConfiguration));
+        return getClient(VariantClient.class, () -> new VariantClient(token));
     }
 
     public VariantOperationClient getVariantOperationClient() {
-        return getClient(VariantOperationClient.class, () -> new VariantOperationClient(token, clientConfiguration));
+        return getClient(VariantOperationClient.class, () -> new VariantOperationClient(token));
     }
 
     public MetaClient getMetaClient() {
-        return getClient(MetaClient.class, () -> new MetaClient(token, clientConfiguration));
+        return getClient(MetaClient.class, () -> new MetaClient(token));
     }
 
     @SuppressWarnings("unchecked")
@@ -155,7 +151,7 @@ public class OpenCGAClient {
     /**
      * Logs in the user.
      *
-     * @param user userId.
+     * @param user     userId.
      * @param password Password.
      * @return AuthenticationResponse object.
      * @throws ClientException when it is not possible logging in.
@@ -202,7 +198,6 @@ public class OpenCGAClient {
             setUserId(null);
         }
     }
-
 
     public String getToken() {
         return token;

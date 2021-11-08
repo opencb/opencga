@@ -48,7 +48,7 @@
         <iva.version>2.1.0-beta</iva.version>
         <cellbase.version>5.0.0-SNAPSHOT</cellbase.version>
         <biodata.version>2.2.0-SNAPSHOT</biodata.version>
-        <java-common-libs.version>4.1.2-SNAPSHOT</java-common-libs.version>
+        <java-common-libs.version>4.2.0-SNAPSHOT</java-common-libs.version>
         <oskar.version>0.2.0</oskar.version>
         <!--        <bionet.version>0.2.0-SNAPSHOT</bionet.version>-->
         <jackson.version>2.10.1</jackson.version>
@@ -495,7 +495,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>3.2.0</version>
+                <version>3.1.0</version>
                 <configuration>
                     <encoding>UTF-8</encoding>
                 </configuration>

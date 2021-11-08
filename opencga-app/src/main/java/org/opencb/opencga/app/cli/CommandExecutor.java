@@ -17,30 +17,23 @@
 package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.JCommander;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.jsonwebtoken.Jwts;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Date;
-import java.util.List;
 
 /**
  * Created by imedina on 19/04/16.
@@ -56,32 +49,24 @@ public abstract class CommandExecutor {
 
     protected String userId;
     protected String token;
-    @Nullable
-    protected CliSession cliSession;
 
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
-    protected ClientConfiguration clientConfiguration;
 
     protected GeneralCliOptions.CommonCommandOptions options;
 
     protected Logger logger;
     private Logger privateLogger;
 
-
     public CommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
-        this(options, false);
-    }
-
-    public CommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean loadClientConfiguration) {
         this.options = options;
-        init(options.logLevel, options.conf, loadClientConfiguration);
+        init(options.logLevel, options.conf);
     }
 
-    protected void init(String logLevel, String conf, boolean loadClientConfiguration) {
+    protected void init(String logLevel, String conf) {
         this.logLevel = logLevel;
         this.conf = conf;
-        cliSession=CliSession.getInstance();
+
         /**
          * System property 'app.home' is automatically set up in opencga.sh. If by any reason
          * this is 'null' then OPENCGA_HOME environment variable is used instead.
@@ -102,11 +87,9 @@ public abstract class CommandExecutor {
 
             // This code assumes general configuration will be always needed and general configuration is overwritten,
             // maybe in the near future this should be an if/else.
-            if (loadClientConfiguration) {
-                loadClientConfiguration();
-                if (StringUtils.isNotEmpty(this.clientConfiguration.getLogLevel())) {
-                    this.configuration.setLogLevel(this.clientConfiguration.getLogLevel());
-                }
+
+            if (StringUtils.isNotEmpty(ClientConfiguration.getInstance().getLogLevel())) {
+                this.configuration.setLogLevel(ClientConfiguration.getInstance().getLogLevel());
             }
 
             // Do not change the order here, we can only configure logger after loading the configuration files,
@@ -123,7 +106,6 @@ public abstract class CommandExecutor {
                 this.token = CliSession.getInstance().getToken();
                 this.userId = CliSession.getInstance().getUser();
             }
-
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -151,7 +133,6 @@ public abstract class CommandExecutor {
         System.setProperty("opencga.log.level", level.name());
         Configurator.reconfigure();
     }
-
 
     @Deprecated
     public boolean loadConfigurations() {
@@ -199,26 +180,8 @@ public abstract class CommandExecutor {
     }
 
     /**
-     * This method attempts to first data configuration from CLI parameter, if not present then uses
-     * the configuration from installation directory, if not exists then loads JAR client-configuration.yml.
-     *
-     * @throws IOException If any IO problem occurs
-     */
-    public void loadClientConfiguration() throws IOException {
-        // We load configuration file either from app home folder or from the JAR
-        Path path = Paths.get(this.conf).resolve("client-configuration.yml");
-        if (Files.exists(path)) {
-            privateLogger.debug("Loading configuration from '{}'", path.toAbsolutePath());
-            this.clientConfiguration = ClientConfiguration.load(new FileInputStream(path.toFile()));
-        } else {
-            privateLogger.debug("Loading configuration from JAR file");
-            this.clientConfiguration = ClientConfiguration
-                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("client-configuration.yml"));
-        }
-    }
-
-    /**
-     * This method attempts to load storage configuration from CLI 'conf' parameter, if not exists then loads JAR storage-configuration.yml.
+     * This method attempts to load storage configuration from CLI 'conf' parameter, if not exists then loads JAR
+     * storage-configuration.yml.
      *
      * @throws IOException If any IO problem occurs
      */
@@ -236,8 +199,6 @@ public abstract class CommandExecutor {
                     .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
         }
     }
-
-
 
     protected void checkSignatureRelease(String release) throws ClientException {
         switch (release) {
@@ -268,7 +229,6 @@ public abstract class CommandExecutor {
         return logLevel;
     }
 
-
     public String getLogFile() {
         return logFile;
     }
@@ -288,5 +248,4 @@ public abstract class CommandExecutor {
     public Logger getLogger() {
         return logger;
     }
-
 }

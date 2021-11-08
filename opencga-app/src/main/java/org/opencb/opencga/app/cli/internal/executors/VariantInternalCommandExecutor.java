@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.app.cli.internal.executors;
 
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SequenceWriter;
@@ -264,7 +263,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
     private void exportFrequencies() throws Exception {
 
         VariantCommandOptions.VariantExportStatsCommandOptions exportCliOptions = variantCommandOptions.exportVariantStatsCommandOptions;
-//        AnalysisCliOptionsParser.ExportVariantStatsCommandOptions exportCliOptions = variantCommandOptions.exportVariantStatsCommandOptions;
+//        AnalysisCliOptionsParser.ExportVariantStatsCommandOptions exportCliOptions = variantCommandOptions
+//        .exportVariantStatsCommandOptions;
 //        AnalysisCliOptionsParser.QueryVariantCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
 
         VariantCommandOptions.VariantQueryCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
@@ -316,7 +316,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
             }
 
         Map<Long, String> studyIds = getStudyIds(token);
-        Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds.values(), clientConfiguration);
+        Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds.values());
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
         queryOptions.put("summary", cliOptions.genericVariantQueryOptions.summary);
 
@@ -414,9 +414,11 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         }
     }
 
-    private void secondaryIndexRemove() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageEngineException,
+    private void secondaryIndexRemove() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
+            StorageEngineException,
             InstantiationException, IllegalAccessException, URISyntaxException, VariantSearchException {
-        VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions cliOptions = variantCommandOptions.variantSecondaryIndexDeleteCommandOptions;
+        VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions cliOptions =
+                variantCommandOptions.variantSecondaryIndexDeleteCommandOptions;
 
         ObjectMap params = new ObjectMap();
         params.putAll(cliOptions.commonOptions.params);
@@ -471,7 +473,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.resume)
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
-
 
         toolRunner.execute(VariantScoreIndexOperationTool.class, params, Paths.get(cliOptions.outdir), jobId, token);
     }
@@ -704,7 +705,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.skipGenesFile,
                 cliOptions.outdir,
                 cliOptions.index
-                )
+        )
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
@@ -729,7 +730,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, cliOptions.study);
         params.putAll(cliOptions.commonOptions.params);
 
-
         // Build variant query from cli options
         Query variantQuery = new Query();
         variantQuery.putAll(cliOptions.variantQuery);
@@ -748,7 +748,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         VariantCommandOptions.CohortVariantStatsCommandOptions cliOptions = variantCommandOptions.cohortVariantStatsCommandOptions;
         ObjectMap params = new ObjectMap();
         params.putAll(cliOptions.commonOptions.params);
-
 
         Query query = null;
         if (StringUtils.isNotEmpty(cliOptions.samplesAnnotation)) {

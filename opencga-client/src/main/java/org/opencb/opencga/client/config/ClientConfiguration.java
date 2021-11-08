@@ -22,16 +22,19 @@ import org.opencb.commons.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 
 /**
  * Created by imedina on 04/05/16.
  */
-public class ClientConfiguration {
+public final class ClientConfiguration {
 
     private String logLevel;
 
@@ -45,16 +48,18 @@ public class ClientConfiguration {
 
     private static Logger logger;
     private static final String DEFAULT_CONFIGURATION_FORMAT = "yaml";
+    private static ClientConfiguration instance;
+    private static Logger privateLogger = LoggerFactory.getLogger(ClientConfiguration.class);
 
-
-    public ClientConfiguration() {
-        logger = LoggerFactory.getLogger(ClientConfiguration.class);
+    public static ClientConfiguration getInstance() {
+        if (instance == null) {
+            instance = new ClientConfiguration();
+            loadClientConfiguration();
+        }
+        return instance;
     }
 
-    public ClientConfiguration(RestConfig rest, GrpcConfig grpc) {
-        this.rest = rest;
-        this.grpc = grpc;
-
+    private ClientConfiguration() {
         logger = LoggerFactory.getLogger(ClientConfiguration.class);
     }
 
@@ -107,6 +112,31 @@ public class ClientConfiguration {
                         break;
                 }
             }
+        }
+    }
+
+    /**
+     * This method attempts to first data configuration from CLI parameter, if not present then uses the configuration from installation
+     * directory, if not exists then loads JAR client-configuration.yml.
+     *
+     * @throws IOException If any IO problem occurs
+     */
+    private static void loadClientConfiguration() {
+        // We load configuration file either from app home folder or from the JAR
+
+        try {
+            String conf = System.getProperty("app.home", System.getenv("OPENCGA_HOME")) + "/conf";
+            Path path = Paths.get(conf).resolve("client-configuration.yml");
+            if (Files.exists(path)) {
+                privateLogger.debug("Loading configuration from '{}'", path.toAbsolutePath());
+                instance = ClientConfiguration.load(new FileInputStream(path.toFile()));
+            } else {
+                privateLogger.debug("Loading configuration from JAR file");
+                instance = ClientConfiguration
+                        .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("client-configuration.yml"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

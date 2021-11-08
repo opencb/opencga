@@ -23,13 +23,17 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
+import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -39,6 +43,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
 
     public static final String LOGIN_OK = "\n\nYou have been logged in correctly.";
     public static final String LOGIN_FAIL = "\n\nNot available login service now. Please contact the system administrator.";
+    public static final String LOGOUT = "\n\nYou've been logged out.";
     private UsersCommandOptions usersCommandOptions;
 
     public ParentUsersCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
@@ -75,13 +80,16 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                     // write CLI session file
                     CliSession.getInstance().setToken(response.getToken());
                     CliSession.getInstance().setUser(user);
+                    CliSession.getInstance().setVersion(GitRepositoryState.get().getBuildVersion());
                     CliSession.getInstance().setRefreshToken(response.getRefreshToken());
                     CliSession.getInstance().setStudies(studies);
+                    CliSession.getInstance().setLogin(TimeUtils.getTime(new Date()));
                     CliSession.getInstance().saveCliSessionFile();
                     Event event = new Event();
                     event.setMessage(LOGIN_OK);
                     event.setType(Event.Type.INFO);
                     res.getEvents().add(event);
+                    res.setType(QueryType.VOID);
                 } else {
                     Event event = new Event();
                     event.setMessage(LOGIN_FAIL);
@@ -106,9 +114,24 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
         return res;
     }
 
-    protected void logout() throws IOException {
+    protected RestResponse<AuthenticationResponse> logout() throws IOException {
         logger.debug("Logout");
-        openCGAClient.logout();
-        CliSession.getInstance().logoutCliSessionFile();
+        RestResponse<AuthenticationResponse> res = new RestResponse();
+        try {
+            openCGAClient.logout();
+            CliSession.getInstance().logoutCliSessionFile();
+            Event event = new Event();
+            event.setMessage(LOGOUT);
+            event.setType(Event.Type.ERROR);
+            res.getEvents().add(event);
+            res.setType(QueryType.VOID);
+        } catch (Exception e) {
+            Event event = new Event();
+            event.setMessage(e.getMessage());
+            event.setType(Event.Type.ERROR);
+            res.getEvents().add(event);
+            //    e.printStackTrace();
+        }
+        return res;
     }
 }

@@ -41,12 +41,10 @@ import java.util.Map;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
-
 @Path("/{apiVersion}/users")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Users", description = "Methods for working with 'users' endpoint")
 public class UserWSServer extends OpenCGAWSServer {
-
 
     public UserWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
@@ -196,19 +194,19 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @GET
-//    @Path("/{user}/reset-password")
-//    @ApiOperation(value = "Reset password", hidden = true,
-//            notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.", response = User.class)
-//    public Response resetPassword(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
-//        try {
-//            OpenCGAResult<User> result = catalogManager.getUserManager().resetPassword(userId, token);
-//            return createOkResponse(result);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-
+    @GET
+    @Path("/{user}/password/reset")
+    @ApiOperation(value = "Reset password", hidden = false,
+            notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.", response = User.class)
+    public Response resetPassword(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
+        try {
+            OpenCGAResult<User> result = catalogManager.getUserManager().resetPassword(userId, token);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+ 
     @GET
     @Path("/{user}/projects")
     @ApiOperation(value = "Retrieve the projects of the user", notes = "Retrieve the list of projects and studies belonging to the user"
@@ -219,7 +217,8 @@ public class UserWSServer extends OpenCGAWSServer {
                     dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType =
+                    "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query")
     })
     public Response getAllProjects(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
@@ -259,7 +258,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response updateConfiguration(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing anything useful for the application such as user or default preferences. " +
                     "When removing, only the id will be necessary.", required = true) ConfigUpdateParams params) {
         try {
@@ -267,7 +266,8 @@ public class UserWSServer extends OpenCGAWSServer {
                 action = ParamUtils.AddRemoveAction.ADD;
             }
             if (action == ParamUtils.AddRemoveAction.ADD) {
-                return createOkResponse(catalogManager.getUserManager().setConfig(userId, params.getId(), params.getConfiguration(), token));
+                return createOkResponse(catalogManager.getUserManager().setConfig(userId, params.getId(), params.getConfiguration(),
+                        token));
             } else {
                 return createOkResponse(catalogManager.getUserManager().deleteConfig(userId, params.getId(), token));
             }
@@ -298,7 +298,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response updateFilters(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "Filter parameters. When removing, only the 'name' of the filter will be necessary", required = true) UserFilter params) {
         try {
             if (action == null) {
@@ -347,5 +347,4 @@ public class UserWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-
 }

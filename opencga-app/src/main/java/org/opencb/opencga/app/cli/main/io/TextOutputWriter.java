@@ -38,6 +38,7 @@ import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.text.SimpleDateFormat;
@@ -73,6 +74,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
     @Override
     public void print(RestResponse queryResponse) {
+        if (queryResponse != null && queryResponse.getType().equals(QueryType.VOID)) {
+            return;
+        }
         if (checkErrors(queryResponse) && queryResponse.allResultsSize() == 0) {
             return;
         }
@@ -88,7 +92,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
                 if (CollectionUtils.isNotEmpty(queryResponse.getEvents())) {
                     for (Event event : ((RestResponse<?>) queryResponse).getEvents()) {
-                        ps.println("EVENT: " + event.getMessage());
+                        if (event.getMessage() != null) {
+                            ps.println("EVENT: " + event.getMessage());
+                        }
                     }
                 }
 
@@ -155,7 +161,6 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 yamlOutputWriter.print(queryResponse, false);
                 break;
         }
-
     }
 
     private String printMetadata(RestResponse queryResponse) {
@@ -237,7 +242,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
         new Table<Project>(tableType)
                 .addColumn("ID", Project::getId)
                 .addColumn("NAME", Project::getName)
-                .addColumn("ORGANISM", p -> StringUtils.defaultIfEmpty(p.getOrganism().getScientificName(), p.getOrganism().getCommonName()), "NA")
+                .addColumn("ORGANISM", p -> StringUtils.defaultIfEmpty(p.getOrganism().getScientificName(),
+                        p.getOrganism().getCommonName()), "NA")
                 .addColumn("ASSEMBLY", p -> p.getOrganism().getAssembly(), "NA")
                 .addColumn("DESCRIPTION", Project::getDescription)
                 .addColumnNumber("#STUDIES", p -> p.getStudies().size())
@@ -284,7 +290,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumn("STATUS", f -> f.getInternal().getStatus().getName())
                 .addColumnNumber("SIZE", File::getSize)
                 .addColumn("INDEX_STATUS", f -> f.getInternal().getIndex().getStatus().getName(), "NA")
-                .addColumn("RELATED_FILES", f -> f.getRelatedFiles().stream().map(rf -> rf.getFile().getName()).collect(Collectors.joining(",")))
+                .addColumn("RELATED_FILES",
+                        f -> f.getRelatedFiles().stream().map(rf -> rf.getFile().getName()).collect(Collectors.joining(",")))
                 .addColumn("SAMPLES", f -> StringUtils.join(f.getSampleIds(), ","));
 
         table.printTable(unwind(queryResultList));
@@ -494,8 +501,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 ? SIMPLE_DATE_FORMAT.format(getStart(job)) : "")),
         END(new Table.TableColumnSchema<>("End", job -> getEnd(job) != null
                 ? SIMPLE_DATE_FORMAT.format(getEnd(job)) : "")),
-        INPUT(new Table.TableColumnSchema<>("Input",  j -> j.getInput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
-        OUTPUT(new Table.TableColumnSchema<>("Output", j -> j.getOutput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
+        INPUT(new Table.TableColumnSchema<>("Input", j -> j.getInput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
+        OUTPUT(new Table.TableColumnSchema<>("Output", j -> j.getOutput().stream().map(File::getName).collect(Collectors.joining(",")),
+                45)),
         OUTPUT_DIRECTORY(new Table.TableColumnSchema<>("Output directory", j -> j.getOutDir().getPath(), 45));
 
         private final Table.TableColumnSchema<Job> columnSchema;

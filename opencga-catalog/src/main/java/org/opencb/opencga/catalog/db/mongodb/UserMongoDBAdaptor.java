@@ -166,7 +166,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         query.append(QueryParams.EMAIL.key(), email);
         Bson bson = parseQuery(query);
 
-        Bson set = Updates.set(PRIVATE_PASSWORD, new Document(PRIVATE_PASSWORD, encryptPassword(newPassword)));
+        Bson set = Updates.set(PRIVATE_PASSWORD, encryptPassword(newPassword));
 
         DataResult result = userCollection.update(bson, set, null);
         if (result.getNumUpdated() == 0) {  //0 query matches.
@@ -614,7 +614,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     @Override
     public OpenCGAResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Remove not yet implemented.");
-
     }
 
     @Override

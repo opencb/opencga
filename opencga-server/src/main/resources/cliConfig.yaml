@@ -40,11 +40,17 @@ apiConfig:
       ignore: False
       key: User
       executorExtended: True
+      optionExtended: True
       commands:
         - name: update-filters
           ignore: True
         - name: login
           executorExtended: True
+        - name: logout
+          executorExtended: True
+          optionExtended: True
+      addedMethods:
+        - logout
     - name: projects
       ignore: False
       key: Project

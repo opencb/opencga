@@ -21,18 +21,17 @@ import java.io.IOException;
 import static org.fusesource.jansi.Ansi.Color.*;
 import static org.fusesource.jansi.Ansi.ansi;
 
-class OpencgaCliShellExecutor extends CommandExecutor {
+public class OpencgaCliShellExecutor extends CommandExecutor {
 
     private LineReader lineReader = null;
     private Terminal terminal = null;
 
     public OpencgaCliShellExecutor(GeneralCliOptions.CommonCommandOptions options) {
-        super(new GeneralCliOptions.CommonCommandOptions(), true);
+        super(new GeneralCliOptions.CommonCommandOptions());
     }
 
     public void setCurrentStudy(String arg) {
-        OpenCGAClient openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSession.getInstance().getToken()),
-                clientConfiguration);
+        OpenCGAClient openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSession.getInstance().getToken()));
         if (openCGAClient != null) {
             try {
                 RestResponse<Study> res = openCGAClient.getStudyClient().info(arg, new ObjectMap());
@@ -92,7 +91,6 @@ class OpencgaCliShellExecutor extends CommandExecutor {
     @Override
     public void execute() throws Exception {
         try {
-
             if (lineReader == null) {
                 lineReader = getTerminal();
             }
@@ -101,12 +99,7 @@ class OpencgaCliShellExecutor extends CommandExecutor {
             while (true) {
                 // Read and sanitize the input
                 String line;
-                if (!CliSession.getInstance().isValid()) {
-                    OpencgaCliProcessor.forceLogin();
-                }
-                if (cliSession != null && cliSession.getUser() != null && CliSession.getInstance().isValid()) {
-                    PROMPT = getPrompt();
-                }
+                PROMPT = getPrompt();
                 try {
                     line = lineReader.readLine(PROMPT);
                 } catch (UserInterruptException e) {
@@ -124,19 +117,16 @@ class OpencgaCliShellExecutor extends CommandExecutor {
                 }
                 // Construct the Command and args to pass to that command
 
-                // Flush a newline to the screen.
-                terminal.writer().flush();
             }
+            terminal.writer().flush();
         } catch (Exception e) {
-            printlnRed(e.getMessage());
-            // e.printStackTrace();
-            // execute();
+            OpencgaMain.printErrorMessage("Execution error ", e);
         }
     }
 
     private String getPrompt() {
-
-        return String.valueOf(ansi().fg(BLUE).a("[" + cliSession.getCurrentStudy() + "]").fg(YELLOW).a("<" + cliSession.getUser() + ">").fg(GREEN).a(
+        return String.valueOf(ansi().fg(BLUE).a("[" + CliSession.getInstance().getCurrentStudy() + "]").fg(YELLOW).a("<"
+                + CliSession.getInstance().getUser() + ">").fg(GREEN).a(
                 "[OpenCGA]/>").reset());
     }
 

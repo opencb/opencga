@@ -2,12 +2,14 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
 import org.fusesource.jansi.Ansi;
+import org.opencb.opencga.app.cli.CliSession;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.io.Console;
+import java.io.IOException;
 
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.ansi;
@@ -16,20 +18,13 @@ public class OpencgaCliProcessor {
 
     private static Console console;
     private static OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
-    private static OpencgaCliOptionsParser cliOptionsParser;
+    // private static OpencgaCliOptionsParser cliOptionsParser;
 
     private static Console getConsole() {
         if (console == null) {
             console = System.console();
         }
         return console;
-    }
-
-    private static OpencgaCliOptionsParser getCliOptionsParser() {
-        if (cliOptionsParser == null) {
-            cliOptionsParser = new OpencgaCliOptionsParser();
-        }
-        return cliOptionsParser;
     }
 
     public static void process(String[] args) {
@@ -39,40 +34,51 @@ public class OpencgaCliProcessor {
             System.out.println("Couldn't get console instance");
             System.exit(0);
         }
-
         if (args.length == 1 && "exit".equals(args[0])) {
             System.out.println(String.valueOf(ansi().fg(Ansi.Color.YELLOW).a("\nThanks for using OpenCGA. See you soon.\n\n").reset()));
             System.exit(0);
         }
-      /*  if (args.length == 1 && "--shell".equals(args[0])) {
-            try {
-                shell.execute();
-            } catch (Exception e) {
-                shell.printlnRed(e.getMessage());
-            }
+
+        if (args.length == 1 && "logout".equals(args[0])) {
+            args = new String[]{"users", "logout"};
         }
-
-*/
-        if (args.length > 2 && "use".equals(args[0]) && "study".equals(args[1])) {
-
+        if (args.length == 1 && "login".equals(args[0])) {
+            // args = new String[]{"users", "login"};
+            forceLogin();
+            return;
+        }
+        if (args.length == 3 && "use".equals(args[0]) && "study".equals(args[1])) {
             shell.setCurrentStudy(args[2]);
+            try {
+                CliSession.getInstance().saveCliSessionFile();
+            } catch (IOException e) {
+                OpencgaMain.printErrorMessage("Error updating session file", e);
+            }
             return;
         }
 
-        //login The first if clause is for scripting login method and the else clause is for the shell login
-        if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1]) && argsContains(args, "--user-password")
-                && !OpencgaMain.getSession().isShell()) {
-            if (!argsContains(args, "--help") && !argsContains(args, "-h")) {
-                args = getUserPasswordArgs(args, "--user-password");
+     /*   if (args.length == 3 && "use".equals(args[0]) && "host".equals(args[1])) {
+            CliSession.getInstance().setCurrentHost(args[2]);
+            try {
+                CliSession.getInstance().saveCliSessionFile();
+            } catch (IOException e) {
+                OpencgaMain.printErrorMessage("Error updating session file", e);
             }
-        } else if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1])) {
-            if (!argsContains(args, "--help") && !argsContains(args, "-h")) {
-                char[] passwordArray = console.readPassword(String.valueOf(ansi().fg(GREEN).a("\nEnter your secret password: ").reset()));
-                args = appendArgs(args, new String[]{"--password", new String(passwordArray)});
+            CliSession.getInstance().loadCliSessionFile();
+        }*/
+        //login The first if clause is for scripting login method and the else clause is for the shell login
+        if (isNotHelpCommand(args)) {
+            if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1]) && argsContains(args, "--user-password")) {
+                if (!OpencgaMain.getSession().isShell()) {
+                    args = getUserPasswordArgs(args, "--user-password");
+                } else {
+                    char[] passwordArray =
+                            console.readPassword(String.valueOf(ansi().fg(GREEN).a("\nEnter your secret password: ").reset()));
+                    args = appendArgs(args, new String[]{"--password", new String(passwordArray)});
+                }
             }
         }
-
-        cliOptionsParser = getCliOptionsParser();
+        OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
 
         try {
             cliOptionsParser.parse(args);
@@ -80,7 +86,6 @@ public class OpencgaCliProcessor {
             String parsedCommand = cliOptionsParser.getCommand();
             if (parsedCommand == null || parsedCommand.isEmpty()) {
                 if (cliOptionsParser.getGeneralOptions().version) {
-                    System.out.println("");
                     OpencgaCliShellExecutor.printGreen("\tOpenCGA CLI version: ");
                     OpencgaCliShellExecutor.printlnYellow("\t" + GitRepositoryState.get().getBuildVersion());
                     OpencgaCliShellExecutor.printGreen("\tGit version:");
@@ -109,7 +114,6 @@ public class OpencgaCliProcessor {
                     if (parsedSubCommand == null || parsedSubCommand.isEmpty()) {
                         cliOptionsParser.printUsage();
                     } else {
-
                         switch (parsedCommand) {
                             case "users":
                                 commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
@@ -121,7 +125,6 @@ public class OpencgaCliProcessor {
                                 commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getStudiesCommandOptions());
                                 break;
                             case "files":
-
                                 commandExecutor = new FilesCommandExecutor(cliOptionsParser.getFilesCommandOptions());
                                 break;
                             case "jobs":
@@ -166,7 +169,7 @@ public class OpencgaCliProcessor {
                                 break;
                         }
 
-                        executeCommand(commandExecutor);
+                        executeCommand(commandExecutor, cliOptionsParser);
                     }
                 }
             }
@@ -176,6 +179,10 @@ public class OpencgaCliProcessor {
             // e.printStackTrace();
             //System.exit(1);
         }
+    }
+
+    private static boolean isNotHelpCommand(String[] args) {
+        return !argsContains(args, "--help") && !argsContains(args, "-h");
     }
 
     private static String[] getUserPasswordArgs(String[] args, String s) {
@@ -188,18 +195,15 @@ public class OpencgaCliProcessor {
         return args;
     }
 
-    private static void executeCommand(CommandExecutor commandExecutor) {
+    private static void executeCommand(CommandExecutor commandExecutor, OpencgaCliOptionsParser cliOptionsParser) {
         if (commandExecutor != null) {
             try {
                 commandExecutor.execute();
             } catch (Exception e) {
-                shell.printlnRed(e.getMessage());
-                //    e.printStackTrace();
-                //System.exit(1);
+                OpencgaMain.printErrorMessage(e.getMessage(), e);
             }
         } else {
             cliOptionsParser.printUsage();
-            // System.exit(1);
         }
     }
 
@@ -233,9 +237,9 @@ public class OpencgaCliProcessor {
         args[1] = "login";
         args = appendArgs(args, new String[]{"-u", user});
         args = appendArgs(args, new String[]{"--password", new String(passwordArray)});
-        cliOptionsParser = getCliOptionsParser();
+        OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
         cliOptionsParser.parse(args);
         CommandExecutor commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
-        executeCommand(commandExecutor);
+        executeCommand(commandExecutor, cliOptionsParser);
     }
 }

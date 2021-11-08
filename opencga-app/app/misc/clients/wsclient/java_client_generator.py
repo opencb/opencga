@@ -24,7 +24,7 @@ class JavaClientGenerator(rest_client_generator.RestClientGenerator):
             'ObjectMap': 'org.opencb.commons.datastore.core.ObjectMap;'
         }
         self.ignore_types = [
-            'Integer', 'String', 'boolean', 'int', 'Boolean'
+            'Integer', 'String', 'boolean', 'int', 'Boolean', 'Object'
         ]
         self.param_types = {
             'string': 'String',
@@ -58,7 +58,6 @@ class JavaClientGenerator(rest_client_generator.RestClientGenerator):
 
         imports = set()
         imports.add('org.opencb.opencga.client.exceptions.ClientException;')
-        imports.add('org.opencb.opencga.client.config.ClientConfiguration;')
         imports.add('org.opencb.opencga.client.rest.AbstractParentClient;')
         imports.add('org.opencb.opencga.core.response.RestResponse;')
 
@@ -96,9 +95,9 @@ class JavaClientGenerator(rest_client_generator.RestClientGenerator):
         text.append(' */')
         text.append('public class {}Client extends AbstractParentClient {{'.format(self.categories[self.get_category_name(category)]))
         text.append('')
-        text.append('{}public {}Client(String token, ClientConfiguration configuration) {{'.format(' ' * 4, self.categories[
+        text.append('{}public {}Client(String token) {{'.format(' ' * 4, self.categories[
             self.get_category_name(category)]))
-        text.append('{}super(token, configuration);'.format(' ' * 8))
+        text.append('{}super(token);'.format(' ' * 8))
         text.append('{}}}'.format(' ' * 4))
         return '\n'.join(text)
 

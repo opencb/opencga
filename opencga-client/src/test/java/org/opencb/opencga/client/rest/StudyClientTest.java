@@ -20,13 +20,10 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.clients.StudyClient;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.RestResponse;
-
-import java.io.IOException;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -36,16 +33,15 @@ import static org.junit.Assert.assertNotNull;
 public class StudyClientTest {
     private OpenCGAClient openCGAClient;
     private StudyClient studyClient;
-    private ClientConfiguration clientConfiguration;
 
     private static WSTestServer wsTestServer;
 
     public StudyClientTest() throws ClientException {
         try {
-            clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration.yml"));
+
 //            clientConfiguration.getRest().setHost("http://localhost:8890/opencga/webservices/rest");
-            openCGAClient = new OpenCGAClient("hgva", "hgva_cafeina", clientConfiguration);
-        } catch (IOException e) {
+            openCGAClient = new OpenCGAClient("hgva", "hgva_cafeina");
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -84,5 +80,4 @@ public class StudyClientTest {
         RestResponse<Study> info = studyClient.info("2", null);
         assertNotNull(info.firstResult());
     }
-
 }

@@ -28,18 +28,17 @@ public class ClientConfigurationTest {
 
     @Test
     public void testDefault() {
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
 
-        clientConfiguration.setCliSessionDuration(120);
+        ClientConfiguration.getInstance().setCliSessionDuration(120);
 
         RestConfig restConfig = new RestConfig("localhost:9090/opencga", true, new QueryRestConfig(200, 2000));
         GrpcConfig grpcConfig = new GrpcConfig("localhost:9091");
 
-        clientConfiguration.setRest(restConfig);
-        clientConfiguration.setGrpc(grpcConfig);
+        ClientConfiguration.getInstance().setRest(restConfig);
+        ClientConfiguration.getInstance().setGrpc(grpcConfig);
 
         try {
-            clientConfiguration.serialize(new FileOutputStream("/tmp/client-configuration-test.yml"));
+            ClientConfiguration.getInstance().serialize(new FileOutputStream("/tmp/client-configuration-test.yml"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -47,7 +46,8 @@ public class ClientConfigurationTest {
 
     @Test
     public void testLoad() throws Exception {
-        ClientConfiguration storageConfiguration = ClientConfiguration.load(getClass().getResource("/client-configuration.yml").openStream());
+        ClientConfiguration storageConfiguration =
+                ClientConfiguration.load(getClass().getResource("/client-configuration.yml").openStream());
         System.out.println("clientConfiguration = " + storageConfiguration);
     }
 }

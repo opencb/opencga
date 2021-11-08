@@ -30,6 +30,8 @@ public class RestResponse<T> {
     private List<Event> events;
 
     private ObjectMap params;
+
+    private QueryType type = QueryType.QUERY;
     private List<OpenCGAResult<T>> responses;
 
     public RestResponse() {
@@ -50,6 +52,7 @@ public class RestResponse<T> {
 
     /**
      * Fetch the m-result of the first response.
+     *
      * @param m Position of the result from the array of results.
      * @return the m-result of the first response.
      */
@@ -59,6 +62,7 @@ public class RestResponse<T> {
 
     /**
      * Fetch the m-result of the n-response.
+     *
      * @param m Position of the result from the array of results.
      * @param n Position of the response from the array of responses.
      * @return the m-result of the n-response.
@@ -69,6 +73,7 @@ public class RestResponse<T> {
 
     /**
      * Fetch the list of results of the m-response.
+     *
      * @param m Position of the response from the array of responses.
      * @return the list of results of the m-response.
      */
@@ -78,6 +83,7 @@ public class RestResponse<T> {
 
     /**
      * Fetch the list of responses.
+     *
      * @return the list of responses.
      */
     public List<OpenCGAResult<T>> responses() {
@@ -86,6 +92,7 @@ public class RestResponse<T> {
 
     /**
      * Fetch the OpenCGAResult of the m-response.
+     *
      * @param m Position of the response from the array of responses.
      * @return the OpenCGAResult of the m-response.
      */
@@ -95,6 +102,7 @@ public class RestResponse<T> {
 
     /**
      * This method just returns the first OpenCGAResult of response, or null if response is null or empty.
+     *
      * @return the first OpenCGAResult in the response
      */
     public OpenCGAResult<T> first() {
@@ -106,6 +114,7 @@ public class RestResponse<T> {
 
     /**
      * This method returns the first result from the first OpenCGAResult of response, equivalent to response.get(0).getResult.get(0).
+     *
      * @return T value if exists, null otherwise
      */
     public T firstResult() {
@@ -127,6 +136,7 @@ public class RestResponse<T> {
 
     /**
      * This method flats the two levels (RestResponse and OpenCGAResult) into a single list of T.
+     *
      * @return a single list with all the results, or null if no response exists
      */
     public List<T> allResults() {
@@ -158,7 +168,6 @@ public class RestResponse<T> {
         sb.append('}');
         return sb.toString();
     }
-
 
     public String getApiVersion() {
         return apiVersion;
@@ -205,4 +214,12 @@ public class RestResponse<T> {
         return this;
     }
 
+    public QueryType getType() {
+        return type;
+    }
+
+    public RestResponse<T> setType(QueryType type) {
+        this.type = type;
+        return this;
+    }
 }
