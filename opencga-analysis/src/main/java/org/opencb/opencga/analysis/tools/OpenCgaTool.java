@@ -212,14 +212,14 @@ public abstract class OpenCgaTool {
             if (scratchDir == null) {
                 Path baseScratchDir = this.outDir;
                 if (StringUtils.isNotEmpty(configuration.getAnalysis().getScratchDir())) {
-                    Path scratch;
                     try {
-                        scratch = Paths.get(configuration.getAnalysis().getScratchDir());
+                        Path scratch = Paths.get(configuration.getAnalysis().getScratchDir());
                         if (scratch.toFile().isDirectory() && scratch.toFile().canWrite()) {
                             baseScratchDir = scratch;
                         } else {
                             try {
                                 FileUtils.forceMkdir(scratch.toFile());
+                                baseScratchDir = scratch;
                             } catch (IOException e) {
                                 String warn = "Unable to access scratch folder '" + scratch + "'. " + e.getMessage();
                                 privateLogger.warn(warn);

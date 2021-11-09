@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.exceptions;
 
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -40,36 +41,37 @@ public class StorageEngineException extends Exception {
         return unableToExecute("Already loaded", fileId, fileName);
     }
 
-    public static StorageEngineException otherOperationInProgressException(TaskMetadata opInProgress,
-                                                                           TaskMetadata currentOperation) {
-        return otherOperationInProgressException(opInProgress, currentOperation.getName(), currentOperation.getFileIds());
-    }
-
     public static StorageEngineException otherOperationInProgressException(TaskMetadata operation, String jobOperationName,
-                                                                           List<Integer> fileIds) {
-        return otherOperationInProgressException(operation, jobOperationName, fileIds, false);
+                                                                           List<Integer> fileIds,
+                                                                           VariantStorageMetadataManager mm) {
+        return otherOperationInProgressException(operation, jobOperationName, fileIds, mm, false);
     }
 
     public static StorageEngineException otherOperationInProgressException(TaskMetadata opInProgress, String currentOperationName,
-                                                                           List<Integer> fileIds, boolean resume) {
+                                                                           List<Integer> fileIds,
+                                                                           VariantStorageMetadataManager mm, boolean resume) {
         if (opInProgress.sameOperation(fileIds, opInProgress.getType(), currentOperationName)) {
-            return currentOperationInProgressException(opInProgress);
+            return currentOperationInProgressException(opInProgress, mm);
         }
         if (resume && opInProgress.getName().equals(currentOperationName)) {
             return new StorageEngineException("Can not resume \"" + currentOperationName + "\" "
-                    + "in status \"" + opInProgress.currentStatus() + "\" with input files " + fileIds + ". "
-                    + "Input files must be same from the previous batch: " + opInProgress.getFileIds());
+                    + "in status \"" + opInProgress.currentStatus() + "\" with input files "
+                    + fileIdsToString(mm, opInProgress.getStudyId(), fileIds) + ". "
+                    + "Input files must be same from the previous batch: "
+                    + fileIdsToString(mm, opInProgress.getStudyId(), opInProgress.getFileIds()));
         } else {
-            return new StorageEngineException("Can not \"" + currentOperationName + "\" files " + fileIds
+            return new StorageEngineException("Can not \"" + currentOperationName + "\" files "
+                    + fileIdsToString(mm, opInProgress.getStudyId(), fileIds)
                     + " while there is an operation \"" + opInProgress.getName() + "\" "
-                    + "in status \"" + opInProgress.currentStatus() + "\" for files " + opInProgress.getFileIds() + ". "
+                    + "in status \"" + opInProgress.currentStatus() + "\" for files "
+                    + fileIdsToString(mm, opInProgress.getStudyId(), opInProgress.getFileIds()) + ". "
                     + "Finish or resume operation to continue.");
         }
     }
 
-    public static StorageEngineException currentOperationInProgressException(TaskMetadata opInProgress) {
+    public static StorageEngineException currentOperationInProgressException(TaskMetadata opInProgress, VariantStorageMetadataManager mm) {
         return new StorageEngineException("Operation \"" + opInProgress.getName() + "\" "
-                + "for files " + opInProgress.getFileIds() + ' '
+                + "for files " + fileIdsToString(mm, opInProgress.getStudyId(), opInProgress.getFileIds()) + ' '
                 + "in status \"" + opInProgress.currentStatus() + "\". "
                 + "Relaunch with " + VariantStorageOptions.RESUME.key() + "=true to finish the operation.");
     }
@@ -120,5 +122,25 @@ public class StorageEngineException extends Exception {
 
     public static StorageEngineException ioException(IOException e) {
         return new StorageEngineException(e.getMessage(), e);
+    }
+
+    protected static String fileIdsToString(VariantStorageMetadataManager metadataManager, int studyId, List<Integer> fileIds) {
+        StringBuilder sb = new StringBuilder();
+        for (Integer fileId : fileIds) {
+            if (sb.length() == 0) {
+                sb.append("[");
+            } else {
+                sb.append(", ");
+            }
+            String fileName;
+            try {
+                fileName = metadataManager.getFileName(studyId, fileId);
+            } catch (Exception e) {
+                fileName = "Error fetching file name " + e.getMessage();
+            }
+            sb.append("\"").append(fileName).append("\" (id=").append(fileId).append(")");
+        }
+        sb.append("]");
+        return sb.toString();
     }
 }

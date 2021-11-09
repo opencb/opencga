@@ -37,6 +37,8 @@ mkdir -p "$HADOOP_CONF_DIR"
 echo "Fetching Hadoop configuration"
 $SSHPASS_CMD ssh ${SSH_OPTS} "$HADOOP_USER_HOST" hbase classpath | tr ":" "\n" | grep "/conf$" | grep "hadoop\|hbase" | sort | uniq | while read i ; do
   $SSHPASS_CMD scp ${SSH_OPTS} -v -r "$HADOOP_USER_HOST:${i}"/* "$HADOOP_CONF_DIR"
+  ## Discard unwanted files
+  rm "$HADOOP_CONF_DIR"/log4j.properties
 done
 
 # Copy the OpenCGA installation directory to the Hadoop cluster
