@@ -618,6 +618,9 @@ public class FileManager extends AnnotationSetManager<File> {
                 FileDBAdaptor.QueryParams.CREATION_DATE.key()));
         file.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(file.getModificationDate(),
                 FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
+//        file.setSoftware(ParamUtils.defaultObject(file.getSoftware(), Software::new));
+//        file.setExperiment(ParamUtils.defaultObject(file.getExperiment(), FileExperiment::new));
+
         file.setJobId(ParamUtils.defaultString(file.getJobId(), ""));
         file.setTags(ParamUtils.defaultObject(file.getTags(), ArrayList::new));
         file.setQualityControl(ParamUtils.defaultObject(file.getQualityControl(), FileQualityControl::new));
@@ -628,6 +631,7 @@ public class FileManager extends AnnotationSetManager<File> {
         file.setStatus(ParamUtils.defaultObject(file.getStatus(), CustomStatus::new));
         file.setStats(ParamUtils.defaultObject(file.getStats(), HashMap::new));
         file.setAttributes(ParamUtils.defaultObject(file.getAttributes(), HashMap::new));
+        file.setAnnotationSets(ParamUtils.defaultObject(file.getAnnotationSets(), Collections::emptyList));
 
 //        validateNewSamples(study, file, sessionId);
 
@@ -704,7 +708,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, parentPath, "", FileInternal.init(),
                         0, Collections.emptyList(), null, "", new FileQualityControl(), Collections.emptyMap(), Collections.emptyMap());
                 validateNewFile(study, parentFile, sessionId, false);
-                parentFileId = register(study, parentFile, existingSamples, nonExistingSamples, parents, options, sessionId)
+                parentFileId = register(study, parentFile, Collections.emptyList(), Collections.emptyList(), parents, options, sessionId)
                         .first().getUid();
             } else {
                 throw new CatalogDBException("Directory not found " + parentPath);
@@ -1032,6 +1036,115 @@ public class FileManager extends AnnotationSetManager<File> {
             return fileDBAdaptor.get(query, QueryOptions.empty());
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Action.UPLOAD, Enums.Resource.FILE, file.getId(), "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
+    /**
+     * Create an image file document given a base64 String.
+     *
+     * @param studyStr     Study to which the file will belong.
+     * @param base64Params FileBase64UploadParams parameters.
+     * @param parents      Flag indicating whether to create any missing parent folders.
+     * @param token        User token.
+     * @return An OpenCGAResult containing the file registered.
+     * @throws CatalogException CatalogException.
+     */
+    public OpenCGAResult<File> uploadBase64(String studyStr, FileBase64UploadParams base64Params, boolean parents, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyStr", studyStr)
+                .append("base64Params", base64Params)
+                .append("parents", parents)
+                .append("token", token);
+
+        try {
+            ParamUtils.checkObj(base64Params, "body");
+            ParamUtils.checkParameter(base64Params.getBase64(), "base64");
+            ParamUtils.checkParameter(base64Params.getPath(), "path");
+
+            String path = base64Params.getPath();
+            if (path.startsWith("/")) {
+                path = path.substring(1);
+            }
+            // Ensure path is a full path pointing to a file, not a folder
+            String[] split = path.split("/");
+            String fileName = split[split.length - 1];
+            if (StringUtils.isEmpty(fileName) || !fileName.contains(".")) {
+                throw new CatalogException("Path must be a full OpenCGA Catalog path pointing to the file that must be generated.");
+            }
+
+            OpenCGAResult<File> parentResult = getParents(study.getUid(), path, false, FileManager.INCLUDE_FILE_URI_PATH);
+            // Check user can write in path
+            authorizationManager.checkFilePermission(study.getUid(), parentResult.first().getUid(), userId,
+                    FileAclEntry.FilePermissions.WRITE);
+
+            // Check available path
+            Query pathQuery = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                    .append(FileDBAdaptor.QueryParams.PATH.key(), path);
+            boolean fileExists = fileDBAdaptor.count(pathQuery).getNumMatches() > 0;
+            if (fileExists) {
+                throw new CatalogException("There already exists a file '" + path + "'");
+            }
+
+            String parentPath = getParentPath(path);
+            if (!parentResult.first().getPath().equals(parentPath) && !parents) {
+                throw new CatalogException("Could not register file. Please, ensure 'parents' flag is enabled or create parent "
+                        + "directories beforehand.");
+            }
+
+            URI uri;
+            try {
+                uri = getFileUri(study.getUid(), path, false);
+            } catch (URISyntaxException e) {
+                throw new CatalogException("Could not obtain uri for file path '" + path + "'", e);
+            }
+            IOManager ioManager;
+            try {
+                ioManager = ioManagerFactory.get(uri);
+            } catch (IOException e) {
+                throw new CatalogException("Could not obtain IOManager for file path '" + path + "'", e);
+            }
+
+            List<Sample> existingSamples = null;
+            if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(base64Params.getSampleIds())) {
+                // Check samples
+                InternalGetDataResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(),
+                        base64Params.getSampleIds(), SampleManager.INCLUDE_SAMPLE_IDS, userId, true);
+                if (!sampleResult.getMissing().isEmpty()) {
+                    throw new CatalogException("Could not find samples: '" + sampleResult.getMissing()
+                            .stream().map(InternalGetDataResult.Missing::getId).collect(Collectors.joining("', '")) + "'");
+                }
+                // All samples exist
+                existingSamples = sampleResult.getResults();
+            }
+
+            File file = new File("", File.Type.FILE, File.Format.IMAGE, base64Params.getBioformat(), uri, path, "",
+                    base64Params.getCreationDate(), base64Params.getModificationDate(), base64Params.getDescription(), false, 0,
+                    base64Params.getSoftware(), null, base64Params.getSampleIds(), null, "", 1, base64Params.getTags(), null,
+                    null, null, base64Params.getStatus() != null ? base64Params.getStatus().toCustomStatus() : null, null, null);
+            validateNewFile(study, file, token, false);
+
+            // Create missing folders
+            ioManager.createDirectory(Paths.get(uri).getParent().toUri(), parents);
+            // Write file in disk
+            ioManager.writeBase64(base64Params.getBase64(), Paths.get(uri));
+            // Register file in Catalog
+            long fileSize = ioManager.getFileSize(uri);
+            file.setSize(fileSize);
+            OpenCGAResult<File> result = register(study, file, existingSamples, null, parents, QueryOptions.empty(), token);
+
+            auditManager.audit(userId, Enums.Action.MOVE_AND_REGISTER, Enums.Resource.FILE, result.first().getId(),
+                    result.first().getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return result;
+        } catch (CatalogException e) {
+            auditManager.audit(userId, Enums.Action.MOVE_AND_REGISTER, Enums.Resource.FILE, "", "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -3172,7 +3285,7 @@ public class FileManager extends AnnotationSetManager<File> {
         File folder = new File(path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
                 stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", false, 0, null, new FileExperiment(),
                 Collections.emptyList(), Collections.emptyList(), "", studyManager.getCurrentRelease(study), Collections.emptyList(),
-                new FileQualityControl(), null, new CustomStatus(), FileInternal.init(), null);
+                Collections.emptyList(), new FileQualityControl(), null, new CustomStatus(), FileInternal.init(), null);
         folder.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
         fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
@@ -3378,7 +3491,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                 File.Bioformat.NONE, dir, destinyPath, null, creationDate, modificationDate,
                                 params.getDescription(), true, 0, new Software(), new FileExperiment(),
                                 Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study), Collections.emptyList(),
-                                new FileQualityControl(), Collections.emptyMap(),
+                                Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(),
                                 params.getStatus() != null ? params.getStatus().toCustomStatus() : new CustomStatus(),
                                 FileInternal.init(), Collections.emptyMap());
                         folder.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
@@ -3436,7 +3549,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                 File.Bioformat.NONE, fileUri, destinyPath, null, creationDate, modificationDate,
                                 params.getDescription(), true, size, new Software(), new FileExperiment(),
                                 Collections.emptyList(), relatedFiles, "", studyManager.getCurrentRelease(study), Collections.emptyList(),
-                                new FileQualityControl(), Collections.emptyMap(),
+                                Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(),
                                 params.getStatus() != null ? params.getStatus().toCustomStatus() : new CustomStatus(), internal,
                                 new HashMap<>());
                         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
@@ -3526,8 +3639,8 @@ public class FileManager extends AnnotationSetManager<File> {
         File subfile = new File(Paths.get(filePath).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                 File.Bioformat.NONE, fileUri, filePath, "", TimeUtils.getTime(), TimeUtils.getTime(),
                 "", isExternal(study, filePath, fileUri), size, new Software(), new FileExperiment(), Collections.emptyList(),
-                Collections.emptyList(), jobId, studyManager.getCurrentRelease(study), Collections.emptyList(), new FileQualityControl(),
-                Collections.emptyMap(), new CustomStatus(), FileInternal.init(), Collections.emptyMap());
+                Collections.emptyList(), jobId, studyManager.getCurrentRelease(study), Collections.emptyList(), Collections.emptyList(),
+                new FileQualityControl(), Collections.emptyMap(), new CustomStatus(), FileInternal.init(), Collections.emptyMap());
         subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
 

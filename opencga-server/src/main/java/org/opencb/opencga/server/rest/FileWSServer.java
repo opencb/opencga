@@ -224,6 +224,21 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/uploadImage")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @ApiOperation(httpMethod = "POST", value = "Upload base64 image to generate image file", response = File.class)
+    public Response base64Upload(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @FormDataParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Create the parent directories if they do not exist", type = "form") @DefaultValue("true") @FormDataParam("parents") boolean parents,
+            @ApiParam(name = "body", value = "Parameters to modify", required = true) FileBase64UploadParams base64Params) {
+        try {
+            return createOkResponse(fileManager.uploadBase64(studyStr, base64Params, parents, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @GET
     @Path("/{file}/download")
     @ApiOperation(value = "Download file", response = DataInputStream.class,
@@ -557,7 +572,7 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @JsonIgnoreProperties({"status"})
+    //    @JsonIgnoreProperties({"status"})
 //    public static class FileUpdateParams extends org.opencb.opencga.core.models.file.FileUpdateParams {
 //    }
     @POST
@@ -595,7 +610,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_ID) @PathParam("annotationSet") String annotationSetId,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @QueryParam("action") ParamUtils.CompleteUpdateAction action,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION) Map<String, Object> updateParams) {
         try {
             if (action == null) {
@@ -687,7 +702,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{files}/unlink")
     @ApiOperation(value = "Unlink linked files and folders", response = Job.class)
     public Response unlink(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)  @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of file ids, names or paths.") @PathParam("files") String files) {
         try {
             getIdList(files);

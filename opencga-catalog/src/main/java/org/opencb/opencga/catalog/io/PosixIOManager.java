@@ -432,8 +432,22 @@ public class PosixIOManager extends IOManager {
         } catch (IOException e) {
             throw new CatalogIOException("Cannot get byte array from file '" + file + "'.", e);
         }
-        String encodedString = Base64.getEncoder().encodeToString(fileContent);
+        String[] split = file.getFileName().toString().split("\\.");
+        String extension = split[split.length - 1];
+        String encodedString = "data:image/" + extension + ";base64," + Base64.getEncoder().encodeToString(fileContent);
         return new FileContent(file.toAbsolutePath().toString(), true, file.toFile().length(), (int) file.toFile().length(), encodedString);
+    }
+
+    @Override
+    public void writeBase64(String base64, Path file) throws CatalogIOException {
+        checkWritableUri(file.getParent().toUri());
+        String base64Image = base64.split(",")[1];
+        byte[] decodedBytes = Base64.getDecoder().decode(base64Image);
+        try {
+            org.apache.commons.io.FileUtils.writeByteArrayToFile(file.toFile(), decodedBytes);
+        } catch (IOException e) {
+            throw new CatalogIOException("Cannot write base64 image to file", e);
+        }
     }
 
     @Override
