@@ -1,66 +1,66 @@
-/*
- * Copyright 2015-2020 OpenCB
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.opencb.opencga.core.models.file;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.opencb.biodata.models.clinical.interpretation.Software;
+import org.opencb.opencga.core.models.common.CustomStatusParams;
+
+import java.util.List;
+import java.util.Map;
 
 public class FileCreateParams {
 
-    @JsonProperty(required = true)
-    private String path;
     private String content;
+    private String path;
     private String description;
-
-    @JsonProperty(defaultValue = "false")
-    private boolean parents;
-
-    @JsonProperty(defaultValue = "false")
-    private boolean directory;
+    private File.Type type;
+    private File.Format format;
+    private File.Bioformat bioformat;
+    private List<String> sampleIds;
+    private Software software;
+    private List<String> tags;
+    private String creationDate;
+    private String modificationDate;
+    private CustomStatusParams status;
+    private Map<String, Object> attributes;
 
     public FileCreateParams() {
     }
 
-    public FileCreateParams(String path, String content, String description, boolean parents, boolean directory) {
-        this.path = path;
+    public FileCreateParams(String content, String path, String description, File.Type type, File.Format format, File.Bioformat bioformat,
+                            List<String> sampleIds, Software software, List<String> tags, String creationDate, String modificationDate,
+                            CustomStatusParams status, Map<String, Object> attributes) {
         this.content = content;
+        this.path = path;
         this.description = description;
-        this.parents = parents;
-        this.directory = directory;
+        this.type = type;
+        this.format = format;
+        this.bioformat = bioformat;
+        this.sampleIds = sampleIds;
+        this.software = software;
+        this.tags = tags;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
+        this.status = status;
+        this.attributes = attributes;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileCreateParams{");
-        sb.append("path='").append(path).append('\'');
-        sb.append(", content='").append(content).append('\'');
+        sb.append("content='").append(content).append('\'');
+        sb.append(", path='").append(path).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", parents=").append(parents);
-        sb.append(", directory=").append(directory);
+        sb.append(", type=").append(type);
+        sb.append(", format=").append(format);
+        sb.append(", bioformat=").append(bioformat);
+        sb.append(", sampleIds=").append(sampleIds);
+        sb.append(", software=").append(software);
+        sb.append(", tags=").append(tags);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public FileCreateParams setPath(String path) {
-        this.path = path;
-        return this;
     }
 
     public String getContent() {
@@ -69,6 +69,15 @@ public class FileCreateParams {
 
     public FileCreateParams setContent(String content) {
         this.content = content;
+        return this;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public FileCreateParams setPath(String path) {
+        this.path = path;
         return this;
     }
 
@@ -81,21 +90,93 @@ public class FileCreateParams {
         return this;
     }
 
-    public boolean isParents() {
-        return parents;
+    public File.Type getType() {
+        return type;
     }
 
-    public FileCreateParams setParents(boolean parents) {
-        this.parents = parents;
+    public FileCreateParams setType(File.Type type) {
+        this.type = type;
         return this;
     }
 
-    public boolean isDirectory() {
-        return directory;
+    public File.Format getFormat() {
+        return format;
     }
 
-    public FileCreateParams setDirectory(boolean directory) {
-        this.directory = directory;
+    public FileCreateParams setFormat(File.Format format) {
+        this.format = format;
+        return this;
+    }
+
+    public File.Bioformat getBioformat() {
+        return bioformat;
+    }
+
+    public FileCreateParams setBioformat(File.Bioformat bioformat) {
+        this.bioformat = bioformat;
+        return this;
+    }
+
+    public List<String> getSampleIds() {
+        return sampleIds;
+    }
+
+    public FileCreateParams setSampleIds(List<String> sampleIds) {
+        this.sampleIds = sampleIds;
+        return this;
+    }
+
+    public Software getSoftware() {
+        return software;
+    }
+
+    public FileCreateParams setSoftware(Software software) {
+        this.software = software;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public FileCreateParams setTags(List<String> tags) {
+        this.tags = tags;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public FileCreateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public FileCreateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
+        return this;
+    }
+
+    public CustomStatusParams getStatus() {
+        return status;
+    }
+
+    public FileCreateParams setStatus(CustomStatusParams status) {
+        this.status = status;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public FileCreateParams setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
         return this;
     }
 }

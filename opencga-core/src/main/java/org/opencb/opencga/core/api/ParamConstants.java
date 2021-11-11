@@ -178,6 +178,10 @@ public class ParamConstants {
     public static final String FILE_SIZE_DESCRIPTION = "File size";
     public static final String FILE_FOLDER = "folder";
     public static final String FILE_FOLDER_DESCRIPTION = "Folder ID, name or path";
+    public static final String FILE_PARENTS_PARAM = "parents";
+    public static final String FILE_PARENTS_DESCRIPTION = "Create the parent directories if they do not exist";
+
+
     public static final String FILE_ALREADY_LINKED = "File already linked. Nothing to do";
     public static final int MAXIMUM_LINES_CONTENT = 1000;
     public static final String MAXIMUM_LINES_CONTENT_DESCRIPTION =

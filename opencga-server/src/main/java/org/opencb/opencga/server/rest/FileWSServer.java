@@ -78,21 +78,12 @@ public class FileWSServer extends OpenCGAWSServer {
                     + "<il><b>directory</b>: Boolean indicating whether to create a file or a directory</il><br>"
                     + "<ul>"
     )
-    public Response createFilePOST(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-                                   @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                   @ApiParam(name = "body", value = "File parameters", required = true) FileCreateParams params) {
+    public Response createFilePOST(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.FILE_PARENTS_DESCRIPTION) @QueryParam(ParamConstants.FILE_PARENTS_PARAM) boolean parents,
+            @ApiParam(name = "body", value = "File parameters", required = true) FileCreateParams params) {
         try {
-            ObjectUtils.defaultIfNull(params, new FileCreateParams());
-            DataResult<File> file;
-            if (params.isDirectory()) {
-                // Create directory
-                file = fileManager.createFolder(studyStr, params.getPath(), params.isParents(),
-                        params.getDescription(), queryOptions, token);
-            } else {
-                // Create a file
-                file = fileManager.createFile(studyStr, params.getPath(), params.getDescription(), params.isParents(), params.getContent(),
-                        token);
-            }
+            DataResult<File> file = fileManager.create(studyStr, params, parents, token);
             return createOkResponse(file);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -219,21 +210,6 @@ public class FileWSServer extends OpenCGAWSServer {
                     .setBioformat(bioformat);
             return createOkResponse(fileManager.upload(studyStr, fileInputStream, file, false, parents, true,
                     expectedChecksum, expectedSize, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @POST
-    @Path("/uploadImage")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @ApiOperation(httpMethod = "POST", value = "Upload base64 image to generate image file", response = File.class)
-    public Response base64Upload(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @FormDataParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Create the parent directories if they do not exist", type = "form") @DefaultValue("true") @FormDataParam("parents") boolean parents,
-            @ApiParam(name = "body", value = "Parameters to modify", required = true) FileBase64UploadParams base64Params) {
-        try {
-            return createOkResponse(fileManager.uploadBase64(studyStr, base64Params, parents, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

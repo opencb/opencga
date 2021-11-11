@@ -577,6 +577,132 @@ public class FileManager extends AnnotationSetManager<File> {
         throw new NotImplementedException("Call to create passing parents and content variables");
     }
 
+    public OpenCGAResult<File> create(String studyStr, FileCreateParams createParams, boolean parents, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("createParams", createParams)
+                .append("parents", parents)
+                .append("token", token);
+
+        String fileId = null;
+        try {
+            ParamUtils.checkObj(createParams, "body");
+            ParamUtils.checkParameter(createParams.getPath(), "path");
+            ParamUtils.checkObj(createParams.getType(), "type");
+
+            String path = createParams.getPath();
+            if (path.startsWith("/")) {
+                path = path.substring(1);
+            }
+
+            if (createParams.getType().equals(File.Type.FILE)) {
+                // Ensure path is a full path pointing to a file, not a folder
+                String[] split = path.split("/");
+                String fileName = split[split.length - 1];
+                if (StringUtils.isEmpty(fileName) || !fileName.contains(".")) {
+                    throw new CatalogException("Path must be a full OpenCGA Catalog path pointing to the file that must be generated. "
+                            + "If, on the other hand, you want to create a directory, please set type to 'DIRECTORY' instead.");
+                }
+
+                ParamUtils.checkParameter(createParams.getContent(), "content");
+            } else {
+                if (StringUtils.isNotEmpty(createParams.getContent())) {
+                    throw new CatalogException("Passed type 'DIRECTORY' but content is not empty. If you are trying to create a file, "
+                            + "please pass type 'FILE' plus the full path including the file name and extension of the file to be "
+                            + "created.");
+                }
+                if (!path.endsWith("/")) {
+                    path = path + "/";
+                }
+            }
+
+            OpenCGAResult<File> parentResult = getParents(study.getUid(), path, false, FileManager.INCLUDE_FILE_URI_PATH);
+            // Check user can write in path
+            authorizationManager.checkFilePermission(study.getUid(), parentResult.first().getUid(), userId,
+                    FileAclEntry.FilePermissions.WRITE);
+
+            // Check available path
+            Query pathQuery = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                    .append(FileDBAdaptor.QueryParams.PATH.key(), path);
+            boolean fileExists = fileDBAdaptor.count(pathQuery).getNumMatches() > 0;
+            if (fileExists) {
+                throw new CatalogException("There already exists a file '" + path + "'");
+            }
+
+            // Check parent folder exists in case 'parents' is false
+            if (!parents) {
+                String parentPath = getParentPath(path);
+                if (!parentResult.first().getPath().equals(parentPath)) {
+                    throw new CatalogException("Could not register file. Please, ensure 'parents' flag is enabled or create parent "
+                            + "directories beforehand.");
+                }
+            }
+
+            List<Sample> existingSamples = null;
+            if (createParams.getType().equals(File.Type.FILE)) {
+                if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(createParams.getSampleIds())) {
+                    // Check samples
+                    InternalGetDataResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(),
+                            createParams.getSampleIds(), SampleManager.INCLUDE_SAMPLE_IDS, userId, true);
+                    if (!sampleResult.getMissing().isEmpty()) {
+                        throw new CatalogException("Could not find samples: '" + sampleResult.getMissing()
+                                .stream().map(InternalGetDataResult.Missing::getId).collect(Collectors.joining("', '")) + "'");
+                    }
+                    // All samples exist
+                    existingSamples = sampleResult.getResults();
+                }
+            }
+            File file = new File("", createParams.getType(), createParams.getFormat(), createParams.getBioformat(), null, path, "",
+                    createParams.getCreationDate(), createParams.getModificationDate(), createParams.getDescription(), false, 0,
+                    createParams.getSoftware(), null, createParams.getSampleIds(), null, "", 1, createParams.getTags(), null, null, null,
+                    createParams.getStatus() != null ? createParams.getStatus().toCustomStatus() : null, null, null);
+            List<Event> eventList = validateNewFile(study, file, false);
+            fileId = file.getId();
+
+            if (file.getType().equals(File.Type.FILE)) {
+                // Obtain IOManager to write in disk
+                IOManager ioManager;
+                try {
+                    ioManager = ioManagerFactory.get(file.getUri());
+                } catch (IOException e) {
+                    throw new CatalogException("Could not obtain IOManager for file path '" + path + "'", e);
+                }
+
+                // Create missing folders
+                ioManager.createDirectory(Paths.get(file.getUri()).getParent().toUri(), parents);
+
+                if (file.getFormat().equals(File.Format.IMAGE)) {
+                    // Write image in disk
+                    ioManager.writeBase64(createParams.getContent(), Paths.get(file.getUri()));
+                } else {
+                    // Write content as text
+                    InputStream inputStream = new ByteArrayInputStream(createParams.getContent().getBytes(StandardCharsets.UTF_8));
+                    ioManager.copy(inputStream, file.getUri());
+                }
+                // Register file in Catalog
+                long fileSize = ioManager.getFileSize(file.getUri());
+                file.setSize(fileSize);
+            }
+            OpenCGAResult<File> result = register(study, file, existingSamples, null, parents, QueryOptions.empty(), token);
+            result.setEvents(eventList);
+
+            auditManager.auditCreate(userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return result;
+        } catch (CatalogException e) {
+            auditManager.auditCreate(userId, Enums.Resource.FILE, fileId, "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
+    }
+
     public OpenCGAResult<File> create(String studyStr, File file, boolean parents, String content, QueryOptions options, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
@@ -604,12 +730,13 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    void validateNewFile(Study study, File file, String sessionId, boolean overwrite) throws CatalogException {
+    List<Event> validateNewFile(Study study, File file, boolean overwrite) throws CatalogException {
         /** Check and set all the params and create a File object **/
         ParamUtils.checkObj(file, "File");
         ParamUtils.checkPath(file.getPath(), "path");
         file.setType(ParamUtils.defaultObject(file.getType(), File.Type.FILE));
-        file.setFormat(ParamUtils.defaultObject(file.getFormat(), File.Format.PLAIN));
+        file.setFormat(ParamUtils.defaultObject(file.getFormat(),
+                file.getType().equals(File.Type.FILE) ? File.Format.PLAIN : File.Format.NONE));
         file.setBioformat(ParamUtils.defaultObject(file.getBioformat(), File.Bioformat.NONE));
         file.setDescription(ParamUtils.defaultString(file.getDescription(), ""));
         file.setRelatedFiles(ParamUtils.defaultObject(file.getRelatedFiles(), ArrayList::new));
@@ -632,6 +759,26 @@ public class FileManager extends AnnotationSetManager<File> {
         file.setStats(ParamUtils.defaultObject(file.getStats(), HashMap::new));
         file.setAttributes(ParamUtils.defaultObject(file.getAttributes(), HashMap::new));
         file.setAnnotationSets(ParamUtils.defaultObject(file.getAnnotationSets(), Collections::emptyList));
+
+        List<Event> eventList = new ArrayList<>();
+        if (file.getType().equals(File.Type.DIRECTORY)) {
+            if (!file.getFormat().equals(File.Format.NONE)) {
+                file.setFormat(File.Format.NONE);
+                eventList.add(new Event(Event.Type.WARNING, "Passed format has been ignored."));
+            }
+            if (!file.getBioformat().equals(File.Bioformat.NONE)) {
+                file.setBioformat(File.Bioformat.NONE);
+                eventList.add(new Event(Event.Type.WARNING, "Passed bioformat has been ignored."));
+            }
+            if (file.getSoftware() != null) {
+                file.setSoftware(null);
+                eventList.add(new Event(Event.Type.WARNING, "Passed software has been ignored."));
+            }
+            if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(file.getSampleIds())) {
+                file.setSampleIds(Collections.emptyList());
+                eventList.add(new Event(Event.Type.WARNING, "Passed sampleIds have been ignored."));
+            }
+        }
 
 //        validateNewSamples(study, file, sessionId);
 
@@ -690,6 +837,8 @@ public class FileManager extends AnnotationSetManager<File> {
 
         file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(file, study.getFqn(), HookConfiguration.Stage.CREATE);
+
+        return eventList;
     }
 
     private OpenCGAResult<File> register(Study study, File file, List<Sample> existingSamples, List<Sample> nonExistingSamples,
@@ -707,7 +856,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 newParent = true;
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, parentPath, "", FileInternal.init(),
                         0, Collections.emptyList(), null, "", new FileQualityControl(), Collections.emptyMap(), Collections.emptyMap());
-                validateNewFile(study, parentFile, sessionId, false);
+                validateNewFile(study, parentFile, false);
                 parentFileId = register(study, parentFile, Collections.emptyList(), Collections.emptyList(), parents, options, sessionId)
                         .first().getUid();
             } else {
@@ -742,7 +891,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
     private OpenCGAResult<File> create(Study study, File file, boolean parents, String content, QueryOptions options, String sessionId)
             throws CatalogException {
-        validateNewFile(study, file, sessionId, false);
+        validateNewFile(study, file, false);
 
         IOManager ioManager;
         try {
@@ -851,7 +1000,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("expectedSize", expectedSize)
                 .append("token", token);
         try {
-            validateNewFile(study, file, token, overwrite);
+            validateNewFile(study, file, overwrite);
 
             File overwrittenFile = null;
             Query query = new Query()
@@ -1036,115 +1185,6 @@ public class FileManager extends AnnotationSetManager<File> {
             return fileDBAdaptor.get(query, QueryOptions.empty());
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Action.UPLOAD, Enums.Resource.FILE, file.getId(), "", study.getId(),
-                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
-    }
-
-    /**
-     * Create an image file document given a base64 String.
-     *
-     * @param studyStr     Study to which the file will belong.
-     * @param base64Params FileBase64UploadParams parameters.
-     * @param parents      Flag indicating whether to create any missing parent folders.
-     * @param token        User token.
-     * @return An OpenCGAResult containing the file registered.
-     * @throws CatalogException CatalogException.
-     */
-    public OpenCGAResult<File> uploadBase64(String studyStr, FileBase64UploadParams base64Params, boolean parents, String token)
-            throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("studyStr", studyStr)
-                .append("base64Params", base64Params)
-                .append("parents", parents)
-                .append("token", token);
-
-        try {
-            ParamUtils.checkObj(base64Params, "body");
-            ParamUtils.checkParameter(base64Params.getBase64(), "base64");
-            ParamUtils.checkParameter(base64Params.getPath(), "path");
-
-            String path = base64Params.getPath();
-            if (path.startsWith("/")) {
-                path = path.substring(1);
-            }
-            // Ensure path is a full path pointing to a file, not a folder
-            String[] split = path.split("/");
-            String fileName = split[split.length - 1];
-            if (StringUtils.isEmpty(fileName) || !fileName.contains(".")) {
-                throw new CatalogException("Path must be a full OpenCGA Catalog path pointing to the file that must be generated.");
-            }
-
-            OpenCGAResult<File> parentResult = getParents(study.getUid(), path, false, FileManager.INCLUDE_FILE_URI_PATH);
-            // Check user can write in path
-            authorizationManager.checkFilePermission(study.getUid(), parentResult.first().getUid(), userId,
-                    FileAclEntry.FilePermissions.WRITE);
-
-            // Check available path
-            Query pathQuery = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                    .append(FileDBAdaptor.QueryParams.PATH.key(), path);
-            boolean fileExists = fileDBAdaptor.count(pathQuery).getNumMatches() > 0;
-            if (fileExists) {
-                throw new CatalogException("There already exists a file '" + path + "'");
-            }
-
-            String parentPath = getParentPath(path);
-            if (!parentResult.first().getPath().equals(parentPath) && !parents) {
-                throw new CatalogException("Could not register file. Please, ensure 'parents' flag is enabled or create parent "
-                        + "directories beforehand.");
-            }
-
-            URI uri;
-            try {
-                uri = getFileUri(study.getUid(), path, false);
-            } catch (URISyntaxException e) {
-                throw new CatalogException("Could not obtain uri for file path '" + path + "'", e);
-            }
-            IOManager ioManager;
-            try {
-                ioManager = ioManagerFactory.get(uri);
-            } catch (IOException e) {
-                throw new CatalogException("Could not obtain IOManager for file path '" + path + "'", e);
-            }
-
-            List<Sample> existingSamples = null;
-            if (org.apache.commons.collections4.CollectionUtils.isNotEmpty(base64Params.getSampleIds())) {
-                // Check samples
-                InternalGetDataResult<Sample> sampleResult = catalogManager.getSampleManager().internalGet(study.getUid(),
-                        base64Params.getSampleIds(), SampleManager.INCLUDE_SAMPLE_IDS, userId, true);
-                if (!sampleResult.getMissing().isEmpty()) {
-                    throw new CatalogException("Could not find samples: '" + sampleResult.getMissing()
-                            .stream().map(InternalGetDataResult.Missing::getId).collect(Collectors.joining("', '")) + "'");
-                }
-                // All samples exist
-                existingSamples = sampleResult.getResults();
-            }
-
-            File file = new File("", File.Type.FILE, File.Format.IMAGE, base64Params.getBioformat(), uri, path, "",
-                    base64Params.getCreationDate(), base64Params.getModificationDate(), base64Params.getDescription(), false, 0,
-                    base64Params.getSoftware(), null, base64Params.getSampleIds(), null, "", 1, base64Params.getTags(), null,
-                    null, null, base64Params.getStatus() != null ? base64Params.getStatus().toCustomStatus() : null, null, null);
-            validateNewFile(study, file, token, false);
-
-            // Create missing folders
-            ioManager.createDirectory(Paths.get(uri).getParent().toUri(), parents);
-            // Write file in disk
-            ioManager.writeBase64(base64Params.getBase64(), Paths.get(uri));
-            // Register file in Catalog
-            long fileSize = ioManager.getFileSize(uri);
-            file.setSize(fileSize);
-            OpenCGAResult<File> result = register(study, file, existingSamples, null, parents, QueryOptions.empty(), token);
-
-            auditManager.audit(userId, Enums.Action.MOVE_AND_REGISTER, Enums.Resource.FILE, result.first().getId(),
-                    result.first().getUuid(), study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return result;
-        } catch (CatalogException e) {
-            auditManager.audit(userId, Enums.Action.MOVE_AND_REGISTER, Enums.Resource.FILE, "", "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
