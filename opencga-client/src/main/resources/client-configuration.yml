@@ -6,7 +6,13 @@ cliSessionDuration: 600
 
 ## REST client configuration options
 rest:
-  host: "${OPENCGA.CLIENT.REST.HOST}"
+  hostname: "opencga"
+  url: "${OPENCGA.CLIENT.REST.HOST}"
+  hosts:
+    - name: "opencga-demo"
+      url: "http://localhost:9090/opencga"
+    - name: "opencga-demo1"
+      url: "http://localhost:9191/opencga"
   tokenAutoRefresh: true
   tlsAllowInvalidCertificates: false
   timeout: 90000

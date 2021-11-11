@@ -2,14 +2,13 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
 import org.fusesource.jansi.Ansi;
-import org.opencb.opencga.app.cli.CliSession;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.*;
+import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.io.Console;
-import java.io.IOException;
 
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.ansi;
@@ -30,7 +29,8 @@ public class OpencgaCliProcessor {
     public static void process(String[] args) {
 
         console = getConsole();
-        if (console == null && OpencgaMain.getSession().isShell()) {
+
+        if (console == null && CliSessionManager.isShell()) {
             System.out.println("Couldn't get console instance");
             System.exit(0);
         }
@@ -43,33 +43,29 @@ public class OpencgaCliProcessor {
             args = new String[]{"users", "logout"};
         }
         if (args.length == 1 && "login".equals(args[0])) {
-            // args = new String[]{"users", "login"};
             forceLogin();
             return;
         }
+
+       /* if (CliSession.getInstance().getUser().equals(CliSession.GUEST_USER) && "use".equals(args[0])) {
+            OpencgaCliShellExecutor.printlnYellow("To change the configuration you must be logged in");
+            return;
+        }*/
         if (args.length == 3 && "use".equals(args[0]) && "study".equals(args[1])) {
-            shell.setCurrentStudy(args[2]);
-            try {
-                CliSession.getInstance().saveCliSessionFile();
-            } catch (IOException e) {
-                OpencgaMain.printErrorMessage("Error updating session file", e);
-            }
+            CliSessionManager.setCurrentStudy(args[2]);
+
             return;
         }
 
-     /*   if (args.length == 3 && "use".equals(args[0]) && "host".equals(args[1])) {
-            CliSession.getInstance().setCurrentHost(args[2]);
-            try {
-                CliSession.getInstance().saveCliSessionFile();
-            } catch (IOException e) {
-                OpencgaMain.printErrorMessage("Error updating session file", e);
-            }
-            CliSession.getInstance().loadCliSessionFile();
-        }*/
+        if (args.length == 3 && "use".equals(args[0]) && "host".equals(args[1])) {
+            CliSessionManager.switchSessionHost(args[2]);
+            return;
+        }
+
         //login The first if clause is for scripting login method and the else clause is for the shell login
         if (isNotHelpCommand(args)) {
             if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1]) && argsContains(args, "--user-password")) {
-                if (!OpencgaMain.getSession().isShell()) {
+                if (!CliSessionManager.isShell()) {
                     args = getUserPasswordArgs(args, "--user-password");
                 } else {
                     char[] passwordArray =
@@ -86,6 +82,7 @@ public class OpencgaCliProcessor {
             String parsedCommand = cliOptionsParser.getCommand();
             if (parsedCommand == null || parsedCommand.isEmpty()) {
                 if (cliOptionsParser.getGeneralOptions().version) {
+
                     OpencgaCliShellExecutor.printGreen("\tOpenCGA CLI version: ");
                     OpencgaCliShellExecutor.printlnYellow("\t" + GitRepositoryState.get().getBuildVersion());
                     OpencgaCliShellExecutor.printGreen("\tGit version:");
@@ -95,12 +92,12 @@ public class OpencgaCliProcessor {
                     OpencgaCliShellExecutor.printGreen("\tDescription: ");
                     OpencgaCliShellExecutor.printlnYellow("\t\tBig Data platform for processing and analysing NGS data");
                     System.out.println("");
+                } else if (cliOptionsParser.getGeneralOptions().buildVersion) {
+                    System.out.println(GitRepositoryState.get().getBuildVersion());
                 } else if (cliOptionsParser.getGeneralOptions().help) {
                     cliOptionsParser.printUsage();
-                    // System.exit(0);
                 } else {
                     cliOptionsParser.printUsage();
-                    //  System.exit(1);
                 }
             } else {
                 CommandExecutor commandExecutor = null;
@@ -176,8 +173,6 @@ public class OpencgaCliProcessor {
         } catch (ParameterException e) {
             OpencgaCliShellExecutor.printlnYellow("\n" + e.getMessage());
             cliOptionsParser.printUsage();
-            // e.printStackTrace();
-            //System.exit(1);
         }
     }
 
@@ -199,6 +194,11 @@ public class OpencgaCliProcessor {
         if (commandExecutor != null) {
             try {
                 commandExecutor.execute();
+                try {
+                    CliSessionManager.setDefaultCurrentStudy();
+                } catch (Exception e) {
+                    OpencgaMain.printErrorMessage(e.getMessage(), e);
+                }
             } catch (Exception e) {
                 OpencgaMain.printErrorMessage(e.getMessage(), e);
             }

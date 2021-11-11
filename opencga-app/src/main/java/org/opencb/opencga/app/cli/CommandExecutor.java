@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.config.Configuration;
@@ -98,13 +99,13 @@ public abstract class CommandExecutor {
 
             // Let's check the session file, maybe the session is still valid
 
-            privateLogger.debug("CLI session file is: {}", CliSession.getInstance());
+            privateLogger.debug("CLI session file is: {}", CliSessionManager.getCurrentFile());
 
             if (StringUtils.isNotBlank(options.token)) {
                 this.token = options.token;
-            } else if (CliSession.getInstance() != null) {
-                this.token = CliSession.getInstance().getToken();
-                this.userId = CliSession.getInstance().getUser();
+            } else {
+                this.token = CliSessionManager.getToken();
+                this.userId = CliSessionManager.getUser();
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);

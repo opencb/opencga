@@ -153,9 +153,8 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             // therefore it must be different from post or have some primitive value in the body so that we can generate the method
             if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config)) && endpoint.hasParameters()) {
                 String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
-
                 if (config.isAvailableCommand(commandName) && !config.isExtendedOptionCommand(commandName)) {
-                    sb.append("    @Parameters(commandNames = {\"" + commandName + "\"}, commandDescription =\"" +
+                    sb.append("    @Parameters(commandNames = {\"" + reverseCommandName(commandName) + "\"}, commandDescription =\"" +
                             endpoint.getDescription().replaceAll("\"", "'") + "\")\n");
                     sb.append("    public class " + getAsClassName(getAsCamelCase(getMethodName(category, endpoint))) + "CommandOptions " +
                             "{\n");
@@ -203,6 +202,16 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             }
         }
         return sb.toString();
+    }
+
+    private String reverseCommandName(String commandName) {
+        if (commandName.contains("-")) {
+            String[] phrase = commandName.split("-");
+            if (phrase.length == 2) {
+                commandName = phrase[1] + "-" + phrase[0];
+            }
+        }
+        return commandName;
     }
 
     private String getVariableName(Parameter parameter) {

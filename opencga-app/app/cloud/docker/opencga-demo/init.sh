@@ -85,7 +85,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
     python3 /opt/opencga/init/override_yaml.py --save
 
     echo "-- Installing Catalog --"
-    /opt/opencga/bin/opencga-admin.sh catalog install --secret-key any_string_you_want  <<< demo
+    /opt/opencga/bin/opencga-admin.sh catalog install --secret-key any_string_you_want  <<< adminOpencga2021.
     status=$?
         if [ $status -ne 0 ]; then
           echo "Failed to install Catalog : $status"
@@ -93,7 +93,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
         fi
     touch $CONTAINER_ALREADY_STARTED
     sleep 5
-    echo 'demo' | /opt/opencga/bin/opencga-admin.sh server rest --start &
+    echo 'adminOpencga2021.' | /opt/opencga/bin/opencga-admin.sh server rest --start &
     status=$?
     if [ $status -ne 0 ]; then
       echo "Failed to start REST server: $status"
@@ -108,9 +108,9 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
 
     if [ "$load" == "true" ]; then
         echo "Creating user for OpenCGA Catalog ....."
-        ./opencga-admin.sh users create -u demo --email demo@opencb.com --name "Demo User" --user-password demo <<< demo
+        ./opencga-admin.sh users create -u demo --email demo@opencb.com --name "Demo User" --user-password demoOpencga2021. <<< adminOpencga2021.
         echo "Login user demo ...."
-        ./opencga.sh users login -u demo <<< demo
+        ./opencga.sh users login -u demo --password demoOpencga2021.
 
 #        echo "Loading default template ...."
 #        ./opencga.sh users template --file /opt/opencga/misc/demo/main.yml --study corpasome
@@ -138,8 +138,8 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
 
     fi
 else
-    echo 'demo' | /opt/opencga/bin/opencga-admin.sh server rest --start &
+    echo 'adminOpencga2021.' | /opt/opencga/bin/opencga-admin.sh server rest --start &
 fi
 
-./opencga-admin.sh catalog daemon --start <<< demo
+./opencga-admin.sh catalog daemon --start <<< adminOpencga2021.
 

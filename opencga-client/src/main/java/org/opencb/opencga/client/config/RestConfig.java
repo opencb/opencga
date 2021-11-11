@@ -16,22 +16,30 @@
 
 package org.opencb.opencga.client.config;
 
+import org.apache.commons.collections4.CollectionUtils;
+
+import java.util.List;
+
 /**
  * Created by imedina on 04/05/16.
  */
 public class RestConfig {
 
-    private String host;
+    private List<Host> hosts;
     private boolean tokenAutoRefresh;
     private boolean tlsAllowInvalidCertificates;
     private int timeout;
     private QueryRestConfig query;
+    private String url;
+    private String hostname;
 
     public RestConfig() {
+
     }
 
-    public RestConfig(String host, boolean tokenAutoRefresh, QueryRestConfig query) {
-        this.host = host;
+    public RestConfig(String defaultClientURL, boolean tokenAutoRefresh, QueryRestConfig query, List<Host> hosts) {
+        this.url = defaultClientURL;
+        this.hosts = hosts;
         this.tokenAutoRefresh = tokenAutoRefresh;
         this.query = query;
     }
@@ -39,7 +47,7 @@ public class RestConfig {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("RestConfig{");
-        sb.append("host='").append(host).append('\'');
+        sb.append("host='").append(hosts).append('\'');
         sb.append(", tokenAutoRefresh=").append(tokenAutoRefresh);
         sb.append(", tlsAllowInvalidCertificates=").append(tlsAllowInvalidCertificates);
         sb.append(", query=").append(query);
@@ -47,12 +55,12 @@ public class RestConfig {
         return sb.toString();
     }
 
-    public String getHost() {
-        return host;
+    public List<Host> getHosts() {
+        return hosts;
     }
 
-    public RestConfig setHost(String host) {
-        this.host = host;
+    public RestConfig setHosts(List<Host> hosts) {
+        this.hosts = hosts;
         return this;
     }
 
@@ -90,5 +98,40 @@ public class RestConfig {
     public RestConfig setQuery(QueryRestConfig query) {
         this.query = query;
         return this;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public RestConfig setUrl(String url) {
+        this.url = url;
+        return this;
+    }
+
+    public String getHostname() {
+        return hostname;
+    }
+
+    public RestConfig setHostname(String hostname) {
+        this.hostname = hostname;
+        return this;
+    }
+
+    private boolean isDefaultHostAdded() {
+        boolean enc = false;
+        if (!CollectionUtils.isEmpty(hosts)) {
+            for (Host h : hosts) {
+                if (hostname.equals(h.getName())) {
+                    enc = true;
+                    break;
+                }
+            }
+        }
+        return enc;
+    }
+
+    private void addDefaultHost() {
+        hosts.add(new Host(hostname, url, true));
     }
 }

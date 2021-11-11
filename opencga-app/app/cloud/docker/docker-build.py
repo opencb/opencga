@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 import os
 import requests
 import sys
-import json
-import pathlib
 from pathlib import Path
+
 
 def error(message):
     sys.stderr.write('error: %s\n' % message)
-    #parser.print_help()
+    # parser.print_help()
     sys.exit(2)
+
 
 def run(command):
     print(command)
     code = os.system(command)
     if code != 0:
         error("Error executing: " + command)
+
 
 def login(loginRequired=False):
     if args.username is None or args.password is None:
@@ -30,6 +32,7 @@ def login(loginRequired=False):
     if code != 0:
         error("Error executing: docker login")
 
+
 def build():
     print("Building docker images " + str(images))
     for i in images:
@@ -39,19 +42,20 @@ def build():
         print("*********************************************")
         if i == "init" or i == "demo":
             command = ("docker build"
-                + " -t " + image + ":" + tag
-                + " -f " + build_folder + "/cloud/docker/opencga-" + i + "/Dockerfile"
-                + " --build-arg TAG=" + tag
-                + " --build-arg ORG=" + org
-                + " " + args.docker_build_args + " "
-                + " " + build_folder)
+                       + " -t " + image + ":" + tag
+                       + " -f " + build_folder + "/cloud/docker/opencga-" + i + "/Dockerfile"
+                       + " --build-arg TAG=" + tag
+                       + " --build-arg ORG=" + org
+                       + " " + args.docker_build_args + " "
+                       + " " + build_folder)
         else:
             command = ("docker build"
-                + " -t " + image + ":" + tag
-                + " -f " + build_folder + "/cloud/docker/opencga-" + i + "/Dockerfile"
-                + " " + args.docker_build_args + " "
-                + " " + build_folder)
+                       + " -t " + image + ":" + tag
+                       + " -f " + build_folder + "/cloud/docker/opencga-" + i + "/Dockerfile"
+                       + " " + args.docker_build_args + " "
+                       + " " + build_folder)
         run(command)
+
 
 def tag_latest(image):
     if "hdp" in tag or "dev" in tag:
@@ -62,12 +66,12 @@ def tag_latest(image):
         return
 
     latest_tag = os.popen(("curl -s https://registry.hub.docker.com/v1/repositories/" + org + "/opencga-" + image + "/tags"
-                            + " | jq -r .[].name"
-                            + " | grep -v latest"
-                            + " | grep -v hdp"
-                            + " | grep -v dev"
-                            + " | sort -r -h"
-                            + " | head"))
+                           + " | jq -r .[].name"
+                           + " | grep -v latest"
+                           + " | grep -v hdp"
+                           + " | grep -v dev"
+                           + " | sort -r -h"
+                           + " | head"))
     if tag >= latest_tag.read():
         print("*********************************************")
         print("Pushing " + org + "/opencga-" + image + ":latest")
@@ -77,6 +81,7 @@ def tag_latest(image):
     else:
         print("Don't use tag " + tag + " as latest")
 
+
 def push():
     print("Pushing images to Docker hub")
     for i in images:
@@ -85,9 +90,10 @@ def push():
         print("Pushing " + server + image + ":" + tag)
         print("*********************************************")
         if server:
-            run("docker tag " + image + ":" + tag + " " +  server + image + ":" + tag)
+            run("docker tag " + image + ":" + tag + " " + server + image + ":" + tag)
         run("docker push " + server + image + ":" + tag)
         tag_latest(i)
+
 
 def delete():
     if args.username is None or args.password is None:
@@ -119,7 +125,9 @@ parser.add_argument('--build-folder', help="the location of the build folder, if
 parser.add_argument('--org', help="Docker organization", default="opencb")
 parser.add_argument('--username', help="Username to login to the docker registry (REQUIRED if deleting from DockerHub)")
 parser.add_argument('--password', help="Password to login to the docker registry (REQUIRED if deleting from DockerHub)")
-parser.add_argument('--docker-build-args', help="Additional build arguments to pass to the docker build command. Usage: --docker-build-args='ARGS' e.g: --docker-build-args='--no-cache'", default="")
+parser.add_argument('--docker-build-args',
+                    help="Additional build arguments to pass to the docker build command. Usage: --docker-build-args='ARGS' e.g: --docker-build-args='--no-cache'",
+                    default="")
 parser.add_argument('--server', help="Docker registry server", default="docker.io")
 
 args = parser.parse_args()
@@ -147,9 +155,9 @@ if args.tag is None:
     if not os.path.isfile(opencgash):
         error("Missing " + opencgash)
 
-    stream = os.popen(opencgash + " --version 2>&1 | grep Version | cut -d ' ' -f 2")
+    stream = os.popen(opencgash + " --build-version")
     version = stream.read()
-    version = version.rstrip()
+    version = version.strip()
 
     if not version:
         error("Missing --tag")

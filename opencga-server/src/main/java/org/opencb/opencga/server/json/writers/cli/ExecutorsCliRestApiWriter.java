@@ -43,7 +43,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         CategoryConfig categoryConfig = availableCategoryConfigs.get(key);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         sb.append("package ").append(config.getOptions().getExecutorsPackage()).append(";\n\n");
-        sb.append("import org.opencb.opencga.app.cli.CliSession;\n");
+        sb.append("import org.opencb.opencga.app.cli.session.CliSessionManager;\n");
         sb.append("import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;\n");
         sb.append("import org.opencb.opencga.app.cli.main.*;\n");
         sb.append("import org.opencb.opencga.core.response.RestResponse;\n");
@@ -347,7 +347,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         if (enc) {
             if (studyPresent) {
                 res += "        if(queryParams.get(\"study\")==null){\n";
-                res += "                queryParams.putIfNotEmpty(\"study\", CliSession.getInstance().getCurrentStudy());\n";
+                res += "                queryParams.putIfNotEmpty(\"study\", CliSessionManager.getCurrentStudy());\n";
                 res += "        }\n";
             }
             return res + "\n";

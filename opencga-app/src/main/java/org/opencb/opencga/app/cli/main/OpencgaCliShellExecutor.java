@@ -5,16 +5,10 @@ import org.jline.reader.impl.DefaultHighlighter;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.app.cli.CliSession;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.user.AuthenticationResponse;
-import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
 
@@ -28,32 +22,6 @@ public class OpencgaCliShellExecutor extends CommandExecutor {
 
     public OpencgaCliShellExecutor(GeneralCliOptions.CommonCommandOptions options) {
         super(new GeneralCliOptions.CommonCommandOptions());
-    }
-
-    public void setCurrentStudy(String arg) {
-        OpenCGAClient openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSession.getInstance().getToken()));
-        if (openCGAClient != null) {
-            try {
-                RestResponse<Study> res = openCGAClient.getStudyClient().info(arg, new ObjectMap());
-                if (res.allResultsSize() > 0) {
-                    CliSession.getInstance().setCurrentStudy(res.response(0).getResults().get(0).getFqn());
-                    //String user, String token, String refreshToken, List<String> studies,String currentStudy
-                    try {
-                        CliSession.getInstance().saveCliSessionFile();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    printlnGreen("Current study is " + arg);
-                } else {
-                    printlnYellow("Invalid study");
-                }
-            } catch (ClientException e) {
-                printlnRed(e.getMessage());
-                e.printStackTrace();
-            }
-        } else {
-            printlnRed("Client not available");
-        }
     }
 
     private LineReader getTerminal() {
@@ -99,7 +67,7 @@ public class OpencgaCliShellExecutor extends CommandExecutor {
             while (true) {
                 // Read and sanitize the input
                 String line;
-                PROMPT = getPrompt();
+                PROMPT = CliSessionManager.getPrompt();
                 try {
                     line = lineReader.readLine(PROMPT);
                 } catch (UserInterruptException e) {
@@ -122,12 +90,6 @@ public class OpencgaCliShellExecutor extends CommandExecutor {
         } catch (Exception e) {
             OpencgaMain.printErrorMessage("Execution error ", e);
         }
-    }
-
-    private String getPrompt() {
-        return String.valueOf(ansi().fg(BLUE).a("[" + CliSession.getInstance().getCurrentStudy() + "]").fg(YELLOW).a("<"
-                + CliSession.getInstance().getUser() + ">").fg(GREEN).a(
-                "[OpenCGA]/>").reset());
     }
 
     private void printShellHeaderMessage() {

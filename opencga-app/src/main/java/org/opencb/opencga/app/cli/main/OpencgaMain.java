@@ -17,6 +17,8 @@
 package org.opencb.opencga.app.cli.main;
 
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.session.CliSession;
+import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
@@ -26,50 +28,60 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 public class OpencgaMain {
 
     public static final String VERSION = GitRepositoryState.get().getBuildVersion();
-    private static Session session;
-    private static boolean DEBUG = false;
 
     public static void main(String[] args) {
-        session = new Session();
         if (args.length == 1 && "--shell".equals(args[0]) || (args.length == 2 && "--shell".equals(args[0]) && "--debug".equals(args[1]))) {
             OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
-            DEBUG = (args.length == 2 && "--shell".equals(args[0]) && "--debug".equals(args[1]));
-            session.setShell(shell);
-
+            CliSession.DEBUG = (args.length == 2 && "--shell".equals(args[0]) && "--debug".equals(args[1]));
+            CliSessionManager.setShell(shell);
             try {
                 shell.execute();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         } else {
+            // CliSession.getInstance();
             OpencgaCliProcessor.process(args);
         }
     }
 
+    public static void printErrorMessage(String s) {
+        printErrorMessage(s, null);
+    }
+
     public static void printErrorMessage(String s, Throwable e) {
-        if (session != null && session.isShell()) {
-            session.getShell().printlnRed(s);
+        if (CliSessionManager.isShell()) {
+            CliSessionManager.getShell().printlnRed(s);
             if (e != null) {
-                if (DEBUG) {
-                    session.getShell().printlnYellow("TRACE:::\n" + ExceptionUtils.prettyExceptionStackTrace(e));
+                if (CliSession.DEBUG) {
+                    CliSessionManager.getShell().printlnYellow("TRACE:::\n" + ExceptionUtils.prettyExceptionStackTrace(e));
                 } else {
-                    session.getShell().printlnRed(e.getMessage());
+                    if (!s.equals(e.getMessage())) {
+                        CliSessionManager.getShell().printlnRed(e.getMessage());
+                    }
                 }
             }
         } else {
             System.err.println(s);
-            if (e != null) {
+            if (e != null && !s.equals(e.getMessage())) {
                 System.err.println(e.getMessage());
             }
         }
     }
 
-    public static Session getSession() {
-        return session;
+    public static void printWarningMessage(String s) {
+        if (CliSessionManager.isShell()) {
+            CliSessionManager.getShell().printlnYellow(s);
+        } else {
+            System.err.println(s);
+        }
     }
 
-    public OpencgaMain setSession(Session session) {
-        this.session = session;
-        return this;
+    public static void printInfoMessage(String s) {
+        if (CliSessionManager.isShell()) {
+            CliSessionManager.getShell().printlnGreen(s);
+        } else {
+            System.err.println(s);
+        }
     }
 }

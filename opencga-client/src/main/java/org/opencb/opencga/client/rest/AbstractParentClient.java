@@ -128,7 +128,7 @@
                  sc.init(null, trustAllCerts, new SecureRandom());
 
                  HostnameVerifier verifier = new HostnameVerifier() {
-                     private String hostname = URI.create(ClientConfiguration.getInstance().getRest().getHost()).getHost();
+                     private String hostname = URI.create(ClientConfiguration.getInstance().getRest().getUrl()).getHost();
 
                      @Override
                      public boolean verify(String hostname, SSLSession sslSession) {
@@ -224,7 +224,7 @@
 
              // Build URL
              WebTarget path = client
-                     .target(ClientConfiguration.getInstance().getRest().getHost())
+                     .target(ClientConfiguration.getInstance().getRest().getUrl())
                      .path("webservices")
                      .path("rest")
                      .path("v2")

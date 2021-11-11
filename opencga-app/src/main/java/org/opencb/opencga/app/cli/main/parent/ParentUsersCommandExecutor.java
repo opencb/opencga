@@ -18,13 +18,11 @@ package org.opencb.opencga.app.cli.main.parent;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.app.cli.CliSession;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
+import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -33,7 +31,6 @@ import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -78,13 +75,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                         }
                     }
                     // write CLI session file
-                    CliSession.getInstance().setToken(response.getToken());
-                    CliSession.getInstance().setUser(user);
-                    CliSession.getInstance().setVersion(GitRepositoryState.get().getBuildVersion());
-                    CliSession.getInstance().setRefreshToken(response.getRefreshToken());
-                    CliSession.getInstance().setStudies(studies);
-                    CliSession.getInstance().setLogin(TimeUtils.getTime(new Date()));
-                    CliSession.getInstance().saveCliSessionFile();
+                    CliSessionManager.initUserSession(response.getToken(), user, response.getRefreshToken(), studies);
                     Event event = new Event();
                     event.setMessage(LOGIN_OK);
                     event.setType(Event.Type.INFO);
@@ -119,7 +110,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
         RestResponse<AuthenticationResponse> res = new RestResponse();
         try {
             openCGAClient.logout();
-            CliSession.getInstance().logoutCliSessionFile();
+            CliSessionManager.logoutCliSessionFile();
             Event event = new Event();
             event.setMessage(LOGOUT);
             event.setType(Event.Type.ERROR);

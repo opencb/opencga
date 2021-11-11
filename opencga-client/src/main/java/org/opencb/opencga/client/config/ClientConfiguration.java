@@ -103,7 +103,7 @@ public final class ClientConfiguration {
                 logger.debug("Overwriting environment parameter '{}'", variable);
                 switch (variable) {
                     case "OPENCGA_CLIENT_REST_HOST":
-                        configuration.getRest().setHost(envVariables.get(variable));
+                        configuration.getRest().setUrl(envVariables.get(variable));
                         break;
                     case "OPENCGA_CLIENT_GRPC_HOST":
                         configuration.getGrpc().setHost(envVariables.get(variable));

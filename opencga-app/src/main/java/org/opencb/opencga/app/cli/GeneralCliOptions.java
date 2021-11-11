@@ -49,6 +49,9 @@ public class GeneralCliOptions {
 
         @Parameter(names = {"--version"})
         public boolean version;
+
+        @Parameter(names = {"--build-version"})
+        public boolean buildVersion;
     }
 
     /**

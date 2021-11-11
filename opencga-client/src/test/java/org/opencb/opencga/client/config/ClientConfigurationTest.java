@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Collections;
 
 /**
  * Created by imedina on 04/05/16.
@@ -31,7 +32,7 @@ public class ClientConfigurationTest {
 
         ClientConfiguration.getInstance().setCliSessionDuration(120);
 
-        RestConfig restConfig = new RestConfig("localhost:9090/opencga", true, new QueryRestConfig(200, 2000));
+        RestConfig restConfig = new RestConfig("localhost:9090/opencga", true, new QueryRestConfig(200, 2000), Collections.emptyList());
         GrpcConfig grpcConfig = new GrpcConfig("localhost:9091");
 
         ClientConfiguration.getInstance().setRest(restConfig);
