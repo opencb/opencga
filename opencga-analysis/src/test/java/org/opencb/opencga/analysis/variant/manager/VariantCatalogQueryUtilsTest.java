@@ -38,6 +38,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
@@ -173,7 +174,14 @@ public class VariantCatalogQueryUtilsTest {
     }
 
     public static File createFile(String path, boolean indexed) throws CatalogException {
-        File file = catalog.getFileManager().create("s1", File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, path, null, 10, null, null, true, "", null, sessionId).first();
+        File file = catalog.getFileManager().create("s1",
+                new FileCreateParams()
+                        .setPath(path)
+                        .setType(File.Type.FILE)
+                        .setFormat(File.Format.VCF)
+                        .setContent(" ")
+                        .setBioformat(File.Bioformat.VARIANT),
+                true, sessionId).first();
         if (indexed) {
             int release = catalog.getProjectManager().get("p1", null, sessionId).first().getCurrentRelease();
             catalog.getFileManager().updateFileIndexStatus(file, Status.READY, "", release, sessionId);

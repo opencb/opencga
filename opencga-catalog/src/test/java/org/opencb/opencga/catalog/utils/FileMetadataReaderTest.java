@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
@@ -88,8 +89,12 @@ public class FileMetadataReaderTest {
 
     @Test
     public void testGetBasicMetadata() throws CatalogException, IOException {
-        File file = catalogManager.getFileManager().create(study.getFqn(), new File().setPath(folder.getPath() + "test.txt"), false,
-                RandomStringUtils.randomAlphanumeric(1000), null, sessionIdUser).first();
+        File file = catalogManager.getFileManager().create(study.getFqn(),
+                new FileCreateParams()
+                        .setContent(RandomStringUtils.randomAlphanumeric(1000))
+                        .setType(File.Type.FILE)
+                        .setPath(folder.getPath() + "test.txt"),
+                false, sessionIdUser).first();
 
         assertEquals(1000, file.getSize());
 
@@ -97,7 +102,8 @@ public class FileMetadataReaderTest {
 
         try {
             Thread.sleep(1000); //Sleep 1 second to see changes on the "modificationDate"
-        } catch (InterruptedException ignored) {}
+        } catch (InterruptedException ignored) {
+        }
 
         OutputStream outputStream = new FileOutputStream(Paths.get(fileUri).toFile(), true);
         byte[] bytes2 = RandomStringUtils.randomAlphanumeric(100).getBytes();

@@ -17,6 +17,7 @@ public class FileCreateParams {
     private List<String> sampleIds;
     private Software software;
     private List<String> tags;
+    private String jobId;
     private String creationDate;
     private String modificationDate;
     private CustomStatusParams status;
@@ -26,8 +27,8 @@ public class FileCreateParams {
     }
 
     public FileCreateParams(String content, String path, String description, File.Type type, File.Format format, File.Bioformat bioformat,
-                            List<String> sampleIds, Software software, List<String> tags, String creationDate, String modificationDate,
-                            CustomStatusParams status, Map<String, Object> attributes) {
+                            List<String> sampleIds, Software software, List<String> tags, String jobId, String creationDate,
+                            String modificationDate, CustomStatusParams status, Map<String, Object> attributes) {
         this.content = content;
         this.path = path;
         this.description = description;
@@ -37,6 +38,7 @@ public class FileCreateParams {
         this.sampleIds = sampleIds;
         this.software = software;
         this.tags = tags;
+        this.jobId = jobId;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.status = status;
@@ -55,6 +57,7 @@ public class FileCreateParams {
         sb.append(", sampleIds=").append(sampleIds);
         sb.append(", software=").append(software);
         sb.append(", tags=").append(tags);
+        sb.append(", jobId='").append(jobId).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", status=").append(status);
@@ -141,6 +144,15 @@ public class FileCreateParams {
 
     public FileCreateParams setTags(List<String> tags) {
         this.tags = tags;
+        return this;
+    }
+
+    public String getJobId() {
+        return jobId;
+    }
+
+    public FileCreateParams setJobId(String jobId) {
+        this.jobId = jobId;
         return this;
     }
 

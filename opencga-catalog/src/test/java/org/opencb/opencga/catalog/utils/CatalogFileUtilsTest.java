@@ -32,6 +32,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
@@ -53,7 +54,7 @@ public class CatalogFileUtilsTest {
     private long studyUid;
     private String studyFqn;
     private String userSessionId;
-//    private String adminSessionId;
+    //    private String adminSessionId;
     private CatalogManager catalogManager;
 
     @Before
@@ -94,9 +95,15 @@ public class CatalogFileUtilsTest {
         File file;
         File returnedFile;
 
-        file = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
-                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", 0, null, null, true,
-                RandomStringUtils.randomAlphanumeric(100), null, userSessionId).first();
+        file = catalogManager.getFileManager().create(studyFqn,
+                new FileCreateParams()
+                        .setType(File.Type.FILE)
+                        .setFormat(File.Format.PLAIN)
+                        .setBioformat(File.Bioformat.NONE)
+                        .setPath("item." + TimeUtils.getTimeMillis() + ".txt")
+                        .setDescription("file at root")
+                        .setContent(RandomStringUtils.randomAlphanumeric(100)),
+                true, userSessionId).first();
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
 
         assertSame("Should not modify the status, so should return the same file.", file, returnedFile);
