@@ -178,7 +178,7 @@ public class ZettaInterpretationAnalysis extends InterpretationAnalysis {
                     .setConfig(config)
                     .execute();
 
-            saveInterpretation(studyId, clinicalAnalysis, diseasePanels, query, config);
+            saveInterpretation(studyId, clinicalAnalysis, query);
         });
     }
 

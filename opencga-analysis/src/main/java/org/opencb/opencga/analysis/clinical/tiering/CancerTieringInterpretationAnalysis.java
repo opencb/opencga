@@ -21,11 +21,11 @@ import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 import java.util.List;
 
@@ -95,7 +95,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
                     .setConfig(config)
                     .execute();
 
-            saveInterpretation(studyId, clinicalAnalysis, null, null, config);
+            saveInterpretation(studyId, clinicalAnalysis, null);
         });
     }
 
