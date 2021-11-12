@@ -127,7 +127,7 @@ public class VariantPhoenixSchemaManager {
         if (fileIds == null || fileIds.isEmpty()) {
             return;
         }
-        List<Integer> sampleIds = new ArrayList<>();
+        Set<Integer> sampleIds = new HashSet<>();
         for (Integer fileId : fileIds) {
             sampleIds.addAll(metadataManager.getFileMetadata(studyId, fileId).getSamples());
         }
@@ -136,7 +136,9 @@ public class VariantPhoenixSchemaManager {
             columns.add(buildFileColumnKey(studyId, fileId, new StringBuilder()));
         }
         for (Integer sampleId : sampleIds) {
-            columns.add(buildSampleColumnKey(studyId, sampleId, new StringBuilder()));
+            for (PhoenixHelper.Column sampleColumn : getSampleColumns(metadataManager.getSampleMetadata(studyId, sampleId), fileIds)) {
+                columns.add(sampleColumn.column());
+            }
         }
         phoenixHelper.dropColumns(con, variantsTableName, columns, DEFAULT_TABLE_TYPE);
         con.commit();

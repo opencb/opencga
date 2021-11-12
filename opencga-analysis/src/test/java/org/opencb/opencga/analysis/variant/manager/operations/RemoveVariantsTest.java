@@ -125,7 +125,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
         String studyId = study.getFqn();
 
         Path outdir = Paths.get(opencga.createTmpOutdir(studyId, "_REMOVE_", sessionId));
-        variantManager.removeFile(studyId, fileIds, new QueryOptions(), sessionId);
+        variantManager.removeFile(studyId, fileIds, new QueryOptions(), outdir.toUri(), sessionId);
 //        assertEquals(files.size(), removedFiles.size());
 
         Cohort all = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
@@ -148,7 +148,8 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
     }
 
     private void removeStudy(Object study, QueryOptions options) throws Exception {
-        variantManager.removeStudy(study.toString(), options, sessionId);
+        Path outdir = Paths.get(opencga.createTmpOutdir(studyId, "_REMOVE_", sessionId));
+        variantManager.removeStudy(study.toString(), options, outdir.toUri(), sessionId);
 
         Query query = new Query(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
         assertEquals(0L, catalogManager.getFileManager().count(study.toString(), query, sessionId).getNumTotalResults());

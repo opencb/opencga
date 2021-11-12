@@ -318,9 +318,9 @@ public class VariantCommandExecutor extends CommandExecutor {
         variantStorageEngine.getOptions().putAll(cliOptions.commonOptions.params);
 
         if (cliOptions.file.size() == 1 && cliOptions.file.get(0).equalsIgnoreCase(VariantQueryUtils.ALL)) {
-            variantStorageEngine.removeStudy(cliOptions.study);
+            variantStorageEngine.removeStudy(cliOptions.study, URI.create(cliOptions.outdir));
         } else {
-            variantStorageEngine.removeFiles(cliOptions.study, cliOptions.file);
+            variantStorageEngine.removeFiles(cliOptions.study, cliOptions.file, URI.create(cliOptions.outdir));
         }
     }
 

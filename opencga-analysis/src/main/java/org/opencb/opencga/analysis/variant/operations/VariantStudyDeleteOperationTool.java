@@ -16,11 +16,10 @@
 
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.common.StringUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.variant.VariantSampleDeleteParams;
+import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -32,17 +31,16 @@ import java.net.URI;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Tool(id = VariantSampleDeleteOperationTool.ID, description = VariantSampleDeleteOperationTool.DESCRIPTION,
+@Tool(id = VariantStudyDeleteOperationTool.ID, description = VariantStudyDeleteOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
-public class VariantSampleDeleteOperationTool extends OperationTool {
+public class VariantStudyDeleteOperationTool extends OperationTool {
 
-    public static final String ID = "variant-sample-delete";
-    public static final String DESCRIPTION = "Remove variant samples from the variant storage";
+    public static final String ID = "variant-study-delete";
+    public static final String DESCRIPTION = "Remove whole study from the variant storage";
 
     private String study;
-
     @ToolParams
-    protected VariantSampleDeleteParams variantSampleDeleteParams;
+    protected VariantStudyDeleteParams toolParams;
 
     @Override
     protected void check() throws Exception {
@@ -52,18 +50,14 @@ public class VariantSampleDeleteOperationTool extends OperationTool {
         if (StringUtils.isEmpty(study)) {
             throw new ToolException("Missing study");
         }
-        if (CollectionUtils.isEmpty(variantSampleDeleteParams.getSample())) {
-            throw new ToolException("Missing sample/s");
-        }
-
-        params.put(VariantStorageOptions.RESUME.key(), variantSampleDeleteParams.isResume());
+        params.put(VariantStorageOptions.RESUME.key(), toolParams.isResume());
     }
 
     @Override
     protected void run() throws Exception {
         step(() -> {
             URI outdir = getOutDir(keepIntermediateFiles).toUri();
-            variantStorageManager.removeSample(study, variantSampleDeleteParams.getSample(), params, outdir, token);
+            variantStorageManager.removeStudy(study, params, outdir, token);
         });
     }
 

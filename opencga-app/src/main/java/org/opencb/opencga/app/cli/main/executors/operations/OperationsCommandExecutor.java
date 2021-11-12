@@ -54,6 +54,9 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
             case VARIANT_DELETE:
                 queryResponse = variantFileDelete();
                 break;
+            case VARIANT_STUDY_DELETE:
+                queryResponse = variantStudyDelete();
+                break;
             case VARIANT_SAMPLE_DELETE:
                 queryResponse = variantSampleDelete();
                 break;
@@ -177,6 +180,15 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                         cliOptions.genericVariantDeleteOptions.file,
                         cliOptions.genericVariantDeleteOptions.resume),
                 getParams(cliOptions));
+    }
+
+    private RestResponse<Job> variantStudyDelete() throws ClientException {
+        OperationsCommandOptions.VariantStudyDeleteCommandOptions cliOptions = operationsCommandOptions.variantStudyDelete;
+
+        return openCGAClient.getVariantOperationClient().deleteVariantStudy(
+                new VariantStudyDeleteParams(
+                        cliOptions.resume),
+                getParams(null, cliOptions.study));
     }
 
     private RestResponse<Job> variantSampleDelete() throws ClientException {
