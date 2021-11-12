@@ -157,7 +157,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 
         FileCommandOptions.CreateCommandOptions commandOptions = filesCommandOptions.createCommandOptions;
 
-        FileCreateParams createParams = new FileCreateParams()
+        FileCreateParamsOld createParams = new FileCreateParamsOld()
                 .setDirectory(StringUtils.isEmpty(commandOptions.content))
                 .setParents(commandOptions.parents)
                 .setContent(commandOptions.content)

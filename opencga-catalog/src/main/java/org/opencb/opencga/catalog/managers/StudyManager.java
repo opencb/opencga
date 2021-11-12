@@ -1104,7 +1104,7 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<?> updateSummaryIndex(String studyStr, RecessiveGeneSummaryIndex summaryIndex,
-                                                                       String token) throws CatalogException {
+                                               String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyStr, userId);
 
@@ -1573,9 +1573,13 @@ public class StudyManager extends AbstractManager {
                     case AuthorizationManager.ROLE_VIEW_ONLY:
                         studyPermissions = AuthorizationManager.getViewOnlyAcls();
                         break;
+                    case AuthorizationManager.ROLE_LOCKED:
+                        studyPermissions = AuthorizationManager.getLockedAcls();
+                        break;
                     default:
                         throw new CatalogException("Admissible template ids are: " + AuthorizationManager.ROLE_ADMIN + ", "
-                                + AuthorizationManager.ROLE_ANALYST + ", " + AuthorizationManager.ROLE_VIEW_ONLY);
+                                + AuthorizationManager.ROLE_ANALYST + ", " + AuthorizationManager.ROLE_VIEW_ONLY + ", "
+                                + AuthorizationManager.ROLE_LOCKED);
                 }
 
                 if (studyPermissions != null) {

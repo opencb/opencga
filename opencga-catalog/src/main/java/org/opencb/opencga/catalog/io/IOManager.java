@@ -70,14 +70,17 @@ public abstract class IOManager {
 
     public abstract FileContent base64Image(Path file) throws CatalogIOException;
 
+    public abstract void writeBase64(String base64, Path file) throws CatalogIOException;
+
     public abstract FileContent head(Path file, long offset, int lines) throws CatalogIOException;
 
     public abstract FileContent tail(Path file, int lines) throws CatalogIOException;
 
     /**
      * Decompress zip or tar.gz file.
-     * @param file     File to be decompressed.
-     * @param destDir  Directory where the file will be decompressed.
+     *
+     * @param file    File to be decompressed.
+     * @param destDir Directory where the file will be decompressed.
      * @throws CatalogIOException if there is any issue decompressing the file.
      */
     public void decompress(Path file, Path destDir) throws CatalogIOException {
@@ -106,7 +109,7 @@ public abstract class IOManager {
 
     public void zip(String file, File destDir) throws CatalogIOException {
         zip(Collections.singletonList(file), destDir);
-    };
+    }
 
     public abstract void unzip(File file, File destDir) throws CatalogIOException;
 
@@ -115,9 +118,9 @@ public abstract class IOManager {
     /**
      * Grep the content of a file.
      *
-     * @param file File.
-     * @param pattern String pattern.
-     * @param lines Maximum number of lines to be returned. 0 means all the lines.
+     * @param file       File.
+     * @param pattern    String pattern.
+     * @param lines      Maximum number of lines to be returned. 0 means all the lines.
      * @param ignoreCase Case insensitive search.
      * @return the FileContent.
      * @throws CatalogIOException If the file is not a file or cannot be found.
