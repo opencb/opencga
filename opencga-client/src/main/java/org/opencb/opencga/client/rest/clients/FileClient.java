@@ -112,8 +112,8 @@ public class FileClient extends AbstractParentClient {
      * @param data          JSON containing the 'content' of the TSV file if this has not yet been registered into OpenCGA.
      * @param params        Map containing any of the following optional parameters.
      *                      study: Study [[user@]project:]study where study and project can be either the ID or UUID.
-     *                      parents: Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously
-     *                      associated).
+     *                      parents: Flag indicating whether to create parent directories if they don't exist (only when TSV file was not
+     *                      previously associated).
      *                      annotationSetId: Annotation set id. If not provided, variableSetId will be used.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -344,11 +344,11 @@ public class FileClient extends AbstractParentClient {
      *
      * @param files  Comma separated list of file IDs or names up to a maximum of 100.
      * @param params Map containing any of the following optional parameters.
-     *               study: Comma separated list of Studies [[user@]project:]study where study and project can be either the ID or UUID up to a
-     *               maximum of 100.
+     *               study: Comma separated list of Studies [[user@]project:]study where study and project can be either the ID or UUID up
+     *               to a maximum of 100.
      *               member: User or group id.
-     *               silent: Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries
-     *               looked for cannot be shown for whichever reason.
+     *               silent: Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the
+     *               entries looked for cannot be shown for whichever reason.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
@@ -434,14 +434,16 @@ public class FileClient extends AbstractParentClient {
      * @param file          File id, name or path. Paths must be separated by : instead of /.
      * @param annotationSet AnnotationSet ID to be updated.
      * @param data          Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove'
-     *                      containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset'
-     *                      containing the comma separated variables that will be set to the default value when the action is RESET.
+     *                      containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only
+     *                      the key 'reset' containing the comma separated variables that will be set to the default value when the action
+     *                      is RESET.
      * @param params        Map containing any of the following optional parameters.
      *                      study: Study [[user@]project:]study where study and project can be either the ID or UUID.
      *                      annotationSet: AnnotationSet ID to be updated.
-     *                      action: Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation;
-     *                      SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to
-     *                      set some annotations to the default value configured in the corresponding variables of the VariableSet if any.
+     *                      action: Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing
+     *                      annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some
+     *                      annotations; RESET to set some annotations to the default value configured in the corresponding variables of the
+     *                      VariableSet if any.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
