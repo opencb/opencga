@@ -5,35 +5,36 @@ import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 
 import java.util.List;
 
+@Deprecated
 public class InterpretationMergeParams {
 
-    private List<InterpretationMethod> methods;
+    private InterpretationMethod method;
     private List<ClinicalVariant> primaryFindings;
     private List<ClinicalVariant> secondaryFindings;
 
     public InterpretationMergeParams() {
     }
 
-    public InterpretationMergeParams(List<InterpretationMethod> methods, List<ClinicalVariant> primaryFindings,
+    public InterpretationMergeParams(InterpretationMethod method, List<ClinicalVariant> primaryFindings,
                                      List<ClinicalVariant> secondaryFindings) {
-        this.methods = methods;
+        this.method = method;
         this.primaryFindings = primaryFindings;
         this.secondaryFindings = secondaryFindings;
     }
 
     public Interpretation toInterpretation() {
         return new Interpretation()
-                .setMethods(methods)
+                .setMethod(method)
                 .setPrimaryFindings(primaryFindings)
                 .setSecondaryFindings(secondaryFindings);
     }
 
-    public List<InterpretationMethod> getMethods() {
-        return methods;
+    public InterpretationMethod getMethod() {
+        return method;
     }
 
-    public InterpretationMergeParams setMethods(List<InterpretationMethod> methods) {
-        this.methods = methods;
+    public InterpretationMergeParams setMethod(InterpretationMethod method) {
+        this.method = method;
         return this;
     }
 

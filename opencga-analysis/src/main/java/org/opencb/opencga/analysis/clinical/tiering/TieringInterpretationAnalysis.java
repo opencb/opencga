@@ -20,18 +20,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
-import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.InterpretationAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 
-import java.util.Collections;
 import java.util.List;
 
 @Tool(id = TieringInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
@@ -109,7 +106,7 @@ public class TieringInterpretationAnalysis extends InterpretationAnalysis {
                     .setConfig(config)
                     .execute();
 
-            saveInterpretation(studyId, clinicalAnalysis, diseasePanels, null, config);
+            saveInterpretation(studyId, clinicalAnalysis, null);
         });
     }
 
