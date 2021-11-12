@@ -72,10 +72,10 @@ public class FileWSServer extends OpenCGAWSServer {
             notes = "Creates a file with some content in it or a folder <br>"
                     + "<ul>"
                     + "<il><b>path</b>: Mandatory parameter. Whole path containing the file or folder name to be created</il><br>"
-                    + "<il><b>content</b>: Content of the file. Only applicable if <b>directory</b> parameter set to false</il><br>"
-                    + "<il><b>description</b>: Description of the file or folder to store as metadata.</il><br>"
-                    + "<il><b>parents</b>: Create the parent directories if they do not exist.</il><br>"
-                    + "<il><b>directory</b>: Boolean indicating whether to create a file or a directory</il><br>"
+                    + "<il><b>type</b>: Mandatory parameter. Type of file being created: FILE or DIRECTORY</il><br>"
+                    + "<il><b>content</b>: Only applicable if type is FILE. Content of the file in UTF-8 format. If file format is IMAGE, "
+                    + "a base64 content is expected.</il><br>"
+                    + "<il><b>format</b>: File format.</il><br>"
                     + "<ul>"
     )
     public Response createFilePOST(
