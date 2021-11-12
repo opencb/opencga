@@ -27,8 +27,8 @@ public class OpencgaCliProcessor {
     }
 
     public static void process(String[] args) {
-
         console = getConsole();
+        OpencgaMain.printDebugMessage("Executing ", args);
 
         if (console == null && CliSessionManager.isShell()) {
             System.out.println("Couldn't get console instance");
@@ -47,18 +47,23 @@ public class OpencgaCliProcessor {
             return;
         }
 
-       /* if (CliSession.getInstance().getUser().equals(CliSession.GUEST_USER) && "use".equals(args[0])) {
-            OpencgaCliShellExecutor.printlnYellow("To change the configuration you must be logged in");
+        if (args.length == 2 && "login".equals(args[0])) {
+            OpencgaMain.printWarningMessage("login " + args[1]);
+            loginUser(args[1]);
             return;
-        }*/
-        if (args.length == 3 && "use".equals(args[0]) && "study".equals(args[1])) {
-            CliSessionManager.setCurrentStudy(args[2]);
+        }
 
+        if (args.length == 3 && "use".equals(args[0]) && "study".equals(args[1])) {
+            CliSessionManager.setValidatedCurrentStudy(args[2]);
             return;
         }
 
         if (args.length == 3 && "use".equals(args[0]) && "host".equals(args[1])) {
-            CliSessionManager.switchSessionHost(args[2]);
+            if (CliSessionManager.DEFAULT_PARAMETER.equals(args[2])) {
+                CliSessionManager.switchDefaultSessionHost();
+            } else {
+                CliSessionManager.switchSessionHost(args[2]);
+            }
             return;
         }
 
@@ -120,6 +125,7 @@ public class OpencgaCliProcessor {
                                 break;
                             case "studies":
                                 commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getStudiesCommandOptions());
+                                CliSessionManager.setReloadStudies(true);
                                 break;
                             case "files":
                                 commandExecutor = new FilesCommandExecutor(cliOptionsParser.getFilesCommandOptions());
@@ -194,11 +200,8 @@ public class OpencgaCliProcessor {
         if (commandExecutor != null) {
             try {
                 commandExecutor.execute();
-                try {
-                    CliSessionManager.setDefaultCurrentStudy();
-                } catch (Exception e) {
-                    OpencgaMain.printErrorMessage(e.getMessage(), e);
-                }
+                CliSessionManager.setDefaultCurrentStudy();
+                CliSessionManager.updateSession();
             } catch (Exception e) {
                 OpencgaMain.printErrorMessage(e.getMessage(), e);
             }
@@ -230,9 +233,15 @@ public class OpencgaCliProcessor {
 
     public static void forceLogin() {
         console = getConsole();
-        String[] args = new String[2];
         String user = console.readLine(String.valueOf(ansi().fg(GREEN).a("\nEnter your user: ").reset()));
+        loginUser(user);
+        OpencgaMain.printDebugMessage("Login user " + user);
+    }
+
+    public static void loginUser(String user) {
+        console = getConsole();
         char[] passwordArray = console.readPassword(String.valueOf(ansi().fg(GREEN).a("\nEnter your password: ").reset()));
+        String[] args = new String[2];
         args[0] = "users";
         args[1] = "login";
         args = appendArgs(args, new String[]{"-u", user});
@@ -241,5 +250,6 @@ public class OpencgaCliProcessor {
         cliOptionsParser.parse(args);
         CommandExecutor commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
         executeCommand(commandExecutor, cliOptionsParser);
+        OpencgaMain.printDebugMessage("Logged user " + user);
     }
 }

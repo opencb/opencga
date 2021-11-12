@@ -128,6 +128,7 @@ public class OpencgaCliShellExecutor extends CommandExecutor {
         System.out.println("");
         System.out.println("");
         System.out.println("");
+        OpencgaMain.printDebugMessage("Opencga is running in DEBUG mode");
         System.out.println("");
         System.out.println("");
         System.out.println("");

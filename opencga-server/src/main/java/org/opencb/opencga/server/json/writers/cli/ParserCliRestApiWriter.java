@@ -24,9 +24,7 @@ import org.opencb.opencga.server.json.config.CategoryConfig;
 import org.opencb.opencga.server.json.config.CommandLineConfiguration;
 import org.opencb.opencga.server.json.writers.ParentClientRestApiWriter;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -59,16 +57,11 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("\n");
         sb.append("package ").append(config.getOptions().getParserPackage()).append(";\n");
         sb.append("\n");
+
         sb.append("import com.beust.jcommander.JCommander;\n");
-        sb.append("import org.opencb.commons.utils.CommandLineUtils;\n");
-        sb.append("import org.opencb.opencga.app.cli.CliOptionsParser;\n");
         sb.append("import org.opencb.opencga.app.cli.GeneralCliOptions;\n");
-        sb.append("import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;\n");
-        sb.append("import org.opencb.opencga.core.common.GitRepositoryState;\n");
-        sb.append("\n");
-        sb.append("import java.util.*;\n");
-        sb.append("\n");
-        sb.append("import ").append(config.getOptions().getOptionsPackage()).append(".*;\n");
+        sb.append("import org.opencb.opencga.app.cli.main.options.*;\n");
+        sb.append("import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;\n");
         sb.append("\n");
         sb.append("\n");
         sb.append("/*\n");
@@ -90,9 +83,8 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
     protected String getClassHeader(String key) {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
-        sb.append("public class OpencgaCliOptionsParser extends CliOptionsParser {\n");
+        sb.append("public class OpencgaCliOptionsParser extends ParentCliOptionsParser {\n");
         sb.append("\n");
-        sb.append("    private final GeneralCliOptions.CommonCommandOptions commonCommandOptions;\n");
         for (Category category : availableCategories.values()) {
             sb.append("    private final " + getAsClassName(category.getName()) + "CommandOptions " + getAsVariableName(category.getName()) +
                     "CommandOptions;\n");
@@ -103,7 +95,6 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("    public OpencgaCliOptionsParser() {\n");
         sb.append("\n");
         sb.append("        jCommander.setExpandAtSign(false);\n");
-        sb.append("        commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();\n");
 
         for (Category category : availableCategories.values()) {
             CategoryConfig config = availableCategoryConfigs.get(getIdCategory(category));
@@ -157,9 +148,7 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
     protected String getClassMethods(String key) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(getTemplateParser());
         for (Category category : availableCategories.values()) {
-
             sb.append("    \n");
             sb.append("    public " + getAsClassName(category.getName()) + "CommandOptions get" + getAsClassName(category.getName())
                     + "CommandOptions() {\n");
@@ -170,63 +159,8 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
         return sb.toString();
     }
 
-    private String getTemplateParser() {
-        try {
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            File file = new File(classLoader.getResource("parserAbstractMethods.template").getFile());
-            String res = readFile(file.getAbsolutePath());
-            res = res.replaceAll("##@@ANALYSIS@@##", getAnalysisCategories());
-            res = res.replaceAll("##@@OPERATIONS@@##", getOperationsCategories());
-
-            return res;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "";
-    }
-
-    private String getOperationsCategories() {
-        String res = "";
-        for (CategoryConfig category : config.getApiConfig().getCategoryConfigList()) {
-            if (category.isOperations()) {
-                res += "\"" + getCategoryCommandName(availableCategories.get(category.getKey()), category) + "\"" + ", ";
-            }
-        }
-        return res.substring(0, res.lastIndexOf(", "));
-    }
-
-    private String getAnalysisCategories() {
-        String res = "";
-        for (CategoryConfig category : config.getApiConfig().getCategoryConfigList()) {
-            if (category.isAnalysis()) {
-                res += "\"" + getCategoryCommandName(availableCategories.get(category.getKey()), category) + "\"" + ", ";
-            }
-        }
-        return res.substring(0, res.lastIndexOf(", "));
-    }
-
-    private String readFile(String file) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(file));
-        String line = null;
-        StringBuilder stringBuilder = new StringBuilder();
-        String ls = System.getProperty("line.separator");
-
-        try {
-            while ((line = reader.readLine()) != null) {
-                stringBuilder.append(line);
-                stringBuilder.append(ls);
-            }
-
-            return stringBuilder.toString();
-        } finally {
-            reader.close();
-        }
-    }
-
     @Override
     protected String getClassFileName(String key) {
-        Category category = availableCategories.get(key);
         return config.getOptions().getOutputDir() + "/OpencgaCliOptionsParser.java";
-        //return "/tmp/OpencgaCliOptionsParser.java";
     }
 }

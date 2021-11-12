@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.app.cli.main;
 
-import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.session.CliSession;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -30,17 +28,17 @@ public class OpencgaMain {
     public static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
     public static void main(String[] args) {
+        CliSessionManager.init(args);
+
         if (args.length == 1 && "--shell".equals(args[0]) || (args.length == 2 && "--shell".equals(args[0]) && "--debug".equals(args[1]))) {
-            OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
-            CliSession.DEBUG = (args.length == 2 && "--shell".equals(args[0]) && "--debug".equals(args[1]));
-            CliSessionManager.setShell(shell);
+            CliSessionManager.initShell();
+            OpencgaMain.printDebugMessage("Shell created ");
             try {
-                shell.execute();
+                CliSessionManager.getShell().execute();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         } else {
-            // CliSession.getInstance();
             OpencgaCliProcessor.process(args);
         }
     }
@@ -49,12 +47,31 @@ public class OpencgaMain {
         printErrorMessage(s, null);
     }
 
+    public static void printDebugMessage(String s, String[] args) {
+        String message = "";
+        for (int i = 0; i < args.length; i++) {
+            message += args[i] + " ";
+        }
+        printDebugMessage(s.trim() + " " + message);
+    }
+
+    public static void printDebugMessage(String message) {
+
+        if (CliSessionManager.isDebug()) {
+            if (CliSessionManager.isShell()) {
+                CliSessionManager.getShell().printlnYellow(message);
+            } else {
+                System.err.println(message);
+            }
+        }
+    }
+
     public static void printErrorMessage(String s, Throwable e) {
         if (CliSessionManager.isShell()) {
             CliSessionManager.getShell().printlnRed(s);
             if (e != null) {
-                if (CliSession.DEBUG) {
-                    CliSessionManager.getShell().printlnYellow("TRACE:::\n" + ExceptionUtils.prettyExceptionStackTrace(e));
+                if (CliSessionManager.isDebug()) {
+                    CliSessionManager.getShell().printlnYellow(ExceptionUtils.prettyExceptionStackTrace(e));
                 } else {
                     if (!s.equals(e.getMessage())) {
                         CliSessionManager.getShell().printlnRed(e.getMessage());

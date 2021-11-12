@@ -99,7 +99,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             if (StringUtils.isNotEmpty(options.token)) {
                 // Ignore session file. Overwrite with command line information (just sessionId)
 
-                CliSessionManager.updateSession(options.token);
+                CliSessionManager.updateSessionToken(options.token);
 
                 token = options.token;
                 userId = null;

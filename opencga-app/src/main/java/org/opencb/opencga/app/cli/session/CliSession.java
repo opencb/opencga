@@ -18,22 +18,21 @@ package org.opencb.opencga.app.cli.session;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.jsonwebtoken.Jwts;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 13/07/15.
@@ -42,7 +41,6 @@ public class CliSession {
 
     public static final String GUEST_USER = "anonymous";
     public static final String NO_STUDY = "NO_STUDY";
-    public static boolean DEBUG = false;
     private final long timestamp;
     private String host;
     private String version;
@@ -50,7 +48,6 @@ public class CliSession {
     private String token;
     private String refreshToken;
     private String login;
-    private String expirationTime;
     private List<String> studies;
     private String currentStudy;
     private String currentHost;
@@ -67,7 +64,6 @@ public class CliSession {
         token = "";
         refreshToken = "";
         login = "19740927121845";
-        expirationTime = "19740927121845";
         currentStudy = NO_STUDY;
         studies = Collections.emptyList();
         currentHost = ClientConfiguration.getInstance().getRest().getHostname();
@@ -76,9 +72,38 @@ public class CliSession {
 
     static CliSession getInstance() {
         if (instance == null) {
-            loadCliSessionFile(CliSessionManager.getLastHostUsed());
+            loadCliSessionFile(getLastHostUsed());
         }
         return instance;
+    }
+
+    public static String getLastHostUsed() {
+        Path sessionDir = Paths.get(System.getProperty("user.home"), ".opencga");
+        if (!Files.exists(sessionDir)) {
+            return ClientConfiguration.getInstance().getRest().getHostname();
+        }
+        Map<String, Long> mapa = new HashMap<String, Long>();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(sessionDir)) {
+            for (Path path : stream) {
+                if (!Files.isDirectory(path)) {
+                    if (path.endsWith(CliSession.SESSION_FILENAME)) {
+                        CliSession cli = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                                .readValue(path.toFile(), CliSession.class);
+                        mapa.put(cli.getCurrentHost(), cli.getTimestamp());
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        String res = "";
+        Long max = new Long(0);
+        for (Map.Entry entry : mapa.entrySet()) {
+            if (((Long) entry.getValue()) > max) {
+                res = String.valueOf(entry.getKey());
+            }
+        }
+        return res;
     }
 
     @Override
@@ -91,7 +116,6 @@ public class CliSession {
         sb.append(", token='").append(token).append('\'');
         sb.append(", refreshToken='").append(refreshToken).append('\'');
         sb.append(", login='").append(login).append('\'');
-        sb.append(", expirationTime='").append(expirationTime).append('\'');
         sb.append(", studies=").append(studies);
         sb.append(", currentStudy='").append(currentStudy).append('\'');
         sb.append(", currentHost='").append(currentHost).append('\'');
@@ -144,12 +168,12 @@ public class CliSession {
         sessionPath = sessionPath.resolve(host + SESSION_FILENAME);
 
         // we remove the part where the token signature is to avoid key verification
-        if (StringUtils.isNotEmpty(token)) {
+      /*  if (StringUtils.isNotEmpty(token) &&) {
             int i = token.lastIndexOf('.');
             String withoutSignature = token.substring(0, i + 1);
             Date expiration = Jwts.parser().parseClaimsJwt(withoutSignature).getBody().getExpiration();
             instance.setExpirationTime(TimeUtils.getTime(expiration));
-        }
+        }*/
         new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), instance);
     }
 
@@ -220,15 +244,6 @@ public class CliSession {
 
     public CliSession setLogin(String login) {
         this.login = login;
-        return this;
-    }
-
-    public String getExpirationTime() {
-        return expirationTime;
-    }
-
-    public CliSession setExpirationTime(String expirationTime) {
-        this.expirationTime = expirationTime;
         return this;
     }
 
