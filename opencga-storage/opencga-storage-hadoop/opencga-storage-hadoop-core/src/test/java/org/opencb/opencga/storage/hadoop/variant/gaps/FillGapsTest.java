@@ -273,7 +273,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         checkNewMissingPositions(dbAdaptor);
 
         // Remove last file
-        removeFile(variantStorageEngine, null, "1K.end.platinum-genomes-vcf-NA12880_S1.genome.vcf.gz", studyMetadata, Collections.emptyMap());
+        removeFile(variantStorageEngine, null, "1K.end.platinum-genomes-vcf-NA12880_S1.genome.vcf.gz", studyMetadata, Collections.emptyMap(), outputUri);
         printVariants(dbAdaptor, newOutputUri());
         checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880");
         checkSampleIndexTable(dbAdaptor);

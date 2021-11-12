@@ -232,6 +232,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", arity = 1)
         public String dbName;
 
+        @Parameter(names = {"--outdir"}, description = "Output directory", arity = 1)
+        public String outdir;
+
     }
 
     /**

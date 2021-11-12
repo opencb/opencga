@@ -26,6 +26,8 @@ import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
+import java.net.URI;
+
 /**
  * Created on 07/07/17.
  *
@@ -64,10 +66,11 @@ public class VariantSampleDeleteOperationTool extends OperationTool {
     @Override
     protected void run() throws Exception {
         step(() -> {
+            URI outdir = getOutDir(keepIntermediateFiles).toUri();
             if (removeStudy) {
-                variantStorageManager.removeStudy(study, params, token);
+                variantStorageManager.removeStudy(study, params, outdir, token);
             } else {
-                variantStorageManager.removeSample(study, variantSampleDeleteParams.getSample(), params, token);
+                variantStorageManager.removeSample(study, variantSampleDeleteParams.getSample(), params, outdir, token);
             }
         });
     }

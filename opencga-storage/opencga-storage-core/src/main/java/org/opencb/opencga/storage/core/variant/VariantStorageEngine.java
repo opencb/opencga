@@ -765,10 +765,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *
      * @param study  StudyName or StudyId
      * @param file   FileName
+     * @param outdir Output directory
      * @throws StorageEngineException If the file can not be removed or there was some problem deleting it.
      */
-    public void removeFile(String study, String file) throws StorageEngineException {
-        removeFiles(study, Collections.singletonList(file));
+    public void removeFile(String study, String file, URI outdir) throws StorageEngineException {
+        removeFiles(study, Collections.singletonList(file), outdir);
     }
 
     /**
@@ -776,18 +777,20 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *
      * @param study  StudyName or StudyId
      * @param files Files to remove
+     * @param outdir Output directory
      * @throws StorageEngineException If the files can not be removed or there was some problem deleting it.
      */
-    public abstract void removeFiles(String study, List<String> files) throws StorageEngineException;
+    public abstract void removeFiles(String study, List<String> files, URI outdir) throws StorageEngineException;
 
     /**
      * Removes samples from the Variant Storage.
      *
      * @param study  StudyName or StudyId
      * @param samples Samples to remove
+     * @param outdir Output directory
      * @throws StorageEngineException If the samples can not be removed or there was some problem deleting it.
      */
-    public void removeSamples(String study, List<String> samples) throws StorageEngineException {
+    public void removeSamples(String study, List<String> samples, URI outdir) throws StorageEngineException {
         throw new UnsupportedOperationException("Unsupported remove sample operation at storage engine " + getStorageEngineId());
     }
 
@@ -922,9 +925,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * Remove a whole study from the Variant Storage.
      *
      * @param study  StudyName or StudyId
+     * @param outdir Output directory
      * @throws StorageEngineException If the file can not be removed or there was some problem deleting it.
      */
-    public abstract void removeStudy(String study) throws StorageEngineException;
+    public abstract void removeStudy(String study, URI outdir) throws StorageEngineException;
 
     public abstract void loadVariantScore(URI scoreFile, String study, String scoreName, String cohort1, String cohort2,
                                           VariantScoreFormatDescriptor descriptor, ObjectMap options)
