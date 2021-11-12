@@ -108,7 +108,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void removeFiles(String study, List<String> files) throws StorageEngineException {
+    public void removeFiles(String study, List<String> files, URI outdir) throws StorageEngineException {
         TaskMetadata task = preRemove(study, files, Collections.emptyList());
         try {
             Thread.sleep(1);
@@ -119,7 +119,7 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void removeStudy(String studyName) throws StorageEngineException {
+    public void removeStudy(String studyName, URI outdir) throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         metadataManager.updateStudyMetadata(studyName, studyMetadata -> {
             metadataManager.removeIndexedFiles(studyMetadata.getId(), metadataManager.getIndexedFiles(studyMetadata.getId()));

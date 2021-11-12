@@ -26,7 +26,6 @@ import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.Tool;
-import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -49,7 +48,8 @@ import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.FILE_ID;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.STUDY_ID;
 
 /**
  * Created by mh719 on 21/11/2016.
@@ -339,18 +339,6 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
     public static void setNoneTimestamp(Job job) {
         job.getConfiguration().set(TIMESTAMP, NONE_TIMESTAMP);
-    }
-
-    public int privateMain(String[] args) throws Exception {
-        return privateMain(args, getConf());
-    }
-
-    public int privateMain(String[] args, Configuration conf) throws Exception {
-        // info https://code.google.com/p/temapred/wiki/HbaseWithJava
-        if (conf != null) {
-            setConf(conf);
-        }
-        return ToolRunner.run(this, args);
     }
 
 

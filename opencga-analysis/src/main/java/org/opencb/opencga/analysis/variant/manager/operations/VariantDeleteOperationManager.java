@@ -27,6 +27,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,20 +37,20 @@ public class VariantDeleteOperationManager extends OperationManager {
         super(variantStorageManager, engine);
     }
 
-    public void removeStudy(String study, String token) throws CatalogException, StorageEngineException {
+    public void removeStudy(String study, URI outdir, String token) throws CatalogException, StorageEngineException {
         study = getStudyFqn(study, token);
 
         // Update study configuration BEFORE executing the operation and fetching files from Catalog
         synchronizeCatalogStudyFromStorage(study, token, true);
 
-        variantStorageEngine.removeStudy(study);
+        variantStorageEngine.removeStudy(study, outdir);
 
         new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager())
                 .synchronizeRemovedStudyFromStorage(study, token);
 
     }
 
-    public void removeFile(String study, List<String> inputFiles, String token) throws CatalogException, StorageEngineException {
+    public void removeFile(String study, List<String> inputFiles, URI outdir, String token) throws CatalogException, StorageEngineException {
         // Update study metadata BEFORE executing the operation and fetching files from Catalog
         StudyMetadata studyMetadata = synchronizeCatalogStudyFromStorage(study, token, true);
 
@@ -75,13 +76,13 @@ public class VariantDeleteOperationManager extends OperationManager {
             }
         }
 
-        variantStorageEngine.removeFiles(study, fileNames);
+        variantStorageEngine.removeFiles(study, fileNames, outdir);
         // Update study configuration to synchronize
         synchronizeCatalogStudyFromStorage(study, token, true);
 
     }
 
-    public void removeSample(String study, List<String> samples, String token) throws CatalogException, StorageEngineException {
+    public void removeSample(String study, List<String> samples, URI outdir, String token) throws CatalogException, StorageEngineException {
         // Update study metadata BEFORE executing the operation and fetching files from Catalog
         synchronizeCatalogStudyFromStorage(study, token, true);
 
@@ -91,7 +92,7 @@ public class VariantDeleteOperationManager extends OperationManager {
 //            files.addAll(sample.getFileIds());
 //        }
 
-        variantStorageEngine.removeSamples(study, samples);
+        variantStorageEngine.removeSamples(study, samples, outdir);
         // Update study configuration to synchronize
         synchronizeCatalogStudyFromStorage(study, token, true);
 

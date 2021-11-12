@@ -15,6 +15,7 @@ import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.mapred.JobContext;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -374,10 +375,20 @@ public class VariantMapReduceUtil {
     }
 
     public static void setNoneReduce(Job job) throws IOException {
-        if (job.getNumReduceTasks() > 0) {
-            LOGGER.info("Set none reduce task");
+        setNumReduceTasks(job, 0);
+    }
+
+    public static void setNumReduceTasks(Job job, int numReducers) throws IOException {
+        // Don't use "job.getNumReduceTasks" so the default is -1 instead of 1
+        int currentReducers = job.getConfiguration().getInt(JobContext.NUM_REDUCES, -1);
+        if (currentReducers != numReducers) {
+            if (numReducers == 0) {
+                LOGGER.info("Set none reduce task");
+            } else {
+                LOGGER.info("Set {} reduce tasks", numReducers);
+            }
         }
-        job.setNumReduceTasks(0);
+        job.setNumReduceTasks(numReducers);
     }
 
     public static void setNoneTimestamp(Job job) throws IOException {
