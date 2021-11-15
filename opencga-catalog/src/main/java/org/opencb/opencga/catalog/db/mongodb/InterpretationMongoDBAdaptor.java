@@ -987,11 +987,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         return nativeIterator(query, options);
     }
 
-
-    private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
-        return getMongoCursor(null, query, options);
-    }
-
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException {
         Bson bson = parseQuery(query);
