@@ -2120,6 +2120,25 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void searchByDisorderTest() throws CatalogException {
+        DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
+        ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams()
+                .setDisorder(new DisorderReferenceParam("dis1"));
+        catalogManager.getClinicalAnalysisManager().update(STUDY, dummyEnvironment.first().getId(), updateParams, QueryOptions.empty(),
+                sessionIdUser);
+
+        createDummyEnvironment(false, false);
+
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().search(STUDY,
+                new Query(ParamConstants.CLINICAL_DISORDER_PARAM, "dis1"), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals(dummyEnvironment.first().getId(), result.first().getId());
+
+        result = catalogManager.getClinicalAnalysisManager().search(STUDY, new Query(), QueryOptions.empty(), sessionIdUser);
+        assertEquals(2, result.getNumResults());
+    }
+
+    @Test
     public void updateDisorder() throws CatalogException {
         DataResult<ClinicalAnalysis> dummyEnvironment = createDummyEnvironment(true, false);
 
