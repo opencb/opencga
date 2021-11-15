@@ -45,8 +45,8 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocum
  */
 public class MongoDBAdaptor extends AbstractDBAdaptor {
 
-    static final String PRIVATE_UID = "uid";
-    static final String PRIVATE_UUID = "uuid";
+    public static final String PRIVATE_UID = "uid";
+    public static final String PRIVATE_UUID = "uuid";
     static final String PRIVATE_ID = "id";
     static final String PRIVATE_FQN = "fqn";
     static final String PRIVATE_PROJECT = "_project";
@@ -55,7 +55,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     static final String PRIVATE_OWNER_ID = "_ownerId";
     public static final String PRIVATE_STUDY_UID = "studyUid";
-    private static final String VERSION = "version";
+    public static final String VERSION = "version";
 
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
     static final String FILTER_ROUTE_COHORTS = "projects.studies.cohorts.";

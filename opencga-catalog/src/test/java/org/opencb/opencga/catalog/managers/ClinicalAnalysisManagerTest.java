@@ -2442,7 +2442,41 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(2, result.first().getPanels().size());
+        for (Panel panel : result.first().getPanels()) {
+            assertNotNull(panel.getName());
+        }
+        assertEquals(2, result.first().getInterpretation().getPanels().size());
+        for (Panel panel : result.first().getInterpretation().getPanels()) {
+            assertNotNull(panel.getId());
+            assertNull(panel.getName());
+        }
         assertFalse(result.first().isPanelLock());
+    }
+
+    @Test
+    public void fetchInterpretationWithFullPanelInformationTest() throws CatalogException {
+        List<Panel> panels = createPanels(2);
+        Individual proband = catalogManager.getIndividualManager().create(STUDY,
+                new Individual()
+                        .setId("proband")
+                        .setSamples(Collections.singletonList(new Sample().setId("sample"))),
+                QueryOptions.empty(), sessionIdUser).first();
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+                .setProband(proband)
+                .setPanels(panels);
+        OpenCGAResult<ClinicalAnalysis> result =
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+
+        Interpretation interpretation = catalogManager.getInterpretationManager().search(STUDY,
+                new Query(InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(), clinicalAnalysis.getId()), QueryOptions.empty(),
+                sessionIdUser).first();
+        assertEquals(2, interpretation.getPanels().size());
+        for (Panel panel : interpretation.getPanels()) {
+            assertNotNull(panel.getId());
+            assertNotNull(panel.getName());
+        }
     }
 
     @Test

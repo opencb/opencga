@@ -35,7 +35,7 @@ import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.InterpretationConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.InterpretationCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -960,7 +960,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     public DBIterator<Interpretation> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new CatalogMongoDBIterator<>(mongoCursor, interpretationConverter);
+        return new InterpretationCatalogMongoDBIterator<>(mongoCursor, interpretationConverter, dbAdaptorFactory, options);
     }
 
     @Override
@@ -973,7 +973,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new CatalogMongoDBIterator(mongoCursor);
+        return new InterpretationCatalogMongoDBIterator(mongoCursor, null, dbAdaptorFactory, queryOptions);
     }
 
     @Override

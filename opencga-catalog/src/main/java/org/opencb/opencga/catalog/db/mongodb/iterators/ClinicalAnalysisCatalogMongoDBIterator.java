@@ -83,11 +83,11 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
         this.interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
         this.panelDBAdaptor = dbAdaptorFactory.getCatalogPanelDBAdaptor();
-        this.interpretationQueryOptions = createInnerQueryOptions(INTERPRETATION.key(), false);
-        this.fileQueryOptions = createInnerQueryOptions(FILES.key(), false);
-        this.familyQueryOptions = createInnerQueryOptions(FAMILY.key(), false);
-        this.individualQueryOptions = createInnerQueryOptions(PROBAND.key(), false);
-        this.panelQueryOptions = createInnerQueryOptions(PANELS.key(), false);
+        this.interpretationQueryOptions = createInnerQueryOptionsForVersionedEntity(options, INTERPRETATION.key(), false);
+        this.fileQueryOptions = createInnerQueryOptionsForVersionedEntity(options, FILES.key(), false);
+        this.familyQueryOptions = createInnerQueryOptionsForVersionedEntity(options, FAMILY.key(), false);
+        this.individualQueryOptions = createInnerQueryOptionsForVersionedEntity(options, PROBAND.key(), false);
+        this.panelQueryOptions = createInnerQueryOptionsForVersionedEntity(options, PANELS.key(), false);
 
         this.clinicalAnalysisListBuffer = new LinkedList<>();
         this.logger = LoggerFactory.getLogger(ClinicalAnalysisCatalogMongoDBIterator.class);
@@ -549,53 +549,5 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             individualSet.add(memberDocument.get(UID) + UID_VERSION_SEP + memberDocument.get(VERSION));
         }
     }
-
-    private QueryOptions createInnerQueryOptions(String fieldProjectionKey, boolean nativeQuery) {
-        QueryOptions queryOptions = new QueryOptions(NATIVE_QUERY, nativeQuery);
-
-        if (options.containsKey(QueryOptions.INCLUDE)) {
-            List<String> currentIncludeList = options.getAsStringList(QueryOptions.INCLUDE);
-            List<String> includeList = new ArrayList<>();
-            for (String include : currentIncludeList) {
-                if (include.startsWith(fieldProjectionKey + ".")) {
-                    includeList.add(include.replace(fieldProjectionKey + ".", ""));
-                }
-            }
-            if (!includeList.isEmpty()) {
-                // If we only have include uid, there is no need for an additional query so we will set current options to native query
-                boolean includeAdditionalFields = includeList.stream().anyMatch(
-                        field -> !field.equals(UID) && !field.equals(VERSION)
-                );
-                if (includeAdditionalFields) {
-                    includeList.add(UID);
-                    includeList.add(VERSION);
-                    queryOptions.put(QueryOptions.INCLUDE, includeList);
-                } else {
-                    // User wants to include fields already retrieved
-                    options.put(NATIVE_QUERY + "_" + fieldProjectionKey, true);
-                }
-            }
-        }
-        if (options.containsKey(QueryOptions.EXCLUDE)) {
-            List<String> currentExcludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-            List<String> excludeList = new ArrayList<>();
-            for (String exclude : currentExcludeList) {
-                if (exclude.startsWith(fieldProjectionKey + ".")) {
-                    String replace = exclude.replace(fieldProjectionKey + ".", "");
-                    if (!UID.equals(replace) && !VERSION.equals(replace)) {
-                        excludeList.add(replace);
-                    }
-                }
-            }
-            if (!excludeList.isEmpty()) {
-                queryOptions.put(QueryOptions.EXCLUDE, excludeList);
-            } else {
-                queryOptions.remove(QueryOptions.EXCLUDE);
-            }
-        }
-
-        return queryOptions;
-    }
-
 
 }
