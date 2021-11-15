@@ -9,17 +9,17 @@ public class InterpretationFindingStats {
 
     private int numVariants;
     private Map<String, Integer> tierCount;
-    private Map<ClinicalVariant.Status, Integer> variantStatusCount;
+    private Map<ClinicalVariant.Status, Integer> statusCount;
     private Map<String, Integer> geneCount;
 
     public InterpretationFindingStats() {
     }
 
-    public InterpretationFindingStats(int numVariants, Map<String, Integer> tierCount,
-                                      Map<ClinicalVariant.Status, Integer> variantStatusCount, Map<String, Integer> geneCount) {
+    public InterpretationFindingStats(int numVariants, Map<String, Integer> tierCount, Map<ClinicalVariant.Status, Integer> statusCount,
+                                      Map<String, Integer> geneCount) {
         this.numVariants = numVariants;
         this.tierCount = tierCount;
-        this.variantStatusCount = variantStatusCount;
+        this.statusCount = statusCount;
         this.geneCount = geneCount;
     }
 
@@ -37,7 +37,7 @@ public class InterpretationFindingStats {
         final StringBuilder sb = new StringBuilder("InterpretationStats{");
         sb.append("numVariants=").append(numVariants);
         sb.append(", tierCount=").append(tierCount);
-        sb.append(", variantStatusCount=").append(variantStatusCount);
+        sb.append(", statusCount=").append(statusCount);
         sb.append(", geneCount=").append(geneCount);
         sb.append('}');
         return sb.toString();
@@ -61,12 +61,12 @@ public class InterpretationFindingStats {
         return this;
     }
 
-    public Map<ClinicalVariant.Status, Integer> getVariantStatusCount() {
-        return variantStatusCount;
+    public Map<ClinicalVariant.Status, Integer> getStatusCount() {
+        return statusCount;
     }
 
-    public InterpretationFindingStats setVariantStatusCount(Map<ClinicalVariant.Status, Integer> variantStatusCount) {
-        this.variantStatusCount = variantStatusCount;
+    public InterpretationFindingStats setStatusCount(Map<ClinicalVariant.Status, Integer> statusCount) {
+        this.statusCount = statusCount;
         return this;
     }
 
