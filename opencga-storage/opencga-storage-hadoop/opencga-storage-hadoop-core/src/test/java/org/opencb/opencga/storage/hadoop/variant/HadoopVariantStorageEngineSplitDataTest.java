@@ -201,9 +201,9 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
             variantStorageEngine.index(Collections.singletonList(getResourceUri(file)), outDir);
         }
 
-        variantStorageEngine.removeFile(STUDY_NAME, Paths.get(files[0]).getFileName().toString());
-        variantStorageEngine.removeFile(STUDY_NAME, Paths.get(files[2]).getFileName().toString());
-        variantStorageEngine.removeFile(STUDY_NAME, Paths.get(files[3]).getFileName().toString());
+        variantStorageEngine.removeFile(STUDY_NAME, Paths.get(files[0]).getFileName().toString(), outputUri);
+        variantStorageEngine.removeFile(STUDY_NAME, Paths.get(files[2]).getFileName().toString(), outputUri);
+        variantStorageEngine.removeFile(STUDY_NAME, Paths.get(files[3]).getFileName().toString(), outputUri);
         variantStorageEngine.index(Collections.singletonList(getResourceUri(files[2])), outDir);
         variantStorageEngine.index(Collections.singletonList(getResourceUri(files[3])), outDir);
         variantStorageEngine.index(Collections.singletonList(getResourceUri(files[0])), outDir);
@@ -345,7 +345,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.REGION);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz")), outputUri);
 
-        variantStorageEngine.removeFiles(STUDY_NAME + "_split", Collections.singletonList("chr22_1-2.variant-test-file.vcf.gz"));
+        variantStorageEngine.removeFiles(STUDY_NAME + "_split", Collections.singletonList("chr22_1-2.variant-test-file.vcf.gz"), outputUri);
 
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), null);
@@ -370,7 +370,7 @@ public class HadoopVariantStorageEngineSplitDataTest extends VariantStorageBaseT
         variantStorageEngine.getOptions().put(VariantStorageOptions.LOAD_HOM_REF.key(), true);
         variantStorageEngine.index(Collections.singletonList(getResourceUri("by_chr/chr22.variant-test-file.vcf.gz")), outDir);
 
-        variantStorageEngine.removeSamples(study_actual, Arrays.asList("NA19600", "NA19660"));
+        variantStorageEngine.removeSamples(study_actual, Arrays.asList("NA19600", "NA19660"), outputUri);
 
         for (Variant variant : variantStorageEngine.iterable(new VariantQuery()
                 .includeSample(ParamConstants.ALL)

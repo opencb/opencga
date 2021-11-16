@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
+
 /**
  * Created by imedina on 27/01/16.
  */
@@ -42,6 +44,8 @@ public class CatalogMongoDBIterator<E> implements DBIterator<E> {
     protected Function<Document, Document> filter;
 
     protected static final String PRIVATE_STUDY_UID = MongoDBAdaptor.PRIVATE_STUDY_UID;
+    protected static final String UID = MongoDBAdaptor.PRIVATE_UID;
+    protected static final String VERSION = MongoDBAdaptor.VERSION;
 
     private static final String SEPARATOR = "__";
 
@@ -132,6 +136,53 @@ public class CatalogMongoDBIterator<E> implements DBIterator<E> {
             document.put("attributes", attributes);
         }
         attributes.put("OPENCGA_ACL", permissions);
+    }
+
+    protected QueryOptions createInnerQueryOptionsForVersionedEntity(QueryOptions options, String fieldProjectionKey, boolean nativeQuery) {
+        QueryOptions queryOptions = new QueryOptions(NATIVE_QUERY, nativeQuery);
+
+        if (options.containsKey(QueryOptions.INCLUDE)) {
+            List<String> currentIncludeList = options.getAsStringList(QueryOptions.INCLUDE);
+            List<String> includeList = new ArrayList<>();
+            for (String include : currentIncludeList) {
+                if (include.startsWith(fieldProjectionKey + ".")) {
+                    includeList.add(include.replace(fieldProjectionKey + ".", ""));
+                }
+            }
+            if (!includeList.isEmpty()) {
+                // If we only have include uid, there is no need for an additional query so we will set current options to native query
+                boolean includeAdditionalFields = includeList.stream().anyMatch(
+                        field -> !field.equals(UID) && !field.equals(VERSION)
+                );
+                if (includeAdditionalFields) {
+                    includeList.add(UID);
+                    includeList.add(VERSION);
+                    queryOptions.put(QueryOptions.INCLUDE, includeList);
+                } else {
+                    // User wants to include fields already retrieved
+                    options.put(NATIVE_QUERY + "_" + fieldProjectionKey, true);
+                }
+            }
+        }
+        if (options.containsKey(QueryOptions.EXCLUDE)) {
+            List<String> currentExcludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+            List<String> excludeList = new ArrayList<>();
+            for (String exclude : currentExcludeList) {
+                if (exclude.startsWith(fieldProjectionKey + ".")) {
+                    String replace = exclude.replace(fieldProjectionKey + ".", "");
+                    if (!UID.equals(replace) && !VERSION.equals(replace)) {
+                        excludeList.add(replace);
+                    }
+                }
+            }
+            if (!excludeList.isEmpty()) {
+                queryOptions.put(QueryOptions.EXCLUDE, excludeList);
+            } else {
+                queryOptions.remove(QueryOptions.EXCLUDE);
+            }
+        }
+
+        return queryOptions;
     }
 
 }

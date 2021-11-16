@@ -39,6 +39,7 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.job.Execution;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -154,8 +155,12 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 throw new CatalogParameterException("Missing content of the TSV file");
             }
 
-            OpenCGAResult<File> result = catalogManager.getFileManager().create(studyStr, new File().setPath(path), parents,
-                    tsvParams.getContent(), FileManager.INCLUDE_FILE_URI_PATH, token);
+            OpenCGAResult<File> result = catalogManager.getFileManager().create(studyStr,
+                    new FileCreateParams()
+                            .setContent(tsvParams.getContent())
+                            .setPath(path)
+                            .setType(File.Type.FILE),
+                    parents, token);
             path = result.first().getPath();
         } else {
             // File found.

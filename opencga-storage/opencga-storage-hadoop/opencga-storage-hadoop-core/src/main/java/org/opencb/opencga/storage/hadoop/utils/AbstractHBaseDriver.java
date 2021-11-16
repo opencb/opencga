@@ -19,11 +19,13 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -33,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static org.opencb.opencga.core.common.IOUtils.humanReadableByteCount;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.MR_EXECUTOR_SSH_PASSWORD;
 
 /**
@@ -41,8 +44,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public abstract class AbstractHBaseDriver extends Configured implements Tool {
-
-    public static final String COUNTER_GROUP_NAME = VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
+    public static final String COUNTER_GROUP_NAME = "OPENCGA.HBASE";
     public static final String COLUMNS_TO_COUNT = "columns_to_count";
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractHBaseDriver.class);
     protected String table;
@@ -67,6 +69,8 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         addJobConf(job, MRJobConfig.REDUCE_MEMORY_MB);
         addJobConf(job, MRJobConfig.MAP_CPU_VCORES);
         addJobConf(job, MRJobConfig.REDUCE_CPU_VCORES);
+        addJobConf(job, MRJobConfig.JOB_RUNNING_MAP_LIMIT);
+        addJobConf(job, MRJobConfig.JOB_RUNNING_REDUCE_LIMIT);
         addJobConf(job, MRJobConfig.TASK_TIMEOUT);
         return job;
     }
@@ -215,8 +219,15 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         return getTempOutdir(prefix, "");
     }
 
-    protected Path getTempOutdir(String prefix, String sufix) {
-        return new Path(getConf().get("hadoop.tmp.dir"), prefix + "." + TimeUtils.getTime() + "." + sufix);
+    protected Path getTempOutdir(String prefix, String suffix) {
+        if (StringUtils.isEmpty(suffix)) {
+            suffix = "";
+        } else if (!suffix.startsWith(".")) {
+            suffix = "." + suffix;
+        }
+        // Be aware that
+        // > ABFS does not allow files or directories to end with a dot.
+        return new Path(getConf().get("hadoop.tmp.dir"), prefix + "." + TimeUtils.getTime() + suffix);
     }
 
     protected Path getLocalOutput(Path outdir) throws IOException {
@@ -296,6 +307,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         } else if (paths.size() == 1) {
             LOGGER.info("Copy to local file " + paths.get(0) + " to " + localOutput);
             fileSystem.copyToLocalFile(false, paths.get(0), localOutput);
+            LOGGER.info("File size : " + humanReadableByteCount(Files.size(Paths.get(localOutput.toUri())), false));
         } else {
             LOGGER.info("Concat and copy to local " + paths.size() + " files from " + mrOutdir + " to " + localOutput);
             try (FSDataOutputStream os = localOutput.getFileSystem(getConf()).create(localOutput)) {
@@ -321,6 +333,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
                     }
                 }
             }
+            LOGGER.info("File size : " + humanReadableByteCount(Files.size(Paths.get(localOutput.toUri())), false));
         }
         return paths;
     }
@@ -361,5 +374,17 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             LoggerFactory.getLogger(aClass).error("Error executing " + aClass, e);
             System.exit(1);
         }
+    }
+
+    public int privateMain(String[] args) throws Exception {
+        return privateMain(args, getConf());
+    }
+
+    public int privateMain(String[] args, Configuration conf) throws Exception {
+        // info https://code.google.com/p/temapred/wiki/HbaseWithJava
+        if (conf != null) {
+            setConf(conf);
+        }
+        return ToolRunner.run(this, args);
     }
 }

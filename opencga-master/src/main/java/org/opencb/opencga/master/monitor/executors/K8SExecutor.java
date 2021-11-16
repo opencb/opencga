@@ -28,6 +28,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
@@ -79,6 +80,7 @@ public class K8SExecutor implements BatchExecutor {
             .withName("tmp-pod")
             .withMountPath("/usr/share/pod")
             .build();
+    private static final String DIND_DONE_FILE = "/usr/share/pod/done";
 
     private final String k8sClusterMaster;
     private final String namespace;
@@ -101,7 +103,8 @@ public class K8SExecutor implements BatchExecutor {
     private String imagePullPolicy;
     private List<LocalObjectReference> imagePullSecrets;
 
-    public K8SExecutor(Execution execution) {
+    public K8SExecutor(Configuration configuration) {
+        Execution execution = configuration.getAnalysis().getExecution();
         this.k8sClusterMaster = execution.getOptions().getString(K8S_MASTER_NODE);
         this.namespace = execution.getOptions().getString(K8S_NAMESPACE);
         this.imageName = execution.getOptions().getString(K8S_IMAGE_NAME);
@@ -149,6 +152,21 @@ public class K8SExecutor implements BatchExecutor {
                 .withRequests(requests)
                 .build();
 
+        String scratchDir = configuration.getAnalysis().getScratchDir();
+        if (StringUtils.isNotEmpty(scratchDir)) {
+            Volume scratchVolume = new VolumeBuilder()
+                    .withName("scratch")
+                    .withEmptyDir(new EmptyDirVolumeSource())
+                    .build();
+            volumes.add(scratchVolume);
+
+            VolumeMount scratchVolumemount = new VolumeMountBuilder()
+                    .withName("scratch")
+                    .withMountPath(scratchDir)
+                    .build();
+            volumeMounts.add(scratchVolumemount);
+        }
+
         String dindImageName = execution.getOptions().getString(K8S_DIND_IMAGE_NAME, "docker:dind-rootless");
         dockerDaemonSidecar = new ContainerBuilder()
                 .withName("dind-daemon")
@@ -160,7 +178,7 @@ public class K8SExecutor implements BatchExecutor {
                 .withEnv(new EnvVar("DOCKER_TLS_CERTDIR", "", null))
 //                .withResources(resources) // TODO: Should we add resources here?
                 .withCommand("/bin/sh", "-c")
-                .addToArgs("dockerd-entrypoint.sh & while ! test -f /usr/share/pod/done; do sleep 5; done; exit 0")
+                .addToArgs("dockerd-entrypoint.sh & while ! test -f " + DIND_DONE_FILE + "; do sleep 5; done; exit 0")
                 .addToVolumeMounts(DOCKER_GRAPH_VOLUMEMOUNT)
                 .addToVolumeMounts(TMP_POD_VOLUMEMOUNT)
                 .addAllToVolumeMounts(volumeMounts)
@@ -242,7 +260,7 @@ public class K8SExecutor implements BatchExecutor {
                                                 .withResources(resources)
                                                 .addToEnv(DOCKER_HOST)
                                                 .withCommand("/bin/sh", "-c")
-                                                .withArgs("trap 'touch /usr/share/pod/done' EXIT ; "
+                                                .withArgs("trap 'touch " + DIND_DONE_FILE + "' EXIT ; "
                                                         + getCommandLine(commandLine, stdout, stderr))
                                                 .withVolumeMounts(volumeMounts)
                                                 .addToVolumeMounts(TMP_POD_VOLUMEMOUNT)

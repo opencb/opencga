@@ -18,9 +18,10 @@ package org.opencb.opencga.storage.hadoop.variant.mr;
 
 import com.google.common.collect.BiMap;
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.mapreduce.TaskInputOutputContext;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -39,10 +40,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * Created by mh719 on 22/12/2016.
  */
 public class VariantsTableMapReduceHelper implements AutoCloseable {
-    public static final String COUNTER_GROUP_NAME = "OPENCGA.HBASE";
+    public static final String COUNTER_GROUP_NAME = AbstractHBaseDriver.COUNTER_GROUP_NAME;
     private final Logger logger = LoggerFactory.getLogger(VariantsTableMapReduceHelper.class);
 
-    private final TaskInputOutputContext context;
+    private final TaskAttemptContext context;
     private final VariantTableHelper helper;
     private StudyMetadata studyMetadata; // Lazy initialisation
     private final HBaseToVariantConverter<Result> hbaseToVariantConverter;
@@ -54,7 +55,7 @@ public class VariantsTableMapReduceHelper implements AutoCloseable {
     private final VariantStorageMetadataManager metadataManager;
 
 
-    public VariantsTableMapReduceHelper(TaskInputOutputContext context) throws IOException {
+    public VariantsTableMapReduceHelper(TaskAttemptContext context) throws IOException {
         this.context = context;
 
         Thread.currentThread().setName(context.getTaskAttemptID().toString());

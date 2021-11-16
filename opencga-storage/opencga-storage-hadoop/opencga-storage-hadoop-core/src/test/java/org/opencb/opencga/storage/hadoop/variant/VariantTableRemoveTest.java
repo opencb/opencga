@@ -61,7 +61,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
     private void removeFile(String file, StudyMetadata studyMetadata, Map<? extends String, ?> map) throws Exception {
         Integer fileId = metadataManager.getFileId(studyMetadata.getId(), file);
         System.out.printf("Remove File ID %s for %s", fileId, file);
-        VariantHbaseTestUtils.removeFile(getVariantStorageEngine(), DB_NAME, file, studyMetadata, map);
+        VariantHbaseTestUtils.removeFile(getVariantStorageEngine(), DB_NAME, file, studyMetadata, map, outputUri);
     }
 
     @Test

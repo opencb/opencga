@@ -19,7 +19,6 @@ package org.opencb.opencga.analysis.clinical;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.Query;
@@ -98,32 +97,24 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysisTool {
     }
 
     protected void checkInterpretationMethod(String methodName, ClinicalAnalysis clinicalAnalysis) throws ToolException {
-        if (clinicalAnalysis.getInterpretation() != null && CollectionUtils.isNotEmpty(clinicalAnalysis.getInterpretation().getMethods())) {
-            for (InterpretationMethod method : clinicalAnalysis.getInterpretation().getMethods()) {
-                if (methodName.equals(method.getName())) {
-                    throw new ToolException("Interpretation (primary) with method name '" + methodName + "' already exists");
-                }
-            }
+        if (clinicalAnalysis.getInterpretation() != null && clinicalAnalysis.getInterpretation().getMethod() != null
+                && methodName.equals(clinicalAnalysis.getInterpretation().getMethod().getName())) {
+            throw new ToolException("Interpretation (primary) with method name '" + methodName + "' already exists");
         }
 
         if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
             for (Interpretation secondaryInterpretation : clinicalAnalysis.getSecondaryInterpretations()) {
-                if (CollectionUtils.isNotEmpty(secondaryInterpretation.getMethods())) {
-                    for (InterpretationMethod method : secondaryInterpretation.getMethods()) {
-                        if (methodName.equals(method.getName())) {
-                            throw new ToolException("Interpretation (secondary) with method name '" + methodName + "' already exists");
-                        }
-                    }
+                if (secondaryInterpretation.getMethod() != null && methodName.equals(secondaryInterpretation.getMethod().getName())) {
+                    throw new ToolException("Interpretation (secondary) with method name '" + methodName + "' already exists");
                 }
             }
         }
     }
 
-    protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, List<DiseasePanel> diseasePanels, Query query,
-                                      InterpretationAnalysisConfiguration config) throws ToolException {
+    protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, Query query) throws ToolException {
 
         // Interpretation method
-        InterpretationMethod method = new InterpretationMethod(getId(), query, diseasePanels,
+        InterpretationMethod method = new InterpretationMethod(getId(), "", "",
                 Collections.singletonList(new Software().setName(getId())));
 
         // Analyst
@@ -134,6 +125,13 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysisTool {
         List<ClinicalVariant> secondaryFindings = readClinicalVariants(Paths.get(getOutDir().toString() + "/"
                 + SECONDARY_FINDINGS_FILENAME));
 
+        for (ClinicalVariant primaryFinding : primaryFindings) {
+            primaryFinding.setFilters(query);
+        }
+        for (ClinicalVariant secondaryFinding : secondaryFindings) {
+            secondaryFinding.setFilters(query);
+        }
+
         org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = new Interpretation()
                 .setId(getId() + "." + TimeUtils.getTimeMillis())
                 .setPrimaryFindings(primaryFindings)
@@ -141,7 +139,7 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysisTool {
                 .setAnalyst(analyst)
                 .setClinicalAnalysisId(clinicalAnalysis.getId())
                 .setCreationDate(TimeUtils.getTime())
-                .setMethods(Collections.singletonList(method));
+                .setMethod(method);
 
         // Store interpretation analysis in DB
         try {

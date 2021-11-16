@@ -32,8 +32,8 @@ public class InterpretationUtils {
         for (ClinicalVariant clinicalVariant : clinicalVariantList) {
             // Populate variant status
             if (clinicalVariant.getStatus() != null) {
-                int count = stats.getVariantStatusCount().get(clinicalVariant.getStatus()) + 1;
-                stats.getVariantStatusCount().put(clinicalVariant.getStatus(), count);
+                int count = stats.getStatusCount().get(clinicalVariant.getStatus()) + 1;
+                stats.getStatusCount().put(clinicalVariant.getStatus(), count);
             }
 
             // Populate tierCount

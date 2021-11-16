@@ -102,6 +102,9 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     INTERMEDIATE_HDFS_DIRECTORY("storage.hadoop.intermediate.hdfs.directory"),
     FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR("storage.hadoop.fill_missing.write.mappers.limit.factor", 1.5F),
     FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS("storage.hadoop.fill_missing.simplifiedMultiAllelicVariants", true),
+
+    WRITE_MAPPERS_LIMIT_FACTOR("storage.hadoop.write.mappers.limit.factor", 1.5F),
+
     STATS_LOCAL("storage.hadoop.stats.local", false);
 
     private final String key;

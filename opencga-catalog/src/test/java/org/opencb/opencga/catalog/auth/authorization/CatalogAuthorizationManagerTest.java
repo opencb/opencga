@@ -38,6 +38,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.file.FileAclParams;
+import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
@@ -156,7 +157,12 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
                 false, null, QueryOptions.empty(), ownerSessionId).first().getPath();
         data_d1_d2_d3_d4 = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/d2/d3/d4/").toString(),
                 false, null, QueryOptions.empty(), ownerSessionId).first().getPath();
-        catalogManager.getFileManager().create(studyFqn, new File().setPath("data/d1/d2/d3/d4/my.txt"), false, "file content", null, ownerSessionId);
+        catalogManager.getFileManager().create(studyFqn,
+                new FileCreateParams()
+                        .setContent("file content")
+                        .setPath("data/d1/d2/d3/d4/my.txt")
+                        .setType(File.Type.FILE),
+                false, ownerSessionId);
 
         // Add studyAdminUser1 and studyAdminUser2 to admin group and admin role.
         catalogManager.getStudyManager().updateGroup(studyFqn, groupAdmin, ParamUtils.BasicUpdateAction.SET,
@@ -432,7 +438,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         }
     }
 
-     /*--------------------------*/
+    /*--------------------------*/
     // Remove users/groups from roles
     /*--------------------------*/
 

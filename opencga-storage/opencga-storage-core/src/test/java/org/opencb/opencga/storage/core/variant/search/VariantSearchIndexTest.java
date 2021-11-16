@@ -187,12 +187,12 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             checkLoadResult(expected, loadResult);
 
             //////////////////////
-            storageEngine.removeFiles(studyMetadata.getName(), Collections.singletonList(fileNames.get(0)));
+            storageEngine.removeFiles(studyMetadata.getName(), Collections.singletonList(fileNames.get(0)), outputUri);
             expected = 0;
 
         } else {
             //////////////////////
-            storageEngine.removeFiles(studyMetadata.getName(), Collections.singletonList(fileNames.get(0)));
+            storageEngine.removeFiles(studyMetadata.getName(), Collections.singletonList(fileNames.get(0)), outputUri);
             expected = dbAdaptor.count(query).first();
         }
 

@@ -571,7 +571,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public void removeSamples(String study, List<String> samples) throws StorageEngineException {
+    public void removeSamples(String study, List<String> samples, URI outdir) throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         final int studyId = metadataManager.getStudyId(study);
         samples = new ArrayList<>(samples);
@@ -610,12 +610,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             }
         }
 
-        remove(study, fullyDeletedFiles, samples);
+        remove(study, fullyDeletedFiles, samples, outdir);
     }
 
     @Override
-    public void removeFiles(String study, List<String> files) throws StorageEngineException {
-        remove(study, files, Collections.emptyList());
+    public void removeFiles(String study, List<String> files, URI outdir) throws StorageEngineException {
+        remove(study, files, Collections.emptyList(), outdir);
     }
 
     /**
@@ -624,9 +624,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
      * @param study     Study
      * @param files     Files to fully delete, including all their samples.
      * @param samples   Samples to remove, leaving partial files.
+     * @param outdir    outdir
      * @throws StorageEngineException if something goes wrong
      */
-    private void remove(String study, List<String> files, List<String> samples) throws StorageEngineException {
+    private void remove(String study, List<String> files, List<String> samples, URI outdir) throws StorageEngineException {
         ObjectMap options = getOptions();
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
@@ -665,6 +666,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         LinkedHashSet<Integer> indexedFiles = metadataManager.getIndexedFiles(sm.getId());
         boolean removeWholeStudy = indexedFiles.size() == fileIds.size() && indexedFiles.containsAll(fileIds);
         options.put(AbstractVariantsTableDriver.TIMESTAMP, task.getTimestamp());
+        options.put(DeleteHBaseColumnDriver.TWO_PHASES_PARAM, true);
 
         // Delete
         Thread hook = getMetadataManager().buildShutdownHook(REMOVE_OPERATION_NAME, studyId, task.getId());
@@ -716,7 +718,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 if (removeWholeStudy) {
                     columns.put(VariantPhoenixSchema.getStudyColumn(studyId).fullColumn(), Collections.emptyList());
                 }
-                String[] deleteFromVariantsArgs = DeleteHBaseColumnDriver.buildArgs(variantsTable, columns, options);
+                ObjectMap thisOptions = new ObjectMap(options);
+                options.put(DeleteHBaseColumnDriver.DELETE_HBASE_COLUMN_TASK_CLASS, VariantsTableDeleteColumnTask.class.getName());
+
+                String[] deleteFromVariantsArgs = DeleteHBaseColumnDriver.buildArgs(variantsTable, columns, thisOptions);
                 getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromVariantsArgs, "Delete from variants table");
                 return stopWatch.now(TimeUnit.MILLISECONDS);
             });
@@ -839,9 +844,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public void removeStudy(String studyName) throws StorageEngineException {
+    public void removeStudy(String studyName, URI outdir) throws StorageEngineException {
         int studyId = getMetadataManager().getStudyId(studyName);
-        removeFiles(studyName, getMetadataManager().getIndexedFiles(studyId).stream().map(Object::toString).collect(Collectors.toList()));
+        removeFiles(studyName, getMetadataManager().getIndexedFiles(studyId).stream().map(Object::toString).collect(Collectors.toList()),
+                outdir);
     }
 
     @Override

@@ -73,27 +73,18 @@ public class FileWSServer extends OpenCGAWSServer {
             notes = "Creates a file with some content in it or a folder <br>"
                     + "<ul>"
                     + "<il><b>path</b>: Mandatory parameter. Whole path containing the file or folder name to be created</il><br>"
-                    + "<il><b>content</b>: Content of the file. Only applicable if <b>directory</b> parameter set to false</il><br>"
-                    + "<il><b>description</b>: Description of the file or folder to store as metadata.</il><br>"
-                    + "<il><b>parents</b>: Create the parent directories if they do not exist.</il><br>"
-                    + "<il><b>directory</b>: Boolean indicating whether to create a file or a directory</il><br>"
+                    + "<il><b>type</b>: Mandatory parameter. Type of file being created: FILE or DIRECTORY</il><br>"
+                    + "<il><b>content</b>: Only applicable if type is FILE. Content of the file in UTF-8 format. If file format is IMAGE, "
+                    + "a base64 content is expected.</il><br>"
+                    + "<il><b>format</b>: File format.</il><br>"
                     + "<ul>"
     )
-    public Response createFilePOST(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-                                   @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                   @ApiParam(name = "body", value = "File parameters", required = true) FileCreateParams params) {
+    public Response createFilePOST(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.FILE_PARENTS_DESCRIPTION) @QueryParam(ParamConstants.FILE_PARENTS_PARAM) boolean parents,
+            @ApiParam(name = "body", value = "File parameters", required = true) FileCreateParams params) {
         try {
-            ObjectUtils.defaultIfNull(params, new FileCreateParams());
-            DataResult<File> file;
-            if (params.isDirectory()) {
-                // Create directory
-                file = fileManager.createFolder(studyStr, params.getPath(), params.isParents(),
-                        params.getDescription(), queryOptions, token);
-            } else {
-                // Create a file
-                file = fileManager.createFile(studyStr, params.getPath(), params.getDescription(), params.isParents(), params.getContent(),
-                        token);
-            }
+            DataResult<File> file = fileManager.create(studyStr, params, parents, token);
             return createOkResponse(file);
         } catch (Exception e) {
             return createErrorResponse(e);

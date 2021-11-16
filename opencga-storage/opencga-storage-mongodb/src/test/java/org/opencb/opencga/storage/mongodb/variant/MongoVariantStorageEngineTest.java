@@ -146,7 +146,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         } catch (StorageEngineException e) {
             e.printStackTrace();
 //            MongoVariantStorageEngineException expected = MongoVariantStorageEngineException.fileBeingStagedException(FILE_ID, "variant-test-file.vcf.gz");
-            StorageEngineException expected = StorageEngineException.currentOperationInProgressException(task);
+            StorageEngineException expected = StorageEngineException.currentOperationInProgressException(task, metadataManager);
             assertThat(e, instanceOf(StoragePipelineException.class));
             assertThat(e, hasCause(instanceOf(expected.getClass())));
             assertThat(e, hasCause(hasMessage(is(expected.getMessage()))));
@@ -299,7 +299,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         assertNotNull(exception.getResults().get(0).getLoadError());
         TaskMetadata opInProgress = new TaskMetadata(RandomUtils.nextInt(1000, 2000), MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0, TaskMetadata.Type.LOAD);
         opInProgress.addStatus(TaskMetadata.Status.RUNNING);
-        StorageEngineException expected = StorageEngineException.currentOperationInProgressException(opInProgress);
+        StorageEngineException expected = StorageEngineException.currentOperationInProgressException(opInProgress, metadataManager);
         assertEquals(expected.getClass(), exception.getResults().get(0).getLoadError().getClass());
         assertEquals(expected.getMessage(), exception.getResults().get(0).getLoadError().getMessage());
     }
@@ -371,7 +371,8 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
             TaskMetadata opInProgress = new TaskMetadata(RandomUtils.nextInt(1000, 2000), MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0, TaskMetadata.Type.OTHER);
             opInProgress.addStatus(TaskMetadata.Status.RUNNING);
-            StorageEngineException expected = MongoVariantStorageEngineException.otherOperationInProgressException(opInProgress, MongoDBVariantStorageOptions.STAGE.key(), Collections.singletonList(secondFileId));
+            StorageEngineException expected = MongoVariantStorageEngineException
+                    .otherOperationInProgressException(opInProgress, MongoDBVariantStorageOptions.STAGE.key(), Collections.singletonList(secondFileId), metadataManager);
             thrown.expect(StoragePipelineException.class);
             thrown.expectCause(instanceOf(expected.getClass()));
             thrown.expectCause(hasMessage(is(expected.getMessage())));
@@ -421,7 +422,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
 
             TaskMetadata opInProgress = new TaskMetadata(RandomUtils.nextInt(1000, 2000), MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0, TaskMetadata.Type.OTHER);
             opInProgress.addStatus(TaskMetadata.Status.RUNNING);
-            StorageEngineException expected = MongoVariantStorageEngineException.otherOperationInProgressException(opInProgress, MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(secondFileId));
+            StorageEngineException expected = MongoVariantStorageEngineException.otherOperationInProgressException(opInProgress, MongoDBVariantStorageOptions.MERGE.key(), Collections.singletonList(secondFileId), metadataManager);
             thrown.expect(StoragePipelineException.class);
             thrown.expectCause(instanceOf(expected.getClass()));
             thrown.expectCause(hasMessage(is(expected.getMessage())));

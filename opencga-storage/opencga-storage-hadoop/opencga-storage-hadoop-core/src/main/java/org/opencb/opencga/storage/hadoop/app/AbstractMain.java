@@ -61,7 +61,7 @@ public abstract class AbstractMain {
                 Stream<?> stream = (Stream<?>) obj;
                 print(stream.iterator());
             } else {
-                System.out.println(objectWriter.writeValueAsString(obj));
+                println(objectWriter.writeValueAsString(obj));
             }
             if (obj instanceof AutoCloseable) {
                 ((AutoCloseable) obj).close();
@@ -71,6 +71,10 @@ public abstract class AbstractMain {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected void println(String msg) {
+        System.out.println(msg);
     }
 
     protected String getArg(String[] args, int i, String def) {

@@ -178,6 +178,10 @@ public class ParamConstants {
     public static final String FILE_SIZE_DESCRIPTION = "File size";
     public static final String FILE_FOLDER = "folder";
     public static final String FILE_FOLDER_DESCRIPTION = "Folder ID, name or path";
+    public static final String FILE_PARENTS_PARAM = "parents";
+    public static final String FILE_PARENTS_DESCRIPTION = "Create the parent directories if they do not exist";
+
+
     public static final String FILE_ALREADY_LINKED = "File already linked. Nothing to do";
     public static final int MAXIMUM_LINES_CONTENT = 1000;
     public static final String MAXIMUM_LINES_CONTENT_DESCRIPTION =
@@ -454,9 +458,10 @@ public class ParamConstants {
 
     public static final String CLINICAL_ANALYSES_DESCRIPTION = "Comma separated list of clinical analysis IDs or names" + UP_TO_100;
     public static final String CLINICAL_ANALYSES_PARAM = "clinicalAnalyses";
-    public static final String CLINICAL_ANALYSIS_CREATE_DEFAULT_PARAM = "createDefaultInterpretation";
-    public static final String CLINICAL_ANALYSIS_CREATE_DEFAULT_DESCRIPTION = "Flag to create and initialise a default primary "
-            + "interpretation (Id will be '{clinicalAnalysisId}.1')";
+    public static final String CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_PARAM = "skipCreateDefaultInterpretation";
+    public static final String CLINICAL_ANALYSIS_SKIP_CREATE_DEFAULT_INTERPRETATION_DESCRIPTION = "Flag to skip creating and initialise "
+            + "an empty default primary interpretation (Id will be '{clinicalAnalysisId}.1'). This flag is only considered if no "
+            + "Interpretation object is passed.";
 
     // ---------------------------------------------
 
@@ -464,7 +469,7 @@ public class ParamConstants {
     public static final String INTERPRETATION_UUID_PARAM = "uuid";
     public static final String INTERPRETATION_CLINICAL_ANALYSIS_ID_PARAM = "clinicalAnalysisId";
     public static final String INTERPRETATION_ANALYST_ID_PARAM = "analystId";
-    public static final String INTERPRETATION_METHODS_NAME_PARAM = "methodsName";
+    public static final String INTERPRETATION_METHOD_NAME_PARAM = "methodName";
     public static final String INTERPRETATION_PANELS_PARAM = "panels";
     public static final String INTERPRETATION_PRIMARY_FINDINGS_IDS_PARAM = "primaryFindings";
     public static final String INTERPRETATION_SECONDARY_FINDINGS_IDS_PARAM = "secondaryFindings";
@@ -479,7 +484,7 @@ public class ParamConstants {
     public static final String INTERPRETATION_UUID_DESCRIPTION = "Comma separated list of Interpretation UUIDs" + UP_TO_100;
     public static final String INTERPRETATION_CLINICAL_ANALYSIS_ID_DESCRIPTION = "Clinical Analysis id";
     public static final String INTERPRETATION_ANALYST_ID_DESCRIPTION = "Analyst ID";
-    public static final String INTERPRETATION_METHODS_NAME_DESCRIPTION = "Interpretation method name";
+    public static final String INTERPRETATION_METHOD_NAME_DESCRIPTION = "Interpretation method name";
     public static final String INTERPRETATION_PANELS_DESCRIPTION = "Interpretation panels";
     public static final String INTERPRETATION_PRIMARY_FINDINGS_IDS_DESCRIPTION = "Interpretation primary findings";
     public static final String INTERPRETATION_SECONDARY_FINDINGS_IDS_DESCRIPTION = "Interpretation secondary findings";

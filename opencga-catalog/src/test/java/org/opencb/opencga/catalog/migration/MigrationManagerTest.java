@@ -157,10 +157,10 @@ public class MigrationManagerTest extends AbstractManagerTest {
             Migration annotation = pendingMigration.getAnnotation(Migration.class);
             switch (i) {
                 case 0:
-                    assertEquals("test2-1", annotation.id());
+                    assertEquals("test2-2", annotation.id());
                     break;
                 case 1:
-                    assertEquals("test2-2", annotation.id());
+                    assertEquals("test2-1", annotation.id());
                     break;
                 default:
                     fail();
@@ -174,10 +174,10 @@ public class MigrationManagerTest extends AbstractManagerTest {
             Migration annotation = pendingMigration.getAnnotation(Migration.class);
             switch (i) {
                 case 0:
-                    assertEquals("test2-1", annotation.id());
+                    assertEquals("test2-2", annotation.id());
                     break;
                 case 1:
-                    assertEquals("test2-2", annotation.id());
+                    assertEquals("test2-1", annotation.id());
                     break;
                 case 2:
                     assertEquals("test3-1", annotation.id());

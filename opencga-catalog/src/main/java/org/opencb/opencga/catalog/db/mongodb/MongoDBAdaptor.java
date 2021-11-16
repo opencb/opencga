@@ -46,7 +46,7 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocum
 public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     public static final String PRIVATE_UID = "uid";
-    static final String PRIVATE_UUID = "uuid";
+    public static final String PRIVATE_UUID = "uuid";
     static final String PRIVATE_ID = "id";
     static final String PRIVATE_FQN = "fqn";
     static final String PRIVATE_PROJECT = "_project";
@@ -55,7 +55,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     static final String PRIVATE_OWNER_ID = "_ownerId";
     public static final String PRIVATE_STUDY_UID = "studyUid";
-    private static final String VERSION = "version";
+    public static final String VERSION = "version";
 
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
     static final String FILTER_ROUTE_COHORTS = "projects.studies.cohorts.";
@@ -814,6 +814,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         private Document push;
         private Document pull;
         private Document pullAll;
+        private List<String> unset;
         private List<NestedArrayUpdateDocument> nestedUpdateList;
 
         private ObjectMap attributes;
@@ -824,6 +825,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             this.push = new Document();
             this.pull = new Document();
             this.pullAll = new Document();
+            this.unset = new LinkedList<>();
             this.nestedUpdateList = new LinkedList<>();
             this.attributes = new ObjectMap();
         }
@@ -862,6 +864,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             }
             if (!pullAll.isEmpty()) {
                 update.put("$pullAll", pullAll);
+            }
+            if (!unset.isEmpty()) {
+                Document unsetDocument = new Document();
+                for (String field : unset) {
+                    unsetDocument.put(field, "");
+                }
+                update.put("$unset", unsetDocument);
             }
 
             return update;
@@ -909,6 +918,15 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
         public UpdateDocument setPullAll(Document pullAll) {
             this.pullAll = pullAll;
+            return this;
+        }
+
+        public List<String> getUnset() {
+            return unset;
+        }
+
+        public UpdateDocument setUnset(List<String> unset) {
+            this.unset = unset;
             return this;
         }
 

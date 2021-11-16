@@ -119,8 +119,9 @@ public abstract class AbstractManager {
      */
     protected void changeQueryId(Query query, String currentKey, String newKey) {
         if (query != null && query.containsKey(currentKey)) {
-            query.put(newKey, query.get(currentKey));
+            Object value = query.get(currentKey);
             query.remove(currentKey);
+            query.put(newKey, value);
         }
     }
 
