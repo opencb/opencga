@@ -360,8 +360,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotNull("samplesAction", commandOptions.samplesAction);
-        queryParams.putIfNotNull("annotationSetsAction", commandOptions.annotationSetsAction);
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", CliSessionManager.getCurrentStudy());
         }

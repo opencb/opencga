@@ -104,8 +104,8 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         for (Endpoint endpoint : category.getEndpoints()) {
             //If it is post, it must have parameters in the body,
             // therefore it must be different from post or have some primitive value in the body so that we can generate the method
-            if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config)) && endpoint.hasParameters()) {
-                String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
+            String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
+            if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config, commandName)) && endpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName)) {
                     sb.append("        public " + getAsClassName(getAsCamelCase(getMethodName(category, endpoint))) + "CommandOptions "
                             + getAsVariableName(getAsCamelCase(getMethodName(category, endpoint))) + "CommandOptions;\n");
@@ -127,8 +127,8 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         for (Endpoint endpoint : category.getEndpoints()) {
             //If it is post, it must have parameters in the body,
             // therefore it must be different from post or have some primitive value in the body so that we can generate the method
-            if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config)) && endpoint.hasParameters()) {
-                String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
+            String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
+            if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config, commandName)) && endpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName)) {
 
                     sb.append("        this." + getAsVariableName(getAsCamelCase(getMethodName(category, endpoint))) + "CommandOptions = " +
@@ -151,8 +151,8 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         for (Endpoint endpoint : category.getEndpoints()) {
             //If it is post, it must have parameters in the body,
             // therefore it must be different from post or have some primitive value in the body so that we can generate the method
-            if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config)) && endpoint.hasParameters()) {
-                String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
+            String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
+            if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config, commandName)) && endpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName) && !config.isExtendedOptionCommand(commandName)) {
                     sb.append("    @Parameters(commandNames = {\"" + reverseCommandName(commandName) + "\"}, commandDescription =\"" +
                             endpoint.getDescription().replaceAll("\"", "'") + "\")\n");
@@ -165,7 +165,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                     Set<String> variable_names = new HashSet<>();
                     for (Parameter parameter : endpoint.getParameters()) {
 
-                        if (config.isAvailableSubCommand(parameter.getName())) {
+                        if (config.isAvailableSubCommand(parameter.getName(), commandName)) {
                             if (!"body".equals(normaliceNames(parameter.getName()))) {
                                 if (parameter.isAvailableType() && !variable_names.contains(normaliceNames(getAsCamelCase(parameter.getName())))) {
                                     sb.append("        @Parameter(names = {" + getShortCuts(parameter, config) + "}, description = " +
@@ -180,7 +180,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                 if (parameter.getData() != null)
                                     for (Parameter bodyParameter : parameter.getData()) {
 
-                                        if (config.isAvailableSubCommand(bodyParameter.getName()) && bodyParameter.isAvailableType() && !variable_names.contains(normaliceNames(getAsCamelCase(parameter.getName())))) {
+                                        if (config.isAvailableSubCommand(bodyParameter.getName(), commandName) && bodyParameter.isAvailableType() && !variable_names.contains(normaliceNames(getAsCamelCase(parameter.getName())))) {
 
                                             sb.append("        @Parameter(names = {" + getShortCuts(bodyParameter, config) + "}, " +
                                                     "description"

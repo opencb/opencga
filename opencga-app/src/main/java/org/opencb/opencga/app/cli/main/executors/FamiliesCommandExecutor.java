@@ -335,7 +335,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("incVersion", commandOptions.incVersion);
         queryParams.putIfNotNull("updateRoles", commandOptions.updateRoles);
-        queryParams.putIfNotNull("annotationSetsAction", commandOptions.annotationSetsAction);
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", CliSessionManager.getCurrentStudy());
         }

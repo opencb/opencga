@@ -439,12 +439,6 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--samples-action"}, description = "Action to be performed if the array of samples is being updated.", required = false, arity = 1)
-        public String samplesAction; 
-    
-        @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated.", required = false, arity = 1)
-        public String annotationSetsAction; 
-    
         @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String id;
     

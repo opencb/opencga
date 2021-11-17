@@ -380,10 +380,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotNull("samplesAction", commandOptions.samplesAction);
-        queryParams.putIfNotNull("phenotypesAction", commandOptions.phenotypesAction);
-        queryParams.putIfNotNull("disordersAction", commandOptions.disordersAction);
-        queryParams.putIfNotNull("annotationSetsAction", commandOptions.annotationSetsAction);
         queryParams.putIfNotNull("incVersion", commandOptions.incVersion);
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", CliSessionManager.getCurrentStudy());

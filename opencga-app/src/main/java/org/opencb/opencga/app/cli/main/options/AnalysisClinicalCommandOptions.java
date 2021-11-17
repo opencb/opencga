@@ -1668,18 +1668,6 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--comments-action"}, description = "Action to be performed if the array of comments is being updated.", required = false, arity = 1)
-        public String commentsAction; 
-    
-        @Parameter(names = {"--flags-action"}, description = "Action to be performed if the array of flags is being updated.", required = false, arity = 1)
-        public String flagsAction; 
-    
-        @Parameter(names = {"--files-action"}, description = "Action to be performed if the array of files is being updated.", required = false, arity = 1)
-        public String filesAction; 
-    
-        @Parameter(names = {"--panels-action"}, description = "Action to be performed if the array of panels is being updated.", required = false, arity = 1)
-        public String panelsAction; 
-    
         @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String id;
     
@@ -1833,18 +1821,6 @@ public class AnalysisClinicalCommandOptions {
     
         @Parameter(names = {"--study", "-s"}, description = "[[user@]project:]study ID", required = false, arity = 1)
         public String study; 
-    
-        @Parameter(names = {"--primary-findings-action"}, description = "Action to be performed if the array of primary findings is being updated.", required = false, arity = 1)
-        public String primaryFindingsAction; 
-    
-        @Parameter(names = {"--methods-action"}, description = "Action to be performed if the array of methods is being updated.", required = false, arity = 1)
-        public String methodsAction; 
-    
-        @Parameter(names = {"--secondary-findings-action"}, description = "Action to be performed if the array of secondary findings is being updated.", required = false, arity = 1)
-        public String secondaryFindingsAction; 
-    
-        @Parameter(names = {"--comments-action"}, description = "Action to be performed if the array of comments is being updated. To REMOVE or REPLACE, the date will need to be provided to identify the comment.", required = false, arity = 1)
-        public String commentsAction; 
     
         @Parameter(names = {"--set-as"}, description = "Set interpretation as", required = false, arity = 1)
         public String setAs; 

@@ -16,14 +16,14 @@ public class Endpoint {
     private String description;
     private List<Parameter> parameters;
 
-    public boolean hasPrimitiveBodyParams(CategoryConfig config) {
+    public boolean hasPrimitiveBodyParams(CategoryConfig config, String commandName) {
 
         for (Parameter parameter : getParameters()) {
             if (parameter.getData() != null && !parameter.getData().isEmpty()) {
                 for (Parameter bodyParam : parameter.getData()) {
                     //     if ((config.isAvailableSubCommand(bodyParam.getName()) && !bodyParam.isComplex()) || (bodyParam.isStringList()
                     //     )) {
-                    if (config.isAvailableSubCommand(bodyParam.getName())) {
+                    if (config.isAvailableSubCommand(bodyParam.getName(), commandName)) {
                         return true;
                     }
                 }
@@ -62,11 +62,11 @@ public class Endpoint {
         return sb.toString();
     }
 
-    public String getMandatoryQueryParams(CategoryConfig config) {
+    public String getMandatoryQueryParams(CategoryConfig config, String commandName) {
         StringBuilder sb = new StringBuilder();
         for (Parameter parameter : getParameters()) {
             if (parameter.getParam().equals("query")) {
-                if (config.isAvailableSubCommand(parameter.getName()) && (!parameter.isComplex() || parameter.isStringList())
+                if (config.isAvailableSubCommand(parameter.getName(), commandName) && (!parameter.isComplex() || parameter.isStringList())
                         && parameter.isRequired()) {
                     sb.append("commandOptions.").append(CommandLineUtils.getAsVariableName(parameter.getName())).append(", ");
                 }

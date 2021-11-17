@@ -416,8 +416,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("incVersion", commandOptions.incVersion);
-        queryParams.putIfNotNull("annotationSetsAction", commandOptions.annotationSetsAction);
-        queryParams.putIfNotNull("phenotypesAction", commandOptions.phenotypesAction);
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", CliSessionManager.getCurrentStudy());
         }

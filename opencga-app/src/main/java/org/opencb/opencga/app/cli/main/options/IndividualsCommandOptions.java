@@ -525,18 +525,6 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @Parameter(names = {"--samples-action"}, description = "Action to be performed if the array of samples is being updated.", required = false, arity = 1)
-        public String samplesAction; 
-    
-        @Parameter(names = {"--phenotypes-action"}, description = "Action to be performed if the array of phenotypes is being updated [SET, ADD, REMOVE]", required = false, arity = 1)
-        public String phenotypesAction; 
-    
-        @Parameter(names = {"--disorders-action"}, description = "Action to be performed if the array of disorders is being updated [SET, ADD, REMOVE]", required = false, arity = 1)
-        public String disordersAction; 
-    
-        @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated.", required = false, arity = 1)
-        public String annotationSetsAction; 
-    
         @Parameter(names = {"--inc-version"}, description = "Create a new version of individual", required = false, arity = 1)
         public Boolean incVersion; 
     

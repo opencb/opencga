@@ -607,12 +607,6 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--inc-version"}, description = "Create a new version of sample", required = false, arity = 1)
         public Boolean incVersion; 
     
-        @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated.", required = false, arity = 1)
-        public String annotationSetsAction; 
-    
-        @Parameter(names = {"--phenotypes-action"}, description = "Action to be performed if the array of phenotypes is being updated [SET, ADD, REMOVE]", required = false, arity = 1)
-        public String phenotypesAction; 
-    
         @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String id;
     

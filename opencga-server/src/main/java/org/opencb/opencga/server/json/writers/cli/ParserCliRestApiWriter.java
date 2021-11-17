@@ -107,8 +107,8 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
                     + getCategoryCommandName(category, config) + "\");\n");
             for (Endpoint endpoint : category.getEndpoints()) {
 
-                if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config)) && endpoint.hasParameters()) {
-                    String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
+                String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
+                if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config, commandName)) && endpoint.hasParameters()) {
                     if (config.isAvailableCommand(commandName)) {
                         sb.append("        " + getAsVariableName(category.getName()) + "SubCommands.addCommand(\"" + commandName + "\", "
                                 + getAsVariableName(category.getName()) + "CommandOptions." + getAsCamelCase(commandName) +

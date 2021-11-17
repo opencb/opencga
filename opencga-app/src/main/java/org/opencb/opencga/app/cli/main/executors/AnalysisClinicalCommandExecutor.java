@@ -1021,10 +1021,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotNull("commentsAction", commandOptions.commentsAction);
-        queryParams.putIfNotNull("flagsAction", commandOptions.flagsAction);
-        queryParams.putIfNotNull("filesAction", commandOptions.filesAction);
-        queryParams.putIfNotNull("panelsAction", commandOptions.panelsAction);
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", CliSessionManager.getCurrentStudy());
         }
@@ -1143,10 +1139,6 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotNull("primaryFindingsAction", commandOptions.primaryFindingsAction);
-        queryParams.putIfNotNull("methodsAction", commandOptions.methodsAction);
-        queryParams.putIfNotNull("secondaryFindingsAction", commandOptions.secondaryFindingsAction);
-        queryParams.putIfNotNull("commentsAction", commandOptions.commentsAction);
         queryParams.putIfNotNull("setAs", commandOptions.setAs);
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", CliSessionManager.getCurrentStudy());

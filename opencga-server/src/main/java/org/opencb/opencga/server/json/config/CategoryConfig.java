@@ -175,7 +175,7 @@ public class CategoryConfig {
         return false;
     }
 
-    public boolean isAvailableSubCommand(String sbname) {
+    public boolean isAvailableSubCommand(String sbname, String commandName) {
         if (commands != null) {
             for (Command cmd : commands) {
                 if (cmd.getSubcommands() != null) {

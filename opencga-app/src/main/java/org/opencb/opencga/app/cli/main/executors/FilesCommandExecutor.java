@@ -533,9 +533,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotEmpty("study", commandOptions.study);
         queryParams.putIfNotNull("sampleIdsAction", commandOptions.sampleIdsAction);
-        queryParams.putIfNotNull("annotationSetsAction", commandOptions.annotationSetsAction);
-        queryParams.putIfNotNull("relatedFilesAction", commandOptions.relatedFilesAction);
-        queryParams.putIfNotNull("tagsAction", commandOptions.tagsAction);
         if(queryParams.get("study")==null){
                 queryParams.putIfNotEmpty("study", CliSessionManager.getCurrentStudy());
         }

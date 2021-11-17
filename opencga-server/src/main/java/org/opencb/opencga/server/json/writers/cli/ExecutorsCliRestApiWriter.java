@@ -161,8 +161,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         for (Endpoint endpoint : category.getEndpoints()) {
             //If it is post, it must have parameters in the body,
             // therefore it must be different from post or have some primitive value in the body so that we can generate the method
-            if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config)) && endpoint.hasParameters()) {
-                String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
+            String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
+            if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config, commandName)) && endpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName)) {
                     sb.append("            case \"" + commandName + "\":\n");
                     sb.append("                queryResponse = " + getAsCamelCase(commandName) + "();\n");
@@ -203,8 +203,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         for (Endpoint endpoint : category.getEndpoints()) {
             //If it is post, it must have parameters in the body,
             // therefore it must be different from post or have some primitive value in the body so that we can generate the method
-            if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config)) && endpoint.hasParameters()) {
-                String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
+            String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
+            if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config, commandName)) && endpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName)) {
                     sb.append("\n");
                     sb.append("    " + (config.isExecutorExtendedCommand(commandName) ? "protected" :
@@ -219,8 +219,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                                 + "CommandOptions commandOptions = " + getAsVariableName(getAsCamelCase(category.getName())) +
                                 "CommandOptions."
                                 + getAsCamelCase(commandName) + "CommandOptions;\n");
-                        sb.append(getQueryParams(endpoint));
-                        sb.append(getBodyParams(endpoint, config));
+                        sb.append(getQueryParams(endpoint, config, getAsCamelCase(commandName)));
+                        sb.append(getBodyParams(endpoint, config, commandName));
                         sb.append(getReturn(category, endpoint, config, commandName));
                     }
                     sb.append("    }\n");
@@ -236,8 +236,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                 "        return openCGAClient.get" + getAsClassName(config.getKey()) + "Client()."
                         + getAsCamelCase(commandName) + "(";
         res += endpoint.getPathParams();
-        res += endpoint.getMandatoryQueryParams(config);
-        if (endpoint.hasPrimitiveBodyParams(config)) {
+        res += endpoint.getMandatoryQueryParams(config, commandName);
+        if (endpoint.hasPrimitiveBodyParams(config, commandName)) {
             res += getAsVariableName(endpoint.getBodyParamsObject()) + ", ";
         }
         if (endpoint.hasQueryParams()) {
@@ -250,9 +250,9 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         return res;
     }
 
-    private String getBodyParams(Endpoint endpoint, CategoryConfig config) {
+    private String getBodyParams(Endpoint endpoint, CategoryConfig config, String commandName) {
         StringBuilder sb = new StringBuilder();
-        if (endpoint.hasPrimitiveBodyParams(config)) {
+        if (endpoint.hasPrimitiveBodyParams(config, commandName)) {
 
             for (Parameter parameter : endpoint.getParameters()) {
                 if (parameter.getData() != null && !parameter.getData().isEmpty()) {
@@ -265,7 +265,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             for (Parameter parameter : endpoint.getParameters()) {
                 if (parameter.getData() != null && !parameter.getData().isEmpty()) {
                     for (Parameter bodyParam : parameter.getData()) {
-                        if (config.isAvailableSubCommand(bodyParam.getName())) {
+                        if (config.isAvailableSubCommand(bodyParam.getName(), commandName)) {
                             if (!bodyParam.isComplex() && !bodyParam.isInnerParam()) {
                                 //sometimes the name of the parameter has the prefix "body" so as not to coincide with another parameter
                                 // with the same name, but the setter does not have this prefix, so it must be removed
@@ -322,27 +322,29 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         return sb.toString();
     }
 
-    private String getQueryParams(Endpoint endpoint) {
+    private String getQueryParams(Endpoint endpoint, CategoryConfig config, String commandName) {
         String res = "\n        ObjectMap queryParams = new ObjectMap();\n";
         boolean enc = false;
         boolean studyPresent = false;
         for (Parameter parameter : endpoint.getParameters()) {
-            if ("query".equals(parameter.getParam()) && !parameter.isRequired() && parameter.isAvailableType()) {
-                enc = true;
-                if (normaliceNames(parameter.getName()).equals("study")) {
-                    studyPresent = true;
-                }
-                if (StringUtils.isNotEmpty(parameter.getType()) && "string".equalsIgnoreCase(parameter.getType())) {
-                    res += "        queryParams.putIfNotEmpty(\"" + normaliceNames(parameter.getName()) + "\", commandOptions."
-                            + normaliceNames(parameter.getName()) + ");\n";
-                } else {
-                    if (parameter.isStringList()) {
-                        res += "        queryParams.putIfNotNull(\"" + normaliceNames(parameter.getName()) + "\", CommandLineUtils" +
-                                ".getListValues(commandOptions."
-                                + normaliceNames(parameter.getName()) + "));\n";
-                    } else {
-                        res += "        queryParams.putIfNotNull(\"" + normaliceNames(parameter.getName()) + "\", commandOptions."
+            if (config.isAvailableSubCommand(parameter.getName(), commandName)) {
+                if ("query".equals(parameter.getParam()) && !parameter.isRequired() && parameter.isAvailableType()) {
+                    enc = true;
+                    if (normaliceNames(parameter.getName()).equals("study")) {
+                        studyPresent = true;
+                    }
+                    if (StringUtils.isNotEmpty(parameter.getType()) && "string".equalsIgnoreCase(parameter.getType())) {
+                        res += "        queryParams.putIfNotEmpty(\"" + normaliceNames(parameter.getName()) + "\", commandOptions."
                                 + normaliceNames(parameter.getName()) + ");\n";
+                    } else {
+                        if (parameter.isStringList()) {
+                            res += "        queryParams.putIfNotNull(\"" + normaliceNames(parameter.getName()) + "\", CommandLineUtils" +
+                                    ".getListValues(commandOptions."
+                                    + normaliceNames(parameter.getName()) + "));\n";
+                        } else {
+                            res += "        queryParams.putIfNotNull(\"" + normaliceNames(parameter.getName()) + "\", commandOptions."
+                                    + normaliceNames(parameter.getName()) + ");\n";
+                        }
                     }
                 }
             }

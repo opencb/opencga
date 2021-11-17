@@ -661,15 +661,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--sample-ids-action"}, description = "Action to be performed if the array of samples is being updated.", required = false, arity = 1)
         public String sampleIdsAction; 
     
-        @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated.", required = false, arity = 1)
-        public String annotationSetsAction; 
-    
-        @Parameter(names = {"--related-files-action"}, description = "Action to be performed if the array of relatedFiles is being updated.", required = false, arity = 1)
-        public String relatedFilesAction; 
-    
-        @Parameter(names = {"--tags-action"}, description = "Action to be performed if the array of tags is being updated.", required = false, arity = 1)
-        public String tagsAction; 
-    
         @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
         public String name;
     

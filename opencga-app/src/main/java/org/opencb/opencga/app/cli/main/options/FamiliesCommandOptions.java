@@ -421,9 +421,6 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--update-roles"}, description = "Update the member roles within the family", required = false, arity = 1)
         public Boolean updateRoles; 
     
-        @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated.", required = false, arity = 1)
-        public String annotationSetsAction; 
-    
         @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String id;
     
