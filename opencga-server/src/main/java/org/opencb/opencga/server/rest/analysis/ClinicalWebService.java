@@ -34,7 +34,6 @@ import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.InterpretationManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -470,7 +469,7 @@ public class ClinicalWebService extends AnalysisWebService {
             actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), primaryFindingsAction);
             actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), secondaryFindingsAction);
             actionMap.put(InterpretationDBAdaptor.QueryParams.COMMENTS.key(), commentsAction);
-            actionMap.put(InterpretationDBAdaptor.QueryParams.METHODS.key(), methodsAction);
+            actionMap.put(InterpretationDBAdaptor.QueryParams.METHOD.key(), methodsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             return createOkResponse(catalogInterpretationManager.update(studyStr, clinicalId, interpretationId, params, setAs, queryOptions, token));
@@ -494,36 +493,6 @@ public class ClinicalWebService extends AnalysisWebService {
             return createErrorResponse(e);
         }
     }
-
-    @POST
-    @Path("/{clinicalAnalysis}/interpretation/{interpretation}/merge")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Merge interpretation", response = Interpretation.class)
-    public Response mergeInterpretation(
-            @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
-            @ApiParam(value = "Interpretation ID where it will be merged") @PathParam("interpretation") String interpretationId,
-            @ApiParam(value = "Secondary Interpretation ID to merge from") @QueryParam("secondaryInterpretationId") String secondaryInterpretationId,
-            @ApiParam(value = "Comma separated list of findings to merge. If not provided, all findings will be merged.")
-            @QueryParam("findings") String findings,
-            @ApiParam(name = "body", value = "JSON containing clinical interpretation to merge from") InterpretationMergeParams params) {
-        try {
-            if (StringUtils.isNotEmpty(secondaryInterpretationId) && params != null) {
-                throw new CatalogParameterException("Only one 'secondaryInterpretationId' or an interpretation in the body is accepted.");
-            } else if (StringUtils.isEmpty(secondaryInterpretationId) && params == null) {
-                throw new CatalogParameterException("One 'secondaryInterpretationId' or an interpretation in the body is expected.");
-            } else if (StringUtils.isNotEmpty(secondaryInterpretationId)) {
-                return createOkResponse(catalogInterpretationManager.merge(studyStr, clinicalId, interpretationId, secondaryInterpretationId,
-                        getIdList(findings, false), token));
-            } else {
-                return createOkResponse(catalogInterpretationManager.merge(studyStr, clinicalId, interpretationId, params.toInterpretation(),
-                        getIdList(findings, false), token));
-            }
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
 
     @DELETE
     @Path("/{clinicalAnalysis}/interpretation/{interpretations}/delete")
@@ -624,7 +593,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.INTERPRETATION_UUID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_UUID_PARAM) String uuid,
             @ApiParam(value = ParamConstants.INTERPRETATION_CLINICAL_ANALYSIS_ID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_CLINICAL_ANALYSIS_ID_PARAM) String clinicalAnalysisId,
             @ApiParam(value = ParamConstants.INTERPRETATION_ANALYST_ID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_ANALYST_ID_PARAM) String analystId,
-            @ApiParam(value = ParamConstants.INTERPRETATION_METHODS_NAME_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_METHODS_NAME_PARAM) String methodsName,
+            @ApiParam(value = ParamConstants.INTERPRETATION_METHOD_NAME_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_METHOD_NAME_PARAM) String method,
             @ApiParam(value = ParamConstants.INTERPRETATION_PANELS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_PANELS_PARAM) String panels,
             @ApiParam(value = ParamConstants.INTERPRETATION_PRIMARY_FINDINGS_IDS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_PRIMARY_FINDINGS_IDS_PARAM) String primaryFindings,
             @ApiParam(value = ParamConstants.INTERPRETATION_SECONDARY_FINDINGS_IDS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_SECONDARY_FINDINGS_IDS_PARAM) String secondaryFindings,
@@ -639,7 +608,7 @@ public class ClinicalWebService extends AnalysisWebService {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             query.putIfNotEmpty(ParamConstants.INTERPRETATION_ANALYST_ID_PARAM, clinicalAnalyst);
-            query.putIfNotEmpty(ParamConstants.INTERPRETATION_METHODS_NAME_PARAM, clinicalAnalyst);
+            query.putIfNotEmpty(ParamConstants.INTERPRETATION_METHOD_NAME_PARAM, clinicalAnalyst);
             query.remove("analyst");
             query.remove("methods");
             return createOkResponse(catalogInterpretationManager.search(studyStr, query, queryOptions, token));
@@ -657,7 +626,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.INTERPRETATION_UUID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_UUID_PARAM) String uuid,
             @ApiParam(value = ParamConstants.INTERPRETATION_CLINICAL_ANALYSIS_ID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_CLINICAL_ANALYSIS_ID_PARAM) String clinicalAnalysisId,
             @ApiParam(value = ParamConstants.INTERPRETATION_ANALYST_ID_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_ANALYST_ID_PARAM) String analystId,
-            @ApiParam(value = ParamConstants.INTERPRETATION_METHODS_NAME_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_METHODS_NAME_PARAM) String methodsName,
+            @ApiParam(value = ParamConstants.INTERPRETATION_METHOD_NAME_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_METHOD_NAME_PARAM) String methodsName,
             @ApiParam(value = ParamConstants.INTERPRETATION_PANELS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_PANELS_PARAM) String panels,
             @ApiParam(value = ParamConstants.INTERPRETATION_PRIMARY_FINDINGS_IDS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_PRIMARY_FINDINGS_IDS_PARAM) String primaryFindings,
             @ApiParam(value = ParamConstants.INTERPRETATION_SECONDARY_FINDINGS_IDS_DESCRIPTION) @QueryParam(ParamConstants.INTERPRETATION_SECONDARY_FINDINGS_IDS_PARAM) String secondaryFindings,
@@ -675,7 +644,7 @@ public class ClinicalWebService extends AnalysisWebService {
             query.remove(ParamConstants.DISTINCT_FIELD_PARAM);
 
             query.putIfNotEmpty(ParamConstants.INTERPRETATION_ANALYST_ID_PARAM, clinicalAnalyst);
-            query.putIfNotEmpty(ParamConstants.INTERPRETATION_METHODS_NAME_PARAM, clinicalAnalyst);
+            query.putIfNotEmpty(ParamConstants.INTERPRETATION_METHOD_NAME_PARAM, clinicalAnalyst);
             query.remove("analyst");
             query.remove("methods");
 

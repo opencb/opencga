@@ -29,10 +29,7 @@ public class ExecutorFactory {
     private BatchExecutor executor;
 
     public ExecutorFactory(Configuration configuration) {
-        this(configuration.getAnalysis().getExecution());
-    }
-
-    public ExecutorFactory(Execution execution) {
+        Execution execution = configuration.getAnalysis().getExecution();
         String mode = StringUtils.isEmpty(execution.getId())
                 ? "local" : execution.getId().toLowerCase();
 
@@ -49,7 +46,7 @@ public class ExecutorFactory {
                 break;
             case "k8s":
             case "kubernetes":
-                this.executor = new K8SExecutor(execution);
+                this.executor = new K8SExecutor(configuration);
                 break;
             default:
                 throw new UnsupportedOperationException("nonsoupported execution mode { " + mode

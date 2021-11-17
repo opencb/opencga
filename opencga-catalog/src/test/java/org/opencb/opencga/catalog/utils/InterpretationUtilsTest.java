@@ -49,9 +49,9 @@ public class InterpretationUtilsTest {
         }
         for (ClinicalVariant.Status value : ClinicalVariant.Status.values()) {
             if (value == ClinicalVariant.Status.NOT_REVIEWED) {
-                assertEquals(0, (int) interpretationStats.getPrimaryFindings().getVariantStatusCount().get(value));
+                assertEquals(0, (int) interpretationStats.getPrimaryFindings().getStatusCount().get(value));
             } else {
-                assertEquals(1, (int) interpretationStats.getPrimaryFindings().getVariantStatusCount().get(value));
+                assertEquals(1, (int) interpretationStats.getPrimaryFindings().getStatusCount().get(value));
             }
         }
         assertEquals(3, interpretationStats.getPrimaryFindings().getGeneCount().size());
@@ -71,9 +71,9 @@ public class InterpretationUtilsTest {
         }
         for (ClinicalVariant.Status value : ClinicalVariant.Status.values()) {
             if (value == ClinicalVariant.Status.REPORTED) {
-                assertEquals(2, (int) interpretationStats.getSecondaryFindings().getVariantStatusCount().get(value));
+                assertEquals(2, (int) interpretationStats.getSecondaryFindings().getStatusCount().get(value));
             } else {
-                assertEquals(1, (int) interpretationStats.getSecondaryFindings().getVariantStatusCount().get(value));
+                assertEquals(1, (int) interpretationStats.getSecondaryFindings().getStatusCount().get(value));
             }
         }
         assertEquals(3, interpretationStats.getSecondaryFindings().getGeneCount().size());
@@ -83,8 +83,8 @@ public class InterpretationUtilsTest {
     }
 
     private ClinicalVariant getClinicalVariant(int i) {
-        String gene = GENE_NAMES.get(i%3);
-        String tier = TIER_NAMES.get(i%4);
+        String gene = GENE_NAMES.get(i % 3);
+        String tier = TIER_NAMES.get(i % 4);
         ClinicalVariant.Status status = Arrays.asList(ClinicalVariant.Status.values()).get(i % 5);
         VariantAnnotation variantAnnotation = new VariantAnnotation();
         variantAnnotation.setConsequenceTypes(Collections.singletonList(

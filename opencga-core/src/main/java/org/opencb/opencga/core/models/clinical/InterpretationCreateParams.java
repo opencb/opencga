@@ -37,7 +37,7 @@ public class InterpretationCreateParams {
     private String creationDate;
     private String modificationDate;
     private ClinicalAnalystParam analyst;
-    private List<InterpretationMethod> methods;
+    private InterpretationMethod method;
     private List<ClinicalVariant> primaryFindings;
     private List<ClinicalVariant> secondaryFindings;
     private List<PanelReferenceParam> panels;
@@ -48,7 +48,7 @@ public class InterpretationCreateParams {
     }
 
     public InterpretationCreateParams(String id, String description, String clinicalAnalysisId, String creationDate,
-                                      String modificationDate, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
+                                      String modificationDate, ClinicalAnalystParam analyst, InterpretationMethod method,
                                       List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
                                       List<PanelReferenceParam> panels, List<ClinicalCommentParam> comments,
                                       Map<String, Object> attributes) {
@@ -58,7 +58,7 @@ public class InterpretationCreateParams {
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.analyst = analyst;
-        this.methods = methods;
+        this.method = method;
         this.primaryFindings = primaryFindings;
         this.secondaryFindings = secondaryFindings;
         this.panels = panels;
@@ -69,8 +69,8 @@ public class InterpretationCreateParams {
     public static InterpretationCreateParams of(Interpretation interpretation) {
         return new InterpretationCreateParams(interpretation.getId(), interpretation.getDescription(),
                 interpretation.getClinicalAnalysisId(), interpretation.getCreationDate(), interpretation.getModificationDate(),
-                ClinicalAnalystParam.of(interpretation.getAnalyst()), interpretation.getMethods(),
-                interpretation.getPrimaryFindings(), interpretation.getSecondaryFindings(),
+                ClinicalAnalystParam.of(interpretation.getAnalyst()), interpretation.getMethod(), interpretation.getPrimaryFindings(),
+                interpretation.getSecondaryFindings(),
                 interpretation.getPanels() != null
                         ? interpretation.getPanels().stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())
                         : null,
@@ -89,7 +89,7 @@ public class InterpretationCreateParams {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", analyst=").append(analyst);
-        sb.append(", methods=").append(methods);
+        sb.append(", method=").append(method);
         sb.append(", primaryFindings=").append(primaryFindings);
         sb.append(", secondaryFindings=").append(secondaryFindings);
         sb.append(", panels=").append(panels);
@@ -100,7 +100,7 @@ public class InterpretationCreateParams {
     }
 
     public Interpretation toClinicalInterpretation() {
-        return new Interpretation(id, description, clinicalAnalysisId, analyst != null ? analyst.toClinicalAnalyst() : null, methods,
+        return new Interpretation(id, description, clinicalAnalysisId, analyst != null ? analyst.toClinicalAnalyst() : null, method,
                 creationDate, modificationDate, primaryFindings, secondaryFindings,
                 panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
@@ -165,12 +165,12 @@ public class InterpretationCreateParams {
         return this;
     }
 
-    public List<InterpretationMethod> getMethods() {
-        return methods;
+    public InterpretationMethod getMethod() {
+        return method;
     }
 
-    public InterpretationCreateParams setMethods(List<InterpretationMethod> methods) {
-        this.methods = methods;
+    public InterpretationCreateParams setMethod(InterpretationMethod method) {
+        this.method = method;
         return this;
     }
 

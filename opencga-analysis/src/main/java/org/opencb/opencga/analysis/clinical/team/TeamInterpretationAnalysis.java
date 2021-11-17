@@ -115,7 +115,7 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
                     .setConfig(config)
                     .execute();
 
-            saveInterpretation(studyId, clinicalAnalysis, diseasePanels, null, config);
+            saveInterpretation(studyId, clinicalAnalysis, null);
         });
     }
 

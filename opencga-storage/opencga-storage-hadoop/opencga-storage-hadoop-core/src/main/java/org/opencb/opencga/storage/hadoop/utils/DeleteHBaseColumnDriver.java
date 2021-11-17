@@ -3,29 +3,42 @@ package org.opencb.opencga.storage.hadoop.utils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.ContentSummary;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
-import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.Mutation;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.KeyOnlyFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
+import org.apache.hadoop.hbase.protobuf.generated.ClientProtos;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Pair;
+import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.util.ToolRunner;
+import org.apache.hadoop.mapreduce.JobContext;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileAsBinaryOutputFormat;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.WRITE_MAPPERS_LIMIT_FACTOR;
 
 /**
  * Created on 19/02/18.
@@ -37,13 +50,15 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
     public static final String COLUMNS_TO_DELETE = "columns_to_delete";
     public static final String DELETE_ALL_COLUMNS = "delete_all_columns";
     public static final String REGIONS_TO_DELETE = "regions_to_delete";
+    public static final String TWO_PHASES_PARAM = "two_phases_delete";
     private static final Logger LOGGER = LoggerFactory.getLogger(DeleteHBaseColumnDriver.class);
     // This separator is not valid at Bytes.toStringBinary
     private static final String REGION_SEPARATOR = "\\\\";
-    public static final String DELETE_HBASE_COLUMN_MAPPER_CLASS = "delete.hbase.column.mapper.class";
+    public static final String DELETE_HBASE_COLUMN_TASK_CLASS = "delete.hbase.column.task.class";
 
     private Map<String, List<String>> columns;
     private List<Pair<byte[], byte[]>> regions;
+    private Path outdir;
 
     public void setupJob(Job job, String table) throws IOException {
         Set<String> allColumns = columns.entrySet()
@@ -83,11 +98,59 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
             scans = Collections.singletonList(templateScan);
         }
 
-        Class<? extends DeleteHBaseColumnMapper> mapperClass = job.getConfiguration()
-                .getClass(DELETE_HBASE_COLUMN_MAPPER_CLASS, DeleteHBaseColumnMapper.class, DeleteHBaseColumnMapper.class);
-
         // set other scan attrs
-        VariantMapReduceUtil.initTableMapperJob(job, table, table, scans, mapperClass);
+        boolean twoPhases = Boolean.parseBoolean(getParam(TWO_PHASES_PARAM));
+        if (!twoPhases) {
+            VariantMapReduceUtil.initTableMapperJob(job, table, scans, DeleteHBaseColumnMapper.class);
+            VariantMapReduceUtil.setOutputHBaseTable(job, table);
+            VariantMapReduceUtil.setNoneReduce(job);
+        } else {
+            VariantMapReduceUtil.initTableMapperJob(job, table, scans, DeleteHBaseColumnToProtoMapper.class);
+            outdir = getTempOutdir("opencga_delete", table);
+            outdir.getFileSystem(getConf()).deleteOnExit(outdir);
+
+            LOGGER.info(" * Temporary outdir file: " + outdir.toUri());
+
+
+            job.setOutputFormatClass(SequenceFileAsBinaryOutputFormat.class);
+            job.setOutputValueClass(BytesWritable.class);
+            job.setOutputKeyClass(BytesWritable.class);
+            SequenceFileAsBinaryOutputFormat.setOutputPath(job, outdir);
+            SequenceFileAsBinaryOutputFormat.setCompressOutput(job, true);
+            SequenceFileAsBinaryOutputFormat.setOutputCompressionType(job, SequenceFile.CompressionType.BLOCK);
+            SequenceFileAsBinaryOutputFormat.setOutputCompressorClass(job, DeflateCodec.class);
+
+            VariantMapReduceUtil.setNoneReduce(job);
+        }
+    }
+
+    @Override
+    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
+        super.postExecution(succeed);
+        try {
+            if (succeed) {
+                if (outdir != null) {
+                    FileSystem fs = FileSystem.get(getConf());
+                    ContentSummary contentSummary = fs.getContentSummary(outdir);
+                    LOGGER.info("Generated file " + outdir.toUri());
+                    LOGGER.info(" - Size (HDFS)         : " + IOUtils.humanReadableByteCount(contentSummary.getLength(), false));
+                    LOGGER.info(" - SpaceConsumed (raw) : " + IOUtils.humanReadableByteCount(contentSummary.getSpaceConsumed(), false));
+
+                    String writeMapperslimitFactor = getParam(WRITE_MAPPERS_LIMIT_FACTOR.key(),
+                            WRITE_MAPPERS_LIMIT_FACTOR.defaultValue().toString());
+                    new HBaseWriterDriver(getConf()).run(HBaseWriterDriver.buildArgs(table,
+                            new ObjectMap()
+                                    .append(HBaseWriterDriver.INPUT_FILE_PARAM, outdir.toUri().toString())
+                                    .append(WRITE_MAPPERS_LIMIT_FACTOR.key(), writeMapperslimitFactor)));
+                }
+            }
+        } catch (Exception e) {
+            throw new StorageEngineException("Error writing mutations", e);
+        } finally {
+            if (outdir != null) {
+                deleteTemporaryFile(outdir);
+            }
+        }
     }
 
     @Override
@@ -218,44 +281,105 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
         return buildArgs(table, args);
     }
 
-    public static void main(String[] args) throws Exception {
-        try {
-            System.exit(new DeleteHBaseColumnDriver().privateMain(args, null));
-        } catch (Exception e) {
-            LOGGER.error("Error executing " + DeleteHBaseColumnDriver.class, e);
-            System.exit(1);
-        }
+    @SuppressWarnings("unchecked")
+    public static void main(String[] args) {
+        main(args, (Class<? extends AbstractVariantsTableDriver>) MethodHandles.lookup().lookupClass());
     }
 
-    public int privateMain(String[] args, Configuration conf) throws Exception {
-        // info https://code.google.com/p/temapred/wiki/HbaseWithJava
-        if (conf != null) {
-            setConf(conf);
-        }
-        return ToolRunner.run(this, args);
-    }
-
-    public static class DeleteHBaseColumnMapper extends TableMapper<ImmutableBytesWritable, Mutation> {
-
-        private Set<String> columnsToCount;
-        private Map<String, List<String>> columnsToDelete;
-        private boolean deleteAllColumns;
-
+    public static class DeleteHBaseColumnToProtoMapper extends TableMapper<BytesWritable, BytesWritable> {
+        private DeleteHBaseColumnTask task;
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            deleteAllColumns = context.getConfiguration().getBoolean(DELETE_ALL_COLUMNS, false);
-            columnsToCount = new HashSet<>(context.getConfiguration().get(COLUMNS_TO_COUNT) == null
-                    ? Collections.emptyList()
-                    : Arrays.asList(context.getConfiguration().getStrings(COLUMNS_TO_COUNT)));
-            columnsToDelete = getColumnsToDelete(context.getConfiguration());
+            Class<? extends DeleteHBaseColumnTask> taskClass = getDeleteHbaseColumnTaskClass(context);
+            try {
+                task = taskClass.newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new IllegalArgumentException("Unable to create new instance of " + DeleteHBaseColumnTask.class, e);
+            }
+            task.setup(context);
         }
 
         @Override
         protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
+            for (Mutation value : task.map(result)) {
+                ClientProtos.MutationProto proto;
+                if (value instanceof Delete) {
+                    proto = ProtobufUtil.toMutation(ClientProtos.MutationProto.MutationType.DELETE, value);
+                } else if (value instanceof Put) {
+                    proto = ProtobufUtil.toMutation(ClientProtos.MutationProto.MutationType.PUT, value);
+                } else {
+                    throw new IllegalArgumentException("Unknown mutation type " + value.getClass());
+                }
+                context.write(new BytesWritable(value.getRow()), new BytesWritable(proto.toByteArray()));
+            }
+            // Indicate that the process is still alive
+            context.progress();
+        }
+    }
+
+    public static class DeleteHBaseColumnMapper extends TableMapper<ImmutableBytesWritable, Mutation> {
+        private DeleteHBaseColumnTask task;
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            Class<? extends DeleteHBaseColumnTask> taskClass = getDeleteHbaseColumnTaskClass(context);
+            try {
+                task = taskClass.newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new IllegalArgumentException("Unable to create new instance of " + DeleteHBaseColumnTask.class, e);
+            }
+            task.setup(context);
+        }
+
+        @Override
+        protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
+            for (Mutation mutation : task.map(result)) {
+                context.write(key, mutation);
+            }
+            // Indicate that the process is still alive
+            context.progress();
+        }
+    }
+
+    public static class DeleteHBaseColumnTask {
+        private TaskAttemptContext context;
+        protected Set<String> columnsToCount;
+        protected Map<String, List<String>> columnsToDelete;
+        protected boolean deleteAllColumns;
+
+        protected void initCounter(String counter) {
+            count(counter, 0);
+        }
+
+        protected final void count(String counter) {
+            count(counter, 1);
+        }
+
+        protected final void count(String counter, int incr) {
+            context.getCounter(COUNTER_GROUP_NAME, counter).increment(incr);
+        }
+
+        protected final void setup(TaskAttemptContext context) throws IOException {
+            this.context = context;
+            setup(context.getConfiguration());
+            initCounter("INPUT_ROWS");
+            initCounter("DELETE");
+            initCounter("NO_DELETE");
+        }
+
+        protected void setup(Configuration configuration) throws IOException {
+            deleteAllColumns = configuration.getBoolean(DELETE_ALL_COLUMNS, false);
+            columnsToCount = new HashSet<>(configuration.get(COLUMNS_TO_COUNT) == null
+                    ? Collections.emptyList()
+                    : Arrays.asList(configuration.getStrings(COLUMNS_TO_COUNT)));
+            columnsToDelete = getColumnsToDelete(configuration);
+        }
+
+        protected List<Mutation> map(Result result) {
             Delete delete = new Delete(result.getRow());
+            count("INPUT_ROWS");
             if (deleteAllColumns) {
-                context.getCounter("DeleteColumn", "delete").increment(1);
-                context.write(key, delete);
+                count("DELETE");
+                return Collections.singletonList(delete);
             } else {
                 for (Cell cell : result.rawCells()) {
                     byte[] family = CellUtil.cloneFamily(cell);
@@ -266,25 +390,30 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
                         delete.addColumn(family, qualifier);
                         for (String otherColumn : otherColumns) {
                             if (columnsToCount.contains(otherColumn)) {
-                                context.getCounter("DeleteColumn", otherColumn).increment(1);
+                                count(otherColumn);
                             }
                             String[] split = otherColumn.split(":", 2);
                             delete.addColumn(Bytes.toBytes(split[0]), Bytes.toBytes(split[1]));
                         }
                         if (columnsToCount.contains(c)) {
-                            context.getCounter("DeleteColumn", c).increment(1);
+                            count(c);
                         }
                     }
                 }
-                if (!delete.isEmpty()) {
-                    context.getCounter("DeleteColumn", "delete").increment(1);
-                    context.write(key, delete);
+                if (delete.isEmpty()) {
+                    count("NO_DELETE");
+                    return Collections.emptyList();
+                } else {
+                    count("DELETE");
+                    return Collections.singletonList(delete);
                 }
             }
-            if (!delete.isEmpty()) {
-                context.write(key, delete);
-            }
         }
+    }
+
+    public static Class<? extends DeleteHBaseColumnTask> getDeleteHbaseColumnTaskClass(JobContext context) {
+        return context.getConfiguration()
+                .getClass(DELETE_HBASE_COLUMN_TASK_CLASS, DeleteHBaseColumnTask.class, DeleteHBaseColumnTask.class);
     }
 
 }

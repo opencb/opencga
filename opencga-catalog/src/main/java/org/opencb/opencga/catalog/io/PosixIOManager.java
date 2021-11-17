@@ -437,6 +437,17 @@ public class PosixIOManager extends IOManager {
     }
 
     @Override
+    public void writeBase64(String base64, Path file) throws CatalogIOException {
+        checkWritableUri(file.getParent().toUri());
+        byte[] decodedBytes = Base64.getDecoder().decode(base64);
+        try {
+            org.apache.commons.io.FileUtils.writeByteArrayToFile(file.toFile(), decodedBytes);
+        } catch (IOException e) {
+            throw new CatalogIOException("Cannot write base64 image to file", e);
+        }
+    }
+
+    @Override
     public FileContent head(Path file, long offset, int lines) throws CatalogIOException {
         if (Files.isRegularFile(file)) {
             if (lines > ParamConstants.MAXIMUM_LINES_CONTENT) {

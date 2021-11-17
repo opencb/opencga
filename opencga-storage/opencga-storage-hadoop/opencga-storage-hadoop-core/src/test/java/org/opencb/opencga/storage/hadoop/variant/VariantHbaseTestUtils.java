@@ -507,7 +507,7 @@ public class VariantHbaseTestUtils {
     }
 
     public static void removeFile(HadoopVariantStorageEngine variantStorageManager, String dbName, String file,
-                                  StudyMetadata studyMetadata, Map<? extends String, ?> otherParams) throws Exception {
+                                  StudyMetadata studyMetadata, Map<? extends String, ?> otherParams, URI outputUri) throws Exception {
         ObjectMap params = new ObjectMap()
                 .append(VariantStorageOptions.STUDY.key(), studyMetadata.getName());
         if (otherParams != null) {
@@ -515,7 +515,7 @@ public class VariantHbaseTestUtils {
         }
 
         variantStorageManager.getOptions().putAll(params);
-        variantStorageManager.removeFile(studyMetadata.getName(), file);
+        variantStorageManager.removeFile(studyMetadata.getName(), file, outputUri);
 //        studyMetadata.copy(
 //                variantStorageManager
 //                        .getDBAdaptor()

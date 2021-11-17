@@ -37,6 +37,7 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -90,16 +91,17 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
     @Override
-    protected void preLoadRegisterAndValidateFile(int studyId, VariantFileMetadata fileMetadata) throws StorageEngineException {
-        super.preLoadRegisterAndValidateFile(studyId, fileMetadata);
+    protected void preLoadRegisterAndValidateFile(int studyId, VariantFileMetadata variantFileMetadata) throws StorageEngineException {
+        super.preLoadRegisterAndValidateFile(studyId, variantFileMetadata);
         boolean loadSampleIndex = YesNoAuto.parse(getOptions(), LOAD_SAMPLE_INDEX.key()).orYes().booleanValue();
+        FileMetadata fileMetadata = getMetadataManager().getFileMetadata(studyId, getFileId());
 
         int version = getMetadataManager().getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
         Set<String> alreadyIndexedSamples = new LinkedHashSet<>();
         Set<Integer> processedSamples = new LinkedHashSet<>();
         Set<Integer> samplesWithoutSplitData = new LinkedHashSet<>();
         VariantStorageEngine.SplitData splitData = VariantStorageEngine.SplitData.from(options);
-        for (String sample : fileMetadata.getSampleIds()) {
+        for (String sample : variantFileMetadata.getSampleIds()) {
             Integer sampleId = getMetadataManager().getSampleId(studyId, sample);
             SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(studyId, sampleId);
             if (splitData != null && sampleMetadata.getSplitData() != null) {
@@ -109,7 +111,15 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                             + " with existing " + sampleMetadata.getSplitData());
                 }
             }
-
+            if (sampleMetadata.isIndexed()) {
+                if (sampleMetadata.getFiles().size() == 1 && sampleMetadata.getFiles().contains(fileMetadata.getId())) {
+                    // It might happen that the sample is marked as INDEXED, but not the file.
+                    // If the sample only belongs to this file (i.e. it's only file is this file), then ignore
+                    // the overwrite the current sample metadata index status
+                    sampleMetadata = getMetadataManager().updateSampleMetadata(studyId, sampleId,
+                            sm -> sm.setIndexStatus(fileMetadata.getIndexStatus()));
+                }
+            }
             if (sampleMetadata.isIndexed()) {
                 alreadyIndexedSamples.add(sample);
                 if (sampleMetadata.isAnnotated()
@@ -130,7 +140,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             if (splitData != null) {
                 logger.info("Loading split data");
             } else {
-                String fileName = Paths.get(fileMetadata.getPath()).getFileName().toString();
+                String fileName = Paths.get(variantFileMetadata.getPath()).getFileName().toString();
                 throw StorageEngineException.alreadyLoadedSamples(fileName, new ArrayList<>(alreadyIndexedSamples));
             }
             for (Integer sampleId : processedSamples) {

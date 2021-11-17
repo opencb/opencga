@@ -9,6 +9,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -26,6 +28,7 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
 
     public abstract String getDockerImageName();
     public abstract String getDockerImageVersion();
+    private Logger privateLogger = LoggerFactory.getLogger(DockerWrapperAnalysisExecutor.class);
 
     public String getShortPrefix() {
         return "-";
@@ -142,6 +145,7 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
     }
 
     protected void runCommandLine(String cmdline) throws ToolException {
+        checkDockerDaemonAlive();
         try {
             new Command(cmdline)
                     .setOutputOutputStream(
@@ -152,6 +156,28 @@ public abstract class DockerWrapperAnalysisExecutor  extends OpenCgaToolExecutor
         } catch (FileNotFoundException e) {
             throw new ToolException(e);
         }
+    }
+
+    protected final void checkDockerDaemonAlive() throws ToolException {
+        int maxAttempts = 6;
+        for (int i = 0; i < maxAttempts; i++) {
+            Command command = new Command("docker stats --no-stream");
+            command.run();
+            if (command.getExitValue() == 0) {
+                // Docker is alive
+                if (i != 0) {
+                    privateLogger.info("Docker daemon up and running!");
+                }
+                return;
+            }
+            privateLogger.info("Waiting for docker to start... (sleep 5s) [" + i + "/" + maxAttempts + "]");
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                throw new ToolException(e);
+            }
+        }
+        throw new ToolException("Docker daemon is not available on this node!");
     }
 
     public static List<Pair<String, String>> getInputFilenames(String inputFile, Set<String> fileParamNames, ObjectMap executorParams) {
