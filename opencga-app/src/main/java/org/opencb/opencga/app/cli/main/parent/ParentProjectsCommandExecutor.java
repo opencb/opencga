@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main.parent;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.ProjectsCommandOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
@@ -31,7 +32,7 @@ public abstract class ParentProjectsCommandExecutor extends OpencgaCommandExecut
     private ProjectsCommandOptions projectsCommandOptions;
 
     public ParentProjectsCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
-                                         ProjectsCommandOptions projectsCommandOptions) {
+                                         ProjectsCommandOptions projectsCommandOptions) throws CatalogAuthenticationException {
 
         super(options, command);
         this.projectsCommandOptions = projectsCommandOptions;

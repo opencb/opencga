@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main;
 
 import org.opencb.opencga.app.cli.session.CliSessionManager;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
@@ -39,7 +40,11 @@ public class OpencgaMain {
                 e.printStackTrace();
             }
         } else {
-            OpencgaCliProcessor.process(args);
+            try {
+                OpencgaCliProcessor.process(args);
+            } catch (CatalogAuthenticationException e) {
+                printErrorMessage(e.getMessage(), e);
+            }
         }
     }
 

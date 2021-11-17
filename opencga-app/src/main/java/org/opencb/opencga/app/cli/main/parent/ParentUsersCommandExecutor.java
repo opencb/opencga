@@ -23,6 +23,7 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -44,7 +45,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
     private UsersCommandOptions usersCommandOptions;
 
     public ParentUsersCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
-                                      UsersCommandOptions usersCommandOptions) {
+                                      UsersCommandOptions usersCommandOptions) throws CatalogAuthenticationException {
 
         super(options, command);
         this.usersCommandOptions = usersCommandOptions;

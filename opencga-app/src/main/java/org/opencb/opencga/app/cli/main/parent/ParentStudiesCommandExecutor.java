@@ -22,6 +22,7 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.StudiesCommandOptions;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
@@ -47,7 +48,7 @@ public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecuto
     private StudiesCommandOptions studiesCommandOptions;
 
     public ParentStudiesCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
-                                        StudiesCommandOptions studiesCommandOptions) {
+                                        StudiesCommandOptions studiesCommandOptions) throws CatalogAuthenticationException {
 
         super(options, command);
         this.studiesCommandOptions = studiesCommandOptions;

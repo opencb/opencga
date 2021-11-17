@@ -58,6 +58,7 @@ public class CliSession {
     private static CliSession instance;
 
     private CliSession() {
+        ClientConfiguration.getInstance().loadClientConfiguration();
         host = "localhost";
         version = "-1";
         user = GUEST_USER;
@@ -80,7 +81,7 @@ public class CliSession {
     public static String getLastHostUsed() {
         Path sessionDir = Paths.get(System.getProperty("user.home"), ".opencga");
         if (!Files.exists(sessionDir)) {
-            return ClientConfiguration.getInstance().getRest().getHostname();
+            return "";
         }
         Map<String, Long> mapa = new HashMap<String, Long>();
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(sessionDir)) {

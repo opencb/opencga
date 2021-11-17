@@ -23,10 +23,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.main.OpencgaCliProcessor;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -59,17 +59,17 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     protected static final String ANSI_RESET = "\033[0m";
     protected static final String ANSI_RED = "\033[31m";
 
-    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
+    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
         this(options, false);
     }
 
-    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
+    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) throws CatalogAuthenticationException {
         super(options);
 
         init(options, skipDuration);
     }
 
-    private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
+    private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) throws CatalogAuthenticationException {
 
         try {
             WriterConfiguration writerConfiguration = new WriterConfiguration();
@@ -144,8 +144,11 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                             }
                         } else {
                             if (CliSessionManager.isShell()) {
-                                CliSessionManager.getShell().printlnYellow("Your session has expired. Please, either login again.");
-                                OpencgaCliProcessor.process(new String[]{"logout"});
+                                throw new CatalogAuthenticationException("Your session has expired. Please, either login again.");
+                           /*     CliSessionManager.getShell().printlnYellow("Your session has expired. Please, either login again.");
+                                CliSessionManager.logoutCliSessionFile();
+                                logger.debug("Session already closed");
+                                openCGAClient = new OpenCGAClient();*/
                             } else {
                                 String message = "ERROR: Your session has expired. Please, either login again or logout to work as "
                                         + "anonymous.";

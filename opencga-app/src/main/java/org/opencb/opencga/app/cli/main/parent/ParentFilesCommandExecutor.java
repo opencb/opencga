@@ -19,6 +19,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.FilesCommandOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.RestResponse;
@@ -31,7 +32,7 @@ public abstract class ParentFilesCommandExecutor extends OpencgaCommandExecutor 
     private FilesCommandOptions filesCommandOptions;
 
     public ParentFilesCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
-                                      FilesCommandOptions filesCommandOptions) {
+                                      FilesCommandOptions filesCommandOptions) throws CatalogAuthenticationException {
 
         super(options, command);
         this.filesCommandOptions = filesCommandOptions;

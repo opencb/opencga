@@ -88,7 +88,10 @@ public class OpencgaCliShellExecutor extends CommandExecutor {
             }
             terminal.writer().flush();
         } catch (Exception e) {
-            OpencgaMain.printErrorMessage("Execution error ", e);
+            if (CliSessionManager.isDebug()) {
+                e.printStackTrace();
+            }
+            OpencgaMain.printErrorMessage("OpenCGA execution error ", e);
         }
     }
 

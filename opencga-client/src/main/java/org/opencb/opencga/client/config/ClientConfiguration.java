@@ -54,7 +54,6 @@ public final class ClientConfiguration {
     public static ClientConfiguration getInstance() {
         if (instance == null) {
             instance = new ClientConfiguration();
-            loadClientConfiguration();
         }
         return instance;
     }
@@ -118,10 +117,8 @@ public final class ClientConfiguration {
     /**
      * This method attempts to first data configuration from CLI parameter, if not present then uses the configuration from installation
      * directory, if not exists then loads JAR client-configuration.yml.
-     *
-     * @throws IOException If any IO problem occurs
      */
-    private static void loadClientConfiguration() {
+    public static void loadClientConfiguration() {
         // We load configuration file either from app home folder or from the JAR
 
         try {

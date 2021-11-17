@@ -36,11 +36,13 @@ public class CliSessionManager {
     private static boolean reloadStudies = false;
 
     static {
-        List<Host> availableHosts = ClientConfiguration.getInstance().getRest().getHosts();
-        availableHosts.add(new Host(ClientConfiguration.getInstance().getRest().getHostname(),
-                ClientConfiguration.getInstance().getRest().getUrl(), true));
-        for (Host h : availableHosts) {
-            hosts.put(h.getName(), h);
+        if (ClientConfiguration.getInstance().getRest() != null) {
+            List<Host> availableHosts = ClientConfiguration.getInstance().getRest().getHosts();
+            availableHosts.add(new Host(ClientConfiguration.getInstance().getRest().getHostname(),
+                    ClientConfiguration.getInstance().getRest().getUrl(), true));
+            for (Host h : availableHosts) {
+                hosts.put(h.getName(), h);
+            }
         }
     }
 
@@ -207,7 +209,6 @@ public class CliSessionManager {
                         OpencgaMain.printDebugMessage("Validated study " + arg);
 
                         CliSession.getInstance().setCurrentStudy(res.response(0).getResults().get(0).getFqn());
-                        //String user, String token, String refreshToken, List<String> studies,String currentStudy
                         OpencgaMain.printDebugMessage("Validated study " + arg);
                         updateSession();
                         OpencgaMain.printInfoMessage("Current study is " + CliSession.getInstance().getCurrentStudy());
@@ -237,6 +238,7 @@ public class CliSessionManager {
     public static String getCurrentFile() {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga",
                 getLastHostUsed() + CliSession.SESSION_FILENAME);
+
         return sessionPath.toString();
     }
 

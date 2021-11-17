@@ -109,6 +109,7 @@ public abstract class CommandExecutor {
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+            // e.printStackTrace();
         }
 
         // Update the timestamp every time one executed command finishes

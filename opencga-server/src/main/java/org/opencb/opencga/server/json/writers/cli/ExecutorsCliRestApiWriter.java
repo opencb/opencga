@@ -50,6 +50,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("import org.opencb.opencga.client.exceptions.ClientException;\n");
         sb.append("import org.opencb.commons.datastore.core.ObjectMap;\n\n");
         sb.append("import org.opencb.opencga.app.cli.main.CommandLineUtils;\n\n");
+        sb.append("import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;\n\n");
+
         sb.append("import java.util.List;\n\n");
 
         sb.append("import " + config.getOptions().getOptionsPackage() + "." + getAsClassName(category.getName()) + "CommandOptions;\n\n");
@@ -129,7 +131,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("    private " + getAsClassName(category.getName()) + "CommandOptions "
                 + getAsVariableName(getAsCamelCase(category.getName())) + "CommandOptions;\n\n");
         sb.append("    public " + getAsClassName(category.getName()) + "CommandExecutor(" + getAsClassName(category.getName())
-                + "CommandOptions " + getAsVariableName(getAsCamelCase(category.getName())) + "CommandOptions) {\n");
+                + "CommandOptions " + getAsVariableName(getAsCamelCase(category.getName()))
+                + "CommandOptions) throws CatalogAuthenticationException {\n");
         if (config.isExecutorExtended()) {
             sb.append("        super(" + getAsVariableName(getAsCamelCase(category.getName())) + "CommandOptions.commonCommandOptions, "
                     + "getParsedSubCommand(" + getAsVariableName(getAsCamelCase(category.getName()))

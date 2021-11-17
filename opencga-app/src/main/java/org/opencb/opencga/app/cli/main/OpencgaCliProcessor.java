@@ -1,14 +1,14 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
-import org.fusesource.jansi.Ansi;
 import org.opencb.opencga.app.cli.CommandExecutor;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.*;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.io.Console;
+import java.io.IOException;
 
 import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.ansi;
@@ -16,8 +16,6 @@ import static org.fusesource.jansi.Ansi.ansi;
 public class OpencgaCliProcessor {
 
     private static Console console;
-    private static OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
-    // private static OpencgaCliOptionsParser cliOptionsParser;
 
     private static Console getConsole() {
         if (console == null) {
@@ -26,7 +24,7 @@ public class OpencgaCliProcessor {
         return console;
     }
 
-    public static void process(String[] args) {
+    public static void process(String[] args) throws CatalogAuthenticationException {
         console = getConsole();
         OpencgaMain.printDebugMessage("Executing ", args);
 
@@ -35,7 +33,7 @@ public class OpencgaCliProcessor {
             System.exit(0);
         }
         if (args.length == 1 && "exit".equals(args[0])) {
-            System.out.println(String.valueOf(ansi().fg(Ansi.Color.YELLOW).a("\nThanks for using OpenCGA. See you soon.\n\n").reset()));
+            OpencgaCliShellExecutor.printlnYellow("\nThanks for using OpenCGA. See you soon.\n\n");
             System.exit(0);
         }
 
@@ -48,7 +46,6 @@ public class OpencgaCliProcessor {
         }
 
         if (args.length == 2 && "login".equals(args[0])) {
-            OpencgaMain.printWarningMessage("login " + args[1]);
             loginUser(args[1]);
             return;
         }
@@ -96,7 +93,7 @@ public class OpencgaCliProcessor {
                     OpencgaCliShellExecutor.printlnYellow("\t\tOpenCGA (OpenCB)");
                     OpencgaCliShellExecutor.printGreen("\tDescription: ");
                     OpencgaCliShellExecutor.printlnYellow("\t\tBig Data platform for processing and analysing NGS data");
-                    System.out.println("");
+                    System.out.println();
                 } else if (cliOptionsParser.getGeneralOptions().buildVersion) {
                     System.out.println(GitRepositoryState.get().getBuildVersion());
                 } else if (cliOptionsParser.getGeneralOptions().help) {
@@ -177,8 +174,15 @@ public class OpencgaCliProcessor {
                 }
             }
         } catch (ParameterException e) {
-            OpencgaCliShellExecutor.printlnYellow("\n" + e.getMessage());
+            OpencgaMain.printWarningMessage("\n" + e.getMessage());
             cliOptionsParser.printUsage();
+        } catch (CatalogAuthenticationException e) {
+            OpencgaMain.printWarningMessage("\n" + e.getMessage());
+            try {
+                CliSessionManager.logoutCliSessionFile();
+            } catch (IOException ex) {
+                OpencgaMain.printErrorMessage(ex.getMessage(), ex);
+            }
         }
     }
 
@@ -203,6 +207,7 @@ public class OpencgaCliProcessor {
                 CliSessionManager.setDefaultCurrentStudy();
                 CliSessionManager.updateSession();
             } catch (Exception e) {
+
                 OpencgaMain.printErrorMessage(e.getMessage(), e);
             }
         } else {
@@ -231,14 +236,14 @@ public class OpencgaCliProcessor {
         return false;
     }
 
-    public static void forceLogin() {
+    public static void forceLogin() throws CatalogAuthenticationException {
         console = getConsole();
         String user = console.readLine(String.valueOf(ansi().fg(GREEN).a("\nEnter your user: ").reset()));
         loginUser(user);
         OpencgaMain.printDebugMessage("Login user " + user);
     }
 
-    public static void loginUser(String user) {
+    public static void loginUser(String user) throws CatalogAuthenticationException {
         console = getConsole();
         char[] passwordArray = console.readPassword(String.valueOf(ansi().fg(GREEN).a("\nEnter your password: ").reset()));
         String[] args = new String[2];
