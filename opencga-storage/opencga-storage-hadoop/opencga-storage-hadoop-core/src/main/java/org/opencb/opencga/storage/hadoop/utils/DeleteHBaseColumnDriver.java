@@ -105,7 +105,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
             VariantMapReduceUtil.setNoneReduce(job);
         } else {
             VariantMapReduceUtil.initTableMapperJob(job, table, scans, DeleteHBaseColumnToProtoMapper.class);
-            outdir = getTempOutdir("opencga_delete", table);
+            outdir = getTempOutdir("opencga_delete", table, true);
             outdir.getFileSystem(getConf()).deleteOnExit(outdir);
 
             LOGGER.info(" * Temporary outdir file: " + outdir.toUri());
