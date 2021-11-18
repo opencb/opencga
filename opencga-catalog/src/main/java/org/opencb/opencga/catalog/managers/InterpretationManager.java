@@ -252,18 +252,18 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         ParamUtils.checkObj(interpretation, "Interpretation");
         ParamUtils.checkParameter(clinicalAnalysis.getId(), "ClinicalAnalysisId");
-
-        if (StringUtils.isEmpty(interpretation.getId())) {
-            // Assign id automatically by counting the number of Interpretations that have been created already in the CA
-            int count = 1;
-            for (ClinicalAudit clinicalAudit : clinicalAnalysis.getAudit()) {
-                if (clinicalAudit.getAction().equals(ClinicalAudit.Action.CREATE_INTERPRETATION)) {
-                    count++;
-                }
-            }
-            interpretation.setId(clinicalAnalysis.getId() + "." + count);
+        if (StringUtils.isNotEmpty(interpretation.getId())) {
+            throw new CatalogException("Interpretation id cannot be passed. It is automatically generated.");
         }
-        ParamUtils.checkIdentifier(interpretation.getId(), "id");
+
+        // Assign id automatically by counting the number of Interpretations that have been created already in the CA
+        int count = 1;
+        for (ClinicalAudit clinicalAudit : clinicalAnalysis.getAudit()) {
+            if (clinicalAudit.getAction().equals(ClinicalAudit.Action.CREATE_INTERPRETATION)) {
+                count++;
+            }
+        }
+        interpretation.setId(clinicalAnalysis.getId() + "." + count);
 
         interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());
 
@@ -440,7 +440,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 InterpretationUpdateParams params = new InterpretationUpdateParams("", new ClinicalAnalystParam(),
-                        Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList(),
+                        InterpretationMethod.init(), null, null, Collections.emptyList(), Collections.emptyList(),
                         clinicalAnalysis.getPanels() != null
                                 ? clinicalAnalysis.getPanels().stream()
                                 .map(p -> new PanelReferenceParam().setId(p.getId())).collect(Collectors.toList())

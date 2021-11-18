@@ -527,6 +527,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
             sortMembersFromFamily(clinicalAnalysis);
 
+            List<ClinicalAudit> clinicalAuditList = new ArrayList<>();
+
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
             if (clinicalAnalysis.getInterpretation() == null
                     && (skipCreateDefaultInterpretation == null || !skipCreateDefaultInterpretation)) {
@@ -536,12 +538,13 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             if (clinicalAnalysis.getInterpretation() != null) {
                 catalogManager.getInterpretationManager().validateNewInterpretation(study, clinicalAnalysis.getInterpretation(),
                         clinicalAnalysis, userId);
+                clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_INTERPRETATION,
+                        "Create interpretation '" + clinicalAnalysis.getInterpretation().getId() + "'", TimeUtils.getTime()));
             }
 
-            ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_CLINICAL_ANALYSIS,
-                    "Create ClinicalAnalysis '" + clinicalAnalysis.getId() + "'", TimeUtils.getTime());
-            OpenCGAResult result = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, Collections.singletonList(clinicalAudit),
-                    options);
+            clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_CLINICAL_ANALYSIS,
+                    "Create ClinicalAnalysis '" + clinicalAnalysis.getId() + "'", TimeUtils.getTime()));
+            OpenCGAResult result = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, clinicalAuditList, options);
 
             auditManager.auditCreate(userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(), clinicalAnalysis.getUuid(),
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
