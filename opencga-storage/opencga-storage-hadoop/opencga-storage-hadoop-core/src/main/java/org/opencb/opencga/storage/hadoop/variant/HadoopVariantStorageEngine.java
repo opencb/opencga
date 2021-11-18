@@ -758,8 +758,17 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                             Set<Integer> filesFromSample = new HashSet<>(sampleMetadata.getFiles());
                             filesFromSample.removeAll(fileIds);
                             if (!filesFromSample.isEmpty()) {
-                                // The sample has other files that are not deleted, need to rebuild the sample index
-                                samplesToRebuildIndex.add(sampleMetadata.getName());
+                                boolean otherFilesFromSampleIndexed = false;
+                                for (Integer fileFromSample : filesFromSample) {
+                                    if (metadataManager.isFileIndexed(studyId, fileFromSample)) {
+                                        otherFilesFromSampleIndexed = true;
+                                        break;
+                                    }
+                                }
+                                if (otherFilesFromSampleIndexed) {
+                                    // The sample has other files that are not deleted, need to rebuild the sample index
+                                    samplesToRebuildIndex.add(sampleMetadata.getName());
+                                }
                             }
                         }
                     }
