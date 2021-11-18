@@ -12,6 +12,8 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileAsBinaryInputFormat;
+import org.apache.hadoop.util.StopWatch;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -21,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.hadoop.mapreduce.MRJobConfig.JOB_RUNNING_MAP_LIMIT;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.WRITE_MAPPERS_LIMIT_FACTOR;
@@ -108,8 +111,52 @@ public class HBaseWriterDriver extends AbstractHBaseDriver {
         main(args, (Class<? extends AbstractVariantsTableDriver>) MethodHandles.lookup().lookupClass());
     }
 
+
     public static class HBaseWriterMapper extends Mapper<BytesWritable, BytesWritable, ImmutableBytesWritable, Mutation> {
 
+        private final StopWatch setupStopWatch = new StopWatch();
+        private final StopWatch mapStopWatch = new StopWatch();
+        private final StopWatch readStopWatch = new StopWatch();
+        private final StopWatch cleanUpStopWatch = new StopWatch();
+        private final StopWatch writeStopWatch = new StopWatch();
+        private final Logger logger = LoggerFactory.getLogger(HBaseWriterDriver.class);
+        public void run(Context context) throws IOException, InterruptedException {
+
+            setupStopWatch.start();
+            setup(context);
+            setupStopWatch.stop();
+
+            try {
+                readStopWatch.start();
+                while (context.nextKeyValue()) {
+                    BytesWritable key = context.getCurrentKey();
+                    BytesWritable value = context.getCurrentValue();
+                    readStopWatch.stop();
+
+                    mapStopWatch.start();
+                    map(key, value, context);
+                    mapStopWatch.stop();
+
+                    // Ensure readStopWatch is started at the end of the loop
+                    readStopWatch.start();
+                }
+                readStopWatch.stop();
+            } finally {
+                cleanUpStopWatch.start();
+                cleanup(context);
+                cleanUpStopWatch.stop();
+                context.getCounter(COUNTER_GROUP_NAME, "setupTime-ms").increment(setupStopWatch.now(TimeUnit.MILLISECONDS));
+                context.getCounter(COUNTER_GROUP_NAME, "mapTime-ms").increment(mapStopWatch.now(TimeUnit.MILLISECONDS));
+                context.getCounter(COUNTER_GROUP_NAME, "readTime-ms").increment(readStopWatch.now(TimeUnit.MILLISECONDS));
+                context.getCounter(COUNTER_GROUP_NAME, "cleanUpTime-ms").increment(cleanUpStopWatch.now(TimeUnit.MILLISECONDS));
+                context.getCounter(COUNTER_GROUP_NAME, "writeTime-ms").increment(writeStopWatch.now(TimeUnit.MILLISECONDS));
+                logger.info("setupTime : " + TimeUtils.durationToString(setupStopWatch.now(TimeUnit.MILLISECONDS)));
+                logger.info("mapTime : " + TimeUtils.durationToString(mapStopWatch.now(TimeUnit.MILLISECONDS)));
+                logger.info("readTime : " + TimeUtils.durationToString(readStopWatch.now(TimeUnit.MILLISECONDS)));
+                logger.info("cleanUpTime : " + TimeUtils.durationToString(cleanUpStopWatch.now(TimeUnit.MILLISECONDS)));
+                logger.info("writeTime : " + TimeUtils.durationToString(writeStopWatch.now(TimeUnit.MILLISECONDS)));
+            }
+        }
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
@@ -125,7 +172,9 @@ public class HBaseWriterDriver extends AbstractHBaseDriver {
 
             Mutation mutation = ProtobufUtil.toMutation(proto);
             context.getCounter(COUNTER_GROUP_NAME, proto.getMutateType().toString()).increment(1);
+            writeStopWatch.start();
             context.write(new ImmutableBytesWritable(), mutation);
+            writeStopWatch.stop();
 
             // Indicate that the process is still alive
             context.progress();
