@@ -79,7 +79,7 @@ public abstract class AbstractDBAdaptor {
     }
 
     protected <T> OpenCGAResult<T> endWrite(long startTime, long numMatches, long numInserted, long numUpdated, long numDeleted,
-                                         List<Event> events) {
+                                            List<Event> events) {
         long end = System.currentTimeMillis();
         return new OpenCGAResult<>((int) (end - startTime), events, numMatches, numInserted, numUpdated, numDeleted, new ObjectMap());
     }
@@ -87,7 +87,7 @@ public abstract class AbstractDBAdaptor {
     protected <T> OpenCGAResult<T> endWrite(long startTime, DataResult result) {
         long end = System.currentTimeMillis();
         return new OpenCGAResult<>((int) (end - startTime), result.getEvents(), result.getNumMatches(), result.getNumInserted(),
-                result.getNumUpdated(), result.getNumDeleted(), new ObjectMap());
+                result.getNumUpdated(), result.getNumDeleted(), result.getNumErrors(), new ObjectMap());
     }
 
     protected void checkParameter(Object param, String name) throws CatalogDBException {

@@ -1574,6 +1574,7 @@ public class FileManager extends AnnotationSetManager<File> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, fileId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not delete file {}: {}", fileId, e.getMessage(), e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.FILE, fileId, fileUuid, study.getId(),
@@ -1661,6 +1662,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     errorMsg = "Cannot delete folder " + file.getPath() + ": " + e.getMessage();
                 }
                 dataResult.getEvents().add(new Event(Event.Type.ERROR, file.getPath(), e.getMessage()));
+                dataResult.setNumErrors(dataResult.getNumErrors() + 1);
 
                 logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
@@ -1992,6 +1994,7 @@ public class FileManager extends AnnotationSetManager<File> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, file.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update file {}: {}", file.getId(), e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
@@ -2044,6 +2047,7 @@ public class FileManager extends AnnotationSetManager<File> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, fileId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Cannot update file {}: {}", fileId, e.getMessage());
             auditManager.auditUpdate(operationId, userId, Enums.Resource.FILE, fileId, fileUuid, study.getId(),
@@ -2117,6 +2121,7 @@ public class FileManager extends AnnotationSetManager<File> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update file {}: {}", fileId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.FILE, fileId, fileUuid, study.getId(),

@@ -675,6 +675,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, interpretation.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update interpretation {}: {}", interpretation.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
@@ -754,6 +755,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     + clinicalAnalysisId + "': " + e.getMessage(), e);
             Event event = new Event(Event.Type.ERROR, interpretationId, e1.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("{}", e1.getMessage(), e);
             auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
@@ -850,6 +852,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update interpretation {}: {}", interpretationId, e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
@@ -1275,6 +1278,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
                 Event event = new Event(Event.Type.ERROR, interpretationId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,

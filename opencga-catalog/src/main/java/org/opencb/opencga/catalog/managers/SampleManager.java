@@ -507,6 +507,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                 Event event = new Event(Event.Type.ERROR, sampleId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationId, userId, Enums.Resource.SAMPLE, sampleId, sampleUuid,
@@ -596,6 +597,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                 Event event = new Event(Event.Type.ERROR, sample.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(),
@@ -879,6 +881,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, sample.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update sample {}: {}", sample.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(),
@@ -932,6 +935,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, sampleId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Could not update sample {}: {}", sampleId, e.getMessage(), e);
             auditManager.auditUpdate(operationId, userId, Enums.Resource.SAMPLE, sampleId, sampleUuid, study.getId(),
@@ -1006,6 +1010,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, sampleId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update sample {}: {}", sampleId, e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.SAMPLE, sampleId, sampleUuid, study.getId(),

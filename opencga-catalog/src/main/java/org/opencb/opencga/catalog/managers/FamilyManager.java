@@ -493,6 +493,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, familyId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot delete family {}: {}", familyId, e.getMessage(), e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, familyId, familyUuid,
@@ -570,6 +571,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
                 Event event = new Event(Event.Type.ERROR, family.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(),
@@ -742,6 +744,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, family.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update family {}: {}", family.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
@@ -796,6 +799,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, familyId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Cannot update family {}: {}", familyId, e.getMessage());
             auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, familyId, familyUuid, study.getId(),
@@ -870,6 +874,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update family {}: {}", familyId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, familyId, familyUuid, study.getId(),

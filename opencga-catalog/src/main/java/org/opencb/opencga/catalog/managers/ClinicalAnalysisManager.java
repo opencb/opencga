@@ -1001,6 +1001,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, clinicalAnalysis.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update clinical analysis {}: {}", clinicalAnalysis.getId(), e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),
@@ -1056,6 +1057,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, clinicalId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Could not update clinical analysis {}: {}", clinicalId, e.getMessage());
             auditManager.auditUpdate(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, clinicalUuid,
@@ -1131,6 +1133,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update clinical analysis {}: {}", clinicalAnalysisId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysisId, clinicalAnalysisUuid,
@@ -1759,6 +1762,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
                 Event event = new Event(Event.Type.ERROR, clinicalId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, clinicalUuid,
@@ -1859,6 +1863,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
                 Event event = new Event(Event.Type.ERROR, clinicalAnalysis.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),
