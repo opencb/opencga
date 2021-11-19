@@ -102,7 +102,7 @@ public class FillGapsDriver extends AbstractVariantsTableDriver {
                 job.setOutputFormatClass(SequenceFileAsBinaryOutputFormat.class);
                 job.setMapOutputKeyClass(BytesWritable.class);
                 job.setMapOutputValueClass(BytesWritable.class);
-                logger.info("Using intermediate file : " + outputPath);
+                logger.info("Using intermediate file : " + new Path(outputPath).toUri());
                 FileOutputFormat.setOutputPath(job, new Path(outputPath));
                 FileOutputFormat.setCompressOutput(job, true);
                 FileOutputFormat.setOutputCompressorClass(job, DeflateCodec.class);
@@ -145,8 +145,9 @@ public class FillGapsDriver extends AbstractVariantsTableDriver {
         super.postExecution(succeed);
         if (succeed) {
             if (input.equalsIgnoreCase("archive") && StringUtils.isNotEmpty(outputPath)) {
-                FileSystem fs = FileSystem.get(getConf());
-                ContentSummary contentSummary = fs.getContentSummary(new Path(outputPath));
+                Path path = new Path(outputPath);
+                FileSystem fs = path.getFileSystem(getConf());
+                ContentSummary contentSummary = fs.getContentSummary(path);
                 logger.info("Generated file " + outputPath);
                 logger.info(" - Size (HDFS)         : " + humanReadableByteCount(contentSummary.getLength(), false));
                 logger.info(" - SpaceConsumed (raw) : " + humanReadableByteCount(contentSummary.getSpaceConsumed(), false));

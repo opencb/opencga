@@ -45,9 +45,10 @@ public class FillMissingHBaseWriterDriver extends AbstractVariantsTableDriver {
     @Override
     protected void parseAndValidateParameters() throws IOException {
         super.parseAndValidateParameters();
-        fs = FileSystem.get(getConf());
         inputPath = getConf().get(FillGapsDriver.FILL_MISSING_INTERMEDIATE_FILE);
-        if (!fs.exists(new Path(inputPath))) {
+        Path path = new Path(inputPath);
+        fs = path.getFileSystem(getConf());
+        if (!fs.exists(path)) {
             throw new FileNotFoundException("Intermediate file not found: " + inputPath);
         }
     }

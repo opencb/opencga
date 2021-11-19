@@ -129,7 +129,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
         try {
             if (succeed) {
                 if (outdir != null) {
-                    FileSystem fs = FileSystem.get(getConf());
+                    FileSystem fs = outdir.getFileSystem(getConf());
                     ContentSummary contentSummary = fs.getContentSummary(outdir);
                     LOGGER.info("Generated file " + outdir.toUri());
                     LOGGER.info(" - Size (HDFS)         : " + IOUtils.humanReadableByteCount(contentSummary.getLength(), false));

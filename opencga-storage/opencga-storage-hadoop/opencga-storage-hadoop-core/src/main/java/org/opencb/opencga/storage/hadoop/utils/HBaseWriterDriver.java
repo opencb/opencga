@@ -37,7 +37,7 @@ public class HBaseWriterDriver extends AbstractHBaseDriver {
 
     public static final String INPUT_FILE_PARAM = "inputFile";
     private final Logger logger = LoggerFactory.getLogger(HBaseWriterDriver.class);
-    private String inputPath;
+    private Path inputPath;
 
     public HBaseWriterDriver() {
     }
@@ -49,10 +49,10 @@ public class HBaseWriterDriver extends AbstractHBaseDriver {
     @Override
     protected void parseAndValidateParameters() throws IOException {
         super.parseAndValidateParameters();
-        FileSystem fs = FileSystem.get(getConf());
-        inputPath = getConf().get(INPUT_FILE_PARAM);
-        if (!fs.exists(new Path(inputPath))) {
-            throw new FileNotFoundException("Intermediate file not found: " + inputPath);
+        inputPath = new Path(getConf().get(INPUT_FILE_PARAM));
+        FileSystem fs = inputPath.getFileSystem(getConf());
+        if (!fs.exists(inputPath)) {
+            throw new FileNotFoundException("Intermediate file not found: " + inputPath.toUri());
         }
     }
 
