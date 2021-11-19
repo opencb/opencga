@@ -2211,6 +2211,25 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void createInterpretationWithPanels() throws CatalogException {
+        catalogManager.getPanelManager().importFromSource(STUDY, "cancer-gene-census", "", sessionIdUser);
+        Panel panel = catalogManager.getPanelManager().search(STUDY, new Query(), QueryOptions.empty(), sessionIdUser).first();
+
+        ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
+
+        Interpretation interpretation = new Interpretation()
+                .setPanels(Collections.singletonList(panel));
+
+        interpretation = catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation,
+                ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser).first();
+        interpretation = catalogManager.getInterpretationManager().get(STUDY, interpretation.getId(), QueryOptions.empty(), sessionIdUser)
+                .first();
+
+        assertEquals(1, interpretation.getPanels().size());
+        assertEquals(panel.getId(), interpretation.getPanels().get(0).getId());
+    }
+
+    @Test
     public void updatePanelsInClinicalAnalysis() throws CatalogException {
         catalogManager.getPanelManager().importFromSource(STUDY, "cancer-gene-census", "", sessionIdUser);
         Panel panel = catalogManager.getPanelManager().search(STUDY, new Query(), QueryOptions.empty(), sessionIdUser).first();
