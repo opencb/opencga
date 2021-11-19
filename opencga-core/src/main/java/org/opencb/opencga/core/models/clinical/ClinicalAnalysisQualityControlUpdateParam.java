@@ -11,13 +11,16 @@ public class ClinicalAnalysisQualityControlUpdateParam {
 
     private ClinicalAnalysisQualityControl.QualityControlSummary summary;
     private List<String> comments;
+    private List<String> files;
 
     public ClinicalAnalysisQualityControlUpdateParam() {
     }
 
-    public ClinicalAnalysisQualityControlUpdateParam(ClinicalAnalysisQualityControl.QualityControlSummary summary, List<String> comments) {
+    public ClinicalAnalysisQualityControlUpdateParam(ClinicalAnalysisQualityControl.QualityControlSummary summary, List<String> comments,
+                                                     List<String> files) {
         this.summary = summary;
         this.comments = comments;
+        this.files = files;
     }
 
     public static ClinicalAnalysisQualityControlUpdateParam of(ClinicalAnalysisQualityControl qualityControl) {
@@ -28,7 +31,7 @@ public class ClinicalAnalysisQualityControlUpdateParam {
             }
         }
 
-        return new ClinicalAnalysisQualityControlUpdateParam(qualityControl.getSummary(), tmpComments);
+        return new ClinicalAnalysisQualityControlUpdateParam(qualityControl.getSummary(), tmpComments, qualityControl.getFiles());
     }
 
     public ClinicalAnalysisQualityControl toClinicalQualityControl() {
@@ -38,7 +41,7 @@ public class ClinicalAnalysisQualityControlUpdateParam {
                 tmpComments.add(new ClinicalComment("", comment, Collections.emptyList(), TimeUtils.getTime()));
             }
         }
-        return new ClinicalAnalysisQualityControl(summary, tmpComments);
+        return new ClinicalAnalysisQualityControl(summary, tmpComments, files);
     }
 
     @Override

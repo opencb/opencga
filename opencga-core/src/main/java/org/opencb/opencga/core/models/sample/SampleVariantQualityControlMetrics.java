@@ -11,23 +11,19 @@ public class SampleVariantQualityControlMetrics {
 
     private List<SampleQcVariantStats> variantStats;
     private List<Signature> signatures;
-    private List<GenomePlot> genomePlots;
+    private GenomePlot genomePlot;
+    private List<String> files;
 
     public SampleVariantQualityControlMetrics() {
-        this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-    }
-
-    public SampleVariantQualityControlMetrics(List<SampleQcVariantStats> variantStats, List<Signature> signatures) {
-        this.variantStats = variantStats;
-        this.signatures = signatures;
-        this.genomePlots = new ArrayList<>();
+        this(new ArrayList<>(), new ArrayList<>(), null, new ArrayList<>());
     }
 
     public SampleVariantQualityControlMetrics(List<SampleQcVariantStats> variantStats, List<Signature> signatures,
-                                              List<GenomePlot> genomePlots) {
+                                              GenomePlot genomePlot, List<String> files) {
         this.variantStats = variantStats;
         this.signatures = signatures;
-        this.genomePlots = genomePlots;
+        this.genomePlot = genomePlot;
+        this.files = files;
     }
 
     @Override
@@ -35,7 +31,8 @@ public class SampleVariantQualityControlMetrics {
         final StringBuilder sb = new StringBuilder("SampleVariantQualityControlMetrics{");
         sb.append("variantStats=").append(variantStats);
         sb.append(", signatures=").append(signatures);
-        sb.append(", genomePlots=").append(genomePlots);
+        sb.append(", genomePlot=").append(genomePlot);
+        sb.append(", files=").append(files);
         sb.append('}');
         return sb.toString();
     }
@@ -58,12 +55,21 @@ public class SampleVariantQualityControlMetrics {
         return this;
     }
 
-    public List<GenomePlot> getGenomePlots() {
-        return genomePlots;
+    public GenomePlot getGenomePlot() {
+        return genomePlot;
     }
 
-    public SampleVariantQualityControlMetrics setGenomePlots(List<GenomePlot> genomePlots) {
-        this.genomePlots = genomePlots;
+    public SampleVariantQualityControlMetrics setGenomePlot(GenomePlot genomePlot) {
+        this.genomePlot = genomePlot;
+        return this;
+    }
+
+    public List<String> getFiles() {
+        return files;
+    }
+
+    public SampleVariantQualityControlMetrics setFiles(List<String> files) {
+        this.files = files;
         return this;
     }
 }

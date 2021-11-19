@@ -115,11 +115,11 @@ public class AlignmentFastQcMetricsAnalysis extends OpenCgaToolScopeStudy {
 
                 // Replace absolute paths to relative paths
                 List<String> relativePaths = new ArrayList<>();
-                for (String path : fastQcMetrics.getImages()) {
+                for (String path : fastQcMetrics.getFiles()) {
                     int index = path.indexOf("JOBS/");
                     relativePaths.add(index == -1 ? new java.io.File(path).getName() : path.substring(index));
                 }
-                fastQcMetrics.setImages(relativePaths);
+                fastQcMetrics.setFiles(relativePaths);
 
                 // Update quality control for the catalog file
                 FileQualityControl qc = catalogBamFile.getQualityControl();

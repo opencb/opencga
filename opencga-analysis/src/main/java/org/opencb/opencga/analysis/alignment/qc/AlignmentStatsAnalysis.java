@@ -145,7 +145,7 @@ public class AlignmentStatsAnalysis extends OpenCgaToolScopeStudy {
                     images.add(relativeFilePath);
                 }
             }
-            alignmentStats.setImages(images);
+            alignmentStats.setFiles(images);
 
             // Update quality control for the catalog file
             FileQualityControl qc = catalogBamFile.getQualityControl();

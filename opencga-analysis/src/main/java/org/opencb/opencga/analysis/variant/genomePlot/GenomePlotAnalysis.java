@@ -103,7 +103,7 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
                         if (qc == null) {
                             qc = new SampleQualityControl();
                         }
-                        qc.getVariant().getGenomePlots().add(genomePlot);
+                        qc.getVariant().setGenomePlot(genomePlot);
 
                         catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
                                 QueryOptions.empty(), getToken());

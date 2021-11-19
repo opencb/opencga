@@ -214,7 +214,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setId("analysis" + RandomStringUtils.randomAlphanumeric(3))
                 .setDescription("My description").setType(ClinicalAnalysis.Type.SINGLE)
                 .setQualityControl(new ClinicalAnalysisQualityControl(ClinicalAnalysisQualityControl.QualityControlSummary.LOW,
-                        Collections.singletonList(comment)))
+                        Collections.singletonList(comment), Collections.emptyList()))
                 .setProband(individual);
 
         ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, true, QueryOptions.empty(),
@@ -231,7 +231,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         Thread.sleep(1000);
         ClinicalAnalysisQualityControlUpdateParam qualityControlUpdateParam =
                 new ClinicalAnalysisQualityControlUpdateParam(ClinicalAnalysisQualityControl.QualityControlSummary.HIGH,
-                        Collections.singletonList("other"));
+                        Collections.singletonList("other"), Collections.emptyList());
         ClinicalAnalysisUpdateParams updateParams = new ClinicalAnalysisUpdateParams().setQualityControl(qualityControlUpdateParam);
 
         catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), updateParams, null, sessionIdUser);

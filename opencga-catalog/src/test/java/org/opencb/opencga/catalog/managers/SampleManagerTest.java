@@ -408,7 +408,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleVariantStats.setTiTvRatio((float) 15.2);
         sampleQcVariantStats.add(new SampleQcVariantStats("v2", "", null, sampleVariantStats));
 
-        SampleVariantQualityControlMetrics metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null);
+        SampleVariantQualityControlMetrics metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null, null);
         SampleQualityControl qualityControl = new SampleQualityControl(null, null, metrics);
 
         OpenCGAResult<Sample> result = catalogManager.getSampleManager().update(studyFqn, "sample",
@@ -451,7 +451,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleVariantStats.setVariantCount(15);
         sampleVariantStats.setTiTvRatio((float) 3.5);
         sampleQcVariantStats.add(new SampleQcVariantStats("v1", "", null, sampleVariantStats));
-        metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null);
+        metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null, null);
         qualityControl = new SampleQualityControl(null, null, metrics);
 
         // And update sample
@@ -582,7 +582,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleVariantStats.setTiTvRatio((float) 15.2);
         sampleQcVariantStats.add(new SampleQcVariantStats("v2", "", null, sampleVariantStats));
 
-        SampleVariantQualityControlMetrics metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null);
+        SampleVariantQualityControlMetrics metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null, null);
         SampleQualityControl qualityControl = new SampleQualityControl(null, null, metrics);
 
         OpenCGAResult<Sample> result = catalogManager.getSampleManager().update(studyFqn, "sample",
@@ -616,7 +616,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         sampleVariantStats.setVariantCount(15);
         sampleVariantStats.setTiTvRatio((float) 3.5);
         sampleQcVariantStats.add(new SampleQcVariantStats("v1", "", null, sampleVariantStats));
-        metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null);
+        metrics = new SampleVariantQualityControlMetrics(sampleQcVariantStats, null, null, null);
         qualityControl = new SampleQualityControl(null, null, metrics);
 
         // And update sample

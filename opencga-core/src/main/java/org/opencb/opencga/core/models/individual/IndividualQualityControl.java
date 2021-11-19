@@ -40,7 +40,7 @@ public class IndividualQualityControl {
     /**
      * File IDs related to the quality control
      */
-    private List<String> fileIds;
+    private List<String> files;
     /**
      * Comments related to the quality control
      */
@@ -51,12 +51,12 @@ public class IndividualQualityControl {
     }
 
     public IndividualQualityControl(SampleRelatednessReport sampleRelatednessReport, List<InferredSexReport> inferredSexReports,
-                                    List<MendelianErrorReport> mendelianErrorReports, List<String> fileIds,
+                                    List<MendelianErrorReport> mendelianErrorReports, List<String> files,
                                     List<ClinicalComment> comments) {
         this.inferredSexReports = inferredSexReports;
         this.sampleRelatednessReport = sampleRelatednessReport;
         this.mendelianErrorReports = mendelianErrorReports;
-        this.fileIds = fileIds;
+        this.files = files;
         this.comments = comments;
     }
 
@@ -66,7 +66,7 @@ public class IndividualQualityControl {
         sb.append("inferredSexReports=").append(inferredSexReports);
         sb.append(", sampleRelatednessReport=").append(sampleRelatednessReport);
         sb.append(", mendelianErrorReports=").append(mendelianErrorReports);
-        sb.append(", fileIds=").append(fileIds);
+        sb.append(", files=").append(files);
         sb.append(", comments=").append(comments);
         sb.append('}');
         return sb.toString();
@@ -90,12 +90,12 @@ public class IndividualQualityControl {
         return this;
     }
 
-    public List<String> getFileIds() {
-        return fileIds;
+    public List<String> getFiles() {
+        return files;
     }
 
-    public IndividualQualityControl setFileIds(List<String> fileIds) {
-        this.fileIds = fileIds;
+    public IndividualQualityControl setFiles(List<String> files) {
+        this.files = files;
         return this;
     }
 

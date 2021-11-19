@@ -9,16 +9,16 @@ import java.util.List;
 
 public class FamilyQualityControl implements Serializable {
     private List<RelatednessReport> relatedness;
-    private List<String> fileIds;
+    private List<String> files;
     private List<ClinicalComment> comments;
 
     public FamilyQualityControl() {
         this(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
     }
 
-    public FamilyQualityControl(List<RelatednessReport> relatedness, List<String> fileIds, List<ClinicalComment> comments) {
+    public FamilyQualityControl(List<RelatednessReport> relatedness, List<String> files, List<ClinicalComment> comments) {
         this.relatedness = relatedness;
-        this.fileIds = fileIds;
+        this.files = files;
         this.comments = comments;
     }
 
@@ -26,7 +26,7 @@ public class FamilyQualityControl implements Serializable {
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilyQualityControl{");
         sb.append("relatedness=").append(relatedness);
-        sb.append(", fileIds=").append(fileIds);
+        sb.append(", files=").append(files);
         sb.append(", comments=").append(comments);
         sb.append('}');
         return sb.toString();
@@ -41,12 +41,12 @@ public class FamilyQualityControl implements Serializable {
         return this;
     }
 
-    public List<String> getFileIds() {
-        return fileIds;
+    public List<String> getFiles() {
+        return files;
     }
 
-    public FamilyQualityControl setFileIds(List<String> fileIds) {
-        this.fileIds = fileIds;
+    public FamilyQualityControl setFiles(List<String> files) {
+        this.files = files;
         return this;
     }
 
