@@ -14,9 +14,11 @@ public class FileQualityControl {
     private AlignmentFileQualityControl alignment;
     private CoverageFileQualityControl coverage;
     private List<ClinicalComment> comments;
+    private List<String> files;
 
     public FileQualityControl() {
-        this(new VariantFileQualityControl(), new AlignmentFileQualityControl(), new CoverageFileQualityControl(), new ArrayList<>());
+        this(new VariantFileQualityControl(), new AlignmentFileQualityControl(), new CoverageFileQualityControl(), new ArrayList<>(),
+                new ArrayList<>());
     }
 
     @Deprecated
@@ -26,11 +28,12 @@ public class FileQualityControl {
     }
 
     public FileQualityControl(VariantFileQualityControl variant, AlignmentFileQualityControl alignment, CoverageFileQualityControl coverage,
-                              List<ClinicalComment> comments) {
+                              List<ClinicalComment> comments, List<String> files) {
         this.variant = variant;
         this.alignment = alignment;
         this.coverage = coverage;
         this.comments = comments;
+        this.files = files;
     }
 
     @Override
@@ -40,6 +43,7 @@ public class FileQualityControl {
         sb.append(", alignment=").append(alignment);
         sb.append(", coverage=").append(coverage);
         sb.append(", comments=").append(comments);
+        sb.append(", files=").append(files);
         sb.append('}');
         return sb.toString();
     }
@@ -77,6 +81,15 @@ public class FileQualityControl {
 
     public FileQualityControl setComments(List<ClinicalComment> comments) {
         this.comments = comments;
+        return this;
+    }
+
+    public List<String> getFiles() {
+        return files;
+    }
+
+    public FileQualityControl setFiles(List<String> files) {
+        this.files = files;
         return this;
     }
 }
