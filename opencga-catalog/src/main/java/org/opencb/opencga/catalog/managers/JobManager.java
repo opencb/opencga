@@ -727,6 +727,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot delete job {}: {}", jobId, e.getMessage(), e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, jobId, jobUuid,
@@ -800,6 +801,7 @@ public class JobManager extends ResourceManager<Job> {
 
                 Event event = new Event(Event.Type.ERROR, job.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
@@ -962,6 +964,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, job.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update job {}: {}", job.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
@@ -1037,6 +1040,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update job {}: {}", jobId, e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
@@ -1090,6 +1094,7 @@ public class JobManager extends ResourceManager<Job> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Could not update job {}: {}", jobId, e.getMessage(), e);
             auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
@@ -1227,6 +1232,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, job.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update job {}: {}", job.getId(), e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
@@ -1278,6 +1284,7 @@ public class JobManager extends ResourceManager<Job> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Cannot update job {}: {}", jobId, e.getMessage());
             auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
@@ -1338,6 +1345,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update job {}: {}", jobId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, jobId, jobUuid, study.getId(),

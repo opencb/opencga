@@ -31,7 +31,6 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class InterpretationCreateParams {
 
-    private String id;
     private String description;
     private String clinicalAnalysisId;
     private String creationDate;
@@ -47,12 +46,10 @@ public class InterpretationCreateParams {
     public InterpretationCreateParams() {
     }
 
-    public InterpretationCreateParams(String id, String description, String clinicalAnalysisId, String creationDate,
-                                      String modificationDate, ClinicalAnalystParam analyst, InterpretationMethod method,
-                                      List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
-                                      List<PanelReferenceParam> panels, List<ClinicalCommentParam> comments,
-                                      Map<String, Object> attributes) {
-        this.id = id;
+    public InterpretationCreateParams(String description, String clinicalAnalysisId, String creationDate, String modificationDate,
+                                      ClinicalAnalystParam analyst, InterpretationMethod method, List<ClinicalVariant> primaryFindings,
+                                      List<ClinicalVariant> secondaryFindings, List<PanelReferenceParam> panels,
+                                      List<ClinicalCommentParam> comments, Map<String, Object> attributes) {
         this.description = description;
         this.clinicalAnalysisId = clinicalAnalysisId;
         this.creationDate = creationDate;
@@ -67,7 +64,7 @@ public class InterpretationCreateParams {
     }
 
     public static InterpretationCreateParams of(Interpretation interpretation) {
-        return new InterpretationCreateParams(interpretation.getId(), interpretation.getDescription(),
+        return new InterpretationCreateParams(interpretation.getDescription(),
                 interpretation.getClinicalAnalysisId(), interpretation.getCreationDate(), interpretation.getModificationDate(),
                 ClinicalAnalystParam.of(interpretation.getAnalyst()), interpretation.getMethod(), interpretation.getPrimaryFindings(),
                 interpretation.getSecondaryFindings(),
@@ -83,8 +80,7 @@ public class InterpretationCreateParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("InterpretationCreateParams{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", description='").append(description).append('\'');
+        sb.append("description='").append(description).append('\'');
         sb.append(", clinicalAnalysisId='").append(clinicalAnalysisId).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
@@ -100,7 +96,7 @@ public class InterpretationCreateParams {
     }
 
     public Interpretation toClinicalInterpretation() {
-        return new Interpretation(id, description, clinicalAnalysisId, analyst != null ? analyst.toClinicalAnalyst() : null, method,
+        return new Interpretation(null, description, clinicalAnalysisId, analyst != null ? analyst.toClinicalAnalyst() : null, method,
                 creationDate, modificationDate, primaryFindings, secondaryFindings,
                 panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
@@ -109,15 +105,6 @@ public class InterpretationCreateParams {
 
     public ObjectMap toInterpretationObjectMap() throws JsonProcessingException {
         return new ObjectMap(getUpdateObjectMapper().writeValueAsString(this.toClinicalInterpretation()));
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public InterpretationCreateParams setId(String id) {
-        this.id = id;
-        return this;
     }
 
     public String getDescription() {

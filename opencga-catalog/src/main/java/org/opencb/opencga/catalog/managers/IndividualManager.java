@@ -904,6 +904,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
                 Event event = new Event(Event.Type.ERROR, individualId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.INDIVIDUAL, individualId, individualUuid,
@@ -977,6 +978,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
                 Event event = new Event(Event.Type.ERROR, individual.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(),
@@ -1148,6 +1150,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, individual.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update individual {}: {}", individual.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(),
@@ -1202,6 +1205,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, individualId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Cannot update individual {}: {}", individualId, e.getMessage());
             auditManager.auditUpdate(operationId, userId, Enums.Resource.INDIVIDUAL, individualId, individualUuid, study.getId(),
@@ -1276,6 +1280,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update individual {}: {}", individualId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.INDIVIDUAL, individualId, individualUuid, study.getId(),

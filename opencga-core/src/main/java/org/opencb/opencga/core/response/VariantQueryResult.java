@@ -61,16 +61,16 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
                               Map<String, List<String>> samples, String source, Boolean approximateCount,
                               Integer approximateCountSamplingSize, Integer numTotalSamples) {
         super((int) time, events, numResults, result, numMatches);
-        if(samples != null) {
+        if (samples != null) {
             setSamples(samples);
         }
-        if(source != null) {
+        if (source != null) {
             setSource(source);
         }
-        if(approximateCount != null) {
+        if (approximateCount != null) {
             setApproximateCount(approximateCount);
         }
-        if(approximateCountSamplingSize != null) {
+        if (approximateCountSamplingSize != null) {
             setApproximateCountSamplingSize(approximateCountSamplingSize);
         }
         if (samples != null) {
@@ -88,6 +88,7 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
                 dataResult.getNumInserted(),
                 dataResult.getNumUpdated(),
                 dataResult.getNumDeleted(),
+                dataResult.getNumErrors(),
                 dataResult.getAttributes());
         setResults(dataResult.getResults());
         setNumResults(dataResult.getNumResults());

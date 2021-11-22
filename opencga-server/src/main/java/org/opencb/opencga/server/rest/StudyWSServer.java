@@ -48,7 +48,6 @@ import java.util.Map;
 
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 
-
 @Path("/{apiVersion}/studies")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Studies", description = "Methods for working with 'studies' endpoint")
@@ -85,9 +84,11 @@ public class StudyWSServer extends OpenCGAWSServer {
                     dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType =
+                    "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType =
+                    "query")
     })
     public Response getAllStudies(
             @Deprecated @ApiParam(value = "Project id or alias", hidden = true) @QueryParam("projectId") String projectId,
@@ -191,7 +192,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateGroupPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         try {
             if (action == null) {
@@ -224,7 +225,6 @@ public class StudyWSServer extends OpenCGAWSServer {
             }
 
             return createOkResponse(catalogManager.getStudyManager().updateGroup(studyStr, groupId, action, updateParams, token));
-
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -236,7 +236,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response getPermissionRules(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Entity where the permission rules should be applied to", required = true)
-                @QueryParam("entity") Enums.Entity entity) {
+            @QueryParam("entity") Enums.Entity entity) {
         try {
             ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(catalogManager.getStudyManager().getPermissionRules(studyStr, entity, token));
@@ -255,7 +255,8 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Action to be performed: ADD to add a new permission rule; REMOVE to remove all permissions assigned by an "
                     + "existing permission rule (even if it overlaps any manual permission); REVERT to remove all permissions assigned by"
                     + " an existing permission rule (keep manual overlaps); NONE to remove an existing permission rule without removing "
-                    + "any permissions that could have been assigned already by the permission rule.", allowableValues = "ADD,REMOVE,REVERT,NONE", defaultValue = "ADD")
+                    + "any permissions that could have been assigned already by the permission rule.", allowableValues = "ADD,REMOVE," +
+                    "REVERT,NONE", defaultValue = "ADD")
             @QueryParam("action") Enums.PermissionRuleAction action,
             @ApiParam(value = "JSON containing the permission rule to be created or removed.", required = true) PermissionRule params) {
         try {
@@ -288,7 +289,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studies}/acl")
-    @ApiOperation(value = "Return the acl of the study. If member is provided, it will only return the acl for the member.", response = Map.class)
+    @ApiOperation(value = "Return the acl of the study. If member is provided, it will only return the acl for the member.", response =
+            Map.class)
     public Response getAcls(
             @ApiParam(value = ParamConstants.STUDIES_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDIES_PARAM) String studiesStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
@@ -389,7 +391,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response createOrRemoveVariableSets(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a variableSet", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing the VariableSet to be created or removed.", required = true) VariableSetCreateParams params) {
         try {
             if (action == null) {
@@ -405,7 +407,8 @@ public class StudyWSServer extends OpenCGAWSServer {
                     fixVariable(variable);
                 }
 
-                queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.getId(), params.getName(), params.getUnique(),
+                queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.getId(), params.getName(),
+                        params.getUnique(),
                         params.getConfidential(), params.getDescription(), null, params.getVariables(), params.getEntities(), token);
             } else {
                 queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, params.getId(), token);
@@ -422,7 +425,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 //    public Response updateVariableSets(
 //            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
 //            @ApiParam(value = "VariableSet id of the VariableSet to be updated") @PathParam("variableSet") String variableSetId,
-//            @ApiParam(value = "JSON containing the fields of the VariableSet to update.", required = true) UpdateableVariableSetParameters params) {
+//            @ApiParam(value = "JSON containing the fields of the VariableSet to update.", required = true)
+//            UpdateableVariableSetParameters params) {
 //        return createErrorResponse(new NotImplementedException("Pending of implementation"));
 //    }
 
@@ -433,8 +437,9 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "VariableSet id of the VariableSet to be updated") @PathParam("variableSet") String variableSetId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a variable", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
-            @ApiParam(value = "JSON containing the variable to be added or removed. For removing, only the variable id will be needed.", required = true) Variable variable) {
+            @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @ApiParam(value = "JSON containing the variable to be added or removed. For removing, only the variable id will be needed.",
+                    required = true) Variable variable) {
         try {
             if (action == null) {
                 action = ParamUtils.AddRemoveAction.ADD;
@@ -461,9 +466,11 @@ public class StudyWSServer extends OpenCGAWSServer {
                     dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType =
+                    "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType =
+                    "query")
     })
     public Response auditSearch(
             @ApiParam(value = ParamConstants.STUDY_ID_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyId,
@@ -483,7 +490,6 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-
     /*
     ========================= TEMPLATES ===========================
      */
@@ -492,7 +498,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @ApiOperation(httpMethod = "POST", value = "Resource to upload a zipped template", response = String.class)
     public Response upload(
-            @FormDataParam("file") InputStream fileInputStream,
+            @ApiParam(value = "File to upload") @FormDataParam("file") InputStream fileInputStream,
             @FormDataParam("file") FormDataContentDisposition fileMetaData,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr) {
         try {
@@ -536,5 +542,4 @@ public class StudyWSServer extends OpenCGAWSServer {
             }
         }
     }
-
 }

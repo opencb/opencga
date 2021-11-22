@@ -384,6 +384,7 @@ public class PanelManager extends ResourceManager<Panel> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, panel.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update panel {}: {}", panel.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(),
@@ -437,6 +438,7 @@ public class PanelManager extends ResourceManager<Panel> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, panelId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Could not update panel {}: {}", panelId, e.getMessage(), e);
             auditManager.auditUpdate(operationId, userId, Enums.Resource.DISEASE_PANEL, panelId, panelUuid, study.getId(),
@@ -511,6 +513,7 @@ public class PanelManager extends ResourceManager<Panel> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, panelId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update panel {}: {}", panelId, e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.DISEASE_PANEL, panelId, panelUuid, study.getId(),
@@ -731,6 +734,7 @@ public class PanelManager extends ResourceManager<Panel> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot delete panel {}: {}", panelId, e.getMessage());
                 auditManager.auditDelete(operationId, userId, Enums.Resource.DISEASE_PANEL, panelId, panelUuid, study.getId(),
@@ -806,6 +810,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
                 Event event = new Event(Event.Type.ERROR, panel.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(),

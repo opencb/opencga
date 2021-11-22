@@ -633,6 +633,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot delete cohort {}: {}", cohortId, e.getMessage());
                 auditManager.auditDelete(operationId, userId, Enums.Resource.COHORT, cohortId, cohortUuid, study.getId(),
@@ -703,6 +704,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, cohort.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot delete cohort {}: {}", cohort.getId(), e.getMessage());
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
@@ -824,6 +826,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, cohortId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Could not update cohort {}: {}", cohortId, e.getMessage(), e);
             auditManager.auditUpdate(operationId, userId, Enums.Resource.COHORT, cohortId, cohortUuid, study.getId(),
@@ -902,6 +905,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, cohortId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update cohort {}: {}", cohortId, e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.COHORT, cohortId, cohortUuid, study.getId(),
@@ -980,6 +984,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, cohort.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update cohort {}: {}", cohort.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),

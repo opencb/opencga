@@ -260,7 +260,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                 }
             }
             String bodyParamsObject = endpoint.getBodyParamsObject();
-            sb.append("\n        " + bodyParamsObject + " " + getAsVariableName(bodyParamsObject) + " = new " + bodyParamsObject + "()");
+            sb.append("\n        " + bodyParamsObject + " " + getAsVariableName(bodyParamsObject) + " = (" + bodyParamsObject + ") new " + bodyParamsObject + "()");
             Set<String> variables = new HashSet<>();
             for (Parameter parameter : endpoint.getParameters()) {
                 if (parameter.getData() != null && !parameter.getData().isEmpty()) {

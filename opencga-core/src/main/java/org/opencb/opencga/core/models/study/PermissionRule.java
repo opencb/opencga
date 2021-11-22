@@ -27,7 +27,6 @@ public class PermissionRule {
     private List<String> members;
     private List<String> permissions;
 
-
     public PermissionRule() {
     }
 
@@ -37,7 +36,6 @@ public class PermissionRule {
         this.members = members;
         this.permissions = permissions;
     }
-
 
     @Override
     public String toString() {
@@ -49,7 +47,6 @@ public class PermissionRule {
         sb.append('}');
         return sb.toString();
     }
-
 
     public String getId() {
         return id;
@@ -90,8 +87,7 @@ public class PermissionRule {
     public enum DeleteAction {
         REMOVE, // Remove all the permissions assigned by the permission rule even if it had been also assigned manually.
         REVERT, // Remove all the permissions assigned by the permission rule but retain manual permissions as well as other permissions
-                // that might have been assigned by other permission rules (leave permissions as if the permission rule had never existed).
+        // that might have been assigned by other permission rules (leave permissions as if the permission rule had never existed).
         NONE,   // Remove the permission rule but no the permissions that might have been eventually assigned because of it.
     }
-
 }

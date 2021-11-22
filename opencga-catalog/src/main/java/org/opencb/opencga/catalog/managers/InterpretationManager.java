@@ -252,18 +252,18 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         ParamUtils.checkObj(interpretation, "Interpretation");
         ParamUtils.checkParameter(clinicalAnalysis.getId(), "ClinicalAnalysisId");
-
-        if (StringUtils.isEmpty(interpretation.getId())) {
-            // Assign id automatically by counting the number of Interpretations that have been created already in the CA
-            int count = 1;
-            for (ClinicalAudit clinicalAudit : clinicalAnalysis.getAudit()) {
-                if (clinicalAudit.getAction().equals(ClinicalAudit.Action.CREATE_INTERPRETATION)) {
-                    count++;
-                }
-            }
-            interpretation.setId(clinicalAnalysis.getId() + "." + count);
+        if (StringUtils.isNotEmpty(interpretation.getId())) {
+            throw new CatalogException("Interpretation id cannot be passed. It is automatically generated.");
         }
-        ParamUtils.checkIdentifier(interpretation.getId(), "id");
+
+        // Assign id automatically by counting the number of Interpretations that have been created already in the CA
+        int count = 1;
+        for (ClinicalAudit clinicalAudit : clinicalAnalysis.getAudit()) {
+            if (clinicalAudit.getAction().equals(ClinicalAudit.Action.CREATE_INTERPRETATION)) {
+                count++;
+            }
+        }
+        interpretation.setId(clinicalAnalysis.getId() + "." + count);
 
         interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());
 
@@ -440,7 +440,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 InterpretationUpdateParams params = new InterpretationUpdateParams("", new ClinicalAnalystParam(),
-                        Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList(),
+                        InterpretationMethod.init(), null, null, Collections.emptyList(), Collections.emptyList(),
                         clinicalAnalysis.getPanels() != null
                                 ? clinicalAnalysis.getPanels().stream()
                                 .map(p -> new PanelReferenceParam().setId(p.getId())).collect(Collectors.toList())
@@ -675,6 +675,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, interpretation.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update interpretation {}: {}", interpretation.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
@@ -754,6 +755,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     + clinicalAnalysisId + "': " + e.getMessage(), e);
             Event event = new Event(Event.Type.ERROR, interpretationId, e1.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("{}", e1.getMessage(), e);
             auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
@@ -850,6 +852,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update interpretation {}: {}", interpretationId, e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
@@ -1275,6 +1278,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
                 Event event = new Event(Event.Type.ERROR, interpretationId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,

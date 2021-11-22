@@ -4,6 +4,7 @@ import io.swagger.annotations.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.opencb.opencga.core.tools.annotations.CliParams;
 import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.Parameter;
@@ -99,6 +100,7 @@ public class RestApiParser {
                 java.lang.reflect.Parameter[] methodParameters = method.getParameters();
                 if (methodParameters != null) {
                     for (java.lang.reflect.Parameter methodParameter : methodParameters) {
+
                         ApiParam apiParam = methodParameter.getAnnotation(ApiParam.class);
                         if (apiParam != null && !apiParam.hidden()) {
                             List<Parameter> bodyParams = new ArrayList<>();
@@ -138,10 +140,23 @@ public class RestApiParser {
                                     type = "object";
                                     try {
                                         Class<?> aClass = Class.forName(typeClass);
-                                        for (Field declaredField : aClass.getDeclaredFields()) {
+                                        List<Field> declaredFields = new ArrayList<>();
+                                        List<Field> classFields = Arrays.asList(aClass.getDeclaredFields());
+                                        for (Field field : classFields) {
+                                            declaredFields.add(field);
+                                        }
+                                        if (aClass.getSuperclass() != null && !"java.lang.Object".equals(aClass.getSuperclass().getName())) {
+                                            List<Field> parentFields = Arrays.asList(aClass.getSuperclass().getDeclaredFields());
+                                            for (Field field : parentFields) {
+                                                declaredFields.add(field);
+                                            }
+                                        }
+                                        for (Field declaredField : declaredFields) {
                                             int modifiers = declaredField.getModifiers();
                                             // Ignore non-private or static fields
-                                            if (Modifier.isPrivate(modifiers) && !Modifier.isStatic(modifiers)) {
+                                            if ((Modifier.isPrivate(modifiers) || Modifier.isProtected(modifiers))
+                                                    && !Modifier.isStatic(modifiers) && !Modifier.isFinal(modifiers)) {
+
                                                 Parameter innerParam = getParameter(declaredField.getName(), variablePrefix, declaredField,
                                                         declaredField.getType().getName(), declaredField.getName());
                                                 if (innerParam.isList()) {
@@ -154,7 +169,9 @@ public class RestApiParser {
                                                         Field[] fields = cls.getDeclaredFields();
                                                         List<Parameter> complexParams = new ArrayList<>();
                                                         for (Field field : fields) {
-                                                            if (CommandLineUtils.isPrimitiveType(field.getType().getSimpleName())) {
+                                                            int innerModifiers = field.getModifiers();
+                                                            if (CommandLineUtils.isPrimitiveType(field.getType().getSimpleName())
+                                                                    && !Modifier.isStatic(innerModifiers)) {
                                                                 //  System.out.println("" + field.getType().getName());
                                                                 Parameter complexParam =
                                                                         getParameter(field.getName(), variablePrefix, field,
@@ -182,13 +199,12 @@ public class RestApiParser {
                             parameter.setType(type);
                             parameter.setTypeClass(typeClass.endsWith(";") ? typeClass : typeClass + ";");
                             parameter.setAllowedValues(apiParam.allowableValues());
-                            parameter.setRequired(apiParam.required());
+                            parameter.setRequired(apiParam.required() || "path".equals(parameter.getParam()));
                             parameter.setDefaultValue(apiParam.defaultValue());
                             parameter.setDescription(apiParam.value());
                             if (!bodyParams.isEmpty()) {
                                 parameter.setData(bodyParams);
                             }
-
                             parameters.add(parameter);
                         }
                     }
@@ -205,6 +221,7 @@ public class RestApiParser {
 
     private static Parameter getParameter(String paramName, String variablePrefix, Field declaredField, String className,
                                           String variableName) {
+
         Parameter innerParam = new Parameter();
         innerParam.setName(paramName);
         innerParam.setParam("body");
@@ -212,7 +229,7 @@ public class RestApiParser {
         innerParam.setType(declaredField.getType().getSimpleName());
         innerParam.setTypeClass(className + ";");
         innerParam.setAllowedValues("");
-        innerParam.setRequired(false);
+        innerParam.setRequired(isRequired(declaredField));
         innerParam.setDefaultValue("");
         innerParam.setComplex(!CommandLineUtils.isPrimitiveType(declaredField.getType().getSimpleName()));
 
@@ -227,7 +244,17 @@ public class RestApiParser {
                     "The body web service " + declaredField.getName() + " "
                             + "parameter");
         }
+
         return innerParam;
+    }
+
+    private static boolean isRequired(Field declaredField) {
+        CliParams annotation = declaredField.getAnnotation(CliParams.class);
+        if (declaredField.getName().equals("permissions"))
+            System.out.println(declaredField.getDeclaringClass() + " Required" + (annotation != null && annotation.required()));
+        if (annotation != null && annotation.required())
+            return true;
+        return false;
     }
 
     @Deprecated
@@ -242,6 +269,7 @@ public class RestApiParser {
         String category = String.valueOf(map.get("name")).toUpperCase() + "_";
         List<LinkedHashMap<String, Object>> endpoints = new ArrayList<>(20);
         for (Method method : clazz.getMethods()) {
+
             Path pathAnnotation = method.getAnnotation(Path.class);
             String httpMethod = "GET";
             if (method.getAnnotation(POST.class) != null) {
@@ -288,6 +316,7 @@ public class RestApiParser {
                 if (methodParameters != null) {
                     for (java.lang.reflect.Parameter methodParameter : methodParameters) {
                         ApiParam apiParam = methodParameter.getAnnotation(ApiParam.class);
+
                         if (apiParam != null && !apiParam.hidden()) {
                             List<Map<String, Object>> bodyParams = new ArrayList<>();
                             LinkedHashMap<String, Object> parameter = new LinkedHashMap<>();
