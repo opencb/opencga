@@ -2218,7 +2218,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         ClinicalAnalysis ca = createDummyEnvironment(true, false).first();
 
         Interpretation interpretation = new Interpretation()
-                .setPanels(Collections.singletonList(panel));
+                .setPanels(Collections.singletonList(new Panel().setId(panel.getId())));
 
         interpretation = catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation,
                 ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser).first();
