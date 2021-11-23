@@ -215,11 +215,15 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         return HDFSIOConnector.isLocal(path.toUri(), getConf());
     }
 
-    protected Path getTempOutdir(String prefix) {
+    protected Path getTempOutdir(String prefix) throws IOException {
         return getTempOutdir(prefix, "");
     }
 
-    protected Path getTempOutdir(String prefix, String suffix) {
+    protected Path getTempOutdir(String prefix, String suffix) throws IOException {
+        return getTempOutdir(prefix, suffix, false);
+    }
+
+    protected Path getTempOutdir(String prefix, String suffix, boolean ensureHdfs) throws IOException {
         if (StringUtils.isEmpty(suffix)) {
             suffix = "";
         } else if (!suffix.startsWith(".")) {
@@ -227,7 +231,31 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         }
         // Be aware that
         // > ABFS does not allow files or directories to end with a dot.
-        return new Path(getConf().get("hadoop.tmp.dir"), prefix + "." + TimeUtils.getTime() + suffix);
+        String fileName = prefix + "." + TimeUtils.getTime() + suffix;
+
+        Path tmpDir = new Path(getConf().get("hadoop.tmp.dir"));
+        if (ensureHdfs) {
+            FileSystem fileSystem = tmpDir.getFileSystem(getConf());
+            if (!fileSystem.getScheme().equals("hdfs")) {
+                LOGGER.info("Temporary directory is not in hdfs:// . Hdfs is required for this temporary file.");
+                LOGGER.info("   Default file system : " + fileSystem.getUri());
+                for (String nameServiceId : getConf().getTrimmedStringCollection("dfs.nameservices")) {
+                    try {
+                        Path hdfsTmpPath = new Path("hdfs", nameServiceId, "/tmp/");
+                        FileSystem hdfsFileSystem = hdfsTmpPath.getFileSystem(getConf());
+                        if (hdfsFileSystem != null) {
+                            LOGGER.info("Change to file system : " + hdfsFileSystem.getUri());
+                            tmpDir = hdfsTmpPath;
+                            break;
+                        }
+                    } catch (Exception e) {
+                        LOGGER.debug("This file system is not hdfs:// . Skip!", e);
+                    }
+                }
+            }
+        }
+        LOGGER.info("Temporary directory: " + tmpDir.toUri());
+        return new Path(tmpDir, fileName);
     }
 
     protected Path getLocalOutput(Path outdir) throws IOException {

@@ -20,7 +20,6 @@ import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileAsBinaryOutputFormat;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -106,7 +105,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
             VariantMapReduceUtil.setNoneReduce(job);
         } else {
             VariantMapReduceUtil.initTableMapperJob(job, table, scans, DeleteHBaseColumnToProtoMapper.class);
-            outdir = getTempOutdir("opencga_delete", table);
+            outdir = getTempOutdir("opencga_delete", table, true);
             outdir.getFileSystem(getConf()).deleteOnExit(outdir);
 
             LOGGER.info(" * Temporary outdir file: " + outdir.toUri());
@@ -130,7 +129,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
         try {
             if (succeed) {
                 if (outdir != null) {
-                    FileSystem fs = FileSystem.get(getConf());
+                    FileSystem fs = outdir.getFileSystem(getConf());
                     ContentSummary contentSummary = fs.getContentSummary(outdir);
                     LOGGER.info("Generated file " + outdir.toUri());
                     LOGGER.info(" - Size (HDFS)         : " + IOUtils.humanReadableByteCount(contentSummary.getLength(), false));
@@ -156,7 +155,8 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
     @Override
     protected void parseAndValidateParameters() throws IOException {
         super.parseAndValidateParameters();
-        columns = getColumnsToDelete(getConf());
+        DeleteHBaseColumnTask task = getDeleteHBaseColumnTask(getConf());
+        columns = task.getColumnsToDelete(getConf());
 
         if (columns.isEmpty()) {
             if (getConf().getBoolean(DELETE_ALL_COLUMNS, false)) {
@@ -173,17 +173,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
             }
         }
 
-        regions = new ArrayList<>();
-        String regionsStr = getConf().get(REGIONS_TO_DELETE);
-        if (regionsStr != null && !regionsStr.isEmpty()) {
-            String[] split = StringUtils.splitByWholeSeparatorPreserveAllTokens(regionsStr, REGION_SEPARATOR);
-            if (split.length % 2 != 0) {
-                throw new IllegalArgumentException("Expected pair number of elements in region.  Got " + split.length);
-            }
-            for (int i = 0; i < split.length; i += 2) {
-                regions.add(new Pair<>(Bytes.toBytesBinary(split[i]), Bytes.toBytesBinary(split[i + 1])));
-            }
-        }
+        regions = task.getRegionsToDelete(getConf());
     }
 
 
@@ -209,25 +199,6 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
         }
 
         return sb.toString();
-    }
-
-    private static Map<String, List<String>> getColumnsToDelete(Configuration conf) {
-        Map<String, List<String>> columns;
-        if (conf.get(COLUMNS_TO_DELETE) == null) {
-            columns = Collections.emptyMap();
-        } else {
-            String[] columnStrings = conf.get(COLUMNS_TO_DELETE).split(";");
-            columns = new HashMap<>(columnStrings.length);
-            for (String elem : columnStrings) {
-                String[] split = elem.split("-->");
-                if (split.length > 1) {
-                    columns.put(split[0], Arrays.asList(split[1].split(",")));
-                } else {
-                    columns.put(elem, Collections.emptyList());
-                }
-            }
-        }
-        return columns;
     }
 
     @Override
@@ -290,12 +261,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
         private DeleteHBaseColumnTask task;
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            Class<? extends DeleteHBaseColumnTask> taskClass = getDeleteHbaseColumnTaskClass(context);
-            try {
-                task = taskClass.newInstance();
-            } catch (InstantiationException | IllegalAccessException e) {
-                throw new IllegalArgumentException("Unable to create new instance of " + DeleteHBaseColumnTask.class, e);
-            }
+            task = getDeleteHBaseColumnTask(context.getConfiguration());
             task.setup(context);
         }
 
@@ -321,12 +287,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
         private DeleteHBaseColumnTask task;
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            Class<? extends DeleteHBaseColumnTask> taskClass = getDeleteHbaseColumnTaskClass(context);
-            try {
-                task = taskClass.newInstance();
-            } catch (InstantiationException | IllegalAccessException e) {
-                throw new IllegalArgumentException("Unable to create new instance of " + DeleteHBaseColumnTask.class, e);
-            }
+            task = getDeleteHBaseColumnTask(context.getConfiguration());
             task.setup(context);
         }
 
@@ -409,11 +370,53 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
                 }
             }
         }
+
+        public List<Pair<byte[], byte[]>> getRegionsToDelete(Configuration configuration) {
+            List<Pair<byte[], byte[]>> regions = new ArrayList<>();
+            String regionsStr = configuration.get(REGIONS_TO_DELETE);
+            if (regionsStr != null && !regionsStr.isEmpty()) {
+                String[] split = StringUtils.splitByWholeSeparatorPreserveAllTokens(regionsStr, REGION_SEPARATOR);
+                if (split.length % 2 != 0) {
+                    throw new IllegalArgumentException("Expected pair number of elements in region.  Got " + split.length);
+                }
+                for (int i = 0; i < split.length; i += 2) {
+                    regions.add(new Pair<>(Bytes.toBytesBinary(split[i]), Bytes.toBytesBinary(split[i + 1])));
+                }
+            }
+            return regions;
+        }
+
+        public Map<String, List<String>> getColumnsToDelete(Configuration conf) {
+            Map<String, List<String>> columns;
+            if (conf.get(COLUMNS_TO_DELETE) == null) {
+                columns = Collections.emptyMap();
+            } else {
+                String[] columnStrings = conf.get(COLUMNS_TO_DELETE).split(";");
+                columns = new HashMap<>(columnStrings.length);
+                for (String elem : columnStrings) {
+                    String[] split = elem.split("-->");
+                    if (split.length > 1) {
+                        columns.put(split[0], Arrays.asList(split[1].split(",")));
+                    } else {
+                        columns.put(elem, Collections.emptyList());
+                    }
+                }
+            }
+            return columns;
+        }
     }
 
-    public static Class<? extends DeleteHBaseColumnTask> getDeleteHbaseColumnTaskClass(JobContext context) {
-        return context.getConfiguration()
+    public static Class<? extends DeleteHBaseColumnTask> getDeleteHbaseColumnTaskClass(Configuration configuration) {
+        return configuration
                 .getClass(DELETE_HBASE_COLUMN_TASK_CLASS, DeleteHBaseColumnTask.class, DeleteHBaseColumnTask.class);
     }
 
+    public static DeleteHBaseColumnTask getDeleteHBaseColumnTask(Configuration configuration) {
+        Class<? extends DeleteHBaseColumnTask> taskClass = getDeleteHbaseColumnTaskClass(configuration);
+        try {
+            return taskClass.newInstance();
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new IllegalArgumentException("Unable to create new instance of " + DeleteHBaseColumnTask.class, e);
+        }
+    }
 }

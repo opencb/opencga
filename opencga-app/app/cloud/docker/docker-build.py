@@ -113,7 +113,7 @@ parser = argparse.ArgumentParser()
 # build, push or delete
 parser.add_argument('action', help="Action to execute", choices=["build", "push", "delete"], default="build")
 
-parser.add_argument('--images', help="comma separated list of images to be made, e.g. base,init,demo,r")
+parser.add_argument('--images', help="comma separated list of images to be made, e.g. base,init,demo,r,samtools")
 parser.add_argument('--tag', help="the tag for this code, e.g. v2.0.0-hdp3.1")
 parser.add_argument('--build-folder', help="the location of the build folder, if not default location")
 parser.add_argument('--org', help="Docker organization", default="opencb")

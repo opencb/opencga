@@ -89,10 +89,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexMendelianError
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexLoader;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexLoader;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
@@ -628,7 +625,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
      * @throws StorageEngineException if something goes wrong
      */
     private void remove(String study, List<String> files, List<String> samples, URI outdir) throws StorageEngineException {
-        ObjectMap options = getOptions();
+        ObjectMap options = new ObjectMap(getOptions());
+        // Remove unneeded values that might leak into options.
+        options.remove("sample");
+        options.remove("file");
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         final int studyId = metadataManager.getStudyId(study);
@@ -719,7 +719,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                     columns.put(VariantPhoenixSchema.getStudyColumn(studyId).fullColumn(), Collections.emptyList());
                 }
                 ObjectMap thisOptions = new ObjectMap(options);
-                options.put(DeleteHBaseColumnDriver.DELETE_HBASE_COLUMN_TASK_CLASS, VariantsTableDeleteColumnTask.class.getName());
+                thisOptions.put(DeleteHBaseColumnDriver.DELETE_HBASE_COLUMN_TASK_CLASS, VariantsTableDeleteColumnTask.class.getName());
 
                 String[] deleteFromVariantsArgs = DeleteHBaseColumnDriver.buildArgs(variantsTable, columns, thisOptions);
                 getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromVariantsArgs, "Delete from variants table");
@@ -758,18 +758,26 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                             Set<Integer> filesFromSample = new HashSet<>(sampleMetadata.getFiles());
                             filesFromSample.removeAll(fileIds);
                             if (!filesFromSample.isEmpty()) {
-                                // The sample has other files that are not deleted, need to rebuild the sample index
-                                samplesToRebuildIndex.add(sampleMetadata.getName());
+                                boolean otherFilesFromSampleIndexed = false;
+                                for (Integer fileFromSample : filesFromSample) {
+                                    if (metadataManager.isFileIndexed(studyId, fileFromSample)) {
+                                        otherFilesFromSampleIndexed = true;
+                                        break;
+                                    }
+                                }
+                                if (otherFilesFromSampleIndexed) {
+                                    // The sample has other files that are not deleted, need to rebuild the sample index
+                                    samplesToRebuildIndex.add(sampleMetadata.getName());
+                                }
                             }
                         }
                     }
-                    List<org.apache.hadoop.hbase.util.Pair<byte[], byte[]>> regions = new ArrayList<>();
-                    for (Integer sampleId : allSampleIds) {
-                        regions.add(new org.apache.hadoop.hbase.util.Pair<>(
-                                SampleIndexSchema.toRowKey(sampleId),
-                                SampleIndexSchema.toRowKey(sampleId + 1)));
-                    }
-                    String[] deleteFromSampleIndexArgs = DeleteHBaseColumnDriver.buildArgs(sampleIndexTable, null, true, regions, options);
+                    ObjectMap thisOptions = new ObjectMap(options);
+                    thisOptions.put(DeleteHBaseColumnDriver.DELETE_HBASE_COLUMN_TASK_CLASS,
+                            SampleIndexDeleteHBaseColumnTask.class.getName());
+                    thisOptions.put(SampleIndexDeleteHBaseColumnTask.SAMPLE_IDS_TO_DELETE_FROM_SAMPLE_INDEX, allSampleIds);
+
+                    String[] deleteFromSampleIndexArgs = DeleteHBaseColumnDriver.buildArgs(sampleIndexTable, null, true, null, thisOptions);
                     getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromSampleIndexArgs,
                             "Delete from SamplesIndex table");
                     return stopWatch.now(TimeUnit.MILLISECONDS);
