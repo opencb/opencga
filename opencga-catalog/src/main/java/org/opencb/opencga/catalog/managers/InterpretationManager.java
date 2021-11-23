@@ -1028,7 +1028,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             parameters.put(InterpretationDBAdaptor.QueryParams.STATUS.key(), interpretation.getStatus());
         }
 
-        return interpretationDBAdaptor.update(interpretation.getUid(), parameters, clinicalAuditList, as, options);
+        OpenCGAResult<Interpretation> update = interpretationDBAdaptor.update(interpretation.getUid(), parameters, clinicalAuditList, as,
+                options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated interpretation
+            OpenCGAResult<Interpretation> result = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(), options);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     public OpenCGAResult<Interpretation> revert(String studyStr, String clinicalAnalysisId, String interpretationId, int version,

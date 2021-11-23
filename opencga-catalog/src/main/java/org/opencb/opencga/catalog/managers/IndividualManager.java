@@ -1417,7 +1417,14 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        return individualDBAdaptor.update(individual.getUid(), parameters, study.getVariableSets(), options);
+        OpenCGAResult<Individual> update = individualDBAdaptor.update(individual.getUid(), parameters, study.getVariableSets(), options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated individual
+            OpenCGAResult<Individual> result = individualDBAdaptor.get(study.getUid(),
+                    new Query(IndividualDBAdaptor.QueryParams.UID.key(), individual.getUid()), options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     @Override

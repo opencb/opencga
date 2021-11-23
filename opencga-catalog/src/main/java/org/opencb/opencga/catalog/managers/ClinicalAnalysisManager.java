@@ -1390,7 +1390,15 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.UPDATE_CLINICAL_ANALYSIS,
                 "Update ClinicalAnalysis '" + clinicalAnalysis.getId() + "'", TimeUtils.getTime());
-        return clinicalDBAdaptor.update(clinicalAnalysis.getUid(), parameters, Collections.singletonList(clinicalAudit), options);
+        OpenCGAResult<ClinicalAnalysis> update = clinicalDBAdaptor.update(clinicalAnalysis.getUid(), parameters,
+                Collections.singletonList(clinicalAudit), options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated clinical analysis
+            OpenCGAResult<ClinicalAnalysis> result = clinicalDBAdaptor.get(study.getUid(),
+                    new Query(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), clinicalAnalysis.getUid()), options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     /**

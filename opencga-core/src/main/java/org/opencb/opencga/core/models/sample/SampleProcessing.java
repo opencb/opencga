@@ -56,6 +56,34 @@ public class SampleProcessing {
         return sb.toString();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SampleProcessing)) return false;
+
+        SampleProcessing that = (SampleProcessing) o;
+
+        if (product != null ? !product.equals(that.product) : that.product != null) return false;
+        if (preparationMethod != null ? !preparationMethod.equals(that.preparationMethod) : that.preparationMethod != null) return false;
+        if (extractionMethod != null ? !extractionMethod.equals(that.extractionMethod) : that.extractionMethod != null) return false;
+        if (labSampleId != null ? !labSampleId.equals(that.labSampleId) : that.labSampleId != null) return false;
+        if (quantity != null ? !quantity.equals(that.quantity) : that.quantity != null) return false;
+        if (date != null ? !date.equals(that.date) : that.date != null) return false;
+        return attributes != null ? attributes.equals(that.attributes) : that.attributes == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = product != null ? product.hashCode() : 0;
+        result = 31 * result + (preparationMethod != null ? preparationMethod.hashCode() : 0);
+        result = 31 * result + (extractionMethod != null ? extractionMethod.hashCode() : 0);
+        result = 31 * result + (labSampleId != null ? labSampleId.hashCode() : 0);
+        result = 31 * result + (quantity != null ? quantity.hashCode() : 0);
+        result = 31 * result + (date != null ? date.hashCode() : 0);
+        result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
+        return result;
+    }
+
     public String getProduct() {
         return product;
     }

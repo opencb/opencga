@@ -186,6 +186,12 @@ public class ClinicalWebService extends AnalysisWebService {
     @Path("/{clinicalAnalyses}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update clinical analysis attributes", response = ClinicalAnalysis.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response update(
             @ApiParam(value = "Comma separated list of clinical analysis IDs") @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -197,6 +203,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @QueryParam("filesAction") ParamUtils.BasicUpdateAction filesAction,
             @ApiParam(value = "Action to be performed if the array of panels is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("panelsAction") ParamUtils.BasicUpdateAction panelsAction,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical analysis information", required = true) ClinicalAnalysisUpdateParams params) {
         try {
             if (commentsAction == null) {
@@ -433,6 +440,12 @@ public class ClinicalWebService extends AnalysisWebService {
     @Path("/{clinicalAnalysis}/interpretation/{interpretation}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update interpretation fields", response = Interpretation.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response updateInterpretation(
             @ApiParam(value = "[[user@]project:]study ID") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed if the array of primary findings is being updated.",
@@ -449,6 +462,7 @@ public class ClinicalWebService extends AnalysisWebService {
             @ApiParam(value = "Set interpretation as", allowableValues = "PRIMARY,SECONDARY") @QueryParam("setAs") ParamUtils.SaveInterpretationAs setAs,
             @ApiParam(value = "Clinical analysis ID") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "Interpretation ID") @PathParam("interpretation") String interpretationId,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(name = "body", value = "JSON containing clinical interpretation information", required = true)
                     InterpretationUpdateParams params) {
         try {

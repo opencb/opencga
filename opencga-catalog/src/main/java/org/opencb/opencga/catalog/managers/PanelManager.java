@@ -555,7 +555,14 @@ public class PanelManager extends ResourceManager<Panel> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        return panelDBAdaptor.update(panel.getUid(), parameters, options);
+        OpenCGAResult<Panel> update = panelDBAdaptor.update(panel.getUid(), parameters, options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated panel
+            OpenCGAResult<Panel> result = panelDBAdaptor.get(study.getUid(),
+                    new Query(PanelDBAdaptor.QueryParams.UID.key(), panel.getUid()), options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     @Override

@@ -243,6 +243,12 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/{cohorts}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some cohort attributes", response = Cohort.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response updateByPost(
             @ApiParam(value = "Comma separated list of cohort ids", required = true) @PathParam("cohorts") String cohorts,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
@@ -251,6 +257,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(value = "body") CohortUpdateParams params) {
         try {
             Map<String, Object> actionMap = new HashMap<>();

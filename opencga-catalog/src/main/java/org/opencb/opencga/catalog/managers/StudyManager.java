@@ -646,14 +646,17 @@ public class StudyManager extends AbstractManager {
                 throw new CatalogException("Jackson casting error: " + e.getMessage(), e);
             }
 
-            OpenCGAResult result = studyDBAdaptor.update(study.getUid(), update, options);
+            OpenCGAResult<Study> updateResult = studyDBAdaptor.update(study.getUid(), update, options);
             auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            OpenCGAResult<Study> queryResult = studyDBAdaptor.get(study.getUid(), options);
-            queryResult.setTime(queryResult.getTime() + result.getTime());
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated study
+                OpenCGAResult<Study> result = studyDBAdaptor.get(study.getUid(), options);
+                updateResult.setResults(result.getResults());
+            }
 
-            return queryResult;
+            return updateResult;
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

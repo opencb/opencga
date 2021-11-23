@@ -1164,7 +1164,14 @@ public class JobManager extends ResourceManager<Job> {
 //            updateParams.setErrorLog(getFile(study.getUid(), updateParams.getErrorLog().getPath(), userId));
 //        }
 
-        return jobDBAdaptor.update(job.getUid(), updateMap, options);
+        OpenCGAResult<Job> update = jobDBAdaptor.update(job.getUid(), updateMap, options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated job
+            OpenCGAResult<Job> result = jobDBAdaptor.get(study.getUid(), new Query(JobDBAdaptor.QueryParams.UID.key(), job.getUid()),
+                    options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     private File getFile(long studyUid, String path, String userId) throws CatalogException {

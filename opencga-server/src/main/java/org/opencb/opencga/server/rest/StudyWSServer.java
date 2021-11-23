@@ -123,12 +123,19 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some study attributes", response = Study.class)
-    public Response updateByPost(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION,
-            required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                 @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyUpdateParams updateParams) {
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
+    public Response updateByPost(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyUpdateParams updateParams) {
         try {
             ObjectUtils.defaultIfNull(updateParams, new StudyUpdateParams());
-            DataResult queryResult = catalogManager.getStudyManager().update(studyStr, updateParams, null, token);
+            DataResult queryResult = catalogManager.getStudyManager().update(studyStr, updateParams, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -191,7 +198,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateGroupPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         try {
             if (action == null) {
@@ -236,7 +243,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response getPermissionRules(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Entity where the permission rules should be applied to", required = true)
-                @QueryParam("entity") Enums.Entity entity) {
+            @QueryParam("entity") Enums.Entity entity) {
         try {
             ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(catalogManager.getStudyManager().getPermissionRules(studyStr, entity, token));
@@ -389,7 +396,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response createOrRemoveVariableSets(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a variableSet", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing the VariableSet to be created or removed.", required = true) VariableSetCreateParams params) {
         try {
             if (action == null) {
@@ -433,7 +440,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "VariableSet id of the VariableSet to be updated") @PathParam("variableSet") String variableSetId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a variable", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing the variable to be added or removed. For removing, only the variable id will be needed.", required = true) Variable variable) {
         try {
             if (action == null) {

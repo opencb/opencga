@@ -1097,7 +1097,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        return sampleDBAdaptor.update(sample.getUid(), parameters, study.getVariableSets(), options);
+        OpenCGAResult<Sample> update = sampleDBAdaptor.update(sample.getUid(), parameters, study.getVariableSets(), options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated sample
+            OpenCGAResult<Sample> queryResult = sampleDBAdaptor.get(study.getUid(),
+                    new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()), options, userId);
+            update.setResults(queryResult.getResults());
+        }
+        return update;
     }
 
     @Override

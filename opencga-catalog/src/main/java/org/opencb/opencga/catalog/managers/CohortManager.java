@@ -1087,7 +1087,14 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
 
         checkUpdateAnnotations(study, cohort, parameters, options, VariableSet.AnnotableDataModels.COHORT, cohortDBAdaptor, userId);
-        return cohortDBAdaptor.update(cohort.getUid(), parameters, study.getVariableSets(), options);
+        OpenCGAResult<Cohort> update = cohortDBAdaptor.update(cohort.getUid(), parameters, study.getVariableSets(), options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated cohort
+            OpenCGAResult<Cohort> result = cohortDBAdaptor.get(study.getUid(),
+                    new Query(CohortDBAdaptor.QueryParams.UID.key(), cohort.getUid()), options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     @Override

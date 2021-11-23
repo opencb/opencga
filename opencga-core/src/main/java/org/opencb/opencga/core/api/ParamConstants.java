@@ -25,6 +25,8 @@ public class ParamConstants {
     public static final String TOKEN = "token";
     public static final String INCLUDE_DESCRIPTION = "Fields included in the response, whole JSON path must be provided";
     public static final String EXCLUDE_DESCRIPTION = "Fields excluded in the response, whole JSON path must be provided";
+    public static final String INCLUDE_RESULT_PARAM = "includeResult";
+    public static final String INCLUDE_RESULT_DESCRIPTION = "Flag indicating to include the created or updated document result in the response";
     public static final String LIMIT_DESCRIPTION = "Number of results to be returned";
     public static final String SKIP_DESCRIPTION = "Number of results to skip";
     public static final String COUNT_DESCRIPTION = "Get the total number of results matching the query. Deactivated by default.";

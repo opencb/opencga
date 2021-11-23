@@ -111,11 +111,17 @@ public class PanelWSServer extends OpenCGAWSServer {
     @Path("/{panels}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update panel attributes", response = Panel.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response updatePanel(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of panel ids") @PathParam("panels") String panels,
-            @ApiParam(value = "Create a new version of panel", defaultValue = "false")
-            @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @ApiParam(value = "Create a new version of panel", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(name = "body", value = "Panel parameters") PanelUpdateParams panelParams) {
         try {
             return createOkResponse(panelManager.update(studyStr, getIdList(panels), panelParams, true, queryOptions, token));

@@ -213,12 +213,19 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @Path("/{families}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some family attributes", response = Family.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response updateByPost(
             @ApiParam(value = "Comma separated list of family ids", required = true) @PathParam("families") String familyStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Create a new version of family", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = ParamConstants.FAMILY_UPDATE_ROLES_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.FAMILY_UPDATE_ROLES_PARAM) boolean updateRoles,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(value = "body") FamilyUpdateParams parameters) {
         try {
             if (annotationSetsAction == null) {
@@ -248,7 +255,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Path where the TSV file is located in OpenCGA or where it should be located.", required = true)
             @QueryParam("path") String path,
             @ApiParam(value = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).")
-            @DefaultValue("false")  @QueryParam("parents") boolean parents,
+            @DefaultValue("false") @QueryParam("parents") boolean parents,
             @ApiParam(value = "Annotation set id. If not provided, variableSetId will be used.") @QueryParam("annotationSetId") String annotationSetId,
             @ApiParam(value = ParamConstants.TSV_ANNOTATION_DESCRIPTION) TsvAnnotationParams params) {
         try {
@@ -272,7 +279,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_ID) @PathParam("annotationSet") String annotationSetId,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE,RESET,REPLACE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @QueryParam("action") ParamUtils.CompleteUpdateAction action,
             @ApiParam(value = "Create a new version of family", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION)
                     boolean incVersion,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION) Map<String, Object> updateParams) {

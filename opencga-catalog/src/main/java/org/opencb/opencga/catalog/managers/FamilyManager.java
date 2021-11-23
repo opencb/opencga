@@ -1004,7 +1004,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        return familyDBAdaptor.update(family.getUid(), parameters, study.getVariableSets(), options);
+        OpenCGAResult<Family> update = familyDBAdaptor.update(family.getUid(), parameters, study.getVariableSets(), options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated family
+            OpenCGAResult<Family> result = familyDBAdaptor.get(study.getUid(),
+                    new Query(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid()), options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     public Map<String, List<String>> calculateFamilyGenotypes(String studyStr, String clinicalAnalysisId, String familyId,

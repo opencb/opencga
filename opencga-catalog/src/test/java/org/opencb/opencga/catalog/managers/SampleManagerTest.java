@@ -662,6 +662,33 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void updateAndReturnResultTest() throws CatalogException {
+        catalogManager.getSampleManager().create(studyFqn,
+                new Sample().setId("testSample").setDescription("description"), null, token);
+
+        SampleProcessing processing = new SampleProcessing("product", "preparationMethod", "extractionMethod", "labSampleId", "quantity",
+                "date", Collections.emptyMap());
+        OpenCGAResult<Sample> result = catalogManager.getSampleManager().update(studyFqn, "testSample",
+                new SampleUpdateParams().setProcessing(processing), new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+        assertEquals(1, result.getNumUpdated());
+        assertEquals(1, result.getNumMatches());
+        assertEquals(0, result.getNumResults());
+        assertEquals(0, result.getResults().size());
+
+        result = catalogManager.getSampleManager().update(studyFqn, "testSample",
+                new SampleUpdateParams().setDescription("my new description"), new QueryOptions()
+                        .append(Constants.INCREMENT_VERSION, true)
+                        .append(ParamConstants.INCLUDE_RESULT_PARAM, true)
+                , token);
+        assertEquals(1, result.getNumUpdated());
+        assertEquals(1, result.getNumMatches());
+        assertEquals(1, result.getNumResults());
+        assertEquals(1, result.getResults().size());
+        assertEquals("my new description", result.first().getDescription());
+        assertEquals(processing, result.first().getProcessing());
+    }
+
+    @Test
     public void updateProcessingField() throws CatalogException {
         catalogManager.getSampleManager().create(studyFqn,
                 new Sample().setId("testSample").setDescription("description"), null, token);
