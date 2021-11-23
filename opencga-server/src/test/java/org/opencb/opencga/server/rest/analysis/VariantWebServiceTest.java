@@ -56,7 +56,7 @@ public class VariantWebServiceTest {
         }
 
         for (QueryParam value : VARIANT_CATALOG_QUERY_PARAMS) {
-            assertTrue(fields.containsKey(value.key()));
+            assertTrue("Missing field " + value.key(), fields.containsKey(value.key()));
         }
     }
 }

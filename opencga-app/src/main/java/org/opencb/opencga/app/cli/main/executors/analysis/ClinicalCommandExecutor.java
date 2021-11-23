@@ -225,6 +225,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull(VariantCatalogQueryUtils.PANEL.key(), commandOptions.panel);
         queryParams.putIfNotNull(VariantCatalogQueryUtils.PANEL_MODE_OF_INHERITANCE.key(), commandOptions.panelModeOfInheritance);
         queryParams.putIfNotNull(VariantCatalogQueryUtils.PANEL_CONFIDENCE.key(), commandOptions.panelConfidence);
+        queryParams.putIfNotNull(VariantCatalogQueryUtils.PANEL_INTERSECTION.key(), commandOptions.panelIntersection);
         queryParams.putIfNotNull(VariantCatalogQueryUtils.PANEL_ROLE_IN_CANCER.key(), commandOptions.panelRoleInCancer);
 
         queryParams.putIfNotNull("trait", commandOptions.trait);

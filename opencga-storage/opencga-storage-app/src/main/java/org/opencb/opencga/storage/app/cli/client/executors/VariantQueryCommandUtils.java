@@ -208,7 +208,7 @@ public class VariantQueryCommandUtils {
         return queryOptions;
     }
 
-    protected static void addParam(ObjectMap query, QueryParam key, Collection value) {
+    protected static void addParam(ObjectMap query, QueryParam key, Collection<?> value) {
         if (CollectionUtils.isNotEmpty(value)) {
             query.put(key.key(), value);
         }
@@ -216,7 +216,6 @@ public class VariantQueryCommandUtils {
 
     protected static void addParam(ObjectMap query, QueryParam key, String value) {
         query.putIfNotEmpty(key.key(), value);
-
     }
 
     protected static void addParam(ObjectMap query, QueryParam key, boolean value) {
@@ -228,6 +227,20 @@ public class VariantQueryCommandUtils {
     protected static void addParam(ObjectMap query, QueryParam key, long value) {
         if (value > 0) {
             query.put(key.key(), value);
+        }
+    }
+
+    protected static void addParam(ObjectMap query, QueryParam key, Object value) {
+        if (value != null) {
+            if (value instanceof Boolean) {
+                addParam(query, key, ((Boolean) value).booleanValue());
+            } else if (value instanceof String) {
+                addParam(query, key, ((String) value));
+            } else if (value instanceof Collection) {
+                addParam(query, key, ((Collection<?>) value));
+            } else {
+                query.put(key.key(), value);
+            }
         }
     }
 
