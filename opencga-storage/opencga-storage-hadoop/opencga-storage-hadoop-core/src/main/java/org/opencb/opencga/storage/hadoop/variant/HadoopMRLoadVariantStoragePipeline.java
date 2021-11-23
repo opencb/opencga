@@ -72,8 +72,8 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
             try {
                 long startTime = System.currentTimeMillis();
 //                    Configuration conf = getHadoopConfiguration(options);
-                FileSystem fs = FileSystem.get(conf);
                 org.apache.hadoop.fs.Path variantsOutputPath = new org.apache.hadoop.fs.Path(output.resolve(UriUtils.fileName(input)));
+                FileSystem fs = variantsOutputPath.getFileSystem(conf);
                 logger.info("Copy from {} to {}", new org.apache.hadoop.fs.Path(input).toUri(), variantsOutputPath.toUri());
                 fs.copyFromLocalFile(false, new org.apache.hadoop.fs.Path(input), variantsOutputPath);
                 logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);

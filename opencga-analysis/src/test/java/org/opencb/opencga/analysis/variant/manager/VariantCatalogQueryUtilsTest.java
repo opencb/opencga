@@ -25,8 +25,12 @@ import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.CancerPanel;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.cellbase.client.config.ClientConfiguration;
+import org.opencb.cellbase.client.config.RestConfig;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -49,6 +53,7 @@ import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -90,6 +95,7 @@ public class VariantCatalogQueryUtilsTest {
     private static File file4;
     private static File file5;
     private static Panel myPanel;
+    private static CellBaseUtils cellBaseUtils;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -163,6 +169,14 @@ public class VariantCatalogQueryUtilsTest {
 
 
         queryUtils = new VariantCatalogQueryUtils(catalog);
+
+//        StorageConfiguration storageConfiguration = StorageConfiguration.load(VariantCatalogQueryUtils.class.getResourceAsStream("/storage-configuration.yml"));
+//        ClientConfiguration clientConfiguration = storageConfiguration.getCellbase().toClientConfiguration();
+        ClientConfiguration clientConfiguration = new ClientConfiguration()
+                .setVersion("v5")
+                .setDefaultSpecies("hsapiens")
+                .setRest(new RestConfig(Collections.singletonList("https://ws.zettagenomics.com/cellbase"), 10000));
+        cellBaseUtils = new CellBaseUtils(new CellBaseClient(clientConfiguration), "grch38");
     }
 
     public static void createSample(String name, String individualName) throws CatalogException {
@@ -191,12 +205,12 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void queriesWithRelease() throws Exception {
-        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.SAMPLE.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 2), sessionId);
-        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.SAMPLE.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 1), sessionId);
-        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 1), sessionId);
-        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.FILE.key(), "file1.vcf").append(VariantQueryParam.RELEASE.key(), 1), sessionId);
-        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.STATS_MAF.key(), "c1>0.1").append(VariantQueryParam.RELEASE.key(), 1), sessionId);
-        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.GENOTYPE.key(), "sample1:HOM_ALT,sample2:HET_REF").append(VariantQueryParam.RELEASE.key(), 1), sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.SAMPLE.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 2), null, sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.SAMPLE.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 1), null, sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), "sample2").append(VariantQueryParam.RELEASE.key(), 1), null, sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.FILE.key(), "file1.vcf").append(VariantQueryParam.RELEASE.key(), 1), null, sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.STATS_MAF.key(), "c1>0.1").append(VariantQueryParam.RELEASE.key(), 1), null, sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(VariantQueryParam.GENOTYPE.key(), "sample1:HOM_ALT,sample2:HET_REF").append(VariantQueryParam.RELEASE.key(), 1), null, sessionId);
     }
 
     @Test
@@ -206,7 +220,7 @@ public class VariantCatalogQueryUtilsTest {
         thrown.expect(e.getClass());
         queryUtils.parseQuery(new Query(VariantQueryParam.SAMPLE.key(), "sample3")
                 .append(VariantQueryParam.STUDY.key(), "s1")
-                .append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson();
+                .append(VariantQueryParam.RELEASE.key(), 1), null, sessionId).toJson();
     }
 
     @Test
@@ -215,7 +229,7 @@ public class VariantCatalogQueryUtilsTest {
         thrown.expect(CatalogException.class);
         queryUtils.parseQuery(new Query(VariantQueryParam.SAMPLE.key(), "sample_not_exists")
                 .append(VariantQueryParam.STUDY.key(), "s1")
-                .append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson();
+                .append(VariantQueryParam.RELEASE.key(), 1), null, sessionId).toJson();
     }
 
     @Test
@@ -225,7 +239,7 @@ public class VariantCatalogQueryUtilsTest {
         thrown.expect(e.getClass());
         queryUtils.parseQuery(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), "sample3")
                 .append(VariantQueryParam.STUDY.key(), "s1")
-                .append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson();
+                .append(VariantQueryParam.RELEASE.key(), 1), null, sessionId).toJson();
     }
 
     @Test
@@ -235,7 +249,7 @@ public class VariantCatalogQueryUtilsTest {
         thrown.expect(e.getClass());
         queryUtils.parseQuery(new Query(VariantQueryParam.FILE.key(), "file3.vcf")
                 .append(VariantQueryParam.STUDY.key(), "s1")
-                .append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson();
+                .append(VariantQueryParam.RELEASE.key(), 1), null, sessionId).toJson();
     }
 
     @Test
@@ -244,7 +258,7 @@ public class VariantCatalogQueryUtilsTest {
         thrown.expect(CatalogException.class);
         queryUtils.parseQuery(new Query(VariantQueryParam.FILE.key(), "non_existing_file.vcf")
                 .append(VariantQueryParam.STUDY.key(), "s1")
-                .append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson();
+                .append(VariantQueryParam.RELEASE.key(), 1), null, sessionId).toJson();
     }
 
     @Test
@@ -253,7 +267,7 @@ public class VariantCatalogQueryUtilsTest {
         thrown.expect(VariantQueryException.class);
         queryUtils.parseQuery(new Query(VariantQueryParam.FILE.key(), "file5.vcf")
                 .append(VariantQueryParam.STUDY.key(), "s1")
-                .append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson();
+                .append(VariantQueryParam.RELEASE.key(), 1), null, sessionId).toJson();
     }
 
     @Test
@@ -261,7 +275,7 @@ public class VariantCatalogQueryUtilsTest {
         thrown.expectMessage("not found");
         thrown.expect(CatalogException.class);
         queryUtils.parseQuery(new Query(VariantQueryParam.FILE.key(), "non_existing_file.vcf")
-                .append(VariantQueryParam.STUDY.key(), "s1"), sessionId).toJson();
+                .append(VariantQueryParam.STUDY.key(), "s1"), null, sessionId).toJson();
     }
 
     @Test
@@ -271,7 +285,7 @@ public class VariantCatalogQueryUtilsTest {
         thrown.expect(e.getClass());
         queryUtils.parseQuery(new Query(VariantQueryParam.INCLUDE_FILE.key(), "file3.vcf")
                 .append(VariantQueryParam.STUDY.key(), "s1")
-                .append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson();
+                .append(VariantQueryParam.RELEASE.key(), 1), null, sessionId).toJson();
     }
 
     @Test
@@ -281,7 +295,7 @@ public class VariantCatalogQueryUtilsTest {
         thrown.expect(e.getClass());
         queryUtils.parseQuery(new Query(VariantQueryParam.COHORT.key(), "c2")
                 .append(VariantQueryParam.STUDY.key(), "s1")
-                .append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson();
+                .append(VariantQueryParam.RELEASE.key(), 1), null, sessionId).toJson();
     }
 
     @Test
@@ -291,7 +305,7 @@ public class VariantCatalogQueryUtilsTest {
         thrown.expect(e.getClass());
         queryUtils.parseQuery(new Query(VariantQueryParam.STATS_MAF.key(), "c2>0.2")
                 .append(VariantQueryParam.STUDY.key(), "s1")
-                .append(VariantQueryParam.RELEASE.key(), 1), sessionId).toJson();
+                .append(VariantQueryParam.RELEASE.key(), 1), null, sessionId).toJson();
     }
 
     @Test
@@ -332,43 +346,43 @@ public class VariantCatalogQueryUtilsTest {
         catalog.getUserManager().addFilter(userId, "myFilter", "", Enums.Resource.VARIANT,
                 new Query("key1", "value1").append("key2", "value2"), new QueryOptions(), sessionId);
 
-        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAVED_FILTER.key(), "myFilter"), sessionId);
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAVED_FILTER.key(), "myFilter"), null, sessionId);
         assertEquals(new Query().append(STUDY.key(), "user@p1:s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "value1").append("key2", "value2"), query);
 
-        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "otherValue"), sessionId);
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "otherValue"), null, sessionId);
         assertEquals(new Query().append(STUDY.key(), "user@p1:s1").append(SAVED_FILTER.key(), "myFilter").append("key1", "otherValue").append("key2", "value2"), query);
     }
 
     @Test
     public void queryByFamily() throws Exception {
-        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1"), sessionId);
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1"), null, sessionId);
         assertEquals(Arrays.asList("sample1", "sample2", "sample3", "sample4"), query.getAsStringList(SAMPLE.key()));
         assertFalse(VariantQueryUtils.isValidParam(query, GENOTYPE));
     }
 
     @Test
     public void queryByFamilyMembers() throws Exception {
-        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_MEMBERS.key(), "individual1,individual4"), sessionId);
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_MEMBERS.key(), "individual1,individual4"), null, sessionId);
         assertEquals(Arrays.asList("sample1", "sample4"), query.getAsStringList(SAMPLE.key()));
     }
 
     @Test
     public void queryByFamilySegregation() throws Exception {
-        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_SEGREGATION.key(), "BIALLELIC"), sessionId);
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_SEGREGATION.key(), "BIALLELIC"), null, sessionId);
         assertEquals("sample1:0/1,0|1,1|0;sample2:0/1,0|1,1|0;sample3:1/1,1|1;sample4:0/0,0/1,0|0,0|1,1|0", query.getString(GENOTYPE.key()));
         assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
     }
 
     @Test
     public void queryBySampleSegregation() throws Exception {
-        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAMPLE.key(), "sample3:biallelic"), sessionId);
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAMPLE.key(), "sample3:biallelic"), null, sessionId);
         assertEquals("sample1:0/1,0|1,1|0;sample2:0/1,0|1,1|0;sample3:1/1,1|1", query.getString(GENOTYPE.key()));
         assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
     }
 
     @Test
     public void queryBySampleSegregationDeNovo() throws Exception {
-        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAMPLE.key(), "sample3:denovo"), sessionId);
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAMPLE.key(), "sample3:denovo"), null, sessionId);
         assertEquals("sample3", query.getString(SAMPLE_DE_NOVO.key()));
         assertFalse(VariantQueryUtils.isValidParam(query, GENOTYPE));
         assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
@@ -376,7 +390,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void queryBySampleSegregationMendelianError() throws Exception {
-        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAMPLE.key(), "sample3:mendelianerror"), sessionId);
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(SAMPLE.key(), "sample3:mendelianerror"), null, sessionId);
         assertEquals("sample3", query.getString(SAMPLE_MENDELIAN_ERROR.key()));
         assertFalse(VariantQueryUtils.isValidParam(query, GENOTYPE));
         assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
@@ -384,7 +398,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void queryByFamilySegregationMendelianError() throws Exception {
-        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_SEGREGATION.key(), "mendelianError"), sessionId);
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_SEGREGATION.key(), "mendelianError"), null, sessionId);
         assertEquals("sample3,sample4", query.getString(VariantQueryUtils.SAMPLE_MENDELIAN_ERROR.key()));
         assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
         assertFalse(VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_DE_NOVO));
@@ -393,7 +407,7 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void queryByFamilySegregationDeNovo() throws Exception {
-        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_SEGREGATION.key(), "deNovo"), sessionId);
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_SEGREGATION.key(), "deNovo"), null, sessionId);
         assertEquals("sample3,sample4", query.getString(VariantQueryUtils.SAMPLE_DE_NOVO.key()));
         assertFalse(VariantQueryUtils.isValidParam(query, SAMPLE));
         assertFalse(VariantQueryUtils.isValidParam(query, VariantQueryUtils.SAMPLE_MENDELIAN_ERROR));
@@ -405,7 +419,7 @@ public class VariantCatalogQueryUtilsTest {
         VariantQueryException e = VariantQueryException.missingStudyFor("family", "f1", Collections.emptyList());
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
-        queryUtils.parseQuery(new Query(FAMILY.key(), "f1"), sessionId);
+        queryUtils.parseQuery(new Query(FAMILY.key(), "f1"), null, sessionId);
     }
 
     @Test
@@ -413,7 +427,7 @@ public class VariantCatalogQueryUtilsTest {
         CatalogException e = new CatalogException("Missing families: asdf not found");
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
-        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "asdf").append(FAMILY_DISORDER.key(), "asdf"), sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "asdf").append(FAMILY_DISORDER.key(), "asdf"), null, sessionId);
     }
 
     @Test
@@ -422,7 +436,7 @@ public class VariantCatalogQueryUtilsTest {
                 + FAMILY.key() + "\" and \"" + FAMILY_SEGREGATION.key() + "\" to use \"" + FAMILY_DISORDER.key() + "\".");
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
-        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_DISORDER.key(), "asdf"), sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FAMILY.key(), "f1").append(FAMILY_DISORDER.key(), "asdf"), null, sessionId);
     }
 
     @Test
@@ -433,16 +447,111 @@ public class VariantCatalogQueryUtilsTest {
         queryUtils.parseQuery(new Query(STUDY.key(), "s1")
                 .append(FAMILY.key(), "f1")
                 .append(FAMILY_SEGREGATION.key(), "autosomal_dominant")
-                .append(FAMILY_DISORDER.key(), "asdf"), sessionId);
+                .append(FAMILY_DISORDER.key(), "asdf"), null, sessionId);
     }
 
     @Test
     public void queryByPanel() throws Exception {
-        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel"), sessionId);
-        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CADM1", "CTBP2P1", "ADSL")), new HashSet<>(query.getAsList(GENE.key())));
-        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel").append(GENE.key(), "ASDF"), sessionId);
-        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CADM1", "CTBP2P1", "ADSL", "ASDF")), new HashSet<>(query.getAsList(GENE.key())));
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel"), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL"), set(query, GENE));
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel").append(GENE.key(), "ASDF"), null, sessionId);
+        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "ASDF"), set(query, GENE));
         assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
+        assertNull(query.get(ANNOT_GENE_REGIONS.key()));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
+                .append(GENE.key(), "BRCA2")
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2"), set(query, GENE));
+        assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
+        assertNull(query.get(ANNOT_GENE_REGIONS.key()));
+
+        Region brca2Region = cellBaseUtils.getGeneRegion("BRCA2");
+        Region cadm1Region = cellBaseUtils.getGeneRegion("CADM1");
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
+                .append(REGION.key(), brca2Region.getChromosome())
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2"), set(query, GENE));
+        assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
+        assertNull(query.get(ANNOT_GENE_REGIONS.key()));
+        assertNull(query.get(REGION.key()));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
+                .append(REGION.key(), brca2Region.getChromosome())
+                .append(GENE.key(), "CADM1")
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2", "CADM1"), set(query.getAsStringList(GENE.key())));
+        assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
+        assertEquals(set(), set(query, ANNOT_GENE_REGIONS));
+        assertEquals(set(), set(query, REGION));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
+                .append(REGION.key(), brca2Region.getChromosome())
+                .append(GENE.key(), "CADM1,BMPR2")
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2", "CADM1"), set(query, GENE));
+        assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
+        assertEquals(set(), set(query, ANNOT_GENE_REGIONS));
+        assertEquals(set(), set(query, REGION));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
+                .append(REGION.key(), brca2Region)
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2"), set(query, GENE));
+        assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
+        assertEquals(set(), set(query, ANNOT_GENE_REGIONS));
+        assertEquals(set(), set(query, REGION));
+
+        Region brca2PartialRegionLarger = new Region(brca2Region.getChromosome(), brca2Region.getStart() - 10000, brca2Region.getEnd() - 10000);
+        Region brca2PartialRegion = new Region(brca2Region.getChromosome(), brca2Region.getStart(), brca2Region.getEnd() - 10000);
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
+                .append(REGION.key(), brca2PartialRegionLarger)
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2"), set(query, GENE));
+        assertEquals(brca2PartialRegion.toString(), query.getString(ANNOT_GENE_REGIONS.key()));
+        assertEquals(set(), set(query, REGION));
+
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
+                .append(REGION.key(), brca2PartialRegionLarger)
+                .append(GENE.key(), "CADM1")
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2", "CADM1"), set(query, GENE));
+        assertEquals(set(brca2PartialRegion.toString(), cadm1Region.toString()), set(query, ANNOT_GENE_REGIONS));
+        assertEquals(set(), set(query, REGION));
+
+        String cadm1Variant = cadm1Region.getChromosome() + ":" + (cadm1Region.getStart() + 1000) + ":A:T";
+        String cadm1NonVariant = cadm1Region.getChromosome() + ":" + (cadm1Region.getStart() - 1000) + ":A:T";
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
+                .append(ID.key(), cadm1Variant + "," + cadm1NonVariant)
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set(), set(query, GENE));
+        assertEquals(set(cadm1Variant), set(query, ID));
+        assertEquals(set(), set(query, ANNOT_GENE_REGIONS));
+        assertEquals(set(), set(query, REGION));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
+                .append(REGION.key(), brca2PartialRegionLarger)
+                .append(ID.key(), cadm1Variant + "," + cadm1NonVariant)
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2"), set(query, GENE));
+        assertEquals(set(cadm1Variant), set(query, ID));
+        assertEquals(set(brca2PartialRegion.toString()), set(query, ANNOT_GENE_REGIONS));
+        assertEquals(set(), set(query, REGION));
+    }
+
+    private Set<String> set(String... values) {
+        return new HashSet<>(Arrays.asList(values));
+    }
+
+    private Set<String> set(Collection<String> values) {
+        return new HashSet<>(values);
+    }
+
+    private Set<String> set(Query query, QueryParam param) {
+        return set(query.getAsStringList(param.key()));
     }
 
     @Test
@@ -450,7 +559,7 @@ public class VariantCatalogQueryUtilsTest {
         CatalogException e = new CatalogException("Panel 'MyPanel_wrong' not found");
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
-        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel_wrong"), sessionId);
+        queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel_wrong"), null, sessionId);
     }
 
     @Test
@@ -508,28 +617,28 @@ public class VariantCatalogQueryUtilsTest {
 
     @Test
     public void testPanels() {
-        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CADM1", "CTBP2P1", "ADSL")),
+        assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(), myPanel));
-        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CTBP2P1", "ADSL")),
+        assertEquals(set("BRCA2", "CTBP2P1", "ADSL"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "TUMOR_SUPPRESSOR_GENE"), myPanel));
-        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CTBP2P1", "ADSL")),
+        assertEquals(set("BRCA2", "CTBP2P1", "ADSL"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "TUMORSUPPRESSORGENE"), myPanel));
-        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CTBP2P1", "ADSL")),
+        assertEquals(set("BRCA2", "CTBP2P1", "ADSL"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "tumor_suppressor_gene"), myPanel));
-        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CTBP2P1", "ADSL")),
+        assertEquals(set("BRCA2", "CTBP2P1", "ADSL"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "tumorSuppressorGene"), myPanel));
-        assertEquals(new HashSet<>(Arrays.asList("CADM1", "CTBP2P1", "ADSL")),
+        assertEquals(set("CADM1", "CTBP2P1", "ADSL"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_ROLE_IN_CANCER.key(), "oncogene"), myPanel));
-        assertEquals(new HashSet<>(Arrays.asList("BRCA2", "CADM1", "ADSL")),
+        assertEquals(set("BRCA2", "CADM1", "ADSL"),
                 VariantCatalogQueryUtils.getGenesFromPanel(new Query(PANEL_MODE_OF_INHERITANCE.key(), "AUTOSOMAL_RECESSIVE"), myPanel));
     }
 
     protected String parseValue(VariantQueryParam param, String value) throws CatalogException {
-        return queryUtils.parseQuery(new Query(param.key(), value), sessionId).getString(param.key());
+        return queryUtils.parseQuery(new Query(param.key(), value), null, sessionId).getString(param.key());
     }
 
     protected String parseValue(String study, VariantQueryParam param, String value) throws CatalogException {
-        return queryUtils.parseQuery(new Query(STUDY.key(), study).append(param.key(), value), sessionId).getString(param.key());
+        return queryUtils.parseQuery(new Query(STUDY.key(), study).append(param.key(), value), null, sessionId).getString(param.key());
     }
 
 }
