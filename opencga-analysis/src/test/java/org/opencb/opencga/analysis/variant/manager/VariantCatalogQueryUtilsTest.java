@@ -25,6 +25,7 @@ import org.opencb.biodata.models.clinical.ClinicalProperty;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.interpretation.CancerPanel;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -95,6 +96,7 @@ public class VariantCatalogQueryUtilsTest {
     private static File file4;
     private static File file5;
     private static Panel myPanel;
+    private static Panel myPanelWithRegions;
     private static CellBaseUtils cellBaseUtils;
 
     @BeforeClass
@@ -104,7 +106,8 @@ public class VariantCatalogQueryUtilsTest {
         User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, Account.AccountType.FULL, null).first();
 
         sessionId = catalog.getUserManager().login("user", "1234").getToken();
-        catalog.getProjectManager().create("p1", "p1", "", "hsapiens", "Homo Sapiens", "GRCh38", null, sessionId);
+        String assembly = "GRCh38";
+        catalog.getProjectManager().create("p1", "p1", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
         catalog.getStudyManager().create("p1", "s1", "s1", "s1", null, null, null, null, null, null, sessionId);
         catalog.getStudyManager().create("p1", "s2", "s2", "s2", null, null, null, null, null, null, sessionId);
         catalog.getStudyManager().create("p1", "s3", "s3", "s3", null, null, null, null, null, null, sessionId);
@@ -144,7 +147,7 @@ public class VariantCatalogQueryUtilsTest {
 
         catalog.getCohortManager().create("s2", new Cohort().setId(StudyEntry.DEFAULT_COHORT).setSamples(Collections.emptyList()), null, sessionId);
 
-        catalog.getProjectManager().create("p2", "p2", "", "hsapiens", "Homo Sapiens", "GRCh38", null, sessionId);
+        catalog.getProjectManager().create("p2", "p2", "", "hsapiens", "Homo Sapiens", assembly, null, sessionId);
         catalog.getStudyManager().create("p2", "p2s2", "p2s2", "p2s2", null, null, null, null, null, null, sessionId);
 
         myPanel = new Panel("MyPanel", "MyPanel", 1);
@@ -167,7 +170,6 @@ public class VariantCatalogQueryUtilsTest {
 
         catalog.getPanelManager().create("s1", myPanel, null, sessionId);
 
-
         queryUtils = new VariantCatalogQueryUtils(catalog);
 
 //        StorageConfiguration storageConfiguration = StorageConfiguration.load(VariantCatalogQueryUtils.class.getResourceAsStream("/storage-configuration.yml"));
@@ -176,7 +178,28 @@ public class VariantCatalogQueryUtilsTest {
                 .setVersion("v5")
                 .setDefaultSpecies("hsapiens")
                 .setRest(new RestConfig(Collections.singletonList("https://ws.zettagenomics.com/cellbase"), 10000));
-        cellBaseUtils = new CellBaseUtils(new CellBaseClient(clientConfiguration), "grch38");
+        cellBaseUtils = new CellBaseUtils(new CellBaseClient(clientConfiguration), assembly);
+
+
+        Region cadm1 = cellBaseUtils.getGeneRegion("CADM1");
+
+        myPanelWithRegions = new Panel("MyPanelWithRegions", "MyPanelWithRegions", 1);
+        myPanelWithRegions.setGenes(
+                Arrays.asList(
+                        new GenePanel().setName("BRCA2"),
+                        new GenePanel().setName("ADSL")
+                ))
+                .setRegions(Arrays.asList(
+                        ((DiseasePanel.RegionPanel) new DiseasePanel.RegionPanel().setCoordinates(Arrays.asList(
+                                new DiseasePanel.Coordinate(assembly, "1:1000-2000", null)))),
+                        ((DiseasePanel.RegionPanel) new DiseasePanel.RegionPanel().setCoordinates(Arrays.asList(
+                                new DiseasePanel.Coordinate(assembly,
+                                        new Region(cadm1.toString()).setEnd(cadm1.getEnd() - 3000).toString(), null))))
+                ))
+        ;
+        catalog.getPanelManager().create("s1", myPanelWithRegions, null, sessionId);
+
+
     }
 
     public static void createSample(String name, String individualName) throws CatalogException {
@@ -193,7 +216,7 @@ public class VariantCatalogQueryUtilsTest {
                         .setPath(path)
                         .setType(File.Type.FILE)
                         .setFormat(File.Format.VCF)
-                        .setContent(" ")
+                        .setContent("##fileformat=VCFv4.1\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n")
                         .setBioformat(File.Bioformat.VARIANT),
                 true, sessionId).first();
         if (indexed) {
@@ -458,8 +481,11 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals(set("BRCA2", "CADM1", "CTBP2P1", "ADSL", "ASDF"), set(query, GENE));
         assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
         assertNull(query.get(ANNOT_GENE_REGIONS.key()));
+    }
 
-        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
+    @Test
+    public void queryByPanelIntersect() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
                 .append(GENE.key(), "BRCA2")
                 .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
         assertEquals(set("BRCA2"), set(query, GENE));
@@ -502,7 +528,7 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals(true, query.getBoolean(SKIP_MISSING_GENES, false));
         assertEquals(set(), set(query, ANNOT_GENE_REGIONS));
         assertEquals(set(), set(query, REGION));
-
+//
         Region brca2PartialRegionLarger = new Region(brca2Region.getChromosome(), brca2Region.getStart() - 10000, brca2Region.getEnd() - 10000);
         Region brca2PartialRegion = new Region(brca2Region.getChromosome(), brca2Region.getStart(), brca2Region.getEnd() - 10000);
 
@@ -523,6 +549,7 @@ public class VariantCatalogQueryUtilsTest {
         assertEquals(set(), set(query, REGION));
 
         String cadm1Variant = cadm1Region.getChromosome() + ":" + (cadm1Region.getStart() + 1000) + ":A:T";
+        String cadm1Variant2 = cadm1Region.getChromosome() + ":" + (cadm1Region.getEnd() - 1000) + ":A:T";
         String cadm1NonVariant = cadm1Region.getChromosome() + ":" + (cadm1Region.getStart() - 1000) + ":A:T";
         query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
                 .append(ID.key(), cadm1Variant + "," + cadm1NonVariant)
@@ -534,20 +561,62 @@ public class VariantCatalogQueryUtilsTest {
 
         query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanel")
                 .append(REGION.key(), brca2PartialRegionLarger)
-                .append(ID.key(), cadm1Variant + "," + cadm1NonVariant)
+                .append(ID.key(), cadm1Variant + "," + cadm1Variant2 + "," + cadm1NonVariant)
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2"), set(query, GENE));
+        assertEquals(set(cadm1Variant, cadm1Variant2), set(query, ID));
+        assertEquals(set(brca2PartialRegion.toString()), set(query, ANNOT_GENE_REGIONS));
+        assertEquals(set(), set(query, REGION));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanelWithRegions")
+                .append(GENE.key(), "BRCA2")
+                .append(ID.key(), cadm1Variant + "," + cadm1Variant2 + "," + cadm1NonVariant)
                 .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
         assertEquals(set("BRCA2"), set(query, GENE));
         assertEquals(set(cadm1Variant), set(query, ID));
-        assertEquals(set(brca2PartialRegion.toString()), set(query, ANNOT_GENE_REGIONS));
+        assertEquals(set(), set(query, ANNOT_GENE_REGIONS));
         assertEquals(set(), set(query, REGION));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanelWithRegions")
+                .append(GENE.key(), "BRCA2,CADM1")
+                .append(ID.key(), cadm1Variant + "," + cadm1Variant2 + "," + cadm1NonVariant)
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2", "CADM1"), set(query, GENE));
+        assertEquals(set(cadm1Variant), set(query, ID));
+        assertEquals(set(brca2Region, new Region(cadm1Region.toString()).setEnd(cadm1Region.getEnd() - 3000)), set(query, ANNOT_GENE_REGIONS));
+        assertEquals(set(), set(query, REGION));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanelWithRegions")
+                .append(REGION.key(), "1,2")
+                .append(GENE.key(), "BRCA2,CADM1")
+                .append(ID.key(), cadm1Variant + "," + cadm1Variant2 + "," + cadm1NonVariant)
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2", "CADM1"), set(query, GENE));
+        assertEquals(set(cadm1Variant), set(query, ID));
+        assertEquals(set(brca2Region, new Region(cadm1Region.toString()).setEnd(cadm1Region.getEnd() - 3000)), set(query, ANNOT_GENE_REGIONS));
+        assertEquals(set("1:1000-2000"), set(query, REGION));
+
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(PANEL.key(), "MyPanelWithRegions")
+                .append(REGION.key(), "1,13")
+                .append(GENE.key(), "CADM1")
+                .append(ID.key(), cadm1Variant + "," + cadm1Variant2 + "," + cadm1NonVariant)
+                .append(PANEL_INTERSECTION.key(), true), null, cellBaseUtils, sessionId);
+        assertEquals(set("BRCA2", "CADM1"), set(query, GENE));
+        assertEquals(set(cadm1Variant), set(query, ID));
+        assertEquals(set(brca2Region, new Region(cadm1Region.toString()).setEnd(cadm1Region.getEnd() - 3000)), set(query, ANNOT_GENE_REGIONS));
+        assertEquals(set("1:1000-2000"), set(query, REGION));
     }
 
-    private Set<String> set(String... values) {
-        return new HashSet<>(Arrays.asList(values));
+    private <T> Set<String> set(T... values) {
+        return set(Arrays.asList(values));
     }
 
-    private Set<String> set(Collection<String> values) {
-        return new HashSet<>(values);
+    private <T> Set<String> set(Collection<T> values) {
+        Set<String> set = new HashSet<>(values.size());
+        for (Object value : values) {
+            set.add(value.toString());
+        }
+        return set;
     }
 
     private Set<String> set(Query query, QueryParam param) {

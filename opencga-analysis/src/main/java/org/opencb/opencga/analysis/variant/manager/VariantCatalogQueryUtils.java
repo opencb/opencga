@@ -670,9 +670,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     : Collections.emptySet();
 
             ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
+            // Extract GENEs from XRefs
             query.put(GENE.key(), xrefs.getGenes());
-            query.put(ID.key(), xrefs.getVariants());
-            query.put(ANNOT_XREF.key(), xrefs.getIDsAndXrefs());
+            query.put(ANNOT_XREF.key(), xrefs.getOtherXrefs());
 
             if (queryRegions.isEmpty() && xrefs.getGenes().isEmpty() && xrefs.getVariants().isEmpty()) {
                 // Nothing to intersect
@@ -738,15 +738,15 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     } // If panelRegions is empty, the QueryRegions will be already intersected with panelGenes
                 }
 
-                if (!geneRegionsFinal.isEmpty() || !queryVariants.isEmpty()) {
-                    // Partial genes, or variants in query. Translate all genes to Regions
+                if (!geneRegionsFinal.isEmpty()) {
+                    // Partial genes in query. Translate all genes to Regions
                     geneRegionsFinal.putAll(cellBaseUtils.getGeneRegionMap(new ArrayList<>(genesFinal), true));
                 }
                 if (!queryVariants.isEmpty()) {
                     //  - Variant in QUERY + genes in PANEL
                     //  - Variant in QUERY + regions in PANEL
                     for (Variant variant : queryVariants) {
-                        for (Region region : Iterables.concat(panelGeneRegionMap.values(), regionsFinal)) {
+                        for (Region region : Iterables.concat(panelGeneRegionMap.values(), panelRegions)) {
                             if (region.contains(variant.getChromosome(), variant.getStart())) {
                                 variantsFinal.add(variant);
                                 break;
