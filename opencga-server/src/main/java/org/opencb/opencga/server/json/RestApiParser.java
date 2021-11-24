@@ -250,8 +250,6 @@ public class RestApiParser {
 
     private static boolean isRequired(Field declaredField) {
         CliParams annotation = declaredField.getAnnotation(CliParams.class);
-        if (declaredField.getName().equals("permissions"))
-            System.out.println(declaredField.getDeclaringClass() + " Required" + (annotation != null && annotation.required()));
         if (annotation != null && annotation.required())
             return true;
         return false;

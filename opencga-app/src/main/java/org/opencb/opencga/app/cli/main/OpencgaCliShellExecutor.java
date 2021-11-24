@@ -29,13 +29,14 @@ public class OpencgaCliShellExecutor extends CommandExecutor {
         try {
             if (terminal == null) {
                 terminal = TerminalBuilder.builder()
-                        .system(true)
+                        .system(true).nativeSignals(true)
                         .build();
 
                 System.out.print(ansi().eraseScreen());
                 printShellHeaderMessage();
             }
             History defaultHistory = new DefaultHistory();
+
             // Register a shutdown-hook per JLine documentation to save history
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try {
@@ -47,7 +48,7 @@ public class OpencgaCliShellExecutor extends CommandExecutor {
             reader = LineReaderBuilder.builder()
                     .terminal(terminal)
                     .highlighter(new DefaultHighlighter())
-                    .history(defaultHistory)
+                    .history(defaultHistory).completer(new OpenCgaCompleterImpl())
                     .build();
         } catch (Exception e) {
             printlnRed("Failed to create terminal " + e.getMessage());

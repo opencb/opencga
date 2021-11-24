@@ -17,14 +17,13 @@
 package org.opencb.opencga.app.cli.main;
 
 import org.jline.reader.Candidate;
-import org.jline.reader.Completer;
-import org.jline.reader.LineReader;
-import org.jline.reader.ParsedLine;
+import org.opencb.opencga.app.cli.session.CliSessionManager;
+import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.client.config.Host;
 
+import java.util.ArrayList;
 import java.util.List;
-
-import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.toList;
+import java.util.Map;
 
 
 /*
@@ -39,177 +38,56 @@ import static java.util.stream.Collectors.toList;
  *    Command line commit: c3f7e1b78ed43a24fab681078982443ceac76160
  */
 
-public abstract class OpenCgaCompleter implements Completer {
+public class OpenCgaCompleterImpl extends OpenCgaCompleter {
 
-    protected List<Candidate> commands = asList("variant", "projects", "panels", "clinical", "jobs", "individuals", "families", "users",
-            "samples", "alignments", "meta", "studies", "files", "operations", "cohorts")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> variantList = asList("aggregationStats", "metadata-annotation", "query-annotation", "run-circos", "delete" +
-                    "-cohort-stats", "info-cohort-stats", "run-cohort-stats", "run-export", "genotypes-family", "run-family-qc", "delete" +
-                    "-file",
-            "run-gatk", "run-genomePlot", "run-gwas", "run-index", "run-individual-qc", "run-inferredSex", "query-knockout-gene", "query" +
-                    "-knockout-individual", "run-knockout", "run-mendelianError", "metadata", "query-mutationalSignature", "run" +
-                    "-mutationalSignature", "run-plink", "query", "run-relatedness", "run-rvtests", "aggregationStats-sample", "run" +
-                    "-sample-eligibility", "run-sample-qc", "query-sample", "run-sample", "query-sample-stats", "run-sample-stats", "run" +
-                    "-stats-export", "run-stats")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> projectsList = asList("create", "search", "aggregationStats", "info", "studies", "update")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> panelsList = asList("update-acl", "create", "distinct", "search", "acl", "delete", "info", "update")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> clinicalList = asList("update-acl", "update-clinical-configuration", "create", "distinct", "distinct" +
-                    "-interpretation", "search-interpretation", "info-interpretation", "run-interpreter-cancerTiering", "run-interpreter" +
-                    "-team",
-            "run-interpreter-tiering", "run-interpreter-zetta", "aggregationStats-rga", "query-rga-gene", "summary-rga-gene", "run-rga" +
-                    "-index", "query-rga-individual", "summary-rga-individual", "query-rga-variant", "summary-rga-variant", "search",
-            "actionable-variant", "query-variant", "acl", "delete", "update", "info", "create-interpretation", "delete-interpretation",
-            "update-interpretation")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> jobsList = asList("update-acl", "aggregationStats", "create", "distinct", "retry", "search", "top", "acl",
-            "delete", "info", "update", "head-log", "tail-log")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> individualsList = asList("update-acl", "aggregationStats", "load-annotationSets", "create", "distinct",
-            "search", "acl", "delete", "info", "update", "relatives")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> familiesList = asList("update-acl", "aggregationStats", "load-annotationSets", "create", "distinct", "search"
-            , "acl", "delete", "info", "update")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> usersList = asList("create", "login", "password", "info", "configs", "update-configs", "filters", "reset" +
-            "-password", "projects", "update")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> samplesList = asList("update-acl", "aggregationStats", "load-annotationSets", "create", "distinct", "load",
-            "search", "acl", "delete", "info", "update")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> alignmentsList = asList("run-bwa", "run-coverage-index", "run-qc-geneCoverageStats", "query-coverage",
-            "ratio" +
-            "-coverage", "stats-coverage", "run-deeptools", "run-fastqc", "run-index", "run-picard", "run-qc", "query", "run-samtools")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> metaList = asList("api")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> studiesList = asList("update-acl", "create", "search", "acl", "aggregationStats", "info", "search-audit",
-            "groups", "update-groups", "update-users", "permissionRules", "update-permissionRules", "run-templates", "update",
-            "variableSets", "update-variableSets", "update-variables")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> filesList = asList("update-acl", "aggregationStats", "load-annotationSets", "create", "distinct", "fetch",
-            "link", "run-link", "run-postlink", "search", "acl", "delete", "info", "unlink", "update", "download", "grep", "head", "image"
-            , "refresh", "tail", "list", "tree")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> operationsList = asList("configure-cellbase", "aggregate-variant", "delete-variant-annotation", "index" +
-                    "-variant-annotation", "save-variant-annotation", "configure-variant", "delete-variant", "aggregate-variant-family",
-            "index" +
-                    "-variant-family", "index-variant", "launcher-variant-index", "run-variant-julie", "repair-variant-metadata",
-            "synchronize" +
-                    "-variant-metadata", "delete-variant-sample", "index-variant-sample", "delete-variant-score", "index-variant-score",
-            "secondaryIndex-variant", "delete-variant-secondaryIndex", "index-variant-stats", "delete-variant-study")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    protected List<Candidate> cohortsList = asList("update-acl", "aggregationStats", "load-annotationSets", "create", "distinct", "generate"
-            , "search", "acl", "delete", "info", "update")
-            .stream()
-            .map(Candidate::new)
-            .collect(toList());
-
-    @Override
-    public void complete(LineReader lineReader, ParsedLine parsedLine, List<Candidate> candidates) {
-        String command = parsedLine.line().trim();
-        switch (command) {
-            case "":
-                candidates.addAll(commands);
-                break;
-            case "variant":
-                candidates.addAll(variantList);
-                break;
-            case "projects":
-                candidates.addAll(projectsList);
-                break;
-            case "panels":
-                candidates.addAll(panelsList);
-                break;
-            case "clinical":
-                candidates.addAll(clinicalList);
-                break;
-            case "jobs":
-                candidates.addAll(jobsList);
-                break;
-            case "individuals":
-                candidates.addAll(individualsList);
-                break;
-            case "families":
-                candidates.addAll(familiesList);
-                break;
-            case "users":
-                candidates.addAll(usersList);
-                break;
-            case "samples":
-                candidates.addAll(samplesList);
-                break;
-            case "alignments":
-                candidates.addAll(alignmentsList);
-                break;
-            case "meta":
-                candidates.addAll(metaList);
-                break;
-            case "studies":
-                candidates.addAll(studiesList);
-                break;
-            case "files":
-                candidates.addAll(filesList);
-                break;
-            case "operations":
-                candidates.addAll(operationsList);
-                break;
-            case "cohorts":
-                candidates.addAll(cohortsList);
-                break;
-            default:
-
-                break;
+    public List<Candidate> checkCandidates(Map<String, List<Candidate>> candidatesMap, String line) {
+        List<Candidate> res = new ArrayList();
+        if (line.trim().contains(" ") || candidatesMap.keySet().contains(line)) {
+            String[] commandLine = line.split(" ");
+            if (commandLine.length == 2 && commandLine[0].equals("use") && commandLine[1].equals("host")) {
+                res = getHostCandidates();
+            } else if (commandLine.length == 2 && commandLine[0].equals("use") && commandLine[1].equals("study")) {
+                res = getStudyCandidates();
+            } else if (commandLine.length == 2) {
+                for (String candidate : candidatesMap.keySet()) {
+                    if (candidate.equals(commandLine[0])) {
+                        res = getCandidates(candidatesMap.get(candidate), commandLine[1]);
+                    }
+                }
+            } else if (commandLine.length == 1 && candidatesMap.keySet().contains(line)) {
+                res.addAll(candidatesMap.get(line));
+            }
+        } else {
+            res = getCandidates(commands, line);
         }
+        return res;
     }
 
-    public abstract List checkCandidates();
+    private List<Candidate> getHostCandidates() {
+        List<Host> hosts = ClientConfiguration.getInstance().getRest().getHosts();
+        List<Candidate> res = new ArrayList();
+        for (Host host : hosts) {
+            res.add(new Candidate(host.getName()));
+        }
+        return res;
+    }
+
+    private List<Candidate> getStudyCandidates() {
+        List<String> studies = CliSessionManager.getStudies();
+        List<Candidate> res = new ArrayList();
+        for (String study : studies) {
+            res.add(new Candidate(study));
+        }
+        return res;
+    }
+
+    private List<Candidate> getCandidates(List<Candidate> list, String s) {
+        List<Candidate> res = new ArrayList();
+        for (Candidate candidate : list) {
+            if (candidate.value().startsWith(s)) {
+                res.add(candidate);
+            }
+        }
+        return res;
+    }
 }

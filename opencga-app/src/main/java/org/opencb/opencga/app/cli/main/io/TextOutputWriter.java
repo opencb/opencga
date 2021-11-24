@@ -75,6 +75,13 @@ public class TextOutputWriter extends AbstractOutputWriter {
     @Override
     public void print(RestResponse queryResponse) {
         if (queryResponse != null && queryResponse.getType().equals(QueryType.VOID)) {
+            if (queryResponse.getEvents() != null) {
+                for (Event event : ((RestResponse<?>) queryResponse).getEvents()) {
+                    if (StringUtils.isNotEmpty(event.getMessage())) {
+                        ps.println(event.getMessage());
+                    }
+                }
+            }
             return;
         }
         if (checkErrors(queryResponse) && queryResponse.allResultsSize() == 0) {
@@ -92,7 +99,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
                 if (CollectionUtils.isNotEmpty(queryResponse.getEvents())) {
                     for (Event event : ((RestResponse<?>) queryResponse).getEvents()) {
-                        if (event.getMessage() != null) {
+                        if (StringUtils.isNotEmpty(event.getMessage())) {
                             ps.println("EVENT: " + event.getMessage());
                         }
                     }

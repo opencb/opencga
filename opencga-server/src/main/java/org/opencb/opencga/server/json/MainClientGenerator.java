@@ -7,6 +7,7 @@ import org.opencb.opencga.server.json.beans.Parameter;
 import org.opencb.opencga.server.json.beans.RestApi;
 import org.opencb.opencga.server.json.config.CommandLineConfiguration;
 import org.opencb.opencga.server.json.config.ConfigurationManager;
+import org.opencb.opencga.server.json.writers.cli.CompleterCliApiWriter;
 import org.opencb.opencga.server.json.writers.cli.ExecutorsCliRestApiWriter;
 import org.opencb.opencga.server.json.writers.cli.OptionsCliRestApiWriter;
 import org.opencb.opencga.server.json.writers.cli.ParserCliRestApiWriter;
@@ -82,6 +83,9 @@ public class MainClientGenerator {
         LOG.info("Creating CLI parser file in folder " + new File(config.getOptions().getOutputDir()).getAbsolutePath());
         ParserCliRestApiWriter parserCliRestApiWriter = new ParserCliRestApiWriter(restApi, config);
         parserCliRestApiWriter.write();
+        LOG.info("Creating CLI parser file in folder " + new File(config.getOptions().getOutputDir()).getAbsolutePath());
+        CompleterCliApiWriter completerCliApiWriter = new CompleterCliApiWriter(restApi, config);
+        completerCliApiWriter.write();
     }
 
     private static RestApi prepare(RestApi api) {

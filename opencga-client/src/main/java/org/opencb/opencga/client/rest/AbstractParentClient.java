@@ -35,6 +35,7 @@
  import org.opencb.opencga.client.exceptions.ClientException;
  import org.opencb.opencga.core.common.JacksonUtils;
  import org.opencb.opencga.core.response.OpenCGAResult;
+ import org.opencb.opencga.core.response.QueryType;
  import org.opencb.opencga.core.response.RestResponse;
  import org.opencb.opencga.core.response.VariantQueryResult;
  import org.slf4j.Logger;
@@ -128,7 +129,7 @@
                  sc.init(null, trustAllCerts, new SecureRandom());
 
                  HostnameVerifier verifier = new HostnameVerifier() {
-                     private String hostname = URI.create(ClientConfiguration.getInstance().getRest().getUrl()).getHost();
+                     private String hostname = URI.create(ClientConfiguration.getInstance().getRest().getCurrentUrl()).getHost();
 
                      @Override
                      public boolean verify(String hostname, SSLSession sslSession) {
@@ -224,7 +225,7 @@
 
              // Build URL
              WebTarget path = client
-                     .target(ClientConfiguration.getInstance().getRest().getUrl())
+                     .target(ClientConfiguration.getInstance().getRest().getCurrentUrl())
                      .path("webservices")
                      .path("rest")
                      .path("v2")
@@ -466,58 +467,59 @@
          File binaryFile = new File(filePath);
          String message = "";
          int responseCode = -1;
+         if (!Files.exists(binaryFile.toPath())) {
+             message = "File not found";
+         } else {
+             try {
+                 URL url = new URL(path.getUri().toURL().toString().replace("/rest/", "/UploadFileServlet/"));
+                 URLConnection connection = url.openConnection();
+                 connection.setDoOutput(true);
+                 connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+                 connection.setRequestProperty("Authorization", "Bearer " + token);
+                 for (String key : params.keySet()) {
+                     connection.setRequestProperty(key, String.valueOf(params.get(key)));
+                 }
+                 OutputStream output = connection.getOutputStream();
+                 StringBuilder buffer = new StringBuilder();
+                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(output, charset));
+                 getParams(params);
+                 // Send binary file.
+                 buffer.append("--" + boundary).append(br);
+                 buffer.append("Content-Disposition: form-data; name=\"binaryFile\"; filename=\"" + binaryFile.getName() + "\"").append(br);
+                 buffer.append("Content-Type: " + URLConnection.guessContentTypeFromName(binaryFile.getName())).append(br);
+                 buffer.append("Content-Transfer-Encoding: binary").append(br);
+                 buffer.append(br);
+                 writer.append(buffer.toString()).flush();
 
-         try {
-             URL url = new URL(path.getUri().toURL().toString().replace("/rest/", "/UploadFileServlet/"));
-             logger.info("url ::: " + url);
-             URLConnection connection = url.openConnection();
-             connection.setDoOutput(true);
-             connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-             connection.setRequestProperty("Authorization", "Bearer " + token);
-             for (String key : params.keySet()) {
-                 connection.setRequestProperty(key, String.valueOf(params.get(key)));
+                 Files.copy(binaryFile.toPath(), output);
+                 output.flush(); // Important before continuing with writer!
+                 writer.append(br).flush(); // CRLF is important! It indicates end of boundary.
+                 // End of multipart/form-data.
+                 writer.append("--" + boundary + "--").append(br).flush();
+                 // Request is lazily fired whenever you need to obtain information about response.
+                 responseCode = ((HttpURLConnection) connection).getResponseCode();
+                 InputStream inputStream = connection.getInputStream();
+                 message = new BufferedReader(
+                         new InputStreamReader(inputStream, StandardCharsets.UTF_8))
+                         .lines()
+                         .collect(Collectors.joining("\n"));
+                 //  message = "File upload result: " + message;
+             } catch (Exception e) {
+                 message = "OpenCga Connecting error";
              }
-             OutputStream output = connection.getOutputStream();
-             StringBuilder buffer = new StringBuilder();
-             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(output, charset));
-             getParams(params);
-             // Send binary file.
-             buffer.append("--" + boundary).append(br);
-             buffer.append("Content-Disposition: form-data; name=\"binaryFile\"; filename=\"" + binaryFile.getName() + "\"").append(br);
-             buffer.append("Content-Type: " + URLConnection.guessContentTypeFromName(binaryFile.getName())).append(br);
-             buffer.append("Content-Transfer-Encoding: binary").append(br);
-             buffer.append(br);
-             writer.append(buffer.toString()).flush();
-
-             Files.copy(binaryFile.toPath(), output);
-             output.flush(); // Important before continuing with writer!
-             writer.append(br).flush(); // CRLF is important! It indicates end of boundary.
-             // End of multipart/form-data.
-             writer.append("--" + boundary + "--").append(br).flush();
-             // Request is lazily fired whenever you need to obtain information about response.
-             responseCode = ((HttpURLConnection) connection).getResponseCode();
-             InputStream inputStream = connection.getInputStream();
-             message = new BufferedReader(
-                     new InputStreamReader(inputStream, StandardCharsets.UTF_8))
-                     .lines()
-                     .collect(Collectors.joining("\n"));
-             //  message = "File upload result: " + message;
-         } catch (Exception e) {
-             message = "OpenCga Connecting error";
          }
-
          RestResponse<T> restResponse = new RestResponse<>();
          Event event = new Event();
          event.setMessage(message);
          if (responseCode == 200) {
              event.setType(Event.Type.INFO);
+             restResponse.setType(QueryType.VOID);
          } else {
              event.setMessage("ERROR :: " + message);
              event.setType(Event.Type.ERROR);
          }
          restResponse.setEvents(new ArrayList<>());
          restResponse.getEvents().add(event);
-         logger.info("RESPONSE CODE ::: " + responseCode);
          return restResponse;
      }
 
@@ -532,7 +534,6 @@
                  } else {
                      result.append("&");
                  }
-                 logger.info(key + " ::: " + params.get(key).toString());
                  result.append(URLEncoder.encode(key, "UTF-8"));
                  result.append("=");
                  result.append(URLEncoder.encode(params.get(key).toString(), "UTF-8"));

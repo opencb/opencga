@@ -67,7 +67,7 @@ public class CliSession {
         login = "19740927121845";
         currentStudy = NO_STUDY;
         studies = Collections.emptyList();
-        currentHost = ClientConfiguration.getInstance().getRest().getHostname();
+        currentHost = ClientConfiguration.getInstance().getRest().getCurrentHostname();
         timestamp = System.currentTimeMillis();
     }
 

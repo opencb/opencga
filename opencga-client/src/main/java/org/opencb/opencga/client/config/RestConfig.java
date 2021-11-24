@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.client.config;
 
-import org.apache.commons.collections4.CollectionUtils;
-
 import java.util.List;
 
 /**
@@ -29,27 +27,30 @@ public class RestConfig {
     private boolean tokenAutoRefresh;
     private boolean tlsAllowInvalidCertificates;
     private int timeout;
+    private Host currentHost;
     private QueryRestConfig query;
-    private String url;
-    private String hostname;
 
     public RestConfig() {
 
     }
 
-    public RestConfig(String defaultClientURL, boolean tokenAutoRefresh, QueryRestConfig query, List<Host> hosts) {
-        this.url = defaultClientURL;
+    public RestConfig(boolean tokenAutoRefresh, QueryRestConfig query, List<Host> hosts) {
         this.hosts = hosts;
         this.tokenAutoRefresh = tokenAutoRefresh;
         this.query = query;
+        if (hosts != null && !hosts.isEmpty()) {
+            currentHost = hosts.get(0);
+        }
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("RestConfig{");
-        sb.append("host='").append(hosts).append('\'');
+        sb.append("hosts=").append(hosts);
         sb.append(", tokenAutoRefresh=").append(tokenAutoRefresh);
         sb.append(", tlsAllowInvalidCertificates=").append(tlsAllowInvalidCertificates);
+        sb.append(", timeout=").append(timeout);
+        sb.append(", currentHost=").append(currentHost);
         sb.append(", query=").append(query);
         sb.append('}');
         return sb.toString();
@@ -100,38 +101,80 @@ public class RestConfig {
         return this;
     }
 
-    public String getUrl() {
-        return url;
-    }
-
-    public RestConfig setUrl(String url) {
-        this.url = url;
-        return this;
-    }
-
-    public String getHostname() {
-        return hostname;
-    }
-
-    public RestConfig setHostname(String hostname) {
-        this.hostname = hostname;
-        return this;
-    }
-
-    private boolean isDefaultHostAdded() {
-        boolean enc = false;
-        if (!CollectionUtils.isEmpty(hosts)) {
-            for (Host h : hosts) {
-                if (hostname.equals(h.getName())) {
-                    enc = true;
-                    break;
-                }
+    private Host getHostByUrl(String s) {
+        for (Host host : hosts) {
+            if (host.getUrl().equals(s)) {
+                return host;
             }
         }
-        return enc;
+        return null;
     }
 
-    private void addDefaultHost() {
-        hosts.add(new Host(hostname, url, true));
+    private Host getHostByName(String s) {
+        for (Host host : hosts) {
+            if (host.getName().equals(s)) {
+                return host;
+            }
+        }
+        return null;
+    }
+
+    private boolean existsUrl(String s) {
+        for (Host host : hosts) {
+            if (host.getUrl().equals(s)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean existsName(String s) {
+        for (Host host : hosts) {
+            if (host.getName().equals(s)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String getCurrentHostname() {
+        if (currentHost == null) {
+            if (hosts != null && !hosts.isEmpty()) {
+                currentHost = hosts.get(0);
+            } else {
+                return "";
+            }
+        }
+        return currentHost.getName();
+    }
+
+    public String getCurrentUrl() {
+        if (currentHost == null) {
+            if (hosts != null && !hosts.isEmpty()) {
+                currentHost = hosts.get(0);
+            } else {
+                return "";
+            }
+        }
+        return currentHost.getUrl();
+    }
+
+    public void setCurrentHostname(String name) {
+
+        if (!existsName(name)) {
+            currentHost = new Host(name, name, true);
+        } else {
+            currentHost = getHostByName(name);
+        }
+        hosts.add(0, currentHost);
+    }
+
+    public void setCurrentUrl(String url) {
+        if (!existsUrl(url)) {
+            currentHost = new Host(url, url, true);
+        } else {
+            currentHost = getHostByUrl(url);
+        }
+        hosts.add(0, currentHost);
     }
 }

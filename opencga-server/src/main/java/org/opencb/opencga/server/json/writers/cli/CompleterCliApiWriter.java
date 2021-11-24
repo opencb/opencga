@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.json.writers.cli;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.RestApi;
@@ -29,9 +28,9 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
+public class CompleterCliApiWriter extends ParentClientRestApiWriter {
 
-    public ParserCliRestApiWriter(RestApi restApi, CommandLineConfiguration config) {
+    public CompleterCliApiWriter(RestApi restApi, CommandLineConfiguration config) {
         super(restApi, config);
     }
 
@@ -58,10 +57,19 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("package ").append(config.getOptions().getParserPackage()).append(";\n");
         sb.append("\n");
 
-        sb.append("import com.beust.jcommander.JCommander;\n");
-        sb.append("import org.opencb.opencga.app.cli.GeneralCliOptions;\n");
-        sb.append("import org.opencb.opencga.app.cli.main.options.*;\n");
-        sb.append("import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;\n");
+        sb.append("import org.jline.reader.Candidate;\n");
+        sb.append("import org.jline.reader.Completer;\n");
+        sb.append("import org.jline.reader.LineReader;\n");
+        sb.append("import org.jline.reader.ParsedLine;\n");
+        sb.append("import org.apache.commons.lang3.StringUtils;\n");
+
+        sb.append("import java.util.List;\n");
+        sb.append("import java.util.Map;\n");
+        sb.append("import java.util.HashMap;\n");
+
+        sb.append("import static java.util.Arrays.asList;\n");
+        sb.append("import static java.util.stream.Collectors.toList;\n");
+
         sb.append("\n");
         sb.append("\n");
         sb.append("/*\n");
@@ -81,51 +89,35 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
 
     @Override
     protected String getClassHeader(String key) {
+
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
-        sb.append("public class OpencgaCliOptionsParser extends ParentCliOptionsParser {\n");
+        sb.append("public abstract class OpenCgaCompleter implements Completer {\n");
         sb.append("\n");
+        sb.append("    protected List<Candidate> commands = asList(\"login\",\"logout\",\"help\",\"use\",");
         for (Category category : availableCategories.values()) {
-            sb.append("    private final " + getAsClassName(category.getName()) + "CommandOptions " + getAsVariableName(category.getName()) +
-                    "CommandOptions;\n");
+            CategoryConfig config = availableCategoryConfigs.get(getIdCategory(category));
+            sb.append("\"" + getCategoryCommandName(category, config) + "\",");
         }
-        sb.append("\n");
-        sb.append("    enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}\n");
-        sb.append("\n");
-        sb.append("    public OpencgaCliOptionsParser() {\n");
-        sb.append("\n");
-        sb.append("        jCommander.setExpandAtSign(false);\n");
+        sb.delete(sb.lastIndexOf(","), sb.length());
+        sb.append(")\n            .stream()\n            .map(Candidate::new)\n            .collect(toList());\n\n");
 
         for (Category category : availableCategories.values()) {
             CategoryConfig config = availableCategoryConfigs.get(getIdCategory(category));
-            sb.append("\n");
-            sb.append("        " + getAsVariableName(category.getName()) + "CommandOptions = new " + getAsClassName(category.getName())
-                    + "CommandOptions(commonCommandOptions, jCommander);\n");
-            sb.append("        jCommander.addCommand(\"" + getCategoryCommandName(category, config)
-                    + "\", " + getAsVariableName(category.getName()) + "CommandOptions);\n");
-            sb.append("        JCommander " + getAsVariableName(category.getName()) + "SubCommands = jCommander.getCommands().get(\""
-                    + getCategoryCommandName(category, config) + "\");\n");
+            sb.append("    private List<Candidate> " + getCategoryCommandName(category, config) + "List = asList( ");
             for (Endpoint endpoint : category.getEndpoints()) {
-
                 String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
                 if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config, commandName)) && endpoint.hasParameters()) {
                     if (config.isAvailableCommand(commandName)) {
-                        sb.append("        " + getAsVariableName(category.getName()) + "SubCommands.addCommand(\"" + commandName + "\", "
-                                + getAsVariableName(category.getName()) + "CommandOptions." + getAsCamelCase(commandName) +
-                                "CommandOptions);\n");
+
+                        sb.append("\"" + commandName + "\",");
                     }
                 }
             }
-
-            if (CollectionUtils.isNotEmpty(config.getAddedMethods())) {
-                for (String methodName : config.getAddedMethods()) {
-                    sb.append("        " + getAsVariableName(category.getName()) + "SubCommands.addCommand(\"" + methodName + "\", "
-                            + getAsVariableName(category.getName()) + "CommandOptions." + getAsCamelCase(methodName) +
-                            "CommandOptions);\n");
-                }
-            }
+            sb.delete(sb.lastIndexOf(","), sb.length());
+            sb.append(")\n            .stream()\n            .map(Candidate::new)\n            .collect(toList());\n\n");
         }
-        sb.append("    }\n");
+
         return sb.toString();
     }
 
@@ -148,19 +140,30 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
     protected String getClassMethods(String key) {
         StringBuilder sb = new StringBuilder();
 
+        sb.append("    @Override\n");
+        sb.append("    public void complete(LineReader lineReader, ParsedLine parsedLine, List<Candidate> candidates) {\n");
+        sb.append("        String command = parsedLine.line().trim();\n");
+        sb.append("        if (StringUtils.isEmpty(command)) {\n");
+        sb.append("            candidates.addAll(commands);\n");
+        sb.append("            return;\n");
+        sb.append("        }\n");
+        sb.append("        Map<String, List<Candidate>> mapCandidates=new HashMap();\n");
         for (Category category : availableCategories.values()) {
-            sb.append("    \n");
-            sb.append("    public " + getAsClassName(category.getName()) + "CommandOptions get" + getAsClassName(category.getName())
-                    + "CommandOptions() {\n");
-            sb.append("        return " + getAsVariableName(category.getName()) + "CommandOptions;\n");
-            sb.append("    }\n");
-            sb.append("    \n");
+            CategoryConfig config = availableCategoryConfigs.get(getIdCategory(category));
+            sb.append("        mapCandidates.put( \"" + getCategoryCommandName(category, config) + "\", "
+                    + getCategoryCommandName(category, config) + "List);\n");
         }
+        sb.append("         candidates.addAll(checkCandidates(mapCandidates,command)); \n");
+        sb.append("     }\n");
+
+        sb.append("    public abstract List<Candidate> checkCandidates(Map<String, List<Candidate>> candidatesMap,String line);");
+        sb.append("    \n");
+
         return sb.toString();
     }
 
     @Override
     protected String getClassFileName(String key) {
-        return config.getOptions().getOutputDir() + "/OpencgaCliOptionsParser.java";
+        return config.getOptions().getOutputDir() + "/OpenCgaCompleter.java";
     }
 }

@@ -1,14 +1,12 @@
 package org.opencb.opencga.app.cli.session;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.OpencgaCliShellExecutor;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.config.Host;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -22,7 +20,9 @@ import org.opencb.opencga.core.response.RestResponse;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 import static org.fusesource.jansi.Ansi.Color.*;
 import static org.fusesource.jansi.Ansi.ansi;
@@ -30,33 +30,20 @@ import static org.fusesource.jansi.Ansi.ansi;
 public class CliSessionManager {
 
     public static final String DEFAULT_PARAMETER = "--default";
-    public static Map<String, Host> hosts = new HashMap<>();
     private static OpencgaCliShellExecutor sessionShell;
     private static boolean debug = false;
     private static boolean reloadStudies = false;
 
-    static {
-        if (ClientConfiguration.getInstance().getRest() != null) {
-            List<Host> availableHosts = ClientConfiguration.getInstance().getRest().getHosts();
-            availableHosts.add(new Host(ClientConfiguration.getInstance().getRest().getHostname(),
-                    ClientConfiguration.getInstance().getRest().getUrl(), true));
-            for (Host h : availableHosts) {
-                hosts.put(h.getName(), h);
-            }
-        }
-    }
-
     public static void updateSession() {
         try {
             if (isShell()) {
-                OpencgaMain.printDebugMessage("Updating session for host " + ClientConfiguration.getInstance().getRest().getHostname());
-                CliSession.getInstance().saveCliSessionFile(ClientConfiguration.getInstance().getRest().getHostname());
-                OpencgaMain.printDebugMessage("Session updated ");
+                OpencgaMain.printDebugMessage("Updating session for host " + ClientConfiguration.getInstance().getRest().getCurrentHostname());
+                CliSession.getInstance().saveCliSessionFile(ClientConfiguration.getInstance().getRest().getCurrentHostname());
             } else {
                 OpencgaMain.printDebugMessage("Updating session for host " + getLastHostUsed());
                 CliSession.getInstance().saveCliSessionFile(getLastHostUsed());
-                OpencgaMain.printDebugMessage("Session updated ");
             }
+            OpencgaMain.printDebugMessage("Session updated ");
             if (isReloadStudies()) {
                 loadStudies();
             }
@@ -81,17 +68,11 @@ public class CliSessionManager {
         if (name == null) {
             throw new Exception("The name of host cannot be null");
         }
-        if (!MapUtils.isEmpty(hosts)) {
-            Host host = hosts.get(name);
-            if (host == null) {
-                throw new Exception("Host not found");
-            }
-            ClientConfiguration.getInstance().getRest().setHostname(name);
-            ClientConfiguration.getInstance().getRest().setUrl(host.getUrl());
-            updateSession();
-        } else {
-            throw new Exception("There are no servers configured");
+        if (!ClientConfiguration.getInstance().getRest().existsName(name)) {
+            throw new Exception("Host not found");
         }
+        ClientConfiguration.getInstance().getRest().setCurrentHostname(name);
+        updateSession();
     }
 
     public static void setDefaultCurrentStudy() throws IOException {
@@ -244,8 +225,8 @@ public class CliSessionManager {
 
     public static void updateSessionToken(String token) {
         CliSession.getInstance().setToken(token);
-        CliSession.getInstance().setHost(ClientConfiguration.getInstance().getRest().getUrl());
-        CliSession.getInstance().setCurrentHost(ClientConfiguration.getInstance().getRest().getHostname());
+        CliSession.getInstance().setHost(ClientConfiguration.getInstance().getRest().getCurrentUrl());
+        CliSession.getInstance().setCurrentHost(ClientConfiguration.getInstance().getRest().getCurrentHostname());
         updateSession();
     }
 
@@ -257,7 +238,7 @@ public class CliSessionManager {
         CliSession.getInstance().setToken(token);
         CliSession.getInstance().setRefreshToken(refreshToken);
         try {
-            CliSession.getInstance().updateCliSessionFile(ClientConfiguration.getInstance().getRest().getHostname());
+            CliSession.getInstance().updateCliSessionFile(ClientConfiguration.getInstance().getRest().getCurrentHostname());
         } catch (IOException e) {
             OpencgaMain.printErrorMessage(e.getMessage(), e);
         }
@@ -290,12 +271,13 @@ public class CliSessionManager {
         CliSession.getInstance().setRefreshToken(refreshToken);
         CliSession.getInstance().setStudies(studies);
         CliSession.getInstance().setLogin(TimeUtils.getTime(new Date()));
+        //CliSession.getInstance().setCurrentHost();
         updateSession();
     }
 
     public static void logoutCliSessionFile() throws IOException {
         if (isShell()) {
-            CliSession.getInstance().logoutCliSessionFile(ClientConfiguration.getInstance().getRest().getHostname());
+            CliSession.getInstance().logoutCliSessionFile(ClientConfiguration.getInstance().getRest().getCurrentHostname());
         } else {
             CliSession.getInstance().logoutCliSessionFile(getLastHostUsed());
         }
@@ -306,13 +288,7 @@ public class CliSessionManager {
     }
 
     private static String getDefaultHost() {
-        String res = "";
-        for (Map.Entry<String, Host> entry : hosts.entrySet()) {
-            if (entry.getValue().isDefaultHost()) {
-                res = entry.getValue().getName();
-            }
-        }
-        return res;
+        return ClientConfiguration.getInstance().getRest().getHosts().get(0).getName();
     }
 
     public static boolean isDebug() {
@@ -335,6 +311,12 @@ public class CliSessionManager {
 
     public static void init(String[] args) {
         CliSession.getInstance();
+        if (StringUtils.isEmpty(CliSession.getInstance().getCurrentHost())) {
+            ClientConfiguration.getInstance().getRest().setCurrentHostname(CliSession.getInstance().getCurrentHost());
+        } else {
+            ClientConfiguration.getInstance().getRest().setCurrentHostname(
+                    ClientConfiguration.getInstance().getRest().getHosts().get(0).getName());
+        }
         setDebug(isDebugModeSet(args));
     }
 

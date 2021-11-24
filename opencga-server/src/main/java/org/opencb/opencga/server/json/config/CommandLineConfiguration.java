@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CommandLineConfiguration {
+
     private Options options;
     private ApiConfig apiConfig;
 
