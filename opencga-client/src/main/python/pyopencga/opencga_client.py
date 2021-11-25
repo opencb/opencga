@@ -155,7 +155,7 @@ class OpencgaClient(object):
                 else:
                     id_ = job_info['internal']['status']['name']
                 raise ValueError('{} ({}): {}'.format(
-                    id_, job_info['status']['date'], job_info['internal']['status']['description']
+                    id_, job_info['internal']['status']['date'], job_info['internal']['status']['description']
                 ))
             elif job_info['internal']['status']['name'] in ['DONE']:
                 break
