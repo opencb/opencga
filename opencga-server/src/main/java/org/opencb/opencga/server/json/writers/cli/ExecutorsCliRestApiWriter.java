@@ -351,7 +351,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         }
         if (enc) {
             if (studyPresent) {
-                res += "        if(queryParams.get(\"study\")==null){\n";
+                res += "        if(queryParams.get(\"study\")==null && CliSessionManager.isShell()){\n";
                 res += "                queryParams.putIfNotEmpty(\"study\", CliSessionManager.getCurrentStudy());\n";
                 res += "        }\n";
             }
