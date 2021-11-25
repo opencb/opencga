@@ -12,7 +12,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public abstract class AbstractMain {
@@ -22,7 +25,7 @@ public abstract class AbstractMain {
     protected static ObjectMapper objectMapper = new ObjectMapper()
             .configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
 
-    protected static <T> T read(String file, Class<T> type) throws java.io.IOException {
+    protected static <T> T readFile(String file, Class<T> type) throws java.io.IOException {
         return objectMapper.readValue(Paths.get(file).toFile(), type);
     }
 
@@ -58,7 +61,7 @@ public abstract class AbstractMain {
                 Stream<?> stream = (Stream<?>) obj;
                 print(stream.iterator());
             } else {
-                System.out.println(objectWriter.writeValueAsString(obj));
+                println(objectWriter.writeValueAsString(obj));
             }
             if (obj instanceof AutoCloseable) {
                 ((AutoCloseable) obj).close();
@@ -68,6 +71,10 @@ public abstract class AbstractMain {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected void println(String msg) {
+        System.out.println(msg);
     }
 
     protected String getArg(String[] args, int i, String def) {
@@ -83,7 +90,8 @@ public abstract class AbstractMain {
         }
     }
 
-    protected ObjectMap getArgsMap(String[] args, int firstIdx) {
+    protected ObjectMap getArgsMap(String[] args, int firstIdx, String... keys) {
+        Set<String> acceptedKeys = new HashSet<>(Arrays.asList(keys));
         ObjectMap argsMap;
         argsMap = new ObjectMap();
         int i = firstIdx;
@@ -91,6 +99,11 @@ public abstract class AbstractMain {
             String key = args[i];
             while (key.startsWith("-")) {
                 key = key.substring(1);
+            }
+            if (!acceptedKeys.isEmpty()) {
+                if (!acceptedKeys.contains(key)) {
+                    throw new IllegalArgumentException("Unknown argument '" + args[i] + "'");
+                }
             }
             String value = safeArg(args, i + 1);
             if (value == null || value.startsWith("-")) {

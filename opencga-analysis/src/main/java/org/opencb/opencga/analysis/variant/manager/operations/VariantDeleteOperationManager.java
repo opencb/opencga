@@ -27,47 +27,36 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-public class VariantFileDeleteOperationManager extends OperationManager {
+public class VariantDeleteOperationManager extends OperationManager {
 
-    public VariantFileDeleteOperationManager(VariantStorageManager variantStorageManager, VariantStorageEngine engine) {
+    public VariantDeleteOperationManager(VariantStorageManager variantStorageManager, VariantStorageEngine engine) {
         super(variantStorageManager, engine);
     }
 
-    public void removeStudy(String study, String token) throws CatalogException, StorageEngineException {
+    public void removeStudy(String study, URI outdir, String token) throws CatalogException, StorageEngineException {
         study = getStudyFqn(study, token);
 
         // Update study configuration BEFORE executing the operation and fetching files from Catalog
-        synchronizeMetadata(study, token, null);
+        synchronizeCatalogStudyFromStorage(study, token, true);
 
-        variantStorageEngine.removeStudy(study);
+        variantStorageEngine.removeStudy(study, outdir);
 
         new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager())
                 .synchronizeRemovedStudyFromStorage(study, token);
 
     }
 
-    public void removeFile(String study, List<String> files, String token) throws CatalogException, StorageEngineException {
-        // Update study configuration BEFORE executing the operation and fetching files from Catalog
-        files = synchronizeMetadata(study, token, files);
+    public void removeFile(String study, List<String> inputFiles, URI outdir, String token) throws CatalogException, StorageEngineException {
+        // Update study metadata BEFORE executing the operation and fetching files from Catalog
+        StudyMetadata studyMetadata = synchronizeCatalogStudyFromStorage(study, token, true);
 
-        variantStorageEngine.removeFiles(study, files);
-        // Update study configuration to synchronize
-        synchronizeCatalogStudyFromStorage(study, token);
-
-    }
-
-    private List<String> synchronizeMetadata(String study, String token, List<String> files)
-            throws CatalogException, StorageEngineException {
-        StudyMetadata studyMetadata = synchronizeCatalogStudyFromStorage(study, token);
-        if (studyMetadata == null) {
-            throw new CatalogException("Study '" + study + "' does not exist on the VariantStorage");
-        }
         List<String> fileNames = new ArrayList<>();
-        if (files != null && !files.isEmpty()) {
-            for (String fileStr : files) {
+        if (inputFiles != null && !inputFiles.isEmpty()) {
+            for (String fileStr : inputFiles) {
                 File file = catalogManager.getFileManager().get(study, fileStr, null, token).first();
                 String catalogIndexStatus = file.getInternal().getIndex().getStatus().getName();
                 if (!catalogIndexStatus.equals(FileIndex.IndexStatus.READY)) {
@@ -86,7 +75,28 @@ public class VariantFileDeleteOperationManager extends OperationManager {
                 throw new CatalogException("Nothing to do!");
             }
         }
-        return fileNames;
+
+        variantStorageEngine.removeFiles(study, fileNames, outdir);
+        // Update study configuration to synchronize
+        synchronizeCatalogStudyFromStorage(study, token, true);
+
     }
+
+    public void removeSample(String study, List<String> samples, URI outdir, String token) throws CatalogException, StorageEngineException {
+        // Update study metadata BEFORE executing the operation and fetching files from Catalog
+        synchronizeCatalogStudyFromStorage(study, token, true);
+
+//        Set<String> files = new HashSet<>();
+//        for (Sample sample : catalogManager.getSampleManager().get(study, samples,
+//                new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.FILE_IDS.key()), token).getResults()) {
+//            files.addAll(sample.getFileIds());
+//        }
+
+        variantStorageEngine.removeSamples(study, samples, outdir);
+        // Update study configuration to synchronize
+        synchronizeCatalogStudyFromStorage(study, token, true);
+
+    }
+
 
 }

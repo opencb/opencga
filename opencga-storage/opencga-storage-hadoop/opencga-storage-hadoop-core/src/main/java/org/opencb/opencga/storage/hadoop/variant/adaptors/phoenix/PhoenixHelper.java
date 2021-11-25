@@ -471,6 +471,17 @@ public class PhoenixHelper {
     }
 
     public interface Column {
+
+        /**
+         * @return Full column name, including namespace
+         */
+        default String fullColumn() {
+            return GenomeHelper.COLUMN_FAMILY + ":" + column();
+        }
+
+        /**
+         * @return Column name
+         */
         String column();
 
         byte[] bytes();
