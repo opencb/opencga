@@ -137,12 +137,18 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
 
                     String writeMapperslimitFactor = getParam(WRITE_MAPPERS_LIMIT_FACTOR.key(),
                             WRITE_MAPPERS_LIMIT_FACTOR.defaultValue().toString());
-                    new HBaseWriterDriver(getConf()).run(HBaseWriterDriver.buildArgs(table,
+                    int code = new HBaseWriterDriver(getConf()).run(HBaseWriterDriver.buildArgs(table,
                             new ObjectMap()
                                     .append(HBaseWriterDriver.INPUT_FILE_PARAM, outdir.toUri().toString())
                                     .append(WRITE_MAPPERS_LIMIT_FACTOR.key(), writeMapperslimitFactor)));
+                    if (code != 0) {
+                        throw new StorageEngineException("Error writing mutations");
+                    }
                 }
             }
+        } catch (StorageEngineException e) {
+            // Don't double wrap this exception
+            throw e;
         } catch (Exception e) {
             throw new StorageEngineException("Error writing mutations", e);
         } finally {
