@@ -151,8 +151,8 @@ class OpencgaClient(object):
             job_info = self.jobs.info(study=study_id, jobs=job_id).get_result(0)
             if job_info['internal']['status']['name'] in ['ERROR', 'ABORTED']:
                 raise ValueError('{} ({}): {}'.format(
-                    job_info['status']['name'], job_info['status']['date'],
-                    job_info['status']['message']
+                    job_info['internal']['status']['name'], job_info['status']['date'],
+                    job_info['internal']['status']['description']
                 ))
             elif job_info['internal']['status']['name'] in ['DONE']:
                 break
