@@ -296,6 +296,8 @@ public class StudyManager extends AbstractManager {
                 .append("token", token);
 
         try {
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+
             /* Check project permissions */
             if (!project.getFqn().startsWith(userId + "@")) {
                 throw new CatalogException("Permission denied: Only the owner of the project can create studies.");
@@ -372,7 +374,9 @@ public class StudyManager extends AbstractManager {
             auditManager.auditCreate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            result.setResults(Arrays.asList(study));
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                result.setResults(Arrays.asList(study));
+            }
             return result;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.STUDY, study.getId(), "", study.getId(), "", auditParams,
@@ -624,6 +628,7 @@ public class StudyManager extends AbstractManager {
         }
 
         try {
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
             ParamUtils.checkObj(parameters, "Parameters");
 
             authorizationManager.checkCanEditStudy(study.getUid(), userId);

@@ -63,12 +63,19 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create a cohort", notes = "A cohort can be created by providing a list of SampleIds, " +
             "or providing a categorical variable (both variableSet and variable). " +
             "If none of this is given, an empty cohort will be created.", response = Cohort.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response createCohort(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @Deprecated
             @ApiParam(value = "Deprecated: Use /generate web service and filter by annotation") @QueryParam("variableSet") String variableSet,
             @Deprecated
             @ApiParam(value = "Deprecated: Use /generate web service and filter by annotation") @QueryParam("variable") String variableName,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(value = "JSON containing cohort information", required = true) CohortCreateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new CohortCreateParams());
@@ -81,6 +88,12 @@ public class CohortWSServer extends OpenCGAWSServer {
     @POST
     @Path("/generate")
     @ApiOperation(value = "Create a cohort based on a sample query", response = Cohort.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response generateCohort(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             /* Sample search query params */
@@ -97,6 +110,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
             @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
             @ApiParam(value = ParamConstants.SNAPSHOT_DESCRIPTION) @QueryParam(ParamConstants.SNAPSHOT_PARAM) int snapshot,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             /* End Sample search query params */
             @ApiParam(value = "JSON containing cohort information", required = true) CohortGenerateParams params) {
         try {

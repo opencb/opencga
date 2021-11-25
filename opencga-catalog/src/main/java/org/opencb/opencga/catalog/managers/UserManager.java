@@ -667,6 +667,7 @@ public class UserManager extends AbstractManager {
                 .append("options", options)
                 .append("token", token);
         try {
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
             ParamUtils.checkParameter(userId, "userId");
             ParamUtils.checkObj(parameters, "parameters");
             ParamUtils.checkParameter(token, "token");

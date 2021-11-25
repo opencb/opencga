@@ -232,6 +232,7 @@ public class ProjectManager extends AbstractManager {
                 .append("options", options)
                 .append("token", token);
 
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         OpenCGAResult<Project> queryResult;
         Project project;
         try {
@@ -265,9 +266,13 @@ public class ProjectManager extends AbstractManager {
             project = projectCreateParams.toProject();
             validateProjectForCreation(project, user.first());
 
-            projectDBAdaptor.insert(project, userId, options);
-            queryResult = getProject(userId, project.getUuid(), options);
-            project = queryResult.first();
+            queryResult = projectDBAdaptor.insert(project, userId, options);
+            OpenCGAResult<Project> result = getProject(userId, project.getUuid(), options);
+            project = result.first();
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created project
+                queryResult.setResults(result.getResults());
+            }
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.PROJECT, projectCreateParams.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -463,6 +468,8 @@ public class ProjectManager extends AbstractManager {
         try {
             ParamUtils.checkObj(parameters, "Parameters");
             ParamUtils.checkParameter(token, "token");
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+
             long projectUid = project.getUid();
             authorizationManager.checkCanEditProject(projectUid, userId);
 

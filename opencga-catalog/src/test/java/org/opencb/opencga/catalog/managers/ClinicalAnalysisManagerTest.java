@@ -85,6 +85,8 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     protected String sessionIdUser;
     private FamilyManager familyManager;
 
+    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
     @Before
     public void setUp() throws IOException, CatalogException {
         catalogManager = catalogManagerResource.getCatalogManager();
@@ -101,7 +103,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 null);
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
+                null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
         catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
     }
 
@@ -164,7 +166,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     private DataResult<Family> createDummyFamily() throws CatalogException {
         Family family = getDummyFamily();
 
-        return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+        return familyManager.create(STUDY, family, INCLUDE_RESULT, sessionIdUser);
     }
 
     private DataResult<ClinicalAnalysis> createDummyEnvironment(boolean createFamily, boolean createDefaultInterpretation) throws CatalogException {
@@ -182,7 +184,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setMembers(Arrays.asList(new Individual().setId("child1").setSamples(Arrays.asList(new Sample().setId("sample2"))))));
 
         return catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, !createDefaultInterpretation,
-                QueryOptions.empty(), sessionIdUser);
+                INCLUDE_RESULT, sessionIdUser);
     }
 
     private List<File> registerDummyFiles() throws CatalogException {
@@ -217,7 +219,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                         Collections.singletonList(comment), Collections.emptyList()))
                 .setProband(individual);
 
-        ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, true, QueryOptions.empty(),
+        ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, true, INCLUDE_RESULT,
                 sessionIdUser).first();
 
         assertEquals(ClinicalAnalysisQualityControl.QualityControlSummary.LOW, ca.getQualityControl().getSummary());
@@ -256,7 +258,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setType(ClinicalAnalysis.Type.SINGLE)
                 .setProband(individual);
         OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis,
-                QueryOptions.empty(), sessionIdUser);
+                INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, clinical.getNumResults());
     }
 
@@ -275,7 +277,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                         new ClinicalComment("", "My second comment", Arrays.asList("1tag", "2tag"), "")))
                 .setProband(individual);
         OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis,
-                QueryOptions.empty(), sessionIdUser);
+                INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, clinical.getNumResults());
         assertEquals(2, clinical.first().getComments().size());
         assertEquals("user", clinical.first().getComments().get(0).getAuthor());
@@ -314,7 +316,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setProband(new Individual().setId("child1"));
         clinicalAnalysis.setFamily(family);
         DataResult<ClinicalAnalysis> clinicalAnalysisDataResult = catalogManager.getClinicalAnalysisManager().create(STUDY,
-                clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+                clinicalAnalysis, INCLUDE_RESULT, sessionIdUser);
 
         assertEquals("child1", clinicalAnalysisDataResult.first().getFamily().getMembers().get(0).getId());
         assertEquals("father", clinicalAnalysisDataResult.first().getFamily().getMembers().get(1).getId());
@@ -2166,7 +2168,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setProband(new Individual().setId("child1"));
         clinicalAnalysis.setFamily(dummyFamily.first());
         DataResult<ClinicalAnalysis> clinicalAnalysisDataResult = catalogManager.getClinicalAnalysisManager().create(STUDY,
-                clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+                clinicalAnalysis, INCLUDE_RESULT, sessionIdUser);
 
         assertTrue(clinicalAnalysisDataResult.first().getFamily().getMembers().stream().map(Individual::getId).collect(Collectors.toList())
                 .containsAll(dummyFamily.first().getMembers().stream().map(Individual::getId).collect(Collectors.toList())));
@@ -2200,7 +2202,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setFamily(dummyFamily.first())
                 .setProband(new Individual().setId("child1"));
 
-        ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(),
+        ClinicalAnalysis ca = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, INCLUDE_RESULT,
                 sessionIdUser).first();
 
         assertEquals(1, ca.getPanels().size());
@@ -2221,7 +2223,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setPanels(Collections.singletonList(new Panel().setId(panel.getId())));
 
         interpretation = catalogManager.getInterpretationManager().create(STUDY, ca.getId(), interpretation,
-                ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser).first();
+                ParamUtils.SaveInterpretationAs.PRIMARY, INCLUDE_RESULT, sessionIdUser).first();
         interpretation = catalogManager.getInterpretationManager().get(STUDY, interpretation.getId(), QueryOptions.empty(), sessionIdUser)
                 .first();
 
@@ -2415,7 +2417,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     private List<Panel> createPanels(int nPanels) throws CatalogException {
         List<Panel> panelList = new ArrayList<>(nPanels);
         for (int i = 0; i < nPanels; i++) {
-            panelList.add(catalogManager.getPanelManager().create(STUDY, new Panel().setId("panel" + i), QueryOptions.empty(),
+            panelList.add(catalogManager.getPanelManager().create(STUDY, new Panel().setId("panel" + i), INCLUDE_RESULT,
                     sessionIdUser).first());
         }
         return panelList;
@@ -2428,7 +2430,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new Individual()
                         .setId("proband")
                         .setSamples(Collections.singletonList(new Sample().setId("sample"))),
-                QueryOptions.empty(), sessionIdUser).first();
+                INCLUDE_RESULT, sessionIdUser).first();
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId("analysis")
@@ -2437,7 +2439,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setPanels(panels);
 
         OpenCGAResult<ClinicalAnalysis> result =
-                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(2, result.first().getPanels().size());
         for (Panel panel : result.first().getPanels()) {
@@ -2458,14 +2460,14 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new Individual()
                         .setId("proband")
                         .setSamples(Collections.singletonList(new Sample().setId("sample"))),
-                QueryOptions.empty(), sessionIdUser).first();
+                INCLUDE_RESULT, sessionIdUser).first();
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId("analysis")
                 .setType(ClinicalAnalysis.Type.SINGLE)
                 .setProband(proband)
                 .setPanels(panels);
         OpenCGAResult<ClinicalAnalysis> result =
-                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, INCLUDE_RESULT, sessionIdUser);
 
         Interpretation interpretation = catalogManager.getInterpretationManager().search(STUDY,
                 new Query(InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(), clinicalAnalysis.getId()), QueryOptions.empty(),
@@ -2484,7 +2486,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new Individual()
                         .setId("proband")
                         .setSamples(Collections.singletonList(new Sample().setId("sample"))),
-                QueryOptions.empty(), sessionIdUser).first();
+                INCLUDE_RESULT, sessionIdUser).first();
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId("analysis")
@@ -2493,7 +2495,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setProband(proband);
 
         OpenCGAResult<ClinicalAnalysis> result =
-                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(2, result.first().getPanels().size());
 
@@ -2547,7 +2549,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new Individual()
                         .setId("proband")
                         .setSamples(Collections.singletonList(new Sample().setId("sample"))),
-                QueryOptions.empty(), sessionIdUser).first();
+                INCLUDE_RESULT, sessionIdUser).first();
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId("analysis")
@@ -2555,7 +2557,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setProband(proband);
 
         OpenCGAResult<ClinicalAnalysis> result =
-                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, true, QueryOptions.empty(), sessionIdUser);
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, true, INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(0, result.first().getPanels().size());
         assertFalse(result.first().isPanelLock());
@@ -2577,7 +2579,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new Individual()
                         .setId("proband")
                         .setSamples(Collections.singletonList(new Sample().setId("sample"))),
-                QueryOptions.empty(), sessionIdUser).first();
+                INCLUDE_RESULT, sessionIdUser).first();
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId("analysis")
@@ -2585,7 +2587,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setProband(proband);
 
         OpenCGAResult<ClinicalAnalysis> result =
-                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, null, QueryOptions.empty(), sessionIdUser);
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, null, INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(0, result.first().getPanels().size());
         assertFalse(result.first().isPanelLock());
@@ -2606,7 +2608,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new Individual()
                         .setId("proband")
                         .setSamples(Collections.singletonList(new Sample().setId("sample"))),
-                QueryOptions.empty(), sessionIdUser).first();
+                INCLUDE_RESULT, sessionIdUser).first();
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId("analysis")
@@ -2615,13 +2617,13 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setPanels(panels.subList(0, 2));
 
         OpenCGAResult<ClinicalAnalysis> result =
-                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(2, result.first().getPanels().size());
         assertFalse(result.first().isPanelLock());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, clinicalAnalysis.getId(),
-                new Interpretation(), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser).first();
+                new Interpretation(), ParamUtils.SaveInterpretationAs.PRIMARY, INCLUDE_RESULT, sessionIdUser).first();
         assertEquals(2, interpretation.getPanels().size());
 
         // Set panelLock to true
@@ -2644,7 +2646,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new Individual()
                         .setId("proband")
                         .setSamples(Collections.singletonList(new Sample().setId("sample"))),
-                QueryOptions.empty(), sessionIdUser).first();
+                INCLUDE_RESULT, sessionIdUser).first();
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId("analysis")
@@ -2653,13 +2655,13 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setPanels(panels.subList(0, 2));
 
         OpenCGAResult<ClinicalAnalysis> result =
-                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(2, result.first().getPanels().size());
         assertFalse(result.first().isPanelLock());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, clinicalAnalysis.getId(),
-                new Interpretation(), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser).first();
+                new Interpretation(), ParamUtils.SaveInterpretationAs.PRIMARY, INCLUDE_RESULT, sessionIdUser).first();
         assertEquals(2, interpretation.getPanels().size());
 
         // Set panelLock to true
@@ -2700,7 +2702,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new Individual()
                         .setId("proband")
                         .setSamples(Collections.singletonList(new Sample().setId("sample"))),
-                QueryOptions.empty(), sessionIdUser).first();
+                INCLUDE_RESULT, sessionIdUser).first();
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId("analysis")
@@ -2710,13 +2712,13 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setPanels(panels.subList(0, 2));
 
         OpenCGAResult<ClinicalAnalysis> result =
-                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(2, result.first().getPanels().size());
         assertTrue(result.first().isPanelLock());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, clinicalAnalysis.getId(),
-                new Interpretation(), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser).first();
+                new Interpretation(), ParamUtils.SaveInterpretationAs.PRIMARY, INCLUDE_RESULT, sessionIdUser).first();
         assertEquals(2, interpretation.getPanels().size());
 
         thrown.expect(CatalogException.class);
@@ -2733,7 +2735,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 new Individual()
                         .setId("proband")
                         .setSamples(Collections.singletonList(new Sample().setId("sample"))),
-                QueryOptions.empty(), sessionIdUser).first();
+                INCLUDE_RESULT, sessionIdUser).first();
 
         ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
                 .setId("analysis")
@@ -2742,13 +2744,13 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setPanels(panels.subList(0, 2));
 
         OpenCGAResult<ClinicalAnalysis> result =
-                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, result.getNumResults());
         assertEquals(2, result.first().getPanels().size());
         assertFalse(result.first().isPanelLock());
 
         Interpretation interpretation = catalogManager.getInterpretationManager().create(STUDY, clinicalAnalysis.getId(),
-                new Interpretation(), ParamUtils.SaveInterpretationAs.PRIMARY, QueryOptions.empty(), sessionIdUser).first();
+                new Interpretation(), ParamUtils.SaveInterpretationAs.PRIMARY, INCLUDE_RESULT, sessionIdUser).first();
         assertEquals(2, interpretation.getPanels().size());
 
         // Ensure this fails
@@ -2780,7 +2782,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setType(ClinicalAnalysis.Type.SINGLE)
                 .setProband(individual);
         OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis,
-                QueryOptions.empty(), sessionIdUser);
+                INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, clinical.getNumResults());
         assertEquals(4, clinical.first().getFiles().size());
         for (File file : clinical.first().getFiles()) {
@@ -2809,7 +2811,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .setType(ClinicalAnalysis.Type.SINGLE)
                 .setProband(individual);
         OpenCGAResult<ClinicalAnalysis> clinical = catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis,
-                QueryOptions.empty(), sessionIdUser);
+                INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, clinical.getNumResults());
         assertEquals(4, clinical.first().getFiles().size());
 

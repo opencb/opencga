@@ -94,10 +94,16 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/create")
-    @ApiOperation(value = "Create sample", response = Sample.class,
-            notes = "Create a sample and optionally associate it to an existing individual.")
+    @ApiOperation(value = "Create sample", response = Sample.class, notes = "Create a sample and optionally associate it to an existing individual.")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response createSamplePOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(value = "JSON containing sample information", required = true) SampleCreateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new SampleCreateParams());

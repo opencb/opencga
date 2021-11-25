@@ -55,7 +55,15 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @POST
     @Path("/create")
     @ApiOperation(value = "Create a new project", response = Project.class)
-    public Response createProjectPOST(@ApiParam(value = "JSON containing the mandatory parameters", required = true) ProjectCreateParams project) {
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
+    public Response createProjectPOST(
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = "JSON containing the mandatory parameters", required = true) ProjectCreateParams project) {
         try {
             ObjectUtils.defaultIfNull(project, new ProjectCreateParams());
 

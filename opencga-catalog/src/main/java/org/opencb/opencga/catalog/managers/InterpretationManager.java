@@ -223,16 +223,18 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
             ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_INTERPRETATION,
                     "Create interpretation '" + interpretation.getId() + "'", TimeUtils.getTime());
-            OpenCGAResult result = interpretationDBAdaptor.insert(study.getUid(), interpretation, saveInterpretationAs,
+            OpenCGAResult<Interpretation> result = interpretationDBAdaptor.insert(study.getUid(), interpretation, saveInterpretationAs,
                     Collections.singletonList(clinicalAudit));
-            OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
-                    QueryOptions.empty());
-            queryResult.setTime(result.getTime() + queryResult.getTime());
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created Interpretation
+                OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
+                        QueryOptions.empty());
+                result.setResults(queryResult.getResults());
+            }
 
             auditManager.auditCreate(userId, Enums.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return queryResult;
+            return result;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

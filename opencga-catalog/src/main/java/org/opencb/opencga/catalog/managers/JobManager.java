@@ -248,6 +248,8 @@ public class JobManager extends ResourceManager<Job> {
                 .append("options", options)
                 .append("token", token);
         try {
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
             ParamUtils.checkObj(job, "Job");
@@ -307,12 +309,16 @@ public class JobManager extends ResourceManager<Job> {
             }
 
             job.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.JOB));
-            jobDBAdaptor.insert(study.getUid(), job, options);
-            OpenCGAResult<Job> queryResult = getJob(study.getUid(), job.getUuid(), options);
+            OpenCGAResult<Job> insert = jobDBAdaptor.insert(study.getUid(), job, options);
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created job
+                OpenCGAResult<Job> queryResult = getJob(study.getUid(), job.getUuid(), options);
+                insert.setResults(queryResult.getResults());
+            }
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return queryResult;
+            return insert;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

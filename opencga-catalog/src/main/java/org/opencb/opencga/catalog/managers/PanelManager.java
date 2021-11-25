@@ -194,11 +194,16 @@ public class PanelManager extends ResourceManager<Panel> {
 
             options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-            panelDBAdaptor.insert(study.getUid(), panel, options);
+            OpenCGAResult<Panel> insert = panelDBAdaptor.insert(study.getUid(), panel, options);
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created panel
+                OpenCGAResult<Panel> result = getPanel(study.getUid(), panel.getUuid(), options);
+                insert.setResults(result.getResults());
+            }
             auditManager.auditCreate(userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return getPanel(study.getUid(), panel.getUuid(), options);
+            return insert;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.DISEASE_PANEL, panel.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
