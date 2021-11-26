@@ -42,7 +42,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
@@ -122,9 +122,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public static final QueryParam PANEL =
             QueryParam.create("panel", PANEL_DESC, QueryParam.Type.TEXT);
     public static final String PANEL_MOI_DESC = "Filter genes from specific panels that match certain mode of inheritance. " +
-                    "Accepted values : "
-                    + "[ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, "
-                    + "deNovo, mendelianError, compoundHeterozygous ]";
+            "Accepted values : "
+            + "[ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, "
+            + "deNovo, mendelianError, compoundHeterozygous ]";
     public static final QueryParam PANEL_MODE_OF_INHERITANCE =
             QueryParam.create("panelModeOfInheritance", PANEL_MOI_DESC
                     , QueryParam.Type.TEXT);
@@ -157,7 +157,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             PANEL_ROLE_IN_CANCER,
             PANEL_INTERSECTION,
             SAVED_FILTER
-            );
+    );
 
 //    public enum SegregationMode {
 //        AUTOSOMAL_DOMINANT("monoallelic"),
@@ -238,10 +238,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
     /**
      * Transforms a high level Query to a query fully understandable by storage.
-     * @param query     High level query. Will be modified by the method.
-     * @param queryOptions   Query options. Won't be modified
-     * @param token User's session id
-     * @return          Modified input query (same instance)
+     *
+     * @param query        High level query. Will be modified by the method.
+     * @param queryOptions Query options. Won't be modified
+     * @param token        User's session id
+     * @return Modified input query (same instance)
      * @throws CatalogException if there is any catalog error
      */
     public Query parseQuery(Query query, QueryOptions queryOptions, String token) throws CatalogException {
@@ -250,11 +251,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
     /**
      * Transforms a high level Query to a query fully understandable by storage.
-     * @param query     High level query. Will be modified by the method.
-     * @param queryOptions   Query options. Won't be modified
-     * @param cellBaseUtils  Cellbase utils
-     * @param token User's session id
-     * @return          Modified input query (same instance)
+     *
+     * @param query         High level query. Will be modified by the method.
+     * @param queryOptions  Query options. Won't be modified
+     * @param cellBaseUtils Cellbase utils
+     * @param token         User's session id
+     * @return Modified input query (same instance)
      * @throws CatalogException if there is any catalog error
      */
     public Query parseQuery(Query query, QueryOptions queryOptions, CellBaseUtils cellBaseUtils, String token) throws CatalogException {
@@ -411,10 +413,10 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                                     + "Family members: " + actualFamilyMembers);
                 }
             }
-            for (Iterator<Individual> iterator = family.getMembers().iterator(); iterator.hasNext();) {
+            for (Iterator<Individual> iterator = family.getMembers().iterator(); iterator.hasNext(); ) {
                 Individual member = iterator.next();
                 int numSamples = 0;
-                for (Iterator<Sample> sampleIt = member.getSamples().iterator(); sampleIt.hasNext();) {
+                for (Iterator<Sample> sampleIt = member.getSamples().iterator(); sampleIt.hasNext(); ) {
                     Sample sample = sampleIt.next();
                     long uid = sample.getUid();
                     if (indexedSampleUids.contains(uid)) {
@@ -436,8 +438,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
             List<Sample> samples = catalogManager.getSampleManager().search(defaultStudyStr,
                     new Query(SampleDBAdaptor.QueryParams.UID.key(), sampleUids), new QueryOptions(INCLUDE, Arrays.asList(
-                    SampleDBAdaptor.QueryParams.ID.key(),
-                    SampleDBAdaptor.QueryParams.UID.key())), token).getResults();
+                            SampleDBAdaptor.QueryParams.ID.key(),
+                            SampleDBAdaptor.QueryParams.UID.key())), token).getResults();
             Map<Long, Sample> sampleMap = samples.stream().collect(Collectors.toMap(Sample::getUid, s -> s));
 
             // By default, include all samples from the family
@@ -651,7 +653,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     if (panel.getRegions() != null) {
                         for (DiseasePanel.RegionPanel region : panel.getRegions()) {
                             for (DiseasePanel.Coordinate coordinate : region.getCoordinates()) {
-                                if (coordinate  .getAssembly().equalsIgnoreCase(assembly)) {
+                                if (coordinate.getAssembly().equalsIgnoreCase(assembly)) {
                                     panelRegions.add(Region.parseRegion(coordinate.getLocation()));
                                 }
                             }
@@ -880,10 +882,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
     /**
      * Gets the individual ID given an individual or sample id.
+     *
      * @param study             study
      * @param individuaOrSample either an individual or sample
      * @param token             user's token
-     * @return                  individualId
+     * @return individualId
      * @throws CatalogException on catalog exception
      */
     private String toIndividualId(String study, String individuaOrSample, String token) throws CatalogException {
@@ -1256,6 +1259,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         /**
          * Splits the value from the query (if any) and translates the IDs to numerical Ids.
          * If a release value is given, checks that every element is part of that release.
+         *
          * @param query        Query with the data
          * @param param        Param to modify
          * @param release      Release filter, if any
@@ -1398,8 +1402,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         file -> ((int) file.getInternal().getIndex().getRelease()), file -> {
                             if (file.getInternal().getIndex() == null
                                     || file.getInternal().getIndex().getStatus() == null
-                                    || file.getInternal().getIndex().getStatus().getName() == null
-                                    || !file.getInternal().getIndex().getStatus().getName().equals(Status.READY)) {
+                                    || file.getInternal().getIndex().getStatus().getId() == null
+                                    || !file.getInternal().getIndex().getStatus().getId().equals(InternalStatus.READY)) {
                                 throw new VariantQueryException("File '" + file.getName() + "' is not indexed");
                             }
                         },

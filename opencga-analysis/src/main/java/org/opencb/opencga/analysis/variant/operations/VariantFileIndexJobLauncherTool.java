@@ -81,7 +81,7 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
                                 new Query()
                                         .append(JobDBAdaptor.QueryParams.INPUT.key(), file.getId())
                                         .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), VariantIndexOperationTool.ID)
-                                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Arrays.asList(
+                                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Arrays.asList(
                                                 Enums.ExecutionStatus.RUNNING,
                                                 Enums.ExecutionStatus.QUEUED,
                                                 Enums.ExecutionStatus.ERROR,
@@ -93,7 +93,7 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
                                 getToken());
 
                 long errorJobs = jobsFromFile.getResults().stream()
-                        .filter(j -> j.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.ERROR)).count();
+                        .filter(j -> j.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ERROR)).count();
                 long runningJobs = jobsFromFile.getNumResults() - errorJobs;
                 if (runningJobs == 0) {
                     // The file is not indexed and it's not in any pending job.
@@ -146,10 +146,10 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
         if (file.getInternal() == null
                 || file.getInternal().getIndex() == null
                 || file.getInternal().getIndex().getStatus() == null
-                || file.getInternal().getIndex().getStatus().getName() == null) {
+                || file.getInternal().getIndex().getStatus().getId() == null) {
             indexStatus = FileIndex.IndexStatus.NONE;
         } else {
-            indexStatus = file.getInternal().getIndex().getStatus().getName();
+            indexStatus = file.getInternal().getIndex().getStatus().getId();
         }
         return indexStatus;
     }

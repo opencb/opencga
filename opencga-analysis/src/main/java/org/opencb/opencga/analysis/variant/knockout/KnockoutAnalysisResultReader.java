@@ -55,8 +55,8 @@ public class KnockoutAnalysisResultReader {
         if (!job.getTool().getId().equals(KnockoutAnalysis.ID)) {
             throw new IllegalArgumentException("Input job '" + job.getId() + "' was not produced by Knockout Analysis Tool");
         }
-        if (!job.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.DONE)) {
-            throw new IllegalArgumentException("Unable to query by job with status '" + job.getInternal().getStatus().getName() + "'");
+        if (!job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.DONE)) {
+            throw new IllegalArgumentException("Unable to query by job with status '" + job.getInternal().getStatus().getId() + "'");
         }
         for (org.opencb.opencga.core.models.file.File file : job.getOutput()) {
             if (file.getName().equals(fileName)) {

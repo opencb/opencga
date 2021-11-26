@@ -82,7 +82,7 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
         sampleSolrModel.setCreationMonth(localDate.getMonth().toString());
         sampleSolrModel.setCreationDay(localDate.getDayOfMonth());
         sampleSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
-        sampleSolrModel.setStatus(sample.getInternal().getStatus().getName());
+        sampleSolrModel.setStatus(sample.getInternal().getStatus().getId());
         sampleSolrModel.setSomatic(sample.isSomatic());
 
         if (sample.getPhenotypes() != null) {

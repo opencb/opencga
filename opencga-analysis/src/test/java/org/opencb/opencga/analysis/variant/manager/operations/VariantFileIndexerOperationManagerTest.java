@@ -85,19 +85,19 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
         variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(CohortStatus.NONE, getDefaultCohort(studyId).getInternal().getStatus().getName());
+        assertEquals(CohortStatus.NONE, getDefaultCohort(studyId).getInternal().getStatus().getId());
         VariantSetStats stats = getVariantSetMetrics(getFile(0).getId());
         assertNotEquals(0, stats.getVariantCount().intValue());
 
         variantManager.index(studyId, getFile(1).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(1000, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(CohortStatus.NONE, getDefaultCohort(studyId).getInternal().getStatus().getName());
+        assertEquals(CohortStatus.NONE, getDefaultCohort(studyId).getInternal().getStatus().getId());
         assertNotNull(getVariantSetMetrics(getFile(1).getId()));
 
         queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
         variantManager.index(studyId, getFile(2).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(1500, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getName());
+        assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getId());
         checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
                 dbName, sessionId);
         assertNotNull(getVariantSetMetrics(getFile(2).getId()));
@@ -105,13 +105,13 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), false);
         variantManager.index(studyId, getFile(3).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(2000, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(CohortStatus.INVALID, getDefaultCohort(studyId).getInternal().getStatus().getName());
+        assertEquals(CohortStatus.INVALID, getDefaultCohort(studyId).getInternal().getStatus().getId());
         assertNotNull(getVariantSetMetrics(getFile(3).getId()));
 
         queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
         variantManager.index(studyId, getFile(4).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(2504, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getName());
+        assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getId());
         assertNotNull(getVariantSetMetrics(getFile(4).getId()));
         checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
                 dbName, sessionId);
@@ -130,7 +130,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
         variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getName());
+        assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getId());
         assertNotNull(getVariantSetMetrics(getFile(0).getId()));
 
     }
@@ -146,8 +146,8 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
             fail("Expected StoragePipelineException exception");
         } catch (Exception e) {
             assertEquals(0, getDefaultCohort(studyId).getSamples().size());
-            assertEquals(CohortStatus.NONE, getDefaultCohort(studyId).getInternal().getStatus().getName());
-            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getInternal().getIndex().getStatus().getName());
+            assertEquals(CohortStatus.NONE, getDefaultCohort(studyId).getInternal().getStatus().getId());
+            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getInternal().getIndex().getStatus().getId());
             assertNotNull(getVariantSetMetrics(getFile(0).getId()));
         }
         queryOptions.put(VariantStorageOptions.STATS_AGGREGATION.key(), "none");
@@ -155,7 +155,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         queryOptions.put(VariantFileIndexerOperationManager.LOAD, true);
         variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getName());
+        assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getId());
         assertNotNull(getVariantSetMetrics(getFile(0).getId()));
 
     }

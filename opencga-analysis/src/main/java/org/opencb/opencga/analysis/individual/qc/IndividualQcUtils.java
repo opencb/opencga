@@ -30,7 +30,7 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.Project;
@@ -229,7 +229,7 @@ public class IndividualQcUtils {
             throw new ToolException(e);
         }
         for (Sample individualSample : sampleResult.getResults()) {
-            if (Status.READY.equals(individualSample.getInternal().getStatus().getName())) {
+            if (InternalStatus.READY.equals(individualSample.getInternal().getStatus().getId())) {
                 if (sample != null) {
                     throw new ToolException("More than one valid sample found for individual '" + individualId + "'.");
                 }
@@ -251,7 +251,7 @@ public class IndividualQcUtils {
             throw new ToolException(e);
         }
         for (Sample individualSample : sampleResult.getResults()) {
-            if (Status.READY.equals(individualSample.getInternal().getStatus().getName())) {
+            if (InternalStatus.READY.equals(individualSample.getInternal().getStatus().getId())) {
                 samples.add(individualSample);
             }
         }
@@ -284,7 +284,7 @@ public class IndividualQcUtils {
         if (sampleResult.getNumResults() > 1) {
             throw new ToolException("More than one sample found for ID '" + sampleId + "'.");
         }
-        if (Status.READY.equals(sampleResult.first().getInternal().getStatus())) {
+        if (InternalStatus.READY.equals(sampleResult.first().getInternal().getStatus())) {
             throw new ToolException("Sample '" + sampleId + "' is not valid. It must be READY.");
         }
         return sampleResult.first();

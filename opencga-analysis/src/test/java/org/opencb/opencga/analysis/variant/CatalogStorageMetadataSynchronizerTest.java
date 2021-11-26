@@ -190,7 +190,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         studyConfigurationFactory.synchronizeCatalogStudyFromStorage(sc, sessionId);
 
         nonIndexedFile = catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first();
-        assertEquals(FileIndex.IndexStatus.READY, nonIndexedFile.getInternal().getIndex().getStatus().getName());
+        assertEquals(FileIndex.IndexStatus.READY, nonIndexedFile.getInternal().getIndex().getStatus().getId());
 
 
         nonIndexedFile = files.stream().filter(file -> !indexedFiles.contains(file.getName())).findFirst().orElse(null);
@@ -200,7 +200,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         studyConfigurationFactory.synchronizeCatalogStudyFromStorage(sc, sessionId);
 
         nonIndexedFile = catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first();
-        assertEquals(FileIndex.IndexStatus.INDEXING, nonIndexedFile.getInternal().getIndex().getStatus().getName());
+        assertEquals(FileIndex.IndexStatus.INDEXING, nonIndexedFile.getInternal().getIndex().getStatus().getId());
 
     }
 

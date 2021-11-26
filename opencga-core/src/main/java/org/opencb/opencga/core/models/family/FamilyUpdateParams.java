@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
 
@@ -40,7 +40,7 @@ public class FamilyUpdateParams {
     private List<IndividualReferenceParam> members;
     private Integer expectedSize;
     private FamilyQualityControl qualityControl;
-    private CustomStatusParams status;
+    private StatusParams status;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
 
@@ -48,7 +48,7 @@ public class FamilyUpdateParams {
     }
 
     public FamilyUpdateParams(String id, String name, String description, String creationDate, String modificationDate,
-                              List<IndividualReferenceParam> members, Integer expectedSize, CustomStatusParams status,
+                              List<IndividualReferenceParam> members, Integer expectedSize, StatusParams status,
                               FamilyQualityControl qualityControl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -85,7 +85,7 @@ public class FamilyUpdateParams {
                         ? members.stream().map(m -> new Individual().setId(m.getId()).setUuid(m.getUuid())).collect(Collectors.toList())
                         : null,
                 creationDate, modificationDate, description, members != null ? members.size() : 0, 1, 1, annotationSets,
-                status != null ? status.toCustomStatus() : null, new FamilyInternal(), Collections.emptyMap(), attributes);
+                status != null ? status.toStatus() : null, new FamilyInternal(), Collections.emptyMap(), attributes);
     }
 
     @Override
@@ -169,11 +169,11 @@ public class FamilyUpdateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public FamilyUpdateParams setStatus(CustomStatusParams status) {
+    public FamilyUpdateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

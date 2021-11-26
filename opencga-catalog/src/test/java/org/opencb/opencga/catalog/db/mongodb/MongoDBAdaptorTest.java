@@ -21,6 +21,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -38,7 +39,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -105,7 +105,7 @@ public class MongoDBAdaptorTest extends GenericTest {
 
 //        String database = catalogConfiguration.getDatabase().getDatabase();
         String database;
-        if(StringUtils.isNotEmpty(configuration.getDatabasePrefix())) {
+        if (StringUtils.isNotEmpty(configuration.getDatabasePrefix())) {
             if (!configuration.getDatabasePrefix().endsWith("_")) {
                 database = configuration.getDatabasePrefix() + "_catalog";
             } else {
@@ -192,13 +192,13 @@ public class MongoDBAdaptorTest extends GenericTest {
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr1"), null).first(),
                 new Study("name", "Study name", "ph1", TimeUtils.getTime(), "", null, 0,
                         Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
-                                new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, "",
-                                        FileInternal.init(), 1000, 1),
-                                new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, "",
-                                        FileInternal.init(), 1000, 1)
-                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                        new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, "",
+                                FileInternal.init(), 1000, 1),
+                        new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, "",
+                                FileInternal.init(), 1000, 1)
+                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
-                        null, null, 1, new CustomStatus(), StudyInternal.init(), Collections.emptyMap()), null);
+                        null, null, 1, new Status(), StudyInternal.init(), Collections.emptyMap()), null);
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "Organization", null, new UserInternal(new UserStatus()),
                 new UserQuota(-1, -1, -1, -1), Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new LinkedList<>(),
@@ -219,19 +219,19 @@ public class MongoDBAdaptorTest extends GenericTest {
                         new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                 "data/alignment.bam", null, "Tophat alignment file", FileInternal.init(), 5000, 1)
                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                        Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new CustomStatus(),
+                        Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new Status(),
                         StudyInternal.init(), Collections.emptyMap()), null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
                 new Study("mineco", "MINECO", "mineco", TimeUtils.getTime(), "", null, 0,
                         Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
-                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
-                                        null, "Description", FileInternal.init(), 10, 1),
-                                new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                        File.Bioformat.NONE, "data/file1.txt", null, "Description", FileInternal.init(), 100, 1),
-                                new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
-                                        "data/alignment.bam", null, "Tophat alignment file", FileInternal.init(), 5000, 1)
-                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                        Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new CustomStatus(),
+                        new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
+                                null, "Description", FileInternal.init(), 10, 1),
+                        new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
+                                File.Bioformat.NONE, "data/file1.txt", null, "Description", FileInternal.init(), 100, 1),
+                        new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
+                                "data/alignment.bam", null, "Tophat alignment file", FileInternal.init(), 5000, 1)
+                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                        Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new Status(),
                         StudyInternal.init(), Collections.emptyMap()), null);
 
         QueryOptions options = new QueryOptions("includeStudies", true);

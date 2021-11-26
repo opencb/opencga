@@ -60,11 +60,11 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         EXTERNAL("external", BOOLEAN, ""),
         RELEASE("release", INTEGER, ""),
         STATUS("status", TEXT_ARRAY, ""),
-        STATUS_NAME("status.name", TEXT, ""),
+        STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         STATUS_DESCRIPTION("status.description", TEXT, ""),
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
-        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DESCRIPTION("internal.status.description", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         RELATED_FILES("relatedFiles", TEXT_ARRAY, ""),
@@ -112,6 +112,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
 
         // Fixme: Index attributes
         private static Map<String, QueryParams> map = new HashMap<>();
+
         static {
             for (QueryParams param : QueryParams.values()) {
                 map.put(param.key(), param);
@@ -163,7 +164,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         DESCRIPTION(QueryParams.DESCRIPTION.key()),
         JOB_ID(QueryParams.JOB_ID.key()),
         SOFTWARE(QueryParams.SOFTWARE.key()),
-        STATUS_NAME(QueryParams.INTERNAL_STATUS_NAME.key()),
+        STATUS_NAME(QueryParams.INTERNAL_STATUS_ID.key()),
         SAMPLE_IDS(QueryParams.SAMPLE_IDS.key()),
         URI(QueryParams.URI.key()),
         SIZE(QueryParams.SIZE.key()),
@@ -172,6 +173,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         ANNOTATIONS(AnnotationSetManager.ANNOTATIONS);
 
         private static Map<String, UpdateParams> map;
+
         static {
             map = new LinkedMap();
             for (UpdateParams params : UpdateParams.values()) {
@@ -291,7 +293,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
      * be applied.
      *
-     * @param studyId study id containing the entries affected.
+     * @param studyId          study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
      * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.
@@ -301,11 +303,11 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
     /**
      * Delete file.
      *
-     * @param file File to be deleted.
+     * @param file   File to be deleted.
      * @param status Deletion status we want to set.
      * @return a OpenCGAResult object.
-     * @throws CatalogDBException when the status is not a valid delete status or if there was any problem during the deletion.
-     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogDBException            when the status is not a valid delete status or if there was any problem during the deletion.
+     * @throws CatalogParameterException     if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     OpenCGAResult delete(File file, String status) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
@@ -313,11 +315,11 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
     /**
      * Delete file.
      *
-     * @param query Delete all the files matching the query.
+     * @param query  Delete all the files matching the query.
      * @param status Deletion status we want to set.
      * @return a OpenCGAResult object.
-     * @throws CatalogDBException when the status is not a valid delete status or if there was any problem during the deletion.
-     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogDBException            when the status is not a valid delete status or if there was any problem during the deletion.
+     * @throws CatalogParameterException     if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     OpenCGAResult delete(Query query, String status) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;

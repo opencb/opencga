@@ -69,7 +69,7 @@ public class CatalogFileToSolrFileConverterTest {
         assertEquals(localDate.getDayOfMonth(), fileSolrModel.getCreationDay());
         assertEquals(localDate.getDayOfWeek().toString(), fileSolrModel.getCreationDayOfWeek());
 
-        assert (fileSolrModel.getStatus().equals(file.getInternal().getStatus().getName()));
+        assert (fileSolrModel.getStatus().equals(file.getInternal().getStatus().getId()));
         assert (fileSolrModel.isExternal() == file.isExternal());
         assert (fileSolrModel.getSize() == file.getSize());
         assert (fileSolrModel.getSoftwareName().equals(file.getSoftware().getName()));

@@ -30,7 +30,7 @@ import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FileStatus;
@@ -107,7 +107,7 @@ public class CatalogFileUtilsTest {
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
 
         assertSame("Should not modify the status, so should return the same file.", file, returnedFile);
-        assertEquals(Status.READY, file.getInternal().getStatus().getName());
+        assertEquals(InternalStatus.READY, file.getInternal().getStatus().getId());
 
 //        /** Check READY and existing file **/
 //        catalogFileUtils.upload(sourceUri, file, null, userSessionId, false, false, false, true);
@@ -123,14 +123,14 @@ public class CatalogFileUtilsTest {
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
 
         assertNotSame(file, returnedFile);
-        assertEquals(FileStatus.MISSING, returnedFile.getInternal().getStatus().getName());
+        assertEquals(FileStatus.MISSING, returnedFile.getInternal().getStatus().getId());
 
         /** Check MISSING file still missing **/
         file = catalogManager.getFileManager().get(studyFqn, file.getPath(), null, userSessionId).first();
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
 
-        assertEquals("Should not modify the still MISSING file, so should return the same file.", file.getInternal().getStatus().getName(),
-                returnedFile.getInternal().getStatus().getName());
+        assertEquals("Should not modify the still MISSING file, so should return the same file.", file.getInternal().getStatus().getId(),
+                returnedFile.getInternal().getStatus().getId());
         //assertSame("Should not modify the still MISSING file, so should return the same file.", file, returnedFile);
 
         /** Check MISSING file with found file **/
@@ -141,7 +141,7 @@ public class CatalogFileUtilsTest {
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
 
         assertNotSame(file, returnedFile);
-        assertEquals(FileStatus.READY, returnedFile.getInternal().getStatus().getName());
+        assertEquals(FileStatus.READY, returnedFile.getInternal().getStatus().getId());
 
 //        /** Check TRASHED file with found file **/
 //        FileUpdateParams updateParams = new FileUpdateParams()

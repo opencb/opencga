@@ -1023,7 +1023,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         }
 
         if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.STATUS.key())) {
-            interpretation.setStatus(updateParams.getStatus().toCustomStatus());
+            interpretation.setStatus(updateParams.getStatus().toStatus());
             validateCustomStatusParameters(clinicalAnalysis, interpretation, interpretationConfiguration);
             parameters.put(InterpretationDBAdaptor.QueryParams.STATUS.key(), interpretation.getStatus());
         }
@@ -1393,7 +1393,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         changeQueryId(query, ParamConstants.INTERPRETATION_STATUS_PARAM, InterpretationDBAdaptor.QueryParams.STATUS_ID.key());
         changeQueryId(query, ParamConstants.INTERPRETATION_INTERNAL_STATUS_PARAM,
-                InterpretationDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
+                InterpretationDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key());
 
         if (query.containsKey(ParamConstants.INTERPRETATION_PANELS_PARAM)) {
             List<String> panelList = query.getAsStringList(ParamConstants.INTERPRETATION_PANELS_PARAM);

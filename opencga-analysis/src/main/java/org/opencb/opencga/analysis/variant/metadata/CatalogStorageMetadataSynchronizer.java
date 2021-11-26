@@ -104,9 +104,9 @@ public class CatalogStorageMetadataSynchronizer {
     public static void updateProjectMetadata(CatalogManager catalog, VariantStorageMetadataManager scm, String project, String sessionId)
             throws CatalogException, StorageEngineException {
         final Project p = catalog.getProjectManager().get(project,
-                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                        ProjectDBAdaptor.QueryParams.ORGANISM.key(), ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key())),
-                sessionId)
+                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                                ProjectDBAdaptor.QueryParams.ORGANISM.key(), ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key())),
+                        sessionId)
                 .first();
 
         updateProjectMetadata(scm, p.getOrganism(), p.getCurrentRelease());
@@ -134,11 +134,11 @@ public class CatalogStorageMetadataSynchronizer {
     /**
      * Updates catalog metadata from storage metadata.
      *
-     * @param study                 StudyMetadata
-     * @param files                 Files to update
-     * @param sessionId             User session id
+     * @param study     StudyMetadata
+     * @param files     Files to update
+     * @param sessionId User session id
      * @return if there were modifications in catalog
-     * @throws CatalogException     if there is an error with catalog
+     * @throws CatalogException if there is an error with catalog
      */
     public boolean synchronizeCatalogFilesFromStorage(String study, List<File> files, String sessionId, QueryOptions fileQueryOptions)
             throws CatalogException, StorageEngineException {
@@ -157,11 +157,11 @@ public class CatalogStorageMetadataSynchronizer {
     /**
      * Updates catalog metadata from storage metadata.
      *
-     * @param studyFqn              Study FQN
-     * @param files                 Files to update
-     * @param sessionId             User session id
+     * @param studyFqn  Study FQN
+     * @param files     Files to update
+     * @param sessionId User session id
      * @return if there were modifications in catalog
-     * @throws CatalogException     if there is an error with catalog
+     * @throws CatalogException if there is an error with catalog
      */
     public boolean synchronizeCatalogFilesFromStorage(String studyFqn, List<File> files, String sessionId)
             throws CatalogException {
@@ -192,16 +192,15 @@ public class CatalogStorageMetadataSynchronizer {
 
     /**
      * Updates catalog metadata from storage metadata.
-     *
+     * <p>
      * 1) Update cohort ALL
      * 2) Update cohort status (calculating / invalid)
      * 3) Update file status
      *
-     *
-     * @param study                 StudyMetadata
-     * @param sessionId             User session id
+     * @param study     StudyMetadata
+     * @param sessionId User session id
      * @return if there were modifications in catalog
-     * @throws CatalogException     if there is an error with catalog
+     * @throws CatalogException if there is an error with catalog
      */
     public boolean synchronizeCatalogStudyFromStorage(StudyMetadata study, String sessionId)
             throws CatalogException {
@@ -247,7 +246,7 @@ public class CatalogStorageMetadataSynchronizer {
                     .collect(Collectors.toList());
 
             if (cohortFromCatalog.size() != cohortFromStorage.size() || !cohortFromStorage.containsAll(cohortFromCatalog)) {
-                if (defaultCohort.getInternal().getStatus().getName().equals(CohortStatus.CALCULATING)) {
+                if (defaultCohort.getInternal().getStatus().getId().equals(CohortStatus.CALCULATING)) {
                     String status;
                     if (defaultCohortStorage.isInvalid()) {
                         status = CohortStatus.INVALID;
@@ -285,7 +284,7 @@ public class CatalogStorageMetadataSynchronizer {
                 while (iterator.hasNext()) {
                     Cohort cohort = iterator.next();
                     CohortMetadata storageCohort = calculatedStats.get(cohort.getId());
-                    if (cohort.getInternal().getStatus() != null && cohort.getInternal().getStatus().getName().equals(CohortStatus.INVALID)) {
+                    if (cohort.getInternal().getStatus() != null && cohort.getInternal().getStatus().getId().equals(CohortStatus.INVALID)) {
                         if (cohort.getSamples().size() != storageCohort.getSamples().size()) {
                             // Skip this cohort. This cohort should remain as invalid
                             logger.debug("Skip " + cohort.getId());
@@ -307,7 +306,7 @@ public class CatalogStorageMetadataSynchronizer {
                             continue;
                         }
                     }
-                    if (cohort.getInternal().getStatus() == null || !cohort.getInternal().getStatus().getName().equals(CohortStatus.READY)) {
+                    if (cohort.getInternal().getStatus() == null || !cohort.getInternal().getStatus().getId().equals(CohortStatus.READY)) {
                         logger.debug("Cohort \"{}\" change status to {}", cohort.getId(), CohortStatus.READY);
                         catalogManager.getCohortManager().setStatus(study.getName(), cohort.getId(), CohortStatus.READY,
                                 "Update status from Storage", sessionId);
@@ -329,7 +328,7 @@ public class CatalogStorageMetadataSynchronizer {
                     COHORT_QUERY_OPTIONS, sessionId)) {
                 while (iterator.hasNext()) {
                     Cohort cohort = iterator.next();
-                    if (cohort.getInternal().getStatus() == null || !cohort.getInternal().getStatus().getName().equals(CohortStatus.INVALID)) {
+                    if (cohort.getInternal().getStatus() == null || !cohort.getInternal().getStatus().getId().equals(CohortStatus.INVALID)) {
                         logger.debug("Cohort \"{}\" change status to {}", cohort.getId(), CohortStatus.INVALID);
                         catalogManager.getCohortManager().setStatus(study.getName(), cohort.getId(), CohortStatus.INVALID,
                                 "Update status from Storage", sessionId);
@@ -502,13 +501,13 @@ public class CatalogStorageMetadataSynchronizer {
                                     new Query()
                                             .append(JobDBAdaptor.QueryParams.INPUT.key(), file.getId())
                                             .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), VariantIndexOperationTool.ID)
-                                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING),
+                                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.RUNNING),
                                     new QueryOptions(QueryOptions.INCLUDE, JobDBAdaptor.QueryParams.ID.key()),
                                     sessionId);
                     if (jobsFromFile.getResults().isEmpty()) {
                         final FileIndex index;
                         index = file.getInternal().getIndex() == null ? new FileIndex() : file.getInternal().getIndex();
-                        String prevStatus = index.getStatus().getName();
+                        String prevStatus = index.getStatus().getId();
                         String newStatus;
                         if (hasTransformedFile(index)) {
                             newStatus = IndexStatus.TRANSFORMED;
@@ -570,7 +569,7 @@ public class CatalogStorageMetadataSynchronizer {
     private boolean synchronizeIndexedFile(StudyMetadata study, String sessionId, boolean modified, Map<String, Set<String>> fileSamplesMap, File file) throws CatalogException {
         String status = file.getInternal().getIndex() == null || file.getInternal().getIndex().getStatus() == null
                 ? IndexStatus.NONE
-                : file.getInternal().getIndex().getStatus().getName();
+                : file.getInternal().getIndex().getStatus().getId();
         if (!status.equals(IndexStatus.READY)) {
             final FileIndex index;
             index = file.getInternal().getIndex() == null ? new FileIndex() : file.getInternal().getIndex();
@@ -578,7 +577,7 @@ public class CatalogStorageMetadataSynchronizer {
                 index.setStatus(new IndexStatus());
             }
             logger.debug("File \"{}\" change status from {} to {}", file.getName(), status, IndexStatus.READY);
-            index.getStatus().setName(IndexStatus.READY);
+            index.getStatus().setId(IndexStatus.READY);
             catalogManager.getFileManager()
                     .updateFileIndexStatus(file, IndexStatus.READY, "Indexed, regarding Storage Metadata", sessionId);
             modified = true;

@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.IOUtils.humanReadableByteCount;
 import static org.opencb.opencga.core.models.common.Enums.ExecutionStatus.RUNNING;
-import static org.opencb.opencga.core.models.common.Status.READY;
+import static org.opencb.opencga.core.models.common.InternalStatus.READY;
 
 /**
  * Created by pfurio on 28/11/16.
@@ -236,7 +236,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumn("ASSEMBLY", p -> p.getOrganism().getAssembly(), "NA")
                 .addColumn("DESCRIPTION", Project::getDescription)
                 .addColumnNumber("#STUDIES", p -> p.getStudies().size())
-                .addColumn("STATUS", p -> p.getInternal().getStatus().getName())
+                .addColumn("STATUS", p -> p.getInternal().getStatus().getId())
                 .printTable(unwind(queryResultList));
     }
 
@@ -253,7 +253,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumnNumber("#INDIVIDUALS", s -> s.getIndividuals().size())
                 .addColumnNumber("#JOBS", s -> s.getJobs().size())
                 .addColumnNumber("#VARIABLE_SETS", s -> s.getVariableSets().size())
-                .addColumn("STATUS", s -> s.getInternal().getStatus().getName());
+                .addColumn("STATUS", s -> s.getInternal().getStatus().getId());
 
         table.printTable(queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList()));
     }
@@ -276,9 +276,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumn("DESCRIPTION", File::getDescription)
                 .addColumn("CATALOG_PATH", File::getPath)
                 .addColumn("FILE_SYSTEM_URI", file -> file.getUri().toString())
-                .addColumn("STATUS", f -> f.getInternal().getStatus().getName())
+                .addColumn("STATUS", f -> f.getInternal().getStatus().getId())
                 .addColumnNumber("SIZE", File::getSize)
-                .addColumn("INDEX_STATUS", f -> f.getInternal().getIndex().getStatus().getName(), "NA")
+                .addColumn("INDEX_STATUS", f -> f.getInternal().getIndex().getStatus().getId(), "NA")
                 .addColumn("RELATED_FILES", f -> f.getRelatedFiles().stream().map(rf -> rf.getFile().getName()).collect(Collectors.joining(",")))
                 .addColumn("SAMPLES", f -> StringUtils.join(f.getSampleIds(), ","));
 
@@ -289,7 +289,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         Table<Sample> table = new Table<Sample>(tableType)
                 .addColumn("ID", Sample::getId)
                 .addColumn("DESCRIPTION", Sample::getDescription)
-                .addColumn("STATUS", s -> s.getInternal().getStatus().getName())
+                .addColumn("STATUS", s -> s.getInternal().getStatus().getId())
                 .addColumn("INDIVIDUAL_ID", Sample::getIndividualId);
 
         table.printTable(unwind(queryResultList));
@@ -300,7 +300,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumn("ID", Cohort::getId)
                 .addColumnEnum("TYPE", Cohort::getType)
                 .addColumn("DESCRIPTION", Cohort::getDescription)
-                .addColumn("STATUS", c -> c.getInternal().getStatus().getName())
+                .addColumn("STATUS", c -> c.getInternal().getStatus().getId())
                 .addColumnNumber("TOTAL_SAMPLES", c -> c.getSamples().size())
                 .addColumn("SAMPLES", c -> c.getSamples().stream().map(Sample::getId).collect(Collectors.joining(",")));
 
@@ -317,7 +317,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumn("POPULATION", i -> i.getPopulation().getName(), "NA")
                 .addColumn("SUBPOPULATION", i -> i.getPopulation().getSubpopulation(), "NA")
                 .addColumnEnum("LIFE_STATUS", Individual::getLifeStatus)
-                .addColumn("STATUS", i -> i.getInternal().getStatus().getName())
+                .addColumn("STATUS", i -> i.getInternal().getStatus().getId())
                 .addColumn("FATHER_ID", i -> i.getFather().getId())
                 .addColumn("MOTHER_ID", i -> i.getMother().getId())
                 .addColumn("CREATION_DATE", Individual::getCreationDate);
@@ -381,9 +381,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
     public enum JobColumns implements TableSchema<Job> {
         ID(new Table.TableColumnSchema<>("ID", Job::getId, 60)),
         TOOL_ID(new Table.TableColumnSchema<>("Tool id", job -> job.getTool().getId())),
-        STATUS(new Table.TableColumnSchema<>("Status", job -> job.getInternal().getStatus().getName())),
+        STATUS(new Table.TableColumnSchema<>("Status", job -> job.getInternal().getStatus().getId())),
         STEP(new Table.TableColumnSchema<>("Step", job -> {
-            if (job.getInternal().getStatus().getName().equals(RUNNING)) {
+            if (job.getInternal().getStatus().getId().equals(RUNNING)) {
                 String currentStep = job.getExecution().getStatus().getStep();
                 int currentStepPosition = 0;
                 for (int i = 0; i < job.getExecution().getSteps().size(); i++) {
@@ -423,7 +423,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 ? SIMPLE_DATE_FORMAT.format(getStart(job)) : "")),
         END(new Table.TableColumnSchema<>("End", job -> getEnd(job) != null
                 ? SIMPLE_DATE_FORMAT.format(getEnd(job)) : "")),
-        INPUT(new Table.TableColumnSchema<>("Input",  j -> j.getInput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
+        INPUT(new Table.TableColumnSchema<>("Input", j -> j.getInput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
         OUTPUT(new Table.TableColumnSchema<>("Output", j -> j.getOutput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
         OUTPUT_DIRECTORY(new Table.TableColumnSchema<>("Output directory", j -> j.getOutDir().getPath(), 45));
 
@@ -450,7 +450,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     return job.getExecution().getEnd();
                 } else {
                     if (job.getInternal() != null && job.getInternal().getStatus() != null) {
-                        if (Enums.ExecutionStatus.ERROR.equals(job.getInternal().getStatus().getName())
+                        if (Enums.ExecutionStatus.ERROR.equals(job.getInternal().getStatus().getId())
                                 && StringUtils.isNotEmpty(job.getInternal().getStatus().getDate())) {
                             return TimeUtils.toDate(job.getInternal().getStatus().getDate());
                         }
@@ -525,8 +525,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 sb.append("  [");
                 if (file.getInternal() != null
                         && file.getInternal().getStatus() != null
-                        && !READY.equals(file.getInternal().getStatus().getName())) {
-                    sb.append(file.getInternal().getStatus().getName()).append(", ");
+                        && !READY.equals(file.getInternal().getStatus().getId())) {
+                    sb.append(file.getInternal().getStatus().getId()).append(", ");
                 }
                 sb.append(humanReadableByteCount(file.getSize(), false)).append("]");
 
@@ -536,7 +536,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
             sb.append("\n");
 
             if (file.getType() == File.Type.DIRECTORY) {
-                printRecursiveTree(fileTree.getChildren(), sb, indent + (iterator.hasNext()? "│   " : "    "));
+                printRecursiveTree(fileTree.getChildren(), sb, indent + (iterator.hasNext() ? "│   " : "    "));
             }
         }
     }

@@ -40,7 +40,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileCreateParams;
@@ -185,10 +185,10 @@ public class VariantCatalogQueryUtilsTest {
 
         myPanelWithRegions = new Panel("MyPanelWithRegions", "MyPanelWithRegions", 1);
         myPanelWithRegions.setGenes(
-                Arrays.asList(
-                        new GenePanel().setName("BRCA2"),
-                        new GenePanel().setName("ADSL")
-                ))
+                        Arrays.asList(
+                                new GenePanel().setName("BRCA2"),
+                                new GenePanel().setName("ADSL")
+                        ))
                 .setRegions(Arrays.asList(
                         ((DiseasePanel.RegionPanel) new DiseasePanel.RegionPanel().setCoordinates(Arrays.asList(
                                 new DiseasePanel.Coordinate(assembly, "1:1000-2000", null)))),
@@ -221,7 +221,7 @@ public class VariantCatalogQueryUtilsTest {
                 true, sessionId).first();
         if (indexed) {
             int release = catalog.getProjectManager().get("p1", null, sessionId).first().getCurrentRelease();
-            catalog.getFileManager().updateFileIndexStatus(file, Status.READY, "", release, sessionId);
+            catalog.getFileManager().updateFileIndexStatus(file, InternalStatus.READY, "", release, sessionId);
         }
         return file;
     }

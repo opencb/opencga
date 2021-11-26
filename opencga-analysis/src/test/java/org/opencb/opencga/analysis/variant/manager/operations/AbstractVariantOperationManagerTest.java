@@ -254,7 +254,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             copyResults(Paths.get(tmpOutdir), studyId, outputId, sessionId);
         }
         inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
-        assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getInternal().getIndex().getStatus().getName());
+        assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getInternal().getIndex().getStatus().getId());
         assertNotNull(inputFile.getQualityControl().getVariant().getVariantSetMetrics());
 
         // Default cohort should not be modified
@@ -309,7 +309,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             assertTrue(samplesInCohort.containsAll(file.getSampleIds()));
         }
         if (calculateStats) {
-            assertEquals(CohortStatus.READY, defaultCohort.getInternal().getStatus().getName());
+            assertEquals(CohortStatus.READY, defaultCohort.getInternal().getStatus().getId());
             checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);
         }
         return etlResults;
@@ -354,7 +354,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             assertThat(samplesInCohort, hasItems(file.getSampleIds().toArray(new String[0])));
         }
         if (calculateStats) {
-            assertEquals(CohortStatus.READY, defaultCohort.getInternal().getStatus().getName());
+            assertEquals(CohortStatus.READY, defaultCohort.getInternal().getStatus().getId());
             checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);
         }
 
@@ -434,7 +434,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
                 indexedFileId = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
                         indexedFileUid), new QueryOptions(), sessionId).first().getId();
             }
-            assertEquals(expectedStatus, catalogManager.getFileManager().get(studyId, indexedFileId, null, sessionId).first().getInternal().getIndex().getStatus().getName());
+            assertEquals(expectedStatus, catalogManager.getFileManager().get(studyId, indexedFileId, null, sessionId).first().getInternal().getIndex().getStatus().getId());
             System.out.println("etlResult = " + etlResult);
         }
     }

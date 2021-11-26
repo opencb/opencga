@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.*;
@@ -37,9 +38,8 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualQualityControl;
@@ -831,7 +831,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new Job().setId("job3").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.UNREGISTERED))),
                 QueryOptions.empty(), token);
 
-        query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
+        query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.PENDING);
         DataResult<Job> unfinishedJobs = catalogManager.getJobManager().search(String.valueOf(studyId), query, null, token);
         assertEquals(2, unfinishedJobs.getNumResults());
 
@@ -914,7 +914,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 token);
 
         assertEquals(1, job.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PENDING, job.first().getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PENDING, job.first().getInternal().getStatus().getId());
     }
 
     @Test
@@ -946,13 +946,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 token);
 
         assertEquals(1, job.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PENDING, job.first().getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PENDING, job.first().getInternal().getStatus().getId());
     }
 
     @Test
     public void submitJobWithoutPermissions() throws CatalogException {
         // Check there are no ABORTED jobs
-        Query query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.ABORTED);
+        Query query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.ABORTED);
         assertEquals(0, catalogManager.getJobManager().count(studyFqn, query, token).getNumMatches());
 
         // Grant view permissions, but no EXECUTION permission
@@ -975,7 +975,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void submitJobWithPermissions() throws CatalogException {
         // Check there are no ABORTED jobs
-        Query query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.ABORTED);
+        Query query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.ABORTED);
         assertEquals(0, catalogManager.getJobManager().count(studyFqn, query, token).getNumMatches());
 
         // Grant view permissions, but no EXECUTION permission
@@ -985,7 +985,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 sessionIdUser3);
         assertEquals(1, search.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getId());
     }
 
     @Test
@@ -997,7 +997,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 sessionIdUser3);
         assertEquals(1, search.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getId());
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("stop the job");
@@ -1213,7 +1213,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 token).first();
         Cohort myCohort = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort")
                 .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3))
-                .setStatus(new CustomStatus("custom", "description", TimeUtils.getTime())), null, token).first();
+                .setStatus(new Status("custom", "custom", "description", TimeUtils.getTime())), null, token).first();
 
         assertEquals("MyCohort", myCohort.getId());
         assertEquals(3, myCohort.getSamples().size());
@@ -1670,7 +1670,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 .append(CohortDBAdaptor.QueryParams.UID.key(), myCohort.getUid())
                 .append(CohortDBAdaptor.QueryParams.DELETED.key(), true);
         Cohort cohort = catalogManager.getCohortManager().search(studyId, query, null, token).first();
-        assertEquals(Status.DELETED, cohort.getInternal().getStatus().getName());
+        assertEquals(InternalStatus.DELETED, cohort.getInternal().getStatus().getId());
     }
 
     @Test
@@ -1715,7 +1715,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         query = new Query(SampleDBAdaptor.QueryParams.ID.key(), "~^SAM");
         myCohort = catalogManager.getCohortManager().generate(studyId, query, new Cohort()
                 .setId("MyCohort2")
-                .setStatus(new CustomStatus("custom", "description", TimeUtils.getTime())), null, token).first();
+                .setStatus(new Status("custom", "custom", "description", TimeUtils.getTime())), null, token).first();
         assertEquals(3, myCohort.getSamples().size());
         assertNotNull(myCohort.getStatus());
         assertEquals("custom", myCohort.getStatus().getName());

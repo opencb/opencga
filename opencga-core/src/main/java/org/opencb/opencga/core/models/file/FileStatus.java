@@ -16,18 +16,17 @@
 
 package org.opencb.opencga.core.models.file;
 
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 
 import java.util.Arrays;
 import java.util.List;
 
-public class FileStatus extends Status {
+public class FileStatus extends InternalStatus {
 
     /**
      * TRASHED name means that the object is marked as deleted although is still available in the database.
      */
     public static final String TRASHED = "TRASHED";
-
     public static final String STAGE = "STAGE";
     public static final String MISSING = "MISSING";
     public static final String PENDING_DELETE = "PENDING_DELETE";
@@ -55,7 +54,7 @@ public class FileStatus extends Status {
     }
 
     public static boolean isValid(String status) {
-        if (Status.isValid(status)) {
+        if (InternalStatus.isValid(status)) {
             return true;
         }
         if (status != null && (status.equals(STAGE) || status.equals(MISSING) || status.equals(TRASHED)

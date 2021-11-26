@@ -1383,7 +1383,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.CONSENT.key(), clinicalAnalysis.getConsent());
         }
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key())) {
-            clinicalAnalysis.setStatus(updateParams.getStatus().toCustomStatus());
+            clinicalAnalysis.setStatus(updateParams.getStatus().toStatus());
             validateCustomStatusParameters(clinicalAnalysis, clinicalConfiguration);
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key(), clinicalAnalysis.getStatus());
         }
@@ -1510,7 +1510,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL_SUMMARY.key());
         changeQueryId(query, ParamConstants.CLINICAL_STATUS_PARAM, ClinicalAnalysisDBAdaptor.QueryParams.STATUS_ID.key());
         changeQueryId(query, ParamConstants.CLINICAL_INTERNAL_STATUS_PARAM,
-                ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
+                ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key());
 
         if (query.containsKey(ParamConstants.CLINICAL_PANELS_PARAM)) {
             List<String> panelList = query.getAsStringList(ParamConstants.CLINICAL_PANELS_PARAM);

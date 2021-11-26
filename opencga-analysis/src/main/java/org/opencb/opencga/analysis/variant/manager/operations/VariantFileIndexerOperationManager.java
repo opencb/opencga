@@ -369,7 +369,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
             if (indexedFile.getInternal().getIndex() != null) {
                 FileIndex index = indexedFile.getInternal().getIndex();
-                switch (index.getStatus().getName()) {
+                switch (index.getStatus().getId()) {
                     case FileIndex.IndexStatus.NONE:
                     case FileIndex.IndexStatus.TRANSFORMED:
                         indexStatusMessage = "Unexpected index status. Expected " + FileIndex.IndexStatus.TRANSFORMING + ", "
@@ -377,7 +377,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                                 + index.getStatus();
                         logger.warn(indexStatusMessage);
                     case FileIndex.IndexStatus.READY: //Do not show warn message when index status is READY.
-                        indexStatusName = index.getStatus().getName();
+                        indexStatusName = index.getStatus().getId();
                         break;
                     case FileIndex.IndexStatus.TRANSFORMING:
                         if (jobFailed) {
@@ -425,7 +425,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                         }
                         break;
                     default:
-                        throw new IllegalStateException("Unknown Index Status " + index.getStatus().getName());
+                        throw new IllegalStateException("Unknown Index Status " + index.getStatus().getId());
                 }
             } else {
                 logger.error("The execution should never get into this condition. Critical error.");
@@ -538,7 +538,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
     private String updateDefaultCohortStatus(String study, String status, String sessionId) throws CatalogException {
         Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
         Cohort defaultCohort = catalogManager.getCohortManager().search(study, query, new QueryOptions(), sessionId).first();
-        String prevStatus = defaultCohort.getInternal().getStatus().getName();
+        String prevStatus = defaultCohort.getInternal().getStatus().getId();
 
         catalogManager.getCohortManager().setStatus(study, defaultCohort.getId(), status, null,
                 sessionId);
@@ -560,10 +560,10 @@ public class VariantFileIndexerOperationManager extends OperationManager {
 
         List<File> filteredFiles = new ArrayList<>(fileList.size());
         for (File file : fileList) {
-            if (file.getInternal().getStatus().getName().equals(FileStatus.READY) && OperationManager.isVcfFormat(file)) {
+            if (file.getInternal().getStatus().getId().equals(FileStatus.READY) && OperationManager.isVcfFormat(file)) {
                 String indexStatus;
-                if (file.getInternal().getIndex() != null && file.getInternal().getIndex().getStatus() != null && file.getInternal().getIndex().getStatus().getName() != null) {
-                    indexStatus = file.getInternal().getIndex().getStatus().getName();
+                if (file.getInternal().getIndex() != null && file.getInternal().getIndex().getStatus() != null && file.getInternal().getIndex().getStatus().getId() != null) {
+                    indexStatus = file.getInternal().getIndex().getStatus().getId();
                 } else {
                     indexStatus = FileIndex.IndexStatus.NONE;
                 }
@@ -600,7 +600,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
                 }
             } else {
                 logger.warn("Skip file " + file.getName() + " with format " + file.getFormat() + " and status "
-                        + file.getInternal().getStatus().getName());
+                        + file.getInternal().getStatus().getId());
             }
         }
         return filteredFiles;
@@ -657,7 +657,7 @@ public class VariantFileIndexerOperationManager extends OperationManager {
             if (OperationManager.isVcfFormat(file)) {
                 String status = file.getInternal().getIndex() == null || file.getInternal().getIndex().getStatus() == null ?
                         FileIndex.IndexStatus.NONE
-                        : file.getInternal().getIndex().getStatus().getName();
+                        : file.getInternal().getIndex().getStatus().getId();
                 switch (status) {
                     case FileIndex.IndexStatus.NONE:
                         if (transformedFiles != null) {

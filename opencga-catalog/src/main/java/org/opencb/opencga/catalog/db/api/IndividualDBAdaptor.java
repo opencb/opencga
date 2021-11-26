@@ -56,11 +56,11 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         SAMPLE_VERSION("samples.version", INTEGER, ""),
         ETHNICITY("ethnicity", TEXT, ""),
         STATUS("status", TEXT_ARRAY, ""),
-        STATUS_NAME("status.name", TEXT, ""),
+        STATUS_ID("status.id", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         STATUS_DESCRIPTION("status.description", TEXT, ""),
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
-        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         INTERNAL_RGA("internal.rga", OBJECT, ""),
         POPULATION_NAME("population.name", TEXT, ""),
@@ -101,6 +101,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         ANNOTATION("annotation", TEXT, "");
 
         private static Map<String, QueryParams> map;
+
         static {
             map = new LinkedMap();
             for (QueryParams params : QueryParams.values()) {
@@ -173,7 +174,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
      * be applied.
      *
-     * @param studyId study id containing the entries affected.
+     * @param studyId          study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
      * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.

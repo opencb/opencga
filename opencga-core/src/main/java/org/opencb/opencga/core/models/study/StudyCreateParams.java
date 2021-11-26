@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models.study;
 
-import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.StatusParams;
 
 import java.util.Map;
 
@@ -29,14 +29,14 @@ public class StudyCreateParams {
     private String creationDate;
     private String modificationDate;
     private StudyNotification notification;
-    private CustomStatusParams status;
+    private StatusParams status;
     private Map<String, Object> attributes;
 
     public StudyCreateParams() {
     }
 
     public StudyCreateParams(String id, String name, String alias, String description, String creationDate, String modificationDate,
-                             StudyNotification notification, Map<String, Object> attributes, CustomStatusParams status) {
+                             StudyNotification notification, Map<String, Object> attributes, StatusParams status) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -50,7 +50,7 @@ public class StudyCreateParams {
 
     public static StudyCreateParams of(Study study) {
         return new StudyCreateParams(study.getId(), study.getName(), study.getAlias(), study.getDescription(), study.getCreationDate(),
-                study.getModificationDate(), study.getNotification(), study.getAttributes(), CustomStatusParams.of(study.getStatus()));
+                study.getModificationDate(), study.getNotification(), study.getAttributes(), StatusParams.of(study.getStatus()));
     }
 
     public Study toStudy() {
@@ -62,7 +62,7 @@ public class StudyCreateParams {
                 .setCreationDate(creationDate)
                 .setModificationDate(modificationDate)
                 .setNotification(notification)
-                .setStatus(status != null ? status.toCustomStatus() : null)
+                .setStatus(status != null ? status.toStatus() : null)
                 .setAttributes(attributes);
     }
 
@@ -145,11 +145,11 @@ public class StudyCreateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public StudyCreateParams setStatus(CustomStatusParams status) {
+    public StudyCreateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

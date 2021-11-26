@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.core.models.user;
 
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 
 import java.util.Arrays;
 import java.util.List;
 
-public class UserStatus extends Status {
+public class UserStatus extends InternalStatus {
 
     public static final String BANNED = "BANNED";
 
@@ -44,7 +44,7 @@ public class UserStatus extends Status {
     }
 
     public static boolean isValid(String status) {
-        if (Status.isValid(status)) {
+        if (InternalStatus.isValid(status)) {
             return true;
         }
         if (status != null && (status.equals(BANNED))) {

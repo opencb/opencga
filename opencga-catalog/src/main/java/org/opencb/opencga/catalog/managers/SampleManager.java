@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.*;
@@ -43,7 +44,6 @@ import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.family.Family;
@@ -202,7 +202,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         sample.setIndividualId(ParamUtils.defaultObject(sample.getIndividualId(), ""));
         sample.setFileIds(ParamUtils.defaultObject(sample.getFileIds(), Collections.emptyList()));
 
-        sample.setStatus(ParamUtils.defaultObject(sample.getStatus(), CustomStatus::new));
+        sample.setStatus(ParamUtils.defaultObject(sample.getStatus(), Status::new));
         sample.setInternal(SampleInternal.init());
         sample.setAttributes(ParamUtils.defaultObject(sample.getAttributes(), Collections.emptyMap()));
 
@@ -761,7 +761,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             if (force) {
                 // Check index status
                 if (file.getInternal().getIndex() != null && file.getInternal().getIndex().getStatus() != null
-                        && !FileIndex.IndexStatus.NONE.equals(file.getInternal().getIndex().getStatus().getName())) {
+                        && !FileIndex.IndexStatus.NONE.equals(file.getInternal().getIndex().getStatus().getId())) {
                     errorFiles.add(file.getPath() + "(" + file.getUid() + ")");
                 }
             } else {
@@ -793,7 +793,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
                 // Check the status of the cohort
                 if (cohort.getInternal().getStatus() != null
-                        && CohortStatus.CALCULATING.equals(cohort.getInternal().getStatus().getName())) {
+                        && CohortStatus.CALCULATING.equals(cohort.getInternal().getStatus().getId())) {
                     errorCohorts.add(cohort.getId() + "(" + cohort.getUid() + ")");
                 }
             } else {

@@ -19,9 +19,9 @@ package org.opencb.opencga.core.models.sample;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
 
 import java.util.*;
 
@@ -119,7 +119,7 @@ public class Sample extends Annotable {
     /**
      * Generic: Object to define the status of the entry.
      */
-    private CustomStatus status;
+    private Status status;
 
     /**
      * Generic: Field automatically managed by OpenCGA containing relevant information of the entry. This field is used for internal
@@ -143,19 +143,19 @@ public class Sample extends Annotable {
     public Sample(String id, String individualId, String description, int release) {
         this(id, null, new SampleProcessing("", "", "", "", "", "", new HashMap<>()), new SampleCollection("", "", "", "", "",
                         new HashMap<>()), release, 1, "", "", description, false, new LinkedList<>(), individualId, new LinkedList<>(),
-                new CustomStatus(), null, new LinkedList<>(), new HashMap<>());
+                new Status(), null, new LinkedList<>(), new HashMap<>());
     }
 
     public Sample(String id, String creationDate, String modificationDate, String individualId, SampleProcessing processing,
                   SampleCollection collection, int release, int version, String description, boolean somatic, List<Phenotype> phenotypes,
-                  List<AnnotationSet> annotationSets, CustomStatus status, SampleInternal internal, Map<String, Object> attributes) {
+                  List<AnnotationSet> annotationSets, Status status, SampleInternal internal, Map<String, Object> attributes) {
         this(id, null, processing, collection, release, version, creationDate, modificationDate, description, somatic, phenotypes,
                 individualId, new LinkedList<>(), status, internal, annotationSets, attributes);
     }
 
     public Sample(String id, String uuid, SampleProcessing processing, SampleCollection collection, int release, int version,
                   String creationDate, String modificationDate, String description, boolean somatic, List<Phenotype> phenotypes,
-                  String individualId, List<String> fileIds, CustomStatus status, SampleInternal internal,
+                  String individualId, List<String> fileIds, Status status, SampleInternal internal,
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this(id, uuid, processing, collection, null, release, version, creationDate, modificationDate, description,
                 somatic, phenotypes, individualId, Collections.emptyList(), fileIds, status, internal, annotationSets, attributes);
@@ -163,7 +163,7 @@ public class Sample extends Annotable {
 
     public Sample(String id, String uuid, SampleProcessing processing, SampleCollection collection, SampleQualityControl qualityControl,
                   int release, int version, String creationDate, String modificationDate, String description, boolean somatic,
-                  List<Phenotype> phenotypes, String individualId, List<String> cohortIds, List<String> fileIds, CustomStatus status,
+                  List<Phenotype> phenotypes, String individualId, List<String> cohortIds, List<String> fileIds, Status status,
                   SampleInternal internal, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
@@ -404,11 +404,11 @@ public class Sample extends Annotable {
         return this;
     }
 
-    public CustomStatus getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public Sample setStatus(CustomStatus status) {
+    public Sample setStatus(Status status) {
         this.status = status;
         return this;
     }

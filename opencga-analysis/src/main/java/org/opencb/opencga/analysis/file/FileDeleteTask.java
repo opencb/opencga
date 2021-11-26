@@ -116,7 +116,7 @@ public class FileDeleteTask extends OpenCgaTool {
                     } else {
                         // We mark for deletion all the
                         Query query = new Query()
-                                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.READY)
+                                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.READY)
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + catalogFile.getPath() + "*");
                         fileManager.update(studyFqn, query, updateParams, options, token);
                     }
@@ -130,7 +130,7 @@ public class FileDeleteTask extends OpenCgaTool {
         step(ID, () -> {
             // Delete the files pending for deletion
             Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.PENDING_DELETE)
+                    .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.PENDING_DELETE)
                     .append(FileDBAdaptor.QueryParams.TAGS.key(), randomMark);
             try (DBIterator<File> iterator = fileManager.iterator(studyFqn, query, FileManager.EXCLUDE_FILE_ATTRIBUTES, token)) {
                 while (iterator.hasNext()) {
@@ -164,12 +164,12 @@ public class FileDeleteTask extends OpenCgaTool {
     private void recoverFromFatalCrash() {
         // Delete the files pending for deletion
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.PENDING_DELETE)
+                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.PENDING_DELETE)
                 .append(FileDBAdaptor.QueryParams.TAGS.key(), randomMark);
         restoreFiles(query);
 
         if (skipTrash) {
-            query.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.DELETING);
+            query.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.DELETING);
             OpenCGAResult<File> fileResult = null;
             try {
                 fileResult = catalogManager.getFileManager().search(studyFqn, query, FileManager.EXCLUDE_FILE_ATTRIBUTES,

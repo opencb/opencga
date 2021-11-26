@@ -132,7 +132,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
                 StudyEntry.DEFAULT_COHORT), null, sessionId).first();
         Set<String> allSampleIds = all.getSamples().stream().map(Sample::getId).collect(Collectors.toSet());
 
-        assertThat(all.getInternal().getStatus().getName(), anyOf(is(CohortStatus.INVALID), is(CohortStatus.NONE)));
+        assertThat(all.getInternal().getStatus().getId(), anyOf(is(CohortStatus.INVALID), is(CohortStatus.NONE)));
         Set<String> loadedSamples = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key
                 (), FileIndex.IndexStatus.READY), null, sessionId)
                 .getResults()
@@ -142,7 +142,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
         assertEquals(loadedSamples, allSampleIds);
 
         for (String file : fileIds) {
-            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, file, null, sessionId).first().getInternal().getIndex().getStatus().getName());
+            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, file, null, sessionId).first().getInternal().getIndex().getStatus().getId());
         }
 
     }

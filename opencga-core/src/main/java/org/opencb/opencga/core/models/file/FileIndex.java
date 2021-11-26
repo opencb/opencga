@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models.file;
 
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -66,7 +66,7 @@ public class FileIndex {
         return new FileIndex("", "", new IndexStatus(IndexStatus.NONE), -1, null, null, new HashMap<>());
     }
 
-    public static class IndexStatus extends Status {
+    public static class IndexStatus extends InternalStatus {
 
         /*
          * States
@@ -101,7 +101,7 @@ public class FileIndex {
         }
 
         public static boolean isValid(String status) {
-            if (Status.isValid(status)) {
+            if (InternalStatus.isValid(status)) {
                 return true;
             }
             if (status != null && (status.equals(NONE) || status.equals(TRANSFORMING) || status.equals(TRANSFORMED)
