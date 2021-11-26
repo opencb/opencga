@@ -1,6 +1,6 @@
 package org.opencb.opencga.server.json;
 
-import io.swagger.annotations.*;
+import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;

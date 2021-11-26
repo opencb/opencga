@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
-import io.swagger.annotations.*;
+import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;

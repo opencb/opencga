@@ -12,7 +12,7 @@ public @interface CreateParam {
     /**
      * @return enum values QUERY, BODY, PATH.
      */
-    ParamType type();
+    ParamType type() default ParamType.QUERY;
 
     /**
      * @return default value of the field.
@@ -30,7 +30,7 @@ public @interface CreateParam {
     boolean required() default false;
 
     /**
-     * @return Class of field.
+     * @return If field is available in update action.
      */
-    Class<?> dataTypeClass() default Void.class;
+    boolean available() default false;
 }

@@ -12,7 +12,7 @@ public @interface UpdateParam {
     /**
      * @return enum values QUERY, BODY, PATH.
      */
-    ParamType type();
+    ParamType type() default ParamType.QUERY;
 
     /**
      * @return default value of the field.
@@ -28,4 +28,9 @@ public @interface UpdateParam {
      * @return If field is CLI required or not.
      */
     boolean required() default false;
+
+    /**
+     * @return If field is available in update action.
+     */
+    boolean available() default false;
 }

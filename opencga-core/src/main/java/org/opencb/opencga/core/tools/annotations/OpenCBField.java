@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.tools.annotations;
 
-public @interface OpenCBParam {
+public @interface OpenCBField {
 
     /**
      * @return id of the field.
@@ -22,9 +22,9 @@ public @interface OpenCBParam {
      */
     Class<?> dataTypeClass() default Void.class;
 
-    UpdateParam update();
+    UpdateParam update() default @UpdateParam;
 
-    CreateParam create();
+    CreateParam create() default @CreateParam;
 
-    SearchParam search();
+    SearchParam search() default @SearchParam;
 }

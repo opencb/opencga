@@ -19,9 +19,14 @@ package org.opencb.opencga.core.models.sample;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
+import org.opencb.opencga.core.tools.annotations.CreateParam;
+import org.opencb.opencga.core.tools.annotations.OpenCBField;
+import org.opencb.opencga.core.tools.annotations.ParamType;
+import org.opencb.opencga.core.tools.annotations.SearchParam;
 
 import java.util.*;
 
@@ -32,11 +37,13 @@ import java.util.*;
 public class Sample extends Annotable {
 
     /**
-     * Sample ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter
-     * when creating a new sample, this ID cannot be changed at the moment.
+     * Sample ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter when
+     * creating a new sample, this ID cannot be changed at the moment.
      *
      * @apiNote Required, Immutable, Unique
      */
+    @OpenCBField(id = "id", name = "id", description = FieldConstants.SAMPLE_ID_DESCRIPTION, create = @CreateParam(required = true,
+            type = ParamType.PATH), search = @SearchParam(required = false, available = true))
     private String id;
 
     /**
