@@ -12,6 +12,7 @@ public class AnnotationVariantQueryParams extends ToolParams {
     private String panelModeOfInheritance;
     private String panelConfidence;
     private String panelRoleInCancer;
+    private Boolean panelIntersection;
     private String cohortStatsRef;
     private String cohortStatsAlt;
     private String cohortStatsMaf;
@@ -114,6 +115,15 @@ public class AnnotationVariantQueryParams extends ToolParams {
 
     public AnnotationVariantQueryParams setPanelRoleInCancer(String panelRoleInCancer) {
         this.panelRoleInCancer = panelRoleInCancer;
+        return this;
+    }
+
+    public Boolean getPanelIntersection() {
+        return panelIntersection;
+    }
+
+    public AnnotationVariantQueryParams setPanelIntersection(Boolean panelIntersection) {
+        this.panelIntersection = panelIntersection;
         return this;
     }
 

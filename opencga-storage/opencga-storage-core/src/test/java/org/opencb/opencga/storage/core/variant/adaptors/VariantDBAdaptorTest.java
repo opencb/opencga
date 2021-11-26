@@ -755,6 +755,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 with("id", VariantAnnotation::getId, is("rs1171830")));
 
         queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
+                        .append(REGION.key(), "2")
+                        .append(ANNOT_XREF.key(), "ERMAP,rs1171830,SH2D5,RCV000036856,7:100807230:G:T,COSM3760638")
+                        .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"),
+                anyOf(
+                        with("id", VariantAnnotation::getId, is("rs1171830")),
+                        annotationOverlaps(new Region("2")),
+                        at("7:100807230:G:T")
+                ));
+
+        queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
                         .append(ANNOT_XREF.key(), "ERMAP,rs1171830,SH2D5,RCV000036856,7:100807230:G:T,COSM3760638")
                         .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"),
                 anyOf(

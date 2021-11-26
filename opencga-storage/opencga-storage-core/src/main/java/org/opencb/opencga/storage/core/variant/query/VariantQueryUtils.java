@@ -1426,6 +1426,10 @@ public final class VariantQueryUtils {
     }
 
     public static void convertGenesToRegionsQuery(Query query, CellBaseUtils cellBaseUtils) {
+        if (isValidParam(query, ANNOT_GENE_REGIONS)) {
+            // GENE_REGIONS already present in query!
+            return;
+        }
         ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
         List<String> genes = variantQueryXref.getGenes();
         if (!genes.isEmpty()) {
@@ -1436,6 +1440,20 @@ public final class VariantQueryUtils {
 
             query.put(ANNOT_GENE_REGIONS.key(), regions);
         }
+    }
+
+    public static Region intersectRegions(Region regionLeft, Region regionRight) {
+        if (!regionLeft.getChromosome().equals(regionRight.getChromosome())) {
+            // Not even the same chromosome
+            return null;
+        }
+        int start = Math.max(regionLeft.getStart(), regionRight.getStart());
+        int end = Math.min(regionLeft.getEnd(), regionRight.getEnd());
+        if (start >= end) {
+            // don't overlap
+            return null;
+        }
+        return new Region(regionLeft.getChromosome(), start, end);
     }
 
     public static List<Region> mergeRegions(List<Region> regions) {

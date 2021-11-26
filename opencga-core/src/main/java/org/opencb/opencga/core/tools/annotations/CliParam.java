@@ -7,10 +7,10 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})
-public @interface CliParams {
+public @interface CliParam {
 
     /**
      * @return If field is CLI required or not.
      */
-    boolean required();
+    boolean required() default false;
 }

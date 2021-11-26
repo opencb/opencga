@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.manager;
 
+import com.google.common.collect.Iterables;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.ClinicalProperty;
@@ -27,6 +28,7 @@ import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.clinical.pedigree.PedigreeManager;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
@@ -54,12 +56,11 @@ import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.KeyOpValue;
-import org.opencb.opencga.storage.core.variant.query.ParsedQuery;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.query.*;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,6 +133,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public static final QueryParam PANEL_CONFIDENCE =
             QueryParam.create("panelConfidence", PANEL_CONFIDENCE_DESC, QueryParam.Type.TEXT);
 
+    public static final String PANEL_INTERSECTION_DESC = "Intersect panel genes and regions with given "
+            + "genes and regions from que input query. This will prevent returning variants from regions out of the panel.";
+    public static final QueryParam PANEL_INTERSECTION =
+            QueryParam.create("panelIntersection", PANEL_INTERSECTION_DESC, Type.BOOLEAN);
+
     public static final String PANEL_ROLE_IN_CANCER_DESC = "Filter genes from specific panels that match certain role in cancer. " +
             "Accepted values : [ both, oncogene, tumorSuppressorGene, fusion ]";
     public static final QueryParam PANEL_ROLE_IN_CANCER =
@@ -149,6 +155,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             PANEL_MODE_OF_INHERITANCE,
             PANEL_CONFIDENCE,
             PANEL_ROLE_IN_CANCER,
+            PANEL_INTERSECTION,
             SAVED_FILTER
             );
 
@@ -232,23 +239,25 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     /**
      * Transforms a high level Query to a query fully understandable by storage.
      * @param query     High level query. Will be modified by the method.
-     * @param token User's session id
-     * @return          Modified input query (same instance)
-     * @throws CatalogException if there is any catalog error
-     */
-    public Query parseQuery(Query query, String token) throws CatalogException {
-        return parseQuery(query, null, token);
-    }
-
-    /**
-     * Transforms a high level Query to a query fully understandable by storage.
-     * @param query     High level query. Will be modified by the method.
      * @param queryOptions   Query options. Won't be modified
      * @param token User's session id
      * @return          Modified input query (same instance)
      * @throws CatalogException if there is any catalog error
      */
     public Query parseQuery(Query query, QueryOptions queryOptions, String token) throws CatalogException {
+        return parseQuery(query, queryOptions, null, token);
+    }
+
+    /**
+     * Transforms a high level Query to a query fully understandable by storage.
+     * @param query     High level query. Will be modified by the method.
+     * @param queryOptions   Query options. Won't be modified
+     * @param cellBaseUtils  Cellbase utils
+     * @param token User's session id
+     * @return          Modified input query (same instance)
+     * @throws CatalogException if there is any catalog error
+     */
+    public Query parseQuery(Query query, QueryOptions queryOptions, CellBaseUtils cellBaseUtils, String token) throws CatalogException {
         if (query == null) {
             // Nothing to do!
             return new Query();
@@ -625,13 +634,13 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 
         if (isValidParam(query, PANEL)) {
             String assembly = null;
-            Set<String> geneNames = new HashSet<>();
-            Set<Region> regions = new HashSet<>();
+            Set<String> panelGenes = new HashSet<>();
+            Set<Region> panelRegions = new HashSet<>();
             Set<String> variants = new HashSet<>();
             List<String> panels = query.getAsStringList(PANEL.key());
             for (String panelId : panels) {
                 Panel panel = getPanel(defaultStudyStr, panelId, token);
-                geneNames.addAll(getGenesFromPanel(query, panel));
+                panelGenes.addAll(getGenesFromPanel(query, panel));
 
                 if (CollectionUtils.isNotEmpty(panel.getRegions()) || CollectionUtils.isNotEmpty(panel.getVariants())) {
                     if (assembly == null) {
@@ -643,7 +652,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         for (DiseasePanel.RegionPanel region : panel.getRegions()) {
                             for (DiseasePanel.Coordinate coordinate : region.getCoordinates()) {
                                 if (coordinate  .getAssembly().equalsIgnoreCase(assembly)) {
-                                    regions.add(Region.parseRegion(coordinate.getLocation()));
+                                    panelRegions.add(Region.parseRegion(coordinate.getLocation()));
                                 }
                             }
                         }
@@ -656,23 +665,122 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
 //                    }
                 }
             }
-            if (!regions.isEmpty()) {
-                if (isValidParam(query, REGION)) {
-                    Set<String> regionsFromQuery = new HashSet<>(query.getAsStringList(REGION.key()));
-                    for (Region region : regions) {
-                        regionsFromQuery.add(region.toString());
+            Set<Region> queryRegions = isValidParam(query, REGION)
+                    ? new HashSet<>(mergeRegions(Region.parseRegions(query.getString(REGION.key()), true)))
+                    : Collections.emptySet();
+
+            ParsedVariantQuery.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
+            // Extract GENEs from XRefs
+            query.put(GENE.key(), xrefs.getGenes());
+            query.put(ANNOT_XREF.key(), xrefs.getOtherXrefs());
+
+            if (queryRegions.isEmpty() && xrefs.getGenes().isEmpty() && xrefs.getVariants().isEmpty()) {
+                // Nothing to intersect
+                query.put(REGION.key(), panelRegions);
+                query.put(GENE.key(), panelGenes);
+                query.put(SKIP_MISSING_GENES, true);
+            } else if (!query.getBoolean(PANEL_INTERSECTION.key(), false)) {
+                // Union panel and query
+                panelRegions.addAll(queryRegions);
+                query.put(REGION.key(), panelRegions);
+
+                panelGenes.addAll(xrefs.getGenes());
+                query.put(GENE.key(), panelGenes);
+                query.put(SKIP_MISSING_GENES, true);
+            } else {
+                // Intersect panel with query!
+                // genesFinal
+                //  - Genes in QUERY + genes in PANEL
+                //  - Genes in QUERY + REGIONS from PANEL (partial)
+                //  - Genes in PANEL + REGIONS from QUERY (partial)
+                // regionsFinal
+                //  - Regions in QUERY + regions in PANEL
+                // variantsFinal
+                //  - Variant in QUERY + genes in PANEL
+                //  - Variant in QUERY + regions in PANEL
+
+                Set<String> queryGenes = new HashSet<>(xrefs.getGenes());
+                List<Variant> queryVariants = xrefs.getVariants();
+                Set<String> genesFinal = new HashSet<>();
+                Map<String, Region> geneRegionsFinal = new HashMap<>();
+                List<Variant> variantsFinal = new LinkedList<>();
+                Set<Region> regionsFinal = new HashSet<>();
+
+                // Genes in PANEL + genes in QUERY
+                if (!queryGenes.isEmpty() && !panelGenes.isEmpty()) {
+                    // Genes in PANEL + genes in QUERY
+                    for (String gene : panelGenes) {
+                        if (queryGenes.contains(gene)) {
+                            genesFinal.add(gene);
+                        }
                     }
-                    query.put(REGION.key(), regionsFromQuery);
+                }
+                Map<String, Region> panelGeneRegionMap = cellBaseUtils.getGeneRegionMap(new ArrayList<>(panelGenes), true);
+                Map<String, Region> queryGeneRegionMap = cellBaseUtils.getGeneRegionMap(new ArrayList<>(queryGenes), false);
+
+                // Genes in PANEL + genes in REGIONS from QUERY (partial)
+                geneRegionIntersect(panelGeneRegionMap, queryRegions, genesFinal, geneRegionsFinal);
+
+                // Genes in QUERY + genes in REGIONS from PANEL (partial)
+                geneRegionIntersect(queryGeneRegionMap, panelRegions, genesFinal, geneRegionsFinal);
+
+                // Regions in PANEL + regions in QUERY
+                if (!queryRegions.isEmpty()) {
+                    if (!panelRegions.isEmpty()) {
+                        for (Region queryRegion : queryRegions) {
+                            for (Region panelRegion : panelRegions) {
+                                Region region = intersectRegions(queryRegion, panelRegion);
+                                if (region != null) {
+                                    regionsFinal.add(region);
+                                }
+                            }
+                        }
+                    } // If panelRegions is empty, the QueryRegions will be already intersected with panelGenes
+                }
+
+                if (!geneRegionsFinal.isEmpty()) {
+                    // Partial genes in query. Translate all genes to Regions
+                    geneRegionsFinal.putAll(cellBaseUtils.getGeneRegionMap(new ArrayList<>(genesFinal), true));
+                }
+                if (!queryVariants.isEmpty()) {
+                    //  - Variant in QUERY + genes in PANEL
+                    //  - Variant in QUERY + regions in PANEL
+                    for (Variant variant : queryVariants) {
+                        for (Region region : Iterables.concat(panelGeneRegionMap.values(), panelRegions)) {
+                            if (region.contains(variant.getChromosome(), variant.getStart())) {
+                                variantsFinal.add(variant);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!geneRegionsFinal.isEmpty()) {
+                    // Partial genes. Translate finalGenes to Regions
+                    List<Region> geneRegions = new ArrayList<>(geneRegionsFinal.values());
+                    mergeRegions(geneRegions);
+                    query.put(ANNOT_GENE_REGIONS.key(), geneRegions);
+
+                    List<String> genes = new ArrayList<>(genesFinal);
+                    genes.addAll(geneRegionsFinal.keySet());
+                    query.put(GENE.key(), genes);
                 } else {
-                    query.put(REGION.key(), regions);
+                    query.put(GENE.key(), genesFinal);
+                    query.put(SKIP_MISSING_GENES, true);
+                }
+
+                if (variantsFinal.isEmpty()) {
+                    query.remove(ID.key());
+                } else {
+                    query.put(ID.key(), variantsFinal);
+                }
+                if (regionsFinal.isEmpty()) {
+                    // Discard regions from query. Already in "ANNOT_GENE_REGIONS"
+                    query.remove(REGION.key());
+                } else {
+                    query.put(REGION.key(), regionsFinal);
                 }
             }
-
-            if (isValidParam(query, GENE)) {
-                geneNames.addAll(query.getAsStringList(GENE.key()));
-            }
-            query.put(GENE.key(), geneNames);
-            query.put(SKIP_MISSING_GENES, true);
         } else {
             if (isValidParam(query, PANEL_CONFIDENCE)) {
                 throw VariantQueryException.malformedParam(PANEL_CONFIDENCE, query.getString(PANEL_CONFIDENCE.key()),
@@ -691,6 +799,40 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         logger.debug("Catalog parsed query : " + VariantQueryUtils.printQuery(query));
 
         return query;
+    }
+
+    public static void geneRegionIntersect(CellBaseUtils cellBaseUtils,
+                                           Set<String> genes,
+                                           Set<Region> regions,
+                                           Set<String> genesFinal,
+                                           Map<String, Region> geneRegionsFinal) {
+        geneRegionIntersect(cellBaseUtils.getGeneRegionMap(new ArrayList<>(genes), true), regions, genesFinal, geneRegionsFinal);
+    }
+
+    public static void geneRegionIntersect(Map<String, Region> geneRegionMap,
+                                           Set<Region> regions,
+                                           Set<String> genesFinal,
+                                           Map<String, Region> geneRegionsFinal) {
+        if (!geneRegionMap.isEmpty() && !regions.isEmpty()) {
+            geneRegionMap.forEach((gene, geneRegion) -> {
+                if (!genesFinal.contains(gene)) {
+                    for (Region region : regions) {
+                        Region intersect = intersectRegions(region, geneRegion);
+                        if (intersect != null) {
+                            // There was an overlap!
+                            if (intersect.equals(geneRegion)) {
+                                // This gene is fully covered!
+                                genesFinal.add(gene);
+                            } else {
+                                // Partially covered.
+                                geneRegionsFinal.put(gene, intersect);
+                            }
+                            break;
+                        }
+                    }
+                }
+            });
+        }
     }
 
     protected static Set<String> getGenesFromPanel(Query query, Panel panel) {

@@ -173,16 +173,15 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
      * @param queryOptions  Query options
      * @param token         User's session id
      * @throws CatalogException if there is any error with Catalog
-     * @throws IOException  If there is any IO error
      * @throws StorageEngineException  If there is any error exporting variants
      */
     public void exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
                            Query query, QueryOptions queryOptions, String token)
-            throws CatalogException, IOException, StorageEngineException {
-        Query finalQuery = catalogUtils.parseQuery(query, queryOptions, token);
-        checkSamplesPermissions(finalQuery, queryOptions, token);
-        String anyStudy = catalogUtils.getAnyStudy(finalQuery, token);
+            throws CatalogException, StorageEngineException {
+        String anyStudy = catalogUtils.getAnyStudy(query, token);
         secureOperation(VariantExportTool.ID, anyStudy, queryOptions, token, engine -> {
+            Query finalQuery = catalogUtils.parseQuery(query, queryOptions, engine.getCellBaseUtils(), token);
+            checkSamplesPermissions(finalQuery, queryOptions, token);
             new VariantExportOperationManager(this, engine).export(outputFile, outputFormat, variantsFile, finalQuery, queryOptions, token);
             return null;
         });
@@ -689,7 +688,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public VariantDBIterator iterator(Query query, QueryOptions queryOptions, String token)
             throws CatalogException, StorageEngineException {
         VariantStorageEngine storageEngine = getVariantStorageEngine(query, token);
-        query = catalogUtils.parseQuery(query, queryOptions, token);
+        query = catalogUtils.parseQuery(query, queryOptions, storageEngine.getCellBaseUtils(), token);
         checkSamplesPermissions(query, queryOptions, storageEngine.getMetadataManager(), token);
         return storageEngine.iterator(query, queryOptions);
     }
@@ -1164,7 +1163,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private <R> R secure(Query query, QueryOptions queryOptions, String token, VariantReadOperation<R> supplier)
             throws CatalogException, StorageEngineException {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, token);
-        catalogUtils.parseQuery(query, token);
+        catalogUtils.parseQuery(query, null, variantStorageEngine.getCellBaseUtils(), token);
         checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), token);
         return supplier.apply(variantStorageEngine);
     }
@@ -1181,10 +1180,11 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         StopWatch totalStopWatch = StopWatch.createStarted();
         StopWatch storageStopWatch = null;
         try {
-            StopWatch stopWatch = StopWatch.createStarted();
-            query = catalogUtils.parseQuery(query, queryOptions, token);
-            auditAttributes.append("catalogParseQueryTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, token);
+
+            StopWatch stopWatch = StopWatch.createStarted();
+            query = catalogUtils.parseQuery(query, queryOptions, variantStorageEngine.getCellBaseUtils(), token);
+            auditAttributes.append("catalogParseQueryTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
 
             stopWatch = StopWatch.createStarted();
             checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), auditAction, token);

@@ -4,7 +4,7 @@ import io.swagger.annotations.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.opencb.opencga.core.tools.annotations.CliParams;
+import org.opencb.opencga.core.tools.annotations.CliParam;
 import org.opencb.opencga.server.json.beans.Category;
 import org.opencb.opencga.server.json.beans.Endpoint;
 import org.opencb.opencga.server.json.beans.Parameter;
@@ -249,7 +249,7 @@ public class RestApiParser {
     }
 
     private static boolean isRequired(Field declaredField) {
-        CliParams annotation = declaredField.getAnnotation(CliParams.class);
+        CliParam annotation = declaredField.getAnnotation(CliParam.class);
         if (annotation != null && annotation.required())
             return true;
         return false;

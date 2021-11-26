@@ -309,7 +309,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
                 }
 
-                clinicalAnalysis.setPanels(panelResult.getResults());
+                interpretation.setPanels(panelResult.getResults());
             }
         }
 

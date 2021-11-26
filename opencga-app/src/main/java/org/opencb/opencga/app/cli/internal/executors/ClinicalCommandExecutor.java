@@ -245,6 +245,7 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         query.putIfNotNull(VariantCatalogQueryUtils.PANEL.key(), cliOptions.panel);
         query.putIfNotNull(VariantCatalogQueryUtils.PANEL_MODE_OF_INHERITANCE.key(), cliOptions.panelModeOfInheritance);
         query.putIfNotNull(VariantCatalogQueryUtils.PANEL_CONFIDENCE.key(), cliOptions.panelConfidence);
+        query.putIfNotNull(VariantCatalogQueryUtils.PANEL_INTERSECTION.key(), cliOptions.panelIntersection);
         query.putIfNotNull(VariantCatalogQueryUtils.PANEL_ROLE_IN_CANCER.key(), cliOptions.panelRoleInCancer);
 
         query.putIfNotNull("trait", cliOptions.trait);
