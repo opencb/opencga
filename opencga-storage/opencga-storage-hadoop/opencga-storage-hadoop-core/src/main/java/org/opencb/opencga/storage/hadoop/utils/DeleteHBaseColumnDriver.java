@@ -3,9 +3,7 @@ package org.opencb.opencga.storage.hadoop.utils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.ContentSummary;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.*;
@@ -119,7 +117,14 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
             SequenceFileAsBinaryOutputFormat.setOutputCompressionType(job, SequenceFile.CompressionType.BLOCK);
             SequenceFileAsBinaryOutputFormat.setOutputCompressorClass(job, DeflateCodec.class);
 
-            VariantMapReduceUtil.setNoneReduce(job);
+            float writeMappersLimitFactor = Float.parseFloat(getParam(WRITE_MAPPERS_LIMIT_FACTOR.key(),
+                    WRITE_MAPPERS_LIMIT_FACTOR.defaultValue().toString()));
+            int serversSize = getServersSize(table);
+            int numReducers = Math.round(writeMappersLimitFactor * serversSize);
+            LOGGER.info("Set job reducers to " + numReducers + ". ServersSize: " + serversSize
+                    + ", writeMappersLimitFactor: " + writeMappersLimitFactor);
+            // Limit number of generated parts, and even the size of the parts
+            VariantMapReduceUtil.setNumReduceTasks(job, numReducers);
         }
     }
 
@@ -134,13 +139,21 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
                     LOGGER.info("Generated file " + outdir.toUri());
                     LOGGER.info(" - Size (HDFS)         : " + IOUtils.humanReadableByteCount(contentSummary.getLength(), false));
                     LOGGER.info(" - SpaceConsumed (raw) : " + IOUtils.humanReadableByteCount(contentSummary.getSpaceConsumed(), false));
+                    LOGGER.info(" - FileCount           : " + contentSummary.getFileCount());
+                    RemoteIterator<LocatedFileStatus> it = fs.listFiles(outdir, true);
+                    while (it.hasNext()) {
+                        LocatedFileStatus fileStatus = it.next();
+                        ContentSummary thiscontent = fs.getContentSummary(fileStatus.getPath());
+                        LOGGER.info("   - " + fileStatus.getPath().getName() + " : "
+                                + IOUtils.humanReadableByteCount(thiscontent.getLength(), false));
+                    }
 
-                    String writeMapperslimitFactor = getParam(WRITE_MAPPERS_LIMIT_FACTOR.key(),
+                    String writeMappersLimitFactor = getParam(WRITE_MAPPERS_LIMIT_FACTOR.key(),
                             WRITE_MAPPERS_LIMIT_FACTOR.defaultValue().toString());
                     int code = new HBaseWriterDriver(getConf()).run(HBaseWriterDriver.buildArgs(table,
                             new ObjectMap()
                                     .append(HBaseWriterDriver.INPUT_FILE_PARAM, outdir.toUri().toString())
-                                    .append(WRITE_MAPPERS_LIMIT_FACTOR.key(), writeMapperslimitFactor)));
+                                    .append(WRITE_MAPPERS_LIMIT_FACTOR.key(), writeMappersLimitFactor)));
                     if (code != 0) {
                         throw new StorageEngineException("Error writing mutations");
                     }
