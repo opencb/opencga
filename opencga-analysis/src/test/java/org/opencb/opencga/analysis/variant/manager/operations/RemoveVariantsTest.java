@@ -27,7 +27,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 
@@ -89,7 +89,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
         }
         indexFiles(files, new QueryOptions(), outputId);
 
-        removeFile(files.subList(0, files.size()/2), new QueryOptions());
+        removeFile(files.subList(0, files.size() / 2), new QueryOptions());
 
     }
 
@@ -134,7 +134,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
 
         assertThat(all.getInternal().getStatus().getId(), anyOf(is(CohortStatus.INVALID), is(CohortStatus.NONE)));
         Set<String> loadedSamples = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key
-                (), FileIndex.IndexStatus.READY), null, sessionId)
+                        (), VariantIndexStatus.READY), null, sessionId)
                 .getResults()
                 .stream()
                 .flatMap(f -> f.getSampleIds().stream())
@@ -142,7 +142,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
         assertEquals(loadedSamples, allSampleIds);
 
         for (String file : fileIds) {
-            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, file, null, sessionId).first().getInternal().getIndex().getStatus().getId());
+            assertEquals(VariantIndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, file, null, sessionId).first().getInternal().getIndex().getStatus().getId());
         }
 
     }
@@ -151,7 +151,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
         Path outdir = Paths.get(opencga.createTmpOutdir(studyId, "_REMOVE_", sessionId));
         variantManager.removeStudy(study.toString(), options, outdir.toUri(), sessionId);
 
-        Query query = new Query(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
+        Query query = new Query(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), VariantIndexStatus.READY);
         assertEquals(0L, catalogManager.getFileManager().count(study.toString(), query, sessionId).getNumTotalResults());
 
         Cohort all = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();

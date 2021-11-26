@@ -2127,9 +2127,9 @@ public class FileManagerTest extends AbstractManagerTest {
                         .setPath("data/"),
                 true, token);
 
-        fileManager.updateFileIndexStatus(fileResult.first(), FileIndex.IndexStatus.TRANSFORMED, null, token);
+        fileManager.updateFileIndexStatus(fileResult.first(), VariantIndexStatus.TRANSFORMED, null, token);
         DataResult<File> read = fileManager.get(studyFqn, fileResult.first().getPath(), new QueryOptions(), token);
-        assertEquals(FileIndex.IndexStatus.TRANSFORMED, read.first().getInternal().getIndex().getStatus().getId());
+        assertEquals(VariantIndexStatus.TRANSFORMED, read.first().getInternal().getIndex().getStatus().getId());
     }
 
     @Test

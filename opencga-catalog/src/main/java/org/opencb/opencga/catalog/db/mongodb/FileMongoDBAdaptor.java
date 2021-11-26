@@ -615,10 +615,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     throw new IllegalArgumentException("Unknown operation " + operation);
             }
         }
-        if (parameters.containsKey(QueryParams.INTERNAL_INDEX_TRANSFORMED_FILE.key())) {
-            document.getSet().put(QueryParams.INTERNAL_INDEX_TRANSFORMED_FILE.key(),
-                    getMongoDBDocument(parameters.get(QueryParams.INTERNAL_INDEX_TRANSFORMED_FILE.key()), "TransformedFile"));
-        }
 
         String[] acceptedLongParams = {QueryParams.SIZE.key()};
         filterLongParams(parameters, document.getSet(), acceptedLongParams);
@@ -681,8 +677,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] acceptedObjectParams = {QueryParams.INTERNAL_INDEX.key(), QueryParams.SOFTWARE.key(), QueryParams.EXPERIMENT.key(),
-                QueryParams.STATUS.key(), QueryParams.INTERNAL_MISSING_SAMPLES.key(), QueryParams.QUALITY_CONTROL.key()};
+        String[] acceptedObjectParams = {QueryParams.INTERNAL_VARIANT_INDEX.key(), QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
+                QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key(), QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), QueryParams.SOFTWARE.key(),
+                QueryParams.EXPERIMENT.key(), QueryParams.STATUS.key(), QueryParams.INTERNAL_MISSING_SAMPLES.key(),
+                QueryParams.QUALITY_CONTROL.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -1309,7 +1307,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case INTERNAL_INDEX_STATUS_NAME:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),
-                                InternalStatus.getPositiveStatus(FileIndex.IndexStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
+                                InternalStatus.getPositiveStatus(VariantIndexStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case SAMPLE_IDS:

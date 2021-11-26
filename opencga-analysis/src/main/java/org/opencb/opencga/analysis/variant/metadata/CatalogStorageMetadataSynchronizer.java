@@ -40,7 +40,7 @@ import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
-import org.opencb.opencga.core.models.file.FileIndex.IndexStatus;
+import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectOrganism;
@@ -75,12 +75,12 @@ public class CatalogStorageMetadataSynchronizer {
             FileDBAdaptor.QueryParams.INTERNAL_INDEX.key(),
             FileDBAdaptor.QueryParams.STUDY_UID.key()));
     public static final Query INDEXED_FILES_QUERY = new Query()
-            .append(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), IndexStatus.READY)
+            .append(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), VariantIndexStatus.READY)
             .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
             .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF.toString(), File.Format.GVCF.toString()));
 
     public static final Query RUNNING_INDEX_FILES_QUERY = new Query()
-            .append(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), Arrays.asList(IndexStatus.LOADING, IndexStatus.INDEXING))
+            .append(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), Arrays.asList(VariantIndexStatus.LOADING, VariantIndexStatus.INDEXING))
             .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
             .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF.toString(), File.Format.GVCF.toString()));
 
@@ -456,12 +456,12 @@ public class CatalogStorageMetadataSynchronizer {
                 if (fileId == null || !indexedFilesFromStorage.contains(fileId)) {
                     String newStatus;
                     if (hasTransformedFile(file.getInternal().getIndex())) {
-                        newStatus = IndexStatus.TRANSFORMED;
+                        newStatus = VariantIndexStatus.TRANSFORMED;
                     } else {
-                        newStatus = IndexStatus.NONE;
+                        newStatus = VariantIndexStatus.NONE;
                     }
                     logger.info("File \"{}\" change status from {} to {}", file.getName(),
-                            IndexStatus.READY, newStatus);
+                            VariantIndexStatus.READY, newStatus);
                     catalogManager.getFileManager()
                             .updateFileIndexStatus(file, newStatus, "Not indexed, regarding Storage Metadata", sessionId);
                     modified = true;
@@ -510,9 +510,9 @@ public class CatalogStorageMetadataSynchronizer {
                         String prevStatus = index.getStatus().getId();
                         String newStatus;
                         if (hasTransformedFile(index)) {
-                            newStatus = IndexStatus.TRANSFORMED;
+                            newStatus = VariantIndexStatus.TRANSFORMED;
                         } else {
-                            newStatus = IndexStatus.NONE;
+                            newStatus = VariantIndexStatus.NONE;
                         }
                         logger.info("File \"{}\" change status from {} to {}", file.getName(),
                                 prevStatus, newStatus);
@@ -553,9 +553,9 @@ public class CatalogStorageMetadataSynchronizer {
                     File file = iterator.next();
                     String newStatus;
                     if (hasTransformedFile(file.getInternal().getIndex())) {
-                        newStatus = IndexStatus.LOADING;
+                        newStatus = VariantIndexStatus.LOADING;
                     } else {
-                        newStatus = IndexStatus.INDEXING;
+                        newStatus = VariantIndexStatus.INDEXING;
                     }
                     catalogManager.getFileManager().updateFileIndexStatus(file, newStatus,
                             "File is being loaded regarding Storage", sessionId);
@@ -568,18 +568,18 @@ public class CatalogStorageMetadataSynchronizer {
 
     private boolean synchronizeIndexedFile(StudyMetadata study, String sessionId, boolean modified, Map<String, Set<String>> fileSamplesMap, File file) throws CatalogException {
         String status = file.getInternal().getIndex() == null || file.getInternal().getIndex().getStatus() == null
-                ? IndexStatus.NONE
+                ? VariantIndexStatus.NONE
                 : file.getInternal().getIndex().getStatus().getId();
-        if (!status.equals(IndexStatus.READY)) {
+        if (!status.equals(VariantIndexStatus.READY)) {
             final FileIndex index;
             index = file.getInternal().getIndex() == null ? new FileIndex() : file.getInternal().getIndex();
             if (index.getStatus() == null) {
-                index.setStatus(new IndexStatus());
+                index.setStatus(new VariantIndexStatus());
             }
-            logger.debug("File \"{}\" change status from {} to {}", file.getName(), status, IndexStatus.READY);
-            index.getStatus().setId(IndexStatus.READY);
+            logger.debug("File \"{}\" change status from {} to {}", file.getName(), status, VariantIndexStatus.READY);
+            index.getStatus().setId(VariantIndexStatus.READY);
             catalogManager.getFileManager()
-                    .updateFileIndexStatus(file, IndexStatus.READY, "Indexed, regarding Storage Metadata", sessionId);
+                    .updateFileIndexStatus(file, VariantIndexStatus.READY, "Indexed, regarding Storage Metadata", sessionId);
             modified = true;
         }
         Set<String> storageSamples = fileSamplesMap.get(file.getName());
@@ -631,7 +631,7 @@ public class CatalogStorageMetadataSynchronizer {
             while (iterator.hasNext()) {
                 File file = iterator.next();
                 catalogManager.getFileManager().setFileIndex(study, file.getId(),
-                        new FileIndex(userId, TimeUtils.getTime(), new IndexStatus(IndexStatus.NONE), -1, null, null, null), token);
+                        new FileIndex(userId, TimeUtils.getTime(), new VariantIndexStatus(VariantIndexStatus.NONE), -1, null, null, null), token);
             }
         }
     }

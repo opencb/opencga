@@ -30,10 +30,7 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
-import org.opencb.opencga.core.models.file.FileLinkParams;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.study.Study;
@@ -154,7 +151,7 @@ public class CatalogStorageMetadataSynchronizerTest {
                 .setPath("data/vcfs/");
         file = catalogManager.getFileManager().link(studyId, params, true, sessionId).first();
         if (indexed) {
-            FileIndex fileIndex = new FileIndex("user", "today", new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), 1234,
+            FileIndex fileIndex = new FileIndex("user", "today", new VariantIndexStatus(VariantIndexStatus.READY), 1234,
                     Collections.emptyMap());
             catalogManager.getFileManager().setFileIndex(studyId, file.getPath(), fileIndex, sessionId);
             indexedFiles.add(file.getName());
@@ -190,7 +187,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         studyConfigurationFactory.synchronizeCatalogStudyFromStorage(sc, sessionId);
 
         nonIndexedFile = catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first();
-        assertEquals(FileIndex.IndexStatus.READY, nonIndexedFile.getInternal().getIndex().getStatus().getId());
+        assertEquals(VariantIndexStatus.READY, nonIndexedFile.getInternal().getIndex().getStatus().getId());
 
 
         nonIndexedFile = files.stream().filter(file -> !indexedFiles.contains(file.getName())).findFirst().orElse(null);
@@ -200,7 +197,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         studyConfigurationFactory.synchronizeCatalogStudyFromStorage(sc, sessionId);
 
         nonIndexedFile = catalogManager.getFileManager().get(studyId, nonIndexedFile.getName(), null, sessionId).first();
-        assertEquals(FileIndex.IndexStatus.INDEXING, nonIndexedFile.getInternal().getIndex().getStatus().getId());
+        assertEquals(VariantIndexStatus.INDEXING, nonIndexedFile.getInternal().getIndex().getStatus().getId());
 
     }
 

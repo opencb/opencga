@@ -16,11 +16,7 @@
 
 package org.opencb.opencga.core.models.file;
 
-import org.opencb.opencga.core.models.common.InternalStatus;
-
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,7 +27,7 @@ public class FileIndex {
     @Deprecated
     private String userId;
     private String creationDate;
-    private IndexStatus status;
+    private VariantIndexStatus status;
 
     @Deprecated
     private long jobId;
@@ -47,15 +43,15 @@ public class FileIndex {
     public FileIndex() {
     }
 
-    public FileIndex(String userId, String creationDate, IndexStatus status, long jobId, Map<String, Object> attributes) {
+    public FileIndex(String userId, String creationDate, VariantIndexStatus status, long jobId, Map<String, Object> attributes) {
         this(userId, creationDate, status, jobId, null, null, attributes);
     }
 
-    public FileIndex(String userId, String creationDate, IndexStatus status, long jobId, TransformedFile transformedFile,
+    public FileIndex(String userId, String creationDate, VariantIndexStatus status, long jobId, TransformedFile transformedFile,
                      LocalFileIndex localFileIndex, Map<String, Object> attributes) {
         this.userId = userId;
         this.creationDate = creationDate;
-        this.status = status != null ? status : new IndexStatus(IndexStatus.NONE);
+        this.status = status != null ? status : new VariantIndexStatus(VariantIndexStatus.NONE);
         this.jobId = jobId;
         this.transformedFile = transformedFile;
         this.localFileIndex = localFileIndex;
@@ -63,53 +59,7 @@ public class FileIndex {
     }
 
     public static FileIndex initialize() {
-        return new FileIndex("", "", new IndexStatus(IndexStatus.NONE), -1, null, null, new HashMap<>());
-    }
-
-    public static class IndexStatus extends InternalStatus {
-
-        /*
-         * States
-         *
-         * NONE --> TRANSFORMING --> TRANSFORMED --> LOADING --> READY
-         *      \                                              /
-         *       ------------------> INDEXING ----------------/
-         *
-         */
-        public static final String NONE = "NONE";
-        public static final String TRANSFORMING = "TRANSFORMING";
-        public static final String TRANSFORMED = "TRANSFORMED";
-        public static final String LOADING = "LOADING";
-        public static final String INDEXING = "INDEXING";
-
-        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, NONE, TRANSFORMED, TRANSFORMING, LOADING, INDEXING);
-
-        public IndexStatus(String status, String message) {
-            if (isValid(status)) {
-                init(status, message);
-            } else {
-                throw new IllegalArgumentException("Unknown status " + status);
-            }
-        }
-
-        public IndexStatus(String status) {
-            this(status, "");
-        }
-
-        public IndexStatus() {
-            this(NONE, "");
-        }
-
-        public static boolean isValid(String status) {
-            if (InternalStatus.isValid(status)) {
-                return true;
-            }
-            if (status != null && (status.equals(NONE) || status.equals(TRANSFORMING) || status.equals(TRANSFORMED)
-                    || status.equals(LOADING) || status.equals(INDEXING))) {
-                return true;
-            }
-            return false;
-        }
+        return new FileIndex("", "", new VariantIndexStatus(VariantIndexStatus.NONE), -1, null, null, new HashMap<>());
     }
 
     public static class TransformedFile {
@@ -224,11 +174,11 @@ public class FileIndex {
         return this;
     }
 
-    public IndexStatus getStatus() {
+    public VariantIndexStatus getStatus() {
         return status;
     }
 
-    public FileIndex setStatus(IndexStatus status) {
+    public FileIndex setStatus(VariantIndexStatus status) {
         this.status = status;
         return this;
     }

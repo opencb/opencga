@@ -43,9 +43,9 @@ import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.file.FileRelatedFile;
+import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
@@ -127,7 +127,6 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
     private Logger logger = LoggerFactory.getLogger(AbstractVariantOperationManagerTest.class);
 
 
-
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
@@ -166,7 +165,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         projectId = catalogManager.getProjectManager().create(projectAlias, projectAlias, "Project 1", "Homo sapiens",
                 null, "GRCh38", new QueryOptions(), sessionId).first().getId();
         Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1",
-                "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)
+                        "Study 1", null, null, null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)
                 .first();
         studyId = study.getId();
         studyFqn = study.getFqn();
@@ -235,7 +234,8 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
 
         try {
             catalogManager.getFileManager().createFolder(studyFqn, outputId, true, null, null, sessionId);
-        } catch (CatalogException ignore) {}
+        } catch (CatalogException ignore) {
+        }
 
         queryOptions.append(VariantFileIndexerOperationManager.TRANSFORM, true);
         queryOptions.append(VariantFileIndexerOperationManager.LOAD, false);
@@ -254,7 +254,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             copyResults(Paths.get(tmpOutdir), studyId, outputId, sessionId);
         }
         inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
-        assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getInternal().getIndex().getStatus().getId());
+        assertEquals(VariantIndexStatus.TRANSFORMED, inputFile.getInternal().getIndex().getStatus().getId());
         assertNotNull(inputFile.getQualityControl().getVariant().getVariantSetMetrics());
 
         // Default cohort should not be modified
@@ -301,7 +301,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         List<StoragePipelineResult> etlResults = variantManager.index(studyId, fileIds, outdir, queryOptions, sessionId);
 
         assertEquals(expectedLoadedFiles.size(), etlResults.size());
-        checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
+        checkEtlResults(studyId, etlResults, VariantIndexStatus.READY);
 
         Cohort defaultCohort = getDefaultCohort(studyId);
         for (File file : expectedLoadedFiles) {
@@ -344,7 +344,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         }
 
         assertEquals(expectedLoadedFiles.size(), etlResults.size());
-        checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
+        checkEtlResults(studyId, etlResults, VariantIndexStatus.READY);
 
         Cohort defaultCohort = getDefaultCohort(studyId);
         assertNotNull(defaultCohort);

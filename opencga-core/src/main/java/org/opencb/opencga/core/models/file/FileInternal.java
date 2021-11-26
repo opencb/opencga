@@ -25,32 +25,37 @@ import java.util.Map;
 public class FileInternal extends Internal {
 
     private FileStatus status;
-    private FileIndex index;
+    private FileInternalVariant variant;
+    private FileInternalAlignment alignment;
     private Map<String, String> sampleMap;
     private MissingSamples missingSamples;
 
     public FileInternal() {
     }
 
-    public FileInternal(String registrationDate, String modificationDate, FileStatus status, FileIndex index, Map<String, String> sampleMap,
-                        MissingSamples missingSamples) {
+    public FileInternal(String registrationDate, String modificationDate, FileStatus status, FileInternalVariant variant,
+                        FileInternalAlignment alignment, Map<String, String> sampleMap, MissingSamples missingSamples) {
         super(null, registrationDate, modificationDate);
         this.status = status;
-        this.index = index;
+        this.variant = variant;
+        this.alignment = alignment;
         this.sampleMap = sampleMap;
         this.missingSamples = missingSamples;
     }
 
     public static FileInternal init() {
-        return new FileInternal(TimeUtils.getTime(), TimeUtils.getTime(), new FileStatus(FileStatus.READY), FileIndex.initialize(),
-                new HashMap<>(), MissingSamples.initialize());
+        return new FileInternal(TimeUtils.getTime(), TimeUtils.getTime(), new FileStatus(FileStatus.READY), FileInternalVariant.init(),
+                FileInternalAlignment.init(), new HashMap<>(), MissingSamples.initialize());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileInternal{");
-        sb.append("status=").append(status);
-        sb.append(", index=").append(index);
+        sb.append("registrationDate='").append(registrationDate).append('\'');
+        sb.append(", lastModified='").append(lastModified).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", variant=").append(variant);
+        sb.append(", alignment=").append(alignment);
         sb.append(", sampleMap=").append(sampleMap);
         sb.append(", missingSamples=").append(missingSamples);
         sb.append('}');
@@ -66,12 +71,13 @@ public class FileInternal extends Internal {
         return this;
     }
 
+    // TODO: REMOVE
     public FileIndex getIndex() {
-        return index;
+        return null;
     }
 
+    // TODO: REMOVE
     public FileInternal setIndex(FileIndex index) {
-        this.index = index;
         return this;
     }
 

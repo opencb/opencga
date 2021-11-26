@@ -45,7 +45,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
@@ -305,7 +305,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 List<String> includeFiles = new ArrayList<>();
                 QueryOptions fileOptions = new QueryOptions(INCLUDE, FileDBAdaptor.QueryParams.UID.key());
                 Query fileQuery = new Query(FileDBAdaptor.QueryParams.RELEASE.key(), "<=" + release)
-                        .append(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
+                        .append(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), VariantIndexStatus.READY);
 
                 for (String study : studies) {
                     for (File file : catalogManager.getFileManager().search(study, fileQuery, fileOptions, token)

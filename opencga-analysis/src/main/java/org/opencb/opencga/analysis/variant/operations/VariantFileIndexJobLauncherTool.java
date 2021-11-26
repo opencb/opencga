@@ -12,7 +12,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
@@ -51,7 +51,7 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
     protected void run() throws Exception {
         Query filesQuery = new Query()
                 .append(FORMAT.key(), Arrays.asList(File.Format.VCF, File.Format.GVCF))
-                .append(INTERNAL_INDEX_STATUS_NAME.key(), "!" + FileIndex.IndexStatus.READY);
+                .append(INTERNAL_INDEX_STATUS_NAME.key(), "!" + VariantIndexStatus.READY);
         filesQuery.putIfNotEmpty(NAME.key(), toolParams.getName());
         filesQuery.putIfNotEmpty(DIRECTORY.key(), toolParams.getDirectory());
         QueryOptions filesInclude = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -100,7 +100,7 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
                     VariantIndexParams indexParams = new VariantIndexParams();
                     indexParams.updateParams(toolParams.getIndexParams().toParams());
                     indexParams.setFile(file.getPath());
-                    if (!indexStatus.equals(FileIndex.IndexStatus.NONE) || errorJobs != 0) {
+                    if (!indexStatus.equals(VariantIndexStatus.NONE) || errorJobs != 0) {
                         if (toolParams.isIgnoreFailed()) {
                             logger.info("Skip file '{}' in status {}. ", file.getId(), indexStatus);
                             continue;
@@ -147,7 +147,7 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
                 || file.getInternal().getIndex() == null
                 || file.getInternal().getIndex().getStatus() == null
                 || file.getInternal().getIndex().getStatus().getId() == null) {
-            indexStatus = FileIndex.IndexStatus.NONE;
+            indexStatus = VariantIndexStatus.NONE;
         } else {
             indexStatus = file.getInternal().getIndex().getStatus().getId();
         }

@@ -39,7 +39,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -147,7 +147,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         } catch (Exception e) {
             assertEquals(0, getDefaultCohort(studyId).getSamples().size());
             assertEquals(CohortStatus.NONE, getDefaultCohort(studyId).getInternal().getStatus().getId());
-            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getInternal().getIndex().getStatus().getId());
+            assertEquals(VariantIndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getInternal().getIndex().getStatus().getId());
             assertNotNull(getVariantSetMetrics(getFile(0).getId()));
         }
         queryOptions.put(VariantStorageOptions.STATS_AGGREGATION.key(), "none");
@@ -184,7 +184,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         thrown.expect(CatalogException.class);
         thrown.expectMessage("index status");
         catalogManager.getFileManager().unlink(study.getFqn(), inputFile.getId(), sessionId);
-        }
+    }
 
     @Test
     public void testDeleteSampleFromIndexedFile() throws Exception {
@@ -229,9 +229,9 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
 
         catalogManager.getFileManager().delete(studyFqn,
                 new Query(FileDBAdaptor.QueryParams.NAME.key(), transformedFile.getName()), new QueryOptions(Constants.SKIP_TRASH, true),
-                        sessionId);
+                sessionId);
         catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.NAME.key(),
-                VariantReaderUtils.getMetaFromTransformedFile(transformedFile.getName())),
+                        VariantReaderUtils.getMetaFromTransformedFile(transformedFile.getName())),
                 new QueryOptions(Constants.SKIP_TRASH, true), sessionId);
 
         indexFile(inputFile, queryOptions, outputId);
@@ -312,7 +312,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         List<File> files = Arrays.asList(getFile(0), getFile(1));
-        catalogManager.getFileManager().updateFileIndexStatus(getFile(1), FileIndex.IndexStatus.TRANSFORMING, "", sessionId);
+        catalogManager.getFileManager().updateFileIndexStatus(getFile(1), VariantIndexStatus.TRANSFORMING, "", sessionId);
 
         // Expect both files to be loaded
         indexFiles(files, Arrays.asList(getFile(0)), queryOptions, outputId);
@@ -325,7 +325,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
                 .append(VariantStorageOptions.RESUME.key(), true);
 
         List<File> files = Arrays.asList(getFile(0), getFile(1));
-        catalogManager.getFileManager().updateFileIndexStatus(getFile(1), FileIndex.IndexStatus.TRANSFORMING, "", sessionId);
+        catalogManager.getFileManager().updateFileIndexStatus(getFile(1), VariantIndexStatus.TRANSFORMING, "", sessionId);
 
         // Expect only the first file to be loaded
         indexFiles(files, files, queryOptions, outputId);
