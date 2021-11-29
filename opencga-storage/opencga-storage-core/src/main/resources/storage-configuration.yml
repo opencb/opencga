@@ -192,6 +192,8 @@ variant:
         storage.hadoop.mr.scanner.timeout: 300000
 
         mapreduce.map.memory.mb: 2048
+        DeleteHBaseColumnDriver:
+          storage.hadoop.write.mappers.limit.factor: 4
         DiscoverPendingVariantsDriver:
           mapreduce.map.memory.mb: 750
         VariantStatsDriver:
