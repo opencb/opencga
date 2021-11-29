@@ -589,7 +589,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         }
 
         // Check if any file is being completely deleted
-        Set<Integer> partiallyDeletedFiles = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds);
+        Set<Integer> partiallyDeletedFiles = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds, true);
         List<String> fullyDeletedFiles = new ArrayList<>();
         List<Integer> fullyDeletedFileIds = new ArrayList<>();
         for (Integer partiallyDeletedFile : partiallyDeletedFiles) {
