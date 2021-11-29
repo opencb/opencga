@@ -48,6 +48,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
     public static final String DELETE_ALL_COLUMNS = "delete_all_columns";
     public static final String REGIONS_TO_DELETE = "regions_to_delete";
     public static final String TWO_PHASES_PARAM = "two_phases_delete";
+    public static final String USE_REDUCE_STEP = "use_reduce_step";
     private static final Logger LOGGER = LoggerFactory.getLogger(DeleteHBaseColumnDriver.class);
     // This separator is not valid at Bytes.toStringBinary
     private static final String REGION_SEPARATOR = "\\\\";
@@ -117,14 +118,18 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
             SequenceFileAsBinaryOutputFormat.setOutputCompressionType(job, SequenceFile.CompressionType.BLOCK);
             SequenceFileAsBinaryOutputFormat.setOutputCompressorClass(job, DeflateCodec.class);
 
-            float writeMappersLimitFactor = Float.parseFloat(getParam(WRITE_MAPPERS_LIMIT_FACTOR.key(),
-                    WRITE_MAPPERS_LIMIT_FACTOR.defaultValue().toString()));
-            int serversSize = getServersSize(table);
-            int numReducers = Math.round(writeMappersLimitFactor * serversSize);
-            LOGGER.info("Set job reducers to " + numReducers + ". ServersSize: " + serversSize
-                    + ", writeMappersLimitFactor: " + writeMappersLimitFactor);
-            // Limit number of generated parts, and even the size of the parts
-            VariantMapReduceUtil.setNumReduceTasks(job, numReducers);
+            if (Boolean.getBoolean(getParam(USE_REDUCE_STEP))) {
+                float writeMappersLimitFactor = Float.parseFloat(getParam(WRITE_MAPPERS_LIMIT_FACTOR.key(),
+                        WRITE_MAPPERS_LIMIT_FACTOR.defaultValue().toString()));
+                int serversSize = getServersSize(table);
+                int numReducers = Math.round(writeMappersLimitFactor * serversSize);
+                LOGGER.info("Set job reducers to " + numReducers + ". ServersSize: " + serversSize
+                        + ", writeMappersLimitFactor: " + writeMappersLimitFactor);
+                // Limit number of generated parts, and even the size of the parts
+                VariantMapReduceUtil.setNumReduceTasks(job, numReducers);
+            } else {
+                VariantMapReduceUtil.setNoneReduce(job);
+            }
         }
     }
 
