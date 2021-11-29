@@ -688,11 +688,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 query.put(GENE.key(), panelGenes);
                 query.put(SKIP_MISSING_GENES, true);
             } else {
+                logger.info("Panel intersection");
                 // Intersect panel with query!
                 // genesFinal
                 //  - Genes in QUERY + genes in PANEL
-                //  - Genes in QUERY + REGIONS from PANEL (partial)
-                //  - Genes in PANEL + REGIONS from QUERY (partial)
+                //  - Genes in QUERY + REGIONS from PANEL (potentially partial)
+                //  - Genes in PANEL + REGIONS from QUERY (potentially partial)
                 // regionsFinal
                 //  - Regions in QUERY + regions in PANEL
                 // variantsFinal
@@ -755,6 +756,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     }
                 }
 
+                logger.info("- Panel : {genes: {}, regions: {} }", panelGenes.size(), panelRegions.size());
+                logger.info("- Query : {genes: {}, regions: {}, variants: {} }",
+                        queryGenes.size(), queryRegions.size(), queryVariants.size());
+                logger.info("- Intersection : {genes: {}, partialGenes:{}, regions: {}, variants: {} }",
+                        genesFinal.size(), geneRegionsFinal.size() - genesFinal.size(), regionsFinal.size(), variantsFinal.size());
                 if (!geneRegionsFinal.isEmpty()) {
                     // Partial genes. Translate finalGenes to Regions
                     List<Region> geneRegions = new ArrayList<>(geneRegionsFinal.values());
