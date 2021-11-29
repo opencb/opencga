@@ -372,13 +372,13 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
                     String c = Bytes.toString(family) + ':' + Bytes.toString(qualifier);
                     List<String> otherColumns = columnsToDelete.get(c);
                     if (columnsToDelete.containsKey(c)) {
-                        delete.addColumn(family, qualifier);
+                        delete.addColumns(family, qualifier);
                         for (String otherColumn : otherColumns) {
                             if (columnsToCount.contains(otherColumn)) {
                                 count(otherColumn);
                             }
                             String[] split = otherColumn.split(":", 2);
-                            delete.addColumn(Bytes.toBytes(split[0]), Bytes.toBytes(split[1]));
+                            delete.addColumns(Bytes.toBytes(split[0]), Bytes.toBytes(split[1]));
                         }
                         if (columnsToCount.contains(c)) {
                             count(c);
