@@ -760,7 +760,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 logger.info("- Query : {genes: {}, regions: {}, variants: {} }",
                         queryGenes.size(), queryRegions.size(), queryVariants.size());
                 logger.info("- Intersection : {genes: {}, partialGenes:{}, regions: {}, variants: {} }",
-                        genesFinal.size(), geneRegionsFinal.size() - genesFinal.size(), regionsFinal.size(), variantsFinal.size());
+                        genesFinal.size(), Math.max(0, geneRegionsFinal.size() - genesFinal.size()),
+                        regionsFinal.size(), variantsFinal.size());
                 if (!geneRegionsFinal.isEmpty()) {
                     // Partial genes. Translate finalGenes to Regions
                     List<Region> geneRegions = new ArrayList<>(geneRegionsFinal.values());
@@ -785,6 +786,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     query.remove(REGION.key());
                 } else {
                     query.put(REGION.key(), regionsFinal);
+                }
+                if (genesFinal.isEmpty() && variantsFinal.isEmpty() && regionsFinal.isEmpty()) {
+                    query.put(REGION.key(), VariantQueryUtils.NON_EXISTING_REGION);
                 }
             }
         } else {
