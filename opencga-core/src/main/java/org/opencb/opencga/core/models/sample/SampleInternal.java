@@ -28,24 +28,31 @@ import org.opencb.opencga.core.models.common.RgaIndex;
 public class SampleInternal extends Internal {
 
     private RgaIndex rga;
+    private SampleInternalVariant variant;
 
     public SampleInternal() {
     }
 
-    public SampleInternal(String registrationDate, String modificationDate, InternalStatus status, RgaIndex rga) {
+    public SampleInternal(String registrationDate, String modificationDate, InternalStatus status, RgaIndex rga,
+                          SampleInternalVariant variant) {
         super(status, registrationDate, modificationDate);
         this.rga = rga;
+        this.variant = variant;
     }
 
     public static SampleInternal init() {
-        return new SampleInternal(TimeUtils.getTime(), TimeUtils.getTime(), new InternalStatus(InternalStatus.READY), RgaIndex.init());
+        return new SampleInternal(TimeUtils.getTime(), TimeUtils.getTime(), new InternalStatus(InternalStatus.READY), RgaIndex.init(),
+                SampleInternalVariant.init());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleInternal{");
         sb.append("status=").append(status);
+        sb.append(", registrationDate='").append(registrationDate).append('\'');
+        sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append(", rga=").append(rga);
+        sb.append(", variant=").append(variant);
         sb.append('}');
         return sb.toString();
     }
@@ -65,6 +72,15 @@ public class SampleInternal extends Internal {
 
     public SampleInternal setRga(RgaIndex rga) {
         this.rga = rga;
+        return this;
+    }
+
+    public SampleInternalVariant getVariant() {
+        return variant;
+    }
+
+    public SampleInternal setVariant(SampleInternalVariant variant) {
+        this.variant = variant;
         return this;
     }
 

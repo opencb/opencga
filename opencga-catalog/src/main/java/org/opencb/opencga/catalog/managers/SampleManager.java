@@ -64,6 +64,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -687,6 +688,51 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         return result;
+    }
+
+    public OpenCGAResult<?> updateSampleInternalVariantIndex(Sample sample, SampleInternalVariantIndex index, String token)
+            throws CatalogException {
+        return updateSampleInternalVariant(sample, index, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX.key(), token);
+    }
+
+    public OpenCGAResult<?> updateSampleInternalGenotypeIndex(Sample sample, SampleInternalVariantGenotypeIndex index, String token)
+            throws CatalogException {
+        return updateSampleInternalVariant(sample, index, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_GENOTYPE_INDEX.key(), token);
+    }
+
+    public OpenCGAResult<?> updateSampleInternalVariantAnnotationIndex(Sample sample, SampleInternalVariantAnnotationIndex index,
+                                                                       String token) throws CatalogException {
+        return updateSampleInternalVariant(sample, index, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(), token);
+    }
+
+    public OpenCGAResult<?> updateSampleInternalVariantSecondaryIndex(Sample sample, SampleInternalVariantSecondaryIndex index,
+                                                                      String token) throws CatalogException {
+        return updateSampleInternalVariant(sample, index, SampleDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key(), token);
+    }
+
+    private OpenCGAResult<?> updateSampleInternalVariant(Sample sample, Object value, String fieldKey, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyDBAdaptor.get(sample.getStudyUid(), StudyManager.INCLUDE_STUDY_IDS).first();
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("sample", sample)
+                .append(fieldKey, value)
+                .append("token", token);
+
+        authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
+
+        ObjectMap params;
+        try {
+            params = new ObjectMap(fieldKey, new ObjectMap(getUpdateObjectMapper().writeValueAsString(value)));
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Cannot parse SampleInternalVariant object: " + e.getMessage(), e);
+        }
+        OpenCGAResult<?> update = sampleDBAdaptor.update(sample.getUid(), params, QueryOptions.empty());
+        auditManager.audit(userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(),
+                study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+        return new OpenCGAResult<>(update.getTime(), update.getEvents(), 1, Collections.emptyList(), 1);
     }
 
     public OpenCGAResult<Sample> updateAnnotationSet(String studyStr, String sampleStr, List<AnnotationSet> annotationSetList,

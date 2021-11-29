@@ -446,7 +446,7 @@ public class FileManager extends AnnotationSetManager<File> {
         return updateFileInternalField(file, index, FileDBAdaptor.QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(), token);
     }
 
-    public OpenCGAResult<?> updateFileInternalVariantSecondaryIndex(File file, FileInternalVariantAnnotationIndex index, String token)
+    public OpenCGAResult<?> updateFileInternalVariantSecondaryIndex(File file, FileInternalVariantSecondaryIndex index, String token)
             throws CatalogException {
         return updateFileInternalField(file, index, FileDBAdaptor.QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key(), token);
     }
