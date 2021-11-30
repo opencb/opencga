@@ -39,6 +39,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileInternalVariantIndex;
 import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
@@ -147,12 +148,10 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
         } catch (Exception e) {
             assertEquals(0, getDefaultCohort(studyId).getSamples().size());
             assertEquals(CohortStatus.NONE, getDefaultCohort(studyId).getInternal().getStatus().getId());
-            assertEquals(VariantIndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getInternal().getIndex().getStatus().getId());
-            assertNotNull(getVariantSetMetrics(getFile(0).getId()));
+            assertEquals(VariantIndexStatus.NONE, catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getInternal().getVariant().getIndex().getStatus().getId());
+            assertNull(getVariantSetMetrics(getFile(0).getId()));
         }
         queryOptions.put(VariantStorageOptions.STATS_AGGREGATION.key(), "none");
-        // File already transformed
-        queryOptions.put(VariantFileIndexerOperationManager.LOAD, true);
         variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(CohortStatus.READY, getDefaultCohort(studyId).getInternal().getStatus().getId());
@@ -309,10 +308,12 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
     @Test
     public void testTransformTransformingFiles() throws Exception {
         QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+                .append(VariantFileIndexerOperationManager.SKIP_INDEXED_FILES, true);
 
         List<File> files = Arrays.asList(getFile(0), getFile(1));
-        catalogManager.getFileManager().updateFileIndexStatus(getFile(1), VariantIndexStatus.TRANSFORMING, "", sessionId);
+        catalogManager.getFileManager().updateFileInternalVariantIndex(getFile(1),
+                FileInternalVariantIndex.init().setStatus(new VariantIndexStatus(VariantIndexStatus.TRANSFORMING)), sessionId);
 
         // Expect both files to be loaded
         indexFiles(files, Arrays.asList(getFile(0)), queryOptions, outputId);
@@ -325,7 +326,7 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
                 .append(VariantStorageOptions.RESUME.key(), true);
 
         List<File> files = Arrays.asList(getFile(0), getFile(1));
-        catalogManager.getFileManager().updateFileIndexStatus(getFile(1), VariantIndexStatus.TRANSFORMING, "", sessionId);
+        catalogManager.getFileManager().updateFileInternalVariantIndex(getFile(1), new FileInternalVariantIndex(new VariantIndexStatus(VariantIndexStatus.TRANSFORMING), 0, null), sessionId);
 
         // Expect only the first file to be loaded
         indexFiles(files, files, queryOptions, outputId);
@@ -334,7 +335,8 @@ public class VariantFileIndexerOperationManagerTest extends AbstractVariantOpera
     @Test
     public void testIndexWithLoadErrorExternalOutputFolder() throws Exception {
         QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+                .append(VariantFileIndexerOperationManager.SKIP_INDEXED_FILES, true);
 
         List<File> files = Arrays.asList(getFile(0), getFile(1));
         queryOptions.put(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, files.get(1).getName() + ".variants.avro.gz");

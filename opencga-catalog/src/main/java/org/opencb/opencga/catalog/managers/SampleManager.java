@@ -48,6 +48,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileInternal;
 import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.*;
@@ -806,8 +807,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             File file = fileIterator.next();
             if (force) {
                 // Check index status
-                if (file.getInternal().getIndex() != null && file.getInternal().getIndex().getStatus() != null
-                        && !VariantIndexStatus.NONE.equals(file.getInternal().getIndex().getStatus().getId())) {
+                if (!FileInternal.getVariantIndexStatusId(file.getInternal()).equals(VariantIndexStatus.NONE)) {
                     errorFiles.add(file.getPath() + "(" + file.getUid() + ")");
                 }
             } else {

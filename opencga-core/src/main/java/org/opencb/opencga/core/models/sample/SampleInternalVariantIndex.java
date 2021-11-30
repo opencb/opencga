@@ -2,6 +2,8 @@ package org.opencb.opencga.core.models.sample;
 
 import org.opencb.opencga.core.models.common.InternalStatus;
 
+import java.util.Objects;
+
 public class SampleInternalVariantIndex {
 
     private InternalStatus status;
@@ -52,5 +54,20 @@ public class SampleInternalVariantIndex {
     public SampleInternalVariantIndex setMultiFile(boolean multiFile) {
         this.multiFile = multiFile;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SampleInternalVariantIndex that = (SampleInternalVariantIndex) o;
+        return numFiles == that.numFiles &&
+                multiFile == that.multiFile &&
+                Objects.equals(status, that.status);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(status, numFiles, multiFile);
     }
 }

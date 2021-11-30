@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.models.file;
 
+import java.util.Objects;
+
 public class FileInternalVariant {
 
     private FileInternalVariantIndex index;
@@ -56,5 +58,20 @@ public class FileInternalVariant {
     public FileInternalVariant setSecondaryIndex(FileInternalVariantSecondaryIndex secondaryIndex) {
         this.secondaryIndex = secondaryIndex;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FileInternalVariant that = (FileInternalVariant) o;
+        return Objects.equals(index, that.index) &&
+                Objects.equals(annotationIndex, that.annotationIndex) &&
+                Objects.equals(secondaryIndex, that.secondaryIndex);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(index, annotationIndex, secondaryIndex);
     }
 }

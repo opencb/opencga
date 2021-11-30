@@ -76,10 +76,10 @@ public class AddNewFileInternalIndex_1850 extends MigrationTool {
                             Number uid = transformedFile.get("id", Number.class);
                             Number metadataUid = transformedFile.get("metadataId", Number.class);
 
-                            if (uid != null) {
+                            if (uid != null && uid.longValue() > 0) {
                                 variant.getIndex().getTransform().setFileId(getFileId(uid.longValue()));
                             }
-                            if (metadataUid != null) {
+                            if (metadataUid != null && metadataUid.longValue() > 0) {
                                 variant.getIndex().getTransform().setMetadataFileId(getFileId(metadataUid.longValue()));
                             }
                         }
@@ -89,7 +89,7 @@ public class AddNewFileInternalIndex_1850 extends MigrationTool {
                             Number fileUid = localFileIndex.get("fileId", Number.class);
                             String indexer = localFileIndex.getString("indexer");
 
-                            if (fileUid != null) {
+                            if (fileUid != null && fileUid.longValue() > 0) {
                                 alignment.getIndex().setFileId(getFileId(fileUid.longValue()));
                             }
                             if (indexer != null) {

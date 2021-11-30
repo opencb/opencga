@@ -2,6 +2,8 @@ package org.opencb.opencga.core.models.file;
 
 import org.opencb.opencga.core.models.common.InternalStatus;
 
+import java.util.Objects;
+
 public class FileInternalVariantAnnotationIndex {
 
     private InternalStatus status;
@@ -32,5 +34,18 @@ public class FileInternalVariantAnnotationIndex {
     public FileInternalVariantAnnotationIndex setStatus(InternalStatus status) {
         this.status = status;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FileInternalVariantAnnotationIndex that = (FileInternalVariantAnnotationIndex) o;
+        return Objects.equals(status, that.status);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(status);
     }
 }

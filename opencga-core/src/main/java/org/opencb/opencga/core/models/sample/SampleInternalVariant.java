@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.models.sample;
 
+import java.util.Objects;
+
 public class SampleInternalVariant {
 
     private SampleInternalVariantIndex index;
@@ -67,5 +69,21 @@ public class SampleInternalVariant {
     public SampleInternalVariant setSecondaryIndex(SampleInternalVariantSecondaryIndex secondaryIndex) {
         this.secondaryIndex = secondaryIndex;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SampleInternalVariant that = (SampleInternalVariant) o;
+        return Objects.equals(index, that.index) &&
+                Objects.equals(sampleGenotypeIndex, that.sampleGenotypeIndex) &&
+                Objects.equals(annotationIndex, that.annotationIndex) &&
+                Objects.equals(secondaryIndex, that.secondaryIndex);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(index, sampleGenotypeIndex, annotationIndex, secondaryIndex);
     }
 }

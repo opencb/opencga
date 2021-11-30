@@ -48,6 +48,20 @@ public class FileInternal extends Internal {
                 FileInternalAlignment.init(), new HashMap<>(), MissingSamples.initialize());
     }
 
+    public static String getVariantIndexStatusId(FileInternal fileInternal) {
+        String indexStatus;
+        if (fileInternal == null
+                || fileInternal.getVariant() == null
+                || fileInternal.getVariant().getIndex() == null
+                || fileInternal.getVariant().getIndex().getStatus() == null
+                || fileInternal.getVariant().getIndex().getStatus().getId() == null) {
+            indexStatus = VariantIndexStatus.NONE;
+        } else {
+            indexStatus = fileInternal.getVariant().getIndex().getStatus().getId();
+        }
+        return indexStatus;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileInternal{");
@@ -71,13 +85,21 @@ public class FileInternal extends Internal {
         return this;
     }
 
-    // TODO: REMOVE
-    public FileIndex getIndex() {
-        return null;
+    public FileInternalVariant getVariant() {
+        return variant;
     }
 
-    // TODO: REMOVE
-    public FileInternal setIndex(FileIndex index) {
+    public FileInternal setVariant(FileInternalVariant variant) {
+        this.variant = variant;
+        return this;
+    }
+
+    public FileInternalAlignment getAlignment() {
+        return alignment;
+    }
+
+    public FileInternal setAlignment(FileInternalAlignment alignment) {
+        this.alignment = alignment;
         return this;
     }
 

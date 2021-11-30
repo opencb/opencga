@@ -341,16 +341,13 @@ public class FileManager extends AnnotationSetManager<File> {
                 // In case of finding more than one file, try to find the proper one.
                 if (fileList.size() > 1) {
                     // Discard files already with a transformed file.
-                    fileList.removeIf(file -> file.getInternal().getIndex() != null
-                            && file.getInternal().getIndex().getTransformedFile() != null
-                            && file.getInternal().getIndex().getTransformedFile().getId() != transformedFile.getUid());
+                    fileList.removeIf(file -> file.getInternal().getVariant().getIndex() != null
+                            && file.getInternal().getVariant().getIndex().hasTransform()
+                            && !file.getInternal().getVariant().getIndex().getTransform().getFileId().equals(transformedFile.getId()));
                 }
                 if (fileList.size() > 1) {
-                    // Discard files not transformed or indexed.
-                    fileList.removeIf(file -> file.getInternal().getIndex() == null
-                            || file.getInternal().getIndex().getStatus() == null
-                            || file.getInternal().getIndex().getStatus().getId() == null
-                            || file.getInternal().getIndex().getStatus().getId().equals(VariantIndexStatus.NONE));
+                    // Discard files not transformed nor indexed.
+                    fileList.removeIf(file -> FileInternal.getVariantIndexStatusId(file.getInternal()).equals(VariantIndexStatus.NONE));
                 }
             }
 
@@ -401,20 +398,21 @@ public class FileManager extends AnnotationSetManager<File> {
 
             // Update vcf file
             logger.debug("Updating vcf relation");
-            FileIndex index = vcf.getInternal().getIndex();
-            if (index.getTransformedFile() == null) {
-                index.setTransformedFile(new FileIndex.TransformedFile(transformedFile.getUid(), json.getUid()));
+            FileInternalVariantIndex index = vcf.getInternal().getVariant().getIndex();
+            if (!index.hasTransform()) {
+                index.setTransform(new FileInternalVariantIndex.Transform(transformedFile.getId(), json.getId()));
             }
-            String status = VariantIndexStatus.NONE;
-            if (vcf.getInternal().getIndex() != null && vcf.getInternal().getIndex().getStatus() != null
-                    && vcf.getInternal().getIndex().getStatus().getId() != null) {
-                status = vcf.getInternal().getIndex().getStatus().getId();
+            String status;
+            if (index.getStatus() != null && index.getStatus().getId() != null) {
+                status = index.getStatus().getId();
+            } else {
+                status = VariantIndexStatus.NONE;
             }
             if (VariantIndexStatus.NONE.equals(status)) {
                 // If TRANSFORMED, TRANSFORMING, etc, do not modify the index status
                 index.setStatus(new VariantIndexStatus(VariantIndexStatus.TRANSFORMED, "Found transformed file"));
             }
-            ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.INTERNAL_INDEX.key(), index);
+            ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX.key(), index);
             fileDBAdaptor.update(vcf.getUid(), params, QueryOptions.empty());
 
             // Update variant stats
@@ -478,56 +476,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
         return new OpenCGAResult<>(update.getTime(), update.getEvents(), 1, Collections.emptyList(), 1);
-    }
-
-    // TODO: REMOVE!
-    public OpenCGAResult<FileIndex> updateFileIndexStatus(File file, String newStatus, String message, String sessionId)
-            throws CatalogException {
-        return updateFileIndexStatus(file, newStatus, message, null, sessionId);
-    }
-
-    // TODO: REMOVE!
-    public OpenCGAResult<FileIndex> updateFileIndexStatus(File file, String newStatus, String message, Integer release, String token)
-            throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = studyDBAdaptor.get(file.getStudyUid(), StudyManager.INCLUDE_STUDY_IDS).first();
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("file", file)
-                .append("newStatus", newStatus)
-                .append("message", message)
-                .append("release", release)
-                .append("token", token);
-
-        authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-
-        FileIndex index = file.getInternal().getIndex();
-        if (index != null) {
-            if (!VariantIndexStatus.isValid(newStatus)) {
-                throw new CatalogException("The status " + newStatus + " is not a valid status.");
-            } else {
-                index.setStatus(new VariantIndexStatus(newStatus, message));
-            }
-        } else {
-            index = new FileIndex(userId, TimeUtils.getTime(), new VariantIndexStatus(newStatus), -1, new ObjectMap());
-        }
-        if (release != null) {
-            if (newStatus.equals(VariantIndexStatus.READY)) {
-                index.setRelease(release);
-            }
-        }
-        ObjectMap params = null;
-        try {
-            params = new ObjectMap(FileDBAdaptor.QueryParams.INTERNAL_INDEX.key(), new ObjectMap(getUpdateObjectMapper()
-                    .writeValueAsString(index)));
-        } catch (JsonProcessingException e) {
-            throw new CatalogException("Cannot parse index object: " + e.getMessage(), e);
-        }
-        OpenCGAResult update = fileDBAdaptor.update(file.getUid(), params, QueryOptions.empty());
-        auditManager.auditUpdate(userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
-                auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-        return new OpenCGAResult<>(update.getTime(), update.getEvents(), 1, Collections.singletonList(index), 1);
     }
 
     @Deprecated
@@ -752,7 +700,8 @@ public class FileManager extends AnnotationSetManager<File> {
         file.setTags(ParamUtils.defaultObject(file.getTags(), ArrayList::new));
         file.setQualityControl(ParamUtils.defaultObject(file.getQualityControl(), FileQualityControl::new));
         file.setInternal(FileInternal.init());
-        file.getInternal().setIndex(ParamUtils.defaultObject(file.getInternal().getIndex(), FileIndex.initialize()));
+        file.getInternal().setVariant(ParamUtils.defaultObject(file.getInternal().getVariant(), FileInternalVariant.init()));
+        file.getInternal().setAlignment(ParamUtils.defaultObject(file.getInternal().getAlignment(), FileInternalAlignment.init()));
         file.getInternal().setStatus(ParamUtils.defaultObject(file.getInternal().getStatus(), new FileStatus(FileStatus.READY)));
         file.getInternal().setSampleMap(ParamUtils.defaultObject(file.getInternal().getSampleMap(), HashMap::new));
         file.setStatus(ParamUtils.defaultObject(file.getStatus(), Status::new));
@@ -1493,9 +1442,16 @@ public class FileManager extends AnnotationSetManager<File> {
     void fixQueryObject(Study study, Query query, String user) throws CatalogException {
         super.fixQueryObject(query);
 
-        changeQueryId(query, ParamConstants.INTERNAL_INDEX_STATUS_PARAM, FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key());
-        changeQueryId(query, ParamConstants.INTERNAL_STATUS_PARAM, FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key());
-        changeQueryId(query, ParamConstants.FILE_SOFTWARE_NAME_PARAM, FileDBAdaptor.QueryParams.SOFTWARE_NAME.key());
+        changeQueryId(query, ParamConstants.INTERNAL_INDEX_STATUS_PARAM,
+                FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX_STATUS_ID.key());
+        changeQueryId(query, "internal.index.status.name",
+                FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX_STATUS_ID.key());
+        changeQueryId(query, ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_PARAM,
+                FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX_STATUS_ID.key());
+        changeQueryId(query, ParamConstants.INTERNAL_STATUS_PARAM,
+                FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key());
+        changeQueryId(query, ParamConstants.FILE_SOFTWARE_NAME_PARAM,
+                FileDBAdaptor.QueryParams.SOFTWARE_NAME.key());
 
         validateQueryPath(query, FileDBAdaptor.QueryParams.PATH.key());
         validateQueryPath(query, FileDBAdaptor.QueryParams.DIRECTORY.key());
@@ -2678,17 +2634,6 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    public void setFileIndex(String studyStr, String fileId, FileIndex index, String sessionId) throws CatalogException {
-        String userId = userManager.getUserId(sessionId);
-        Study study = studyManager.resolveId(studyStr, userId);
-        long fileUid = internalGet(study.getUid(), fileId, INCLUDE_FILE_IDS, userId).first().getUid();
-
-        authorizationManager.checkFilePermission(study.getUid(), fileUid, userId, FileAclEntry.FilePermissions.WRITE);
-
-        ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.INTERNAL_INDEX.key(), index);
-        fileDBAdaptor.update(fileUid, parameters, QueryOptions.empty());
-    }
-
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> fileList, String member, boolean ignoreException,
                                                             String token) throws CatalogException {
@@ -3061,8 +3006,7 @@ public class FileManager extends AnnotationSetManager<File> {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.UID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.RELATED_FILES.key(),
                 FileDBAdaptor.QueryParams.SIZE.key(), FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(),
-                FileDBAdaptor.QueryParams.INTERNAL_INDEX.key(), FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
-                FileDBAdaptor.QueryParams.EXTERNAL.key()));
+                FileDBAdaptor.QueryParams.INTERNAL.key(), FileDBAdaptor.QueryParams.EXTERNAL.key()));
 
         OpenCGAResult<File> fileOpenCGAResult = internalGet(study.getUid(), fileId, options, userId);
         if (fileOpenCGAResult.getNumResults() == 0) {
@@ -3158,20 +3102,20 @@ public class FileManager extends AnnotationSetManager<File> {
         if (!indexFiles.isEmpty()) {
             Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), new ArrayList<>(indexFiles));
             try (DBIterator<File> iterator = fileDBAdaptor.iterator(query, new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                    FileDBAdaptor.QueryParams.INTERNAL_INDEX.key(), FileDBAdaptor.QueryParams.UID.key())))) {
+                    FileDBAdaptor.QueryParams.INTERNAL.key(), FileDBAdaptor.QueryParams.UID.key())))) {
                 while (iterator.hasNext()) {
                     File next = iterator.next();
-                    String status = next.getInternal().getIndex().getStatus().getId();
+                    String status = FileInternal.getVariantIndexStatusId(next.getInternal());
                     switch (status) {
                         case VariantIndexStatus.READY:
                             // If they are already ready, we only need to remove the reference to the transformed files as they will be
                             // removed
-                            next.getInternal().getIndex().setTransformedFile(null);
+                            next.getInternal().getVariant().getIndex().setTransform(null);
                             break;
                         case VariantIndexStatus.TRANSFORMED:
                             // We need to remove the reference to the transformed files and change their status from TRANSFORMED to NONE
-                            next.getInternal().getIndex().setTransformedFile(null);
-                            next.getInternal().getIndex().getStatus().setId(VariantIndexStatus.NONE);
+                            next.getInternal().getVariant().getIndex().setTransform(null);
+                            next.getInternal().getVariant().getIndex().getStatus().setId(VariantIndexStatus.NONE);
                             break;
                         case VariantIndexStatus.NONE:
                         case VariantIndexStatus.DELETED:

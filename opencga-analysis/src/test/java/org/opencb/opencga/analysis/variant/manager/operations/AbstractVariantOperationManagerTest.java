@@ -254,7 +254,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
             copyResults(Paths.get(tmpOutdir), studyId, outputId, sessionId);
         }
         inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
-        assertEquals(VariantIndexStatus.TRANSFORMED, inputFile.getInternal().getIndex().getStatus().getId());
+        assertEquals(VariantIndexStatus.TRANSFORMED, inputFile.getInternal().getVariant().getIndex().getStatus().getId());
         assertNotNull(inputFile.getQualityControl().getVariant().getVariantSetMetrics());
 
         // Default cohort should not be modified
@@ -275,7 +275,7 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         assertEquals(1, relatedFiles.size());
         assertEquals(inputFile.getUid(), relatedFiles.get(0).getFile().getUid());
 
-        assertEquals(transformedFile.getUid(), inputFile.getInternal().getIndex().getTransformedFile().getId());
+        assertEquals(transformedFile.getId(), inputFile.getInternal().getVariant().getIndex().getTransform().getFileId());
 
         return transformedFile;
     }
@@ -362,9 +362,9 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
         // Check transformed file relations
         for (File inputFile : expectedLoadedFiles) {
             inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
-            assertNotNull(inputFile.getInternal().getIndex().getTransformedFile());
-            String transformedFileId = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
-                    inputFile.getInternal().getIndex().getTransformedFile().getId()), new QueryOptions(), sessionId).first().getId();
+            assertTrue(inputFile.getInternal().getVariant().getIndex().hasTransform());
+            assertNotNull(inputFile.getInternal().getVariant().getIndex().getTransform());
+            String transformedFileId = inputFile.getInternal().getVariant().getIndex().getTransform().getFileId();
 
             File transformedFile = catalogManager.getFileManager().get(studyId, transformedFileId, new QueryOptions(), sessionId).first();
 
@@ -434,7 +434,8 @@ public abstract class AbstractVariantOperationManagerTest extends GenericTest {
                 indexedFileId = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.UID.key(),
                         indexedFileUid), new QueryOptions(), sessionId).first().getId();
             }
-            assertEquals(expectedStatus, catalogManager.getFileManager().get(studyId, indexedFileId, null, sessionId).first().getInternal().getIndex().getStatus().getId());
+            assertEquals(expectedStatus, catalogManager.getFileManager().get(studyId, indexedFileId, null, sessionId).first()
+                    .getInternal().getVariant().getIndex().getStatus().getId());
             System.out.println("etlResult = " + etlResult);
         }
     }

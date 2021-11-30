@@ -1,5 +1,9 @@
 package org.opencb.opencga.core.models.file;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Objects;
+
 public class FileInternalVariantIndex {
 
     private VariantIndexStatus status;
@@ -56,6 +60,25 @@ public class FileInternalVariantIndex {
         return this;
     }
 
+    public boolean hasTransform() {
+        return transform != null && StringUtils.isNotEmpty(transform.getFileId());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FileInternalVariantIndex that = (FileInternalVariantIndex) o;
+        return release == that.release &&
+                Objects.equals(status, that.status) &&
+                Objects.equals(transform, that.transform);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(status, release, transform);
+    }
+
     public static class Transform {
 
         private String fileId;
@@ -98,6 +121,20 @@ public class FileInternalVariantIndex {
         public Transform setMetadataFileId(String metadataFileId) {
             this.metadataFileId = metadataFileId;
             return this;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Transform transform = (Transform) o;
+            return Objects.equals(fileId, transform.fileId) &&
+                    Objects.equals(metadataFileId, transform.metadataFileId);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(fileId, metadataFileId);
         }
     }
 

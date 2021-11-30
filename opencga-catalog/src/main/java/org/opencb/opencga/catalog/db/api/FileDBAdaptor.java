@@ -86,23 +86,16 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
 
         INTERNAL("internal", OBJECT, ""),
         INTERNAL_VARIANT_INDEX("internal.variant.index", TEXT_ARRAY, ""),
+        INTERNAL_VARIANT_INDEX_STATUS_ID("internal.variant.index.status.id", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_ANNOTATION_INDEX("internal.variant.annotationIndex", TEXT_ARRAY, ""),
+        INTERNAL_VARIANT_ANNOTATION_INDEX_STATUS_ID("internal.variant.annotationIndex.status.id", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_SECONDARY_INDEX("internal.variant.secondaryIndex", TEXT_ARRAY, ""),
+        INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID("internal.variant.secondaryIndex.status.id", TEXT_ARRAY, ""),
         INTERNAL_ALIGNMENT_INDEX("internal.alignment.index", TEXT_ARRAY, ""),
+        INTERNAL_ALIGNMENT_INDEX_STATUS_ID("internal.alignment.index.status.id", TEXT_ARRAY, ""),
         INTERNAL_MISSING_SAMPLES("internal.missingSamples", OBJECT, ""),
         INTERNAL_MISSING_SAMPLES_EXISTING("internal.missingSamples.existing", TEXT_ARRAY, ""),
         INTERNAL_MISSING_SAMPLES_NON_EXISTING("internal.missingSamples.nonExisting", TEXT_ARRAY, ""),
-
-        // TODO: REMOVE all INTERNAL_INDEX params
-        INTERNAL_INDEX("internal.index", TEXT_ARRAY, ""),
-        INTERNAL_INDEX_USER_ID("internal.index.userId", TEXT, ""),
-        INTERNAL_INDEX_CREATION_DATE("internal.index.creationDate", TEXT, ""),
-        INTERNAL_INDEX_STATUS_NAME("internal.index.status.name", TEXT, ""),
-        INTERNAL_INDEX_STATUS_MESSAGE("internal.index.status.message", TEXT, ""),
-        INTERNAL_INDEX_JOB_ID("internal.index.jobId", TEXT, ""),
-        INTERNAL_INDEX_TRANSFORMED_FILE("internal.index.transformedFile", TEXT_ARRAY, ""),
-        INTERNAL_INDEX_RELEASE("internal.index.release", INTEGER, ""),
-
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

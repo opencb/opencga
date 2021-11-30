@@ -21,6 +21,8 @@ import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.common.RgaIndex;
 
+import java.util.Objects;
+
 /**
  * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh interdum
  * finibus.
@@ -100,5 +102,22 @@ public class SampleInternal extends Internal {
     public SampleInternal setLastModified(String lastModified) {
         this.lastModified = lastModified;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        SampleInternal that = (SampleInternal) o;
+        return Objects.equals(rga, that.rga) && Objects.equals(variant, that.variant);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(rga, variant);
     }
 }

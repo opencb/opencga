@@ -2,6 +2,8 @@ package org.opencb.opencga.core.models.file;
 
 import org.opencb.opencga.core.models.common.InternalStatus;
 
+import java.util.Objects;
+
 public class FileInternalAlignmentIndex {
 
     private InternalStatus status;
@@ -56,5 +58,20 @@ public class FileInternalAlignmentIndex {
     public FileInternalAlignmentIndex setIndexer(String indexer) {
         this.indexer = indexer;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FileInternalAlignmentIndex that = (FileInternalAlignmentIndex) o;
+        return Objects.equals(status, that.status) &&
+                Objects.equals(fileId, that.fileId) &&
+                Objects.equals(indexer, that.indexer);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(status, fileId, indexer);
     }
 }

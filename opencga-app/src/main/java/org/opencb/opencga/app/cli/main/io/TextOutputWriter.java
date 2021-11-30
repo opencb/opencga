@@ -278,7 +278,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .addColumn("FILE_SYSTEM_URI", file -> file.getUri().toString())
                 .addColumn("STATUS", f -> f.getInternal().getStatus().getId())
                 .addColumnNumber("SIZE", File::getSize)
-                .addColumn("INDEX_STATUS", f -> f.getInternal().getIndex().getStatus().getId(), "NA")
+                .addColumn("INDEX_STATUS", f -> f.getInternal().getVariant().getIndex().getStatus().getId(), "NA")
                 .addColumn("RELATED_FILES", f -> f.getRelatedFiles().stream().map(rf -> rf.getFile().getName()).collect(Collectors.joining(",")))
                 .addColumn("SAMPLES", f -> StringUtils.join(f.getSampleIds(), ","));
 

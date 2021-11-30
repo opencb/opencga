@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.variant.manager.operations;
 
 import org.junit.After;
 import org.junit.Test;
+import org.junit.internal.matchers.ThrowableCauseMatcher;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
@@ -57,6 +58,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
+import static org.junit.internal.matchers.ThrowableCauseMatcher.*;
 import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
@@ -419,7 +421,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
 
         QueryOptions options = new QueryOptions();
 
-        thrown.expectMessage(VariantStatsAnalysis.missingAggregationMappingFile(Aggregation.EXAC).getMessage());
+        thrown.expect(hasCause(hasMessage(is(VariantStatsAnalysis.missingAggregationMappingFile(Aggregation.EXAC).getMessage()))));
         calculateStats(options, Collections.emptyList());
     }
 

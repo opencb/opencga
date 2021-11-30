@@ -25,7 +25,7 @@ public class VariantIndexStatus extends InternalStatus {
 
     public VariantIndexStatus(String status, String message) {
         if (isValid(status)) {
-            init(status, message);
+            init(status, status, message);
         } else {
             throw new IllegalArgumentException("Unknown status " + status);
         }
@@ -37,6 +37,16 @@ public class VariantIndexStatus extends InternalStatus {
 
     public VariantIndexStatus() {
         this(NONE, "");
+    }
+
+    @Override
+    public String getId() {
+        return super.getId();
+    }
+
+    @Override
+    public String getName() {
+        return super.getName();
     }
 
     public static VariantIndexStatus init() {

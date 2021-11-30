@@ -133,7 +133,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
         Set<String> allSampleIds = all.getSamples().stream().map(Sample::getId).collect(Collectors.toSet());
 
         assertThat(all.getInternal().getStatus().getId(), anyOf(is(CohortStatus.INVALID), is(CohortStatus.NONE)));
-        Set<String> loadedSamples = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key
+        Set<String> loadedSamples = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX_STATUS_ID.key
                         (), VariantIndexStatus.READY), null, sessionId)
                 .getResults()
                 .stream()
@@ -142,7 +142,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
         assertEquals(loadedSamples, allSampleIds);
 
         for (String file : fileIds) {
-            assertEquals(VariantIndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, file, null, sessionId).first().getInternal().getIndex().getStatus().getId());
+            assertEquals(VariantIndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, file, null, sessionId).first().getInternal().getVariant().getIndex().getStatus().getId());
         }
 
     }
@@ -151,7 +151,7 @@ public class RemoveVariantsTest extends AbstractVariantOperationManagerTest {
         Path outdir = Paths.get(opencga.createTmpOutdir(studyId, "_REMOVE_", sessionId));
         variantManager.removeStudy(study.toString(), options, outdir.toUri(), sessionId);
 
-        Query query = new Query(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), VariantIndexStatus.READY);
+        Query query = new Query(FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX_STATUS_ID.key(), VariantIndexStatus.READY);
         assertEquals(0L, catalogManager.getFileManager().count(study.toString(), query, sessionId).getNumTotalResults());
 
         Cohort all = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT), null, sessionId).first();

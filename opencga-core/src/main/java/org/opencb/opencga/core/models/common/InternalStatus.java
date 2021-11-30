@@ -69,16 +69,21 @@ public class InternalStatus extends Status {
         this.commit = commit;
     }
 
-    protected void init(String status, String description) {
-        setId(status);
-        setDescription(description);
-        setDate(TimeUtils.getTime());
+    protected void init(String statusId, String description) {
+        init(statusId, null, description);
+    }
+
+    protected void init(String statusId, String statusName, String description) {
+        super.id = statusId;
+        super.name = statusName;;
+        super.description = description;
+        super.date = TimeUtils.getTime();
         this.version = GitRepositoryState.get().getBuildVersion();
         this.commit = GitRepositoryState.get().getCommitId();
     }
 
-    public static boolean isValid(String status) {
-        if (status != null && (status.equals(READY) || status.equals(DELETED))) {
+    public static boolean isValid(String statusId) {
+        if (statusId != null && (statusId.equals(READY) || statusId.equals(DELETED))) {
             return true;
         }
         return false;
@@ -92,8 +97,8 @@ public class InternalStatus extends Status {
 
         InternalStatus that = (InternalStatus) o;
 
-        if (version != null ? !version.equals(that.version) : that.version != null) return false;
-        return commit != null ? commit.equals(that.commit) : that.commit == null;
+        if (!Objects.equals(version, that.version)) return false;
+        return Objects.equals(commit, that.commit);
     }
 
     @Override

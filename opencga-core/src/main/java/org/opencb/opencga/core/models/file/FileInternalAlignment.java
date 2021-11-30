@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.models.file;
 
+import java.util.Objects;
+
 public class FileInternalAlignment {
 
     private FileInternalAlignmentIndex index;
@@ -30,5 +32,18 @@ public class FileInternalAlignment {
     public FileInternalAlignment setIndex(FileInternalAlignmentIndex index) {
         this.index = index;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        FileInternalAlignment that = (FileInternalAlignment) o;
+        return Objects.equals(index, that.index);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(index);
     }
 }

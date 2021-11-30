@@ -7,6 +7,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,7 @@ public class AddFilePathToStudyConfigurationMigration {
             file = queryResult.first();
         } else {
             for (File i : queryResult.getResults()) {
-                if (i.getInternal().getIndex().getStatus() != null && InternalStatus.READY.equals(i.getInternal().getIndex().getStatus().getId())) {
+                if (InternalStatus.READY.equals(FileInternal.getVariantIndexStatusId(i.getInternal()))) {
                     if (file != null) {
                         throw new IllegalStateException("Error migrating storage. "
                                 + "Unable to determine which file is indexed");
