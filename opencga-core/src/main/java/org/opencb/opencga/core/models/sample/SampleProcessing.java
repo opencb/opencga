@@ -16,16 +16,39 @@
 
 package org.opencb.opencga.core.models.sample;
 
+import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.tools.annotations.DataModel;
+
 import java.util.Map;
 
 public class SampleProcessing {
 
+    @DataModel(id = "SampleProcessing.product", name = "product", indexed = true,
+            description = FieldConstants.SAMPLE_PROCESSING_PRODUCT_DESCRIPTION)
     private String product;
+
+    @DataModel(id = "SampleProcessing.preparationMethod", name = "preparationMethod", indexed = true,
+            description = FieldConstants.SAMPLE_PROCESSING_PREPARATION_METHOD)
     private String preparationMethod;
+
+    @DataModel(id = "SampleProcessing.preparationMethod", name = "preparationMethod", indexed = true,
+            description = FieldConstants.SAMPLE_PROCESSING_EXTRACTION_METHOD)
     private String extractionMethod;
+
+    @DataModel(id = "SampleProcessing.labSampleId", name = "labSampleId", indexed = true,
+            description = FieldConstants.SAMPLE_PROCESSING_LAB_SAMPLE_ID_DESCRIPTION)
     private String labSampleId;
+
+    @DataModel(id = "SampleProcessing.quantity", name = "quantity", indexed = true,
+            description = FieldConstants.SAMPLE_PROCESSING_QUANTITY_DESCRIPTION)
     private String quantity;
+
+    @DataModel(id = "SampleProcessing.date", name = "date", indexed = true,
+            description = FieldConstants.SAMPLE_PROCESSING_DATE_DESCRIPTION)
     private String date;
+
+    @DataModel(id = "SampleProcessing.attributes", name = "attributes", indexed = true,
+            description = FieldConstants.SAMPLE_PROCESSING_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public SampleProcessing() {

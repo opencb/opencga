@@ -1,6 +1,6 @@
 package org.opencb.opencga.core.tools.annotations;
 
-public @interface OpenCBField {
+public @interface DataModel {
 
     /**
      * @return id of the field.
@@ -21,6 +21,24 @@ public @interface OpenCBField {
      * @return Class of field.
      */
     Class<?> dataTypeClass() default Void.class;
+
+    boolean indexed() default false;
+
+    boolean required() default false;
+
+    boolean managed() default false;
+
+    boolean unique() default false;
+
+    boolean deprecated() default false;
+
+    int since() default -1;
+
+    String[] dependsOn() default {};
+
+    FieldScope scope() default FieldScope.USER;
+
+    String[] alias() default {};
 
     UpdateParam update() default @UpdateParam;
 

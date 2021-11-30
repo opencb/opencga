@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.main;
 
 import org.opencb.opencga.app.cli.session.CliSessionManager;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
@@ -29,22 +28,17 @@ public class OpencgaMain {
     public static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
     public static void main(String[] args) {
-        CliSessionManager.init(args);
-
-        if (args.length == 1 && "--shell".equals(args[0]) || (args.length == 2 && "--shell".equals(args[0]) && "--debug".equals(args[1]))) {
-            CliSessionManager.initShell();
-            OpencgaMain.printDebugMessage("Shell created ");
-            try {
+        try {
+            CliSessionManager.init(args);
+            if (args.length == 1 && "--shell".equals(args[0]) || (args.length == 2 && "--shell".equals(args[0]) && "--debug".equals(args[1]))) {
+                CliSessionManager.initShell();
+                OpencgaMain.printDebugMessage("Shell created ");
                 CliSessionManager.getShell().execute();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else {
-            try {
+            } else {
                 OpencgaCliProcessor.process(args);
-            } catch (CatalogAuthenticationException e) {
-                printErrorMessage(e.getMessage(), e);
             }
+        } catch (Exception e) {
+            printErrorMessage(e.getMessage(), e);
         }
     }
 

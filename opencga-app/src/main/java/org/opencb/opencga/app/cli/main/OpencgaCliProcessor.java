@@ -249,12 +249,20 @@ public class OpencgaCliProcessor {
         String[] args = new String[2];
         args[0] = "users";
         args[1] = "login";
-        args = appendArgs(args, new String[]{"-u", user});
-        args = appendArgs(args, new String[]{"--password", new String(passwordArray)});
-        OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
-        cliOptionsParser.parse(args);
-        CommandExecutor commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
-        executeCommand(commandExecutor, cliOptionsParser);
-        OpencgaMain.printDebugMessage("Logged user " + user);
+        if (isValidUser(user)) {
+            args = appendArgs(args, new String[]{"-u", user});
+            args = appendArgs(args, new String[]{"--password", new String(passwordArray)});
+            OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
+            cliOptionsParser.parse(args);
+            CommandExecutor commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+            executeCommand(commandExecutor, cliOptionsParser);
+            OpencgaMain.printWarningMessage("Logged user " + user);
+        } else {
+            OpencgaMain.printWarningMessage("Invalid user name: " + user);
+        }
+    }
+
+    private static boolean isValidUser(String user) {
+        return user.matches("^[A-Za-z][A-Za-z0-9_]{2,29}$");
     }
 }

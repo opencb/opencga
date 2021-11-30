@@ -1,6 +1,8 @@
 package org.opencb.opencga.core.models.common;
 
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.tools.annotations.DataModel;
 
 public class RgaIndex {
 
@@ -10,6 +12,8 @@ public class RgaIndex {
      *
      * @apiNote Internal, Unique, Immutable
      */
+    @DataModel(id = "RgaIndex.status", name = "status",
+            description = FieldConstants.RGAINDEX_STATUS_DESCRIPTION)
     private Status status;
     /**
      * Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus
@@ -17,6 +21,9 @@ public class RgaIndex {
      *
      * @apiNote Internal, Unique, Immutable
      */
+
+    @DataModel(id = "RgaIndex.date", name = "date",
+            description = FieldConstants.RGAINDEX_DATE_DESCRIPTION)
     private String date;
 
     public RgaIndex() {

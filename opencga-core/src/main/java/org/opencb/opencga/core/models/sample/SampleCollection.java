@@ -16,15 +16,35 @@
 
 package org.opencb.opencga.core.models.sample;
 
+import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.tools.annotations.DataModel;
+
 import java.util.Map;
 
 public class SampleCollection {
 
+    @DataModel(id = "SampleCollection.tissue", name = "tissue", indexed = true,
+            description = FieldConstants.SAMPLE_COLLECTION_TISSUE_DESCRIPTION)
     private String tissue;
+
+    @DataModel(id = "SampleCollection.organ", name = "organ", indexed = true,
+            description = FieldConstants.SAMPLE_COLLECTION_TISSUE_DESCRIPTION)
     private String organ;
+
+    @DataModel(id = "SampleCollection.quantity", name = "quantity", indexed = true,
+            description = FieldConstants.SAMPLE_COLLECTION_QUANTITY_DESCRIPTION)
     private String quantity;
+
+    @DataModel(id = "SampleCollection.method", name = "method", indexed = true,
+            description = FieldConstants.SAMPLE_COLLECTION_METHOD_DESCRIPTION)
     private String method;
+
+    @DataModel(id = "SampleCollection.date", name = "date", indexed = true,
+            description = FieldConstants.SAMPLE_COLLECTION_DATE_DESCRIPTION)
     private String date;
+
+    @DataModel(id = "SampleCollection.attributes", name = "attributes", indexed = true,
+            description = FieldConstants.SAMPLE_COLLECTION_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public SampleCollection() {

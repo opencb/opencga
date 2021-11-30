@@ -14,7 +14,6 @@ public class Parameter {
     private String description;
     private List<Parameter> data;
     private String allowedValues;
-    private int position;
     private boolean complex;
     private String genericType;
     private boolean innerParam;
@@ -31,7 +30,7 @@ public class Parameter {
         sb.append(", description='").append(description).append('\'');
         sb.append(", data=").append(data);
         sb.append(", allowedValues='").append(allowedValues).append('\'');
-        sb.append(", position=").append(position);
+        //  sb.append(", position=").append(position);
         sb.append(", complex=").append(complex);
         sb.append(", genericType='").append(genericType).append('\'');
         sb.append(", innerParam=").append(innerParam);
@@ -63,15 +62,6 @@ public class Parameter {
 
     public Parameter setAllowedValues(String allowedValues) {
         this.allowedValues = allowedValues;
-        return this;
-    }
-
-    public int getPosition() {
-        return position;
-    }
-
-    public Parameter setPosition(int position) {
-        this.position = position;
         return this;
     }
 

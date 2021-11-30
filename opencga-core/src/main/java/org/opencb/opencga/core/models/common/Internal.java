@@ -1,9 +1,20 @@
 package org.opencb.opencga.core.models.common;
 
+import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.opencga.core.tools.annotations.DataModel;
+
 public abstract class Internal {
 
+    @DataModel(id = "Internal.status", name = "status",
+            description = FieldConstants.INTERNAL_STATUS_DESCRIPTION)
     protected Status status;
+
+    @DataModel(id = "Internal.registrationDate", name = "registrationDate",
+            description = FieldConstants.INTERNAL_REGISTRATION_DATE_DESCRIPTION)
     protected String registrationDate;
+
+    @DataModel(id = "Internal.lastModified", name = "lastModified",
+            description = FieldConstants.INTERNAL_LAST_MODIFIED_DESCRIPTION)
     protected String lastModified;
 
     public Internal() {

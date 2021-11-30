@@ -96,7 +96,7 @@ public class CliSessionManager {
                     RestResponse<Project> res = openCGAClient.getProjectClient().search(new ObjectMap());
                     setUserStudies(res);
                 } catch (ClientException e) {
-                    e.printStackTrace();
+                    OpencgaMain.printErrorMessage("Reloading projects failed: ", e);
                 }
             } else {
                 OpenCGAClient openCGAClient = new OpenCGAClient();
@@ -104,7 +104,7 @@ public class CliSessionManager {
                     RestResponse<Project> res = openCGAClient.getUserClient().projects(CliSession.getInstance().getUser(), new ObjectMap());
                     setUserStudies(res);
                 } catch (ClientException e) {
-                    e.printStackTrace();
+                    OpencgaMain.printErrorMessage("Reloading projects failed ", e);
                 }
             }
         }
@@ -171,7 +171,7 @@ public class CliSessionManager {
                     updateSession();
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                OpencgaMain.printErrorMessage("Reloading studies failed ", e);
             }
         } else {
             OpencgaMain.printErrorMessage("To set a study you must be logged in");
@@ -198,7 +198,6 @@ public class CliSessionManager {
                     }
                 } catch (ClientException e) {
                     OpencgaMain.printErrorMessage(e.getMessage(), e);
-                    e.printStackTrace();
                 }
             } else {
                 OpencgaMain.printErrorMessage("Client not available");

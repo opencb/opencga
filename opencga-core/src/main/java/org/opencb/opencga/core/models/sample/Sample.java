@@ -23,10 +23,9 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
-import org.opencb.opencga.core.tools.annotations.CreateParam;
-import org.opencb.opencga.core.tools.annotations.OpenCBField;
+import org.opencb.opencga.core.tools.annotations.DataModel;
 import org.opencb.opencga.core.tools.annotations.ParamType;
-import org.opencb.opencga.core.tools.annotations.SearchParam;
+import org.opencb.opencga.core.tools.annotations.UpdateParam;
 
 import java.util.*;
 
@@ -42,8 +41,8 @@ public class Sample extends Annotable {
      *
      * @apiNote Required, Immutable, Unique
      */
-    @OpenCBField(id = "id", name = "id", description = FieldConstants.SAMPLE_ID_DESCRIPTION, create = @CreateParam(required = true,
-            type = ParamType.PATH), search = @SearchParam(required = false, available = true))
+    @DataModel(id = "id", name = "id", description = FieldConstants.SAMPLE_ID_DESCRIPTION, required = true, unique = true, indexed = true,
+            managed = true, update = @UpdateParam(required = true, type = ParamType.PATH))
     private String id;
 
     /**
@@ -51,20 +50,24 @@ public class Sample extends Annotable {
      *
      * @apiNote Immutable, Unique
      */
+    @DataModel(id = "uuid", name = "uuid", description = FieldConstants.GENERIC_UUID_DESCRIPTION, unique = true,
+            managed = true)
     private String uuid;
 
     /**
      * Describes how the sample was processed in the lab.
      */
+    @DataModel(id = "processing", name = "processing", indexed = true, description = FieldConstants.SAMPLE_PROCESSING_DESCRIPTION)
     private SampleProcessing processing;
 
     /**
      * Describes how the sample was collected.
      *
      * @apiNote
-     * @implNote The sample collection is a list of samples
+     * @implNote Describes how the sample was collected.
      * @since 2.1
      */
+    @DataModel(id = "collection", name = "collection", indexed = true, description = FieldConstants.SAMPLE_SAMPLE_COLLECTION_DESCRIPTION)
     private SampleCollection collection;
 
     /**
@@ -75,6 +78,8 @@ public class Sample extends Annotable {
      * @see [ZetaGenomics] (https://www.zettagenomics.com)
      * @since 2.1
      */
+    @DataModel(id = "qualityControl", name = "qualityControl", indexed = true,
+            description = FieldConstants.SAMPLE_QUALITY_CONTROL_DESCRIPTION)
     private SampleQualityControl qualityControl;
 
     /**
@@ -82,6 +87,8 @@ public class Sample extends Annotable {
      *
      * @apiNote Immutable
      */
+    @DataModel(id = "release", name = "release", description = FieldConstants.GENERIC_RELEASE_DESCRIPTION,
+            managed = true)
     private int release;
 
     /**
@@ -90,6 +97,8 @@ public class Sample extends Annotable {
      *
      * @apiNote Immutable
      */
+    @DataModel(id = "version", name = "version", description = FieldConstants.GENERIC_VERSION_DESCRIPTION,
+            managed = true)
     private int version;
 
     /**
@@ -97,6 +106,8 @@ public class Sample extends Annotable {
      *
      * @apiNote Immutable
      */
+    @DataModel(id = "creationDate", name = "creationDate", description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION,
+            managed = true, indexed = true)
     private String creationDate;
 
     /**
@@ -104,11 +115,14 @@ public class Sample extends Annotable {
      *
      * @apiNote Immutable
      */
+    @DataModel(id = "modificationDate", name = "modificationDate", description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION,
+            managed = true, indexed = true)
     private String modificationDate;
 
     /**
      * Generic: Users may provide a description for the entry.
      */
+    @DataModel(id = "description", name = "description", description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
     /**
@@ -116,16 +130,31 @@ public class Sample extends Annotable {
      *
      * @apiNote
      */
+    @DataModel(id = "somatic", name = "somatic", description = FieldConstants.SAMPLE_SOMATIC_DESCRIPTION,
+            indexed = true)
     private boolean somatic;
+
+    @DataModel(id = "phenotypes", name = "phenotypes", description = FieldConstants.SAMPLE_PHENOTYPES_DESCRIPTION,
+            indexed = true)
     private List<Phenotype> phenotypes;
 
+    @DataModel(id = "individualId", name = "individualId", description = FieldConstants.SAMPLE_INDIVIDUAL_ID_DESCRIPTION,
+            indexed = true)
     private String individualId;
+
+    @DataModel(id = "fileIds", name = "fileIds", description = FieldConstants.SAMPLE_FILE_IDS_DESCRIPTION,
+            indexed = true)
     private List<String> fileIds;
+
+    @DataModel(id = "cohortIds", name = "cohortIds", description = FieldConstants.SAMPLE_COHORT_IDS_DESCRIPTION,
+            indexed = true)
     private List<String> cohortIds;
 
     /**
      * Generic: Object to define the status of the entry.
      */
+    @DataModel(id = "status", name = "status", description = FieldConstants.SAMPLE_COHORT_IDS_DESCRIPTION,
+            indexed = true)
     private CustomStatus status;
 
     /**
@@ -134,14 +163,15 @@ public class Sample extends Annotable {
      *
      * @apiNote Immutable
      */
+    @DataModel(id = "internal", name = "internal", description = FieldConstants.SAMPLE_INTERNAL_DESCRIPTION,
+            managed = true)
     private SampleInternal internal;
 
     /**
-     * Dictionary that can be customised by users to store any additional information users may require.
-     *
      * @implNote This field is not meant to be queried. It should only contain extra information. To store additional information meant to
      * be queried, please use annotationSets.
      */
+    @DataModel(id = "attributes", name = "attributes", description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public Sample() {

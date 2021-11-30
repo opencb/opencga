@@ -44,7 +44,6 @@ public class Status {
 
     public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED);
 
-
     public Status() {
         this(READY, "");
     }
@@ -66,7 +65,6 @@ public class Status {
         this.date = TimeUtils.getTime();
         this.description = description;
     }
-
 
     public static boolean isValid(String status) {
         if (status != null && (status.equals(READY) || status.equals(DELETED))) {

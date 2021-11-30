@@ -99,7 +99,9 @@ public class ParentCliOptionsParser extends CliOptionsParser {
 
     private Map<String, String> getOpencgaCommands() {
         Map<String, String> h = new HashMap<>();
-        h.put("use <host|study> <name>", "Sets the host(server) or study to be used in the following commands");
+        h.put("--shell", "Interactive mode opencga shell");
+        h.put("use study <name>", "(Only in interactive mode) Sets the study to be used in the following commands");
+        h.put("use host <name>", "Sets the host(server) to be used in the following commands");
         h.put("login [user]", "Authenticates new user in the system");
         h.put("logout", "Logouts the current user from the system");
         h.put("exit", "Closes the opencga shell");

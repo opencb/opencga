@@ -10,10 +10,6 @@ public @interface Api {
 
     String[] tags() default {""};
 
-    /**
-     * @deprecated
-     */
-    @Deprecated
     String description() default "";
 
     /**
