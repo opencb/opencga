@@ -35,7 +35,6 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
 
     private List<Panel> panels;
 
-    private InterpretationStats stats;
     private InterpretationInternal internal;
     private int release;
 
@@ -47,7 +46,7 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
                           InterpretationMethod method, String creationDate, String modificationDate,
                           List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings, List<Panel> panels,
                           List<ClinicalComment> comments, Map<String, Object> attributes) {
-        super(id, "", description, clinicalAnalysisId, analyst, method, primaryFindings, secondaryFindings, comments, null,
+        super(id, "", description, clinicalAnalysisId, analyst, method, primaryFindings, secondaryFindings, comments, null, null,
                 creationDate, modificationDate, 0, attributes);
         this.panels = panels;
     }
@@ -65,7 +64,6 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
         sb.append("studyUid=").append(studyUid);
         sb.append(", uid=").append(uid);
         sb.append(", panels=").append(panels);
-        sb.append(", stats=").append(stats);
         sb.append(", internal=").append(internal);
         sb.append(", release=").append(release);
         sb.append('}');
@@ -106,15 +104,6 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
 
     public Interpretation setPanels(List<Panel> panels) {
         this.panels = panels;
-        return this;
-    }
-
-    public InterpretationStats getStats() {
-        return stats;
-    }
-
-    public Interpretation setStats(InterpretationStats stats) {
-        this.stats = stats;
         return this;
     }
 
