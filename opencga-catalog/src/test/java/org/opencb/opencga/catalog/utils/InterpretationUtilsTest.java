@@ -3,13 +3,13 @@ package org.opencb.opencga.catalog.utils;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
 import org.opencb.biodata.models.clinical.interpretation.VariantClassification;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.clinical.InterpretationStats;
 
 import java.util.ArrayList;
 import java.util.Arrays;

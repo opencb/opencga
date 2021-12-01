@@ -233,6 +233,8 @@ public class ClinicalCommandOptions {
         public String panelConfidence;
         @Parameter(names = {"--panel-role-in-cancer"}, description = PANEL_ROLE_IN_CANCER_DESC, arity = 1)
         public String panelRoleInCancer;
+        @Parameter(names = {"--panel-intersection"}, description = PANEL_INTERSECTION_DESC, arity = 1)
+        public Boolean panelIntersection;
 
         @Parameter(names = {"--" + PRIMARY_INTERPRETATION_PARAM_NAME}, description = "Primary interpretation", arity = 0)
         public boolean primary;

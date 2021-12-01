@@ -141,6 +141,20 @@ public class VariantMatchers {
         return overlaps(region, true);
     }
 
+    public static Matcher<VariantAnnotation> annotationOverlaps(Region region) {
+        return new TypeSafeDiagnosingMatcher<VariantAnnotation>() {
+            @Override
+            protected boolean matchesSafely(VariantAnnotation item, Description mismatchDescription) {
+                return region.overlaps(item.getChromosome(), item.getStart(), item.getStart());
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("overlaps with region " + region);
+            }
+        };
+    }
+
     public static Matcher<Variant> overlaps(final Region region, final boolean inclusive) {
         return new TypeSafeDiagnosingMatcher<Variant>() {
             @Override

@@ -119,9 +119,13 @@ public class HBaseVariantTableNameGenerator {
     }
 
     public static void checkValidMetaTableName(String metaTableName) {
-        if (!validSuffix(metaTableName, META_SUFIX)) {
+        if (!isValidMetaTableName(metaTableName)) {
             throw new IllegalArgumentException("Invalid meta table name : " + metaTableName);
         }
+    }
+
+    public static boolean isValidMetaTableName(String metaTableName) {
+        return validSuffix(metaTableName, META_SUFIX);
     }
 
     private static boolean validSuffix(String tableName, String suffix) {

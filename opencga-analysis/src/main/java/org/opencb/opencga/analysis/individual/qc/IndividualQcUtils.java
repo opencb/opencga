@@ -345,7 +345,7 @@ public class IndividualQcUtils {
                                    String token) throws ToolException {
         try {
             storageManager.exportData(tpedFile.getAbsolutePath(), TPED, null, query, QueryOptions.empty(), token);
-        } catch (CatalogException | IOException | StorageEngineException e) {
+        } catch (CatalogException | StorageEngineException e) {
             throw new ToolException(e);
         }
 

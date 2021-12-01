@@ -18,6 +18,7 @@ import static com.mongodb.client.model.Filters.eq;
         description = "Rename SampleQualityControl fields #1844", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
+        patch = 2,
         date = 20211119)
 public class RenameSampleQualityControlFields extends MigrationTool {
 
@@ -49,7 +50,7 @@ public class RenameSampleQualityControlFields extends MigrationTool {
                             if (CollectionUtils.isNotEmpty(plots)) {
                                 variant.put("genomePlot", plots.get(0));
                             }
-                            
+
                             // Add files
                             variant.put("files", Collections.emptyList());
 
@@ -59,11 +60,12 @@ public class RenameSampleQualityControlFields extends MigrationTool {
                                 for (Document signature : signatures) {
                                     // Check SignatureFitting
                                     Document fitting = signature.get("fitting", Document.class);
-
-                                    // Rename image for file
-                                    String image = fitting.get("image", String.class);
-                                    fitting.remove("image");
-                                    fitting.put("file", image != null ? image : "");
+                                    if (fitting != null) {
+                                        // Rename image for file
+                                        String image = fitting.get("image", String.class);
+                                        fitting.remove("image");
+                                        fitting.put("file", image != null ? image : "");
+                                    }
                                 }
                             }
                         }

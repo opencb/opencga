@@ -22,7 +22,7 @@ public abstract class Main {
             case "mm":
             case "metadata":
             case "metadatamanager":
-                new AdminMain().run(args);
+                new VariantMetadataMain().run(args);
                 break;
             case "si":
             case "sampleindex":

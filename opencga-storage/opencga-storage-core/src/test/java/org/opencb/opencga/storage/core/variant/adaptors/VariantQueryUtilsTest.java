@@ -392,6 +392,23 @@ public class VariantQueryUtilsTest extends GenericTest {
     }
 
     @Test
+    public void intersectRegionsTest() throws Exception {
+        intersectRegionsTest(null, "1", "2");
+        intersectRegionsTest("1", "1", "1");
+        intersectRegionsTest("1:10000-20000", "1:10000-20000", "1:10000-20000");
+        intersectRegionsTest("1:17000-20000", "1:15000-20000", "1:17000-20000");
+        intersectRegionsTest("1:17000-20000", "1:17000-20000", "1:17000-25000");
+        intersectRegionsTest("1:17000-18000", "1:15000-20000", "1:17000-18000");
+        intersectRegionsTest("1:17000-20000", "1:15000-20000", "1:17000-22000");
+    }
+
+    private void intersectRegionsTest(String expected, String r1, String r2) {
+        Region expectedRegion = expected == null ? null : new Region(expected);
+        assertEquals(expectedRegion, intersectRegions(new Region(r1), new Region(r2)));
+        assertEquals(expectedRegion, intersectRegions(new Region(r2), new Region(r1)));
+    }
+
+    @Test
     public void mergeRegionsTest() throws Exception {
         assertEquals(Arrays.asList(new Region("1", 100, 400)), mergeRegions(Arrays.asList(new Region("1", 100, 200), new Region("1", 200, 400))));
         assertEquals(Arrays.asList(new Region("1", 100, 200), new Region("1", 201, 400)), mergeRegions(Arrays.asList(new Region("1", 100, 200), new Region("1", 201, 400))));

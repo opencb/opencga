@@ -149,7 +149,7 @@ public class ArchiveDriver extends Configured implements Tool {
 
     private VariantFileMetadata readMetaData(Configuration conf, URI inputMetaFile) throws IOException {
         Path from = new Path(inputMetaFile);
-        FileSystem fs = FileSystem.get(conf);
+        FileSystem fs = from.getFileSystem(conf);
         DatumReader<VariantFileMetadata> userDatumReader = new SpecificDatumReader<>(VariantFileMetadata.class);
         VariantFileMetadata variantFileMetadata;
         if (inputMetaFile.toString().endsWith("json") || inputMetaFile.toString().endsWith("json.gz")) {
