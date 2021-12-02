@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
@@ -231,6 +232,7 @@ public class ProjectManager extends AbstractManager {
                 .append("options", options)
                 .append("token", token);
 
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         OpenCGAResult<Project> queryResult;
         Project project;
         try {
@@ -264,9 +266,13 @@ public class ProjectManager extends AbstractManager {
             project = projectCreateParams.toProject();
             validateProjectForCreation(project, user.first());
 
-            projectDBAdaptor.insert(project, userId, options);
-            queryResult = getProject(userId, project.getUuid(), options);
-            project = queryResult.first();
+            queryResult = projectDBAdaptor.insert(project, userId, options);
+            OpenCGAResult<Project> result = getProject(userId, project.getUuid(), options);
+            project = result.first();
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created project
+                queryResult.setResults(result.getResults());
+            }
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.PROJECT, projectCreateParams.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -322,8 +328,8 @@ public class ProjectManager extends AbstractManager {
      * Reads a project from Catalog given a project id or alias.
      *
      * @param projectId Project id or alias.
-     * @param options    Read options
-     * @param token  sessionId
+     * @param options   Read options
+     * @param token     sessionId
      * @return The specified object
      * @throws CatalogException CatalogException
      */
@@ -374,9 +380,9 @@ public class ProjectManager extends AbstractManager {
     /**
      * Fetch all the project objects matching the query.
      *
-     * @param query     Query to catalog.
-     * @param options   Query options, like "include", "exclude", "limit" and "skip"
-     * @param token sessionId
+     * @param query   Query to catalog.
+     * @param options Query options, like "include", "exclude", "limit" and "skip"
+     * @param token   sessionId
      * @return All matching elements.
      * @throws CatalogException CatalogException
      */
@@ -416,10 +422,10 @@ public class ProjectManager extends AbstractManager {
     /**
      * Update metada from projects.
      *
-     * @param projectId Project id or alias.
+     * @param projectId  Project id or alias.
      * @param parameters Parameters to change.
      * @param options    options
-     * @param token  sessionId
+     * @param token      sessionId
      * @return The modified entry.
      * @throws CatalogException CatalogException
      */
@@ -431,11 +437,11 @@ public class ProjectManager extends AbstractManager {
     /**
      * Update metada from projects.
      *
-     * @param projectId Project id or alias.
-     * @param parameters Parameters to change.
-     * @param options    options
-     * @param allowProtectedUpdates  Allow protected updates
-     * @param token  sessionId
+     * @param projectId             Project id or alias.
+     * @param parameters            Parameters to change.
+     * @param options               options
+     * @param allowProtectedUpdates Allow protected updates
+     * @param token                 sessionId
      * @return The modified entry.
      * @throws CatalogException CatalogException
      */
@@ -462,6 +468,8 @@ public class ProjectManager extends AbstractManager {
         try {
             ParamUtils.checkObj(parameters, "Parameters");
             ParamUtils.checkParameter(token, "token");
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+
             long projectUid = project.getUid();
             authorizationManager.checkCanEditProject(projectUid, userId);
 
@@ -517,15 +525,18 @@ public class ProjectManager extends AbstractManager {
                 ParamUtils.checkIdentifier(parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), "id");
             }
 
-            OpenCGAResult result = projectDBAdaptor.update(projectUid, parameters, QueryOptions.empty());
+            OpenCGAResult<Project> update = projectDBAdaptor.update(projectUid, parameters, QueryOptions.empty());
             auditManager.auditUpdate(userId, Enums.Resource.PROJECT, project.getId(), project.getUuid(), "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            OpenCGAResult<Project> queryResult = projectDBAdaptor.get(projectUid,
-                    new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
-            queryResult.setTime(queryResult.getTime() + result.getTime());
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated project
+                OpenCGAResult<Project> result = projectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.UID.key(), projectUid), options,
+                        userId);
+                update.setResults(result.getResults());
+            }
 
-            return queryResult;
+            return update;
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, Enums.Resource.PROJECT, project.getId(), project.getUuid(), "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

@@ -65,8 +65,15 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new study", response = Study.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response createStudyPOST(
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(value = ParamConstants.STUDY_PARAM, required = true) StudyCreateParams study) {
         try {
             return createOkResponse(catalogManager.getStudyManager().create(project, study != null ? study.toStudy() : new Study(),
@@ -124,12 +131,19 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some study attributes", response = Study.class)
-    public Response updateByPost(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION,
-            required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                 @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyUpdateParams updateParams) {
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
+    public Response updateByPost(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyUpdateParams updateParams) {
         try {
             ObjectUtils.defaultIfNull(updateParams, new StudyUpdateParams());
-            DataResult queryResult = catalogManager.getStudyManager().update(studyStr, updateParams, null, token);
+            DataResult queryResult = catalogManager.getStudyManager().update(studyStr, updateParams, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -440,6 +454,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing the variable to be added or removed. For removing, only the variable id will be needed.",
                     required = true) Variable variable) {
+
         try {
             if (action == null) {
                 action = ParamUtils.AddRemoveAction.ADD;

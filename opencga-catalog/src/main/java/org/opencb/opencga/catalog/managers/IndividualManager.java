@@ -326,12 +326,16 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             validateNewIndividual(study, individual, sampleIds, userId, true);
 
             // Create the individual
-            individualDBAdaptor.insert(study.getUid(), individual, study.getVariableSets(), options);
-            OpenCGAResult<Individual> queryResult = getIndividual(study.getUid(), individual.getUuid(), options);
+            OpenCGAResult<Individual> insert = individualDBAdaptor.insert(study.getUid(), individual, study.getVariableSets(), options);
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created individual
+                OpenCGAResult<Individual> queryResult = getIndividual(study.getUid(), individual.getUuid(), options);
+                insert.setResults(queryResult.getResults());
+            }
             auditManager.auditCreate(userId, Enums.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return queryResult;
+            return insert;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.INDIVIDUAL, individual.getId(), "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1417,7 +1421,14 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        return individualDBAdaptor.update(individual.getUid(), parameters, study.getVariableSets(), options);
+        OpenCGAResult<Individual> update = individualDBAdaptor.update(individual.getUid(), parameters, study.getVariableSets(), options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated individual
+            OpenCGAResult<Individual> result = individualDBAdaptor.get(study.getUid(),
+                    new Query(IndividualDBAdaptor.QueryParams.UID.key(), individual.getUid()), options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     @Override

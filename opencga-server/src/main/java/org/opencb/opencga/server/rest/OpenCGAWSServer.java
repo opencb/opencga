@@ -441,6 +441,9 @@ public class OpenCGAWSServer {
                 case ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM: // SampleWS
                     queryOptions.put(ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM, Boolean.parseBoolean(value));
                     break;
+                case ParamConstants.INCLUDE_RESULT_PARAM:
+                    queryOptions.put(ParamConstants.INCLUDE_RESULT_PARAM, Boolean.parseBoolean(value));
+                    break;
                 case "lazy":
                     lazy = Boolean.parseBoolean(value);
                     queryOptions.put(entry.getKey(), lazy);

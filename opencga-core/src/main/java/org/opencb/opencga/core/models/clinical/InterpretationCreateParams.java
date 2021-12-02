@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 
@@ -41,6 +42,7 @@ public class InterpretationCreateParams {
     private List<ClinicalVariant> secondaryFindings;
     private List<PanelReferenceParam> panels;
     private List<ClinicalCommentParam> comments;
+    private StatusParam status;
     private Map<String, Object> attributes;
 
     public InterpretationCreateParams() {
@@ -49,7 +51,7 @@ public class InterpretationCreateParams {
     public InterpretationCreateParams(String description, String clinicalAnalysisId, String creationDate, String modificationDate,
                                       ClinicalAnalystParam analyst, InterpretationMethod method, List<ClinicalVariant> primaryFindings,
                                       List<ClinicalVariant> secondaryFindings, List<PanelReferenceParam> panels,
-                                      List<ClinicalCommentParam> comments, Map<String, Object> attributes) {
+                                      List<ClinicalCommentParam> comments, StatusParam status, Map<String, Object> attributes) {
         this.description = description;
         this.clinicalAnalysisId = clinicalAnalysisId;
         this.creationDate = creationDate;
@@ -60,6 +62,7 @@ public class InterpretationCreateParams {
         this.secondaryFindings = secondaryFindings;
         this.panels = panels;
         this.comments = comments;
+        this.status = status;
         this.attributes = attributes;
     }
 
@@ -74,6 +77,7 @@ public class InterpretationCreateParams {
                 interpretation.getComments() != null
                         ? interpretation.getComments().stream().map(ClinicalCommentParam::of).collect(Collectors.toList())
                         : null,
+                StatusParam.of(interpretation.getStatus()),
                 interpretation.getAttributes());
     }
 
@@ -90,6 +94,7 @@ public class InterpretationCreateParams {
         sb.append(", secondaryFindings=").append(secondaryFindings);
         sb.append(", panels=").append(panels);
         sb.append(", comments=").append(comments);
+        sb.append(", status=").append(status);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -100,7 +105,7 @@ public class InterpretationCreateParams {
                 creationDate, modificationDate, primaryFindings, secondaryFindings,
                 panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
-                attributes);
+                status != null ? status.toCustomStatus() : null, attributes);
     }
 
     public ObjectMap toInterpretationObjectMap() throws JsonProcessingException {
@@ -194,6 +199,15 @@ public class InterpretationCreateParams {
 
     public InterpretationCreateParams setComments(List<ClinicalCommentParam> comments) {
         this.comments = comments;
+        return this;
+    }
+
+    public StatusParam getStatus() {
+        return status;
+    }
+
+    public InterpretationCreateParams setStatus(StatusParam status) {
+        this.status = status;
         return this;
     }
 

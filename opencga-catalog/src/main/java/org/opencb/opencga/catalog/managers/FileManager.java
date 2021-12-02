@@ -2215,7 +2215,14 @@ public class FileManager extends AnnotationSetManager<File> {
 
         checkUpdateAnnotations(study, file, parameters, options, VariableSet.AnnotableDataModels.FILE, fileDBAdaptor, userId);
 
-        return fileDBAdaptor.update(file.getUid(), parameters, study.getVariableSets(), options);
+        OpenCGAResult update = fileDBAdaptor.update(file.getUid(), parameters, study.getVariableSets(), options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated file
+            OpenCGAResult<File> result = fileDBAdaptor.get(study.getUid(), new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()),
+                    options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     @Deprecated

@@ -234,11 +234,15 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             validateNewSample(study, sample, userId);
 
             // We create the sample
-            sampleDBAdaptor.insert(study.getUid(), sample, study.getVariableSets(), options);
-            OpenCGAResult<Sample> queryResult = getSample(study.getUid(), sample.getUuid(), options);
+            OpenCGAResult<Sample> insert = sampleDBAdaptor.insert(study.getUid(), sample, study.getVariableSets(), options);
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created sample
+                OpenCGAResult<Sample> result = getSample(study.getUid(), sample.getUuid(), options);
+                insert.setResults(result.getResults());
+            }
             auditManager.auditCreate(userId, Enums.Resource.SAMPLE, sample.getId(), sample.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return queryResult;
+            return insert;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.SAMPLE, sample.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1097,7 +1101,14 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        return sampleDBAdaptor.update(sample.getUid(), parameters, study.getVariableSets(), options);
+        OpenCGAResult<Sample> update = sampleDBAdaptor.update(sample.getUid(), parameters, study.getVariableSets(), options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated sample
+            OpenCGAResult<Sample> queryResult = sampleDBAdaptor.get(study.getUid(),
+                    new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid()), options, userId);
+            update.setResults(queryResult.getResults());
+        }
+        return update;
     }
 
     @Override

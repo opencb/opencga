@@ -188,8 +188,6 @@ public class CatalogManagerTest extends AbstractManagerTest {
         attributes.put("object", new BasicDBObject("id", 1234));
         params.put("attributes", attributes);
 
-        User userPre = catalogManager.getUserManager().get("user", new QueryOptions(), token).first();
-        System.out.println("userPre = " + userPre);
         Thread.sleep(10);
 
         catalogManager.getUserManager().update("user", params, null, token);
@@ -880,7 +878,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         for (int i = 99; i > 0; i--) {
             String studyId = studies.get(i % studies.size()).getId();
-            String id = catalogManager.getJobManager().create(studyId, new Job().setId("myJob-" + i), null, token).first().getId();
+            String id = catalogManager.getJobManager().create(studyId, new Job().setId("myJob-" + i), INCLUDE_RESULT, token).first().getId();
             String status;
             switch (i % 3) {
                 case 0:
@@ -1168,7 +1166,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testDeleteVariableSetInUse() throws CatalogException {
         String sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"),
-                new QueryOptions(), token).first().getId();
+                INCLUDE_RESULT, token).first().getId();
         List<Variable> variables = Arrays.asList(
                 new Variable("NAME", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), null, 0, "", "", null,
                         Collections.emptyMap()),
@@ -1205,15 +1203,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
      */
     @Test
     public void testCreateCohort() throws CatalogException {
-        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
-                token).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), new QueryOptions(),
-                token).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
-                token).first();
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, token).first();
         Cohort myCohort = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort")
                 .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3))
-                .setStatus(new CustomStatus("custom", "description", TimeUtils.getTime())), null, token).first();
+                .setStatus(new CustomStatus("custom", "description", TimeUtils.getTime())), INCLUDE_RESULT, token).first();
 
         assertEquals("MyCohort", myCohort.getId());
         assertEquals(3, myCohort.getSamples().size());
@@ -1227,12 +1222,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void createSampleCohortTest() throws Exception {
-        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
-                token).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), new QueryOptions(),
-                token).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
-                token).first();
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, token).first();
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
                 .setSamples(Arrays.asList(sampleId1, sampleId2)), null, token).first();
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort2")
@@ -1269,12 +1261,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void updateSampleCohortTest() throws Exception {
-        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
-                token).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), new QueryOptions(),
-                token).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
-                token).first();
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, token).first();
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
                 .setSamples(Arrays.asList(sampleId1)), null, token).first();
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort2")
@@ -1323,12 +1312,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void deleteSampleCohortTest() throws Exception {
-        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
-                token).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), new QueryOptions(),
-                token).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
-                token).first();
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, token).first();
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
                 .setSamples(Arrays.asList(sampleId1)), null, token).first();
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort2")
@@ -1384,12 +1370,9 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void setSampleCohortTest() throws Exception {
-        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
-                token).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), new QueryOptions(),
-                token).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
-                token).first();
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, token).first();
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort1")
                 .setSamples(Arrays.asList(sampleId1)), null, token).first();
 
@@ -1471,24 +1454,19 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testGetAllCohorts() throws CatalogException {
         String studyId = "1000G:phase1";
 
-        Sample sampleId1 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_1"), new QueryOptions(),
-                token).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_2"), new QueryOptions(),
-                token).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), new QueryOptions(),
-                token).first();
-        Sample sampleId4 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_4"), new QueryOptions(),
-                token).first();
-        Sample sampleId5 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_5"), new QueryOptions(),
-                token).first();
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, token).first();
+        Sample sampleId4 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_4"), INCLUDE_RESULT, token).first();
+        Sample sampleId5 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_5"), INCLUDE_RESULT, token).first();
         Cohort myCohort1 = catalogManager.getCohortManager().create(studyId,
                 new Cohort().setId("MyCohort1").setType(Enums.CohortType.FAMILY).setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)),
-                null, token).first();
+                INCLUDE_RESULT, token).first();
         Cohort myCohort2 = catalogManager.getCohortManager().create(studyId,
                 new Cohort().setId("MyCohort2").setType(Enums.CohortType.FAMILY)
-                        .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3, sampleId4)), null, token).first();
+                        .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3, sampleId4)), INCLUDE_RESULT, token).first();
         Cohort myCohort3 = catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort3")
-                .setType(Enums.CohortType.CASE_CONTROL).setSamples(Arrays.asList(sampleId3, sampleId4)), null, token).first();
+                .setType(Enums.CohortType.CASE_CONTROL).setSamples(Arrays.asList(sampleId3, sampleId4)), INCLUDE_RESULT, token).first();
         catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort4").setType(Enums.CohortType.TRIO)
                 .setSamples(Arrays.asList(sampleId5, sampleId3)), null, token).first();
 
@@ -1534,8 +1512,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testCreateCohortAlreadyExisting() throws CatalogException {
-        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
-                token).first();
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, token).first();
         catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY)
                 .setSamples(Collections.singletonList(sampleId1)), null, token).first();
 
@@ -1546,19 +1523,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testUpdateCohort() throws CatalogException {
-        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), new QueryOptions(),
-                token).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), new QueryOptions(),
-                token).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), new QueryOptions(),
-                token).first();
-        Sample sampleId4 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_4"), new QueryOptions(),
-                token).first();
-        Sample sampleId5 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_5"), new QueryOptions(),
-                token).first();
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, token).first();
+        Sample sampleId4 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_4"), INCLUDE_RESULT, token).first();
+        Sample sampleId5 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_5"), INCLUDE_RESULT, token).first();
 
         Cohort myCohort = catalogManager.getCohortManager().create(studyFqn, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY)
-                .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3, sampleId1)), null, token).first();
+                .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3, sampleId1)), INCLUDE_RESULT, token).first();
 
         assertEquals("MyCohort", myCohort.getId());
         assertEquals(3, myCohort.getSamples().size());
@@ -1646,15 +1618,12 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testDeleteCohort() throws CatalogException {
         String studyId = "user@1000G:phase1";
 
-        Sample sampleId1 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_1"), new QueryOptions(),
-                token).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_2"), new QueryOptions(),
-                token).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), new QueryOptions(),
-                token).first();
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, token).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, token).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, token).first();
 
         Cohort myCohort = catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY)
-                .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)), null, token).first();
+                .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)), INCLUDE_RESULT, token).first();
 
         assertEquals("MyCohort", myCohort.getId());
         assertEquals(3, myCohort.getSamples().size());
@@ -1677,15 +1646,15 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void getSamplesFromCohort() throws CatalogException, IOException {
         String studyId = "user@1000G:phase1";
 
-        Sample sampleId1 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_1"), new QueryOptions(),
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT,
                 token).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_2"), new QueryOptions(),
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT,
                 token).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), new QueryOptions(),
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT,
                 token).first();
 
         Cohort myCohort = catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort").setType(Enums.CohortType.FAMILY)
-                .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)), null, token).first();
+                .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)), INCLUDE_RESULT, token).first();
 
         DataResult<Sample> myCohort1 = catalogManager.getCohortManager().getSamples(studyId, "MyCohort", token);
         assertEquals(3, myCohort1.getNumResults());
@@ -1701,21 +1670,18 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void generateCohortFromSampleQuery() throws CatalogException, IOException {
         String studyId = "user@1000G:phase1";
 
-        Sample sampleId1 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_1"), new QueryOptions(),
-                token).first();
-        Sample sampleId2 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_2"), new QueryOptions(),
-                token).first();
-        Sample sampleId3 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), new QueryOptions(),
-                token).first();
+        catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_1"), INCLUDE_RESULT, token);
+        catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_2"), INCLUDE_RESULT, token);
+        catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), INCLUDE_RESULT, token);
 
         Query query = new Query();
-        Cohort myCohort = catalogManager.getCohortManager().generate(studyId, query, new Cohort().setId("MyCohort"), null, token).first();
+        Cohort myCohort = catalogManager.getCohortManager().generate(studyId, query, new Cohort().setId("MyCohort"), INCLUDE_RESULT, token).first();
         assertEquals(12, myCohort.getSamples().size());
 
         query = new Query(SampleDBAdaptor.QueryParams.ID.key(), "~^SAM");
         myCohort = catalogManager.getCohortManager().generate(studyId, query, new Cohort()
                 .setId("MyCohort2")
-                .setStatus(new CustomStatus("custom", "description", TimeUtils.getTime())), null, token).first();
+                .setStatus(new CustomStatus("custom", "description", TimeUtils.getTime())), INCLUDE_RESULT, token).first();
         assertEquals(3, myCohort.getSamples().size());
         assertNotNull(myCohort.getStatus());
         assertEquals("custom", myCohort.getStatus().getName());
@@ -1732,13 +1698,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         String individualId1 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_1")
                         .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
-                new QueryOptions(), token).first().getId();
+                INCLUDE_RESULT, token).first().getId();
         String individualId2 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_2")
                         .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
-                new QueryOptions(), token).first().getId();
+                INCLUDE_RESULT, token).first().getId();
         String individualId3 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_3")
                         .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
-                new QueryOptions(), token).first().getId();
+                INCLUDE_RESULT, token).first().getId();
 
         catalogManager.getIndividualManager().update(studyFqn, individualId1, new IndividualUpdateParams()
                         .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
@@ -1929,7 +1895,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn, sample3, QueryOptions.empty(), token);
 
         Individual individual = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("individual"),
-                Arrays.asList(sample.getId(), sample2.getId()), QueryOptions.empty(), token).first();
+                Arrays.asList(sample.getId(), sample2.getId()), INCLUDE_RESULT, token).first();
         assertEquals(2, individual.getSamples().size());
         assertEquals(2, individual.getSamples().stream().map(Sample::getId)
                 .filter(s -> Arrays.asList(sample.getId(), sample2.getId()).contains(s)).count());
@@ -2060,7 +2026,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                         .setMother(new Individual().setId("mother")),
                 null, QueryOptions.empty(), token);
         Family family = catalogManager.getFamilyManager().create(studyFqn, new Family().setId("family"),
-                Arrays.asList("child", "mother", "father"), QueryOptions.empty(), token).first();
+                Arrays.asList("child", "mother", "father"), INCLUDE_RESULT, token).first();
 
         assertNotNull(family.getRoles());
         assertFalse(family.getRoles().isEmpty());
@@ -2317,7 +2283,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testUpdateIndividualQualityControl() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
         DataResult<Individual> individualDataResult = individualManager.create(studyFqn, new Individual().setId("Test")
-                .setDateOfBirth("19870214"), QueryOptions.empty(), token);
+                .setDateOfBirth("19870214"), INCLUDE_RESULT, token);
 
         IndividualQualityControl qualityControl = new IndividualQualityControl(null, null, null, Collections.emptyList(),
                 Arrays.asList(new ClinicalComment("pfurio", "message", Collections.singletonList("tag"), "today")));
@@ -2338,7 +2304,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testUpdateIndividualInfo() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
         DataResult<Individual> individualDataResult = individualManager.create(studyFqn, new Individual().setId("Test")
-                .setDateOfBirth("19870214"), QueryOptions.empty(), token);
+                .setDateOfBirth("19870214"), INCLUDE_RESULT, token);
         assertEquals(1, individualDataResult.getNumResults());
         assertEquals("Test", individualDataResult.first().getId());
         assertEquals("19870214", individualDataResult.first().getDateOfBirth());
@@ -2467,7 +2433,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                         .setId("child")
                         .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype1")))
                         .setDisorders(Collections.singletonList(new Disorder().setId("disorder1"))),
-                QueryOptions.empty(), token).first();
+                INCLUDE_RESULT, token).first();
         Individual father = new Individual()
                 .setId("father")
                 .setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotype2")))

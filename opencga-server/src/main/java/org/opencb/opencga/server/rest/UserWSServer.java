@@ -236,14 +236,21 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{user}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some user attributes", response = User.class)
-    public Response updateByPost(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-                                 @ApiParam(value = "JSON containing the params to be updated.", required = true)
-                                         UserUpdateParams parameters) {
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
+    public Response updateByPost(
+            @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = "JSON containing the params to be updated.", required = true) UserUpdateParams parameters) {
         try {
             ObjectUtils.defaultIfNull(parameters, new UserUpdateParams());
 
             ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(parameters));
-            OpenCGAResult<User> result = catalogManager.getUserManager().update(userId, params, null, token);
+            OpenCGAResult<User> result = catalogManager.getUserManager().update(userId, params, queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

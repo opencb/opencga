@@ -253,18 +253,23 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
             family.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FAMILY));
 
-            familyDBAdaptor.insert(study.getUid(), family, study.getVariableSets(), options);
-            OpenCGAResult<Family> queryResult = getFamily(study.getUid(), family.getUuid(), options);
+            OpenCGAResult<Family> insert = familyDBAdaptor.insert(study.getUid(), family, study.getVariableSets(), options);
             if (membersToCreate) {
+                OpenCGAResult<Family> queryResult = getFamily(study.getUid(), family.getUuid(), FamilyManager.INCLUDE_FAMILY_MEMBERS);
                 calculateRoles(study, queryResult.first(), userId);
                 ObjectMap params = new ObjectMap(FamilyDBAdaptor.QueryParams.ROLES.key(), queryResult.first().getRoles());
                 familyDBAdaptor.update(family.getUid(), params, QueryOptions.empty());
+            }
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated family
+                OpenCGAResult<Family> queryResult = getFamily(study.getUid(), family.getUuid(), options);
+                insert.setResults(queryResult.getResults());
             }
 
             auditManager.auditCreate(userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return queryResult;
+            return insert;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.FAMILY, family.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1004,7 +1009,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        return familyDBAdaptor.update(family.getUid(), parameters, study.getVariableSets(), options);
+        OpenCGAResult<Family> update = familyDBAdaptor.update(family.getUid(), parameters, study.getVariableSets(), options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated family
+            OpenCGAResult<Family> result = familyDBAdaptor.get(study.getUid(),
+                    new Query(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid()), options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     public Map<String, List<String>> calculateFamilyGenotypes(String studyStr, String clinicalAnalysisId, String familyId,

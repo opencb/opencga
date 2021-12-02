@@ -87,7 +87,7 @@ public final class VariantQueryUtils {
             "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
     public static final QueryParam NUM_TOTAL_SAMPLES = QueryParam.create("numTotalSamples", "", QueryParam.Type.INTEGER);
-
+    public static final String NON_EXISTING_REGION = "non_existing_region";
     public static final List<QueryParam> INTERNAL_VARIANT_QUERY_PARAMS = Arrays.asList(ANNOT_EXPRESSION_GENES,
             ANNOT_GO_GENES,
             ANNOT_GENE_REGIONS,

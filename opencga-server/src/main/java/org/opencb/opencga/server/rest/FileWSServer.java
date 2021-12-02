@@ -531,6 +531,12 @@ public class FileWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{files}/update")
     @ApiOperation(value = "Update some file attributes", response = File.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response updatePOST(
             @ApiParam(value = "Comma separated list of file ids, names or paths. Paths must be separated by : instead of /")
             @PathParam(value = "files") String fileIdStr,
@@ -543,6 +549,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     , defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.BasicUpdateAction relatedFilesAction,
             @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,SET,REMOVE",
                     defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.BasicUpdateAction tagsAction,
+
             @ApiParam(name = "body", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
             if (samplesAction == null) {

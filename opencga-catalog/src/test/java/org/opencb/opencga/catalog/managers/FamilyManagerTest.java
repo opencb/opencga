@@ -76,6 +76,8 @@ public class FamilyManagerTest extends GenericTest {
     private FamilyManager familyManager;
     protected String sessionIdUser;
 
+    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
     @Before
     public void setUp() throws IOException, CatalogException {
         catalogManager = catalogManagerResource.getCatalogManager();
@@ -88,7 +90,7 @@ public class FamilyManagerTest extends GenericTest {
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
+                null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
         catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
     }
 
@@ -714,7 +716,7 @@ public class FamilyManagerTest extends GenericTest {
         Family family = new Family(familyName, familyName, null, null, members, "", 5,
                 Collections.emptyList(), Collections.emptyMap());
 
-        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, memberIds, QueryOptions.empty(), sessionIdUser);
+        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, memberIds, INCLUDE_RESULT, sessionIdUser);
 
         if (createMissingMembers) {
             catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
@@ -785,7 +787,7 @@ public class FamilyManagerTest extends GenericTest {
                 .setMembers(Arrays.asList(new Individual().setId("proband").setSex(IndividualProperty.Sex.MALE),
                         new Individual().setFather(new Individual().setId("proband")).setId("child")
                                 .setSex(IndividualProperty.Sex.FEMALE)));
-        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, INCLUDE_RESULT, sessionIdUser);
 
         assertEquals(2, familyDataResult.first().getMembers().size());
     }
@@ -881,14 +883,14 @@ public class FamilyManagerTest extends GenericTest {
                 Arrays.asList(relFather, relMother, relChild1, relChild2, relChild1), "", -1, Collections.emptyList(), Collections.emptyMap
                 ());
 
-        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, INCLUDE_RESULT, sessionIdUser);
         assertEquals(4, familyDataResult.first().getMembers().size());
     }
 
     @Test
     public void createEmptyFamily() throws CatalogException {
         Family family = new Family("xxx", "xxx", null, null, null, "", -1, Collections.emptyList(), Collections.emptyMap());
-        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, familyDataResult.getNumResults());
     }
 
