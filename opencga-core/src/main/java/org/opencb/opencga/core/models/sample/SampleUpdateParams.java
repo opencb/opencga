@@ -22,6 +22,7 @@ import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.ExternalSource;
 
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +37,7 @@ public class SampleUpdateParams {
     private String creationDate;
     private String modificationDate;
     private String individualId;
+    private ExternalSource source;
     private SampleProcessing processing;
     private SampleCollection collection;
     private SampleQualityControl qualityControl;
@@ -49,14 +51,15 @@ public class SampleUpdateParams {
     }
 
     public SampleUpdateParams(String id, String description, String creationDate, String modificationDate, String individualId,
-                              SampleProcessing processing, SampleCollection collection, SampleQualityControl qualityControl,
-                              Boolean somatic, List<Phenotype> phenotypes, List<AnnotationSet> annotationSets,
-                              Map<String, Object> attributes, CustomStatusParams status) {
+                              ExternalSource source, SampleProcessing processing, SampleCollection collection,
+                              SampleQualityControl qualityControl, Boolean somatic, List<Phenotype> phenotypes,
+                              List<AnnotationSet> annotationSets, Map<String, Object> attributes, CustomStatusParams status) {
         this.id = id;
         this.description = description;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.individualId = individualId;
+        this.source = source;
         this.processing = processing;
         this.collection = collection;
         this.qualityControl = qualityControl;
@@ -85,7 +88,7 @@ public class SampleUpdateParams {
 
     @JsonIgnore
     public Sample toSample() {
-        return new Sample(id, "", processing, collection, qualityControl, 1, 1, creationDate, modificationDate,
+        return new Sample(id, "", source, processing, collection, qualityControl, 1, 1, creationDate, modificationDate,
                 description, somatic != null && somatic, phenotypes, individualId, Collections.emptyList(), Collections.emptyList(),
                 status != null ? status.toCustomStatus() : null, new SampleInternal(), annotationSets, attributes);
     }
@@ -98,6 +101,7 @@ public class SampleUpdateParams {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", individualId='").append(individualId).append('\'');
+        sb.append(", source=").append(source);
         sb.append(", processing=").append(processing);
         sb.append(", collection=").append(collection);
         sb.append(", qualityControl=").append(qualityControl);
@@ -153,6 +157,15 @@ public class SampleUpdateParams {
 
     public SampleUpdateParams setIndividualId(String individualId) {
         this.individualId = individualId;
+        return this;
+    }
+
+    public ExternalSource getSource() {
+        return source;
+    }
+
+    public SampleUpdateParams setSource(ExternalSource source) {
+        this.source = source;
         return this;
     }
 

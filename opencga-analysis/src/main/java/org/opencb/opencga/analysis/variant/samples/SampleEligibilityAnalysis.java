@@ -70,7 +70,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis.DESCRIPTION;
 
-@Tool(id= SampleEligibilityAnalysis.ID, resource = Enums.Resource.VARIANT, description = DESCRIPTION)
+@Tool(id = SampleEligibilityAnalysis.ID, resource = Enums.Resource.VARIANT, description = DESCRIPTION)
 public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "sample-eligibility";
@@ -227,7 +227,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                             new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                                     IndividualDBAdaptor.QueryParams.ID.key(),
                                     IndividualDBAdaptor.QueryParams.NAME.key(),
-                                    IndividualDBAdaptor.QueryParams.SEX.key(),
+                                    IndividualDBAdaptor.QueryParams.SEX_ID.key(),
                                     IndividualDBAdaptor.QueryParams.DISORDERS.key(),
                                     IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
                                     IndividualDBAdaptor.QueryParams.SAMPLES.key() + "." + SampleDBAdaptor.QueryParams.ID.key(),
@@ -245,7 +245,7 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
                     analysisResult.getIndividuals().add(new SampleEligibilityAnalysisResult.ElectedIndividual()
                             .setName(individual.getName())
                             .setId(individual.getId())
-                            .setSex(individual.getSex())
+                            .setSex(individual.getSex().getSex())
                             .setDisorders(getIds(individual.getDisorders()))
                             .setPhenotypes(getIds(individual.getPhenotypes()))
                             .setSample(new SampleEligibilityAnalysisResult.SampleSummary()

@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
@@ -61,8 +62,9 @@ public class CatalogSampleToSolrSampleConverterTest {
         study.setAttributes(attributes);
 
         Individual individual = new Individual();
-        individual.setUuid("uuid").setEthnicity("spanish").setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).
-                setPopulation(new IndividualPopulation("valencian", "", ""));
+        individual.setUuid("uuid").setEthnicity(new OntologyTermAnnotation().setId("spanish"))
+                .setKaryotypicSex(IndividualProperty.KaryotypicSex.XX)
+                .setPopulation(new IndividualPopulation("valencian", "", ""));
 
         Sample sample = new Sample();
         new Status("READY");

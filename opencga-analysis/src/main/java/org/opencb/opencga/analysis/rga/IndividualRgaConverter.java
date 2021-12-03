@@ -114,9 +114,9 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
      * Extract a map containing the processed KnockoutByindividuals.
      *
      * @param rgaDataModel RgaDataModel instance.
-     * @param variantMap Map of variants.
-     * @param variantIds Set of variant ids to be included in the result. If empty, include all of them.
-     * @param result Map containing the KnockoutByIndividual's processed.
+     * @param variantMap   Map of variants.
+     * @param variantIds   Set of variant ids to be included in the result. If empty, include all of them.
+     * @param result       Map containing the KnockoutByIndividual's processed.
      */
     public static void extractKnockoutByIndividualMap(RgaDataModel rgaDataModel, Map<String, Variant> variantMap, Set<String> variantIds,
                                                       Map<String, KnockoutByIndividual> result) {
@@ -338,7 +338,7 @@ public class IndividualRgaConverter extends AbstractRgaConverter {
                     }
 
                     String sex = knockoutByIndividual.getSex() != null
-                            ? knockoutByIndividual.getSex().name()
+                            ? knockoutByIndividual.getSex()
                             : IndividualProperty.Sex.UNKNOWN.name();
 
                     RgaDataModel model = new RgaDataModel()

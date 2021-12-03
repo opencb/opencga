@@ -26,6 +26,7 @@ import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.*;
@@ -1337,9 +1338,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         // Parse all the individuals
         for (Individual member : members) {
-            Member individual = new Member(
-                    member.getId(), member.getName(), null, null, null,
-                    Member.Sex.getEnum(member.getSex().toString()), member.getLifeStatus(),
+            Member individual = new Member(member.getId(), member.getName(), null, null, null, member.getSex(), member.getLifeStatus(),
                     member.getPhenotypes(), member.getDisorders(), member.getAttributes());
             individualMap.put(individual.getId(), individual);
         }
@@ -1408,7 +1407,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         Map<String, Individual> membersMap = new HashMap<>();       // individualName|individualId: Individual
         Map<String, List<Individual>> parentsMap = new HashMap<>(); // motherName||F---fatherName||M: List<children>
-        Set<String> noParentsSet = new HashSet<>();             // Set with individuals without parents
+        Set<String> noParentsSet = new HashSet<>();                 // Set with individuals without parents
 
         // 1. Fill in the objects initialised above
         for (Individual individual : family.getMembers()) {
@@ -1459,18 +1458,23 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             for (String parentName : split) {
                 String[] splitNameSex = parentName.split("\\|\\|");
                 String name = splitNameSex[0];
-                IndividualProperty.Sex sex = splitNameSex[1].equals("F") ? IndividualProperty.Sex.FEMALE : IndividualProperty.Sex.MALE;
+                SexOntologyTermAnnotation sexTerm = splitNameSex[1].equals("F")
+                        ? SexOntologyTermAnnotation.initFemale()
+                        : SexOntologyTermAnnotation.initMale();
+                IndividualProperty.Sex sex = sexTerm.getSex();
 
                 if (!membersMap.containsKey(name)) {
                     throw new CatalogException("The parent " + name + " is not present in the members list");
                 } else {
                     // Check if the sex is correct
-                    IndividualProperty.Sex sex1 = membersMap.get(name).getSex();
+                    IndividualProperty.Sex sex1 = membersMap.get(name).getSex() != null
+                            ? membersMap.get(name).getSex().getSex()
+                            : IndividualProperty.Sex.UNKNOWN;
                     if (sex1 != null && sex1 != sex && sex1 != IndividualProperty.Sex.UNKNOWN) {
                         throw new CatalogException("Sex of parent " + name + " is incorrect or the relationship is incorrect. In "
-                                + "principle, it should be " + sex);
+                                + "principle, it should be " + sexTerm);
                     }
-                    membersMap.get(name).setSex(sex);
+                    membersMap.get(name).setSex(sexTerm);
 
                     // We attempt to remove the individual from the noParentsSet
                     noParentsSet.remove(membersMap.get(name).getId());

@@ -16,11 +16,16 @@
 
 package org.opencb.opencga.core.models.sample;
 
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class SampleProcessing {
 
-    private String product;
+    private List<OntologyTermAnnotation> product;
     private String preparationMethod;
     private String extractionMethod;
     private String labSampleId;
@@ -31,8 +36,8 @@ public class SampleProcessing {
     public SampleProcessing() {
     }
 
-    public SampleProcessing(String product, String preparationMethod, String extractionMethod, String labSampleId, String quantity,
-                            String date, Map<String, Object> attributes) {
+    public SampleProcessing(List<OntologyTermAnnotation> product, String preparationMethod, String extractionMethod, String labSampleId,
+                            String quantity, String date, Map<String, Object> attributes) {
         this.product = product;
         this.preparationMethod = preparationMethod;
         this.extractionMethod = extractionMethod;
@@ -40,6 +45,10 @@ public class SampleProcessing {
         this.quantity = quantity;
         this.date = date;
         this.attributes = attributes;
+    }
+
+    public static SampleProcessing init() {
+        return new SampleProcessing(new ArrayList<>(), "", "", "", "", "", new HashMap<>());
     }
 
     @Override
@@ -56,11 +65,11 @@ public class SampleProcessing {
         return sb.toString();
     }
 
-    public String getProduct() {
+    public List<OntologyTermAnnotation> getProduct() {
         return product;
     }
 
-    public SampleProcessing setProduct(String product) {
+    public SampleProcessing setProduct(List<OntologyTermAnnotation> product) {
         this.product = product;
         return this;
     }

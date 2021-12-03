@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.*;
@@ -2432,15 +2433,15 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testIndividualRelatives() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
-        individualManager.create(studyFqn, new Individual().setId("proband").setSex(IndividualProperty.Sex.MALE), QueryOptions.empty(),
+        individualManager.create(studyFqn, new Individual().setId("proband").setSex(SexOntologyTermAnnotation.initMale()), QueryOptions.empty(),
                 token);
-        individualManager.create(studyFqn, new Individual().setId("brother").setSex(IndividualProperty.Sex.MALE), QueryOptions.empty(),
+        individualManager.create(studyFqn, new Individual().setId("brother").setSex(SexOntologyTermAnnotation.initMale()), QueryOptions.empty(),
                 token);
-        individualManager.create(studyFqn, new Individual().setId("sister").setSex(IndividualProperty.Sex.FEMALE), QueryOptions.empty(),
+        individualManager.create(studyFqn, new Individual().setId("sister").setSex(SexOntologyTermAnnotation.initFemale()), QueryOptions.empty(),
                 token);
-        individualManager.create(studyFqn, new Individual().setId("father").setSex(IndividualProperty.Sex.MALE), QueryOptions.empty(),
+        individualManager.create(studyFqn, new Individual().setId("father").setSex(SexOntologyTermAnnotation.initMale()), QueryOptions.empty(),
                 token);
-        individualManager.create(studyFqn, new Individual().setId("mother").setSex(IndividualProperty.Sex.FEMALE), QueryOptions.empty(),
+        individualManager.create(studyFqn, new Individual().setId("mother").setSex(SexOntologyTermAnnotation.initFemale()), QueryOptions.empty(),
                 token);
 
         individualManager.update(studyFqn, "proband", new IndividualUpdateParams().setFather(new IndividualReferenceParam("father", ""))
