@@ -16,12 +16,17 @@
 
 package org.opencb.opencga.core.models.sample;
 
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class SampleCollection {
 
-    private String tissue;
-    private String organ;
+    private List<OntologyTermAnnotation> from;
+    private String type;
     private String quantity;
     private String method;
     private String date;
@@ -30,43 +35,48 @@ public class SampleCollection {
     public SampleCollection() {
     }
 
-    public SampleCollection(String tissue, String organ, String quantity, String method, String date, Map<String, Object> attributes) {
-        this.tissue = tissue;
-        this.organ = organ;
+    public SampleCollection(List<OntologyTermAnnotation> from, String type, String quantity, String method, String date,
+                            Map<String, Object> attributes) {
+        this.from = from;
+        this.type = type;
         this.quantity = quantity;
         this.method = method;
         this.date = date;
         this.attributes = attributes;
     }
 
+    public static SampleCollection init() {
+        return new SampleCollection(new ArrayList<>(), "", "", "", "", new HashMap<>());
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleCollection{");
-        sb.append("tissue='").append(tissue).append('\'');
-        sb.append(", organ='").append(organ).append('\'');
+        sb.append("from=").append(from);
+        sb.append(", type='").append(type).append('\'');
         sb.append(", quantity='").append(quantity).append('\'');
         sb.append(", method='").append(method).append('\'');
         sb.append(", date='").append(date).append('\'');
-        sb.append(", attributes='").append(attributes).append('\'');
+        sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getTissue() {
-        return tissue;
+    public List<OntologyTermAnnotation> getFrom() {
+        return from;
     }
 
-    public SampleCollection setTissue(String tissue) {
-        this.tissue = tissue;
+    public SampleCollection setFrom(List<OntologyTermAnnotation> from) {
+        this.from = from;
         return this;
     }
 
-    public String getOrgan() {
-        return organ;
+    public String getType() {
+        return type;
     }
 
-    public SampleCollection setOrgan(String organ) {
-        this.organ = organ;
+    public SampleCollection setType(String type) {
+        this.type = type;
         return this;
     }
 

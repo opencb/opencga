@@ -24,7 +24,7 @@ public class RgaUtilsTest {
         knockoutByIndividual.setMotherId("mother");
         knockoutByIndividual.setMotherSampleId("sample" + count * 10);
         knockoutByIndividual.setFatherSampleId("sample" + count * 100);
-        knockoutByIndividual.setSex(IndividualProperty.Sex.MALE);
+        knockoutByIndividual.setSex(IndividualProperty.Sex.MALE.name());
         knockoutByIndividual.setDisorders(Collections.singletonList(new Disorder().setId("disorderId" + count).setName("disorderName" + count)));
         knockoutByIndividual.setPhenotypes(Collections.singletonList(new Phenotype().setId("phenotypeId" + count).setName("phenotypeName" + count)));
 

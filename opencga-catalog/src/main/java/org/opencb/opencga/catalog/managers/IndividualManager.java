@@ -19,6 +19,8 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
@@ -82,7 +84,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.UUID.key(),
             IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.FATHER.key(),
             IndividualDBAdaptor.QueryParams.MOTHER.key(), IndividualDBAdaptor.QueryParams.DISORDERS.key(),
-            IndividualDBAdaptor.QueryParams.PHENOTYPES.key(), IndividualDBAdaptor.QueryParams.STUDY_UID.key()));
+            IndividualDBAdaptor.QueryParams.PHENOTYPES.key(), IndividualDBAdaptor.QueryParams.SEX.key(),
+            IndividualDBAdaptor.QueryParams.STUDY_UID.key()));
 
     private static final Map<IndividualProperty.KaryotypicSex, IndividualProperty.Sex> KARYOTYPIC_SEX_SEX_MAP;
 
@@ -216,11 +219,11 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         ParamUtils.checkIdentifier(individual.getId(), "id");
         individual.setName(StringUtils.isEmpty(individual.getName()) ? individual.getId() : individual.getName());
         individual.setLocation(ParamUtils.defaultObject(individual.getLocation(), Location::new));
-        individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
+        individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), OntologyTermAnnotation::new));
         individual.setPopulation(ParamUtils.defaultObject(individual.getPopulation(), IndividualPopulation::new));
         individual.setLifeStatus(ParamUtils.defaultObject(individual.getLifeStatus(), IndividualProperty.LifeStatus.UNKNOWN));
         individual.setKaryotypicSex(ParamUtils.defaultObject(individual.getKaryotypicSex(), IndividualProperty.KaryotypicSex.UNKNOWN));
-        individual.setSex(ParamUtils.defaultObject(individual.getSex(), IndividualProperty.Sex.UNKNOWN));
+        individual.setSex(ParamUtils.defaultObject(individual.getSex(), SexOntologyTermAnnotation::initUnknown));
         individual.setPhenotypes(ParamUtils.defaultObject(individual.getPhenotypes(), Collections.emptyList()));
         individual.setDisorders(ParamUtils.defaultObject(individual.getDisorders(), Collections.emptyList()));
         individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
@@ -729,9 +732,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         // Looking for children
         Query query = new Query();
-        if (proband.getSex() == IndividualProperty.Sex.MALE) {
+        if (proband.getSex().getSex() == IndividualProperty.Sex.MALE) {
             query.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), proband.getUid());
-        } else if (proband.getSex() == IndividualProperty.Sex.FEMALE) {
+        } else if (proband.getSex().getSex() == IndividualProperty.Sex.FEMALE) {
             query.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), proband.getUid());
         }
         if (!query.isEmpty()) {
@@ -785,9 +788,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     private Family.FamiliarRelationship getChildSex(Individual individual) {
-        if (individual.getSex() == IndividualProperty.Sex.MALE) {
+        if (individual.getSex().getSex() == IndividualProperty.Sex.MALE) {
             return Family.FamiliarRelationship.SON;
-        } else if (individual.getSex() == IndividualProperty.Sex.FEMALE) {
+        } else if (individual.getSex().getSex() == IndividualProperty.Sex.FEMALE) {
             return Family.FamiliarRelationship.DAUGHTER;
         } else {
             return Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX;
@@ -802,7 +805,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             Set<String> includeSet = new HashSet<>(options.getAsStringList(QueryOptions.INCLUDE));
             includeSet.add(IndividualDBAdaptor.QueryParams.ID.key());
             includeSet.add(IndividualDBAdaptor.QueryParams.UUID.key());
-            includeSet.add(IndividualDBAdaptor.QueryParams.SEX.key());
+            includeSet.add(IndividualDBAdaptor.QueryParams.SEX_ID.key());
             includeSet.add(IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key());
             includeSet.add(IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.UID.key());
             includeSet.add(IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key());
@@ -813,7 +816,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             Set<String> excludeSet = new HashSet<>(options.getAsStringList(QueryOptions.EXCLUDE));
             excludeSet.remove(IndividualDBAdaptor.QueryParams.ID.key());
             excludeSet.remove(IndividualDBAdaptor.QueryParams.UUID.key());
-            excludeSet.remove(IndividualDBAdaptor.QueryParams.SEX.key());
+            excludeSet.remove(IndividualDBAdaptor.QueryParams.SEX_ID.key());
             excludeSet.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
             excludeSet.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
 
@@ -1734,6 +1737,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     private void fixQuery(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);
+        changeQueryId(query, ParamConstants.INDIVIDUAL_SEX_PARAM, IndividualDBAdaptor.QueryParams.SEX_ID.key());
+        changeQueryId(query, ParamConstants.INDIVIDUAL_ETHNICITY_PARAM, IndividualDBAdaptor.QueryParams.ETHNICITY_ID.key());
         changeQueryId(query, ParamConstants.INDIVIDUAL_POPULATION_NAME_PARAM, IndividualDBAdaptor.QueryParams.POPULATION_NAME.key());
         changeQueryId(query, ParamConstants.INDIVIDUAL_POPULATION_SUBPOPULATION_PARAM,
                 IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key());

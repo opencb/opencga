@@ -22,8 +22,10 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.AdditionalInfo;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.ExternalSource;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -155,6 +157,10 @@ public class Study extends PrivateFields {
     private URI uri;
     private int release;
 
+    private List<ExternalSource> sources;
+
+    private StudyType type;
+
     /**
      * An object describing the status of the Sample.
      *
@@ -169,6 +175,8 @@ public class Study extends PrivateFields {
      */
     private StudyInternal internal;
 
+    private List<AdditionalInfo> additionalInfo;
+
     /**
      * You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.
      *
@@ -179,22 +187,25 @@ public class Study extends PrivateFields {
     public Study() {
     }
 
-    public Study(String name, String alias, String description, StudyInternal internal, URI uri, int release) {
-        this(alias, name, alias, TimeUtils.getTime(), description, null, 0, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+    public Study(String name, String alias, String description, StudyType type, StudyInternal internal, URI uri, int release) {
+        this(alias, name, alias, TimeUtils.getTime(), TimeUtils.getTime(), description, type, new LinkedList<>(), null, 0,
                 new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new HashMap<>(), uri, release, new CustomStatus(), internal, new HashMap<>());
+                new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new HashMap<>(), uri, release,
+                new CustomStatus(), internal, new LinkedList<>(), new HashMap<>());
     }
 
-    public Study(String id, String name, String alias, String creationDate, String description, StudyNotification notification, long size,
-                 List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals, List<Family> families,
-                 List<Sample> samples, List<Cohort> cohorts, List<org.opencb.opencga.core.models.panel.Panel> panels,
-                 List<ClinicalAnalysis> clinicalAnalyses,
+    public Study(String id, String name, String alias, String creationDate, String modificationDate, String description, StudyType type,
+                 List<ExternalSource> sources, StudyNotification notification, long size, List<Group> groups, List<File> files,
+                 List<Job> jobs, List<Individual> individuals, List<Family> families, List<Sample> samples, List<Cohort> cohorts,
+                 List<org.opencb.opencga.core.models.panel.Panel> panels, List<ClinicalAnalysis> clinicalAnalyses,
                  List<VariableSet> variableSets, Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri, int release,
-                 CustomStatus status, StudyInternal internal, Map<String, Object> attributes) {
+                 CustomStatus status, StudyInternal internal, List<AdditionalInfo> additionalInfo, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
+        this.type = type;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.description = description;
         this.notification = notification;
         this.size = size;
@@ -207,12 +218,14 @@ public class Study extends PrivateFields {
         this.cohorts = ObjectUtils.defaultIfNull(cohorts, new ArrayList<>());
         this.panels = ObjectUtils.defaultIfNull(panels, new ArrayList<>());
         this.clinicalAnalyses = ObjectUtils.defaultIfNull(clinicalAnalyses, new ArrayList<>());
+        this.sources = sources;
         this.internal = internal;
         this.variableSets = ObjectUtils.defaultIfNull(variableSets, new ArrayList<>());
         this.permissionRules = ObjectUtils.defaultIfNull(permissionRules, new HashMap<>());
         this.uri = uri;
         this.status = status;
         this.release = release;
+        this.additionalInfo = additionalInfo;
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
 
@@ -220,8 +233,8 @@ public class Study extends PrivateFields {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Study{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", name='").append(name).append('\'');
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
@@ -242,8 +255,11 @@ public class Study extends PrivateFields {
         sb.append(", permissionRules=").append(permissionRules);
         sb.append(", uri=").append(uri);
         sb.append(", release=").append(release);
+        sb.append(", sources=").append(sources);
+        sb.append(", type=").append(type);
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
+        sb.append(", additionalInfo=").append(additionalInfo);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -333,6 +349,24 @@ public class Study extends PrivateFields {
 
     public Study setSize(long size) {
         this.size = size;
+        return this;
+    }
+
+    public List<ExternalSource> getSources() {
+        return sources;
+    }
+
+    public Study setSources(List<ExternalSource> sources) {
+        this.sources = sources;
+        return this;
+    }
+
+    public StudyType getType() {
+        return type;
+    }
+
+    public Study setType(StudyType type) {
+        this.type = type;
         return this;
     }
 
@@ -477,6 +511,15 @@ public class Study extends PrivateFields {
 
     public Study setStatus(CustomStatus status) {
         this.status = status;
+        return this;
+    }
+
+    public List<AdditionalInfo> getAdditionalInfo() {
+        return additionalInfo;
+    }
+
+    public Study setAdditionalInfo(List<AdditionalInfo> additionalInfo) {
+        this.additionalInfo = additionalInfo;
         return this;
     }
 

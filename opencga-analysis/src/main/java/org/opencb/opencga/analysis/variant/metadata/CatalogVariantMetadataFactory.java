@@ -55,7 +55,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
             Arrays.asList(
                     IndividualDBAdaptor.QueryParams.UID.key(),
                     IndividualDBAdaptor.QueryParams.ID.key(),
-                    IndividualDBAdaptor.QueryParams.SEX.key(),
+                    IndividualDBAdaptor.QueryParams.SEX_ID.key(),
                     IndividualDBAdaptor.QueryParams.MOTHER.key(),
                     IndividualDBAdaptor.QueryParams.FATHER.key()
             ));
@@ -133,7 +133,7 @@ public final class CatalogVariantMetadataFactory extends VariantMetadataFactory 
         for (Individual catalogIndividual : catalogIndividuals) {
             org.opencb.biodata.models.metadata.Individual individual = individualMap.get(catalogIndividual.getId());
 
-            individual.setSex(catalogIndividual.getSex().name());
+            individual.setSex(catalogIndividual.getSex().getSex().name());
 //            individual.setFamily(catalogIndividual.getFamily());
 
             if (catalogIndividual.getPhenotypes() != null && !catalogIndividual.getPhenotypes().isEmpty()) {

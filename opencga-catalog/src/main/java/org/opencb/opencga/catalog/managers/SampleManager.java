@@ -42,10 +42,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
-import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.RgaIndex;
+import org.opencb.opencga.core.models.common.*;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
@@ -189,8 +186,9 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             sample.setCohortIds(Collections.emptyList());
         }
 
-        sample.setProcessing(ParamUtils.defaultObject(sample.getProcessing(), SampleProcessing::new));
-        sample.setCollection(ParamUtils.defaultObject(sample.getCollection(), SampleCollection::new));
+        sample.setSource(ParamUtils.defaultObject(sample.getSource(), ExternalSource::init));
+        sample.setProcessing(ParamUtils.defaultObject(sample.getProcessing(), SampleProcessing::init));
+        sample.setCollection(ParamUtils.defaultObject(sample.getCollection(), SampleCollection::init));
         sample.setQualityControl(ParamUtils.defaultObject(sample.getQualityControl(), SampleQualityControl::new));
         sample.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(sample.getCreationDate(),
                 SampleDBAdaptor.QueryParams.CREATION_DATE.key()));
@@ -337,16 +335,16 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
     void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
         changeQueryId(query, ParamConstants.SAMPLE_RGA_STATUS_PARAM, SampleDBAdaptor.QueryParams.INTERNAL_RGA_STATUS.key());
-        changeQueryId(query, ParamConstants.SAMPLE_PROCESSING_PRODUCT_PARAM, SampleDBAdaptor.QueryParams.PROCESSING_PRODUCT.key());
         changeQueryId(query, ParamConstants.SAMPLE_PROCESSING_PREPARATION_METHOD_PARAM,
                 SampleDBAdaptor.QueryParams.PROCESSING_PREPARATION_METHOD.key());
         changeQueryId(query, ParamConstants.SAMPLE_PROCESSING_EXTRACTION_METHOD_PARAM,
                 SampleDBAdaptor.QueryParams.PROCESSING_EXTRACTION_METHOD.key());
         changeQueryId(query, ParamConstants.SAMPLE_PROCESSING_LAB_SAMPLE_ID_PARAM,
                 SampleDBAdaptor.QueryParams.PROCESSING_LAB_SAMPLE_ID.key());
-        changeQueryId(query, ParamConstants.SAMPLE_COLLECTION_TISSUE_PARAM, SampleDBAdaptor.QueryParams.COLLECTION_TISSUE.key());
-        changeQueryId(query, ParamConstants.SAMPLE_COLLECTION_ORGAN_PARAM, SampleDBAdaptor.QueryParams.COLLECTION_ORGAN.key());
         changeQueryId(query, ParamConstants.SAMPLE_COLLECTION_METHOD_PARAM, SampleDBAdaptor.QueryParams.COLLECTION_METHOD.key());
+        changeQueryId(query, ParamConstants.SAMPLE_PROCESSING_PRODUCT_PARAM, SampleDBAdaptor.QueryParams.PROCESSING_PRODUCT_ID.key());
+        changeQueryId(query, ParamConstants.SAMPLE_COLLECTION_FROM_PARAM, SampleDBAdaptor.QueryParams.COLLECTION_FROM_ID.key());
+        changeQueryId(query, ParamConstants.SAMPLE_COLLECTION_TYPE_PARAM, SampleDBAdaptor.QueryParams.COLLECTION_TYPE.key());
 
         fixQualityControlQuery(query);
         super.fixQueryObject(query);

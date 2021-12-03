@@ -19,6 +19,8 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -115,9 +117,9 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 .setMother(StringUtils.isNotEmpty(commandOptions.motherId)
                         ? new IndividualReferenceParam().setId(commandOptions.motherId)
                         : null)
-                .setSex(commandOptions.sex)
+                .setSex(new SexOntologyTermAnnotation().setId(String.valueOf(commandOptions.sex)))
                 .setParentalConsanguinity(commandOptions.parentalConsanguinity)
-                .setEthnicity(commandOptions.ethnicity)
+                .setEthnicity(new OntologyTermAnnotation().setId(commandOptions.ethnicity))
                 .setPopulation(new IndividualPopulation(commandOptions.populationName, commandOptions.populationSubpopulation,
                         commandOptions.populationDescription))
                 .setKaryotypicSex(commandOptions.karyotypicSex)
@@ -157,8 +159,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), commandOptions.name);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER.key(), commandOptions.fatherId);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER.key(), commandOptions.motherId);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SEX.key(), commandOptions.sex);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), commandOptions.ethnicity);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SEX_ID.key(), commandOptions.sex);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY_ID.key(), commandOptions.ethnicity);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SAMPLES.key(), commandOptions.samples);
 
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(), commandOptions.populationName);
@@ -191,11 +193,11 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 .setFather(new IndividualReferenceParam(commandOptions.fatherId, ""))
                 .setMother(new IndividualReferenceParam(commandOptions.motherId, ""))
                 .setDateOfBirth(commandOptions.dateOfBirth)
-                .setSex(commandOptions.sex)
+                .setSex(new SexOntologyTermAnnotation().setId(commandOptions.sex.name()))
                 .setSamples(commandOptions.samples != null
                         ? commandOptions.samples.stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())
                         : null)
-                .setEthnicity(commandOptions.ethnicity)
+                .setEthnicity(new OntologyTermAnnotation().setId(commandOptions.ethnicity))
                 .setKaryotypicSex(commandOptions.karyotypicSex)
                 .setLifeStatus(commandOptions.lifeStatus);
         if (StringUtils.isNotEmpty(commandOptions.populationDescription) || StringUtils.isNotEmpty(commandOptions.populationName)
