@@ -151,6 +151,9 @@ if args.tag is None:
     version = stream.read()
     version = version.rstrip()
 
+    print("opencgash: " + opencgash)
+    print("version: " + version)
+
     if not version:
         error("Missing --tag")
 
