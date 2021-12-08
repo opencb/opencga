@@ -56,7 +56,7 @@ jobs:
   deploy-docker:
     name: Push Docker image
     runs-on: ubuntu-20.04
-    needs: build
+    needs: test
     steps:
       - uses: actions/checkout@v2
       - name: Set up JDK 1.8
