@@ -143,15 +143,22 @@ if not os.path.isdir(build_folder + "/libs") or not os.path.isdir(build_folder +
 if args.tag is None:
 
     ## Read version
-    opencgash = build_folder + "/bin/opencga.sh"
-    if not os.path.isfile(opencgash):
-        error("Missing " + opencgash)
+#     opencgash = build_folder + "/bin/opencga.sh"
+#     if not os.path.isfile(opencgash):
+#         error("Missing " + opencgash)
+#
+#     stream = os.popen(opencgash + " --version 2>&1 | grep Version | cut -d ' ' -f 2")
+#     version = stream.read()
+#     version = version.rstrip()
 
-    stream = os.popen(opencgash + " --version 2>&1 | grep Version | cut -d ' ' -f 2")
+    git_properties = build_folder + "/misc/git/git.properties"
+    if not os.path.isfile(git_properties):
+        error("Missing '" + git_properties + "'")
+
+    stream = os.popen("grep 'git.build.version' " + git_properties + " | cut -d '=' -f 2")
     version = stream.read()
     version = version.rstrip()
-
-    print("opencgash: " + opencgash)
+    print("git_properties: " + git_properties)
     print("version: " + version)
 
     if not version:
