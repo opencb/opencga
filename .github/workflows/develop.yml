@@ -62,7 +62,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: build-folder
-#          path: build
+          path: build
       - run: ls -lh
       - uses: docker/login-action@v1
         with:
