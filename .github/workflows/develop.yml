@@ -63,7 +63,7 @@ jobs:
         with:
           name: build-folder
           path: build
-      - run: ls -lh
+      - run: ls -lh build
       - uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKER_HUB_USER }}
