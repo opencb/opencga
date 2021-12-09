@@ -9,7 +9,7 @@ jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
-      maven_opts: -Pstorage-hadoop -Phdp3.1
+      maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
 
   test:
     name: Test java-common-libs
@@ -49,6 +49,8 @@ jobs:
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
     needs: test
+    with:
+      maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
     secrets:
       MAVEN_NEXUS_USER: ${{ secrets.MAVEN_NEXUS_USER }}
       MAVEN_NEXUS_PASSWORD: ${{ secrets.MAVEN_NEXUS_PASSWORD }}
