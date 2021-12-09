@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    with:
+      maven_opts: -Pstorage-hadoop -Phdp3.1
 
   test:
     name: Test java-common-libs
@@ -44,7 +46,7 @@ jobs:
       - name: Run Maven Tests
         run: mvn -T 2 clean install -DskipTests
 
-  deploy:
+  deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
     needs: test
     secrets:
@@ -57,7 +59,7 @@ jobs:
     uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
     needs: test
     with:
-      cli: python3 ./build/cloud/docker/docker-build.py push
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
     secrets:
       DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
       DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
