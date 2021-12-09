@@ -1,0 +1,66 @@
+name: Release new OpenCGA version
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    with:
+      maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
+
+  test:
+    name: Test java-common-libs
+    runs-on: ubuntu-20.04
+    needs: build
+    strategy:
+      matrix:
+        mongodb: ["4.2"]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: '10'
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '8'
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven
+      - name: Start MongoDB v${{ matrix.mongodb }}
+        uses: supercharge/mongodb-github-action@1.7.0
+        with:
+          mongodb-version: ${{ matrix.mongodb }}
+          mongodb-replica-set: rs-test
+      - name: Run Maven Tests
+        run: mvn -T 2 clean install -DskipTests -P storage-hadoop,hdp3.1
+
+  deploy-maven:
+    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
+    needs: test
+    with:
+      maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
+    secrets:
+      MAVEN_NEXUS_USER: ${{ secrets.MAVEN_NEXUS_USER }}
+      MAVEN_NEXUS_PASSWORD: ${{ secrets.MAVEN_NEXUS_PASSWORD }}
+      MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+      MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+
+  deploy-docker:
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    needs: test
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
+    secrets:
+      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+  release:
+    uses: opencb/java-common-libs/.github/workflows/release-github-workflow.yml@develop
+    needs: deploy
