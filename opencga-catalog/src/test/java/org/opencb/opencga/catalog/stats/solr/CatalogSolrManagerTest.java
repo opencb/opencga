@@ -148,8 +148,8 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 //        queryOptions.add("limit", 2);
         queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.UUID.key(),
                 IndividualDBAdaptor.QueryParams.STUDY_UID.key(),
-                IndividualDBAdaptor.QueryParams.SEX.key(), IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
-                IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
+                IndividualDBAdaptor.QueryParams.SEX_ID.key(), IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
+                IndividualDBAdaptor.QueryParams.ETHNICITY_ID.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
                 IndividualDBAdaptor.QueryParams.INTERNAL_STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
                 IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
@@ -191,7 +191,7 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
                 SampleDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 SampleDBAdaptor.QueryParams.SOMATIC.key(), SampleDBAdaptor.QueryParams.PHENOTYPES.key(),
-                SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),SampleDBAdaptor.QueryParams.UID.key(),
+                SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), SampleDBAdaptor.QueryParams.UID.key(),
                 SampleDBAdaptor.QueryParams.ATTRIBUTES.key()));
         queryOptions.append(DBAdaptor.INCLUDE_ACLS, true);
 
@@ -226,7 +226,7 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
                 SampleDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 SampleDBAdaptor.QueryParams.SOMATIC.key(), SampleDBAdaptor.QueryParams.PHENOTYPES.key(),
-                SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),SampleDBAdaptor.QueryParams.UID.key(),
+                SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), SampleDBAdaptor.QueryParams.UID.key(),
                 SampleDBAdaptor.QueryParams.ATTRIBUTES.key()));
         queryOptions.append(DBAdaptor.INCLUDE_ACLS, true);
 
@@ -294,7 +294,7 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
                 SampleDBAdaptor.QueryParams.INTERNAL_STATUS.key(),
                 SampleDBAdaptor.QueryParams.SOMATIC.key(), SampleDBAdaptor.QueryParams.PHENOTYPES.key(),
-                SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),SampleDBAdaptor.QueryParams.UID.key(),
+                SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), SampleDBAdaptor.QueryParams.UID.key(),
                 SampleDBAdaptor.QueryParams.ATTRIBUTES.key()));
         queryOptions.append(DBAdaptor.INCLUDE_ACLS, true);
 
@@ -373,8 +373,8 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
         QueryOptions queryOptions = new QueryOptions(ParamConstants.FLATTEN_ANNOTATIONS, "true");
         queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.UUID.key(),
                 IndividualDBAdaptor.QueryParams.STUDY_UID.key(),
-                IndividualDBAdaptor.QueryParams.SEX.key(), IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
-                IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
+                IndividualDBAdaptor.QueryParams.SEX_ID.key(), IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
+                IndividualDBAdaptor.QueryParams.ETHNICITY_ID.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
                 IndividualDBAdaptor.QueryParams.INTERNAL_STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
                 IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),

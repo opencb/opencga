@@ -29,7 +29,8 @@ public class FieldConstants {
     public static final String SAMPLE_FILE_IDS_DESCRIPTION = "File ids of the sample";
     public static final String SAMPLE_COHORT_IDS_DESCRIPTION = "Cohort ids of the sample";
     public static final String SAMPLE_INTERNAL_DESCRIPTION = "Sample internal information";
-
+    public static final String SAMPLE_EXTERNAL_SOURCE_DESCRIPTION = "The external source from where the example was imported";
+    
     //SampleProcessing
     public static final String SAMPLE_PROCESSING_PRODUCT_DESCRIPTION = "Describes which product was used to process the sample in the lab.";
     public static final String SAMPLE_PROCESSING_PREPARATION_METHOD = "Describes which preparation method was used to process the sample "
@@ -47,7 +48,8 @@ public class FieldConstants {
     public static final String SAMPLE_COLLECTION_DATE_DESCRIPTION = "Date when the sample was collected.";
     public static final String SAMPLE_COLLECTION_ATTRIBUTES_DESCRIPTION = "Attributes of the sample collection.";
     public static final String SAMPLE_COLLECTION_METHOD_DESCRIPTION = "Describes which method was used to collect the sample";
-
+    public static final String SAMPLE_COLLECTION_FROM_DESCRIPTION = "OntologyTermAnnotation list";
+    public static final String SAMPLE_COLLECTION_TYPE_DESCRIPTION = "Type of the sample collection";
     //SampleQualityControl
     public static final String SAMPLE_QUALITY_CONTROL_FILES_DESCRIPTION = "Files used for the quality control of the sample";
     public static final String SAMPLE_QUALITY_CONTROL_COMMENTS_DESCRIPTION = "Comments for the quality control of the sample";
@@ -73,4 +75,6 @@ public class FieldConstants {
     //RgaIndex
     public static final String RGAINDEX_STATUS_DESCRIPTION = "Status of the Rga index";
     public static final String RGAINDEX_DATE_DESCRIPTION = "Date of Rga index";
+
+
 }

@@ -6,7 +6,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -113,19 +113,19 @@ public class RgaManagerTest {
 
             // Father
             individuals.add(catalogManager.getIndividualManager()
-                    .create(STUDY, new Individual(FATHER, FATHER, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, null, null, null, "",
+                    .create(STUDY, new Individual(FATHER, FATHER, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
                             Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(FATHER), null, ownerToken).first());
             // Mother
             individuals.add(catalogManager.getIndividualManager()
-                    .create(STUDY, new Individual(MOTHER, MOTHER, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, null, null, null, "",
+                    .create(STUDY, new Individual(MOTHER, MOTHER, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
                             Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(MOTHER), null, ownerToken).first());
             // Son
             individuals.add(catalogManager.getIndividualManager()
-                    .create(STUDY, new Individual(SON, SON, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.MALE, null, null, null, null, "",
+                    .create(STUDY, new Individual(SON, SON, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
                             Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), Collections.singletonList(SON), null, ownerToken).first());
             // Daughter
             individuals.add(catalogManager.getIndividualManager()
-                    .create(STUDY, new Individual(DAUGHTER, DAUGHTER, new Individual(), new Individual(), new Location(), IndividualProperty.Sex.FEMALE, null, null, null, null, "",
+                    .create(STUDY, new Individual(DAUGHTER, DAUGHTER, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
                             Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(DAUGHTER), null, ownerToken).first());
             catalogManager.getFamilyManager().create(
                     STUDY,

@@ -32,7 +32,7 @@ public class CliSessionManager {
     public static final String DEFAULT_PARAMETER = "--default";
     private static OpencgaCliShellExecutor sessionShell;
     private static boolean debug = false;
-    private static boolean reloadStudies = false;
+    private static final boolean reloadStudies = false;
 
     public static void updateSession() {
         try {
@@ -251,12 +251,12 @@ public class CliSessionManager {
         return sessionShell;
     }
 
-    public static void setShell(OpencgaCliShellExecutor shell) {
-        sessionShell = shell;
-    }
-
     public static boolean isShell() {
         return sessionShell != null;
+    }
+
+    public static void setShell(OpencgaCliShellExecutor shell) {
+        sessionShell = shell;
     }
 
     public static List<String> getStudies() {
@@ -264,6 +264,8 @@ public class CliSessionManager {
     }
 
     public static void initUserSession(String token, String user, String refreshToken, List<String> studies) throws IOException {
+
+        setReloadStudies(true);
         CliSession.getInstance().setToken(token);
         CliSession.getInstance().setUser(user);
         CliSession.getInstance().setVersion(GitRepositoryState.get().getBuildVersion());

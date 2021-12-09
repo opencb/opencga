@@ -23,7 +23,8 @@ import org.junit.Test;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -666,7 +667,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn,
                 new Sample().setId("testSample").setDescription("description"), null, token);
 
-        SampleProcessing processing = new SampleProcessing("product", "preparationMethod", "extractionMethod", "labSampleId", "quantity",
+        SampleProcessing processing = new SampleProcessing(null, "preparationMethod", "extractionMethod", "labSampleId", "quantity",
                 "date", Collections.emptyMap());
         OpenCGAResult<Sample> result = catalogManager.getSampleManager().update(studyFqn, "testSample",
                 new SampleUpdateParams().setProcessing(processing), new QueryOptions(Constants.INCREMENT_VERSION, true), token);
@@ -693,13 +694,13 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn,
                 new Sample().setId("testSample").setDescription("description"), null, token);
 
-        SampleProcessing processing = new SampleProcessing("product", "preparationMethod", "extractionMethod", "labSampleId", "quantity",
-                "date", Collections.emptyMap());
+        SampleProcessing processing = new SampleProcessing(Collections.singletonList(new OntologyTermAnnotation().setId("product")),
+                "preparationMethod", "extractionMethod", "labSampleId", "quantity", "date", Collections.emptyMap());
         catalogManager.getSampleManager().update(studyFqn, "testSample",
                 new SampleUpdateParams().setProcessing(processing), new QueryOptions(Constants.INCREMENT_VERSION, true), token);
 
         DataResult<Sample> testSample = catalogManager.getSampleManager().get(studyFqn, "testSample", new QueryOptions(), token);
-        assertEquals("product", testSample.first().getProcessing().getProduct());
+        assertEquals("product", testSample.first().getProcessing().getProduct().get(0).getId());
         assertEquals("preparationMethod", testSample.first().getProcessing().getPreparationMethod());
         assertEquals("extractionMethod", testSample.first().getProcessing().getExtractionMethod());
         assertEquals("labSampleId", testSample.first().getProcessing().getLabSampleId());
@@ -713,15 +714,20 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn,
                 new Sample().setId("testSample").setDescription("description"), null, token);
 
-        SampleCollection collection = new SampleCollection("tissue", "organ", "quantity", "method", "date", Collections.emptyMap());
+        SampleCollection collection = new SampleCollection(Collections.singletonList(new OntologyTermAnnotation("id", "name", "desc",
+                "source", "", Collections.emptyMap())), "type", "quantity", "method", "date", Collections.emptyMap());
         CustomStatusParams statusParams = new CustomStatusParams("status1", "my description");
         catalogManager.getSampleManager().update(studyFqn, "testSample",
                 new SampleUpdateParams().setCollection(collection).setStatus(statusParams),
                 new QueryOptions(Constants.INCREMENT_VERSION, true), token);
 
         DataResult<Sample> testSample = catalogManager.getSampleManager().get(studyFqn, "testSample", new QueryOptions(), token);
-        assertEquals("tissue", testSample.first().getCollection().getTissue());
-        assertEquals("organ", testSample.first().getCollection().getOrgan());
+        assertEquals(1, testSample.first().getCollection().getFrom().size());
+        assertEquals("id", testSample.first().getCollection().getFrom().get(0).getId());
+        assertEquals("name", testSample.first().getCollection().getFrom().get(0).getName());
+        assertEquals("desc", testSample.first().getCollection().getFrom().get(0).getDescription());
+        assertEquals("source", testSample.first().getCollection().getFrom().get(0).getSource());
+        assertEquals("type", testSample.first().getCollection().getType());
         assertEquals("quantity", testSample.first().getCollection().getQuantity());
         assertEquals("method", testSample.first().getCollection().getMethod());
         assertEquals("date", testSample.first().getCollection().getDate());
@@ -1907,7 +1913,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         Individual ind = new Individual()
                 .setId("INDIVIDUAL_1")
-                .setSex(IndividualProperty.Sex.UNKNOWN);
+                .setSex(SexOntologyTermAnnotation.initUnknown());
         ind.setAnnotationSets(Collections.singletonList(annotationSet));
         ind = catalogManager.getIndividualManager().create(studyFqn, ind, INCLUDE_RESULT, token).first();
 

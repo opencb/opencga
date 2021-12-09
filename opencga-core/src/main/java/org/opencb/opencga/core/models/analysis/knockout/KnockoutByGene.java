@@ -19,7 +19,6 @@ package org.opencb.opencga.core.models.analysis.knockout;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.core.GeneAnnotation;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
 
 import java.util.*;
 
@@ -142,7 +141,7 @@ public class KnockoutByGene {
         private String motherSampleId;
         private String fatherId;
         private String fatherSampleId;
-        private IndividualProperty.Sex sex;
+        private String sex;
         private List<Phenotype> phenotypes;
         private List<Disorder> disorders;
         private Map<String, KnockoutTranscript> transcriptsMap = new HashMap<>(); // Internal only
@@ -151,7 +150,7 @@ public class KnockoutByGene {
         }
 
         public KnockoutIndividual(String id, String sampleId, String motherId, String motherSampleId, String fatherId,
-                                  String fatherSampleId, IndividualProperty.Sex sex, List<Phenotype> phenotypes, List<Disorder> disorders) {
+                                  String fatherSampleId, String sex, List<Phenotype> phenotypes, List<Disorder> disorders) {
             this.id = id;
             this.sampleId = sampleId;
             this.motherId = motherId;
@@ -224,11 +223,11 @@ public class KnockoutByGene {
             return this;
         }
 
-        public IndividualProperty.Sex getSex() {
+        public String getSex() {
             return sex;
         }
 
-        public KnockoutIndividual setSex(IndividualProperty.Sex sex) {
+        public KnockoutIndividual setSex(String sex) {
             this.sex = sex;
             return this;
         }

@@ -242,7 +242,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
             }
         }
 
-        ps.println(sb.toString());
+        ps.println(sb);
     }
 
     private void printProject(List<DataResult<Project>> queryResultList) {
@@ -330,9 +330,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
         Table<Individual> table = new Table<Individual>(tableType)
                 .addColumn("ID", Individual::getId)
                 .addColumn("NAME", Individual::getId)
-                .addColumnEnum("SEX", Individual::getSex)
+                .addColumnEnum("SEX", i -> i.getSex().getSex())
                 .addColumnEnum("KARYOTYPIC_SEX", Individual::getKaryotypicSex)
-                .addColumn("ETHNICITY", Individual::getEthnicity)
+                .addColumn("ETHNICITY", i -> i.getEthnicity().getId(), "NA")
                 .addColumn("POPULATION", i -> i.getPopulation().getName(), "NA")
                 .addColumn("SUBPOPULATION", i -> i.getPopulation().getSubpopulation(), "NA")
                 .addColumnEnum("LIFE_STATUS", Individual::getLifeStatus)
@@ -414,7 +414,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (DataResult<FileTree> fileTreeQueryResult : queryResponse.getResponses()) {
             printRecursiveTree(fileTreeQueryResult.getResults(), sb, "");
         }
-        ps.println(sb.toString());
+        ps.println(sb);
     }
 
     private void printRecursiveTree(List<FileTree> fileTreeList, StringBuilder sb, String indent) {
@@ -509,8 +509,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
         END(new Table.TableColumnSchema<>("End", job -> getEnd(job) != null
                 ? SIMPLE_DATE_FORMAT.format(getEnd(job)) : "")),
         INPUT(new Table.TableColumnSchema<>("Input", j -> j.getInput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
-        OUTPUT(new Table.TableColumnSchema<>("Output", j -> j.getOutput().stream().map(File::getName).collect(Collectors.joining(",")),
-                45)),
+
+        OUTPUT(new Table.TableColumnSchema<>("Output", j -> j.getOutput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
         OUTPUT_DIRECTORY(new Table.TableColumnSchema<>("Output directory", j -> j.getOutDir().getPath(), 45));
 
         private final Table.TableColumnSchema<Job> columnSchema;

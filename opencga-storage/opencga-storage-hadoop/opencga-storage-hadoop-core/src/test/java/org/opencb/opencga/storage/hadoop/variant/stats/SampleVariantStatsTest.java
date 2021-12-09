@@ -5,6 +5,7 @@ import org.junit.*;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.tools.variant.stats.SampleVariantStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -50,8 +51,6 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
             runETL(engine, getPlatinumFile(12877), outputUri, params, true, true, true);
             runETL(engine, getPlatinumFile(12878), outputUri, params, true, true, true);
             runETL(engine, getPlatinumFile(12879), outputUri, params, true, true, true);
-
-
 
 
             List<String> family = Arrays.asList(father, mother, child);
@@ -175,9 +174,9 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
 
         Pedigree pedigree = new Pedigree();
         pedigree.setMembers(Collections.singletonList(
-                new Member(child, child, Member.Sex.UNKNOWN)
-                        .setFather(new Member(father, father, Member.Sex.MALE))
-                        .setMother(new Member(mother, mother, Member.Sex.FEMALE))));
+                new Member(child, child, SexOntologyTermAnnotation.initUnknown())
+                        .setFather(new Member(father, father, SexOntologyTermAnnotation.initMale()))
+                        .setMother(new Member(mother, mother, SexOntologyTermAnnotation.initFemale()))));
 
         SampleVariantStatsCalculator calculator = new SampleVariantStatsCalculator(pedigree, Arrays.asList(father, mother, child), sampleFileMap);
         List<SampleVariantStats> stats = calculator.compute(engine.iterator());

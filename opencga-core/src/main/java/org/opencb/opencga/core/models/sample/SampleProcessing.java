@@ -16,16 +16,22 @@
 
 package org.opencb.opencga.core.models.sample;
 
+
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.annotations.DataModel;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class SampleProcessing {
 
+
     @DataModel(id = "SampleProcessing.product", name = "product", indexed = true,
             description = FieldConstants.SAMPLE_PROCESSING_PRODUCT_DESCRIPTION)
-    private String product;
+    private List<OntologyTermAnnotation> product;
 
     @DataModel(id = "SampleProcessing.preparationMethod", name = "preparationMethod", indexed = true,
             description = FieldConstants.SAMPLE_PROCESSING_PREPARATION_METHOD)
@@ -54,8 +60,8 @@ public class SampleProcessing {
     public SampleProcessing() {
     }
 
-    public SampleProcessing(String product, String preparationMethod, String extractionMethod, String labSampleId, String quantity,
-                            String date, Map<String, Object> attributes) {
+    public SampleProcessing(List<OntologyTermAnnotation> product, String preparationMethod, String extractionMethod, String labSampleId,
+                            String quantity, String date, Map<String, Object> attributes) {
         this.product = product;
         this.preparationMethod = preparationMethod;
         this.extractionMethod = extractionMethod;
@@ -63,6 +69,10 @@ public class SampleProcessing {
         this.quantity = quantity;
         this.date = date;
         this.attributes = attributes;
+    }
+
+    public static SampleProcessing init() {
+        return new SampleProcessing(new ArrayList<>(), "", "", "", "", "", new HashMap<>());
     }
 
     @Override
@@ -87,8 +97,10 @@ public class SampleProcessing {
         SampleProcessing that = (SampleProcessing) o;
 
         if (product != null ? !product.equals(that.product) : that.product != null) return false;
-        if (preparationMethod != null ? !preparationMethod.equals(that.preparationMethod) : that.preparationMethod != null) return false;
-        if (extractionMethod != null ? !extractionMethod.equals(that.extractionMethod) : that.extractionMethod != null) return false;
+        if (preparationMethod != null ? !preparationMethod.equals(that.preparationMethod) : that.preparationMethod != null)
+            return false;
+        if (extractionMethod != null ? !extractionMethod.equals(that.extractionMethod) : that.extractionMethod != null)
+            return false;
         if (labSampleId != null ? !labSampleId.equals(that.labSampleId) : that.labSampleId != null) return false;
         if (quantity != null ? !quantity.equals(that.quantity) : that.quantity != null) return false;
         if (date != null ? !date.equals(that.date) : that.date != null) return false;
@@ -107,11 +119,11 @@ public class SampleProcessing {
         return result;
     }
 
-    public String getProduct() {
+    public List<OntologyTermAnnotation> getProduct() {
         return product;
     }
 
-    public SampleProcessing setProduct(String product) {
+    public SampleProcessing setProduct(List<OntologyTermAnnotation> product) {
         this.product = product;
         return this;
     }

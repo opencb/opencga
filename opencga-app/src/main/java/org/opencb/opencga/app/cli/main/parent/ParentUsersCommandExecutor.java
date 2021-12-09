@@ -42,7 +42,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
     public static final String LOGIN_OK = "\n\nYou have been logged in correctly.";
     public static final String LOGIN_FAIL = "\n\nNot available login service now. Please contact the system administrator.";
     public static final String LOGOUT = "\n\nYou've been logged out.";
-    private UsersCommandOptions usersCommandOptions;
+    private final UsersCommandOptions usersCommandOptions;
 
     public ParentUsersCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
                                       UsersCommandOptions usersCommandOptions) throws CatalogAuthenticationException {
@@ -76,6 +76,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                         }
                     }
                     // write CLI session file
+
                     CliSessionManager.initUserSession(response.getToken(), user, response.getRefreshToken(), studies);
                     Event event = new Event();
                     event.setMessage(LOGIN_OK);
