@@ -5,6 +5,7 @@ import com.mongodb.client.model.Projections;
 import org.bson.Document;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
 import org.opencb.opencga.core.models.study.Study;
@@ -35,9 +36,17 @@ public class DeleteUnusedVariableSets extends MigrationTool {
 
         for (Study study : studyList) {
             logger.info("Deleting VariableSets from study '{}'", study.getFqn());
-            catalogManager.getStudyManager().deleteVariableSet(study.getFqn(), "opencga_alignment_samtools_flagstat", true, token);
-            catalogManager.getStudyManager().deleteVariableSet(study.getFqn(), "opencga_alignment_stats", true, token);
-            catalogManager.getStudyManager().deleteVariableSet(study.getFqn(), "opencga_sample_qc", true, token);
+            delete(study.getFqn(), "opencga_alignment_samtools_flagstat");
+            delete(study.getFqn(), "opencga_alignment_stats");
+            delete(study.getFqn(), "opencga_sample_qc");
+        }
+    }
+
+    private void delete(String studyFqn, String variableSetId) {
+        try {
+            catalogManager.getStudyManager().deleteVariableSet(studyFqn, variableSetId, true, token);
+        } catch (CatalogException e) {
+            logger.warn(e.getMessage());
         }
     }
 
