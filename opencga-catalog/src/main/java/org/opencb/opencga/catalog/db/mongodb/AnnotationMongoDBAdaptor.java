@@ -94,6 +94,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         ANNOTATION_SETS_COUNT_ELEMENTS(ANNOTATION_SETS.key() + "." + COUNT_ELEMENTS.key(), INTEGER_ARRAY, "");
 
         private static Map<String, AnnotationSetParams> map;
+
         static {
             map = new LinkedMap();
             for (AnnotationSetParams params : AnnotationSetParams.values()) {
@@ -262,7 +263,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
     }
 
     OpenCGAResult<? extends Annotable> updateAnnotationSets(ClientSession clientSession, long entryId, ObjectMap parameters,
-                                                         List<VariableSet> variableSetList, QueryOptions options, boolean isVersioned)
+                                                            List<VariableSet> variableSetList, QueryOptions options, boolean isVersioned)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
         long startTime = startQuery();
@@ -575,9 +576,9 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
         removeAnnotationSetByVariableSetId(clientSession, entryId, variableSetUid, isVersioned, false);
     }
 
-    private void removeAnnotationSetByVariableSetId(ClientSession clientSession, long entryId, long variableSetUid, boolean isVersioned,
+    private void removeAnnotationSetByVariableSetId(ClientSession clientSession, long entryUid, long variableSetUid, boolean isVersioned,
                                                     boolean isInternal) throws CatalogDBException {
-        Document queryDocument = new Document(PRIVATE_UID, entryId);
+        Document queryDocument = new Document(PRIVATE_UID, entryUid);
         if (isVersioned) {
             queryDocument.append(LAST_OF_VERSION, true);
         }
@@ -590,6 +591,30 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             pull = Updates.pull(AnnotationSetParams.INTERNAL_ANNOTATION_SETS.key(),
                     new Document(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSetUid));
         }
+
+        DataResult result = getCollection().update(clientSession, queryDocument, pull, new QueryOptions("multi", true));
+        if (result.getNumMatches() > 0 && result.getNumUpdated() < 1) {
+            throw new CatalogDBException("Could not delete the annotation set");
+        }
+    }
+
+    protected void removeAllAnnotationSetsByVariableSetId(ClientSession clientSession, long studyUid, VariableSet variableSet,
+                                                          boolean isVersioned) throws CatalogDBException {
+        String annotationSetKey = variableSet.isInternal()
+                ? AnnotationSetParams.INTERNAL_ANNOTATION_SETS.key()
+                : AnnotationSetParams.ANNOTATION_SETS.key();
+
+        Document queryDocument = new Document()
+                .append(PRIVATE_STUDY_UID, studyUid)
+                .append(annotationSetKey + "." + AnnotationSetParams.VARIABLE_SET_ID.key(), variableSet.getUid());
+        if (isVersioned) {
+            queryDocument.append(LAST_OF_VERSION, true);
+        }
+
+        Bson pull = new Document()
+                .append("$pull", new Document(annotationSetKey,
+                        new Document(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSet.getUid())))
+                .append("$unset", new Document(AnnotationSetParams.PRIVATE_VARIABLE_SET_MAP.key() + "." + variableSet.getUid(), ""));
 
         DataResult result = getCollection().update(clientSession, queryDocument, pull, new QueryOptions("multi", true));
         if (result.getNumMatches() > 0 && result.getNumUpdated() < 1) {
@@ -737,11 +762,11 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
      * Remove the whole annotation matching the variable to be removed. If the variable is a complex object, it will remove all the
      * entries the object might have.
      * Example: "personal: { name, telephone, address ...}"
-     *    - If fieldId is personal, it will remove all the existing entries for personal.name, personal.telephone, personal.address, etc.
-     *    - If fieldId is personal.name, it will only remove the existing entries for personal.name
+     * - If fieldId is personal, it will remove all the existing entries for personal.name, personal.telephone, personal.address, etc.
+     * - If fieldId is personal.name, it will only remove the existing entries for personal.name
      *
      * @param variableSetId Variable set id.
-     * @param fieldId Field id corresponds with the variable name whose annotations have to be removed.
+     * @param fieldId       Field id corresponds with the variable name whose annotations have to be removed.
      * @return A OpenCGAResult object.
      * @throws CatalogDBException if there is any unexpected error.
      */
@@ -898,7 +923,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                                         new Document(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$size", 0)),
                                         new Document(AnnotationSetParams.ANNOTATION_SETS.key(), new Document("$elemMatch",
                                                 new Document(AnnotationSetParams.VARIABLE_SET_ID.key(), new Document("$ne", value)))
-                                ))));
+                                        ))));
                                 break;
                             case "!==":
                                 // Even if there is another variableSet different than the value, it will NOT match
@@ -938,8 +963,8 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
                         List<Document> valueList;
                         try {
-                             valueList = addCompQueryFilter(type, AnnotationSetParams.VALUE.key(), Arrays.asList(valueString.split(",")),
-                                     new ArrayList<>());
+                            valueList = addCompQueryFilter(type, AnnotationSetParams.VALUE.key(), Arrays.asList(valueString.split(",")),
+                                    new ArrayList<>());
                         } catch (CatalogDBException e) {
                             throw new CatalogDBException("Variable " + key + ": " + e.getMessage(), e);
                         }

@@ -406,7 +406,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
     OpenCGAResult<VariableSet> getVariableSets(Query query, QueryOptions queryOptions, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    OpenCGAResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user)
+    OpenCGAResult<VariableSet> deleteVariableSet(long studyUid, VariableSet variableSet, boolean force)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
