@@ -17,7 +17,7 @@ import java.util.List;
 import static com.mongodb.client.model.Filters.eq;
 
 @Migration(id = "add_new_allowed_biotype",
-        description = "Add new allowed biotype 'guide_RNA'", version = "2.2.0",
+        description = "Add new allowed biotype 'guide_RNA', #1856", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         date = 20211209)
