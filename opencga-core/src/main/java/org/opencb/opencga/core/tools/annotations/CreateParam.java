@@ -22,7 +22,7 @@ public @interface CreateParam {
     /**
      * @return List of possible allowed values.
      */
-    String allowableValues() default "";
+    String allowedValues() default "";
 
     /**
      * @return If field is CLI required or not.

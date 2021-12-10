@@ -1,5 +1,12 @@
 package org.opencb.opencga.core.tools.annotations;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD})
 public @interface DataModel {
 
     /**
@@ -7,36 +14,40 @@ public @interface DataModel {
      */
     String id() default "";
 
-    /**
-     * @return name of the field.
-     */
+    @Deprecated
     String name() default "";
 
-    /**
-     * @return name of the field.
-     */
+    String defaultValue() default "";
+
     String description() default "";
 
     /**
      * @return Class of field.
      */
+    @Deprecated
     Class<?> dataTypeClass() default Void.class;
-
-    boolean indexed() default false;
 
     boolean required() default false;
 
+    boolean indexed() default false;
+
     boolean managed() default false;
+
+    boolean updatable() default true;
 
     boolean unique() default false;
 
     boolean deprecated() default false;
 
-    int since() default -1;
+    /**
+     * @return Version when this field was added, eg. "2.1"
+     */
+    String since() default "";
 
     String[] dependsOn() default {};
 
-    FieldScope scope() default FieldScope.USER;
+//    @Deprecated
+//    FieldScope scope() default FieldScope.USER;
 
     String[] alias() default {};
 
