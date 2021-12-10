@@ -186,7 +186,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                                     "description"
                                                     + " = \"" + bodyParameter.getDescription().replaceAll("\"", "'") + "\", required = "
                                                     + (bodyParameter.isRequired() || isMandatory(commandName,
-                                                    normaliceNames(getAsCamelCase(bodyParameter.getName())))) + ", arity = 1)\n");
+                                                    getVariableName(bodyParameter))) + ", arity = 1)\n");
 
                                             sb.append("        public " + getValidValue(bodyParameter.getType()) + " "
                                                     + getVariableName(bodyParameter) + ";\n");
@@ -224,8 +224,8 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         return res;
     }
 
-    private boolean isMandatory(String commandName, String normaliceNames) {
-        return "create".equals(commandName) && "id".equals(normaliceNames);
+    private boolean isMandatory(String commandName, String normaliseNames) {
+        return "create".equals(commandName) && "id".equals(normaliseNames);
     }
 
     private String normaliceNames(String name) {
