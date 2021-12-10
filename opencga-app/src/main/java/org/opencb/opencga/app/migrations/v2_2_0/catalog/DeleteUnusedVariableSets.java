@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Migration(id = "delete_unused_variablesets",
-        description = "Delete unused VariableSets", version = "2.2.0",
+        description = "Delete unused VariableSets, #1859", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         date = 20211210)
