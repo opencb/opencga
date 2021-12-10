@@ -43,7 +43,7 @@ public class Sample extends Annotable {
      *
      * @apiNote Required, Immutable, Unique
      */
-    @DataModel(id = "id", required = true, indexed = true, unique = true, updatable = false,
+    @DataModel(id = "id", required = true, indexed = true, unique = true, immutable = true,
             update = @UpdateParam(required = true, type = ParamType.PATH),
             description = FieldConstants.SAMPLE_ID_DESCRIPTION)
     private String id;
@@ -53,7 +53,7 @@ public class Sample extends Annotable {
      *
      * @apiNote Immutable, Unique
      */
-    @DataModel(id = "uuid", managed = true, indexed = true, unique = true,
+    @DataModel(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
             description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String uuid;
 

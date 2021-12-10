@@ -33,7 +33,7 @@ public @interface DataModel {
 
     boolean managed() default false;
 
-    boolean updatable() default true;
+    boolean immutable() default false;
 
     boolean unique() default false;
 
@@ -51,9 +51,12 @@ public @interface DataModel {
 
     String[] alias() default {};
 
+    @Deprecated
     UpdateParam update() default @UpdateParam;
 
+    @Deprecated
     CreateParam create() default @CreateParam;
 
+    @Deprecated
     SearchParam search() default @SearchParam;
 }
