@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>2.0.5</version>
+    <version>2.0.6</version>
     <packaging>pom</packaging>
 
     <name>OpenCGA</name>
@@ -41,8 +41,8 @@
     </modules>
 
     <properties>
-        <opencga.version>2.0.5</opencga.version>
-        <pyopencga.version>2.0.5</pyopencga.version>
+        <opencga.version>2.0.6</opencga.version>
+        <pyopencga.version>2.0.6</pyopencga.version>
         <iva.version>2.1.0-beta</iva.version>
         <cellbase.version>4.8.0</cellbase.version>
         <biodata.version>2.0.5</biodata.version>
@@ -55,7 +55,7 @@
         <protobuf.version>3.9.0</protobuf.version>
         <grpc.version>1.23.0</grpc.version>
         <slf4j.version>1.7.25</slf4j.version>
-        <log4j2.version>2.13.3</log4j2.version>
+        <log4j2.version>2.15.0</log4j2.version>
         <solr.version>8.4.1</solr.version>
         <jetty.version>9.4.17.v20190418</jetty.version>
         <junit.version>4.12</junit.version>
