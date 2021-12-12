@@ -4,12 +4,21 @@ on:
   push:
     branches:
       - develop
+      - release-2.2.x
 
 jobs:
   build:
     uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
     with:
       maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
+
+  sonar:
+    uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
+    needs: build
+    with:
+      sonarProjectKey: opencb_opencga
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   test:
     name: Test java-common-libs
