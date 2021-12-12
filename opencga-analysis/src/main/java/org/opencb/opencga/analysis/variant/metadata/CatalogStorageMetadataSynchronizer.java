@@ -67,6 +67,7 @@ import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.URI;
 public class CatalogStorageMetadataSynchronizer {
 
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            FileDBAdaptor.QueryParams.ID.key(),
             FileDBAdaptor.QueryParams.NAME.key(),
             FileDBAdaptor.QueryParams.PATH.key(),
             FileDBAdaptor.QueryParams.URI.key(),

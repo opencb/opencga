@@ -81,7 +81,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     /**
-     *
      * @return MongoDB connection to the job collection.
      */
     public MongoDBCollection getJobCollection() {
@@ -472,7 +471,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     studyResults.getResults().stream().map(Study::getUid).collect(Collectors.toList()));
         }
 
-        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};
+        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
@@ -804,10 +803,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Query queryCopy = new Query(query);
         queryCopy.remove(QueryParams.DELETED.key());
 
-        fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), queryCopy);
-        fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), queryCopy);
-
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = (QueryParams.getParam(entry.getKey()) != null)
@@ -829,20 +824,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                             addAutoOrQuery(PRIVATE_STUDY_UIDS, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         }
                         break;
-                    case ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case RESOURCE_MANAGER_ATTRIBUTES:
-                        addAutoOrQuery(entry.getKey(), entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case BATTRIBUTES:
-                        String mongoKey = entry.getKey().replace(QueryParams.BATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
-                    case NATTRIBUTES:
-                        mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
-                        addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
-                        break;
                     case TOOL:
                     case TOOL_ID:
                         addAutoOrQuery(QueryParams.TOOL_ID.key(), queryParam.key(), queryCopy, QueryParams.TOOL_ID.type(), andBsonList);
@@ -859,6 +840,11 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case STATUS:
+                    case STATUS_NAME:
+                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), queryCopy, QueryParams.STATUS_NAME.type(),
+                                andBsonList);
+                        break;
                     case INTERNAL_STATUS:
                     case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
@@ -870,25 +856,18 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case ID:
                     case UUID:
                     case USER_ID:
-                    case TYPE:
-                    case DESCRIPTION:
-                    case PRIORITY:
-                    case START_TIME:
-                    case END_TIME:
-                    case OUTPUT_ERROR:
-                    case EXECUTION_START:
-                    case EXECUTION_END:
-                    case COMMAND_LINE:
+                    case TOOL_TYPE:
+                    case PRIORITY: // TODO: This filter is not indexed. We should change it and query _priority instead.
+//                    case START_TIME:
+//                    case END_TIME:
+//                    case OUTPUT_ERROR:
+//                    case EXECUTION_START:
+//                    case EXECUTION_END:
+//                    case COMMAND_LINE:
                     case VISITED:
                     case RELEASE:
-                    case INTERNAL_STATUS_DESCRIPTION:
-                    case INTERNAL_STATUS_DATE:
-                    case SIZE:
                     case OUT_DIR_UID:
-                    case TMP_OUT_DIR_URI:
                     case TAGS:
-                    case ERROR:
-                    case ERROR_DESCRIPTION:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     default:

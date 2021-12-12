@@ -32,7 +32,7 @@ import java.util.Map;
  */
 public class VariantSearchModel {
 
-    @Field
+    @Field("id")
     private String id;
 
     @Field("variantId")

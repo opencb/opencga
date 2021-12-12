@@ -89,7 +89,7 @@ public class FileManager extends AnnotationSetManager<File> {
     public static final QueryOptions INCLUDE_FILE_IDS;
     public static final QueryOptions INCLUDE_FILE_URI;
     public static final QueryOptions INCLUDE_FILE_URI_PATH;
-    public  static final QueryOptions EXCLUDE_FILE_ATTRIBUTES;
+    public static final QueryOptions EXCLUDE_FILE_ATTRIBUTES;
     private static final Comparator<File> ROOT_FIRST_COMPARATOR;
     private static final Comparator<File> ROOT_LAST_COMPARATOR;
 
@@ -163,6 +163,7 @@ public class FileManager extends AnnotationSetManager<File> {
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
+        // TODO: This should be using getFieldFilter method.
         Function<File, String> fileStringFunction = File::getPath;
         boolean canBeSearchedAsName = true;
         List<String> correctedFileList = new ArrayList<>(uniqueList.size());
@@ -240,6 +241,29 @@ public class FileManager extends AnnotationSetManager<File> {
 
             throw CatalogException.notFound("files", getMissingFields(uniqueList, fileDataResult.getResults(), fileStringFunction));
         }
+    }
+
+    FileDBAdaptor.QueryParams getFieldFilter(List<String> idList) throws CatalogException {
+        FileDBAdaptor.QueryParams idQueryParam = null;
+        for (String entry : idList) {
+            FileDBAdaptor.QueryParams param;
+            if (UuidUtils.isOpenCgaUuid(entry)) {
+                param = FileDBAdaptor.QueryParams.UUID;
+            } else if (entry.contains(":") && !entry.contains("/")) {
+                param = FileDBAdaptor.QueryParams.ID;
+            } else if (entry.contains("/")) {
+                param = FileDBAdaptor.QueryParams.PATH;
+            } else {
+                param = FileDBAdaptor.QueryParams.NAME;
+            }
+            if (idQueryParam == null) {
+                idQueryParam = param;
+            }
+            if (idQueryParam != param) {
+                throw new CatalogException("Found uuids and paths in the same query. Please, choose one or do two different queries.");
+            }
+        }
+        return idQueryParam;
     }
 
     private OpenCGAResult<File> getFile(long studyUid, String fileUuid, QueryOptions options) throws CatalogException {
@@ -773,13 +797,13 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Upload a file in Catalog.
      *
-     * @param studyStr        study where the file will be uploaded.
-     * @param fileInputStream Input stream of the file to be uploaded.
-     * @param file            File object containing at least the basic metadata necessary for a successful upload: path
-     * @param overwrite       Overwrite the current file if any.
-     * @param parents         boolean indicating whether unexisting parent folders should also be created automatically.
+     * @param studyStr          study where the file will be uploaded.
+     * @param fileInputStream   Input stream of the file to be uploaded.
+     * @param file              File object containing at least the basic metadata necessary for a successful upload: path
+     * @param overwrite         Overwrite the current file if any.
+     * @param parents           boolean indicating whether unexisting parent folders should also be created automatically.
      * @param calculateChecksum boolean indicating whether to calculate the checksum of the uploaded file.
-     * @param token       session id of the user performing the upload.
+     * @param token             session id of the user performing the upload.
      * @return a OpenCGAResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
@@ -791,15 +815,15 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Upload a file in Catalog.
      *
-     * @param studyStr        study where the file will be uploaded.
-     * @param fileInputStream Input stream of the file to be uploaded.
-     * @param file            File object containing at least the basic metadata necessary for a successful upload: path
-     * @param overwrite       Overwrite the current file if any.
-     * @param parents         boolean indicating whether unexisting parent folders should also be created automatically.
+     * @param studyStr          study where the file will be uploaded.
+     * @param fileInputStream   Input stream of the file to be uploaded.
+     * @param file              File object containing at least the basic metadata necessary for a successful upload: path
+     * @param overwrite         Overwrite the current file if any.
+     * @param parents           boolean indicating whether unexisting parent folders should also be created automatically.
      * @param calculateChecksum boolean indicating whether to calculate the checksum of the uploaded file.
      * @param expectedChecksum  Expected checksum to be checked
      * @param expectedSize      Expected file size
-     * @param token       session id of the user performing the upload.
+     * @param token             session id of the user performing the upload.
      * @return a OpenCGAResult with the file uploaded.
      * @throws CatalogException if the user does not have permissions or any other unexpected issue happens.
      */
@@ -1338,20 +1362,9 @@ public class FileManager extends AnnotationSetManager<File> {
     void fixQueryObject(Study study, Query query, String user) throws CatalogException {
         super.fixQueryObject(query);
 
-        if (query.containsKey(ParamConstants.INTERNAL_INDEX_STATUS_PARAM)) {
-            query.put(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), query.get(ParamConstants.INTERNAL_INDEX_STATUS_PARAM));
-            query.remove(ParamConstants.INTERNAL_INDEX_STATUS_PARAM);
-        }
-
-//        if (query.containsKey(FileDBAdaptor.QueryParams.ID.key())) {
-//            if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.ID.key()))) {
-//                OpenCGAResult<File> queryResult = internalGet(study.getUid(), query.getAsStringList(FileDBAdaptor.QueryParams.ID.key()),
-//                        INCLUDE_FILE_IDS, user, true);
-//                query.put(FileDBAdaptor.QueryParams.UID.key(), queryResult.getResults().stream().map(File::getUid)
-//                        .collect(Collectors.toList()));
-//            }
-//            query.remove(FileDBAdaptor.QueryParams.ID.key());
-//        }
+        changeQueryId(query, ParamConstants.INTERNAL_INDEX_STATUS_PARAM, FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key());
+        changeQueryId(query, ParamConstants.INTERNAL_STATUS_PARAM, FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
+        changeQueryId(query, ParamConstants.FILE_SOFTWARE_NAME_PARAM, FileDBAdaptor.QueryParams.SOFTWARE_NAME.key());
 
         validateQueryPath(query, FileDBAdaptor.QueryParams.PATH.key());
         validateQueryPath(query, FileDBAdaptor.QueryParams.DIRECTORY.key());
@@ -1362,14 +1375,6 @@ public class FileManager extends AnnotationSetManager<File> {
             query.put(FileDBAdaptor.QueryParams.JOB_ID.key(), "");
         }
 
-//        // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
-//        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLES.key()))) {
-//            OpenCGAResult<Sample> sampleDataResult = catalogManager.getSampleManager().internalGet(study.getUid(),
-//                    query.getAsStringList(FileDBAdaptor.QueryParams.SAMPLES.key()), SampleManager.INCLUDE_SAMPLE_IDS, user, true);
-//            query.put(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleDataResult.getResults().stream().map(Sample::getUid)
-//                    .collect(Collectors.toList()));
-//            query.remove(FileDBAdaptor.QueryParams.SAMPLES.key());
-//        }
     }
 
     private void validateQueryPath(Query query, String key) {
@@ -1732,7 +1737,7 @@ public class FileManager extends AnnotationSetManager<File> {
      * Delete the file from the file system and from OpenCGA.
      *
      * @param study Study object.
-     * @param file File or folder.
+     * @param file  File or folder.
      * @return a OpenCGAResult object.
      */
     private OpenCGAResult physicalDelete(Study study, File file) throws CatalogException {
@@ -1966,11 +1971,11 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Update a File from catalog.
      *
-     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
-     * @param fileIds   List of file ids. Could be either the id, path or uuid.
+     * @param studyStr     Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param fileIds      List of file ids. Could be either the id, path or uuid.
      * @param updateParams Data model filled only with the parameters to be updated.
      * @param options      QueryOptions object.
-     * @param token  Session id of the user logged in.
+     * @param token        Session id of the user logged in.
      * @return A OpenCGAResult.
      * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
      *                          exist or is not allowed to be updated.
@@ -2881,11 +2886,11 @@ public class FileManager extends AnnotationSetManager<File> {
     /**
      * Method to check if a file or folder can be deleted. It will check for indexation, status, permissions and file system availability.
      *
-     * @param studyStr       Study.
-     * @param fileId         File or folder id.
-     * @param unlink         Boolean indicating whether the operation only expects to remove the entry from the database or also remove
-     *                       the file from disk.
-     * @param token          Token of the user for which DELETE permissions will be checked.
+     * @param studyStr Study.
+     * @param fileId   File or folder id.
+     * @param unlink   Boolean indicating whether the operation only expects to remove the entry from the database or also remove
+     *                 the file from disk.
+     * @param token    Token of the user for which DELETE permissions will be checked.
      * @throws CatalogException if any of the files cannot be deleted.
      */
     public void checkCanDeleteFile(String studyStr, String fileId, boolean unlink, String token) throws CatalogException {

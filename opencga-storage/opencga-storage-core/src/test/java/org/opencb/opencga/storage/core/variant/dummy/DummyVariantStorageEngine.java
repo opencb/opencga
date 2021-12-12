@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -107,18 +108,18 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void removeFiles(String study, List<String> files) throws StorageEngineException {
-        TaskMetadata task = preRemoveFiles(study, files);
+    public void removeFiles(String study, List<String> files, URI outdir) throws StorageEngineException {
+        TaskMetadata task = preRemove(study, files, Collections.emptyList());
         try {
             Thread.sleep(1);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        postRemoveFiles(study, task.getFileIds(), task.getId(), false);
+        postRemoveFiles(study, task.getFileIds(), Collections.emptyList(), task.getId(), false);
     }
 
     @Override
-    public void removeStudy(String studyName) throws StorageEngineException {
+    public void removeStudy(String studyName, URI outdir) throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         metadataManager.updateStudyMetadata(studyName, studyMetadata -> {
             metadataManager.removeIndexedFiles(studyMetadata.getId(), metadataManager.getIndexedFiles(studyMetadata.getId()));

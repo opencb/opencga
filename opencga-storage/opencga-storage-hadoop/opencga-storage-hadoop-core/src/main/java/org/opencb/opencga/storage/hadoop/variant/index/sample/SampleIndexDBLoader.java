@@ -250,16 +250,16 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                     if (chunk.isMerging() && !builder.isEmpty()) {
                         Delete delete = new Delete(put.getRow());
                         for (String gt : builder.getGtSet()) {
-                            delete.addColumn(family, SampleIndexSchema.toAnnotationClinicalIndexColumn(gt));
-                            delete.addColumn(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt));
-                            delete.addColumn(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
-                            delete.addColumn(family, SampleIndexSchema.toAnnotationCtBtTfIndexColumn(gt));
-                            delete.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt));
-                            delete.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));
-                            delete.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt));
-                            delete.addColumn(family, SampleIndexSchema.toParentsGTColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toAnnotationClinicalIndexColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toAnnotationBiotypeIndexColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toAnnotationConsequenceTypeIndexColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toAnnotationCtBtTfIndexColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toAnnotationIndexColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt));
+                            delete.addColumns(family, SampleIndexSchema.toParentsGTColumn(gt));
                         }
-                        delete.addColumn(family, SampleIndexSchema.toMendelianErrorColumn());
+                        delete.addColumns(family, SampleIndexSchema.toMendelianErrorColumn());
                         mutations.add(delete);
                     }
                 }

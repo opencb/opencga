@@ -87,7 +87,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "job", required = true) JobRetryParams params
 
-            ) {
+    ) {
         try {
             List<String> jobDependsOn;
             if (StringUtils.isNotEmpty(dependsOn)) {
@@ -184,19 +184,20 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response search(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.OTHER_STUDIES_FLAG_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.OTHER_STUDIES_FLAG) boolean others,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID_PARAM) String name,
-            @ApiParam(value = ParamConstants.JOB_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_ID_PARAM) String tool,
+            @ApiParam(value = ParamConstants.JOB_IDS_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.JOB_UUIDS_DESCRIPTION) @QueryParam(ParamConstants.JOB_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.JOB_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_ID_PARAM) String toolId,
+            @ApiParam(value = ParamConstants.JOB_TOOL_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_TYPE_PARAM) String toolType,
             @ApiParam(value = ParamConstants.JOB_USER_DESCRIPTION) @QueryParam(ParamConstants.JOB_USER_PARAM) String user,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.JOB_PRIORITY_PARAM) String priority,
-            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.JOB_STATUS_DESCRIPTION) @QueryParam(ParamConstants.JOB_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.JOB_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.JOB_INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.JOB_VISITED_DESCRIPTION) @DefaultValue("") @QueryParam(ParamConstants.JOB_VISITED_PARAM) Boolean visited,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS_PARAM) String tags,
             @ApiParam(value = ParamConstants.JOB_INPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_INPUT_FILES_PARAM) String input,
             @ApiParam(value = ParamConstants.JOB_OUTPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_OUTPUT_FILES_PARAM) String output,
-            @ApiParam(value = ParamConstants.JOB_EXECUTION_START_DESCRIPTION) @QueryParam(ParamConstants.JOB_EXECUTION_START_PARAM) String executionStart,
-            @ApiParam(value = ParamConstants.JOB_EXECUTION_END_DESCRIPTION) @QueryParam(ParamConstants.JOB_EXECUTION_END_PARAM) String executionEnd,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
             @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
             @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam("deleted") boolean deleted) {
@@ -214,21 +215,23 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response distinct(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.OTHER_STUDIES_FLAG_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.OTHER_STUDIES_FLAG) boolean others,
-            @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID_PARAM) String name,
-            @ApiParam(value = ParamConstants.JOB_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_ID_PARAM) String tool,
+            @ApiParam(value = ParamConstants.JOB_IDS_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.JOB_UUIDS_DESCRIPTION) @QueryParam(ParamConstants.JOB_UUID_PARAM) String uuid,
+            @ApiParam(value = ParamConstants.JOB_TOOL_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_ID_PARAM) String toolId,
+            @ApiParam(value = ParamConstants.JOB_TOOL_TYPE_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_TYPE_PARAM) String toolType,
             @ApiParam(value = ParamConstants.JOB_USER_DESCRIPTION) @QueryParam(ParamConstants.JOB_USER_PARAM) String user,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.JOB_PRIORITY_PARAM) String priority,
-            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.JOB_STATUS_DESCRIPTION) @QueryParam(ParamConstants.JOB_STATUS_PARAM) String status,
+            @ApiParam(value = ParamConstants.JOB_INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.JOB_INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.CREATION_DATE_PARAM) String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.MODIFICATION_DATE_PARAM) String modificationDate,
             @ApiParam(value = ParamConstants.JOB_VISITED_DESCRIPTION) @DefaultValue("") @QueryParam(ParamConstants.JOB_VISITED_PARAM) Boolean visited,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS_PARAM) String tags,
             @ApiParam(value = ParamConstants.JOB_INPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_INPUT_FILES_PARAM) String input,
             @ApiParam(value = ParamConstants.JOB_OUTPUT_FILES_DESCRIPTION) @QueryParam(ParamConstants.JOB_OUTPUT_FILES_PARAM) String output,
-            @ApiParam(value = ParamConstants.JOB_EXECUTION_START_DESCRIPTION) @QueryParam(ParamConstants.JOB_EXECUTION_START_PARAM) String executionStart,
-            @ApiParam(value = ParamConstants.JOB_EXECUTION_END_DESCRIPTION) @QueryParam(ParamConstants.JOB_EXECUTION_END_PARAM) String executionEnd,
             @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
             @ApiParam(value = ParamConstants.RELEASE_DESCRIPTION) @QueryParam(ParamConstants.RELEASE_PARAM) String release,
+            @ApiParam(value = ParamConstants.DELETED_DESCRIPTION, defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = ParamConstants.DISTINCT_FIELD_DESCRIPTION, required = true) @QueryParam(ParamConstants.DISTINCT_FIELD_PARAM) String field) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);

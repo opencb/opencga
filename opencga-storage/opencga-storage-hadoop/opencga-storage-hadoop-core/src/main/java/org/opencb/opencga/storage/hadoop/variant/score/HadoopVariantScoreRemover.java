@@ -8,7 +8,7 @@ import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreRemover;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.VariantsTableDeleteColumnMapper;
+import org.opencb.opencga.storage.hadoop.variant.VariantsTableDeleteColumnTask;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
@@ -34,7 +34,7 @@ public class HadoopVariantScoreRemover extends VariantScoreRemover {
         PhoenixHelper.Column column = VariantPhoenixSchema.getVariantScoreColumn(scoreMetadata.getStudyId(), scoreMetadata.getId());
 
         options = new ObjectMap(options);
-        options.put(DeleteHBaseColumnDriver.DELETE_HBASE_COLUMN_MAPPER_CLASS, VariantsTableDeleteColumnMapper.class.getName());
+        options.put(DeleteHBaseColumnDriver.DELETE_HBASE_COLUMN_TASK_CLASS, VariantsTableDeleteColumnTask.class.getName());
 
         String[] args = DeleteHBaseColumnDriver.buildArgs(
                 dbAdaptor.getVariantTable(),

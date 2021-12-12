@@ -14,10 +14,7 @@ import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
-import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
-import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.models.variant.VariantStatsIndexParams;
+import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
@@ -56,6 +53,9 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case VARIANT_DELETE:
                 queryResponse = variantFileDelete();
+                break;
+            case VARIANT_SAMPLE_DELETE:
+                queryResponse = variantSampleDelete();
                 break;
             case VARIANT_INDEX_LAUNCHER:
                 queryResponse = variantIndexLauncher();
@@ -176,6 +176,16 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 new VariantFileDeleteParams(
                         cliOptions.genericVariantDeleteOptions.file,
                         cliOptions.genericVariantDeleteOptions.resume),
+                getParams(cliOptions));
+    }
+
+    private RestResponse<Job> variantSampleDelete() throws ClientException {
+        OperationsCommandOptions.VariantSampleDeleteCommandOptions cliOptions = operationsCommandOptions.variantSampleDelete;
+
+        return openCGAClient.getVariantOperationClient().deleteVariantSample(
+                new VariantSampleDeleteParams(
+                        cliOptions.sample,
+                        cliOptions.resume),
                 getParams(cliOptions));
     }
 

@@ -95,6 +95,8 @@ public enum VariantStorageOptions implements ConfigurationOption {
     INTERSECT_ACTIVE("search.intersect.active", true),                       // Allow intersect queries with the SearchEngine (Solr)
     INTERSECT_ALWAYS("search.intersect.always", false),                      // Force intersect queries
     INTERSECT_PARAMS_THRESHOLD("search.intersect.params.threshold", 3),      // Minimum number of QueryParams in the query to intersect
+    SEARCH_LOAD_BATCH_SIZE("search.load.batchSize", 100),
+    SEARCH_LOAD_THREADS("search.load.numThreads", 2),
 
     APPROXIMATE_COUNT_SAMPLING_SIZE("approximateCountSamplingSize", 1000),
     @Deprecated

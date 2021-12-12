@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.api.ParamConstants;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -114,6 +115,9 @@ public class ParamUtils {
     public static void checkValidUserId(String userId) throws CatalogParameterException {
         if (userId == null || userId.isEmpty()) {
             throw new CatalogParameterException("Missing user id.");
+        }
+        if (userId.equals(ParamConstants.ANONYMOUS_USER_ID) || userId.equals(ParamConstants.REGISTERED_USERS)) {
+            throw new CatalogParameterException("User id cannot be one of the reserved OpenCGA users.");
         }
         if (!userId.matches("^[A-Za-z0-9]([-_.]?[A-Za-z0-9])*$")) {
             throw new CatalogParameterException("Invalid user id. Id needs to start by any character and might contain single '-', '_', "

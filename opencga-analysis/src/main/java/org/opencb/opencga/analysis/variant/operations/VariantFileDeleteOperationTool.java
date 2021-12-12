@@ -25,6 +25,8 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
+import java.net.URI;
+
 /**
  * Created on 07/07/17.
  *
@@ -63,10 +65,11 @@ public class VariantFileDeleteOperationTool extends OperationTool {
     protected void run() throws Exception {
 
         step(() -> {
+            URI outdir = getOutDir(keepIntermediateFiles).toUri();
             if (removeStudy) {
-                variantStorageManager.removeStudy(study, params, token);
+                variantStorageManager.removeStudy(study, params, outdir, token);
             } else {
-                variantStorageManager.removeFile(study, variantFileDeleteParams.getFile(), params, token);
+                variantStorageManager.removeFile(study, variantFileDeleteParams.getFile(), params, outdir, token);
             }
         });
     }
