@@ -39,7 +39,7 @@
         <module>opencga-client</module>
         <module>opencga-server</module>
         <module>opencga-clinical</module>
-<!--        <module>opencga-test</module>-->
+        <!--        <module>opencga-test</module>-->
     </modules>
 
     <properties>
@@ -51,7 +51,7 @@
         <iva.version>2.1.0-beta</iva.version>
         <oskar.version>0.2.0</oskar.version>
 
-        <jackson.version>2.11.4</jackson.version>
+        <jackson.version>2.10.5</jackson.version>
         <jersey.version>2.25.1</jersey.version>
         <collections.version>4.4</collections.version>
         <avro.version>1.7.7</avro.version>
