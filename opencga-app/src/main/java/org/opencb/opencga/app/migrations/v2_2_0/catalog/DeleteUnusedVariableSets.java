@@ -17,6 +17,7 @@ import java.util.List;
         description = "Delete unused VariableSets, #1859", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
+        patch = 2,
         date = 20211210)
 public class DeleteUnusedVariableSets extends MigrationTool {
 
@@ -39,6 +40,7 @@ public class DeleteUnusedVariableSets extends MigrationTool {
             delete(study.getFqn(), "opencga_alignment_samtools_flagstat");
             delete(study.getFqn(), "opencga_alignment_stats");
             delete(study.getFqn(), "opencga_sample_qc");
+            delete(study.getFqn(), "opencga_file_variant_stats");
         }
     }
 
