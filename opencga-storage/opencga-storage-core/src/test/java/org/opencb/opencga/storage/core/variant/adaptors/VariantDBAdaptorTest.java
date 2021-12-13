@@ -863,7 +863,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         if (StringUtils.isEmpty(flag)) {
             flagMatcher = any(ConsequenceType.class);
         } else {
-            flagMatcher = withAny("flag", ConsequenceType::getTranscriptAnnotationFlags, is(flag));
+            flagMatcher = withAny("flag", ConsequenceType::getTranscriptFlags, is(flag));
         }
 
         if (StringUtils.isEmpty(biotype)) {
@@ -913,8 +913,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         for (Variant variant : allVariants.getResults()) {
             if (variant.getAnnotation().getConsequenceTypes() != null) {
                 for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                    if (consequenceType.getTranscriptAnnotationFlags() != null) {
-                        flagsInVariant.addAll(consequenceType.getTranscriptAnnotationFlags());
+                    if (consequenceType.getTranscriptFlags() != null) {
+                        flagsInVariant.addAll(consequenceType.getTranscriptFlags());
                     }
                 }
             }

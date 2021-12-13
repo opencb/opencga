@@ -20,7 +20,7 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   test:
-    name: Test java-common-libs
+    name: Test OpenCGA
     runs-on: ubuntu-20.04
     needs: build
     strategy:

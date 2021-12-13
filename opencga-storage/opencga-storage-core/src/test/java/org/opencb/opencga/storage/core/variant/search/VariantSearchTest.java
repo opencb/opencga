@@ -82,30 +82,30 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
                 // Check annotation flags
                 System.out.println("inCT, annotation flags:");
-                if (ListUtils.isNotEmpty(inCT.getTranscriptAnnotationFlags())) {
-                    System.out.println("\t" + StringUtils.join(inCT.getTranscriptAnnotationFlags(), ","));
+                if (CollectionUtils.isNotEmpty(inCT.getTranscriptFlags())) {
+                    System.out.println("\t" + StringUtils.join(inCT.getTranscriptFlags(), ","));
                 }
                 System.out.println();
                 System.out.println("outCT, annotation flags:");
-                if (ListUtils.isNotEmpty(outCT.getTranscriptAnnotationFlags())) {
-                    System.out.println("\t" + StringUtils.join(outCT.getTranscriptAnnotationFlags(), ","));
+                if (CollectionUtils.isNotEmpty(outCT.getTranscriptFlags())) {
+                    System.out.println("\t" + StringUtils.join(outCT.getTranscriptFlags(), ","));
                 }
                 System.out.println();
-                if (ListUtils.isNotEmpty(inCT.getTranscriptAnnotationFlags())
-                        && ListUtils.isNotEmpty(outCT.getTranscriptAnnotationFlags())) {
-                    if (inCT.getTranscriptAnnotationFlags().size() == outCT.getTranscriptAnnotationFlags().size()) {
-                        for (int j = 0; j < inCT.getTranscriptAnnotationFlags().size(); j++) {
-                            if (!inCT.getTranscriptAnnotationFlags().get(j)
-                                    .equals(outCT.getTranscriptAnnotationFlags().get(j))) {
-                                fail("Annotation flags mismatch: " + inCT.getTranscriptAnnotationFlags().get(j) + " vs "
-                                        + outCT.getTranscriptAnnotationFlags().get(j));
+                if (CollectionUtils.isNotEmpty(inCT.getTranscriptFlags())
+                        && CollectionUtils.isNotEmpty(outCT.getTranscriptFlags())) {
+                    if (inCT.getTranscriptFlags().size() == outCT.getTranscriptFlags().size()) {
+                        for (int j = 0; j < inCT.getTranscriptFlags().size(); j++) {
+                            if (!inCT.getTranscriptFlags().get(j)
+                                    .equals(outCT.getTranscriptFlags().get(j))) {
+                                fail("Annotation flags mismatch: " + inCT.getTranscriptFlags().get(j) + " vs "
+                                        + outCT.getTranscriptFlags().get(j));
                             }
                         }
                     } else {
                         fail("Annotation flags mismatch (size)");
                     }
-                } else if (ListUtils.isNotEmpty(inCT.getTranscriptAnnotationFlags())
-                        || ListUtils.isNotEmpty(outCT.getTranscriptAnnotationFlags())) {
+                } else if (CollectionUtils.isNotEmpty(inCT.getTranscriptFlags())
+                        || CollectionUtils.isNotEmpty(outCT.getTranscriptFlags())) {
                     fail("Annotation flags mismatch");
                 }
 

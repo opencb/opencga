@@ -61,7 +61,7 @@
         <log4j2.version>2.13.3</log4j2.version>
         <solr.version>8.4.1</solr.version>
         <jetty.version>9.4.17.v20190418</jetty.version>
-        <junit.version>4.12</junit.version>
+        <junit.version>4.13.2</junit.version>
 
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
