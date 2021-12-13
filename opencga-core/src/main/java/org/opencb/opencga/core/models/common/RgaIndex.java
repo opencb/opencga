@@ -2,7 +2,7 @@ package org.opencb.opencga.core.models.common;
 
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.tools.annotations.DataModel;
+import org.opencb.opencga.core.tools.annotations.DataField;
 
 public class RgaIndex {
 
@@ -12,7 +12,7 @@ public class RgaIndex {
      *
      * @apiNote Internal, Unique, Immutable
      */
-    @DataModel(id = "RgaIndex.status", name = "status",
+    @DataField(id = "RgaIndex.status", name = "status",
             description = FieldConstants.RGAINDEX_STATUS_DESCRIPTION)
     private Status status;
     /**
@@ -22,7 +22,7 @@ public class RgaIndex {
      * @apiNote Internal, Unique, Immutable
      */
 
-    @DataModel(id = "RgaIndex.date", name = "date",
+    @DataField(id = "RgaIndex.date", name = "date",
             description = FieldConstants.RGAINDEX_DATE_DESCRIPTION)
     private String date;
 

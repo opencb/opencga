@@ -18,7 +18,7 @@ package org.opencb.opencga.core.models.sample;
 
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.tools.annotations.DataModel;
+import org.opencb.opencga.core.tools.annotations.DataField;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -26,15 +26,15 @@ import java.util.List;
 
 public class SampleQualityControl implements Serializable {
 
-    @DataModel(id = "SampleQualityControl.files", name = "files",
+    @DataField(id = "SampleQualityControl.files", name = "files",
             description = FieldConstants.SAMPLE_QUALITY_CONTROL_FILES_DESCRIPTION)
     private List<String> files;
 
-    @DataModel(id = "SampleQualityControl.comments", name = "comments",
+    @DataField(id = "SampleQualityControl.comments", name = "comments",
             description = FieldConstants.SAMPLE_QUALITY_CONTROL_COMMENTS_DESCRIPTION)
     private List<ClinicalComment> comments;
 
-    @DataModel(id = "SampleQualityControl.variant", name = "variant",
+    @DataField(id = "SampleQualityControl.variant", name = "variant",
             description = FieldConstants.SAMPLE_QUALITY_CONTROL_VARIANT_DESCRIPTION)
     private SampleVariantQualityControlMetrics variant;
 

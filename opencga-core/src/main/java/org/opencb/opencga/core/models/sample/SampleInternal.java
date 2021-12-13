@@ -21,7 +21,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.tools.annotations.DataModel;
+import org.opencb.opencga.core.tools.annotations.DataField;
 
 /**
  * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh interdum
@@ -29,7 +29,7 @@ import org.opencb.opencga.core.tools.annotations.DataModel;
  */
 public class SampleInternal extends Internal {
 
-    @DataModel(id = "RgaIndex.rga", name = "rga", indexed = true,
+    @DataField(id = "RgaIndex.rga", name = "rga", indexed = true,
             description = FieldConstants.SAMPLE_INTERNAL_RGA_DESCRIPTION)
     private RgaIndex rga;
 

@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})
-public @interface DataModel {
+public @interface DataField {
 
     /**
      * @return id of the field.
@@ -17,15 +17,7 @@ public @interface DataModel {
     @Deprecated
     String name() default "";
 
-    String defaultValue() default "";
-
-    String description() default "";
-
-    /**
-     * @return Class of field.
-     */
-    @Deprecated
-    Class<?> dataTypeClass() default Void.class;
+    String[] alias() default {};
 
     boolean required() default false;
 
@@ -39,6 +31,8 @@ public @interface DataModel {
 
     boolean deprecated() default false;
 
+    String defaultValue() default "";
+
     /**
      * @return Version when this field was added, eg. "2.1"
      */
@@ -46,17 +40,17 @@ public @interface DataModel {
 
     String[] dependsOn() default {};
 
+    String description() default "";
+
 //    @Deprecated
-//    FieldScope scope() default FieldScope.USER;
-
-    String[] alias() default {};
-
-    @Deprecated
-    UpdateParam update() default @UpdateParam;
-
-    @Deprecated
-    CreateParam create() default @CreateParam;
-
-    @Deprecated
-    SearchParam search() default @SearchParam;
+//    Class<?> dataTypeClass() default Void.class;
+//
+//    @Deprecated
+//    UpdateParam update() default @UpdateParam;
+//
+//    @Deprecated
+//    CreateParam create() default @CreateParam;
+//
+//    @Deprecated
+//    SearchParam search() default @SearchParam;
 }

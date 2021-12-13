@@ -1,26 +1,26 @@
 package org.opencb.opencga.core.models.common;
 
-import org.opencb.opencga.core.tools.annotations.DataModel;
+import org.opencb.opencga.core.tools.annotations.DataField;
 
 public class ExternalSource {
 
-    @DataModel(id = "id", required = true, indexed = true,
+    @DataField(id = "id", required = true, indexed = true,
             description = "Source ID...")
     private String id;
 
-    @DataModel(id = "name",
+    @DataField(id = "name",
             description = "Source name...")
     private String name;
 
-    @DataModel(id = "description",
+    @DataField(id = "description",
             description = "Source description...")
     private String description;
 
-    @DataModel(id = "source",
+    @DataField(id = "source",
             description = "Source ...")
     private String source;
 
-    @DataModel(id = "url",
+    @DataField(id = "url",
             description = "Source ID")
     private String url;
 

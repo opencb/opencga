@@ -19,7 +19,7 @@ package org.opencb.opencga.core.models.sample;
 
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.tools.annotations.DataModel;
+import org.opencb.opencga.core.tools.annotations.DataField;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,27 +29,27 @@ import java.util.Map;
 public class SampleCollection {
 
 
-    @DataModel(id = "SampleCollection.from", name = "from", indexed = true,
+    @DataField(id = "SampleCollection.from", name = "from", indexed = true,
             description = FieldConstants.SAMPLE_COLLECTION_FROM_DESCRIPTION)
     private List<OntologyTermAnnotation> from;
 
-    @DataModel(id = "SampleCollection.type", name = "type", indexed = true,
+    @DataField(id = "SampleCollection.type", name = "type", indexed = true,
             description = FieldConstants.SAMPLE_COLLECTION_TYPE_DESCRIPTION)
     private String type;
 
-    @DataModel(id = "SampleCollection.quantity", name = "quantity", indexed = true,
+    @DataField(id = "SampleCollection.quantity", name = "quantity", indexed = true,
             description = FieldConstants.SAMPLE_COLLECTION_QUANTITY_DESCRIPTION)
     private String quantity;
 
-    @DataModel(id = "SampleCollection.method", name = "method", indexed = true,
+    @DataField(id = "SampleCollection.method", name = "method", indexed = true,
             description = FieldConstants.SAMPLE_COLLECTION_METHOD_DESCRIPTION)
     private String method;
 
-    @DataModel(id = "SampleCollection.date", name = "date", indexed = true,
+    @DataField(id = "SampleCollection.date", name = "date", indexed = true,
             description = FieldConstants.SAMPLE_COLLECTION_DATE_DESCRIPTION)
     private String date;
 
-    @DataModel(id = "SampleCollection.attributes", name = "attributes", indexed = true,
+    @DataField(id = "SampleCollection.attributes", name = "attributes", indexed = true,
             description = FieldConstants.SAMPLE_COLLECTION_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 

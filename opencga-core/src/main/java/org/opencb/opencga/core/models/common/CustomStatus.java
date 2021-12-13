@@ -17,7 +17,7 @@
 package org.opencb.opencga.core.models.common;
 
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.tools.annotations.DataModel;
+import org.opencb.opencga.core.tools.annotations.DataField;
 
 /**
  * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh interdum
@@ -31,7 +31,7 @@ public class CustomStatus {
      *
      * @apiNote Required, Immutable
      */
-    @DataModel(id = "CustomStatus.name", name = "name", indexed = true,
+    @DataField(id = "CustomStatus.name", name = "name", indexed = true,
             description = FieldConstants.CUSTOM_STATUS_NAME_DESCRIPTION)
     private String name;
     /**
@@ -40,7 +40,7 @@ public class CustomStatus {
      *
      * @apiNote Required
      */
-    @DataModel(id = "CustomStatus.description", name = "description", indexed = true,
+    @DataField(id = "CustomStatus.description", name = "description", indexed = true,
             description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
     /**
@@ -49,7 +49,7 @@ public class CustomStatus {
      *
      * @apiNote Internal, Unique, Immutable
      */
-    @DataModel(id = "CustomStatus.date", name = "date", managed = true,
+    @DataField(id = "CustomStatus.date", name = "date", managed = true,
             description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String date;
 
