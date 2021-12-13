@@ -86,8 +86,8 @@ public class IndividualIndexTask extends OpenCgaAnalysisTool {
         QueryOptions individualQueryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.UUID.key(),
                         IndividualDBAdaptor.QueryParams.FATHER_UID.key(), IndividualDBAdaptor.QueryParams.MOTHER_UID.key(),
-                        IndividualDBAdaptor.QueryParams.SEX.key(),
-                        IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
+                        IndividualDBAdaptor.QueryParams.SEX_ID.key(),
+                        IndividualDBAdaptor.QueryParams.ETHNICITY_ID.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                         IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
                         IndividualDBAdaptor.QueryParams.VERSION.key(),
                         IndividualDBAdaptor.QueryParams.INTERNAL_STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),

@@ -3,6 +3,7 @@ package org.opencb.opencga.app.migrations.v2_2_0.catalog;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.UpdateOneModel;
 import org.bson.Document;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -11,7 +12,6 @@ import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
 import org.opencb.opencga.catalog.utils.InterpretationUtils;
 import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.clinical.InterpretationStats;
 
 import static com.mongodb.client.model.Filters.eq;
 

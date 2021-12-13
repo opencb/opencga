@@ -25,6 +25,7 @@ import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -223,16 +224,18 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
             ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_INTERPRETATION,
                     "Create interpretation '" + interpretation.getId() + "'", TimeUtils.getTime());
-            OpenCGAResult result = interpretationDBAdaptor.insert(study.getUid(), interpretation, saveInterpretationAs,
+            OpenCGAResult<Interpretation> result = interpretationDBAdaptor.insert(study.getUid(), interpretation, saveInterpretationAs,
                     Collections.singletonList(clinicalAudit));
-            OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
-                    QueryOptions.empty());
-            queryResult.setTime(result.getTime() + queryResult.getTime());
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created Interpretation
+                OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(),
+                        QueryOptions.empty());
+                result.setResults(queryResult.getResults());
+            }
 
             auditManager.auditCreate(userId, Enums.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return queryResult;
+            return result;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.INTERPRETATION, interpretation.getId(), "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -252,18 +255,18 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         ParamUtils.checkObj(interpretation, "Interpretation");
         ParamUtils.checkParameter(clinicalAnalysis.getId(), "ClinicalAnalysisId");
-
-        if (StringUtils.isEmpty(interpretation.getId())) {
-            // Assign id automatically by counting the number of Interpretations that have been created already in the CA
-            int count = 1;
-            for (ClinicalAudit clinicalAudit : clinicalAnalysis.getAudit()) {
-                if (clinicalAudit.getAction().equals(ClinicalAudit.Action.CREATE_INTERPRETATION)) {
-                    count++;
-                }
-            }
-            interpretation.setId(clinicalAnalysis.getId() + "." + count);
+        if (StringUtils.isNotEmpty(interpretation.getId())) {
+            throw new CatalogException("Interpretation id cannot be passed. It is automatically generated.");
         }
-        ParamUtils.checkIdentifier(interpretation.getId(), "id");
+
+        // Assign id automatically by counting the number of Interpretations that have been created already in the CA
+        int count = 1;
+        for (ClinicalAudit clinicalAudit : clinicalAnalysis.getAudit()) {
+            if (clinicalAudit.getAction().equals(ClinicalAudit.Action.CREATE_INTERPRETATION)) {
+                count++;
+            }
+        }
+        interpretation.setId(clinicalAnalysis.getId() + "." + count);
 
         interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());
 
@@ -309,12 +312,12 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
                 }
 
-                clinicalAnalysis.setPanels(panelResult.getResults());
+                interpretation.setPanels(panelResult.getResults());
             }
         }
 
-        // Validate custom status
-        validateCustomStatusParameters(clinicalAnalysis, interpretation, interpretationConfiguration);
+        // Validate status
+        validateStatusParameter(interpretation, clinicalAnalysis.getType(), interpretationConfiguration);
 
         // Check there are no duplicated findings
         Set<String> findings = new HashSet<>();
@@ -367,29 +370,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretation.setAnalyst(new ClinicalAnalyst(user.getId(), user.getName(), user.getEmail(), userId, TimeUtils.getTime()));
     }
 
-    private void validateCustomStatusParameters(ClinicalAnalysis clinicalAnalysis, Interpretation interpretation,
-                                                InterpretationStudyConfiguration interpretationConfiguration) throws CatalogException {
-        // Status
-        if (interpretationConfiguration.getStatus() == null
-                || CollectionUtils.isEmpty(interpretationConfiguration.getStatus().get(clinicalAnalysis.getType()))) {
-            throw new CatalogException("Missing status configuration in study for type '" + clinicalAnalysis.getType()
-                    + "'. Please add a proper set of valid statuses.");
-        }
-        if (StringUtils.isNotEmpty(interpretation.getStatus().getId())) {
-            Map<String, StatusValue> statusMap = new HashMap<>();
-            for (StatusValue status : interpretationConfiguration.getStatus().get(clinicalAnalysis.getType())) {
-                statusMap.put(status.getId(), status);
-            }
-            if (!statusMap.containsKey(interpretation.getStatus().getId())) {
-                throw new CatalogException("Unknown status '" + interpretation.getStatus().getId() + "'. The list of valid statuses is: '"
-                        + String.join(",", statusMap.keySet()) + "'");
-            }
-            StatusValue statusValue = statusMap.get(interpretation.getStatus().getId());
-            interpretation.getStatus().setDescription(statusValue.getDescription());
-            interpretation.getStatus().setDate(TimeUtils.getTime());
-        }
-    }
-
     public OpenCGAResult<Interpretation> clear(String studyStr, String clinicalAnalysisId, List<String> interpretationList, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
@@ -440,7 +420,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 InterpretationUpdateParams params = new InterpretationUpdateParams("", new ClinicalAnalystParam(),
-                        Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList(),
+                        InterpretationMethod.init(), null, null, Collections.emptyList(), Collections.emptyList(),
                         clinicalAnalysis.getPanels() != null
                                 ? clinicalAnalysis.getPanels().stream()
                                 .map(p -> new PanelReferenceParam().setId(p.getId())).collect(Collectors.toList())
@@ -675,6 +655,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, interpretation.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update interpretation {}: {}", interpretation.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretation.getId(),
@@ -754,6 +735,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                     + clinicalAnalysisId + "': " + e.getMessage(), e);
             Event event = new Event(Event.Type.ERROR, interpretationId, e1.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("{}", e1.getMessage(), e);
             auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
@@ -850,6 +832,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update interpretation {}: {}", interpretationId, e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
@@ -1021,11 +1004,18 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         if (parameters.containsKey(InterpretationDBAdaptor.QueryParams.STATUS.key())) {
             interpretation.setStatus(updateParams.getStatus().toCustomStatus());
-            validateCustomStatusParameters(clinicalAnalysis, interpretation, interpretationConfiguration);
+            validateStatusParameter(interpretation, clinicalAnalysis.getType(), interpretationConfiguration);
             parameters.put(InterpretationDBAdaptor.QueryParams.STATUS.key(), interpretation.getStatus());
         }
 
-        return interpretationDBAdaptor.update(interpretation.getUid(), parameters, clinicalAuditList, as, options);
+        OpenCGAResult<Interpretation> update = interpretationDBAdaptor.update(interpretation.getUid(), parameters, clinicalAuditList, as,
+                options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated interpretation
+            OpenCGAResult<Interpretation> result = interpretationDBAdaptor.get(study.getUid(), interpretation.getId(), options);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     public OpenCGAResult<Interpretation> revert(String studyStr, String clinicalAnalysisId, String interpretationId, int version,
@@ -1275,6 +1265,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
                 Event event = new Event(Event.Type.ERROR, interpretationId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationId, userId, Enums.Resource.INTERPRETATION, interpretationId, interpretationUuid,
@@ -1405,6 +1396,29 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 // We won't return any results
                 query.put(InterpretationDBAdaptor.QueryParams.PANELS_UID.key(), -1);
             }
+        }
+    }
+
+    private void validateStatusParameter(Interpretation interpretation, ClinicalAnalysis.Type type,
+                                         InterpretationStudyConfiguration interpretationConfiguration) throws CatalogException {
+        // Status
+        if (interpretationConfiguration.getStatus() == null
+                || CollectionUtils.isEmpty(interpretationConfiguration.getStatus().get(type))) {
+            throw new CatalogException("Missing status configuration in study for type '" + type
+                    + "'. Please add a proper set of valid statuses.");
+        }
+        if (StringUtils.isNotEmpty(interpretation.getStatus().getId())) {
+            Map<String, StatusValue> statusMap = new HashMap<>();
+            for (StatusValue status : interpretationConfiguration.getStatus().get(type)) {
+                statusMap.put(status.getId(), status);
+            }
+            if (!statusMap.containsKey(interpretation.getStatus().getId())) {
+                throw new CatalogException("Unknown status '" + interpretation.getStatus().getId() + "'. The list of valid statuses is: '"
+                        + String.join(",", statusMap.keySet()) + "'");
+            }
+            StatusValue statusValue = statusMap.get(interpretation.getStatus().getId());
+            interpretation.getStatus().setDescription(statusValue.getDescription());
+            interpretation.getStatus().setDate(TimeUtils.getTime());
         }
     }
 }

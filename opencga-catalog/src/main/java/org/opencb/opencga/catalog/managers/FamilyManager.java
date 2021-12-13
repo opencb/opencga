@@ -26,6 +26,7 @@ import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.commons.datastore.core.*;
@@ -253,18 +254,23 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             options = ParamUtils.defaultObject(options, QueryOptions::new);
             family.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FAMILY));
 
-            familyDBAdaptor.insert(study.getUid(), family, study.getVariableSets(), options);
-            OpenCGAResult<Family> queryResult = getFamily(study.getUid(), family.getUuid(), options);
+            OpenCGAResult<Family> insert = familyDBAdaptor.insert(study.getUid(), family, study.getVariableSets(), options);
             if (membersToCreate) {
+                OpenCGAResult<Family> queryResult = getFamily(study.getUid(), family.getUuid(), FamilyManager.INCLUDE_FAMILY_MEMBERS);
                 calculateRoles(study, queryResult.first(), userId);
                 ObjectMap params = new ObjectMap(FamilyDBAdaptor.QueryParams.ROLES.key(), queryResult.first().getRoles());
                 familyDBAdaptor.update(family.getUid(), params, QueryOptions.empty());
+            }
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated family
+                OpenCGAResult<Family> queryResult = getFamily(study.getUid(), family.getUuid(), options);
+                insert.setResults(queryResult.getResults());
             }
 
             auditManager.auditCreate(userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return queryResult;
+            return insert;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.FAMILY, family.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -493,6 +499,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, familyId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot delete family {}: {}", familyId, e.getMessage(), e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, familyId, familyUuid,
@@ -570,6 +577,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
                 Event event = new Event(Event.Type.ERROR, family.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(),
@@ -742,6 +750,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, family.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update family {}: {}", family.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(), study.getId(),
@@ -796,6 +805,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, familyId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Cannot update family {}: {}", familyId, e.getMessage());
             auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, familyId, familyUuid, study.getId(),
@@ -870,6 +880,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update family {}: {}", familyId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, familyId, familyUuid, study.getId(),
@@ -999,7 +1010,14 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        return familyDBAdaptor.update(family.getUid(), parameters, study.getVariableSets(), options);
+        OpenCGAResult<Family> update = familyDBAdaptor.update(family.getUid(), parameters, study.getVariableSets(), options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated family
+            OpenCGAResult<Family> result = familyDBAdaptor.get(study.getUid(),
+                    new Query(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid()), options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     public Map<String, List<String>> calculateFamilyGenotypes(String studyStr, String clinicalAnalysisId, String familyId,
@@ -1332,9 +1350,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         // Parse all the individuals
         for (Individual member : members) {
-            Member individual = new Member(
-                    member.getId(), member.getName(), null, null, null,
-                    Member.Sex.getEnum(member.getSex().toString()), member.getLifeStatus(),
+            Member individual = new Member(member.getId(), member.getName(), null, null, null, member.getSex(), member.getLifeStatus(),
                     member.getPhenotypes(), member.getDisorders(), member.getAttributes());
             individualMap.put(individual.getId(), individual);
         }
@@ -1403,7 +1419,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         Map<String, Individual> membersMap = new HashMap<>();       // individualName|individualId: Individual
         Map<String, List<Individual>> parentsMap = new HashMap<>(); // motherName||F---fatherName||M: List<children>
-        Set<String> noParentsSet = new HashSet<>();             // Set with individuals without parents
+        Set<String> noParentsSet = new HashSet<>();                 // Set with individuals without parents
 
         // 1. Fill in the objects initialised above
         for (Individual individual : family.getMembers()) {
@@ -1454,18 +1470,23 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             for (String parentName : split) {
                 String[] splitNameSex = parentName.split("\\|\\|");
                 String name = splitNameSex[0];
-                IndividualProperty.Sex sex = splitNameSex[1].equals("F") ? IndividualProperty.Sex.FEMALE : IndividualProperty.Sex.MALE;
+                SexOntologyTermAnnotation sexTerm = splitNameSex[1].equals("F")
+                        ? SexOntologyTermAnnotation.initFemale()
+                        : SexOntologyTermAnnotation.initMale();
+                IndividualProperty.Sex sex = sexTerm.getSex();
 
                 if (!membersMap.containsKey(name)) {
                     throw new CatalogException("The parent " + name + " is not present in the members list");
                 } else {
                     // Check if the sex is correct
-                    IndividualProperty.Sex sex1 = membersMap.get(name).getSex();
+                    IndividualProperty.Sex sex1 = membersMap.get(name).getSex() != null
+                            ? membersMap.get(name).getSex().getSex()
+                            : IndividualProperty.Sex.UNKNOWN;
                     if (sex1 != null && sex1 != sex && sex1 != IndividualProperty.Sex.UNKNOWN) {
                         throw new CatalogException("Sex of parent " + name + " is incorrect or the relationship is incorrect. In "
-                                + "principle, it should be " + sex);
+                                + "principle, it should be " + sexTerm);
                     }
-                    membersMap.get(name).setSex(sex);
+                    membersMap.get(name).setSex(sexTerm);
 
                     // We attempt to remove the individual from the noParentsSet
                     noParentsSet.remove(membersMap.get(name).getId());

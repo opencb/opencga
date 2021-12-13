@@ -70,10 +70,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
         if (!valid) {
             return null;
         }
-        System.out.println("[" + variant + "] partial.gtCountMap = " + partial.gtCountMap);
         VariantStats calculate = calculate(variant, partial);
-        System.out.println("[" + variant + "] calculate.getGenotypeCount() = " + calculate.getGenotypeCount());
-        System.out.println("[" + variant + "] calculate.getSampleCount() = " + calculate.getSampleCount());
         return calculate;
     }
 

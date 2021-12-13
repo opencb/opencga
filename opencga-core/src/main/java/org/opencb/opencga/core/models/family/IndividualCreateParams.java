@@ -19,6 +19,8 @@ package org.opencb.opencga.core.models.family;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
@@ -43,8 +45,8 @@ public class IndividualCreateParams {
     private IndividualReferenceParam mother;
     private Location location;
 
-    private IndividualProperty.Sex sex;
-    private String ethnicity;
+    private SexOntologyTermAnnotation sex;
+    private OntologyTermAnnotation ethnicity;
     private Boolean parentalConsanguinity;
     private IndividualPopulation population;
     private String dateOfBirth;
@@ -60,11 +62,11 @@ public class IndividualCreateParams {
     }
 
     public IndividualCreateParams(String id, String name, String creationDate, String modificationDate, IndividualReferenceParam father,
-                                  IndividualReferenceParam mother, Location location, IndividualProperty.Sex sex, String ethnicity,
-                                  Boolean parentalConsanguinity, IndividualPopulation population, String dateOfBirth,
-                                  IndividualProperty.KaryotypicSex karyotypicSex, IndividualProperty.LifeStatus lifeStatus,
-                                  List<AnnotationSet> annotationSets, List<Phenotype> phenotypes, List<Disorder> disorders,
-                                  CustomStatusParams status, Map<String, Object> attributes) {
+                                  IndividualReferenceParam mother, Location location, SexOntologyTermAnnotation sex,
+                                  OntologyTermAnnotation ethnicity, Boolean parentalConsanguinity, IndividualPopulation population,
+                                  String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
+                                  IndividualProperty.LifeStatus lifeStatus, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
+                                  List<Disorder> disorders, CustomStatusParams status, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.creationDate = creationDate;
@@ -206,20 +208,20 @@ public class IndividualCreateParams {
         return this;
     }
 
-    public IndividualProperty.Sex getSex() {
+    public SexOntologyTermAnnotation getSex() {
         return sex;
     }
 
-    public IndividualCreateParams setSex(IndividualProperty.Sex sex) {
+    public IndividualCreateParams setSex(SexOntologyTermAnnotation sex) {
         this.sex = sex;
         return this;
     }
 
-    public String getEthnicity() {
+    public OntologyTermAnnotation getEthnicity() {
         return ethnicity;
     }
 
-    public IndividualCreateParams setEthnicity(String ethnicity) {
+    public IndividualCreateParams setEthnicity(OntologyTermAnnotation ethnicity) {
         this.ethnicity = ethnicity;
         return this;
     }

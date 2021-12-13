@@ -41,7 +41,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -146,7 +145,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
 
     public Signature parse(Path dir) throws IOException {
         Signature result = new Signature(signatureParams.getId(), signatureParams.getDescription(),
-                signatureParams.getQuery(), "SNV", null, Collections.emptyList(), null);
+                signatureParams.getQuery(), "SNV", null, null, null);
 
         // Context counts
         File contextFile = dir.resolve(GENOME_CONTEXT_FILENAME).toFile();
@@ -183,7 +182,7 @@ public class MutationalSignatureAnalysis extends OpenCgaToolScopeStudy {
             if (imgFile.exists()) {
                 int index = imgFile.getAbsolutePath().indexOf("JOBS/");
                 String relativeFilePath = (index == -1 ? imgFile.getName() : imgFile.getAbsolutePath().substring(index));
-                fitting.setImage(relativeFilePath);
+                fitting.setFile(relativeFilePath);
             }
 
             result.setFitting(fitting);

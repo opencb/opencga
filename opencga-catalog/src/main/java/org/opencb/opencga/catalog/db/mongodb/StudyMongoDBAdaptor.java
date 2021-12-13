@@ -22,6 +22,7 @@ import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -43,14 +44,13 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -114,8 +114,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, studyParameters, acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.STATUS.key(), QueryParams.INTERNAL_CONFIGURATION_CLINICAL.key(),
-                QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(), QueryParams.INTERNAL_INDEX_RECESSIVE_GENE.key()};
+        final String[] acceptedObjectParams = {QueryParams.TYPE.key(), QueryParams.SOURCES.key(), QueryParams.STATUS.key(),
+                QueryParams.INTERNAL_CONFIGURATION_CLINICAL.key(), QueryParams.INTERNAL_CONFIGURATION_VARIANT_ENGINE.key(),
+                QueryParams.INTERNAL_INDEX_RECESSIVE_GENE.key(), QueryParams.ADDITIONAL_INFO.key()};
         filterObjectParams(parameters, studyParameters, acceptedObjectParams);
 
         if (studyParameters.containsKey(QueryParams.STATUS.key())) {
@@ -1127,62 +1128,105 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user)
+    public OpenCGAResult<VariableSet> deleteVariableSet(long studyUid, VariableSet variableSet, boolean force)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        checkVariableSetInUse(variableSetId);
+        try {
+            return runTransaction(clientSession -> {
+                if (force) {
+                    deleteAllAnnotationSetsByVariableSet(clientSession, studyUid, variableSet);
+                } else {
+                    checkVariableSetInUse(variableSet);
+                }
 
-        Bson query = Filters.eq(QueryParams.VARIABLE_SET_UID.key(), variableSetId);
-        Bson operation = Updates.pull("variableSets", Filters.eq(PRIVATE_UID, variableSetId));
-        DataResult result = studyCollection.update(query, operation, null);
+                Bson query = Filters.eq(QueryParams.VARIABLE_SET_UID.key(), variableSet.getUid());
+                Bson operation = Updates.pull("variableSets", Filters.eq(PRIVATE_UID, variableSet.getUid()));
+                DataResult result = studyCollection.update(query, operation, null);
 
-        if (result.getNumUpdated() == 0) {
-            throw CatalogDBException.uidNotFound("VariableSet", variableSetId);
+                if (result.getNumUpdated() == 0) {
+                    throw CatalogDBException.idNotFound("VariableSet", variableSet.getId());
+                }
+                return new OpenCGAResult<>(result);
+            });
+        } catch (CatalogDBException e) {
+            throw new CatalogDBException("Could not delete VariableSet '" + variableSet.getId() + "': " + e.getMessage(), e);
         }
-        return new OpenCGAResult<>(result);
     }
 
-    public void checkVariableSetInUse(long variableSetId)
+    private void deleteAllAnnotationSetsByVariableSet(ClientSession session, long studyUid, VariableSet variableSet)
+            throws CatalogDBException {
+        List<VariableSet.AnnotableDataModels> entities = variableSet.getEntities();
+        if (CollectionUtils.isEmpty(entities)) {
+            entities = new ArrayList<>(EnumSet.allOf(VariableSet.AnnotableDataModels.class));
+        }
+
+        // Delete all existing annotationSets
+        for (VariableSet.AnnotableDataModels entity : entities) {
+            switch (entity) {
+                case SAMPLE:
+                    dbAdaptorFactory.getCatalogSampleDBAdaptor()
+                            .removeAllAnnotationSetsByVariableSetId(session, studyUid, variableSet, true);
+                    break;
+                case COHORT:
+                    dbAdaptorFactory.getCatalogCohortDBAdaptor()
+                            .removeAllAnnotationSetsByVariableSetId(session, studyUid, variableSet, false);
+                    break;
+                case INDIVIDUAL:
+                    dbAdaptorFactory.getCatalogIndividualDBAdaptor()
+                            .removeAllAnnotationSetsByVariableSetId(session, studyUid, variableSet, true);
+                    break;
+                case FAMILY:
+                    dbAdaptorFactory.getCatalogFamilyDBAdaptor()
+                            .removeAllAnnotationSetsByVariableSetId(session, studyUid, variableSet, true);
+                    break;
+                case FILE:
+                    dbAdaptorFactory.getCatalogFileDBAdaptor()
+                            .removeAllAnnotationSetsByVariableSetId(session, studyUid, variableSet, false);
+                    break;
+                default:
+                    throw new CatalogDBException("Unexpected entity '" + entity + "'");
+            }
+        }
+    }
+
+    private void checkVariableSetInUse(VariableSet variableSet)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        OpenCGAResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(
-                new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSetId), new QueryOptions());
-        if (samples.getNumResults() != 0) {
-            String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of samples : [";
-            for (Sample sample : samples.getResults()) {
-                msg += " { id: " + sample.getUid() + ", name: \"" + sample.getId() + "\" },";
-            }
-            msg += "]";
-            throw new CatalogDBException(msg);
+        List<VariableSet.AnnotableDataModels> entities = variableSet.getEntities();
+        if (CollectionUtils.isEmpty(entities)) {
+            entities = new ArrayList<>(EnumSet.allOf(VariableSet.AnnotableDataModels.class));
         }
-        OpenCGAResult<Individual> individuals = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(
-                new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSetId),
-                new QueryOptions());
-        if (individuals.getNumResults() != 0) {
-            String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of individuals : [";
-            for (Individual individual : individuals.getResults()) {
-                msg += " { id: " + individual.getUid() + ", name: \"" + individual.getName() + "\" },";
+
+        Query query = new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSet.getUid());
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, "id");
+        for (VariableSet.AnnotableDataModels entity : entities) {
+            OpenCGAResult<? extends Annotable> result;
+            switch (entity) {
+                case SAMPLE:
+                    result = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options);
+                    break;
+                case COHORT:
+                    result = dbAdaptorFactory.getCatalogCohortDBAdaptor().get(query, options);
+                    break;
+                case INDIVIDUAL:
+                    result = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query, options);
+                    break;
+                case FAMILY:
+                    result = dbAdaptorFactory.getCatalogFamilyDBAdaptor().get(query, options);
+                    break;
+                case FILE:
+                    result = dbAdaptorFactory.getCatalogFileDBAdaptor().get(query, options);
+                    break;
+                default:
+                    throw new CatalogDBException("Unexpected entity '" + entity + "'");
             }
-            msg += "]";
-            throw new CatalogDBException(msg);
-        }
-        OpenCGAResult<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor().get(
-                new Query(CohortDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSetId), new QueryOptions());
-        if (cohorts.getNumResults() != 0) {
-            String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of cohorts : [";
-            for (Cohort cohort : cohorts.getResults()) {
-                msg += " { id: " + cohort.getUid() + ", name: \"" + cohort.getId() + "\" },";
+
+            if (result.getNumResults() != 0) {
+                String msg = "Can't delete VariableSet, still in use in " + entity + " : [";
+                for (Annotable tmpResult : result.getResults()) {
+                    msg += " {id: " + tmpResult.getId() + "},";
+                }
+                msg += "]";
+                throw new CatalogDBException(msg);
             }
-            msg += "]";
-            throw new CatalogDBException(msg);
-        }
-        OpenCGAResult<Family> families = dbAdaptorFactory.getCatalogFamilyDBAdaptor().get(
-                new Query(FamilyDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSetId), new QueryOptions());
-        if (cohorts.getNumResults() != 0) {
-            String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of families : [";
-            for (Family family : families.getResults()) {
-                msg += " { id: " + family.getUid() + ", name: \"" + family.getName() + "\" },";
-            }
-            msg += "]";
-            throw new CatalogDBException(msg);
         }
     }
 

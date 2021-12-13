@@ -6,6 +6,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.BreakendMate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.SampleEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -155,8 +156,16 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
 
         Map<String, Variant> mateVariantsMap = new HashMap<>(variants.size());
         for (Variant mateVariant : variantDBAdaptor.get(baseQuery, new QueryOptions()).getResults()) {
+            if (mateVariant.getStudies().isEmpty()) {
+                // Under weird situations, we might get empty studies list. Just discard them.
+                continue;
+            }
             StudyEntry mateStudyEntry = mateVariant.getStudies().get(0);
-            String vcfId = mateStudyEntry.getFile(mateStudyEntry.getSample(samplePosition).getFileIndex()).getData().get(StudyEntry.VCF_ID);
+            SampleEntry sampleEntry = mateStudyEntry.getSample(samplePosition);
+            if (sampleEntry == null) {
+                continue;
+            }
+            String vcfId = mateStudyEntry.getFile(sampleEntry.getFileIndex()).getData().get(StudyEntry.VCF_ID);
             mateVariantsMap.put(vcfId, mateVariant);
         }
 

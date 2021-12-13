@@ -47,7 +47,7 @@ public class DummyTestAnnotator extends VariantAnnotator {
             ct.setGeneName("a gene");
             ct.setSequenceOntologyTerms(Collections.emptyList());
             ct.setExonOverlap(Collections.emptyList());
-            ct.setTranscriptAnnotationFlags(Collections.emptyList());
+            ct.setTranscriptFlags(Collections.emptyList());
             a.setConsequenceTypes(Collections.singletonList(ct));
             a.setAdditionalAttributes(
                     Collections.singletonMap(GROUP_NAME.key(),

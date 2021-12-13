@@ -229,6 +229,20 @@ public class ParamUtils {
         }
     }
 
+    public enum AddRemoveForceRemoveAction {
+        ADD,
+        REMOVE,
+        FORCE_REMOVE;
+
+        public static AddRemoveForceRemoveAction from(Map<String, ?> map, String key) {
+            return from(map, key, null);
+        }
+
+        public static AddRemoveForceRemoveAction from(Map<String, ?> map, String key, AddRemoveForceRemoveAction defaultValue) {
+            return getEnumFromMap(map, key, defaultValue, AddRemoveForceRemoveAction.class);
+        }
+    }
+
     public enum AddRemoveReplaceAction {
         ADD,
         REMOVE,

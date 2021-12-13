@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
 import io.swagger.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
@@ -435,6 +436,9 @@ public class OpenCGAWSServer {
                 case ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM: // SampleWS
                     queryOptions.put(ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM, Boolean.parseBoolean(value));
                     break;
+                case ParamConstants.INCLUDE_RESULT_PARAM:
+                    queryOptions.put(ParamConstants.INCLUDE_RESULT_PARAM, Boolean.parseBoolean(value));
+                    break;
                 case "lazy":
                     lazy = Boolean.parseBoolean(value);
                     queryOptions.put(entry.getKey(), lazy);
@@ -629,11 +633,29 @@ public class OpenCGAWSServer {
         for (OpenCGAResult<?> openCGAResult : list) {
             setFederationServer(openCGAResult, uriInfo);
         }
+        Response.Status status = getResponseStatus(list);
+
         queryResponse.setResponses(list);
 
-        Response response = createJsonResponse(queryResponse);
+        Response response = Response.fromResponse(createJsonResponse(queryResponse)).status(status).build();
         logResponse(response.getStatusInfo(), queryResponse);
         return response;
+    }
+
+    private Response.Status getResponseStatus(List<OpenCGAResult<?>> list) {
+        if (list != null) {
+            for (OpenCGAResult<?> openCGAResult : list) {
+                if (CollectionUtils.isNotEmpty(openCGAResult.getEvents())) {
+                    for (Event event : openCGAResult.getEvents()) {
+                        if (event.getType().equals(Event.Type.ERROR)) {
+                            return Response.Status.BAD_REQUEST;
+                        }
+                    }
+                }
+            }
+        }
+
+        return Response.Status.OK;
     }
 
     protected Response createRawOkResponse(Object obj) {

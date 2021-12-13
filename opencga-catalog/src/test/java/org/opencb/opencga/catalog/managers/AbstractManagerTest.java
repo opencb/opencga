@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileCreateParams;
@@ -78,6 +79,7 @@ public class AbstractManagerTest extends GenericTest {
     protected String testFile1;
     protected String testFile2;
 
+    protected static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     @Before
     public void setUp() throws IOException, CatalogException {
@@ -97,28 +99,28 @@ public class AbstractManagerTest extends GenericTest {
         sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
 
         project1 = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", new QueryOptions(), token).first().getId();
+                null, "GRCh38", INCLUDE_RESULT, token).first().getId();
         project2 = catalogManager.getProjectManager().create("pmp", "Project Management Project", "life art intelligent system",
-                "Homo sapiens", null, "GRCh38", new QueryOptions(), sessionIdUser2).first().getId();
-        catalogManager.getProjectManager().create("p1", "project 1", "", "Homo sapiens", null, "GRCh38", new QueryOptions(),
+                "Homo sapiens", null, "GRCh38", INCLUDE_RESULT, sessionIdUser2).first().getId();
+        catalogManager.getProjectManager().create("p1", "project 1", "", "Homo sapiens", null, "GRCh38", INCLUDE_RESULT,
                 sessionIdUser3).first();
 
-        Study study = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", "Done", null, null, null, null, null, token).first();
+        Study study = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, token).first();
         studyUid = study.getUid();
         studyFqn = study.getFqn();
 
-        study = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", "d", null, null, null, null, null, token).first();
+        study = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", "d", null, null, null, null, INCLUDE_RESULT, token).first();
         studyUid2 = study.getUid();
         studyFqn2 = study.getFqn();
 
-        study = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", "", null, null, null, null, null, sessionIdUser2).first();
+        study = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first();
         studyFqn3 = study.getFqn();
 
         catalogManager.getFileManager().createFolder(studyFqn2, Paths.get("data/test/folder/").toString(), true,
                 null, QueryOptions.empty(), token);
 
         testFolder = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/test/folder/").toString(),
-                true, null, QueryOptions.empty(), token).first();
+                true, null, INCLUDE_RESULT, token).first();
         ObjectMap attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("numValue", 5);
@@ -133,7 +135,7 @@ public class AbstractManagerTest extends GenericTest {
                         .setType(File.Type.FILE),
                 false, token);
 
-        File fileTest1k = catalogManager.getFileManager().get(studyFqn, queryResult2.first().getPath(), null, token).first();
+        File fileTest1k = catalogManager.getFileManager().get(studyFqn, queryResult2.first().getPath(), INCLUDE_RESULT, token).first();
         attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("name", "fileTest1k");
@@ -151,7 +153,7 @@ public class AbstractManagerTest extends GenericTest {
                         .setType(File.Type.FILE),
                 false, token);
 
-        File fileTest05k = catalogManager.getFileManager().get(studyFqn, queryResult1.first().getPath(), null, token).first();
+        File fileTest05k = catalogManager.getFileManager().get(studyFqn, queryResult1.first().getPath(), INCLUDE_RESULT, token).first();
         attributes = new ObjectMap();
         attributes.put("field", "valuable");
         attributes.put("name", "fileTest05k");
@@ -168,7 +170,7 @@ public class AbstractManagerTest extends GenericTest {
                         .setType(File.Type.FILE),
                 false, token);
 
-        File test01k = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), null, token).first();
+        File test01k = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), INCLUDE_RESULT, token).first();
         attributes = new ObjectMap();
         attributes.put("field", "other");
         attributes.put("name", "test01k");
@@ -198,49 +200,49 @@ public class AbstractManagerTest extends GenericTest {
         Sample sample = new Sample().setId("s_1");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_1").append("AGE", 6).append("ALIVE", true).append("PHEN", "CONTROL"))));
-        s_1 = catalogManager.getSampleManager().create(studyFqn, sample, new QueryOptions(), token).first().getId();
+        s_1 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_2");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_2").append("AGE", 10).append("ALIVE", false).append("PHEN", "CASE"))));
-        s_2 = catalogManager.getSampleManager().create(studyFqn, sample, new QueryOptions(), token).first().getId();
+        s_2 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_3");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_3").append("AGE", 15).append("ALIVE", true).append("PHEN", "CONTROL"))));
-        s_3 = catalogManager.getSampleManager().create(studyFqn, sample, new QueryOptions(), token).first().getId();
+        s_3 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_4");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_4").append("AGE", 22).append("ALIVE", false).append("PHEN", "CONTROL"))));
-        s_4 = catalogManager.getSampleManager().create(studyFqn, sample, new QueryOptions(), token).first().getId();
+        s_4 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_5");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", vs.getId(),
                 new ObjectMap("NAME", "s_5").append("AGE", 29).append("ALIVE", true).append("PHEN", "CASE"))));
-        s_5 = catalogManager.getSampleManager().create(studyFqn, sample, new QueryOptions(), token).first().getId();
+        s_5 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_6");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot2", vs.getId(),
                 new ObjectMap("NAME", "s_6").append("AGE", 38).append("ALIVE", true).append("PHEN", "CONTROL"))));
-        s_6 = catalogManager.getSampleManager().create(studyFqn, sample, new QueryOptions(), token).first().getId();
+        s_6 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_7");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot2", vs.getId(),
                 new ObjectMap("NAME", "s_7").append("AGE", 46).append("ALIVE", false).append("PHEN", "CASE"))));
-        s_7 = catalogManager.getSampleManager().create(studyFqn, sample, new QueryOptions(), token).first().getId();
+        s_7 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_8");
         sample.setAnnotationSets(Collections.singletonList(new AnnotationSet("annot2", vs.getId(),
                 new ObjectMap("NAME", "s_8").append("AGE", 72).append("ALIVE", true).append("PHEN", "CONTROL"))));
-        s_8 = catalogManager.getSampleManager().create(studyFqn, sample, new QueryOptions(), token).first().getId();
+        s_8 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         sample.setId("s_9");
         sample.setAnnotationSets(Collections.emptyList());
-        s_9 = catalogManager.getSampleManager().create(studyFqn, sample, new QueryOptions(), token).first().getId();
+        s_9 = catalogManager.getSampleManager().create(studyFqn, sample, INCLUDE_RESULT, token).first().getId();
 
         catalogManager.getFileManager().update(studyFqn, test01k.getPath(), new FileUpdateParams()
-                .setSampleIds(Arrays.asList(s_1, s_2, s_3, s_4, s_5)), new QueryOptions(), token);
+                .setSampleIds(Arrays.asList(s_1, s_2, s_3, s_4, s_5)), INCLUDE_RESULT, token);
     }
 
 
