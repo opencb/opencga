@@ -404,16 +404,17 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Add or remove a variableSet", response = VariableSet.class)
     public Response createOrRemoveVariableSets(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a variableSet", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-            @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @ApiParam(value = "Action to be performed: ADD, REMOVE or FORCE_REMOVE a variableSet",
+                    allowableValues = "ADD,REMOVE,FORCE_REMOVE", defaultValue = "ADD")
+            @QueryParam("action") ParamUtils.AddRemoveForceRemoveAction action,
             @ApiParam(value = "JSON containing the VariableSet to be created or removed.", required = true) VariableSetCreateParams params) {
         try {
             if (action == null) {
-                action = ParamUtils.AddRemoveAction.ADD;
+                action = ParamUtils.AddRemoveForceRemoveAction.ADD;
             }
 
             DataResult<VariableSet> queryResult;
-            if (action == ParamUtils.AddRemoveAction.ADD) {
+            if (action == ParamUtils.AddRemoveForceRemoveAction.ADD) {
                 // Fix variable set params to support 1.3.x
                 // TODO: Remove in version 2.1.0-SNAPSHOT
                 params.setId(StringUtils.isNotEmpty(params.getId()) ? params.getId() : params.getName());
@@ -425,7 +426,8 @@ public class StudyWSServer extends OpenCGAWSServer {
                         params.getUnique(),
                         params.getConfidential(), params.getDescription(), null, params.getVariables(), params.getEntities(), token);
             } else {
-                queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, params.getId(), token);
+                boolean force = ParamUtils.AddRemoveForceRemoveAction.FORCE_REMOVE.equals(action);
+                queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, params.getId(), force, token);
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {

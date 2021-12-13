@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - release-2.2.x
 
 jobs:
   build:
@@ -11,8 +12,16 @@ jobs:
     with:
       maven_opts: -P storage-hadoop,hdp3.1 -Dopencga.war.name=opencga
 
+  sonar:
+    uses: opencb/java-common-libs/.github/workflows/sonar-analysis-workflow.yml@develop
+    needs: build
+    with:
+      sonarProjectKey: opencb_opencga
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   test:
-    name: Test java-common-libs
+    name: Test OpenCGA
     runs-on: ubuntu-20.04
     needs: build
     strategy:
@@ -44,7 +53,7 @@ jobs:
           mongodb-version: ${{ matrix.mongodb }}
           mongodb-replica-set: rs-test
       - name: Run Maven Tests
-        run: mvn -T 2 clean install -DskipTests
+        run: mvn -T 2 clean install -P storage-hadoop,hdp3.1 -DskipTests
 
   deploy-maven:
     uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop

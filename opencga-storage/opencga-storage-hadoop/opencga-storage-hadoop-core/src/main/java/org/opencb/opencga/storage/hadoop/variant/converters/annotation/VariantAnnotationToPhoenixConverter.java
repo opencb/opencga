@@ -127,7 +127,7 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
             addNotNull(genes, consequenceType.getGeneId());
             addNotNull(transcripts, consequenceType.getTranscriptId());
             addNotNull(biotype, consequenceType.getBiotype());
-            addAllNotNull(flags, consequenceType.getTranscriptAnnotationFlags());
+            addAllNotNull(flags, consequenceType.getTranscriptFlags());
 
             ProteinVariantAnnotation proteinVariantAnnotation = consequenceType.getProteinVariantAnnotation();
             for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
@@ -157,8 +157,8 @@ public class VariantAnnotationToPhoenixConverter extends AbstractPhoenixConverte
                 }
 
                 // Add a combination with the transcript flag
-                if (consequenceType.getTranscriptAnnotationFlags() != null) {
-                    for (String flag : consequenceType.getTranscriptAnnotationFlags()) {
+                if (consequenceType.getTranscriptFlags() != null) {
+                    for (String flag : consequenceType.getTranscriptFlags()) {
                         if (VariantQueryUtils.IMPORTANT_TRANSCRIPT_FLAGS.contains(flag)) {
                             geneSoFlag.add(combine(consequenceType.getGeneName(), so, flag));
                             geneSoFlag.add(combine(consequenceType.getGeneId(), so, flag));

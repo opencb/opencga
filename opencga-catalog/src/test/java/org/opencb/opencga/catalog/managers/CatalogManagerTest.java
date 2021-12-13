@@ -1106,7 +1106,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(study.getFqn(), "vs1", "vs1", true, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
 
-        DataResult<VariableSet> result = catalogManager.getStudyManager().deleteVariableSet(studyFqn, vs1.getId(), token);
+        DataResult<VariableSet> result = catalogManager.getStudyManager().deleteVariableSet(studyFqn, vs1.getId(), false, token);
         assertEquals(0, result.getNumResults());
 
         thrown.expect(CatalogException.class);    //VariableSet does not exist
@@ -1185,7 +1185,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 QueryOptions.empty(), token);
 
         try {
-            catalogManager.getStudyManager().deleteVariableSet(studyFqn, vs1.getId(), token);
+            catalogManager.getStudyManager().deleteVariableSet(studyFqn, vs1.getId(), false, token);
         } finally {
             VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyFqn, vs1.getId(), null, token).first();
             assertEquals(vs1.getUid(), variableSet.getUid());
@@ -1666,6 +1666,92 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogParameterException.class);
         catalogManager.getCohortManager().getSamples(studyId, "MyCohort,MyCohort", token);
     }
+
+    @Test
+    public void testDeleteVariableSetWithAnnotations() throws CatalogException {
+        VariableSet variableSet = createVariableSetAndAnnotationSets();
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("in use");
+        catalogManager.getStudyManager().deleteVariableSet(studyFqn, variableSet.getId(), false, token);
+    }
+
+    private VariableSet createVariableSetAndAnnotationSets() throws CatalogException {
+        VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyFqn, "vs", null, token).first();
+
+        String individualId1 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_1")
+                        .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
+                INCLUDE_RESULT, token).first().getId();
+        String individualId2 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_2")
+                        .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
+                INCLUDE_RESULT, token).first().getId();
+        String individualId3 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_3")
+                        .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN),
+                INCLUDE_RESULT, token).first().getId();
+
+        catalogManager.getIndividualManager().update(studyFqn, individualId1, new IndividualUpdateParams()
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
+                                new ObjectMap("NAME", "INDIVIDUAL_1").append("AGE", 5).append("PHEN", "CASE").append("ALIVE", true)))),
+                QueryOptions.empty(), token);
+
+        catalogManager.getIndividualManager().update(studyFqn, individualId2, new IndividualUpdateParams()
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
+                                new ObjectMap("NAME", "INDIVIDUAL_2").append("AGE", 15).append("PHEN", "CONTROL").append("ALIVE", true)))),
+                QueryOptions.empty(), token);
+
+        catalogManager.getIndividualManager().update(studyFqn, individualId3, new IndividualUpdateParams()
+                        .setAnnotationSets(Collections.singletonList(new AnnotationSet("annot1", variableSet.getId(),
+                                new ObjectMap("NAME", "INDIVIDUAL_3").append("AGE", 25).append("PHEN", "CASE").append("ALIVE", true)))),
+                QueryOptions.empty(), token);
+
+        QueryOptions options = new QueryOptions()
+                .append(QueryOptions.LIMIT, 0)
+                .append(QueryOptions.COUNT, true);
+        OpenCGAResult<?> result = catalogManager.getIndividualManager().search(studyFqn,
+                new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSet.getId()), options,
+                token);
+        assertEquals(3, result.getNumMatches());
+
+        result = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSet.getId()), options,
+                token);
+        assertEquals(8, result.getNumMatches());
+        return variableSet;
+    }
+
+    @Test
+    public void testForceDeleteVariableSetWithAnnotations() throws CatalogException {
+        VariableSet variableSet = createVariableSetAndAnnotationSets();
+        catalogManager.getStudyManager().deleteVariableSet(studyFqn, variableSet.getId(), true, token);
+
+        QueryOptions options = new QueryOptions()
+                .append(QueryOptions.LIMIT, 0)
+                .append(QueryOptions.COUNT, true);
+        try {
+            catalogManager.getIndividualManager().search(studyFqn,
+                    new Query(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSet.getId()), options,
+                    token);
+            fail("It should fail saying Variable set does not exist");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("not found"));
+        }
+
+        try {
+            catalogManager.getSampleManager().search(studyFqn,
+                    new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSet.getId()), options,
+                    token);
+            fail("It should fail saying Variable set does not exist");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("not found"));
+        }
+
+        try {
+            catalogManager.getStudyManager().getVariableSet(studyFqn, variableSet.getId(), QueryOptions.empty(), token);
+            fail("It should fail saying Variable set does not exist");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("not found"));
+        }
+    }
+
 
     @Test
     public void generateCohortFromSampleQuery() throws CatalogException, IOException {

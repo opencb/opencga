@@ -1374,7 +1374,8 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.getVariableSets(query, options, userId);
     }
 
-    public OpenCGAResult<VariableSet> deleteVariableSet(String studyId, String variableSetId, String token) throws CatalogException {
+    public OpenCGAResult<VariableSet> deleteVariableSet(String studyId, String variableSetId, boolean force, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId, StudyManager.INCLUDE_VARIABLE_SET);
         VariableSet variableSet = extractVariableSet(study, variableSetId, userId);
@@ -1382,10 +1383,11 @@ public class StudyManager extends AbstractManager {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyId)
                 .append("variableSetId", variableSetId)
+                .append("force", force)
                 .append("token", token);
         try {
             authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
-            OpenCGAResult writeResult = studyDBAdaptor.deleteVariableSet(variableSet.getUid(), QueryOptions.empty(), userId);
+            OpenCGAResult writeResult = studyDBAdaptor.deleteVariableSet(study.getUid(), variableSet, force);
             auditManager.audit(userId, Enums.Action.DELETE_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(), "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 

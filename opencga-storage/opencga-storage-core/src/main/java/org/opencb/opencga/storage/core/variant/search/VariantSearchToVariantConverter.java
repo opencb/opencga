@@ -55,7 +55,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     private static final String LIST_SEP = "___";
     private static final String FIELD_SEP = " -- ";
 
-    private Logger logger = LoggerFactory.getLogger(VariantSearchToVariantConverter.class);
+    private final Logger logger = LoggerFactory.getLogger(VariantSearchToVariantConverter.class);
     private Set<VariantField> includeFields;
 
     private Map<String, StudyEntry> studyEntryMap;
@@ -341,7 +341,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     }
                     if (fields.length > 3) {
                         if (fields[3].length() > 0) {
-                            consequenceType.setTranscriptAnnotationFlags(Arrays.asList(fields[3].split(",")));
+                            consequenceType.setTranscriptFlags(Arrays.asList(fields[3].split(",")));
                         }
                     }
                     if (fields.length > 4) {
@@ -773,8 +773,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             trans.append(FIELD_SEP).append(StringUtils.isEmpty(conseqType.getBiotype())
                                     ? "" : conseqType.getBiotype());
                             trans.append(FIELD_SEP);
-                            if (ListUtils.isNotEmpty(conseqType.getTranscriptAnnotationFlags())) {
-                                trans.append(StringUtils.join(conseqType.getTranscriptAnnotationFlags(), ","));
+                            if (CollectionUtils.isNotEmpty(conseqType.getTranscriptFlags())) {
+                                trans.append(StringUtils.join(conseqType.getTranscriptFlags(), ","));
                             }
                         }
 
@@ -813,8 +813,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             }
 
                             // Add a combination with the transcript flag
-                            if (conseqType.getTranscriptAnnotationFlags() != null) {
-                                for (String transcriptFlag : conseqType.getTranscriptAnnotationFlags()) {
+                            if (conseqType.getTranscriptFlags() != null) {
+                                for (String transcriptFlag : conseqType.getTranscriptFlags()) {
                                     if (VariantQueryUtils.IMPORTANT_TRANSCRIPT_FLAGS.contains(transcriptFlag)) {
                                         geneToSOAccessions.add(gene + "_" + soIdInt + "_" + transcriptFlag);
                                         geneToSOAccessions.add(conseqType.getGeneId() + "_" + soIdInt + "_" + transcriptFlag);
