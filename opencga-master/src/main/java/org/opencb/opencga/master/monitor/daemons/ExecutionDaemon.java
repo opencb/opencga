@@ -16,8 +16,10 @@
 
 package org.opencb.opencga.master.monitor.daemons;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -27,6 +29,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.ExecutionManager;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.managers.PipelineManager;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -44,6 +49,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -72,6 +78,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             "Execution has been partially processed and a few jobs launched.");
     private static final Enums.ExecutionStatus PROCESSED_STATUS = new Enums.ExecutionStatus(Enums.ExecutionStatus.PROCESSED,
             "Execution has been processed and all jobs created");
+
+    public static final Pattern PIPELINE_VARIABLE_PATTERN = PipelineManager.PIPELINE_VARIABLE_PATTERN;
+    public static final Pattern EXECUTION_VARIABLE_PATTERN = Pattern.compile("(\\$\\{EXECUTION.([^$]+)\\})");
 
     public ExecutionDaemon(int interval, String token, CatalogManager catalogManager) throws CatalogDBException {
         super(interval, token, catalogManager);
@@ -440,6 +449,11 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 jobParams.put(JobDaemon.OUTDIR_PARAM, execution.getOutDir().getPath() + pipelineJobId);
                 Job job = createJobInstance(execution.getId(), pipelineJobId, pipelineJob.getDescription(), execution.getPriority(),
                         jobParams, execution.getTags(), dependsOn, execution.getUserId());
+                try {
+                    job = fillDynamicJobValues(execution, job);
+                } catch (CatalogException e) {
+                    return abortExecution(execution, e.getMessage());
+                }
                 jobList.add(job);
             }
 
@@ -467,6 +481,27 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         return 0;
+    }
+
+    private Job fillDynamicJobValues(Execution execution, Job job) throws CatalogException {
+        try {
+            String jobJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(job);
+            ObjectMap jobMap = JacksonUtils.getDefaultObjectMapper().readValue(jobJsonString, ObjectMap.class);
+
+            String executionJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(execution);
+            ObjectMap executionMap = JacksonUtils.getDefaultObjectMapper().readValue(executionJsonString, ObjectMap.class);
+
+            String pipelineJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(execution.getPipeline());
+            ObjectMap pipelineMap = JacksonUtils.getDefaultObjectMapper().readValue(pipelineJsonString, ObjectMap.class);
+
+            ParamUtils.processDynamicVariables(pipelineMap, jobMap, PIPELINE_VARIABLE_PATTERN);
+            ParamUtils.processDynamicVariables(executionMap, jobMap, EXECUTION_VARIABLE_PATTERN);
+
+            jobJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(jobMap);
+            return JacksonUtils.getDefaultObjectMapper().readValue(jobJsonString, Job.class);
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not process dynamic variables from JSON properly", e);
+        }
     }
 
     private String getPipelineJobId(String key, Pipeline.PipelineJob pipelineJob) {

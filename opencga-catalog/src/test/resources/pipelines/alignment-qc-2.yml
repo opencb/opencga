@@ -6,21 +6,21 @@ config:
   timeout: 3600
 jobs:
   alignment-stats:
-    description: $PIPELINE.description
+    description: ${PIPELINE.description}
     #    output:
     #      - id: BAM
     #        value: $OUTDIR/alignment.bam
     params:
-      file: $PIPELINE.params.bamFile
+      file: ${EXECUTION.params.bamFile}
   alignment-flagstats:
     params:
       #      file2: $JOB.alignment-stats.OUTPUT.BAM
       #      file3: FILE:BAM
-      file4: $EXECUTION/alignment-stats/mememe/a/a/a/a/alignment.bam
-      file: $PIPELINE.params.bamFile
+      file4: ${EXECUTION/alignment-stats/mememe/a/a/a/a/alignment.bam}
+      file: ${EXECUTION.params.bamFile}
   alignment-fastqcmetrics:
     params:
-      file: $PIPELINE.params.bamFile
+      file: ${EXECUTION.params.bamFile}
   alignment-hsmetrics:
     dependsOn:
       - "alignment-stats"
