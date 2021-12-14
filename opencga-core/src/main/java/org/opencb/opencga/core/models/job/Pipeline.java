@@ -31,13 +31,14 @@ public class Pipeline extends PrivateStudyUid {
     public Pipeline() {
     }
 
-    public Pipeline(String id, String uuid, String description, boolean disabled, int version, Map<String, Object> params,
-                    PipelineConfig config, LinkedHashMap<String, PipelineJob> jobs) {
+    public Pipeline(String id, String description, boolean disabled, int version, String creationDate, String modificationDate,
+                    Map<String, Object> params, PipelineConfig config, LinkedHashMap<String, PipelineJob> jobs) {
         this.id = id;
-        this.uuid = uuid;
         this.description = description;
         this.disabled = disabled;
         this.version = version;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.params = params;
         this.config = config;
         this.jobs = jobs;
