@@ -122,6 +122,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         this.dbCollectionMap.put(Enums.Resource.COHORT, dbAdaptorFactory.getCatalogCohortDBAdaptor().getCohortCollection());
         this.dbCollectionMap.put(Enums.Resource.FILE, dbAdaptorFactory.getCatalogFileDBAdaptor().getCollection());
         this.dbCollectionMap.put(Enums.Resource.INDIVIDUAL, dbAdaptorFactory.getCatalogIndividualDBAdaptor().getCollection());
+        this.dbCollectionMap.put(Enums.Resource.EXECUTION, dbAdaptorFactory.getCatalogExecutionDBAdaptor().getExecutionCollection());
         this.dbCollectionMap.put(Enums.Resource.JOB, dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection());
         this.dbCollectionMap.put(Enums.Resource.SAMPLE, dbAdaptorFactory.getCatalogSampleDBAdaptor().getCollection());
         this.dbCollectionMap.put(Enums.Resource.DISEASE_PANEL, dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelCollection());
@@ -140,6 +141,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
             case STUDY:
             case COHORT:
             case INDIVIDUAL:
+            case EXECUTION:
             case JOB:
             case FILE:
             case SAMPLE:
