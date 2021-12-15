@@ -27,7 +27,7 @@ Sample data model hosts information about any biological material, normally extr
 ## Data Model
 
 ### Sample
-You can find the Java code [here](https://github.com/opencb/opencga/tree/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/Sample.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -51,20 +51,17 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/develop
 | **status**<br>*<a href="Sample.md#CustomStatus"><em>CustomStatus</em></a>* <br><br>_since_: 2.0 | <p>Cohort ids of the sample</p> |
 | **attributes**<br>*Map* <br><br>_since_: 1.0 | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 
-### SampleCollection
-You can find the Java code [here](https://github.com/opencb/opencga/tree/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
+### CustomStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
 
 | Field | Description |
 | :---  | :--- |
-| **SampleCollection.from**<br>*List<<a href="Sample.md#OntologyTermAnnotation"><em>OntologyTermAnnotation</em></a>>* <br> | <p>OntologyTermAnnotation list</p> |
-| **SampleCollection.type**<br>*String* <br> | <p>Type of the sample collection</p> |
-| **SampleCollection.quantity**<br>*String* <br> | <p>Quantity collected for the sample.</p> |
-| **SampleCollection.method**<br>*String* <br> | <p>Describes which method was used to collect the sample</p> |
-| **SampleCollection.date**<br>*String* <br> | <p>Date when the sample was collected.</p> |
-| **SampleCollection.attributes**<br>*Map* <br> | <p>Attributes of the sample collection.</p> |
+| **CustomStatus.name**<br>*String* <br> | <p>Name of the status</p> |
+| **CustomStatus.description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **CustomStatus.date**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
 
 ### SampleQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/tree/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleQualityControl.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleQualityControl.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -73,7 +70,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/develop
 | **SampleQualityControl.variant**<br>*<a href="Sample.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>* <br> | <p>Describes variant quality control</p> |
 
 ### SampleVariantQualityControlMetrics
-You can find the Java code [here](https://github.com/opencb/opencga/tree/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleVariantQualityControlMetrics.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleVariantQualityControlMetrics.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -83,22 +80,11 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/develop
 | **SampleVariantQualityControlMetrics.files**<br>*List* <br> | <p>File for the quality control metrics of the sample</p> |
 
 ### GenomePlot
-You can find the Java code [here](https://github.com/opencb/opencga/tree/develop/opencga-core/src/main/java/org/opencb/biodata/models/clinical/qc/GenomePlot.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/biodata/models/clinical/qc/GenomePlot.java).
 
-
-### ExternalSource
-You can find the Java code [here](https://github.com/opencb/opencga/tree/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/common/ExternalSource.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Source ID...</p> |
-| **name**<br>*String* <br> | <p>Source name...</p> |
-| **description**<br>*String* <br> | <p>Source description...</p> |
-| **source**<br>*String* <br> | <p>Source ...</p> |
-| **url**<br>*String* <br> | <p>Source ID</p> |
 
 ### SampleProcessing
-You can find the Java code [here](https://github.com/opencb/opencga/tree/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleProcessing.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleProcessing.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -110,24 +96,38 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/develop
 | **SampleProcessing.date**<br>*String* <br> | <p>Date when the sample was processed in the lab.</p> |
 | **SampleProcessing.attributes**<br>*Map* <br> | <p>Attributes of the processing.</p> |
 
-### CustomStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
+### ExternalSource
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/ExternalSource.java).
 
 | Field | Description |
 | :---  | :--- |
-| **CustomStatus.name**<br>*String* <br> | <p>Name of the status</p> |
-| **CustomStatus.description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **CustomStatus.date**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **id**<br>*String* <br> | <p>Source ID...</p> |
+| **name**<br>*String* <br> | <p>Source name...</p> |
+| **description**<br>*String* <br> | <p>Source description...</p> |
+| **source**<br>*String* <br> | <p>Source ...</p> |
+| **url**<br>*String* <br> | <p>Source ID</p> |
+
+### SampleCollection
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
+
+| Field | Description |
+| :---  | :--- |
+| **SampleCollection.from**<br>*List<<a href="Sample.md#OntologyTermAnnotation"><em>OntologyTermAnnotation</em></a>>* <br> | <p>OntologyTermAnnotation list</p> |
+| **SampleCollection.type**<br>*String* <br> | <p>Type of the sample collection</p> |
+| **SampleCollection.quantity**<br>*String* <br> | <p>Quantity collected for the sample.</p> |
+| **SampleCollection.method**<br>*String* <br> | <p>Describes which method was used to collect the sample</p> |
+| **SampleCollection.date**<br>*String* <br> | <p>Date when the sample was collected.</p> |
+| **SampleCollection.attributes**<br>*Map* <br> | <p>Attributes of the sample collection.</p> |
 
 ### SampleInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).
 
 | Field | Description |
 | :---  | :--- |
 | **RgaIndex.rga**<br>*<a href="Sample.md#RgaIndex"><em>RgaIndex</em></a>* <br> | <p>Rga index for Sample internal</p> |
 
 ### RgaIndex
-You can find the Java code [here](https://github.com/opencb/opencga/tree/develop/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex.java).
 
 | Field | Description |
 | :---  | :--- |

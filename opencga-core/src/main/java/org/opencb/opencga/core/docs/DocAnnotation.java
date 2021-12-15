@@ -3,6 +3,7 @@ package org.opencb.opencga.core.docs;
 import org.opencb.commons.docs.DocParser;
 import org.opencb.commons.docs.config.DocConfiguration;
 import org.opencb.commons.docs.factories.DocFactory;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +24,8 @@ public class DocAnnotation {
         config.setDocClasses(classes);
         config.setType(DocFactory.DocFactoryType.MARKDOWN);
         config.setOutputDir("/workspace/opencga/docs/data-models/");
-        config.setGithubServer("https://github.com/opencb/opencga/tree/develop/opencga-core/");
+        config.setGithubServer("https://github.com/opencb/opencga/tree/"
+                + GitRepositoryState.get().getBranch() + "/opencga-core/");
         config.setJsondir("/workspace/opencga/opencga-core/src/main/resources/doc/json");
         try {
             DocParser parser = new DocParser();
