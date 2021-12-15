@@ -3,8 +3,8 @@ package org.opencb.opencga.core.models.sample;
 import org.opencb.biodata.models.clinical.qc.GenomePlot;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.clinical.qc.Signature;
+import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.tools.annotations.DataField;
 
 import java.util.ArrayList;
 import java.util.List;

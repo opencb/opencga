@@ -1,6 +1,7 @@
 package org.opencb.opencga.core.models.common;
 
-import org.opencb.opencga.core.tools.annotations.DataField;
+
+import org.opencb.commons.annotations.DataField;
 
 public class ExternalSource {
 

@@ -18,8 +18,8 @@ package org.opencb.opencga.core.models.sample;
 
 
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
-import org.opencb.opencga.core.tools.annotations.DataField;
 
 import java.util.ArrayList;
 import java.util.HashMap;

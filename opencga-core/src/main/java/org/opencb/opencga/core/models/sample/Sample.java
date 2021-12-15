@@ -19,12 +19,13 @@ package org.opencb.opencga.core.models.sample;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.commons.annotations.DataClass;
+import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.ExternalSource;
-import org.opencb.opencga.core.tools.annotations.*;
 
 import java.util.*;
 
@@ -80,7 +81,7 @@ public class Sample extends Annotable {
      * @implNote Describes how the sample was collected.
      * @since 2.1
      */
-    @DataField(id = "collection",  since = "2.0",
+    @DataField(id = "collection", since = "2.0",
             description = FieldConstants.SAMPLE_SAMPLE_COLLECTION_DESCRIPTION)
     private SampleCollection collection;
 
