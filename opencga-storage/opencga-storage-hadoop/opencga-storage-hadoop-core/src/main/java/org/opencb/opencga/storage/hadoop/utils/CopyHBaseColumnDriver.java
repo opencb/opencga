@@ -149,7 +149,7 @@ public class CopyHBaseColumnDriver extends AbstractHBaseDriver {
                                 CellUtil.getValueBufferShallowCopy(cell)));
 
                 if (deleteAfterCopy) {
-                    context.write(key, new Delete(result.getRow()).addColumn(family, qualifier));
+                    context.write(key, new Delete(result.getRow()).addColumns(family, qualifier));
                 }
                 if (columnsToCount.contains(c)) {
                     context.getCounter("CopyColumn", c).increment(1);
