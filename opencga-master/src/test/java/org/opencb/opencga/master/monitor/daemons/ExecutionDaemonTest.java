@@ -488,9 +488,20 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         for (Job job : executionResult.first().getJobs()) {
             assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getName());
         }
-//        assertEquals(1, executionResult.first().getJobs().get(3).getDependsOn().size());
-//        assertEquals(executionResult.first().getJobs().get(0).getId(),
-//                executionResult.first().getJobs().get(3).getDependsOn().get(0).getId());
+
+        // Update job status to DONE
+        Job job = executionResult.first().getJobs().get(0);
+        catalogManager.getJobManager().privateUpdate(studyFqn, job.getId(),
+                new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE)), adminToken);
+
+        executionDaemon.checkPendingExecutions();
+        executionResult = catalogManager.getExecutionManager().get(studyFqn, executionResult.first().getId(), QueryOptions.empty(), token);
+        assertEquals(1, executionResult.getNumResults());
+        assertEquals(Enums.ExecutionStatus.PROCESSED, executionResult.first().getInternal().getStatus().getName());
+        assertEquals(4, executionResult.first().getJobs().size());
+        Job stats = executionResult.first().getJobs().get(0);
+        job = executionResult.first().getJobs().get(3);
+        assertEquals("alignment-stats uuid: " + stats.getUuid(), job.getDescription());
     }
 
     @Test

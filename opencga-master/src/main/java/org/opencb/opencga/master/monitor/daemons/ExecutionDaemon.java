@@ -491,10 +491,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             String executionJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(execution);
             ObjectMap executionMap = JacksonUtils.getDefaultObjectMapper().readValue(executionJsonString, ObjectMap.class);
 
-            String pipelineJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(execution.getPipeline());
-            ObjectMap pipelineMap = JacksonUtils.getDefaultObjectMapper().readValue(pipelineJsonString, ObjectMap.class);
-
-            ParamUtils.processDynamicVariables(pipelineMap, jobMap, PIPELINE_VARIABLE_PATTERN);
             ParamUtils.processDynamicVariables(executionMap, jobMap, EXECUTION_VARIABLE_PATTERN);
 
             jobJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(jobMap);

@@ -22,5 +22,6 @@ jobs:
     params:
       file: ${EXECUTION.params.bamFile}
   alignment-hsmetrics:
+    description: "alignment-stats uuid: ${EXECUTION.jobs[tool.id=alignment-stats].uuid}"
     dependsOn:
       - "alignment-stats"
