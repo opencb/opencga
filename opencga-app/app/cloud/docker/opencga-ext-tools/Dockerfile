@@ -15,7 +15,6 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
     fastqc \
     plink1.9 \
     bwa \
-    picard \
     r-base && \
     R -e "install.packages(c('nnls', 'ggplot2', 'jsonlite', 'optparse', 'BiocManager', 'RCircos'))" && \
     rm -rf /var/lib/apt/lists/* /tmp/*

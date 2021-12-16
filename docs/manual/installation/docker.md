@@ -6,8 +6,8 @@ OpenCGA produces **four** different Docker images for runnning OpenCGA in two ma
 
 * \*\*\*\*[opencga-base](https://hub.docker.com/r/opencb/opencga-base): base image for building the other images, this image contains the OpenCGA basic installation folder.
 * [opencga-init](https://hub.docker.com/r/opencb/opencga-init): image running REST web services
-* [opencga-r](https://hub.docker.com/r/opencb/opencga-r): image running _master_ service
 * [opencga-demo](https://hub.docker.com/r/opencb/opencga-demo): all-in-one image with all OpenCGA components running
+* [opencga-ext-tools](https://hub.docker.com/r/opencb/opencga-ext-tools): image that contains external tools (e.g., samtools, fastqc, R, ...) used by OpenCGA analysis
 
 You can use OpenCGA Docker image to run a complete OpenCGA platform locally. You can use the other images to deploy a whole cluster solution in a cloud environment using Kubernetes. Docker Images are deployed in [Docker Hub OpenCB organisation](https://hub.docker.com/orgs/opencb).
 
