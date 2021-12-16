@@ -151,7 +151,7 @@ public class Sample extends Annotable {
     private boolean somatic;
 
     @DataField(id = "phenotypes", alias = {"phenotypes.id", "phenotypesId"},
-            description = FieldConstants.SAMPLE_PHENOTYPES_DESCRIPTION)
+            description = FieldConstants.GENERIC_PHENOTYPES_DESCRIPTION)
     private List<Phenotype> phenotypes;
 
     @DataField(id = "individualId", indexed = true, alias = {"individual", "individual.id"},

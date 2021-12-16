@@ -69,6 +69,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **SampleQualityControl.comments**<br>*List<<a href="Sample.md#ClinicalComment"><em>ClinicalComment</em></a>>* <br> | <p>Comments for the quality control of the sample</p> |
 | **SampleQualityControl.variant**<br>*<a href="Sample.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>* <br> | <p>Describes variant quality control</p> |
 
+### ClinicalComment
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/biodata/models/clinical/ClinicalComment.java).
+
+
 ### SampleVariantQualityControlMetrics
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleVariantQualityControlMetrics.java).
 
@@ -79,9 +83,52 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **SampleVariantQualityControlMetrics.genomePlot**<br>*<a href="Sample.md#GenomePlot"><em>GenomePlot</em></a>* <br> | <p>Genome plot for the quality control of the sample</p> |
 | **SampleVariantQualityControlMetrics.files**<br>*List* <br> | <p>File for the quality control metrics of the sample</p> |
 
+### SampleQcVariantStats
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/biodata/models/clinical/qc/SampleQcVariantStats.java).
+
+
 ### GenomePlot
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/biodata/models/clinical/qc/GenomePlot.java).
 
+
+### Signature
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/biodata/models/clinical/qc/Signature.java).
+
+
+### SampleCollection
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
+
+| Field | Description |
+| :---  | :--- |
+| **SampleCollection.from**<br>*List<<a href="Sample.md#OntologyTermAnnotation"><em>OntologyTermAnnotation</em></a>>* <br> | <p>OntologyTermAnnotation list</p> |
+| **SampleCollection.type**<br>*String* <br> | <p>Type of the sample collection</p> |
+| **SampleCollection.quantity**<br>*String* <br> | <p>Quantity collected for the sample.</p> |
+| **SampleCollection.method**<br>*String* <br> | <p>Describes which method was used to collect the sample</p> |
+| **SampleCollection.date**<br>*String* <br> | <p>Date when the sample was collected.</p> |
+| **SampleCollection.attributes**<br>*Map* <br> | <p>Attributes of the sample collection.</p> |
+
+### OntologyTermAnnotation
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/biodata/models/core/OntologyTermAnnotation.java).
+
+
+### Phenotype
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/biodata/models/clinical/Phenotype.java).
+
+| Field | Description |
+| :---  | :--- |
+| **ageOfOnset**<br>*String* <br> | <p>Indicates the age of on set of the phenotype</p> |
+| **status**<br>*<a href="Sample.md#Status"><em>Status</em></a>* <br> | <p>Status of phenotype OBSERVED, NOT_OBSERVED, UNKNOWN</p> |
+
+### ExternalSource
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/ExternalSource.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Source ID...</p> |
+| **name**<br>*String* <br> | <p>Source name...</p> |
+| **description**<br>*String* <br> | <p>Source description...</p> |
+| **source**<br>*String* <br> | <p>Source ...</p> |
+| **url**<br>*String* <br> | <p>Source ID</p> |
 
 ### SampleProcessing
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleProcessing.java).
@@ -96,28 +143,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **SampleProcessing.date**<br>*String* <br> | <p>Date when the sample was processed in the lab.</p> |
 | **SampleProcessing.attributes**<br>*Map* <br> | <p>Attributes of the processing.</p> |
 
-### ExternalSource
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/ExternalSource.java).
+### OntologyTermAnnotation
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/biodata/models/core/OntologyTermAnnotation.java).
 
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Source ID...</p> |
-| **name**<br>*String* <br> | <p>Source name...</p> |
-| **description**<br>*String* <br> | <p>Source description...</p> |
-| **source**<br>*String* <br> | <p>Source ...</p> |
-| **url**<br>*String* <br> | <p>Source ID</p> |
-
-### SampleCollection
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
-
-| Field | Description |
-| :---  | :--- |
-| **SampleCollection.from**<br>*List<<a href="Sample.md#OntologyTermAnnotation"><em>OntologyTermAnnotation</em></a>>* <br> | <p>OntologyTermAnnotation list</p> |
-| **SampleCollection.type**<br>*String* <br> | <p>Type of the sample collection</p> |
-| **SampleCollection.quantity**<br>*String* <br> | <p>Quantity collected for the sample.</p> |
-| **SampleCollection.method**<br>*String* <br> | <p>Describes which method was used to collect the sample</p> |
-| **SampleCollection.date**<br>*String* <br> | <p>Date when the sample was collected.</p> |
-| **SampleCollection.attributes**<br>*Map* <br> | <p>Attributes of the sample collection.</p> |
 
 ### SampleInternal
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).

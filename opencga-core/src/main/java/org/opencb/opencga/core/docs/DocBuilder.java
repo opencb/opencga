@@ -12,10 +12,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DocAnnotation {
+public class DocBuilder {
 
 
-    private static final Logger LOG = LoggerFactory.getLogger(DocAnnotation.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DocBuilder.class);
 
     public static void main(String[] args) {
         DocConfiguration config = new DocConfiguration();

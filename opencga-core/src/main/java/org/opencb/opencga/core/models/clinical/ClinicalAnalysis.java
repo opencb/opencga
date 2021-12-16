@@ -21,6 +21,8 @@ import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.common.Status;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.family.Family;
@@ -43,6 +45,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote Required, Immutable, Unique
      */
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.CLINICALANALYSIS_ID_DESCRIPTION)
     private String id;
 
     /**
@@ -51,6 +55,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote Internal, Unique, Immutable
      */
+    @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String uuid;
 
     /**
@@ -58,15 +64,27 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote
      */
+    @DataField(id = "description", defaultValue = "No description available",
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+
+    @DataField(id = "type", indexed = true,
+            description = FieldConstants.CLINICALANALYSIS_TYPE)
     private Type type;
 
+    @DataField(id = "disorder", indexed = true,
+            description = FieldConstants.CLINICALANALYSIS_DISORDER)
     private Disorder disorder;
 
     // List of files (VCF, BAM and BIGWIG)
+    @DataField(id = "files", indexed = true,
+            description = FieldConstants.CLINICALANALYSIS_FILES)
     private List<File> files;
 
+    @DataField(id = "proband", indexed = true,
+            description = FieldConstants.CLINICALANALYSIS_PROBAND)
     private Individual proband;
+
     private Family family;
 
     private List<Panel> panels;

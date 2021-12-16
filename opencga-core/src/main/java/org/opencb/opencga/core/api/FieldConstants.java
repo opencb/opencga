@@ -15,6 +15,7 @@ public class FieldConstants {
     public static final String GENERIC_DESCRIPTION_DESCRIPTION = "Users may provide a description for the entry.";
     public static final String GENERIC_ATTRIBUTES_DESCRIPTION = "Dictionary that can be customised by users to store any additional "
             + "information users may require..";
+    public static final String GENERIC_PHENOTYPES_DESCRIPTION = "List of phenotypes ";
 
     //Sample
     public static final String SAMPLE_ID_DESCRIPTION = "Sample data model hosts information about any biological material, normally "
@@ -24,13 +25,12 @@ public class FieldConstants {
     public static final String SAMPLE_SAMPLE_COLLECTION_DESCRIPTION = "Describes how the sample was collected.";
     public static final String SAMPLE_QUALITY_CONTROL_DESCRIPTION = "Contains different metrics to evaluate the quality of the sample.";
     public static final String SAMPLE_SOMATIC_DESCRIPTION = "Describes if the sample is somatic or not ";
-    public static final String SAMPLE_PHENOTYPES_DESCRIPTION = "List of phenotypes ";
     public static final String SAMPLE_INDIVIDUAL_ID_DESCRIPTION = "Individual id of the sample";
     public static final String SAMPLE_FILE_IDS_DESCRIPTION = "File ids of the sample";
     public static final String SAMPLE_COHORT_IDS_DESCRIPTION = "Cohort ids of the sample";
     public static final String SAMPLE_INTERNAL_DESCRIPTION = "Sample internal information";
     public static final String SAMPLE_EXTERNAL_SOURCE_DESCRIPTION = "The external source from where the example was imported";
-    
+
     //SampleProcessing
     public static final String SAMPLE_PROCESSING_PRODUCT_DESCRIPTION = "Describes which product was used to process the sample in the lab.";
     public static final String SAMPLE_PROCESSING_PREPARATION_METHOD = "Describes which preparation method was used to process the sample "
@@ -76,5 +76,48 @@ public class FieldConstants {
     public static final String RGAINDEX_STATUS_DESCRIPTION = "Status of the Rga index";
     public static final String RGAINDEX_DATE_DESCRIPTION = "Date of Rga index";
 
+    //ClinicalAnalysis
+    public static final String CLINICALANALYSIS_ID_DESCRIPTION = "ClinicalAnalysis ID is a mandatory parameter when "
+            + "creating a new ClinicalAnalysis, this ID cannot be changed at the moment.";
+    public static final String CLINICALANALYSIS_TYPE = "Enumeration of the diferent types of clinical analysis "
+            + "SINGLE, FAMILY, CANCER, COHORT, AUTOCOMPARATIVE";
+    public static final String CLINICALANALYSIS_DISORDER = "Disorder of the clinical analysis";
+    public static final String CLINICALANALYSIS_FILES = "List of files (VCF, BAM and BIGWIG)";
+    public static final String CLINICALANALYSIS_PROBAND = "Individual proband of the clinical analysis";
+
+    //Location
+    public static final String LOCATION_ADDRESS = "Location address";
+    public static final String LOCATION_COUNTRY = "Location country";
+    public static final String LOCATION_CITY = "Location city";
+    public static final String LOCATION_STATE = "Location state";
+    public static final String LOCATION_POSTAL_CODE = "Location postal code";
+
+    //Individual population
+    public static final String INDIVIDUAL_POPULATION_NAME = "Name of the individual population";
+    public static final String INDIVIDUAL_POPULATION_SUBPOPULATION = "Subpopulation of the individual population";
+    public static final String INDIVIDUAL_POPULATION_DESCRIPTION = "Description of the individual population";
+
+
+    //Individual
+    public static final String INDIVIDUAL_ID_DESCRIPTION = "Individual ID in the study, this must be unique in the "
+            + "study but can be repeated in different studies. This is a mandatory parameter "
+            + "when creating a new Individual, this ID cannot be changed at the moment.";
+    public static final String INDIVIDUAL_NAME = "Name of the individual";
+    public static final String INDIVIDUAL_MOTHER = "Mother of the individual";
+    public static final String INDIVIDUAL_FATHER = "Father of the individual";
+    public static final String INDIVIDUAL_FAMILY_IDS = "List of ids of the family members";
+    public static final String INDIVIDUAL_LOCATION = "Location of the individual";
+    public static final String INDIVIDUAL_QUALITY_CONTROL = "Contains different metrics to evaluate "
+            + "the quality of the individual.";
+    public static final String INDIVIDUAL_SEX = "Sex of the individual";
+    public static final String INDIVIDUAL_KARYOTYPIC_SEX = "Karyotypic sex of the individual";
+    public static final String INDIVIDUAL_ETHNICITY = "Ethnicity of the individual";
+    public static final String INDIVIDUAL_DATE_OF_BIRTH = "Date of birth of the individual";
+    public static final String INDIVIDUAL_LIFE_STATUS = "Life status of the of the individual "
+            + "ALIVE, ABORTED, DECEASED, UNBORN, STILLBORN, MISCARRIAGE, UNKNOWN";
+    public static final String INDIVIDUAL_DISORDERS = "List of the individual disorders";
+    public static final String INDIVIDUAL_SAMPLES = "List of the individual samples";
+    public static final String INDIVIDUAL_PARENTAL_CONSANGUINITY = "Indicates the parental consanguinity is "
+            + "true or false";
 
 }
