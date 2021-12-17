@@ -3,9 +3,7 @@ package org.opencb.opencga.storage.hadoop.utils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.ContentSummary;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.*;
@@ -50,6 +48,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
     public static final String DELETE_ALL_COLUMNS = "delete_all_columns";
     public static final String REGIONS_TO_DELETE = "regions_to_delete";
     public static final String TWO_PHASES_PARAM = "two_phases_delete";
+    public static final String USE_REDUCE_STEP = "use_reduce_step";
     private static final Logger LOGGER = LoggerFactory.getLogger(DeleteHBaseColumnDriver.class);
     // This separator is not valid at Bytes.toStringBinary
     private static final String REGION_SEPARATOR = "\\\\";
@@ -119,7 +118,18 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
             SequenceFileAsBinaryOutputFormat.setOutputCompressionType(job, SequenceFile.CompressionType.BLOCK);
             SequenceFileAsBinaryOutputFormat.setOutputCompressorClass(job, DeflateCodec.class);
 
-            VariantMapReduceUtil.setNoneReduce(job);
+            if (Boolean.getBoolean(getParam(USE_REDUCE_STEP))) {
+                float writeMappersLimitFactor = Float.parseFloat(getParam(WRITE_MAPPERS_LIMIT_FACTOR.key(),
+                        WRITE_MAPPERS_LIMIT_FACTOR.defaultValue().toString()));
+                int serversSize = getServersSize(table);
+                int numReducers = Math.round(writeMappersLimitFactor * serversSize);
+                LOGGER.info("Set job reducers to " + numReducers + ". ServersSize: " + serversSize
+                        + ", writeMappersLimitFactor: " + writeMappersLimitFactor);
+                // Limit number of generated parts, and even the size of the parts
+                VariantMapReduceUtil.setNumReduceTasks(job, numReducers);
+            } else {
+                VariantMapReduceUtil.setNoneReduce(job);
+            }
         }
     }
 
@@ -134,15 +144,29 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
                     LOGGER.info("Generated file " + outdir.toUri());
                     LOGGER.info(" - Size (HDFS)         : " + IOUtils.humanReadableByteCount(contentSummary.getLength(), false));
                     LOGGER.info(" - SpaceConsumed (raw) : " + IOUtils.humanReadableByteCount(contentSummary.getSpaceConsumed(), false));
+                    LOGGER.info(" - FileCount           : " + contentSummary.getFileCount());
+                    RemoteIterator<LocatedFileStatus> it = fs.listFiles(outdir, true);
+                    while (it.hasNext()) {
+                        LocatedFileStatus fileStatus = it.next();
+                        ContentSummary thiscontent = fs.getContentSummary(fileStatus.getPath());
+                        LOGGER.info("   - " + fileStatus.getPath().getName() + " : "
+                                + IOUtils.humanReadableByteCount(thiscontent.getLength(), false));
+                    }
 
-                    String writeMapperslimitFactor = getParam(WRITE_MAPPERS_LIMIT_FACTOR.key(),
+                    String writeMappersLimitFactor = getParam(WRITE_MAPPERS_LIMIT_FACTOR.key(),
                             WRITE_MAPPERS_LIMIT_FACTOR.defaultValue().toString());
-                    new HBaseWriterDriver(getConf()).run(HBaseWriterDriver.buildArgs(table,
+                    int code = new HBaseWriterDriver(getConf()).run(HBaseWriterDriver.buildArgs(table,
                             new ObjectMap()
                                     .append(HBaseWriterDriver.INPUT_FILE_PARAM, outdir.toUri().toString())
-                                    .append(WRITE_MAPPERS_LIMIT_FACTOR.key(), writeMapperslimitFactor)));
+                                    .append(WRITE_MAPPERS_LIMIT_FACTOR.key(), writeMappersLimitFactor)));
+                    if (code != 0) {
+                        throw new StorageEngineException("Error writing mutations");
+                    }
                 }
             }
+        } catch (StorageEngineException e) {
+            // Don't double wrap this exception
+            throw e;
         } catch (Exception e) {
             throw new StorageEngineException("Error writing mutations", e);
         } finally {
@@ -348,13 +372,13 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
                     String c = Bytes.toString(family) + ':' + Bytes.toString(qualifier);
                     List<String> otherColumns = columnsToDelete.get(c);
                     if (columnsToDelete.containsKey(c)) {
-                        delete.addColumn(family, qualifier);
+                        delete.addColumns(family, qualifier);
                         for (String otherColumn : otherColumns) {
                             if (columnsToCount.contains(otherColumn)) {
                                 count(otherColumn);
                             }
                             String[] split = otherColumn.split(":", 2);
-                            delete.addColumn(Bytes.toBytes(split[0]), Bytes.toBytes(split[1]));
+                            delete.addColumns(Bytes.toBytes(split[0]), Bytes.toBytes(split[1]));
                         }
                         if (columnsToCount.contains(c)) {
                             count(c);
