@@ -7,13 +7,11 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PipelineDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.PipelineConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
@@ -28,39 +26,40 @@ import org.opencb.opencga.core.models.job.Pipeline;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Consumer;
 
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDBAdaptor {
 
     private final MongoDBCollection pipelineCollection;
+    private final MongoDBCollection lastPipelineCollection;
     private final MongoDBCollection deletedPipelineCollection;
     private PipelineConverter pipelineConverter;
 
     private static final String PRIVATE_STUDY_UIDS = "_studyUids";
 
-    public PipelineMongoDBAdaptor(MongoDBCollection pipelineCollection, MongoDBCollection deletedPipelineCollection,
-                                  Configuration configuration, MongoDBAdaptorFactory dbAdaptorFactory) {
+    public PipelineMongoDBAdaptor(MongoDBCollection pipelineCollection, MongoDBCollection lastPipelineCollection,
+                                  MongoDBCollection deletedPipelineCollection, Configuration configuration,
+                                  MongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(PipelineMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.pipelineCollection = pipelineCollection;
+        this.lastPipelineCollection = lastPipelineCollection;
         this.deletedPipelineCollection = deletedPipelineCollection;
         this.pipelineConverter = new PipelineConverter();
     }
 
-    public MongoDBCollection getPipelineCollection() {
-        return pipelineCollection;
+    public MongoDBCollection getLastPipelineCollection() {
+        return lastPipelineCollection;
     }
 
     @Override
     public OpenCGAResult nativeInsert(Map<String, Object> pipeline, String userId) throws CatalogDBException {
         Document document = getMongoDBDocument(pipeline, "pipeline");
-        return new OpenCGAResult(pipelineCollection.insert(document, null));
+        return new OpenCGAResult(lastPipelineCollection.insert(document, null));
     }
 
     @Override
@@ -87,7 +86,7 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
         filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyId));
 
         Bson bson = Filters.and(filterList);
-        DataResult<Long> count = pipelineCollection.count(clientSession, bson);
+        DataResult<Long> count = lastPipelineCollection.count(clientSession, bson);
 
         if (count.getNumMatches() > 0) {
             throw new CatalogDBException("Pipeline { id: '" + pipeline.getId() + "'} already exists.");
@@ -103,12 +102,14 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
             pipeline.setCreationDate(TimeUtils.getTime());
         }
 
-        Document jobObject = pipelineConverter.convertToStorageType(pipeline);
-        jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(pipeline.getCreationDate()));
-        jobObject.put(PRIVATE_MODIFICATION_DATE, jobObject.get(PRIVATE_CREATION_DATE));
+        Document pipelineObject = pipelineConverter.convertToStorageType(pipeline);
+        pipelineObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(pipeline.getCreationDate()));
+        pipelineObject.put(PRIVATE_MODIFICATION_DATE, pipelineObject.get(PRIVATE_CREATION_DATE));
+        pipelineObject.put(LAST_OF_VERSION, true);
 
         logger.debug("Inserting pipeline '{}' ({})...", pipeline.getId(), pipeline.getUid());
-        pipelineCollection.insert(clientSession, jobObject, null);
+        pipelineCollection.insert(clientSession, pipelineObject, null);
+        lastPipelineCollection.insert(clientSession, pipelineObject, null);
         logger.debug("Pipeline '{}' successfully inserted", pipeline.getId());
         return pipelineUid;
     }
@@ -135,7 +136,7 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
     public DBIterator<Pipeline> iterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         query.put(PRIVATE_STUDY_UID, studyUid);
-        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options, user);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, user);
         return new CatalogMongoDBIterator<>(mongoCursor, pipelineConverter);
     }
 
@@ -146,7 +147,7 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
         queryOptions.put(NATIVE_QUERY, true);
 
         query.put(PRIVATE_STUDY_UID, studyUid);
-        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions, user);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, queryOptions, user);
         return new CatalogMongoDBIterator(mongoCursor, pipelineConverter);
     }
 
@@ -155,7 +156,7 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
         logger.debug("Execution count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return new OpenCGAResult<>(pipelineCollection.count(bson));
+        return new OpenCGAResult<>(lastPipelineCollection.count(bson));
     }
 
     @Override
@@ -173,7 +174,7 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
     @Override
     public OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bsonDocument = parseQuery(query);
-        return new OpenCGAResult<>(pipelineCollection.count(bsonDocument));
+        return new OpenCGAResult<>(lastPipelineCollection.count(bsonDocument));
     }
 
     @Override
@@ -193,16 +194,128 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
     @Override
     public OpenCGAResult nativeGet(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return nativeGet(null, query, options);
+    }
+
+    public OpenCGAResult nativeGet(ClientSession session, Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
-        try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
+        try (DBIterator<Document> dbIterator = nativeIterator(session, query, options)) {
             return endQuery(startTime, dbIterator);
         }
     }
 
     @Override
-    public OpenCGAResult<Pipeline> update(long id, ObjectMap parameters, QueryOptions queryOptions)
+    public OpenCGAResult<Pipeline> update(long uid, ObjectMap parameters, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        throw new NotImplementedException("Method not implemented");
+        try {
+            return runTransaction(clientSession -> {
+                Query query = new Query(QueryParams.UID.key(), uid);
+                OpenCGAResult<Document> documentResult = nativeGet(clientSession, query, QueryOptions.empty());
+                if (documentResult.getNumResults() == 0) {
+                    throw new CatalogDBException("Could not update pipeline. Pipeline uid '" + uid + "' not found.");
+                }
+
+                return privateUpdate(clientSession, documentResult.first(), parameters, queryOptions);
+            });
+        } catch (CatalogDBException e) {
+            logger.error("Could not update pipeline {}: {}", uid, e.getMessage(), e);
+            throw new CatalogDBException("Could not update pipeline " + uid + ": " + e.getMessage(), e.getCause());
+        }
+    }
+
+    private OpenCGAResult<Pipeline> privateUpdate(ClientSession clientSession, Document pipelineDocument, ObjectMap parameters,
+                                                  QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        long tmpStartTime = startQuery();
+        String pipelineId = pipelineDocument.getString(QueryParams.ID.key());
+        long pipelineUid = pipelineDocument.getLong(QueryParams.UID.key());
+        long studyUid = pipelineDocument.getLong(QueryParams.STUDY_UID.key());
+
+        Query tmpQuery = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.UID.key(), pipelineUid)
+                .append(LAST_OF_VERSION, true);
+
+        createNewVersion(clientSession, pipelineCollection, lastPipelineCollection, pipelineDocument);
+
+        UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, queryOptions);
+        Document pipelineUpdate = updateParams.toFinalUpdateDocument();
+
+        if (pipelineUpdate.isEmpty()) {
+            if (!parameters.isEmpty()) {
+                logger.error("Non-processed update parameters: {}", parameters.keySet());
+            }
+            throw new CatalogDBException("Nothing to be updated");
+        }
+
+        List<Event> events = new ArrayList<>();
+
+        Bson finalQuery = parseQuery(tmpQuery);
+        logger.debug("Pipeline update: query : {}, update: {}",
+                finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                pipelineUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        DataResult updateResult = pipelineCollection.update(clientSession, finalQuery, pipelineUpdate, QueryOptions.empty());
+        if (updateResult.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not update pipeline '" + pipelineId + "'. Pipeline not found.");
+        }
+        updateResult = lastPipelineCollection.update(clientSession, finalQuery, pipelineUpdate, QueryOptions.empty());
+        if (updateResult.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not update pipeline '" + pipelineId + "'. Pipeline not found.");
+        }
+        if (updateResult.getNumUpdated() == 0) {
+            events.add(new Event(Event.Type.WARNING, pipelineId, "Pipeline was already updated"));
+        }
+        logger.debug("Pipeline {} successfully updated", pipelineId);
+
+        return endWrite(tmpStartTime, 1, 1, events);
+    }
+
+    private UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, QueryOptions queryOptions) {
+        UpdateDocument document = new UpdateDocument();
+
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.CREATION_DATE.key(), QueryParams.MODIFICATION_DATE.key()};
+        filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
+        String[] acceptedBooleanParams = {QueryParams.DISABLED.key()};
+        filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
+
+        String[] acceptedMapParams = {QueryParams.PARAMS.key()};
+        filterMapParams(parameters, document.getSet(), acceptedMapParams);
+
+        String[] acceptedObjectParams = {QueryParams.CONFIG.key(), QueryParams.JOBS.key()};
+        filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
+        }
+
+        if (!document.toFinalUpdateDocument().isEmpty()) {
+            String time = TimeUtils.getTime();
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
+        }
+
+        return document;
     }
 
     @Override
@@ -214,17 +327,22 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
     @Override
     public DBIterator<Pipeline> iterator(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options);
         return new CatalogMongoDBIterator<>(mongoCursor, pipelineConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return nativeIterator(null, query, options);
+    }
+
+    public DBIterator nativeIterator(ClientSession session, Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(session, query, queryOptions);
         return new CatalogMongoDBIterator(mongoCursor, pipelineConverter);
     }
 
@@ -239,12 +357,12 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
         }
     }
 
-    private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options)
+    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return getMongoCursor(query, options, null);
+        return getMongoCursor(clientSession, query, options, null);
     }
 
-    private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options, String user)
+    private MongoDBIterator<Document> getMongoCursor(ClientSession session, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         QueryOptions qOptions;
         if (options != null) {
@@ -257,10 +375,18 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
 
         logger.debug("Pipeline get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(ParamConstants.DELETED_PARAM)) {
-            return pipelineCollection.iterator(bson, qOptions);
+            if (isQueryingOldVersions(query)) {
+                return pipelineCollection.iterator(session, bson, null, null, qOptions);
+            } else {
+                return lastPipelineCollection.iterator(session, bson, null, null, qOptions);
+            }
         } else {
-            return deletedPipelineCollection.iterator(bson, qOptions);
+            return deletedPipelineCollection.iterator(session, bson, null, null, qOptions);
         }
+    }
+
+    private boolean isQueryingOldVersions(Query query) {
+        return query.containsKey(QueryParams.VERSION.key());
     }
 
 
@@ -297,8 +423,13 @@ public class PipelineMongoDBAdaptor extends MongoDBAdaptor implements PipelineDB
 //            query.remove(ParamConstants.ACL_PARAM);
 //        }
 
+        if (query.containsKey(LAST_OF_VERSION)) {
+            addAutoOrQuery(LAST_OF_VERSION, LAST_OF_VERSION, query, QueryParam.Type.BOOLEAN, andBsonList);
+        }
+
         Query queryCopy = new Query(query);
         queryCopy.remove(ParamConstants.DELETED_PARAM);
+        queryCopy.remove(LAST_OF_VERSION);
 
 //        fixComplexQueryParam(PipelineDBAdaptor.QueryParams.ATTRIBUTES.key(), queryCopy);
 

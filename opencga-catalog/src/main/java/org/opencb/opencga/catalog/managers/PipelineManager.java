@@ -17,15 +17,16 @@ import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Pipeline;
+import org.opencb.opencga.core.models.job.PipelineInternal;
+import org.opencb.opencga.core.models.job.PipelineUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.tools.ToolFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,8 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class PipelineManager extends ResourceManager<Pipeline> {
 
@@ -151,14 +154,104 @@ public class PipelineManager extends ResourceManager<Pipeline> {
             validateForCreation(study, pipeline);
 
             // We create the pipeline
-            pipelineDBAdaptor.insert(study.getUid(), pipeline, options);
-            OpenCGAResult<Pipeline> queryResult = getPipeline(study.getUid(), pipeline.getUuid(), options);
+            OpenCGAResult<Pipeline> insert = pipelineDBAdaptor.insert(study.getUid(), pipeline, options);
+
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created pipeline
+                OpenCGAResult<Pipeline> queryResult = getPipeline(study.getUid(), pipeline.getUuid(), options);
+                insert.setResults(queryResult.getResults());
+            }
+
             auditManager.auditCreate(userId, Enums.Resource.PIPELINE, pipeline.getId(), pipeline.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return queryResult;
+            return insert;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.PIPELINE, pipeline.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
+    public OpenCGAResult<Pipeline> update(String studyStr, String pipelineId, PipelineUpdateParams updateParams, QueryOptions options,
+                                          String token) throws CatalogException {
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("updateParams", updateParams)
+                .append("options", options)
+                .append("token", token);
+        try {
+            // 1. We check everything can be done
+            authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+
+            OpenCGAResult<Pipeline> pipelineOpenCGAResult = internalGet(study.getUid(), pipelineId, QueryOptions.empty(), userId);
+            if (pipelineOpenCGAResult.getNumResults() == 0) {
+                throw CatalogException.notFound("pipeline", Collections.singletonList(pipelineId));
+            }
+            Pipeline pipeline = pipelineOpenCGAResult.first();
+
+            // Copy fields passed in UpdateParams to Pipeline object. ONLY THE FIELDS THE USER ATTEMPTS TO CHANGE.
+            // We do it to be able to fill dynamic variables (${PIPELINE.xxxx})
+            pipeline.setDescription(StringUtils.isNotEmpty(updateParams.getDescription())
+                    ? updateParams.getDescription() : pipeline.getDescription());
+            pipeline.setDisabled(updateParams.isDisabled() != null ? updateParams.isDisabled() : pipeline.isDisabled());
+            pipeline.setCreationDate(StringUtils.isNotEmpty(updateParams.getCreationDate())
+                    ? updateParams.getCreationDate() : pipeline.getCreationDate());
+            pipeline.setModificationDate(StringUtils.isNotEmpty(updateParams.getModificationDate())
+                    ? updateParams.getModificationDate() : pipeline.getModificationDate());
+            pipeline.setParams(updateParams.getParams() != null ? updateParams.getParams() : pipeline.getParams());
+            pipeline.setConfig(updateParams.getConfig() != null ? updateParams.getConfig() : pipeline.getConfig());
+            pipeline.setJobs(updateParams.getJobs() != null ? updateParams.getJobs() : pipeline.getJobs());
+
+            // 2. Process dynamic variables
+            try {
+                String pipelineJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(pipeline);
+                ObjectMap pipelineMap = JacksonUtils.getDefaultObjectMapper().readValue(pipelineJsonString, ObjectMap.class);
+                ParamUtils.processDynamicVariables(pipelineMap, PIPELINE_VARIABLE_PATTERN);
+                pipelineJsonString = JacksonUtils.getDefaultObjectMapper().writeValueAsString(pipelineMap);
+                pipeline = JacksonUtils.getDefaultObjectMapper().readValue(pipelineJsonString, Pipeline.class);
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not process JSON properly", e);
+            }
+
+            validate(pipeline);
+
+            // Revert operation and copy already filled dynamic values
+            updateParams.setDescription(StringUtils.isNotEmpty(updateParams.getDescription()) ? pipeline.getDescription() : null);
+            updateParams.setDisabled(updateParams.isDisabled() != null ? pipeline.isDisabled() : null);
+            updateParams.setCreationDate(StringUtils.isNotEmpty(updateParams.getCreationDate()) ? pipeline.getCreationDate() : null);
+            updateParams.setModificationDate(StringUtils.isNotEmpty(updateParams.getModificationDate())
+                    ? pipeline.getModificationDate() : null);
+            updateParams.setParams(updateParams.getParams() != null ? pipeline.getParams() : null);
+            updateParams.setConfig(updateParams.getConfig() != null ? pipeline.getConfig() : null);
+            updateParams.setJobs(updateParams.getJobs() != null ? pipeline.getJobs() : null);
+
+
+            ObjectMap params;
+            try {
+                params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams));
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse PipelineUpdateParams object: " + e.getMessage(), e);
+            }
+
+            OpenCGAResult<Pipeline> update = pipelineDBAdaptor.update(pipeline.getUid(), params, options);
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated pipeline
+                OpenCGAResult<Pipeline> queryResult = pipelineDBAdaptor.get(pipeline.getUid(), options);
+                update.setResults(queryResult.getResults());
+            }
+            auditManager.auditUpdate(userId, Enums.Resource.PIPELINE, pipeline.getId(), pipeline.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return update;
+        } catch (CatalogException e) {
+            logger.error("Could not update pipeline {}: {}", pipelineId, e.getMessage(), e);
+            auditManager.auditUpdate(userId, Enums.Resource.PIPELINE, pipelineId, pipelineId, study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
@@ -176,12 +269,19 @@ public class PipelineManager extends ResourceManager<Pipeline> {
         pipeline.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(pipeline.getModificationDate(),
                 PipelineDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         pipeline.setParams(ParamUtils.defaultObject(pipeline.getParams(), Collections::emptyMap));
+        pipeline.setVersion(1);
         pipeline.setConfig(ParamUtils.defaultObject(pipeline.getConfig(), Pipeline.PipelineConfig::init));
+        pipeline.setInternal(PipelineInternal.init());
 
         Set<String> jobIds = new HashSet<>();
         for (Map.Entry<String, Pipeline.PipelineJob> entry : pipeline.getJobs().entrySet()) {
             String jobId = entry.getKey();
             Pipeline.PipelineJob job = entry.getValue();
+            if (StringUtils.isNotEmpty(job.getToolId()) && job.getExecutable() != null
+                    && StringUtils.isNotEmpty(job.getExecutable().getId())) {
+                throw new CatalogException("Please, only define toolId or executable.id. Found values for both keys in job '" + jobId
+                        + "'");
+            }
             job.setToolId(ParamUtils.defaultString(job.getToolId(), ""));
             job.setName(ParamUtils.defaultString(job.getName(), ""));
             job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
@@ -195,15 +295,27 @@ public class PipelineManager extends ResourceManager<Pipeline> {
                 }
             }
 
-            if (StringUtils.isNotEmpty(job.getToolId())) {
-                try {
-                    new ToolFactory().getToolClass(job.getToolId());
-                } catch (ToolException e) {
-                    throw new CatalogException("Tool '" + job.getToolId() + "' from Pipeline does not exist.", e);
-                }
-            }
+            // TODO: Validate toolId
+//            String toolId = getPipelineJobId(jobId, job);
+//            if (StringUtils.isNotEmpty(toolId)) {
+//                try {
+//                    new ToolFactory().getToolClass(toolId);
+//                } catch (ToolException e) {
+//                    throw new CatalogException("Tool '" + toolId + "' from Pipeline does not exist.", e);
+//                }
+//            }
             jobIds.add(jobId);
         }
+    }
+
+    private static String getPipelineJobId(String key, Pipeline.PipelineJob pipelineJob) {
+        if (StringUtils.isNotEmpty(pipelineJob.getToolId())) {
+            return pipelineJob.getToolId();
+        }
+        if (pipelineJob.getExecutable() != null && StringUtils.isNotEmpty(pipelineJob.getExecutable().getId())) {
+            return pipelineJob.getExecutable().getId();
+        }
+        return key;
     }
 
 //    private static void checkToolExists(String toolId) {

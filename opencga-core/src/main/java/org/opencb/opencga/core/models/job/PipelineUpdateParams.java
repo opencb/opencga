@@ -3,12 +3,10 @@ package org.opencb.opencga.core.models.job;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class PipelineCreateParams {
+public class PipelineUpdateParams {
 
-    private String id;
     private String description;
-
-    private boolean disabled;
+    private Boolean disabled;
 
     private String creationDate;
     private String modificationDate;
@@ -17,14 +15,25 @@ public class PipelineCreateParams {
     private Pipeline.PipelineConfig config;
     private LinkedHashMap<String, Pipeline.PipelineJob> jobs;
 
-    public PipelineCreateParams() {
+    public PipelineUpdateParams() {
+    }
+
+    public PipelineUpdateParams(String description, boolean disabled, String creationDate, String modificationDate,
+                                Map<String, Object> params, Pipeline.PipelineConfig config,
+                                LinkedHashMap<String, Pipeline.PipelineJob> jobs) {
+        this.description = description;
+        this.disabled = disabled;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
+        this.params = params;
+        this.config = config;
+        this.jobs = jobs;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PipelineCreateParams{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", description='").append(description).append('\'');
+        final StringBuilder sb = new StringBuilder("PipelineUpdateParams{");
+        sb.append("description='").append(description).append('\'');
         sb.append(", disabled=").append(disabled);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
@@ -35,33 +44,20 @@ public class PipelineCreateParams {
         return sb.toString();
     }
 
-    public Pipeline toPipeline() {
-        return new Pipeline(id, description, disabled, 0, creationDate, modificationDate, null, params, config, jobs);
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public PipelineCreateParams setId(String id) {
-        this.id = id;
-        return this;
-    }
-
     public String getDescription() {
         return description;
     }
 
-    public PipelineCreateParams setDescription(String description) {
+    public PipelineUpdateParams setDescription(String description) {
         this.description = description;
         return this;
     }
 
-    public boolean isDisabled() {
+    public Boolean isDisabled() {
         return disabled;
     }
 
-    public PipelineCreateParams setDisabled(boolean disabled) {
+    public PipelineUpdateParams setDisabled(Boolean disabled) {
         this.disabled = disabled;
         return this;
     }
@@ -70,7 +66,7 @@ public class PipelineCreateParams {
         return creationDate;
     }
 
-    public PipelineCreateParams setCreationDate(String creationDate) {
+    public PipelineUpdateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
         return this;
     }
@@ -79,7 +75,7 @@ public class PipelineCreateParams {
         return modificationDate;
     }
 
-    public PipelineCreateParams setModificationDate(String modificationDate) {
+    public PipelineUpdateParams setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
         return this;
     }
@@ -88,7 +84,7 @@ public class PipelineCreateParams {
         return params;
     }
 
-    public PipelineCreateParams setParams(Map<String, Object> params) {
+    public PipelineUpdateParams setParams(Map<String, Object> params) {
         this.params = params;
         return this;
     }
@@ -97,7 +93,7 @@ public class PipelineCreateParams {
         return config;
     }
 
-    public PipelineCreateParams setConfig(Pipeline.PipelineConfig config) {
+    public PipelineUpdateParams setConfig(Pipeline.PipelineConfig config) {
         this.config = config;
         return this;
     }
@@ -106,7 +102,7 @@ public class PipelineCreateParams {
         return jobs;
     }
 
-    public PipelineCreateParams setJobs(LinkedHashMap<String, Pipeline.PipelineJob> jobs) {
+    public PipelineUpdateParams setJobs(LinkedHashMap<String, Pipeline.PipelineJob> jobs) {
         this.jobs = jobs;
         return this;
     }

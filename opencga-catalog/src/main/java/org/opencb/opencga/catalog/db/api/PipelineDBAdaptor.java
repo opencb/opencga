@@ -50,9 +50,17 @@ public interface PipelineDBAdaptor extends CoreDBAdaptor<Pipeline> {
         ID("id", TEXT, ""),
         UID(MongoDBAdaptor.PRIVATE_UID, LONG, ""),
         UUID("uuid", TEXT, ""),
+        DESCRIPTION("description", TEXT, ""),
+        DISABLED("disabled", BOOLEAN, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         VERSION("version", INTEGER, ""),
+        INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
+        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
+        PARAMS("params", OBJECT, ""),
+        CONFIG("config", OBJECT, ""),
+        JOBS("jobs", OBJECT, ""),
 
         STUDY_UID(MongoDBAdaptor.PRIVATE_STUDY_UID, LONG, "");
 

@@ -145,7 +145,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         } catch (CatalogException e) {
             logger.error("{}", e.getMessage(), e);
         }
-        logger.info("----- JOB DAEMON  ----- pending={}, processed={}, queued={}, running={}", pendingExecutions, processedExecutions,
+        logger.info("----- EXECUTION DAEMON  ----- pending={}, processed={}, queued={}, running={}", pendingExecutions, processedExecutions,
                 queuedExecutions, runningExecutions);
 
             /*

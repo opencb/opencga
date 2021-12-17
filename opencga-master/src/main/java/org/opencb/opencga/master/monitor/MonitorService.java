@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.master.monitor.daemons.ExecutionDaemon;
+import org.opencb.opencga.master.monitor.daemons.JobDaemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,10 +45,12 @@ public class MonitorService {
     private int port;
 
     private ExecutionDaemon executionDaemon;
+    private JobDaemon jobDaemon;
 //    private FileDaemon fileDaemon;
 //    private AuthorizationDaemon authorizationDaemon;
 
     private Thread executionThread;
+    private Thread jobThread;
 //    private Thread indexThread;
 //    private Thread fileThread;
 //    private Thread authorizationThread;
@@ -76,10 +79,12 @@ public class MonitorService {
         String nonExpiringToken = this.catalogManager.getUserManager().getAdminNonExpiringToken(token);
 
         executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken, catalogManager);
+        jobDaemon = new JobDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken, catalogManager, appHome);
 //            fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(),
 //                    configuration.getMonitor().getDaysToRemove(), nonExpiringToken, catalogManager);
 
         executionThread = new Thread(executionDaemon, "execution-thread");
+        jobThread = new Thread(jobDaemon, "job-thread");
 //            fileThread = new Thread(fileDaemon, "file-thread");
 //            authorizationThread = new Thread(authorizationDaemon, "authorization-thread");
 
@@ -90,6 +95,7 @@ public class MonitorService {
 
         // Launching the two daemons in two different threads
         executionThread.start();
+        jobThread.start();
 //        indexThread.start();
 //        authorizationThread.start();
 //        fileThread.start();
@@ -146,6 +152,7 @@ public class MonitorService {
 
     public void stop() throws Exception {
         executionDaemon.setExit(true);
+        jobDaemon.setExit(true);
 //        fileDaemon.setExit(true);
 //        executionDaemon.setExit(true);
 //        authorizationDaemon.setExit(true);

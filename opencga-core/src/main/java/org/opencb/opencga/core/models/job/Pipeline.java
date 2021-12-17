@@ -22,6 +22,8 @@ public class Pipeline extends PrivateStudyUid {
     private String creationDate;
     private String modificationDate;
 
+    private PipelineInternal internal;
+
     private Map<String, Object> params;
     private PipelineConfig config;
     private LinkedHashMap<String, PipelineJob> jobs;
@@ -32,13 +34,15 @@ public class Pipeline extends PrivateStudyUid {
     }
 
     public Pipeline(String id, String description, boolean disabled, int version, String creationDate, String modificationDate,
-                    Map<String, Object> params, PipelineConfig config, LinkedHashMap<String, PipelineJob> jobs) {
+                    PipelineInternal internal, Map<String, Object> params, PipelineConfig config,
+                    LinkedHashMap<String, PipelineJob> jobs) {
         this.id = id;
         this.description = description;
         this.disabled = disabled;
         this.version = version;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
+        this.internal = internal;
         this.params = params;
         this.config = config;
         this.jobs = jobs;
@@ -91,8 +95,9 @@ public class Pipeline extends PrivateStudyUid {
         sb.append(", version=").append(version);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", internal=").append(internal);
         sb.append(", params=").append(params);
-        sb.append(", options=").append(config);
+        sb.append(", config=").append(config);
         sb.append(", jobs=").append(jobs);
         sb.append('}');
         return sb.toString();
@@ -186,6 +191,15 @@ public class Pipeline extends PrivateStudyUid {
 
     public Pipeline setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
+        return this;
+    }
+
+    public PipelineInternal getInternal() {
+        return internal;
+    }
+
+    public Pipeline setInternal(PipelineInternal internal) {
+        this.internal = internal;
         return this;
     }
 

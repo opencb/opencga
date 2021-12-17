@@ -58,6 +58,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             INTERPRETATION_COLLECTION,
             PIPELINE_COLLECTION,
 
+            LAST_PIPELINE_COLLECTION,
+
             DELETED_USER_COLLECTION,
             DELETED_STUDY_COLLECTION,
             DELETED_FILE_COLLECTION,
@@ -77,6 +79,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             AUDIT_COLLECTION
     );
 
+    // Contains all document versions
     public static final String USER_COLLECTION = "user";
     public static final String STUDY_COLLECTION = "study";
     public static final String FILE_COLLECTION = "file";
@@ -89,8 +92,12 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String PANEL_COLLECTION = "panel";
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String INTERPRETATION_COLLECTION = "interpretation";
-    public static final String PIPELINE_COLLECTION = "study_pipeline";
+    public static final String PIPELINE_COLLECTION = "pipeline";
 
+    // Contains only the last version
+    public static final String LAST_PIPELINE_COLLECTION = "last_pipeline";
+
+    // Contains all deleted documents
     public static final String DELETED_USER_COLLECTION = "deleted_user";
     public static final String DELETED_STUDY_COLLECTION = "deleted_study";
     public static final String DELETED_FILE_COLLECTION = "deleted_file";
@@ -103,7 +110,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String DELETED_PANEL_COLLECTION = "deleted_panel";
     public static final String DELETED_CLINICAL_ANALYSIS_COLLECTION = "deleted_clinical";
     public static final String DELETED_INTERPRETATION_COLLECTION = "deleted_interpretation";
-    public static final String DELETED_PIPELINE_COLLECTION = "deleted_study_pipeline";
+    public static final String DELETED_PIPELINE_COLLECTION = "deleted_pipeline";
 
     public static final String METADATA_COLLECTION = "metadata";
     public static final String MIGRATION_COLLECTION = "migration";
@@ -341,6 +348,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         MongoDBCollection clinicalCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION);
         MongoDBCollection interpretationCollection = mongoDataStore.getCollection(INTERPRETATION_COLLECTION);
 
+        MongoDBCollection lastPipelineCollection = mongoDataStore.getCollection(LAST_PIPELINE_COLLECTION);
+
         MongoDBCollection deletedUserCollection = mongoDataStore.getCollection(DELETED_USER_COLLECTION);
         MongoDBCollection deletedStudyCollection = mongoDataStore.getCollection(DELETED_STUDY_COLLECTION);
         MongoDBCollection deletedFileCollection = mongoDataStore.getCollection(DELETED_FILE_COLLECTION);
@@ -375,6 +384,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(CLINICAL_ANALYSIS_COLLECTION, clinicalCollection);
         collections.put(INTERPRETATION_COLLECTION, interpretationCollection);
 
+        collections.put(LAST_PIPELINE_COLLECTION, lastPipelineCollection);
+
         collections.put(DELETED_USER_COLLECTION, deletedUserCollection);
         collections.put(DELETED_STUDY_COLLECTION, deletedStudyCollection);
         collections.put(DELETED_FILE_COLLECTION, deletedFileCollection);
@@ -405,7 +416,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, catalogConfiguration, this);
         interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, deletedInterpretationCollection,
                 catalogConfiguration, this);
-        pipelineDBAdaptor = new PipelineMongoDBAdaptor(pipelineCollection, deletedPipelineCollection, catalogConfiguration, this);
+        pipelineDBAdaptor = new PipelineMongoDBAdaptor(pipelineCollection, lastPipelineCollection, deletedPipelineCollection,
+                catalogConfiguration, this);
         metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, catalogConfiguration, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection, catalogConfiguration);
         migrationDBAdaptor = new MigrationMongoDBAdaptor(migrationCollection, catalogConfiguration, this);

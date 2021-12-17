@@ -704,6 +704,66 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         dbCollection.insert(clientSession, document, QueryOptions.empty());
     }
 
+    protected void createNewVersion(ClientSession clientSession, MongoDBCollection dbCollection, MongoDBCollection lastDbCollection,
+                                    Document document) throws CatalogDBException {
+        Document updateOldVersion = new Document();
+
+        // Current release number
+        int release;
+        List<Integer> supportedReleases = (List<Integer>) document.get(RELEASE_FROM_VERSION);
+        if (supportedReleases.size() > 1) {
+            release = supportedReleases.get(supportedReleases.size() - 1);
+
+            // If it contains several releases, it means this is the first update on the current release, so we just need to take the
+            // current release number out
+            supportedReleases.remove(supportedReleases.size() - 1);
+        } else {
+            release = supportedReleases.get(0);
+
+            // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
+            // last version of the release
+            updateOldVersion.put(LAST_OF_RELEASE, false);
+        }
+        updateOldVersion.put(RELEASE_FROM_VERSION, supportedReleases);
+        updateOldVersion.put(LAST_OF_VERSION, false);
+
+        // Perform the update on the previous version
+        Document queryDocument = new Document()
+                .append(PRIVATE_STUDY_UID, document.getLong(PRIVATE_STUDY_UID))
+                .append(VERSION, document.getInteger(VERSION))
+                .append(PRIVATE_UID, document.getLong(PRIVATE_UID));
+
+        logger.debug("Updating previous version: query : {}, update: {}",
+                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                updateOldVersion.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        // Collection containing all versions
+        DataResult updateResult = dbCollection.update(clientSession, queryDocument, new Document("$set", updateOldVersion), null);
+        if (updateResult.getNumUpdated() == 0) {
+            throw new CatalogDBException("Internal error: Could not update previous version");
+        }
+        // Collection containing only last version
+        updateResult = lastDbCollection.update(clientSession, queryDocument, new Document("$set", updateOldVersion), null);
+        if (updateResult.getNumUpdated() == 0) {
+            throw new CatalogDBException("Internal error: Could not update previous version");
+        }
+
+        // We update the information for the new version of the document
+        document.put(LAST_OF_RELEASE, true);
+        document.put(LAST_OF_VERSION, true);
+        document.put(RELEASE_FROM_VERSION, Arrays.asList(release));
+        document.put(VERSION, document.getInteger(VERSION) + 1);
+
+        logger.debug("Inserting new document version: document: {}",
+                document.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        // Insert the new version document in the "all versions" collection
+        dbCollection.insert(clientSession, document, QueryOptions.empty());
+        // Remove previous version and add last version in the "last version only" collection
+        lastDbCollection.remove(clientSession, queryDocument, QueryOptions.empty());
+        lastDbCollection.insert(clientSession, document, QueryOptions.empty());
+    }
+
     /**
      * Revert to a previous version.
      *
