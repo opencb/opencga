@@ -165,6 +165,8 @@ public class Individual extends Annotable {
             description = FieldConstants.SAMPLE_COHORT_IDS_DESCRIPTION)
     private CustomStatus status;
 
+    @DataField(id = "status", since = "2.0",
+            description = FieldConstants.SAMPLE_COHORT_IDS_DESCRIPTION)
     private IndividualInternal internal;
 
     /**

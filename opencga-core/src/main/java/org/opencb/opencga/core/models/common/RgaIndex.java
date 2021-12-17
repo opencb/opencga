@@ -12,7 +12,7 @@ public class RgaIndex {
      *
      * @apiNote Internal, Unique, Immutable
      */
-    @DataField(id = "RgaIndex.status", name = "status",
+    @DataField(id = "status", name = "status",
             description = FieldConstants.RGAINDEX_STATUS_DESCRIPTION)
     private Status status;
     /**
@@ -22,7 +22,7 @@ public class RgaIndex {
      * @apiNote Internal, Unique, Immutable
      */
 
-    @DataField(id = "RgaIndex.date", name = "date",
+    @DataField(id = "date", name = "date",
             description = FieldConstants.RGAINDEX_DATE_DESCRIPTION)
     private String date;
 

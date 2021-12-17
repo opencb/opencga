@@ -4,11 +4,8 @@ Sample data model hosts information about any biological material, normally extr
 ### Summary 
 | Field | Create | Update | Unique | Required|
 | :--- | :---: | :---: |:---: |:---: |
-| uuid | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
-| release | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
-| version | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
-| internal | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | id | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |
+| uuid | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | source | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | processing | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | collection | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
@@ -23,6 +20,9 @@ Sample data model hosts information about any biological material, normally extr
 | cohortIds | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | status | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | attributes | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| release | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| version | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| internal | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 
 ## Data Model
 
@@ -31,11 +31,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 
 | Field | Description |
 | :---  | :--- |
-| **uuid**<br>*String* <br> | <p>Unique 32-character identifier assigned automatically by OpenCGA.</p> |
-| **release**<br>*int* <br> | <p>An integer describing the current data release.</p> |
-| **version**<br>*int* <br> | <p>Autoincremental version assigned to the registered entry. By default, updates does not create new versions. To enable versioning, users must set the `incVersion` flag from the /update web service when updating the document.</p> |
-| **internal**<br>*<a href="sample.md#SampleInternal"><em>SampleInternal</em></a>* <br><br>_since_: 2.0 | <p>Sample internal information</p> |
 | **id**<br>*String* <br> | <p>Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular analysis. This is the main data model, it stores the most basic and important information.</p> |
+| **uuid**<br>*String* <br> | <p>Unique 32-character identifier assigned automatically by OpenCGA.</p> |
 | **source**<br>*<a href="sample.md#ExternalSource"><em>ExternalSource</em></a>* <br><br>_since_: 2.2 | <p>The external source from where the example was imported</p> |
 | **processing**<br>*<a href="sample.md#SampleProcessing"><em>SampleProcessing</em></a>* <br><br>_since_: 2.0 | <p>Describes how the sample was processed in the lab.</p> |
 | **collection**<br>*<a href="sample.md#SampleCollection"><em>SampleCollection</em></a>* <br><br>_since_: 2.0 | <p>Describes how the sample was collected.</p> |
@@ -50,108 +47,38 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **cohortIds**<br>*List* <br> | <p>Cohort ids of the sample</p> |
 | **status**<br>*<a href="sample.md#CustomStatus"><em>CustomStatus</em></a>* <br><br>_since_: 2.0 | <p>Cohort ids of the sample</p> |
 | **attributes**<br>*Map* <br><br>_since_: 1.0 | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
-
-### SampleCollection
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
-
-| Field | Description |
-| :---  | :--- |
-| **SampleCollection.from**<br>*List<<a href="sample.md#OntologyTermAnnotation"><em>OntologyTermAnnotation</em></a>>* <br> | <p>OntologyTermAnnotation list</p> |
-| **SampleCollection.type**<br>*String* <br> | <p>Type of the sample collection</p> |
-| **SampleCollection.quantity**<br>*String* <br> | <p>Quantity collected for the sample.</p> |
-| **SampleCollection.method**<br>*String* <br> | <p>Describes which method was used to collect the sample</p> |
-| **SampleCollection.date**<br>*String* <br> | <p>Date when the sample was collected.</p> |
-| **SampleCollection.attributes**<br>*Map* <br> | <p>Attributes of the sample collection.</p> |
-
-### OntologyTermAnnotation
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/core/OntologyTermAnnotation.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Id to identify the object</p> |
-| **name**<br>*String* <br> | <p>Object name</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **description**<br>*String* <br> | <p>Ontology source</p> |
-| **description**<br>*String* <br> | <p>Ontology url</p> |
-| **attributes**<br>*Map* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
-
-### SampleProcessing
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleProcessing.java).
-
-| Field | Description |
-| :---  | :--- |
-| **SampleProcessing.product**<br>*List<<a href="sample.md#OntologyTermAnnotation"><em>OntologyTermAnnotation</em></a>>* <br> | <p>Describes which product was used to process the sample in the lab.</p> |
-| **SampleProcessing.preparationMethod**<br>*String* <br> | <p>Describes which preparation method was used to process the sample in the lab.</p> |
-| **SampleProcessing.preparationMethod**<br>*String* <br> | <p>Describes which extraction method was used to process the samplein the lab.</p> |
-| **SampleProcessing.labSampleId**<br>*String* <br> | <p>Original id has the sample in the lab.</p> |
-| **SampleProcessing.quantity**<br>*String* <br> | <p>Number of process has done the sample.</p> |
-| **SampleProcessing.date**<br>*String* <br> | <p>Date when the sample was processed in the lab.</p> |
-| **SampleProcessing.attributes**<br>*Map* <br> | <p>Attributes of the processing.</p> |
-
-### OntologyTermAnnotation
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/core/OntologyTermAnnotation.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Id to identify the object</p> |
-| **name**<br>*String* <br> | <p>Object name</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **description**<br>*String* <br> | <p>Ontology source</p> |
-| **description**<br>*String* <br> | <p>Ontology url</p> |
-| **attributes**<br>*Map* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
-
-### ExternalSource
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/ExternalSource.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Source ID...</p> |
-| **name**<br>*String* <br> | <p>Source name...</p> |
-| **description**<br>*String* <br> | <p>Source description...</p> |
-| **source**<br>*String* <br> | <p>Source ...</p> |
-| **url**<br>*String* <br> | <p>Source ID</p> |
-
-### Phenotype
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Phenotype.java).
-
-| Field | Description |
-| :---  | :--- |
-| **ageOfOnset**<br>*String* <br> | <p>Indicates the age of on set of the phenotype</p> |
-| **status**<br>*Status* <br> | <p>Status of phenotype OBSERVED, NOT_OBSERVED, UNKNOWN</p> |
-
-### SampleInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).
-
-| Field | Description |
-| :---  | :--- |
-| **RgaIndex.rga**<br>*<a href="sample.md#RgaIndex"><em>RgaIndex</em></a>* <br> | <p>Rga index for Sample internal</p> |
-
-### RgaIndex
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex.java).
-
-| Field | Description |
-| :---  | :--- |
-| **RgaIndex.status**<br>*Status* <br> | <p>Status of the Rga index NOT_INDEXED, INDEXED, INVALID_PERMISSIONS, INVALID_METADATA, INVALID</p> |
-| **RgaIndex.date**<br>*String* <br> | <p>Date of Rga index</p> |
+| **release**<br>*int* <br> | <p>An integer describing the current data release.</p> |
+| **version**<br>*int* <br> | <p>Autoincremental version assigned to the registered entry. By default, updates does not create new versions. To enable versioning, users must set the `incVersion` flag from the /update web service when updating the document.</p> |
+| **internal**<br>*<a href="sample.md#SampleInternal"><em>SampleInternal</em></a>* <br><br>_since_: 2.0 | <p>Sample internal information</p> |
 
 ### SampleQualityControl
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleQualityControl.java).
 
 | Field | Description |
 | :---  | :--- |
-| **SampleQualityControl.files**<br>*List* <br> | <p>Files used for the quality control of the sample</p> |
-| **SampleQualityControl.comments**<br>*List<<a href="sample.md#ClinicalComment"><em>ClinicalComment</em></a>>* <br> | <p>Comments for the quality control of the sample</p> |
-| **SampleQualityControl.variant**<br>*<a href="sample.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>* <br> | <p>Describes variant quality control</p> |
+| **files**<br>*List* <br> | <p>Files used for the quality control of the sample</p> |
+| **comments**<br>*List<<a href="sample.md#ClinicalComment"><em>ClinicalComment</em></a>>* <br> | <p>Comments for the quality control of the sample</p> |
+| **variant**<br>*<a href="sample.md#SampleVariantQualityControlMetrics"><em>SampleVariantQualityControlMetrics</em></a>* <br> | <p>Describes variant quality control</p> |
+
+### ClinicalComment
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalComment.java).
+
+| Field | Description |
+| :---  | :--- |
+| **author**<br>*String* <br> | <p>Clinical comment author</p> |
+| **message**<br>*String* <br> | <p>Clinical comment message</p> |
+| **tags**<br>*List* <br> | <p>List of tags for the clinical comment</p> |
+| **date**<br>*String* <br> | <p>Date of the clinical comment</p> |
 
 ### SampleVariantQualityControlMetrics
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleVariantQualityControlMetrics.java).
 
 | Field | Description |
 | :---  | :--- |
-| **SampleVariantQualityControlMetrics.variantStats**<br>*List<<a href="sample.md#SampleQcVariantStats"><em>SampleQcVariantStats</em></a>>* <br> | <p>Variant stats for the quality control of the sample</p> |
-| **SampleVariantQualityControlMetrics.signatures**<br>*List<<a href="sample.md#Signature"><em>Signature</em></a>>* <br> | <p>Signature for the quality control of the sample</p> |
-| **SampleVariantQualityControlMetrics.genomePlot**<br>*<a href="sample.md#GenomePlot"><em>GenomePlot</em></a>* <br> | <p>Genome plot for the quality control of the sample</p> |
-| **SampleVariantQualityControlMetrics.files**<br>*List* <br> | <p>File for the quality control metrics of the sample</p> |
+| **variantStats**<br>*List<<a href="sample.md#SampleQcVariantStats"><em>SampleQcVariantStats</em></a>>* <br> | <p>Variant stats for the quality control of the sample</p> |
+| **signatures**<br>*List<<a href="sample.md#Signature"><em>Signature</em></a>>* <br> | <p>Signature for the quality control of the sample</p> |
+| **genomePlot**<br>*<a href="sample.md#GenomePlot"><em>GenomePlot</em></a>* <br> | <p>Genome plot for the quality control of the sample</p> |
+| **files**<br>*List* <br> | <p>File for the quality control metrics of the sample</p> |
 
 ### GenomePlot
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/GenomePlot.java).
@@ -205,6 +132,14 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **files**<br>*List* <br> | <p>List of files of signature</p> |
 | **fitting**<br>*<a href="sample.md#SignatureFitting"><em>SignatureFitting</em></a>* <br> | <p>Signature fitting</p> |
 
+### GenomeContextCount
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/Signature/GenomeContextCount.java).
+
+| Field | Description |
+| :---  | :--- |
+| **context**<br>*String* <br> | <p>Genome context to count</p> |
+| **total**<br>*int* <br> | <p>Counted integer</p> |
+
 ### SignatureFitting
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/SignatureFitting.java).
 
@@ -217,23 +152,28 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **coeff**<br>*double* <br> | <p>Coefficient of the fitting signature</p> |
 | **file**<br>*String* <br> | <p>Files of the fitting signature</p> |
 
-### GenomeContextCount
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/Signature/GenomeContextCount.java).
+### Phenotype
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Phenotype.java).
 
 | Field | Description |
 | :---  | :--- |
-| **context**<br>*String* <br> | <p>Genome context to count</p> |
-| **total**<br>*int* <br> | <p>Counted integer</p> |
+| **ageOfOnset**<br>*String* <br> | <p>Indicates the age of on set of the phenotype</p> |
+| **status**<br>*Status* <br> | <p>Status of phenotype OBSERVED, NOT_OBSERVED, UNKNOWN</p> |
 
-### ClinicalComment
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalComment.java).
+### SampleInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleInternal.java).
 
 | Field | Description |
 | :---  | :--- |
-| **author**<br>*String* <br> | <p>Clinical comment author</p> |
-| **message**<br>*String* <br> | <p>Clinical comment message</p> |
-| **tags**<br>*List* <br> | <p>List of tags for the clinical comment</p> |
-| **date**<br>*String* <br> | <p>Date of the clinical comment</p> |
+| **RgaIndex.rga**<br>*<a href="sample.md#RgaIndex"><em>RgaIndex</em></a>* <br> | <p>Rga index for Sample internal</p> |
+
+### RgaIndex
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/RgaIndex.java).
+
+| Field | Description |
+| :---  | :--- |
+| **status**<br>*Status* <br> | <p>Status of the Rga index NOT_INDEXED, INDEXED, INVALID_PERMISSIONS, INVALID_METADATA, INVALID</p> |
+| **date**<br>*String* <br> | <p>Date of Rga index</p> |
 
 ### CustomStatus
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
@@ -243,6 +183,66 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **CustomStatus.name**<br>*String* <br> | <p>Name of the status</p> |
 | **CustomStatus.description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
 | **CustomStatus.date**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+
+### SampleCollection
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleCollection.java).
+
+| Field | Description |
+| :---  | :--- |
+| **from**<br>*List<<a href="sample.md#OntologyTermAnnotation"><em>OntologyTermAnnotation</em></a>>* <br> | <p>OntologyTermAnnotation list</p> |
+| **type**<br>*String* <br> | <p>Type of the sample collection</p> |
+| **quantity**<br>*String* <br> | <p>Quantity collected for the sample.</p> |
+| **method**<br>*String* <br> | <p>Describes which method was used to collect the sample</p> |
+| **date**<br>*String* <br> | <p>Date when the sample was collected.</p> |
+| **attributes**<br>*Map* <br> | <p>Attributes of the sample collection.</p> |
+
+### OntologyTermAnnotation
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/core/OntologyTermAnnotation.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Id to identify the object</p> |
+| **name**<br>*String* <br> | <p>Object name</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **description**<br>*String* <br> | <p>Ontology source</p> |
+| **description**<br>*String* <br> | <p>Ontology url</p> |
+| **attributes**<br>*Map* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
+
+### ExternalSource
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/ExternalSource.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Source ID...</p> |
+| **name**<br>*String* <br> | <p>Source name...</p> |
+| **description**<br>*String* <br> | <p>Source description...</p> |
+| **source**<br>*String* <br> | <p>Source ...</p> |
+| **url**<br>*String* <br> | <p>Source ID</p> |
+
+### SampleProcessing
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/sample/SampleProcessing.java).
+
+| Field | Description |
+| :---  | :--- |
+| **product**<br>*List<<a href="sample.md#OntologyTermAnnotation"><em>OntologyTermAnnotation</em></a>>* <br> | <p>Describes which product was used to process the sample in the lab.</p> |
+| **preparationMethod**<br>*String* <br> | <p>Describes which preparation method was used to process the sample in the lab.</p> |
+| **preparationMethod**<br>*String* <br> | <p>Describes which extraction method was used to process the samplein the lab.</p> |
+| **labSampleId**<br>*String* <br> | <p>Original id has the sample in the lab.</p> |
+| **quantity**<br>*String* <br> | <p>Number of process has done the sample.</p> |
+| **date**<br>*String* <br> | <p>Date when the sample was processed in the lab.</p> |
+| **attributes**<br>*Map* <br> | <p>Attributes of the processing.</p> |
+
+### OntologyTermAnnotation
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/core/OntologyTermAnnotation.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Id to identify the object</p> |
+| **name**<br>*String* <br> | <p>Object name</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **description**<br>*String* <br> | <p>Ontology source</p> |
+| **description**<br>*String* <br> | <p>Ontology url</p> |
+| **attributes**<br>*Map* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 ## Example
 This is a full JSON example:
 ```javascript

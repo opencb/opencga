@@ -11,19 +11,19 @@ import java.util.List;
 
 public class SampleVariantQualityControlMetrics {
 
-    @DataField(id = "SampleVariantQualityControlMetrics.variantStats", name = "variantStats",
+    @DataField(id = "variantStats", name = "variantStats",
             description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_VARIANT_STATS_DESCRIPTION)
     private List<SampleQcVariantStats> variantStats;
 
-    @DataField(id = "SampleVariantQualityControlMetrics.signatures", name = "signatures",
+    @DataField(id = "signatures", name = "signatures",
             description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_SIGNATURES_DESCRIPTION)
     private List<Signature> signatures;
 
-    @DataField(id = "SampleVariantQualityControlMetrics.genomePlot", name = "genomePlot",
+    @DataField(id = "genomePlot", name = "genomePlot",
             description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_GENOME_PLOT_DESCRIPTION)
     private GenomePlot genomePlot;
 
-    @DataField(id = "SampleVariantQualityControlMetrics.files", name = "files",
+    @DataField(id = "files", name = "files",
             description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_FILES_DESCRIPTION)
     private List<String> files;
 

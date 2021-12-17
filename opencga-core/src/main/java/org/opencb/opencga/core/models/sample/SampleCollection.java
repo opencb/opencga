@@ -29,27 +29,27 @@ import java.util.Map;
 public class SampleCollection {
 
 
-    @DataField(id = "SampleCollection.from", name = "from", indexed = true,
+    @DataField(id = "from", name = "from", indexed = true,
             description = FieldConstants.SAMPLE_COLLECTION_FROM_DESCRIPTION)
     private List<OntologyTermAnnotation> from;
 
-    @DataField(id = "SampleCollection.type", name = "type", indexed = true,
+    @DataField(id = "type", name = "type", indexed = true,
             description = FieldConstants.SAMPLE_COLLECTION_TYPE_DESCRIPTION)
     private String type;
 
-    @DataField(id = "SampleCollection.quantity", name = "quantity", indexed = true,
+    @DataField(id = "quantity", name = "quantity", indexed = true,
             description = FieldConstants.SAMPLE_COLLECTION_QUANTITY_DESCRIPTION)
     private String quantity;
 
-    @DataField(id = "SampleCollection.method", name = "method", indexed = true,
+    @DataField(id = "method", name = "method", indexed = true,
             description = FieldConstants.SAMPLE_COLLECTION_METHOD_DESCRIPTION)
     private String method;
 
-    @DataField(id = "SampleCollection.date", name = "date", indexed = true,
+    @DataField(id = "date", name = "date", indexed = true,
             description = FieldConstants.SAMPLE_COLLECTION_DATE_DESCRIPTION)
     private String date;
 
-    @DataField(id = "SampleCollection.attributes", name = "attributes", indexed = true,
+    @DataField(id = "attributes", name = "attributes", indexed = true,
             description = FieldConstants.SAMPLE_COLLECTION_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 

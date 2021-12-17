@@ -26,15 +26,15 @@ import java.util.List;
 
 public class SampleQualityControl implements Serializable {
 
-    @DataField(id = "SampleQualityControl.files", name = "files",
+    @DataField(id = "files", name = "files",
             description = FieldConstants.SAMPLE_QUALITY_CONTROL_FILES_DESCRIPTION)
     private List<String> files;
 
-    @DataField(id = "SampleQualityControl.comments", name = "comments",
+    @DataField(id = "comments", name = "comments",
             description = FieldConstants.SAMPLE_QUALITY_CONTROL_COMMENTS_DESCRIPTION)
     private List<ClinicalComment> comments;
 
-    @DataField(id = "SampleQualityControl.variant", name = "variant",
+    @DataField(id = "variant", name = "variant",
             description = FieldConstants.SAMPLE_QUALITY_CONTROL_VARIANT_DESCRIPTION)
     private SampleVariantQualityControlMetrics variant;
 
