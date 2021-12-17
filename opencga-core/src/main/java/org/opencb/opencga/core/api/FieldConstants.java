@@ -73,7 +73,8 @@ public class FieldConstants {
     public static final String SAMPLE_INTERNAL_RGA_DESCRIPTION = "Rga index for Sample internal";
 
     //RgaIndex
-    public static final String RGAINDEX_STATUS_DESCRIPTION = "Status of the Rga index";
+    public static final String RGAINDEX_STATUS_DESCRIPTION = "Status of the Rga index NOT_INDEXED, INDEXED, INVALID_PERMISSIONS, "
+            + "INVALID_METADATA, INVALID";
     public static final String RGAINDEX_DATE_DESCRIPTION = "Date of Rga index";
 
     //ClinicalAnalysis
