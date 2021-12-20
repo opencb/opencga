@@ -85,8 +85,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
             description = FieldConstants.CLINICALANALYSIS_PROBAND)
     private Individual proband;
 
+    @DataField(id = "proband", indexed = true,
+            description = FieldConstants.CLINICALANALYSIS_FAMILY)
     private Family family;
 
+    @DataField(id = "proband", indexed = true,
+            description = FieldConstants.CLINICALANALYSIS_FAMILY)
     private List<Panel> panels;
     private boolean panelLock;
 
@@ -107,6 +111,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote Internal
      */
+    @DataField(id = "creationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
 
     /**
@@ -114,6 +120,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote Internal
      */
+    @DataField(id = "modificationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
     private String dueDate;

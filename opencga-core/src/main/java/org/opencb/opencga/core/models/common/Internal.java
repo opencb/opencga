@@ -5,15 +5,15 @@ import org.opencb.opencga.core.api.FieldConstants;
 
 public abstract class Internal {
 
-    @DataField(id = "Internal.status", name = "status",
+    @DataField(id = "status", name = "status",
             description = FieldConstants.INTERNAL_STATUS_DESCRIPTION)
     protected Status status;
 
-    @DataField(id = "Internal.registrationDate", name = "registrationDate",
+    @DataField(id = "registrationDate", name = "registrationDate",
             description = FieldConstants.INTERNAL_REGISTRATION_DATE_DESCRIPTION)
     protected String registrationDate;
 
-    @DataField(id = "Internal.lastModified", name = "lastModified",
+    @DataField(id = "lastModified", name = "lastModified",
             description = FieldConstants.INTERNAL_LAST_MODIFIED_DESCRIPTION)
     protected String lastModified;
 

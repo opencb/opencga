@@ -16,7 +16,11 @@ public class FieldConstants {
     public static final String GENERIC_ATTRIBUTES_DESCRIPTION = "Dictionary that can be customised by users to store any additional "
             + "information users may require..";
     public static final String GENERIC_PHENOTYPES_DESCRIPTION = "List of phenotypes ";
-
+    public static final String GENERIC_QUALITY_CONTROL = "Contains different metrics to evaluate "
+            + "the quality of the individual.";
+    public static final String GENERIC_CUSTOM_STATUS = "Object to set a custom status";
+    public static final String GENERIC_INTERNAL = "Internal field for manage the object";
+    public static final String GENERIC_NAME = "Name of the ";
     //Sample
     public static final String SAMPLE_ID_DESCRIPTION = "Sample data model hosts information about any biological material, normally "
             + "extracted from an _Individual_, that is used for a particular analysis. This is the main data model, it stores the most "
@@ -85,6 +89,7 @@ public class FieldConstants {
     public static final String CLINICALANALYSIS_DISORDER = "Disorder of the clinical analysis";
     public static final String CLINICALANALYSIS_FILES = "List of files (VCF, BAM and BIGWIG)";
     public static final String CLINICALANALYSIS_PROBAND = "Individual proband of the clinical analysis";
+    public static final String CLINICALANALYSIS_FAMILY = "Family of the clinical analysis";
 
     //Location
     public static final String LOCATION_ADDRESS = "Location address";
@@ -108,8 +113,6 @@ public class FieldConstants {
     public static final String INDIVIDUAL_FATHER = "Father of the individual";
     public static final String INDIVIDUAL_FAMILY_IDS = "List of ids of the family members";
     public static final String INDIVIDUAL_LOCATION = "Location of the individual";
-    public static final String INDIVIDUAL_QUALITY_CONTROL = "Contains different metrics to evaluate "
-            + "the quality of the individual.";
     public static final String INDIVIDUAL_SEX = "Sex of the individual";
     public static final String INDIVIDUAL_KARYOTYPIC_SEX = "Karyotypic sex of the individual";
     public static final String INDIVIDUAL_ETHNICITY = "Ethnicity of the individual";
@@ -120,5 +123,13 @@ public class FieldConstants {
     public static final String INDIVIDUAL_SAMPLES = "List of the individual samples";
     public static final String INDIVIDUAL_PARENTAL_CONSANGUINITY = "Indicates the parental consanguinity is "
             + "true or false";
+
+    //Family
+    public static final String FAMILY_ID_DESCRIPTION = "Family is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.";
+    public static final String FAMILY_NAME = "Family name";
+    public static final String FAMILY_MEMBERS = "List of individuals who are family members";
+    public static final String FAMILY_DISORDERS = "Family disorders";
+    public static final String FAMILY_EXPECTED_SIZE = "Family expected size";
+    public static final String FAMILY_ROLES = "Roles of family members";
 
 }

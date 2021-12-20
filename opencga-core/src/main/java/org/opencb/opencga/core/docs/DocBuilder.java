@@ -4,6 +4,8 @@ import org.opencb.commons.docs.DocParser;
 import org.opencb.commons.docs.config.DocConfiguration;
 import org.opencb.commons.docs.doc.DocFactory;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +23,8 @@ public class DocBuilder {
         DocConfiguration config = new DocConfiguration();
         List<Class> classes = new ArrayList();
         classes.add(Sample.class);
+        classes.add(Individual.class);
+        classes.add(Family.class);
         config.setDocClasses(classes);
         config.setType(DocFactory.DocFactoryType.MARKDOWN);
         config.setOutputDir("/workspace/opencga/docs/data-models/");

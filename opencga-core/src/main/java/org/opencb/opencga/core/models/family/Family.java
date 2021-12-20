@@ -20,6 +20,8 @@ package org.opencb.opencga.core.models.family;
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -41,6 +43,9 @@ public class Family extends Annotable {
      *
      * @apiNote Required, Immutable, Unique
      */
+
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.FAMILY_ID_DESCRIPTION)
     private String id;
 
     /**
@@ -48,13 +53,28 @@ public class Family extends Annotable {
      *
      * @apiNote Internal, Unique, Immutable
      */
+    @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String uuid;
 
+    @DataField(id = "name", indexed = true,
+            description = FieldConstants.FAMILY_NAME)
     private String name;
+
+    @DataField(id = "members", indexed = true,
+            description = FieldConstants.FAMILY_MEMBERS)
     private List<Individual> members;
+
+    @DataField(id = "phenotypes", indexed = true,
+            description = FieldConstants.GENERIC_PHENOTYPES_DESCRIPTION)
     private List<Phenotype> phenotypes;
+
+    @DataField(id = "disorders", indexed = true,
+            description = FieldConstants.FAMILY_DISORDERS)
     private List<Disorder> disorders;
 
+    @DataField(id = "qualityControl", indexed = true,
+            description = FieldConstants.GENERIC_QUALITY_CONTROL)
     private FamilyQualityControl qualityControl;
 
     /**
@@ -62,6 +82,8 @@ public class Family extends Annotable {
      *
      * @apiNote Internal
      */
+    @DataField(id = "creationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
 
     /**
@@ -69,8 +91,12 @@ public class Family extends Annotable {
      *
      * @apiNote Internal
      */
+    @DataField(id = "modificationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
+    @DataField(id = "modificationDate", indexed = true, since = "1.0",
+            description = FieldConstants.FAMILY_EXPECTED_SIZE)
     private int expectedSize;
 
     /**
@@ -78,13 +104,18 @@ public class Family extends Annotable {
      *
      * @apiNote
      */
+    @DataField(id = "description", defaultValue = "No description available",
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+
 
     /**
      * An integer describing the current data release.
      *
      * @apiNote Internal
      */
+    @DataField(id = "release", managed = true, indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
 
     /**
@@ -92,6 +123,8 @@ public class Family extends Annotable {
      *
      * @apiNote Internal
      */
+    @DataField(id = "version", managed = true, indexed = true,
+            description = FieldConstants.GENERIC_VERSION_DESCRIPTION)
     private int version;
 
     /**
@@ -99,14 +132,20 @@ public class Family extends Annotable {
      *
      * @apiNote
      */
+    @DataField(id = "status", since = "2.0",
+            description = FieldConstants.GENERIC_CUSTOM_STATUS)
     private CustomStatus status;
+
 
     /**
      * An object describing the internal information of the Family. This is managed by OpenCGA.
      *
      * @apiNote Internal
      */
+    @DataField(id = "internal", since = "2.0", description = FieldConstants.GENERIC_INTERNAL, navigate = false)
     private FamilyInternal internal;
+
+    @DataField(id = "roles", description = FieldConstants.FAMILY_ROLES)
     private Map<String, Map<String, FamiliarRelationship>> roles;
 
     /**
@@ -114,6 +153,8 @@ public class Family extends Annotable {
      *
      * @apiNote
      */
+    @DataField(id = "attributes", since = "1.0",
+            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public Family() {

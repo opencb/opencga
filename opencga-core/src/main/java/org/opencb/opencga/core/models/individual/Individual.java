@@ -72,7 +72,7 @@ public class Individual extends Annotable {
     @DataField(id = "location", indexed = true, description = FieldConstants.INDIVIDUAL_LOCATION)
     private Location location;
 
-    @DataField(id = "qualityControl", indexed = true, description = FieldConstants.INDIVIDUAL_QUALITY_CONTROL)
+    @DataField(id = "qualityControl", indexed = true, description = FieldConstants.GENERIC_QUALITY_CONTROL)
     private IndividualQualityControl qualityControl;
 
     @DataField(id = "sex", indexed = true, description = FieldConstants.INDIVIDUAL_SEX)
@@ -162,11 +162,11 @@ public class Individual extends Annotable {
     private boolean parentalConsanguinity;
 
     @DataField(id = "status", since = "2.0",
-            description = FieldConstants.SAMPLE_COHORT_IDS_DESCRIPTION)
+            description = FieldConstants.GENERIC_CUSTOM_STATUS)
     private CustomStatus status;
 
-    @DataField(id = "status", since = "2.0",
-            description = FieldConstants.SAMPLE_COHORT_IDS_DESCRIPTION)
+    @DataField(id = "internal", since = "2.0",
+            description = FieldConstants.GENERIC_INTERNAL, navigate = false)
     private IndividualInternal internal;
 
     /**
