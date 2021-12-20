@@ -32,7 +32,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **id**<br>*String* <br> | <p>Family is a mandatory parameter when creating a new sample, this ID cannot be changed at the moment.</p> |
 | **uuid**<br>*String* <br> | <p>Unique 32-character identifier assigned automatically by OpenCGA.</p> |
 | **name**<br>*String* <br> | <p>Family name</p> |
-| **members**<br>*List<<a href="family.md#Individual"><em>Individual</em></a>>* <br> | <p>List of individuals who are family members</p> |
+| **members**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/individual"><em>Individual</em></a>>* <br> | <p>List of individuals who are family members</p> |
 | **phenotypes**<br>*List<<a href="family.md#Phenotype"><em>Phenotype</em></a>>* <br> | <p>List of phenotypes </p> |
 | **disorders**<br>*List<<a href="family.md#Disorder"><em>Disorder</em></a>>* <br> | <p>Family disorders</p> |
 | **qualityControl**<br>*<a href="family.md#FamilyQualityControl"><em>FamilyQualityControl</em></a>* <br> | <p>Contains different metrics to evaluate the quality of the individual.</p> |
