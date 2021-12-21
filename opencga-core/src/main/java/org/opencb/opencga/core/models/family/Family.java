@@ -95,7 +95,7 @@ public class Family extends Annotable {
             description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
-    @DataField(id = "modificationDate", indexed = true, since = "1.0",
+    @DataField(id = "expectedSize", indexed = true,
             description = FieldConstants.FAMILY_EXPECTED_SIZE)
     private int expectedSize;
 
@@ -142,7 +142,7 @@ public class Family extends Annotable {
      *
      * @apiNote Internal
      */
-    @DataField(id = "internal", since = "2.0", description = FieldConstants.GENERIC_INTERNAL, navigate = false)
+    @DataField(id = "internal", since = "2.0", description = FieldConstants.GENERIC_INTERNAL)
     private FamilyInternal internal;
 
     @DataField(id = "roles", description = FieldConstants.FAMILY_ROLES)
