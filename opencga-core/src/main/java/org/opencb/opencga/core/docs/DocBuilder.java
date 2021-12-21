@@ -28,9 +28,10 @@ public class DocBuilder {
         config.setDocClasses(classes);
         config.setType(DocFactory.DocFactoryType.MARKDOWN);
         config.setOutputDir("/workspace/opencga/docs/data-models/");
-        config.setGithubServer("https://github.com/opencb/opencga/tree/"
+        config.setGithubServerURL("https://github.com/opencb/opencga/tree/"
                 + GitRepositoryState.get().getBranch() + "/opencga-core/");
         config.setJsondir("/workspace/opencga/opencga-core/src/main/resources/doc/json");
+        config.setGitbookServerURL("https://docs.opencga.opencb.org/data-models/");
         try {
             DocParser parser = new DocParser();
             parser.parse(config);
