@@ -18,11 +18,9 @@ import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
-import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.response.VariantQueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -42,28 +40,6 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
     @Rule
     public VariantSolrExternalResource solr = new VariantSolrExternalResource();
-
-    @Test
-    public void testProdSolr() throws StorageEngineException {
-        VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager();
-
-        String host = "http://localhost:8983/solr";
-        int timeout = 5000;
-        SolrManager solrManager = new SolrManager(host, SolrManager.DEFAULT_MODE, timeout);
-        String coreName = "opencga-test_serena_cancer37";
-        System.out.println("core: exists " + coreName + " ? " + solrManager.existsCore(coreName));
-        System.out.println("collection: exists " + coreName + " ? " + solrManager.existsCollection(coreName));
-
-
-//        solr.configure(variantStorageEngine);
-//        VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
-//        SolrManager solrManager = variantSearchManager.getSolrManager();
-        System.out.println("Done!");
-
-//        VariantQueryResult<Variant> results = variantSearchManager.query(collection, new Query(),
-//                new QueryOptions(QueryOptions.LIMIT, limit));
-    }
-
 
     @Test
     public void testTranscriptInfo() throws Exception {
