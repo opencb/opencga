@@ -1,0 +1,59 @@
+#id	name	father.id	mother.id	parentalConsanguinity	sex.id
+- id: child
+  name: Child
+  father:
+    id: father
+  mother:
+    id: mother
+  parentalConsanguinity: false
+  sex:
+    id: MALE
+- id: sister
+  name: Sister
+  father:
+    id: father
+  mother:
+    id: mother
+  parentalConsanguinity: false
+  sex:
+    id: FEMALE
+- id: father
+  name: Father
+  parentalConsanguinity: false
+  sex:
+    id: MALE
+- id: mother
+  name: Mother
+  parentalConsanguinity: false
+  sex:
+    id: FEMALE
+- id: mother1
+  name: mother1
+  parentalConsanguinity: false
+  sex:
+    id: FEMALE
+- id: father1
+  name: father1
+  parentalConsanguinity: false
+  sex:
+    id: MALE
+- id: child1
+  name: child1
+  parentalConsanguinity: false
+  sex:
+    id: UNKNOWN
+- id: mother2
+  name: mother2
+  parentalConsanguinity: false
+  sex:
+    id: FEMALE
+- id: father2
+  name: father2
+  parentalConsanguinity: false
+  sex:
+    id: MALE
+- id: child22
+  name: child22
+  parentalConsanguinity: false
+  sex:
+    id: UNKNOWN

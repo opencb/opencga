@@ -1,0 +1,7 @@
+#id	somatic	individualId
+sample1	true	child
+sample2	false	child
+sample3	true	sister
+sample4	true	sister
+sample5	false	father
+sample6	true	mother
