@@ -21,6 +21,11 @@ public class FieldConstants {
     public static final String GENERIC_CUSTOM_STATUS = "Object to set a custom status";
     public static final String GENERIC_INTERNAL = "Internal field for manage the object";
     public static final String GENERIC_NAME = "Name of the ";
+
+    //QualityControl
+    public static final String QUALITY_CONTROL_FILES_DESCRIPTION = "File IDs related to the quality control";
+    public static final String QUALITY_CONTROL_COMMENTS_DESCRIPTION = "Comments related to the quality control";
+
     //Sample
     public static final String SAMPLE_ID_DESCRIPTION = "Sample data model hosts information about any biological material, normally "
             + "extracted from an _Individual_, that is used for a particular analysis. This is the main data model, it stores the most "
@@ -131,5 +136,11 @@ public class FieldConstants {
     public static final String FAMILY_DISORDERS = "Family disorders";
     public static final String FAMILY_EXPECTED_SIZE = "Family expected size";
     public static final String FAMILY_ROLES = "Roles of family members";
+
+    //FamilyQualityControl
+    public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_DESCRIPTION = "Reports of family relationship";
+    public static final String INDIVIDUAL_QUALITY_CONTROL_INFERRED_SEX_REPORT_DESCRIPTION = "List of inferred sex reports, it depends on the method (currently by coverage ratio)";
+    public static final String INDIVIDUAL_QUALITY_CONTROL_SAMPLE_RELATEDNESS_REPORT_DESCRIPTION = "Reports of samples relatedness";
+    public static final String INDIVIDUAL_QUALITY_CONTROL_MENDELIAN_ERRORS_DESCRIPTION = "Mendelian errors";
 
 }
