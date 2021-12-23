@@ -145,7 +145,8 @@ public class Family extends Annotable {
     @DataField(id = "internal", since = "2.0", description = FieldConstants.GENERIC_INTERNAL)
     private FamilyInternal internal;
 
-    @DataField(id = "roles", description = FieldConstants.FAMILY_ROLES)
+    @DataField(id = "roles", uncommentedClasses = {"FamiliarRelationship"},
+            description = FieldConstants.FAMILY_ROLES)
     private Map<String, Map<String, FamiliarRelationship>> roles;
 
     /**

@@ -41,8 +41,17 @@ public class Status {
     @DataField(id = "name", indexed = true,
             description = FieldConstants.GENERIC_NAME + " Status")
     private String name;
+
+    @DataField(id = "date", indexed = true,
+            description = FieldConstants.STATUS_DATE_DESCRIPTION)
     private String date;
+
+    @DataField(id = "description", indexed = true,
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+
+    @DataField(id = "message", indexed = true, deprecated = true,
+            description = FieldConstants.STATUS_MESSAGE_DESCRIPTION)
     @Deprecated
     private String message;
 

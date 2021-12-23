@@ -135,7 +135,7 @@ public class FieldConstants {
     public static final String FAMILY_MEMBERS = "List of individuals who are family members";
     public static final String FAMILY_DISORDERS = "Family disorders";
     public static final String FAMILY_EXPECTED_SIZE = "Family expected size";
-    public static final String FAMILY_ROLES = "Roles of family members";
+    public static final String FAMILY_ROLES = "Map of members ids and enum of roles (FATHER, MOTHER, IDENTICAL_TWIN, SON, UNCLE, PATERNAL_GRANDFATHER...)  ";
 
     //FamilyQualityControl
     public static final String FAMILY_QUALITY_CONTROL_RELATEDNESS_DESCRIPTION = "Reports of family relationship";
@@ -143,4 +143,7 @@ public class FieldConstants {
     public static final String INDIVIDUAL_QUALITY_CONTROL_SAMPLE_RELATEDNESS_REPORT_DESCRIPTION = "Reports of samples relatedness";
     public static final String INDIVIDUAL_QUALITY_CONTROL_MENDELIAN_ERRORS_DESCRIPTION = "Mendelian errors";
 
+    //Status
+    public static final String STATUS_DATE_DESCRIPTION = "Date has setted the status";
+    public static final String STATUS_MESSAGE_DESCRIPTION = "Deprecated: Message describing the status";
 }

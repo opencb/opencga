@@ -42,98 +42,12 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
 | **status**<br>*[CustomStatus](https://docs.opencga.opencb.org/data-models/family#customstatus)* <br><br>_since_: 2.0 | <p>Object to set a custom status</p> |
 | **internal**<br>*[FamilyInternal](https://docs.opencga.opencb.org/data-models/family#familyinternal)* <br><br>_since_: 2.0 | <p>Internal field for manage the object</p> |
-| **roles**<br>*Map<String,Map<String,<a href="https://docs.opencga.opencb.org/data-models/family#familiarrelationship"><em>FamiliarRelationship</em></a>>* <br> | <p>Roles of family members</p> |
+| **roles**<br>*Map<String,Map<String,FamiliarRelationship>* <br> | <p>Map of members ids and enum of roles (FATHER, MOTHER, IDENTICAL_TWIN, SON, UNCLE, PATERNAL_GRANDFATHER...)  </p> |
 | **attributes**<br>*Map<String,Object>* <br><br>_since_: 1.0 | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 | **release**<br>*int* <br> | <p>An integer describing the current data release.</p> |
 | **version**<br>*int* <br> | <p>Autoincremental version assigned to the registered entry. By default, updates does not create new versions. To enable versioning, users must set the `incVersion` flag from the /update web service when updating the document.</p> |
 
-### Phenotype
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Phenotype.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Id to identify the object</p> |
-| **ageOfOnset**<br>*String* <br> | <p>Indicates the age of on set of the phenotype</p> |
-| **status**<br>*Status* <br> | <p>Status of phenotype OBSERVED, NOT_OBSERVED, UNKNOWN</p> |
-| **name**<br>*String* <br> | <p>Object name</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **source**<br>*String* <br> | <p>Ontology source</p> |
-| **url**<br>*String* <br> | <p>Ontology url</p> |
-| **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
-
-### Map
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/util/Map.java).
-
-
-### CustomStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
-
-| Field | Description |
-| :---  | :--- |
-| **CustomStatus.name**<br>*String* <br> | <p>Name of the status</p> |
-| **CustomStatus.description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **CustomStatus.date**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-
-### Object
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/lang/Object.java).
-
-
-### String
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/lang/String.java).
-
-
-### FamilyQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyQualityControl.java).
-
-| Field | Description |
-| :---  | :--- |
-| **relatedness**<br>*List<[RelatednessReport](https://docs.opencga.opencb.org/data-models/family#relatednessreport) >* <br> | <p>Reports of family relationship</p> |
-| **files**<br>*List<[String](https://docs.opencga.opencb.org/data-models/family#string) >* <br> | <p>File IDs related to the quality control</p> |
-| **comments**<br>*List<[ClinicalComment](https://docs.opencga.opencb.org/data-models/family#clinicalcomment) >* <br> | <p>Comments related to the quality control</p> |
-
-### FamilyInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
-
-| Field | Description |
-| :---  | :--- |
-| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/family#status)* <br> | <p>Status of the internal object</p> |
-| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object</p> |
-| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object</p> |
-
-### Disorder
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Disorder.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Id to identify the object</p> |
-| **name**<br>*String* <br> | <p>Object name</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **source**<br>*String* <br> | <p>Ontology source</p> |
-| **url**<br>*String* <br> | <p>Ontology url</p> |
-| **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
-
 ### Enum FamiliarRelationship
 _Enumeration class._
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/family/Family/FamiliarRelationship.java).
-
-
-### ClinicalComment
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalComment.java).
-
-| Field | Description |
-| :---  | :--- |
-| **author**<br>*String* <br> | <p>Clinical comment author</p> |
-| **message**<br>*String* <br> | <p>Clinical comment message</p> |
-| **tags**<br>*List<[String](https://docs.opencga.opencb.org/data-models/family#string) >* <br> | <p>List of tags for the clinical comment</p> |
-| **date**<br>*String* <br> | <p>Date of the clinical comment</p> |
-
-### Status
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Status.java).
-
-| Field | Description |
-| :---  | :--- |
-| **name**<br>*String* <br> | <p>Name of the  Status</p> |
-
-### RelatednessReport
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/RelatednessReport.java).
 
