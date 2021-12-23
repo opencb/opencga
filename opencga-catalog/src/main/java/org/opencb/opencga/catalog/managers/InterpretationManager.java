@@ -213,7 +213,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             QueryOptions clinicalOptions = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
                     Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(),
                             ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key(),
-                            ClinicalAnalysisDBAdaptor.QueryParams.AUDIT.key()));
+                            ClinicalAnalysisDBAdaptor.QueryParams.AUDIT.key(),
+                            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
+                            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_ID.key()));
             ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), clinicalAnalysisStr,
                     clinicalOptions, userId).first();
 
@@ -266,7 +268,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 count++;
             }
         }
-        // FIXME Pedr, this is a temporary fix, to be removed soon
+
+        // FIXME Pedro, this is a temporary fix, to be removed soon
         if (count == 1 && clinicalAnalysis.getInterpretation() != null) {
             count = 2;
             // get last interpretation number if any
