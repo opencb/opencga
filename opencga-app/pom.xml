@@ -70,12 +70,12 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-client</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-test</artifactId>
-            <version>${opencga.version}</version>
-            <type>pom</type>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.opencb.opencga</groupId>-->
+<!--            <artifactId>opencga-test</artifactId>-->
+<!--            <version>${opencga.version}</version>-->
+<!--            <type>pom</type>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
