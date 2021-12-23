@@ -266,6 +266,17 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 count++;
             }
         }
+        // FIXME Pedr, this is a temporary fix, to be removed soon
+        if (count == 1 && clinicalAnalysis.getInterpretation() != null) {
+            count = 2;
+            // get last interpretation number if any
+            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+                Interpretation lastInterpretation = clinicalAnalysis.getSecondaryInterpretations()
+                        .get(clinicalAnalysis.getSecondaryInterpretations().size() - 1);
+                // new version number is one plus
+                count = Integer.parseInt(lastInterpretation.getId().split(".")[1]) + 1;
+            }
+        }
         interpretation.setId(clinicalAnalysis.getId() + "." + count);
 
         interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());
