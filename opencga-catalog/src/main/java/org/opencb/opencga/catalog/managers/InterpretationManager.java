@@ -213,7 +213,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             QueryOptions clinicalOptions = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
                     Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(),
                             ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key(),
-                            ClinicalAnalysisDBAdaptor.QueryParams.AUDIT.key()));
+                            ClinicalAnalysisDBAdaptor.QueryParams.AUDIT.key(),
+                            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
+                            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_ID.key()));
             ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), clinicalAnalysisStr,
                     clinicalOptions, userId).first();
 
@@ -264,6 +266,18 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         for (ClinicalAudit clinicalAudit : clinicalAnalysis.getAudit()) {
             if (clinicalAudit.getAction().equals(ClinicalAudit.Action.CREATE_INTERPRETATION)) {
                 count++;
+            }
+        }
+
+        // FIXME Pedro, this is a temporary fix, to be removed soon
+        if (count == 1 && clinicalAnalysis.getInterpretation() != null) {
+            count = 2;
+            // get last interpretation number if any
+            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+                Interpretation lastInterpretation = clinicalAnalysis.getSecondaryInterpretations()
+                        .get(clinicalAnalysis.getSecondaryInterpretations().size() - 1);
+                // new version number is one plus
+                count = Integer.parseInt(lastInterpretation.getId().split(".")[1]) + 1;
             }
         }
         interpretation.setId(clinicalAnalysis.getId() + "." + count);
