@@ -382,11 +382,11 @@ public class ClinicalInterpretationManager extends StorageManager {
                 }
 
                 gFeature = new GenomicFeature(geneId, featureType, transcriptId, ct.getGeneName(), ct.getSequenceOntologyTerms(), null);
-                panelIds = null;
+                panelIds = new ArrayList();
                 if (genePanelMap.containsKey(geneId)) {
-                    panelIds = new ArrayList<>(genePanelMap.get(geneId));
+                    panelIds.addAll(genePanelMap.get(geneId));
                 } else if (genePanelMap.containsKey(ct.getGeneName())) {
-                    panelIds = new ArrayList<>(genePanelMap.get(ct.getGeneName()));
+                    panelIds.addAll(genePanelMap.get(ct.getGeneName()));
                 }
 
                 ClinicalVariantEvidence evidence;
@@ -438,6 +438,9 @@ public class ClinicalInterpretationManager extends StorageManager {
         if (genomicFeature != null) {
             clinicalVariantEvidence.setGenomicFeature(genomicFeature);
         }
+
+        // Set panel
+        clinicalVariantEvidence.setPanelId(panelId);
 
         // Panel ID and compute tier based on SO terms
         String tier = UNTIERED;
