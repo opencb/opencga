@@ -2543,6 +2543,87 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     }
 
     @Test
+    public void updateInterpretationPanelsActionTest() throws CatalogException {
+        List<Panel> panels = createPanels(5);
+        Individual proband = catalogManager.getIndividualManager().create(STUDY,
+                new Individual()
+                        .setId("proband")
+                        .setSamples(Collections.singletonList(new Sample().setId("sample"))),
+                INCLUDE_RESULT, sessionIdUser).first();
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("analysis")
+                .setType(ClinicalAnalysis.Type.SINGLE)
+//                .setPanels(panels.subList(0, 2))
+                .setProband(proband);
+
+        OpenCGAResult<ClinicalAnalysis> result =
+                catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, INCLUDE_RESULT, sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals(0, result.first().getPanels().size());
+
+        String intepretationId = result.first().getInterpretation().getId();
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.SET);
+        QueryOptions options = new QueryOptions()
+                .append(Constants.ACTIONS, actionMap)
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+        OpenCGAResult<Interpretation> interpretation = catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(),
+                intepretationId, new InterpretationUpdateParams()
+                        .setPanels(panels.subList(0, 2).stream().map((p) -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())),
+                null, options, sessionIdUser);
+        assertEquals(2, interpretation.first().getPanels().size());
+
+        actionMap = new HashMap<>();
+        actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.ADD);
+        options = new QueryOptions()
+                .append(Constants.ACTIONS, actionMap)
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+        interpretation = catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(),
+                intepretationId, new InterpretationUpdateParams()
+                        .setPanels(Collections.singletonList(new PanelReferenceParam(panels.get(2).getId()))),
+                null, options, sessionIdUser);
+        assertEquals(1, interpretation.getNumResults());
+        assertEquals(3, interpretation.first().getPanels().size());
+        assertTrue(panels.subList(0, 3).stream().map(Panel::getId).collect(Collectors.toList()).containsAll(
+                interpretation.first().getPanels().stream().map(Panel::getId).collect(Collectors.toList())));
+
+        actionMap = new HashMap<>();
+        actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.REMOVE);
+        options = new QueryOptions()
+                .append(Constants.ACTIONS, actionMap)
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+        interpretation = catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(),
+                intepretationId, new InterpretationUpdateParams()
+                        .setPanels(Arrays.asList(
+                                new PanelReferenceParam(panels.get(0).getId()),
+                                new PanelReferenceParam(panels.get(2).getId()))
+                        ),
+                null, options, sessionIdUser);
+        assertEquals(1, interpretation.getNumResults());
+        assertEquals(1, interpretation.first().getPanels().size());
+        assertEquals(panels.get(1).getId(), interpretation.first().getPanels().get(0).getId());
+
+        actionMap = new HashMap<>();
+        actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.SET);
+        options = new QueryOptions()
+                .append(Constants.ACTIONS, actionMap)
+                .append(ParamConstants.INCLUDE_RESULT_PARAM, true);
+        interpretation = catalogManager.getInterpretationManager().update(STUDY, clinicalAnalysis.getId(),
+                intepretationId, new InterpretationUpdateParams()
+                        .setPanels(Arrays.asList(
+                                new PanelReferenceParam(panels.get(3).getId()),
+                                new PanelReferenceParam(panels.get(4).getId()))
+                        ),
+                null, options, sessionIdUser);
+        assertEquals(1, interpretation.getNumResults());
+        assertEquals(2, interpretation.first().getPanels().size());
+        assertTrue(panels.subList(3, 5).stream().map(Panel::getId).collect(Collectors.toList()).containsAll(
+                interpretation.first().getPanels().stream().map(Panel::getId).collect(Collectors.toList())));
+
+    }
+
+    @Test
     public void updatePanelsAndPanelLockFromClinicalAnalysisTest() throws CatalogException {
         List<Panel> panels = createPanels(2);
         Individual proband = catalogManager.getIndividualManager().create(STUDY,
