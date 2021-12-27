@@ -64,7 +64,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String FILTER_ROUTE_FILES = "projects.studies.files.";
     static final String FILTER_ROUTE_JOBS = "projects.studies.jobs.";
 
-    static final String LAST_OF_VERSION = "_lastOfVersion";
+    public static final String LAST_OF_VERSION = "_lastOfVersion";
     static final String RELEASE_FROM_VERSION = "_releaseFromVersion";
     static final String LAST_OF_RELEASE = "_lastOfRelease";
     static final String PRIVATE_CREATION_DATE = "_creationDate";
