@@ -398,7 +398,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                             evidences.add(evidence);
                         }
                     }
-                } else {
+                } else if (genePanelMap.size() == 0) {
                     evidence = createEvidence(variant.getId(), ct, gFeature, null, null, null, variant.getAnnotation(), roleInCancer,
                             actionableVariants, config);
                     if (config == null || !config.isSkipUntieredVariants() || evidence.getClassification().getTier() != UNTIERED) {
@@ -420,7 +420,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     /*--------------------------------------------------------------------------*/
 
     protected ClinicalVariantEvidence createEvidence(String variantId, ConsequenceType consequenceType, GenomicFeature genomicFeature,
-                                                     String panelId, ClinicalProperty.ModeOfInheritance moi,
+                                                     String panelId, List<ClinicalProperty.ModeOfInheritance> mois,
                                                      ClinicalProperty.Penetrance penetrance, VariantAnnotation annotation,
                                                      Map<String, ClinicalProperty.RoleInCancer> roleInCancer,
                                                      Map<String, List<String>> actionableVariants,
@@ -453,8 +453,8 @@ public class ClinicalInterpretationManager extends StorageManager {
         }
 
         // Mode of inheritance
-        if (moi != null) {
-            clinicalVariantEvidence.setModeOfInheritance(moi);
+        if (mois != null) {
+            clinicalVariantEvidence.setModeOfInheritances(mois);
         }
 
         // Penetrance
@@ -466,7 +466,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         clinicalVariantEvidence.setClassification(new VariantClassification());
 
         // Variant classification: ACMG
-        List<String> acmgs = calculateAcmgClassification(consequenceType, annotation, moi);
+        List<String> acmgs = calculateAcmgClassification(consequenceType, annotation, mois);
         clinicalVariantEvidence.getClassification().setAcmg(acmgs);
 
         // Variant classification: clinical significance
@@ -725,8 +725,9 @@ public class ClinicalInterpretationManager extends StorageManager {
             Disorder disorder = new Disorder().setId(query.getString(FAMILY_DISORDER.key()));
             List<DiseasePanel> diseasePanels = getDiseasePanels(query, sessionId);
             return new DefaultClinicalVariantCreator(getRoleInCancerManager().getRoleInCancer(),
-                    getActionableVariantManager().getActionableVariants(assembly), disorder, moi, ClinicalProperty.Penetrance.COMPLETE,
-                    diseasePanels, biotypes, soNames, !skipUntieredVariants);
+                    getActionableVariantManager().getActionableVariants(assembly), disorder,
+                    Collections.singletonList(moi), ClinicalProperty.Penetrance.COMPLETE, diseasePanels, biotypes,
+                    soNames, !skipUntieredVariants);
         } catch (IOException e) {
             throw new ToolException("Error creating clinical variant creator", e);
         }
