@@ -23,7 +23,7 @@ import java.util.*;
         date = 20211227)
 public class AddMissingClinicalAudit extends MigrationTool {
 
-    private final static String SEPARATOR = "__---__";
+    private final static String SEPARATOR = "____";
 
     @Override
     protected void run() throws Exception {
@@ -50,7 +50,7 @@ public class AddMissingClinicalAudit extends MigrationTool {
         MongoCollection<Document> clinicalCollection = getMongoCollection(MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION);
         for (Map.Entry<String, Integer> entry : clinicalAuditCount.entrySet()) {
             logger.debug("Processing entry key '{}'...", entry.getKey());
-            String[] split = StringUtils.split(entry.getKey(), SEPARATOR);
+            String[] split = entry.getKey().split(SEPARATOR);
             String clinicalAnalysisId = split[0];
             long studyUid = Long.parseLong(split[1]);
 
