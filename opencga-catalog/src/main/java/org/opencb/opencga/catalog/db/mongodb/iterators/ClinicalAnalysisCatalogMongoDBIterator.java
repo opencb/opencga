@@ -83,10 +83,11 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
         this.interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
         this.panelDBAdaptor = dbAdaptorFactory.getCatalogPanelDBAdaptor();
+
         this.interpretationQueryOptions = createInnerQueryOptionsForVersionedEntity(options, INTERPRETATION.key(), false);
         this.fileQueryOptions = createInnerQueryOptionsForVersionedEntity(options, FILES.key(), true);
-        this.familyQueryOptions = createInnerQueryOptionsForVersionedEntity(options, FAMILY.key(), true);
-        this.individualQueryOptions = createInnerQueryOptionsForVersionedEntity(options, PROBAND.key(), true);
+        this.familyQueryOptions = createInnerQueryOptionsForVersionedEntity(options, FAMILY.key(), false);
+        this.individualQueryOptions = createInnerQueryOptionsForVersionedEntity(options, PROBAND.key(), false);
         this.panelQueryOptions = createInnerQueryOptionsForVersionedEntity(options, PANELS.key(), true);
 
         this.clinicalAnalysisListBuffer = new LinkedList<>();

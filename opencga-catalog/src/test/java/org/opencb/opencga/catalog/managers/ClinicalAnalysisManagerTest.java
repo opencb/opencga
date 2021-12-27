@@ -2448,7 +2448,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(2, result.first().getInterpretation().getPanels().size());
         for (Panel panel : result.first().getInterpretation().getPanels()) {
             assertNotNull(panel.getId());
-            assertNull(panel.getName());
+            assertNotNull(panel.getName());
         }
         assertFalse(result.first().isPanelLock());
     }
