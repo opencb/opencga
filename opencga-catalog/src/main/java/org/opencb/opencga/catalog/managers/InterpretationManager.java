@@ -213,7 +213,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             QueryOptions clinicalOptions = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
                     Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(),
                             ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key(),
-                            ClinicalAnalysisDBAdaptor.QueryParams.AUDIT.key()));
+                            ClinicalAnalysisDBAdaptor.QueryParams.AUDIT.key(),
+                            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
+                            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_ID.key()));
             ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), clinicalAnalysisStr,
                     clinicalOptions, userId).first();
 
@@ -266,6 +268,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 count++;
             }
         }
+
         interpretation.setId(clinicalAnalysis.getId() + "." + count);
 
         interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());
