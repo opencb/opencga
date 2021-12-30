@@ -23,8 +23,10 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.templates.TemplateRunner;
+import org.opencb.opencga.catalog.db.api.PipelineDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -43,6 +45,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -252,8 +255,10 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Pipeline id. If provided, it will only fetch the requested pipeline.") @QueryParam("pipelineId") String pipelineId) {
         try {
-//            return createOkResponse(catalogManager.getStudyManager().getCustomGroups(studyStr, pipelineId, token));
-            return createOkResponse(null);
+            if (StringUtils.isNotEmpty(pipelineId)) {
+                query.put(PipelineDBAdaptor.QueryParams.ID.key(), pipelineId);
+            }
+            return createOkResponse(catalogManager.getPipelineManager().search(studyStr, new Query(), QueryOptions.empty(), token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -271,12 +276,12 @@ public class StudyWSServer extends OpenCGAWSServer {
             if (action == null) {
                 action = ParamUtils.AddRemoveAction.ADD;
             }
-            OpenCGAResult<Pipeline> pipelineResult = null;
-//            if (action == ParamUtils.AddRemoveAction.ADD) {
-//                pipelineResult = catalogManager.getStudyManager().createPipeline(studyStr, pipeline, token);
-//            } else {
-//                pipelineResult = catalogManager.getStudyManager().deletePipeline(studyStr, pipeline.getId(), token);
-//            }
+            OpenCGAResult<Pipeline> pipelineResult;
+            if (action == ParamUtils.AddRemoveAction.ADD) {
+                pipelineResult = catalogManager.getPipelineManager().create(studyStr, pipeline, QueryOptions.empty(), token);
+            } else {
+                pipelineResult = catalogManager.getPipelineManager().delete(studyStr, Collections.singletonList(pipeline.getId()), QueryOptions.empty(), token);
+            }
             return createOkResponse(pipelineResult);
         } catch (Exception e) {
             return createErrorResponse(e);
