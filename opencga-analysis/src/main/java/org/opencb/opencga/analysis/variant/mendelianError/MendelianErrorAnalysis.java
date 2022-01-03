@@ -19,100 +19,55 @@ package org.opencb.opencga.analysis.variant.mendelianError;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.MendelianErrorAnalysisExecutor;
 
 import java.io.IOException;
 
 @Tool(id = MendelianErrorAnalysis.ID, resource = Enums.Resource.VARIANT, description = MendelianErrorAnalysis.DESCRIPTION)
-public class MendelianErrorAnalysis extends OpenCgaAnalysisTool {
+public class MendelianErrorAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "mendelian-error";
     public static final String DESCRIPTION = "Run mendelian error analysis to infer uniparental disomy regions.";
 
-    private String studyId;
-    private String familyId;
-    private String individualId;
-    private String sampleId;
+    @ToolParams
+    protected final MendelianErrorParams params = new MendelianErrorParams();
 
     public MendelianErrorAnalysis() {
-    }
-
-    /**
-     * Study of the samples.
-     *
-     * @param studyId Study id
-     * @return this
-     */
-    public MendelianErrorAnalysis setStudy(String studyId) {
-        this.studyId = studyId;
-        return this;
-    }
-
-    public String getFamilyId() {
-        return familyId;
-    }
-
-    public MendelianErrorAnalysis setFamilyId(String familyId) {
-        this.familyId = familyId;
-        return this;
-    }
-
-    public String getIndividualId() {
-        return individualId;
-    }
-
-    public MendelianErrorAnalysis setIndividualId(String individualId) {
-        this.individualId = individualId;
-        return this;
-    }
-
-    public String getSampleId() {
-        return sampleId;
-    }
-
-    public MendelianErrorAnalysis setSampleId(String sampleId) {
-        this.sampleId = sampleId;
-        return this;
     }
 
     @Override
     protected void check() throws Exception {
         super.check();
-        setUpStorageEngineExecutor(studyId);
+        setUpStorageEngineExecutor(getStudy());
 
-        if (StringUtils.isEmpty(studyId)) {
+        if (StringUtils.isEmpty(getStudy())) {
             throw new ToolException("Missing study ID.");
         }
 
-        try {
-            studyId = catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
-        } catch (CatalogException e) {
-            throw new ToolException(e);
-        }
-
         // Sanity check
-        if (StringUtils.isNotEmpty(familyId) && StringUtils.isNotEmpty(individualId) && StringUtils.isNotEmpty(sampleId)) {
+        if (StringUtils.isNotEmpty(params.getFamilyId()) && StringUtils.isNotEmpty(params.getIndividualId())
+                && StringUtils.isNotEmpty(params.getSampleId())) {
             throw new ToolException("Incorrect parameters: please, provide only a family ID, a individual ID or a sample ID.");
         }
 
         // Get family by ID
         Family family;
-        if (StringUtils.isNotEmpty(familyId)) {
+        if (StringUtils.isNotEmpty(params.getFamilyId())) {
             // Get family ID by individual ID
-            family = IndividualQcUtils.getFamilyById(studyId, familyId, catalogManager, token);
-        } else if (StringUtils.isNotEmpty(individualId)) {
+            family = IndividualQcUtils.getFamilyById(getStudy(), params.getFamilyId(), catalogManager, token);
+        } else if (StringUtils.isNotEmpty(params.getIndividualId())) {
             // Get family ID by individual ID
-            family = IndividualQcUtils.getFamilyByIndividualId(studyId, individualId, catalogManager, token);
-        } else if (StringUtils.isNotEmpty(sampleId)) {
+            family = IndividualQcUtils.getFamilyByIndividualId(getStudy(), params.getIndividualId(), catalogManager, token);
+        } else if (StringUtils.isNotEmpty(params.getSampleId())) {
             // Get family ID by sample ID
-            family = IndividualQcUtils.getFamilyBySampleId(studyId, sampleId, catalogManager, token);
+            family = IndividualQcUtils.getFamilyBySampleId(getStudy(), params.getSampleId(), catalogManager, token);
         } else {
             throw new ToolException("Missing a family ID, a individual ID or a sample ID.");
         }
@@ -120,7 +75,7 @@ public class MendelianErrorAnalysis extends OpenCgaAnalysisTool {
             throw new ToolException("Members not found to execute genetic checks analysis.");
         }
 
-        familyId = family.getId();
+        params.setFamilyId(family.getId());
     }
 
 
@@ -130,8 +85,8 @@ public class MendelianErrorAnalysis extends OpenCgaAnalysisTool {
         step(ID, () -> {
             MendelianErrorAnalysisExecutor mendelianErrorExecutor = getToolExecutor(MendelianErrorAnalysisExecutor.class);
 
-            mendelianErrorExecutor.setStudyId(studyId)
-                    .setFamilyId(familyId)
+            mendelianErrorExecutor.setStudyId(getStudy())
+                    .setFamilyId(params.getFamilyId())
                     .execute();
 
             try {

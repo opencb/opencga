@@ -1369,7 +1369,7 @@ public class VariantCommandOptions {
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
-        public Object internalJobOptions = internalJobOptionsObject;
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
         public String study;

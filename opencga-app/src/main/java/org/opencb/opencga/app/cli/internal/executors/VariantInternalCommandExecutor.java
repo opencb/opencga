@@ -42,6 +42,7 @@ import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorAnalysis;
+import org.opencb.opencga.analysis.variant.mendelianError.MendelianErrorParams;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.relatedness.RelatednessAnalysis;
@@ -821,17 +822,14 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
     private void mendelianError() throws Exception {
         VariantCommandOptions.MendelianErrorCommandOptions cliOptions = variantCommandOptions.mendelianErrorCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
+        Path outDir = Paths.get(cliOptions.outdir);
 
-        MendelianErrorAnalysis mendelianErrorAnalysis = new MendelianErrorAnalysis();
-        mendelianErrorAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, token);
-        mendelianErrorAnalysis.setStudy(cliOptions.study)
-                .setFamilyId(cliOptions.family)
-                .setIndividualId(cliOptions.individual)
-                .setSampleId(cliOptions.sample)
-                .start();
+        // Prepare analysis parameters and config
+        ObjectMap params = new MendelianErrorParams(cliOptions.family, cliOptions.individual, cliOptions.sample)
+                .toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(MendelianErrorAnalysis.class, params, outDir, cliOptions.jobOptions.jobId, token);
     }
 
     private void inferredSex() throws Exception {
