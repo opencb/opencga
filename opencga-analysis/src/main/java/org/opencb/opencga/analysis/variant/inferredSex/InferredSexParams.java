@@ -4,29 +4,29 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 public class InferredSexParams extends ToolParams {
 
-    private String individualId;
+    private String individual;
 
     public InferredSexParams() {
     }
 
-    public InferredSexParams(String individualId) {
-        this.individualId = individualId;
+    public InferredSexParams(String individual) {
+        this.individual = individual;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("InferredSexParams{");
-        sb.append("individualId='").append(individualId).append('\'');
+        sb.append("individualId='").append(individual).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getIndividualId() {
-        return individualId;
+    public String getIndividual() {
+        return individual;
     }
 
-    public InferredSexParams setIndividualId(String individualId) {
-        this.individualId = individualId;
+    public InferredSexParams setIndividual(String individual) {
+        this.individual = individual;
         return this;
     }
 }

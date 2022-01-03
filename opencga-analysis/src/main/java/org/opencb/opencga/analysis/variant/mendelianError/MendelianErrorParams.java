@@ -4,53 +4,53 @@ import org.opencb.opencga.core.tools.ToolParams;
 
 public class MendelianErrorParams extends ToolParams {
 
-    private String familyId;
-    private String individualId;
-    private String sampleId;
+    private String family;
+    private String individual;
+    private String sample;
 
     public MendelianErrorParams() {
     }
 
-    public MendelianErrorParams(String familyId, String individualId, String sampleId) {
-        this.familyId = familyId;
-        this.individualId = individualId;
-        this.sampleId = sampleId;
+    public MendelianErrorParams(String family, String individual, String sample) {
+        this.family = family;
+        this.individual = individual;
+        this.sample = sample;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("MendelianErrorParams{");
-        sb.append("familyId='").append(familyId).append('\'');
-        sb.append(", individualId='").append(individualId).append('\'');
-        sb.append(", sampleId='").append(sampleId).append('\'');
+        sb.append("familyId='").append(family).append('\'');
+        sb.append(", individualId='").append(individual).append('\'');
+        sb.append(", sampleId='").append(sample).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getFamilyId() {
-        return familyId;
+    public String getFamily() {
+        return family;
     }
 
-    public MendelianErrorParams setFamilyId(String familyId) {
-        this.familyId = familyId;
+    public MendelianErrorParams setFamily(String family) {
+        this.family = family;
         return this;
     }
 
-    public String getIndividualId() {
-        return individualId;
+    public String getIndividual() {
+        return individual;
     }
 
-    public MendelianErrorParams setIndividualId(String individualId) {
-        this.individualId = individualId;
+    public MendelianErrorParams setIndividual(String individual) {
+        this.individual = individual;
         return this;
     }
 
-    public String getSampleId() {
-        return sampleId;
+    public String getSample() {
+        return sample;
     }
 
-    public MendelianErrorParams setSampleId(String sampleId) {
-        this.sampleId = sampleId;
+    public MendelianErrorParams setSample(String sample) {
+        this.sample = sample;
         return this;
     }
 }

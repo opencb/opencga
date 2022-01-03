@@ -52,22 +52,22 @@ public class MendelianErrorAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Sanity check
-        if (StringUtils.isNotEmpty(params.getFamilyId()) && StringUtils.isNotEmpty(params.getIndividualId())
-                && StringUtils.isNotEmpty(params.getSampleId())) {
+        if (StringUtils.isNotEmpty(params.getFamily()) && StringUtils.isNotEmpty(params.getIndividual())
+                && StringUtils.isNotEmpty(params.getSample())) {
             throw new ToolException("Incorrect parameters: please, provide only a family ID, a individual ID or a sample ID.");
         }
 
         // Get family by ID
         Family family;
-        if (StringUtils.isNotEmpty(params.getFamilyId())) {
+        if (StringUtils.isNotEmpty(params.getFamily())) {
             // Get family ID by individual ID
-            family = IndividualQcUtils.getFamilyById(getStudy(), params.getFamilyId(), catalogManager, token);
-        } else if (StringUtils.isNotEmpty(params.getIndividualId())) {
+            family = IndividualQcUtils.getFamilyById(getStudy(), params.getFamily(), catalogManager, token);
+        } else if (StringUtils.isNotEmpty(params.getIndividual())) {
             // Get family ID by individual ID
-            family = IndividualQcUtils.getFamilyByIndividualId(getStudy(), params.getIndividualId(), catalogManager, token);
-        } else if (StringUtils.isNotEmpty(params.getSampleId())) {
+            family = IndividualQcUtils.getFamilyByIndividualId(getStudy(), params.getIndividual(), catalogManager, token);
+        } else if (StringUtils.isNotEmpty(params.getSample())) {
             // Get family ID by sample ID
-            family = IndividualQcUtils.getFamilyBySampleId(getStudy(), params.getSampleId(), catalogManager, token);
+            family = IndividualQcUtils.getFamilyBySampleId(getStudy(), params.getSample(), catalogManager, token);
         } else {
             throw new ToolException("Missing a family ID, a individual ID or a sample ID.");
         }
@@ -75,7 +75,7 @@ public class MendelianErrorAnalysis extends OpenCgaToolScopeStudy {
             throw new ToolException("Members not found to execute genetic checks analysis.");
         }
 
-        params.setFamilyId(family.getId());
+        params.setFamily(family.getId());
     }
 
 
@@ -86,7 +86,7 @@ public class MendelianErrorAnalysis extends OpenCgaToolScopeStudy {
             MendelianErrorAnalysisExecutor mendelianErrorExecutor = getToolExecutor(MendelianErrorAnalysisExecutor.class);
 
             mendelianErrorExecutor.setStudyId(getStudy())
-                    .setFamilyId(params.getFamilyId())
+                    .setFamilyId(params.getFamily())
                     .execute();
 
             try {

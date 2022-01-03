@@ -50,7 +50,7 @@ public class InferredSexAnalysis extends OpenCgaToolScopeStudy {
         }
 
         // Check individual and sample
-        if (StringUtils.isEmpty(inferredSexParams.getIndividualId())) {
+        if (StringUtils.isEmpty(inferredSexParams.getIndividual())) {
             throw new ToolException("Missing individual ID.");
         }
     }
@@ -62,7 +62,7 @@ public class InferredSexAnalysis extends OpenCgaToolScopeStudy {
             InferredSexAnalysisExecutor inferredSexExecutor = getToolExecutor(InferredSexAnalysisExecutor.class);
 
             inferredSexExecutor.setStudyId(getStudy())
-                    .setIndividualId(inferredSexParams.getIndividualId())
+                    .setIndividualId(inferredSexParams.getIndividual())
                     .execute();
 
             // Get inferred sex report
