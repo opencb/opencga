@@ -52,7 +52,6 @@ import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.InterpretationStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -510,9 +509,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     interpretationConverter.validatePanelsToUpdate(document.getSet());
                     break;
                 case REMOVE:
-                    fixPanelsForRemoval(parameters);
-                    filterObjectParams(parameters, document.getPullAll(), panelParams);
-                    interpretationConverter.validatePanelsToUpdate(document.getPullAll());
+                    clinicalDBAdaptor.fixPanelsForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPull(), panelParams);
                     break;
                 case ADD:
                     filterObjectParams(parameters, document.getAddToSet(), panelParams);
@@ -535,20 +533,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         return document;
-    }
-
-    static void fixPanelsForRemoval(ObjectMap parameters) {
-        if (parameters.get(QueryParams.PANELS.key()) == null) {
-            return;
-        }
-
-        List<Panel> panelParamList = new LinkedList<>();
-        for (Object panel : parameters.getAsList(QueryParams.PANELS.key())) {
-            if (panel instanceof Panel) {
-                panelParamList.add(new Panel().setId(((Panel) panel).getId()));
-            }
-        }
-        parameters.put(QueryParams.PANELS.key(), panelParamList);
     }
 
     static void fixFindingsForRemoval(ObjectMap parameters, String findingsKey) {
