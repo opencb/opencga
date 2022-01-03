@@ -36,6 +36,7 @@ import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.genomePlot.GenomePlotAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.inferredSex.InferredSexAnalysis;
+import org.opencb.opencga.analysis.variant.inferredSex.InferredSexParams;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
@@ -835,15 +836,14 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
     private void inferredSex() throws Exception {
         VariantCommandOptions.InferredSexCommandOptions cliOptions = variantCommandOptions.inferredSexCommandOptions;
-        ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.commonOptions.params);
+        Path outDir = Paths.get(cliOptions.outdir);
 
-        InferredSexAnalysis inferredSexAnalysis = new InferredSexAnalysis();
-        inferredSexAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-                variantCommandOptions.internalJobOptions.jobId, token);
-        inferredSexAnalysis.setStudyId(cliOptions.study)
-                .setIndividualId(cliOptions.individual)
-                .start();
+        // Prepare analysis parameters and config
+        ObjectMap params = new InferredSexParams(cliOptions.individual)
+                .toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(InferredSexAnalysis.class, params, outDir, cliOptions.jobOptions.jobId, token);
     }
 
     private void relatedness() throws Exception {

@@ -82,7 +82,8 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CLINICAL_DESCR;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE_DESCR;
 
 /**
  * Created by pfurio on 23/11/16.
@@ -1394,7 +1395,7 @@ public class VariantCommandOptions {
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
-        public Object internalJobOptions = internalJobOptionsObject;
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"--study"}, description = "Study ID where the individual or sample belong to.")
         public String study;

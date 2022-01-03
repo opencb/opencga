@@ -18,65 +18,39 @@ package org.opencb.opencga.analysis.variant.inferredSex;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
-import org.opencb.opencga.analysis.tools.OpenCgaAnalysisTool;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.InferredSexAnalysisExecutor;
 
 import java.io.IOException;
 
 @Tool(id = InferredSexAnalysis.ID, resource = Enums.Resource.VARIANT, description = InferredSexAnalysis.DESCRIPTION)
-public class InferredSexAnalysis extends OpenCgaAnalysisTool {
+public class InferredSexAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "inferred-sex";
     public static final String DESCRIPTION = "Infer sex from chromosome mean coverages.";
 
-    private String studyId;
-    private String individualId;
+    @ToolParams
+    protected final InferredSexParams inferredSexParams = new InferredSexParams();
 
     public InferredSexAnalysis() {
-    }
-
-    /**
-     * Study of the samples.
-     *
-     * @param studyId Study ID
-     * @return this
-     */
-    public InferredSexAnalysis setStudyId(String studyId) {
-        this.studyId = studyId;
-        return this;
-    }
-
-    public String getIndividualId() {
-        return individualId;
-    }
-
-    public InferredSexAnalysis setIndividualId(String individualId) {
-        this.individualId = individualId;
-        return this;
     }
 
     @Override
     protected void check() throws Exception {
         super.check();
-        setUpStorageEngineExecutor(studyId);
+        setUpStorageEngineExecutor(getStudy());
 
-        if (StringUtils.isEmpty(studyId)) {
+        if (StringUtils.isEmpty(getStudy())) {
             throw new ToolException("Missing study.");
         }
 
-        try {
-            studyId = catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
-        } catch (CatalogException e) {
-            throw new ToolException(e);
-        }
-
         // Check individual and sample
-        if (StringUtils.isEmpty(individualId)) {
+        if (StringUtils.isEmpty(inferredSexParams.getIndividualId())) {
             throw new ToolException("Missing individual ID.");
         }
     }
@@ -87,8 +61,8 @@ public class InferredSexAnalysis extends OpenCgaAnalysisTool {
         step("inferred-sex", () -> {
             InferredSexAnalysisExecutor inferredSexExecutor = getToolExecutor(InferredSexAnalysisExecutor.class);
 
-            inferredSexExecutor.setStudyId(studyId)
-                    .setIndividualId(individualId)
+            inferredSexExecutor.setStudyId(getStudy())
+                    .setIndividualId(inferredSexParams.getIndividualId())
                     .execute();
 
             // Get inferred sex report
