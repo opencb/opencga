@@ -12,10 +12,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.IOException;
 
 @Path("/{apiVersion}/pipelines")
@@ -25,8 +22,7 @@ public class PipelineWSServer extends OpenCGAWSServer {
 
     private PipelineManager pipelineManager;
 
-    public PipelineWSServer(UriInfo uriInfo, HttpServletRequest httpServletRequest, HttpHeaders httpHeaders)
-            throws VersionException, IOException {
+    public PipelineWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
         pipelineManager = catalogManager.getPipelineManager();
     }
