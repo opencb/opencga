@@ -157,14 +157,14 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 
         FileCommandOptions.CreateCommandOptions commandOptions = filesCommandOptions.createCommandOptions;
 
-        FileCreateParamsOld createParams = new FileCreateParamsOld()
-                .setDirectory(StringUtils.isEmpty(commandOptions.content))
-                .setParents(commandOptions.parents)
+        FileCreateParams createParams = new FileCreateParams()
                 .setContent(commandOptions.content)
                 .setDescription(commandOptions.description)
                 .setPath(commandOptions.folder);
 
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
+        ObjectMap params = new ObjectMap()
+                .append(ParamConstants.FILE_PARENTS_PARAM, commandOptions.parents)
+                .append(FileDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
 
         return openCGAClient.getFileClient().create(createParams, params);
     }
