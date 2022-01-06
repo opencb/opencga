@@ -225,38 +225,38 @@ public class MetaWSServer extends OpenCGAWSServer {
     @Path("/api")
     @ApiOperation(value = "API", response = List.class)
     public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr) {
+        Map<String, Class> classMap = new LinkedHashMap<>();
+        classMap.put("users", UserWSServer.class);
+        classMap.put("projects", ProjectWSServer.class);
+        classMap.put("studies", StudyWSServer.class);
+        classMap.put("files", FileWSServer.class);
+        classMap.put("jobs", JobWSServer.class);
+        classMap.put("samples", SampleWSServer.class);
+        classMap.put("individuals", IndividualWSServer.class);
+        classMap.put("families", FamilyWSServer.class);
+        classMap.put("cohorts", CohortWSServer.class);
+        classMap.put("panels", PanelWSServer.class);
+        classMap.put("alignment", AlignmentWebService.class);
+        classMap.put("variant", VariantWebService.class);
+        classMap.put("clinical", ClinicalWebService.class);
+        classMap.put("variantOperations", VariantOperationWebService.class);
+        classMap.put("meta", MetaWSServer.class);
+        classMap.put("ga4gh", Ga4ghWSServer.class);
+        classMap.put("admin", AdminWSServer.class);
 
-        Map<String, Class> classes = new LinkedHashMap<>();
-        classes.put("users", UserWSServer.class);
-        classes.put("projects", ProjectWSServer.class);
-        classes.put("studies", StudyWSServer.class);
-        classes.put("files", FileWSServer.class);
-        classes.put("jobs", JobWSServer.class);
-        classes.put("samples", SampleWSServer.class);
-        classes.put("individuals", IndividualWSServer.class);
-        classes.put("families", FamilyWSServer.class);
-        classes.put("cohorts", CohortWSServer.class);
-        classes.put("panels", PanelWSServer.class);
-        classes.put("alignment", AlignmentWebService.class);
-        classes.put("variant", VariantWebService.class);
-        classes.put("clinical", ClinicalWebService.class);
-        classes.put("variantOperations", VariantOperationWebService.class);
-        classes.put("meta", MetaWSServer.class);
-        classes.put("ga4gh", Ga4ghWSServer.class);
-        classes.put("admin", AdminWSServer.class);
-        List<Class> JSONClasses = new ArrayList<>();
+        List<Class> classes = new ArrayList<>();
+        // Check if some categories have been selected
         if (StringUtils.isNotEmpty(categoryStr)) {
             for (String category : categoryStr.split(",")) {
-                JSONClasses.add(classes.get(category));
+                classes.add(classMap.get(category));
             }
         } else {
             // Get API for all categories
-            for (String category : classes.keySet()) {
-                JSONClasses.add(classes.get(category));
+            for (String category : classMap.keySet()) {
+                classes.add(classMap.get(category));
             }
         }
-        //List<LinkedHashMap<String, Object>> api = JSONManager.getHelp(JSONClasses);
-        List<Category> api = RestApiParser.getCategories(JSONClasses);
+        List<Category> api = RestApiParser.getCategories(classes);
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(api), 1));
     }
 
