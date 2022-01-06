@@ -1,10 +1,10 @@
 package org.opencb.opencga.server.json;
 
 import org.apache.log4j.Logger;
-import org.opencb.opencga.server.json.beans.Category;
-import org.opencb.opencga.server.json.beans.Endpoint;
-import org.opencb.opencga.server.json.beans.Parameter;
-import org.opencb.opencga.server.json.beans.RestApi;
+import org.opencb.opencga.server.json.models.RestCategory;
+import org.opencb.opencga.server.json.models.RestEndpoint;
+import org.opencb.opencga.server.json.models.RestParameter;
+import org.opencb.opencga.server.json.models.RestApi;
 import org.opencb.opencga.server.json.config.CommandLineConfiguration;
 import org.opencb.opencga.server.json.config.ConfigurationManager;
 import org.opencb.opencga.server.json.writers.cli.CompleterCliApiWriter;
@@ -91,17 +91,17 @@ public class MainClientGenerator {
     private static RestApi prepare(RestApi api) {
         //To process endpoints the parameter for each one must have a different name
         //Sometimes body parameter has the same name of a query parameter
-        for (Category category : api.getCategories()) {
-            for (Endpoint endpoint : category.getEndpoints()) {
+        for (RestCategory restCategory : api.getCategories()) {
+            for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
                 List<String> aux = new ArrayList<>();
-                for (Parameter parameter : endpoint.getParameters()) {
-                    aux.add(parameter.getName());
+                for (RestParameter restParameter : restEndpoint.getParameters()) {
+                    aux.add(restParameter.getName());
                 }
-                for (Parameter parameter : endpoint.getParameters()) {
-                    if (parameter.getData() != null) {
-                        for (Parameter body_parameter : parameter.getData()) {
-                            if (aux.contains(body_parameter.getName())) {
-                                body_parameter.setName("body_" + body_parameter.getName());
+                for (RestParameter restParameter : restEndpoint.getParameters()) {
+                    if (restParameter.getData() != null) {
+                        for (RestParameter body_Rest_parameter : restParameter.getData()) {
+                            if (aux.contains(body_Rest_parameter.getName())) {
+                                body_Rest_parameter.setName("body_" + body_Rest_parameter.getName());
                             }
                         }
                     }

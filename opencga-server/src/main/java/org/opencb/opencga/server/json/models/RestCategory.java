@@ -1,12 +1,12 @@
-package org.opencb.opencga.server.json.beans;
+package org.opencb.opencga.server.json.models;
 
 import java.util.List;
 
-public class Category {
+public class RestCategory {
 
     private String name;
     private String path;
-    private List<Endpoint> endpoints;
+    private List<RestEndpoint> endpoints;
 
     @Override
     public String toString() {
@@ -22,7 +22,7 @@ public class Category {
         return name;
     }
 
-    public Category setName(String name) {
+    public RestCategory setName(String name) {
         this.name = name;
         return this;
     }
@@ -31,17 +31,17 @@ public class Category {
         return path;
     }
 
-    public Category setPath(String path) {
+    public RestCategory setPath(String path) {
         this.path = path;
         return this;
     }
 
-    public List<Endpoint> getEndpoints() {
+    public List<RestEndpoint> getEndpoints() {
         return endpoints;
     }
 
-    public Category setEndpoints(List<Endpoint> endpoints) {
-        this.endpoints = endpoints;
+    public RestCategory setEndpoints(List<RestEndpoint> restEndpoints) {
+        this.endpoints = restEndpoints;
         return this;
     }
 

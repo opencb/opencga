@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.server.json.writers.cli;
 
-import org.opencb.opencga.server.json.beans.Category;
-import org.opencb.opencga.server.json.beans.Endpoint;
-import org.opencb.opencga.server.json.beans.RestApi;
+import org.opencb.opencga.server.json.models.RestCategory;
+import org.opencb.opencga.server.json.models.RestEndpoint;
+import org.opencb.opencga.server.json.models.RestApi;
 import org.opencb.opencga.server.json.config.CategoryConfig;
 import org.opencb.opencga.server.json.config.CommandLineConfiguration;
 import org.opencb.opencga.server.json.writers.ParentClientRestApiWriter;
@@ -95,19 +95,19 @@ public class CompleterCliApiWriter extends ParentClientRestApiWriter {
         sb.append("public abstract class OpenCgaCompleter implements Completer {\n");
         sb.append("\n");
         sb.append("    protected List<Candidate> commands = asList(\"login\",\"logout\",\"help\",\"use\",");
-        for (Category category : availableCategories.values()) {
-            CategoryConfig config = availableCategoryConfigs.get(getIdCategory(category));
-            sb.append("\"" + getCategoryCommandName(category, config) + "\",");
+        for (RestCategory restCategory : availableCategories.values()) {
+            CategoryConfig config = availableCategoryConfigs.get(getIdCategory(restCategory));
+            sb.append("\"" + getCategoryCommandName(restCategory, config) + "\",");
         }
         sb.delete(sb.lastIndexOf(","), sb.length());
         sb.append(")\n            .stream()\n            .map(Candidate::new)\n            .collect(toList());\n\n");
 
-        for (Category category : availableCategories.values()) {
-            CategoryConfig config = availableCategoryConfigs.get(getIdCategory(category));
-            sb.append("    private List<Candidate> " + getCategoryCommandName(category, config) + "List = asList( ");
-            for (Endpoint endpoint : category.getEndpoints()) {
-                String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
-                if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config, commandName)) && endpoint.hasParameters()) {
+        for (RestCategory restCategory : availableCategories.values()) {
+            CategoryConfig config = availableCategoryConfigs.get(getIdCategory(restCategory));
+            sb.append("    private List<Candidate> " + getCategoryCommandName(restCategory, config) + "List = asList( ");
+            for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
+                String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
+                if ((!"POST".equals(restEndpoint.getMethod()) || restEndpoint.hasPrimitiveBodyParams(config, commandName)) && restEndpoint.hasParameters()) {
                     if (config.isAvailableCommand(commandName)) {
 
                         sb.append("\"" + commandName + "\",");
@@ -148,10 +148,10 @@ public class CompleterCliApiWriter extends ParentClientRestApiWriter {
         sb.append("            return;\n");
         sb.append("        }\n");
         sb.append("        Map<String, List<Candidate>> mapCandidates=new HashMap();\n");
-        for (Category category : availableCategories.values()) {
-            CategoryConfig config = availableCategoryConfigs.get(getIdCategory(category));
-            sb.append("        mapCandidates.put( \"" + getCategoryCommandName(category, config) + "\", "
-                    + getCategoryCommandName(category, config) + "List);\n");
+        for (RestCategory restCategory : availableCategories.values()) {
+            CategoryConfig config = availableCategoryConfigs.get(getIdCategory(restCategory));
+            sb.append("        mapCandidates.put( \"" + getCategoryCommandName(restCategory, config) + "\", "
+                    + getCategoryCommandName(restCategory, config) + "List);\n");
         }
         sb.append("         candidates.addAll(checkCandidates(mapCandidates,command)); \n");
         sb.append("     }\n");

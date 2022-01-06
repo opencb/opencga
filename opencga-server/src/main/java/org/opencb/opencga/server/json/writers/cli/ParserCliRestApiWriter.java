@@ -17,9 +17,9 @@
 package org.opencb.opencga.server.json.writers.cli;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.opencb.opencga.server.json.beans.Category;
-import org.opencb.opencga.server.json.beans.Endpoint;
-import org.opencb.opencga.server.json.beans.RestApi;
+import org.opencb.opencga.server.json.models.RestCategory;
+import org.opencb.opencga.server.json.models.RestEndpoint;
+import org.opencb.opencga.server.json.models.RestApi;
 import org.opencb.opencga.server.json.config.CategoryConfig;
 import org.opencb.opencga.server.json.config.CommandLineConfiguration;
 import org.opencb.opencga.server.json.writers.ParentClientRestApiWriter;
@@ -85,8 +85,8 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("\n");
         sb.append("public class OpencgaCliOptionsParser extends ParentCliOptionsParser {\n");
         sb.append("\n");
-        for (Category category : availableCategories.values()) {
-            sb.append("    private final " + getAsClassName(category.getName()) + "CommandOptions " + getAsVariableName(category.getName()) +
+        for (RestCategory restCategory : availableCategories.values()) {
+            sb.append("    private final " + getAsClassName(restCategory.getName()) + "CommandOptions " + getAsVariableName(restCategory.getName()) +
                     "CommandOptions;\n");
         }
         sb.append("\n");
@@ -96,22 +96,22 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("\n");
         sb.append("        jCommander.setExpandAtSign(false);\n");
 
-        for (Category category : availableCategories.values()) {
-            CategoryConfig config = availableCategoryConfigs.get(getIdCategory(category));
+        for (RestCategory restCategory : availableCategories.values()) {
+            CategoryConfig config = availableCategoryConfigs.get(getIdCategory(restCategory));
             sb.append("\n");
-            sb.append("        " + getAsVariableName(category.getName()) + "CommandOptions = new " + getAsClassName(category.getName())
+            sb.append("        " + getAsVariableName(restCategory.getName()) + "CommandOptions = new " + getAsClassName(restCategory.getName())
                     + "CommandOptions(commonCommandOptions, jCommander);\n");
-            sb.append("        jCommander.addCommand(\"" + getCategoryCommandName(category, config)
-                    + "\", " + getAsVariableName(category.getName()) + "CommandOptions);\n");
-            sb.append("        JCommander " + getAsVariableName(category.getName()) + "SubCommands = jCommander.getCommands().get(\""
-                    + getCategoryCommandName(category, config) + "\");\n");
-            for (Endpoint endpoint : category.getEndpoints()) {
+            sb.append("        jCommander.addCommand(\"" + getCategoryCommandName(restCategory, config)
+                    + "\", " + getAsVariableName(restCategory.getName()) + "CommandOptions);\n");
+            sb.append("        JCommander " + getAsVariableName(restCategory.getName()) + "SubCommands = jCommander.getCommands().get(\""
+                    + getCategoryCommandName(restCategory, config) + "\");\n");
+            for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
 
-                String commandName = getMethodName(category, endpoint).replaceAll("_", "-");
-                if ((!"POST".equals(endpoint.getMethod()) || endpoint.hasPrimitiveBodyParams(config, commandName)) && endpoint.hasParameters()) {
+                String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
+                if ((!"POST".equals(restEndpoint.getMethod()) || restEndpoint.hasPrimitiveBodyParams(config, commandName)) && restEndpoint.hasParameters()) {
                     if (config.isAvailableCommand(commandName)) {
-                        sb.append("        " + getAsVariableName(category.getName()) + "SubCommands.addCommand(\"" + commandName + "\", "
-                                + getAsVariableName(category.getName()) + "CommandOptions." + getAsCamelCase(commandName) +
+                        sb.append("        " + getAsVariableName(restCategory.getName()) + "SubCommands.addCommand(\"" + commandName + "\", "
+                                + getAsVariableName(restCategory.getName()) + "CommandOptions." + getAsCamelCase(commandName) +
                                 "CommandOptions);\n");
                     }
                 }
@@ -119,8 +119,8 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
 
             if (CollectionUtils.isNotEmpty(config.getAddedMethods())) {
                 for (String methodName : config.getAddedMethods()) {
-                    sb.append("        " + getAsVariableName(category.getName()) + "SubCommands.addCommand(\"" + methodName + "\", "
-                            + getAsVariableName(category.getName()) + "CommandOptions." + getAsCamelCase(methodName) +
+                    sb.append("        " + getAsVariableName(restCategory.getName()) + "SubCommands.addCommand(\"" + methodName + "\", "
+                            + getAsVariableName(restCategory.getName()) + "CommandOptions." + getAsCamelCase(methodName) +
                             "CommandOptions);\n");
                 }
             }
@@ -148,11 +148,11 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
     protected String getClassMethods(String key) {
         StringBuilder sb = new StringBuilder();
 
-        for (Category category : availableCategories.values()) {
+        for (RestCategory restCategory : availableCategories.values()) {
             sb.append("    \n");
-            sb.append("    public " + getAsClassName(category.getName()) + "CommandOptions get" + getAsClassName(category.getName())
+            sb.append("    public " + getAsClassName(restCategory.getName()) + "CommandOptions get" + getAsClassName(restCategory.getName())
                     + "CommandOptions() {\n");
-            sb.append("        return " + getAsVariableName(category.getName()) + "CommandOptions;\n");
+            sb.append("        return " + getAsVariableName(restCategory.getName()) + "CommandOptions;\n");
             sb.append("    }\n");
             sb.append("    \n");
         }

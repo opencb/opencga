@@ -17,9 +17,9 @@
 package org.opencb.opencga.server.json.writers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.server.json.beans.Category;
-import org.opencb.opencga.server.json.beans.Endpoint;
-import org.opencb.opencga.server.json.beans.RestApi;
+import org.opencb.opencga.server.json.models.RestCategory;
+import org.opencb.opencga.server.json.models.RestEndpoint;
+import org.opencb.opencga.server.json.models.RestApi;
 import org.opencb.opencga.server.json.config.CategoryConfig;
 import org.opencb.opencga.server.json.config.CommandLineConfiguration;
 import org.opencb.opencga.server.json.utils.CommandLineUtils;
@@ -35,7 +35,7 @@ public abstract class ParentClientRestApiWriter {
     protected Map<String, String> validTypes;
     protected RestApi restApi;
     protected CommandLineConfiguration config;
-    protected Map<String, Category> availableCategories = new HashMap<>();
+    protected Map<String, RestCategory> availableCategories = new HashMap<>();
     protected Map<String, CategoryConfig> availableCategoryConfigs = new HashMap<>();
     protected Map<String, String> invalidNames = new HashMap<>();
 
@@ -70,11 +70,11 @@ public abstract class ParentClientRestApiWriter {
         }
     }
 
-    public String getCategoryCommandName(Category category, CategoryConfig categoryConfig) {
+    public String getCategoryCommandName(RestCategory restCategory, CategoryConfig categoryConfig) {
         if (!StringUtils.isEmpty(categoryConfig.getCommandName())) {
             return categoryConfig.getCommandName();
         }
-        return category.getPath().substring(category.getPath().lastIndexOf("/") + 1);
+        return restCategory.getPath().substring(restCategory.getPath().lastIndexOf("/") + 1);
     }
 
     protected void writeToFile(File file, StringBuffer sb) throws IOException {
@@ -87,10 +87,10 @@ public abstract class ParentClientRestApiWriter {
 
     private void init() {
         for (CategoryConfig categoryConfig : config.getApiConfig().getCategoryConfigList()) {
-            for (Category category : restApi.getCategories()) {
-                if (!categoryConfig.isIgnore() && categoryConfig.getName().equals(getIdCategory(category))) {
-                    availableCategories.put(getIdCategory(category), category);
-                    availableCategoryConfigs.put(getIdCategory(category), categoryConfig);
+            for (RestCategory restCategory : restApi.getCategories()) {
+                if (!categoryConfig.isIgnore() && categoryConfig.getName().equals(getIdCategory(restCategory))) {
+                    availableCategories.put(getIdCategory(restCategory), restCategory);
+                    availableCategoryConfigs.put(getIdCategory(restCategory), categoryConfig);
                 }
             }
         }
@@ -132,7 +132,7 @@ public abstract class ParentClientRestApiWriter {
         return res;
     }
 
-    public String getIdCategory(Category cat) {
+    public String getIdCategory(RestCategory cat) {
         String res = getCleanPath(cat.getPath());
         return getAsCamelCase(res, "_");
     }
@@ -156,9 +156,9 @@ public abstract class ParentClientRestApiWriter {
         return path.replace("/{apiVersion}/", "").replace("/", "_");
     }
 
-    public String getMethodName(Category category, Endpoint endpoint) {
+    public String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
         String methodName = "";
-        String subpath = endpoint.getPath().replace(category.getPath() + "/", "");
+        String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
         String[] items = subpath.split("/");
         if (items.length == 1) {
             methodName = items[0];
@@ -231,11 +231,11 @@ public abstract class ParentClientRestApiWriter {
         return builder.toString();
     }
 
-    public Map<String, Category> getAvailableCategories() {
+    public Map<String, RestCategory> getAvailableCategories() {
         return availableCategories;
     }
 
-    public ParentClientRestApiWriter setAvailableCategories(Map<String, Category> availableCategories) {
+    public ParentClientRestApiWriter setAvailableCategories(Map<String, RestCategory> availableCategories) {
         this.availableCategories = availableCategories;
         return this;
     }

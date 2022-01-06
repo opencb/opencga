@@ -3,7 +3,7 @@ package org.opencb.opencga.server.json.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.log4j.Logger;
-import org.opencb.opencga.server.json.beans.RestApi;
+import org.opencb.opencga.server.json.models.RestApi;
 
 import java.io.File;
 

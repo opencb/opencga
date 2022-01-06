@@ -5,10 +5,10 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.core.tools.annotations.CliParam;
-import org.opencb.opencga.server.json.beans.Category;
-import org.opencb.opencga.server.json.beans.Endpoint;
-import org.opencb.opencga.server.json.beans.Parameter;
-import org.opencb.opencga.server.json.beans.RestApi;
+import org.opencb.opencga.server.json.models.RestCategory;
+import org.opencb.opencga.server.json.models.RestEndpoint;
+import org.opencb.opencga.server.json.models.RestParameter;
+import org.opencb.opencga.server.json.models.RestApi;
 import org.opencb.opencga.server.json.utils.CommandLineUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,24 +37,24 @@ public class RestApiParser {
         return res;
     }
 
-    public static List<Category> getCategories(List<Class> classes) {
-        List<Category> res = new ArrayList<>();
+    public static List<RestCategory> getCategories(List<Class> classes) {
+        List<RestCategory> res = new ArrayList<>();
         for (Class clazz : classes) {
             res.add(getCategory(clazz));
         }
         return res;
     }
 
-    private static Category getCategory(Class clazz) {
-        Category category = new Category();
+    private static RestCategory getCategory(Class clazz) {
+        RestCategory restCategory = new RestCategory();
 
         Map<String, String> fieldNames = new HashMap<>();
-        category.setName(((Api) clazz.getAnnotation(Api.class)).value());
-        category.setPath(((Path) clazz.getAnnotation(Path.class)).value());
+        restCategory.setName(((Api) clazz.getAnnotation(Api.class)).value());
+        restCategory.setPath(((Path) clazz.getAnnotation(Path.class)).value());
         //System.out.println("CATEGORY : " + map.get("name"));
 
-        String category_name = category.getName().toUpperCase() + "_";
-        List<Endpoint> endpoints = new ArrayList<>();
+        String category_name = restCategory.getName().toUpperCase() + "_";
+        List<RestEndpoint> restEndpoints = new ArrayList<>();
         for (Method method : clazz.getMethods()) {
             Path pathAnnotation = method.getAnnotation(Path.class);
             String httpMethod = "GET";
@@ -70,30 +70,30 @@ public class RestApiParser {
             if (pathAnnotation != null && apiOperationAnnotation != null && !apiOperationAnnotation.hidden()) {
                 String path = pathAnnotation.value();
                 String variablePrefix = category_name + getMethodName(path).toUpperCase() + "_";
-                Endpoint endpoint = new Endpoint();
-                endpoint.setMethod(httpMethod);
-                endpoint.setPath(category.getPath() + pathAnnotation.value());
-                endpoint.setResponse(StringUtils.substringAfterLast(apiOperationAnnotation.response().getName().replace("Void", ""),
+                RestEndpoint restEndpoint = new RestEndpoint();
+                restEndpoint.setMethod(httpMethod);
+                restEndpoint.setPath(restCategory.getPath() + pathAnnotation.value());
+                restEndpoint.setResponse(StringUtils.substringAfterLast(apiOperationAnnotation.response().getName().replace("Void", ""),
                         "."));
                 String responseClass = apiOperationAnnotation.response().getName().replace("Void", "");
-                endpoint.setResponseClass(responseClass.endsWith(";") ? responseClass : responseClass + ";");
-                endpoint.setNotes(apiOperationAnnotation.notes());
-                endpoint.setDescription(apiOperationAnnotation.value());
+                restEndpoint.setResponseClass(responseClass.endsWith(";") ? responseClass : responseClass + ";");
+                restEndpoint.setNotes(apiOperationAnnotation.notes());
+                restEndpoint.setDescription(apiOperationAnnotation.value());
 
                 ApiImplicitParams apiImplicitParams = method.getAnnotation(ApiImplicitParams.class);
-                List<Parameter> parameters = new ArrayList<>();
+                List<RestParameter> restParameters = new ArrayList<>();
                 if (apiImplicitParams != null) {
                     for (ApiImplicitParam apiImplicitParam : apiImplicitParams.value()) {
-                        Parameter parameter = new Parameter();
-                        parameter.setName(apiImplicitParam.name());
-                        parameter.setParam(apiImplicitParam.paramType());
-                        parameter.setType(apiImplicitParam.dataType());
-                        parameter.setTypeClass("java.lang." + StringUtils.capitalize(apiImplicitParam.dataType()));
-                        parameter.setAllowedValues(apiImplicitParam.allowableValues());
-                        parameter.setRequired(apiImplicitParam.required());
-                        parameter.setDefaultValue(apiImplicitParam.defaultValue());
-                        parameter.setDescription(apiImplicitParam.value());
-                        parameters.add(parameter);
+                        RestParameter restParameter = new RestParameter();
+                        restParameter.setName(apiImplicitParam.name());
+                        restParameter.setParam(apiImplicitParam.paramType());
+                        restParameter.setType(apiImplicitParam.dataType());
+                        restParameter.setTypeClass("java.lang." + StringUtils.capitalize(apiImplicitParam.dataType()));
+                        restParameter.setAllowedValues(apiImplicitParam.allowableValues());
+                        restParameter.setRequired(apiImplicitParam.required());
+                        restParameter.setDefaultValue(apiImplicitParam.defaultValue());
+                        restParameter.setDescription(apiImplicitParam.value());
+                        restParameters.add(restParameter);
                     }
                 }
 
@@ -103,22 +103,22 @@ public class RestApiParser {
 
                         ApiParam apiParam = methodParameter.getAnnotation(ApiParam.class);
                         if (apiParam != null && !apiParam.hidden()) {
-                            List<Parameter> bodyParams = new ArrayList<>();
-                            Parameter parameter = new Parameter();
+                            List<RestParameter> bodyParams = new ArrayList<>();
+                            RestParameter restParameter = new RestParameter();
                             if (methodParameter.getAnnotation(PathParam.class) != null) {
-                                parameter.setName(methodParameter.getAnnotation(PathParam.class).value());
-                                parameter.setParam("path");
+                                restParameter.setName(methodParameter.getAnnotation(PathParam.class).value());
+                                restParameter.setParam("path");
                             } else {
                                 if (methodParameter.getAnnotation(QueryParam.class) != null) {
-                                    parameter.setName(methodParameter.getAnnotation(QueryParam.class).value());
-                                    parameter.setParam("query");
+                                    restParameter.setName(methodParameter.getAnnotation(QueryParam.class).value());
+                                    restParameter.setParam("query");
                                 } else {
                                     if (methodParameter.getAnnotation(FormDataParam.class) != null) {
-                                        parameter.setName(methodParameter.getAnnotation(FormDataParam.class).value());
-                                        parameter.setParam("query");
+                                        restParameter.setName(methodParameter.getAnnotation(FormDataParam.class).value());
+                                        restParameter.setParam("query");
                                     } else {
-                                        parameter.setName("body");
-                                        parameter.setParam("body");
+                                        restParameter.setName("body");
+                                        restParameter.setParam("body");
                                     }
                                 }
                             }
@@ -129,7 +129,7 @@ public class RestApiParser {
                             if (typeClass.contains(".")) {
                                 String[] split = typeClass.split("\\.");
                                 type = split[split.length - 1];
-                                if (!parameter.getParam().equals("body")) {
+                                if (!restParameter.getParam().equals("body")) {
                                     type = type.toLowerCase();
 
                                     // Complex type different from body are enums
@@ -157,7 +157,7 @@ public class RestApiParser {
                                             if ((Modifier.isPrivate(modifiers) || Modifier.isProtected(modifiers))
                                                     && !Modifier.isStatic(modifiers) && !Modifier.isFinal(modifiers)) {
 
-                                                Parameter innerParam = getParameter(declaredField.getName(), variablePrefix, declaredField,
+                                                RestParameter innerParam = getParameter(declaredField.getName(), variablePrefix, declaredField,
                                                         declaredField.getType().getName(), declaredField.getName());
                                                 if (innerParam.isList()) {
                                                     innerParam.setGenericType(declaredField.getGenericType().getTypeName());
@@ -167,13 +167,13 @@ public class RestApiParser {
                                                         String classAndPackageName = innerParam.getTypeClass().replaceAll(";", "");
                                                         Class cls = Class.forName(classAndPackageName);
                                                         Field[] fields = cls.getDeclaredFields();
-                                                        List<Parameter> complexParams = new ArrayList<>();
+                                                        List<RestParameter> complexParams = new ArrayList<>();
                                                         for (Field field : fields) {
                                                             int innerModifiers = field.getModifiers();
                                                             if (CommandLineUtils.isPrimitiveType(field.getType().getSimpleName())
                                                                     && !Modifier.isStatic(innerModifiers)) {
                                                                 //  System.out.println("" + field.getType().getName());
-                                                                Parameter complexParam =
+                                                                RestParameter complexParam =
                                                                         getParameter(field.getName(), variablePrefix, field,
                                                                                 field.getType().getName(), declaredField.getName());
                                                                 complexParam.setGenericType(declaredField.getType().getName());
@@ -196,33 +196,33 @@ public class RestApiParser {
                                     }
                                 }
                             }
-                            parameter.setType(type);
-                            parameter.setTypeClass(typeClass.endsWith(";") ? typeClass : typeClass + ";");
-                            parameter.setAllowedValues(apiParam.allowableValues());
-                            parameter.setRequired(apiParam.required() || "path".equals(parameter.getParam()));
-                            parameter.setDefaultValue(apiParam.defaultValue());
-                            parameter.setDescription(apiParam.value());
+                            restParameter.setType(type);
+                            restParameter.setTypeClass(typeClass.endsWith(";") ? typeClass : typeClass + ";");
+                            restParameter.setAllowedValues(apiParam.allowableValues());
+                            restParameter.setRequired(apiParam.required() || "path".equals(restParameter.getParam()));
+                            restParameter.setDefaultValue(apiParam.defaultValue());
+                            restParameter.setDescription(apiParam.value());
                             if (!bodyParams.isEmpty()) {
-                                parameter.setData(bodyParams);
+                                restParameter.setData(bodyParams);
                             }
-                            parameters.add(parameter);
+                            restParameters.add(restParameter);
                         }
                     }
                 }
-                endpoint.setParameters(parameters);
-                endpoints.add(endpoint);
+                restEndpoint.setParameters(restParameters);
+                restEndpoints.add(restEndpoint);
             }
         }
 
-        endpoints.sort(Comparator.comparing(endpoint -> (String) endpoint.getPath()));
-        category.setEndpoints(endpoints);
-        return category;
+        restEndpoints.sort(Comparator.comparing(endpoint -> (String) endpoint.getPath()));
+        restCategory.setEndpoints(restEndpoints);
+        return restCategory;
     }
 
-    private static Parameter getParameter(String paramName, String variablePrefix, Field declaredField, String className,
-                                          String variableName) {
+    private static RestParameter getParameter(String paramName, String variablePrefix, Field declaredField, String className,
+                                              String variableName) {
 
-        Parameter innerParam = new Parameter();
+        RestParameter innerParam = new RestParameter();
         innerParam.setName(paramName);
         innerParam.setParam("body");
         innerParam.setParentParamName(variableName);

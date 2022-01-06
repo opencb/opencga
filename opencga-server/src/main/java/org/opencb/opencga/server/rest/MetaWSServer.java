@@ -26,7 +26,7 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.server.json.RestApiParser;
-import org.opencb.opencga.server.json.beans.Category;
+import org.opencb.opencga.server.json.models.RestCategory;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
@@ -256,7 +256,7 @@ public class MetaWSServer extends OpenCGAWSServer {
                 classes.add(classMap.get(category));
             }
         }
-        List<Category> api = RestApiParser.getCategories(classes);
+        List<RestCategory> api = RestApiParser.getCategories(classes);
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(api), 1));
     }
 
