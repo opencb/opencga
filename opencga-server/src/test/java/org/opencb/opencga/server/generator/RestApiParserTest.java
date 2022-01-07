@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.json;
+package org.opencb.opencga.server.generator;
 
 import org.junit.BeforeClass;
 import org.junit.Test;

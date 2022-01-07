@@ -1,16 +1,16 @@
-package org.opencb.opencga.server.json;
+package org.opencb.opencga.server.generator;
 
 import org.apache.log4j.Logger;
-import org.opencb.opencga.server.json.config.CommandLineConfiguration;
-import org.opencb.opencga.server.json.config.ConfigurationManager;
-import org.opencb.opencga.server.json.models.RestApi;
-import org.opencb.opencga.server.json.models.RestCategory;
-import org.opencb.opencga.server.json.models.RestEndpoint;
-import org.opencb.opencga.server.json.models.RestParameter;
-import org.opencb.opencga.server.json.writers.cli.AutoCompleteWriter;
-import org.opencb.opencga.server.json.writers.cli.ExecutorsCliRestApiWriter;
-import org.opencb.opencga.server.json.writers.cli.OptionsCliRestApiWriter;
-import org.opencb.opencga.server.json.writers.cli.ParserCliRestApiWriter;
+import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
+import org.opencb.opencga.server.generator.config.ConfigurationManager;
+import org.opencb.opencga.server.generator.models.RestApi;
+import org.opencb.opencga.server.generator.models.RestCategory;
+import org.opencb.opencga.server.generator.models.RestEndpoint;
+import org.opencb.opencga.server.generator.models.RestParameter;
+import org.opencb.opencga.server.generator.writers.cli.AutoCompleteWriter;
+import org.opencb.opencga.server.generator.writers.cli.ExecutorsCliRestApiWriter;
+import org.opencb.opencga.server.generator.writers.cli.OptionsCliRestApiWriter;
+import org.opencb.opencga.server.generator.writers.cli.ParserCliRestApiWriter;
 import org.opencb.opencga.server.rest.*;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentWebService;

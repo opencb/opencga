@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.json.config;
+package org.opencb.opencga.server.generator.config;
 
 import org.apache.commons.lang3.StringUtils;
 

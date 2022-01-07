@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.json.writers.cli;
+package org.opencb.opencga.server.generator.writers.cli;
 
-import org.opencb.opencga.server.json.models.RestCategory;
-import org.opencb.opencga.server.json.models.RestEndpoint;
-import org.opencb.opencga.server.json.models.RestParameter;
-import org.opencb.opencga.server.json.models.RestApi;
-import org.opencb.opencga.server.json.config.CategoryConfig;
-import org.opencb.opencga.server.json.config.CommandLineConfiguration;
-import org.opencb.opencga.server.json.config.Shortcut;
-import org.opencb.opencga.server.json.writers.ParentClientRestApiWriter;
+import org.opencb.opencga.server.generator.models.RestCategory;
+import org.opencb.opencga.server.generator.models.RestEndpoint;
+import org.opencb.opencga.server.generator.models.RestParameter;
+import org.opencb.opencga.server.generator.models.RestApi;
+import org.opencb.opencga.server.generator.config.CategoryConfig;
+import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
+import org.opencb.opencga.server.generator.config.Shortcut;
+import org.opencb.opencga.server.generator.writers.ParentClientRestApiWriter;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

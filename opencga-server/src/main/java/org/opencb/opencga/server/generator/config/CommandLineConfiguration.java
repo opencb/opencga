@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.json.config;
+package org.opencb.opencga.server.generator.config;
 
 import java.util.ArrayList;
 import java.util.List;

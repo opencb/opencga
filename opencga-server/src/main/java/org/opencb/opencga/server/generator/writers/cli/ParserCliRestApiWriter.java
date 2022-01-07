@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.json.writers.cli;
+package org.opencb.opencga.server.generator.writers.cli;
 
-import org.opencb.opencga.server.json.models.RestCategory;
-import org.opencb.opencga.server.json.models.RestEndpoint;
-import org.opencb.opencga.server.json.models.RestApi;
-import org.opencb.opencga.server.json.config.CategoryConfig;
-import org.opencb.opencga.server.json.config.CommandLineConfiguration;
-import org.opencb.opencga.server.json.writers.ParentClientRestApiWriter;
+import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.opencga.server.generator.models.RestCategory;
+import org.opencb.opencga.server.generator.models.RestEndpoint;
+import org.opencb.opencga.server.generator.models.RestApi;
+import org.opencb.opencga.server.generator.config.CategoryConfig;
+import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
+import org.opencb.opencga.server.generator.writers.ParentClientRestApiWriter;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class AutoCompleteWriter extends ParentClientRestApiWriter {
+public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
 
-    public AutoCompleteWriter(RestApi restApi, CommandLineConfiguration config) {
+    public ParserCliRestApiWriter(RestApi restApi, CommandLineConfiguration config) {
         super(restApi, config);
     }
 
@@ -57,19 +58,10 @@ public class AutoCompleteWriter extends ParentClientRestApiWriter {
         sb.append("package ").append(config.getOptions().getParserPackage()).append(";\n");
         sb.append("\n");
 
-        sb.append("import org.jline.reader.Candidate;\n");
-        sb.append("import org.jline.reader.Completer;\n");
-        sb.append("import org.jline.reader.LineReader;\n");
-        sb.append("import org.jline.reader.ParsedLine;\n");
-        sb.append("import org.apache.commons.lang3.StringUtils;\n");
-
-        sb.append("import java.util.List;\n");
-        sb.append("import java.util.Map;\n");
-        sb.append("import java.util.HashMap;\n");
-
-        sb.append("import static java.util.Arrays.asList;\n");
-        sb.append("import static java.util.stream.Collectors.toList;\n");
-
+        sb.append("import com.beust.jcommander.JCommander;\n");
+        sb.append("import org.opencb.opencga.app.cli.GeneralCliOptions;\n");
+        sb.append("import org.opencb.opencga.app.cli.main.options.*;\n");
+        sb.append("import org.opencb.opencga.app.cli.main.parent.ParentCliOptionsParser;\n");
         sb.append("\n");
         sb.append("\n");
         sb.append("/*\n");
@@ -89,35 +81,51 @@ public class AutoCompleteWriter extends ParentClientRestApiWriter {
 
     @Override
     protected String getClassHeader(String key) {
-
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
-        sb.append("public abstract class OpenCgaCompleter implements Completer {\n");
+        sb.append("public class OpencgaCliOptionsParser extends ParentCliOptionsParser {\n");
         sb.append("\n");
-        sb.append("    protected List<Candidate> commands = asList(\"login\",\"logout\",\"help\",\"use\",");
         for (RestCategory restCategory : availableCategories.values()) {
-            CategoryConfig config = availableCategoryConfigs.get(getIdCategory(restCategory));
-            sb.append("\"" + getCategoryCommandName(restCategory, config) + "\",");
+            sb.append("    private final " + getAsClassName(restCategory.getName()) + "CommandOptions " + getAsVariableName(restCategory.getName()) +
+                    "CommandOptions;\n");
         }
-        sb.delete(sb.lastIndexOf(","), sb.length());
-        sb.append(")\n            .stream()\n            .map(Candidate::new)\n            .collect(toList());\n\n");
+        sb.append("\n");
+        sb.append("    enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}\n");
+        sb.append("\n");
+        sb.append("    public OpencgaCliOptionsParser() {\n");
+        sb.append("\n");
+        sb.append("        jCommander.setExpandAtSign(false);\n");
 
         for (RestCategory restCategory : availableCategories.values()) {
             CategoryConfig config = availableCategoryConfigs.get(getIdCategory(restCategory));
-            sb.append("    private List<Candidate> " + getCategoryCommandName(restCategory, config) + "List = asList( ");
+            sb.append("\n");
+            sb.append("        " + getAsVariableName(restCategory.getName()) + "CommandOptions = new " + getAsClassName(restCategory.getName())
+                    + "CommandOptions(commonCommandOptions, jCommander);\n");
+            sb.append("        jCommander.addCommand(\"" + getCategoryCommandName(restCategory, config)
+                    + "\", " + getAsVariableName(restCategory.getName()) + "CommandOptions);\n");
+            sb.append("        JCommander " + getAsVariableName(restCategory.getName()) + "SubCommands = jCommander.getCommands().get(\""
+                    + getCategoryCommandName(restCategory, config) + "\");\n");
             for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
+
                 String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
                 if ((!"POST".equals(restEndpoint.getMethod()) || restEndpoint.hasPrimitiveBodyParams(config, commandName)) && restEndpoint.hasParameters()) {
                     if (config.isAvailableCommand(commandName)) {
-
-                        sb.append("\"" + commandName + "\",");
+                        sb.append("        " + getAsVariableName(restCategory.getName()) + "SubCommands.addCommand(\"" + commandName + "\", "
+                                + getAsVariableName(restCategory.getName()) + "CommandOptions." + getAsCamelCase(commandName) +
+                                "CommandOptions);\n");
                     }
                 }
             }
-            sb.delete(sb.lastIndexOf(","), sb.length());
-            sb.append(")\n            .stream()\n            .map(Candidate::new)\n            .collect(toList());\n\n");
-        }
 
+            if (CollectionUtils.isNotEmpty(config.getAddedMethods())) {
+                for (String methodName : config.getAddedMethods()) {
+                    sb.append("        " + getAsVariableName(restCategory.getName()) + "SubCommands.addCommand(\"" + methodName + "\", "
+                            + getAsVariableName(restCategory.getName()) + "CommandOptions." + getAsCamelCase(methodName) +
+                            "CommandOptions);\n");
+                }
+            }
+        }
+        sb.append("    }\n");
         return sb.toString();
     }
 
@@ -140,30 +148,19 @@ public class AutoCompleteWriter extends ParentClientRestApiWriter {
     protected String getClassMethods(String key) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("    @Override\n");
-        sb.append("    public void complete(LineReader lineReader, ParsedLine parsedLine, List<Candidate> candidates) {\n");
-        sb.append("        String command = parsedLine.line().trim();\n");
-        sb.append("        if (StringUtils.isEmpty(command)) {\n");
-        sb.append("            candidates.addAll(commands);\n");
-        sb.append("            return;\n");
-        sb.append("        }\n");
-        sb.append("        Map<String, List<Candidate>> mapCandidates=new HashMap();\n");
         for (RestCategory restCategory : availableCategories.values()) {
-            CategoryConfig config = availableCategoryConfigs.get(getIdCategory(restCategory));
-            sb.append("        mapCandidates.put( \"" + getCategoryCommandName(restCategory, config) + "\", "
-                    + getCategoryCommandName(restCategory, config) + "List);\n");
+            sb.append("    \n");
+            sb.append("    public " + getAsClassName(restCategory.getName()) + "CommandOptions get" + getAsClassName(restCategory.getName())
+                    + "CommandOptions() {\n");
+            sb.append("        return " + getAsVariableName(restCategory.getName()) + "CommandOptions;\n");
+            sb.append("    }\n");
+            sb.append("    \n");
         }
-        sb.append("         candidates.addAll(checkCandidates(mapCandidates,command)); \n");
-        sb.append("     }\n");
-
-        sb.append("    public abstract List<Candidate> checkCandidates(Map<String, List<Candidate>> candidatesMap,String line);");
-        sb.append("    \n");
-
         return sb.toString();
     }
 
     @Override
     protected String getClassFileName(String key) {
-        return config.getOptions().getOutputDir() + "/OpenCgaCompleter.java";
+        return config.getOptions().getOutputDir() + "/OpencgaCliOptionsParser.java";
     }
 }

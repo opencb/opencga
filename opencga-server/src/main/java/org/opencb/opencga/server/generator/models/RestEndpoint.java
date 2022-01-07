@@ -1,8 +1,8 @@
-package org.opencb.opencga.server.json.models;
+package org.opencb.opencga.server.generator.models;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.opencb.opencga.server.json.config.CategoryConfig;
-import org.opencb.opencga.server.json.utils.CommandLineUtils;
+import org.opencb.opencga.server.generator.config.CategoryConfig;
+import org.opencb.opencga.server.generator.utils.CommandLineUtils;
 
 import java.util.List;
 

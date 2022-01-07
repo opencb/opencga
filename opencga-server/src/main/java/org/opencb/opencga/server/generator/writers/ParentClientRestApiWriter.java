@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.json.writers;
+package org.opencb.opencga.server.generator.writers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.server.json.models.RestCategory;
-import org.opencb.opencga.server.json.models.RestEndpoint;
-import org.opencb.opencga.server.json.models.RestApi;
-import org.opencb.opencga.server.json.config.CategoryConfig;
-import org.opencb.opencga.server.json.config.CommandLineConfiguration;
-import org.opencb.opencga.server.json.utils.CommandLineUtils;
+import org.opencb.opencga.server.generator.models.RestCategory;
+import org.opencb.opencga.server.generator.models.RestEndpoint;
+import org.opencb.opencga.server.generator.models.RestApi;
+import org.opencb.opencga.server.generator.config.CategoryConfig;
+import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
+import org.opencb.opencga.server.generator.utils.CommandLineUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;

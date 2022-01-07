@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.json.models;
+package org.opencb.opencga.server.generator.models;
 
 import java.util.List;
 

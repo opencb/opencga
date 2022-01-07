@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.json.utils;
+package org.opencb.opencga.server.generator.utils;
 
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;

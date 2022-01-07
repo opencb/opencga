@@ -1,9 +1,9 @@
-package org.opencb.opencga.server.json.config;
+package org.opencb.opencga.server.generator.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.log4j.Logger;
-import org.opencb.opencga.server.json.models.RestApi;
+import org.opencb.opencga.server.generator.models.RestApi;
 
 import java.io.File;
 

@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.json;
+package org.opencb.opencga.server.generator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
@@ -6,11 +6,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.tools.annotations.*;
-import org.opencb.opencga.server.json.models.RestApi;
-import org.opencb.opencga.server.json.models.RestCategory;
-import org.opencb.opencga.server.json.models.RestEndpoint;
-import org.opencb.opencga.server.json.models.RestParameter;
-import org.opencb.opencga.server.json.utils.CommandLineUtils;
+import org.opencb.opencga.server.generator.models.RestApi;
+import org.opencb.opencga.server.generator.models.RestCategory;
+import org.opencb.opencga.server.generator.models.RestEndpoint;
+import org.opencb.opencga.server.generator.models.RestParameter;
+import org.opencb.opencga.server.generator.utils.CommandLineUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
