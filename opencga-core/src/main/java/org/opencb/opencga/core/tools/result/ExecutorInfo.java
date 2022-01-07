@@ -17,17 +17,33 @@
 package org.opencb.opencga.core.tools.result;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
 public class ExecutorInfo {
 
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
+
+    @DataField(id = "clazz", indexed = true,
+            description = FieldConstants.EXECUTION_INFO_CLASS_DESCRIPTION)
     @JsonProperty("class")
     private String clazz;
+
+    @DataField(id = "params", indexed = true,
+            description = FieldConstants.EXECUTION_INFO_PARAMS_DESCRIPTION)
     private ObjectMap params;
+
+    @DataField(id = "source", indexed = true,
+            description = FieldConstants.EXECUTION_INFO_SOURCE_DESCRIPTION)
     private ToolExecutor.Source source;
+
+    @DataField(id = "framework", indexed = true,
+            description = FieldConstants.EXECUTION_INFO_FRAMEWORK_DESCRIPTION)
     private ToolExecutor.Framework framework;
 
     public ExecutorInfo() {

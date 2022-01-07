@@ -129,16 +129,35 @@ public class Job extends PrivateStudyUid {
     @DataField(id = "execution", indexed = true,
             description = FieldConstants.JOB_EXECUTION_DESCRIPTION)
     private ExecutionResult execution;
+
+    @DataField(id = "stdout", indexed = true,
+            description = FieldConstants.JOB_STDOUT_DESCRIPTION)
     private File stdout;
+
+    @DataField(id = "stderr", indexed = true,
+            description = FieldConstants.JOB_STDERR_DESCRIPTION)
     private File stderr;
+
+
+    @DataField(id = "visited", indexed = true,
+            description = FieldConstants.JOB_VISITED)
     private boolean visited;
     /**
      * An integer describing the current data release.
      *
      * @apiNote Internal
      */
+
+    @DataField(id = "release", indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
+
+    @DataField(id = "study", indexed = true,
+            description = FieldConstants.JOB_STUDY)
     private JobStudyParam study;
+
+    @DataField(id = "attributes", indexed = true,
+            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public Job() {

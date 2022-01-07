@@ -196,7 +196,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote
      */
-    @DataField(id = "status", indexed = true,
+    @DataField(id = "status", indexed = true, uncommentedClasses = {"Status"},
             description = FieldConstants.GENERIC_STATUS_DESCRIPTION)
     private Status status;
 

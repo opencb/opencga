@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.Status;
@@ -23,8 +25,16 @@ import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 
 public class StudyInternal extends Internal {
 
+    @DataField(id = "status", indexed = true,
+            description = FieldConstants.GENERIC_STATUS_DESCRIPTION)
     private Status status;
+
+    @DataField(id = "index", indexed = true,
+            description = FieldConstants.STUDY_INTERNAL_INDEX)
     private StudyIndex index;
+
+    @DataField(id = "configuration", indexed = true, uncommentedClasses = {"StudyConfiguration"},
+            description = FieldConstants.STUDY_INTERNAL_CONFIGURATION)
     private StudyConfiguration configuration;
 
     public StudyInternal() {

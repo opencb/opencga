@@ -88,11 +88,6 @@ public class Cohort extends Annotable {
             description = FieldConstants.COHORT_NUM_SAMPLES)
     private int numSamples;
 
-    /**
-     * An integer describing the current data release.
-     *
-     * @apiNote Internal
-     */
 
     @DataField(id = "release", indexed = true,
             description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)

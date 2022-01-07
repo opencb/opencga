@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.core.models.user;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.project.Project;
 
 import java.util.*;
@@ -31,11 +33,24 @@ public class User {
      *
      * @apiNote Required, Immutable, Unique
      */
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
+
+    @DataField(id = "name", indexed = true,
+            description = FieldConstants.USER_NAME)
     private String name;
+
+    @DataField(id = "email", indexed = true,
+            description = FieldConstants.USER_EMAIL)
     private String email;
+
+    @DataField(id = "organization", indexed = true,
+            description = FieldConstants.USER_ORGANIZATION)
     private String organization;
 
+    @DataField(id = "account", indexed = true,
+            description = FieldConstants.USER_ACCOUNT)
     private Account account;
 
     /**
@@ -43,7 +58,13 @@ public class User {
      *
      * @apiNote Internal
      */
+
+    @DataField(id = "internal", indexed = true,
+            description = FieldConstants.GENERIC_INTERNAL)
     private UserInternal internal;
+
+    @DataField(id = "quota", indexed = true,
+            description = FieldConstants.USER_QUOTA)
     private UserQuota quota;
 
     /**
@@ -51,10 +72,21 @@ public class User {
      *
      * @apiNote
      */
+    @DataField(id = "projects", indexed = true,
+            description = FieldConstants.USER_PROJECTS)
     private List<Project> projects;
+
+    @DataField(id = "sharedProjects", indexed = true,
+            description = FieldConstants.USER_SHARED_PROJECTS)
     private List<Project> sharedProjects;
 
+
+    @DataField(id = "configs", indexed = true,
+            description = FieldConstants.USER_CONFIGS)
     private Map<String, ObjectMap> configs;
+
+    @DataField(id = "filters", indexed = true,
+            description = FieldConstants.USER_FILTERS)
     private List<UserFilter> filters;
 
     /**
@@ -62,6 +94,8 @@ public class User {
      *
      * @apiNote
      */
+    @DataField(id = "attributes", indexed = true,
+            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public User() {

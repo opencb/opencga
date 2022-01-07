@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models.project;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.common.Internal;
@@ -23,7 +25,12 @@ import org.opencb.opencga.core.models.common.Status;
 
 public class ProjectInternal extends Internal {
 
+    @DataField(id = "datastores", indexed = true, uncommentedClasses = {"Datastores"},
+            description = FieldConstants.PROJECT_INTERNAL_DATA_STORES)
     private Datastores datastores;
+
+    @DataField(id = "cellbase", indexed = true, uncommentedClasses = {"CellBaseConfiguration"},
+            description = FieldConstants.PROJECT_INTERNAL_CELLBASE)
     private CellBaseConfiguration cellbase;
 
     public ProjectInternal() {

@@ -16,15 +16,28 @@
 
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.core.api.FieldConstants;
 
 import java.util.List;
 
 public class PermissionRule {
 
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
+
+    @DataField(id = "query", indexed = true,
+            description = FieldConstants.PERMISSION_RULE_QUERY)
     private Query query;
+
+    @DataField(id = "members", indexed = true,
+            description = FieldConstants.PERMISSION_RULE_MEMBERS)
     private List<String> members;
+
+    @DataField(id = "permissions", indexed = true,
+            description = FieldConstants.PERMISSION_RULE_PERMISSIONS)
     private List<String> permissions;
 
     public PermissionRule() {
