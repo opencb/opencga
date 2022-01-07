@@ -48,7 +48,7 @@ public class MainClientGenerator {
         classes.add(MetaWSServer.class);
         classes.add(Ga4ghWSServer.class);
         classes.add(AdminWSServer.class);
-        restApi = prepare(RestApiParser.getApi(classes));
+        restApi = prepare(RestApiParser.parse(classes));
         /*
         Uncomment only for test json
             List<Class> classes2 = new ArrayList<>();
