@@ -18,7 +18,7 @@ public class RestEndpoint {
 
     public boolean hasPrimitiveBodyParams(CategoryConfig config, String commandName) {
         for (RestParameter restParameter : getParameters()) {
-            if (restParameter.getData() != null && !restParameter.getData().isEmpty()) {
+            if (CollectionUtils.isNotEmpty(restParameter.getData())) {
                 for (RestParameter bodyParam : restParameter.getData()) {
                     //     if ((config.isAvailableSubCommand(bodyParam.getName()) && !bodyParam.isComplex()) || (bodyParam.isStringList()
                     //     )) {
