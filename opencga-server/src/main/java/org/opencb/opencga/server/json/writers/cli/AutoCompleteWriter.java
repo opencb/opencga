@@ -28,9 +28,9 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class CompleterCliApiWriter extends ParentClientRestApiWriter {
+public class AutoCompleteWriter extends ParentClientRestApiWriter {
 
-    public CompleterCliApiWriter(RestApi restApi, CommandLineConfiguration config) {
+    public AutoCompleteWriter(RestApi restApi, CommandLineConfiguration config) {
         super(restApi, config);
     }
 

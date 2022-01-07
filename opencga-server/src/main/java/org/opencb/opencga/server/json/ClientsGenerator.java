@@ -1,13 +1,13 @@
 package org.opencb.opencga.server.json;
 
 import org.apache.log4j.Logger;
+import org.opencb.opencga.server.json.config.CommandLineConfiguration;
+import org.opencb.opencga.server.json.config.ConfigurationManager;
+import org.opencb.opencga.server.json.models.RestApi;
 import org.opencb.opencga.server.json.models.RestCategory;
 import org.opencb.opencga.server.json.models.RestEndpoint;
 import org.opencb.opencga.server.json.models.RestParameter;
-import org.opencb.opencga.server.json.models.RestApi;
-import org.opencb.opencga.server.json.config.CommandLineConfiguration;
-import org.opencb.opencga.server.json.config.ConfigurationManager;
-import org.opencb.opencga.server.json.writers.cli.CompleterCliApiWriter;
+import org.opencb.opencga.server.json.writers.cli.AutoCompleteWriter;
 import org.opencb.opencga.server.json.writers.cli.ExecutorsCliRestApiWriter;
 import org.opencb.opencga.server.json.writers.cli.OptionsCliRestApiWriter;
 import org.opencb.opencga.server.json.writers.cli.ParserCliRestApiWriter;
@@ -23,9 +23,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainClientGenerator {
+public class ClientsGenerator {
 
-    private static final Logger LOG = Logger.getLogger(MainClientGenerator.class);
+    private static final Logger logger = Logger.getLogger(ClientsGenerator.class);
     private static RestApi restApi;
     private static CommandLineConfiguration config;
 
@@ -48,44 +48,34 @@ public class MainClientGenerator {
         classes.add(MetaWSServer.class);
         classes.add(Ga4ghWSServer.class);
         classes.add(AdminWSServer.class);
-        restApi = prepare(new RestApiParser().parse(classes));
-        /*
-        Uncomment only for test json
-            List<Class> classes2 = new ArrayList<>();
-            classes2.add(FileWSServer.class);
 
-            List<LinkedHashMap<String, Object>> help = RestApiParser.getHelp(classes2);
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            try {
-                System.out.println(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(help));
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-        */
         try {
+            restApi = prepare(new RestApiParser().parse(classes));
             config = ConfigurationManager.setUp(restApi);
             config.initialize();
+
+            cli();
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        cli();
     }
 
     private static void cli() {
-        LOG.info("Creating CLI options files in folder " + new File(config.getOptions().getOptionsOutputDir()).getAbsolutePath());
+        logger.info("Creating CLI options files in folder " + new File(config.getOptions().getOptionsOutputDir()).getAbsolutePath());
         OptionsCliRestApiWriter optionsCliRestApiWriter = new OptionsCliRestApiWriter(restApi, config);
         optionsCliRestApiWriter.write();
-        LOG.info("Creating CLI executors files in folder " + new File(config.getOptions().getExecutorsOutputDir()).getAbsolutePath());
+
+        logger.info("Creating CLI executors files in folder " + new File(config.getOptions().getExecutorsOutputDir()).getAbsolutePath());
         ExecutorsCliRestApiWriter executorsCliRestApiWriter = new ExecutorsCliRestApiWriter(restApi, config);
         executorsCliRestApiWriter.write();
-        LOG.info("Creating CLI parser file in folder " + new File(config.getOptions().getOutputDir()).getAbsolutePath());
+
+        logger.info("Creating CLI parser file in folder " + new File(config.getOptions().getOutputDir()).getAbsolutePath());
         ParserCliRestApiWriter parserCliRestApiWriter = new ParserCliRestApiWriter(restApi, config);
         parserCliRestApiWriter.write();
-        LOG.info("Creating CLI parser file in folder " + new File(config.getOptions().getOutputDir()).getAbsolutePath());
-        CompleterCliApiWriter completerCliApiWriter = new CompleterCliApiWriter(restApi, config);
-        completerCliApiWriter.write();
+
+        logger.info("Creating CLI parser file in folder " + new File(config.getOptions().getOutputDir()).getAbsolutePath());
+        AutoCompleteWriter autoCompleteWriter = new AutoCompleteWriter(restApi, config);
+        autoCompleteWriter.write();
     }
 
     private static RestApi prepare(RestApi api) {
