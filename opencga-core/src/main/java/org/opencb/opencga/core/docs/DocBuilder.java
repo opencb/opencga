@@ -4,9 +4,16 @@ import org.opencb.commons.docs.DocParser;
 import org.opencb.commons.docs.config.DocConfiguration;
 import org.opencb.commons.docs.doc.DocFactory;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +32,14 @@ public class DocBuilder {
         classes.add(Sample.class);
         classes.add(Individual.class);
         classes.add(Family.class);
+        classes.add(Cohort.class);
+        classes.add(File.class);
+        classes.add(ClinicalAnalysis.class);
+        classes.add(Job.class);
+        classes.add(Study.class);
+        classes.add(Project.class);
+        classes.add(User.class);
+
         config.setDocClasses(classes);
         config.setType(DocFactory.DocFactoryType.MARKDOWN);
         config.setOutputDir("/workspace/opencga/docs/data-models/");

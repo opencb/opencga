@@ -21,7 +21,9 @@ public class FieldConstants {
     public static final String GENERIC_CUSTOM_STATUS = "Object to set a custom status";
     public static final String GENERIC_INTERNAL = "Internal field for manage the object";
     public static final String GENERIC_NAME = "Name of the ";
-
+    public static final String GENERIC_ID_DESCRIPTION = "Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.";
+    public static final String GENERIC_STATUS_DESCRIPTION = "Object status";
+    public static final String GENERIC_STATS = "Stats of the object";
     //QualityControl
     public static final String QUALITY_CONTROL_FILES_DESCRIPTION = "File IDs related to the quality control";
     public static final String QUALITY_CONTROL_COMMENTS_DESCRIPTION = "Comments related to the quality control";
@@ -86,16 +88,6 @@ public class FieldConstants {
             + "INVALID_METADATA, INVALID";
     public static final String RGAINDEX_DATE_DESCRIPTION = "Date of Rga index";
 
-    //ClinicalAnalysis
-    public static final String CLINICALANALYSIS_ID_DESCRIPTION = "ClinicalAnalysis ID is a mandatory parameter when "
-            + "creating a new ClinicalAnalysis, this ID cannot be changed at the moment.";
-    public static final String CLINICALANALYSIS_TYPE = "Enumeration of the diferent types of clinical analysis "
-            + "SINGLE, FAMILY, CANCER, COHORT, AUTOCOMPARATIVE";
-    public static final String CLINICALANALYSIS_DISORDER = "Disorder of the clinical analysis";
-    public static final String CLINICALANALYSIS_FILES = "List of files (VCF, BAM and BIGWIG)";
-    public static final String CLINICALANALYSIS_PROBAND = "Individual proband of the clinical analysis";
-    public static final String CLINICALANALYSIS_FAMILY = "Family of the clinical analysis";
-
     //Location
     public static final String LOCATION_ADDRESS = "Location address";
     public static final String LOCATION_COUNTRY = "Location country";
@@ -146,4 +138,158 @@ public class FieldConstants {
     //Status
     public static final String STATUS_DATE_DESCRIPTION = "Date has setted the status";
     public static final String STATUS_MESSAGE_DESCRIPTION = "Deprecated: Message describing the status";
+
+
+    //Interpretation
+    public static final String INTERPRETATION_STUDY_UID = "Study identifier";
+    public static final String INTERPRETATION_UID = "Interpretation identifier";
+    public static final String INTERPRETATION_PANELS = "Interpretation panel list";
+
+    //InterpretationInternal
+    public static final String INTERPRETATION_INTERNAL_STATUS = "State of the interpretation that can have the values READY, "
+            + "DELETED, NOT_REVIEWED, UNDER_REVIEW, REVIEWED and REJECTED";
+
+    //ClinicalAnalysis
+    public static final String CLINICAL_ANALYSIS_ID_DESCRIPTION = "ClinicalAnalysis ID is a mandatory parameter when "
+            + "creating a new ClinicalAnalysis, this ID cannot be changed at the moment.";
+    public static final String CLINICAL_ANALYSIS_TYPE = "Enumeration of the diferent types of clinical analysis "
+            + "SINGLE, FAMILY, CANCER, COHORT, AUTOCOMPARATIVE";
+    public static final String CLINICAL_ANALYSIS_DISORDER = "Disorder of the clinical analysis";
+    public static final String CLINICAL_ANALYSIS_FILES = "List of files (VCF, BAM and BIGWIG)";
+    public static final String CLINICAL_ANALYSIS_PROBAND = "Individual proband of the clinical analysis";
+    public static final String CLINICAL_ANALYSIS_FAMILY = "Family of the clinical analysis";
+    public static final String CLINICAL_ANALYSIS_PANELS = "List of panels to the clinical analysis";
+    public static final String CLINICAL_ANALYSIS_PANEL_LOCK = "Boolean to set lock panels";
+    public static final String CLINICAL_ANALYSIS_LOCKED = "Boolean that indicates if the clinical analysis is locked or not";
+    public static final String CLINICAL_ANALYSIS_INTERPRETATION = "Interpretation of the clinical analysis";
+    public static final String CLINICAL_ANALYSIS_SECONDARY_INTERPRETATION = "List of Interpretations containing the second and consecutive";
+    public static final String CLINICAL_ANALYSIS_CONSENT = "Object contains consent annotations of clinical analysis";
+    public static final String CLINICAL_ANALYSIS_ANALYST = "The analyst of the clinical analysis";
+    public static final String CLINICAL_ANALYSIS_REPORT = "Report of the clinical analysis";
+    public static final String CLINICAL_ANALYSIS_PRIORITY = "Priority of the clinical analysis";
+    public static final String CLINICAL_ANALYSIS_FLAGS = "List of flags for the clinical analysis";
+    public static final String CLINICAL_ANALYSIS_DUE_DATE_DESCRIPTION = "Due date of the clinical analysis";
+    public static final String CLINICAL_ANALYSIS_COMMENTS = "List of Clinical Analysis comments";
+    public static final String CLINICAL_ANALYSIS_AUDIT = "List of Clinical Analysis audits";
+
+    //ClinicalConsentParam
+    public static final String CLINICAL_CONSENT_PARAM_VALUE = "Value of the param that can have the values "
+            + "YES, NO and UNKNOWN";
+
+    //ClinicalConsentAnnotation
+    public static final String CLINICAL_CONSENT_ANNOTATION_CONSENTS = "List of ClinicalConsentParam";
+    public static final String CLINICAL_CONSENT_ANNOTATION_DATE = "Date of the ClinicalConsentAnnotation";
+
+
+    //ClinicalReport
+    public static final String CLINICAL_REPORT_TITLE = "Report title";
+    public static final String CLINICAL_REPORT_OVERVIEW = "Report overview";
+    public static final String CLINICAL_REPORT_DISCUSSION = "Report discussion";
+    public static final String CLINICAL_REPORT_LOGO = "Report logo";
+    public static final String CLINICAL_REPORT_SIGNED_BY = "Indicates who has signed the report";
+    public static final String CLINICAL_REPORT_SIGNATURE = "Report signature";
+    public static final String CLINICAL_REPORT_DATE = "Report date";
+
+    //ClinicalPriorityAnnotation
+    public static final String CLINICAL_PRIORITY_ANNOTATION_RANK_DESCRIPTION = "ClinicalPriorityAnnotation rank";
+    public static final String CLINICAL_PRIORITY_DATE = "ClinicalPriorityAnnotation date";
+    //FlagAnnotation
+    public static final String FLAG_ANNOTATION_DATE_DESCRIPTION = "FlagAnnotation date";
+
+
+    //ClinicalAnalysisQualityControl
+    public static final String CLINICAL_ANALYSIS_QUALITY_CONTROL_COMMENTS = "List of ClinicalAnalysisQualityControl comments";
+    public static final String CLINICAL_ANALYSIS_QUALITY_CONTROL_SUMMARY = "ClinicalAnalysisQualityControl summary that can have the values "
+            + "HIGH, MEDIUM, LOW, DISCARD, NEEDS_REVIEW, UNKNOWN";
+    public static final String CLINICAL_ANALYSIS_QUALITY_CONTROL_FILES = "List of ClinicalAnalysisQualityControl files";
+
+    //Cohort
+    public static final String COHORT_TYPE = "Cohort type that can have the values CASE_CONTROL, CASE_SET, CONTROL_SET, PAIRED, "
+            + "PAIRED_TUMOR, AGGREGATE, TIME_SERIES, FAMILY, TRIO and COLLECTION";
+    public static final String COHORT_SAMPLES = "List of cohort samples";
+    public static final String COHORT_NUM_SAMPLES = "Number of samples";
+
+    //File
+    public static final String FILE_NAME = "The name of the file";
+    public static final String FILE_TYPE = "The type can have the values FILE or DIRECTORY";
+    public static final String FILE_FORMAT = "The format can have the values VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, "
+            + "CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, "
+            + "PARQUET, IMAGE, PLAIN, BINARY, NONE and UNKNOWN";
+    public static final String FILE_BIOFORMAT = "The bioformat can have the values MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT, "
+            + "MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX, MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX, "
+            + "MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT, MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX, DATAMATRIX_EXPRESSION, "
+            + "IDLIST, IDLIST_RANKED, ANNOTATION_GENEVSANNOTATION, OTHER_NEWICK, OTHER_BLAST, OTHER_INTERACTION, OTHER_GENOTYPE, "
+            + "OTHER_PLINK, OTHER_VCF, OTHER_PED, @Deprecated VCF4, VARIANT, ALIGNMENT, COVERAGE, SEQUENCE, PEDIGREE, "
+            + "REFERENCE_GENOME, NONE and UNKNOWN";
+    public static final String FILE_CHECKSUM = "The checksum of the file";
+    public static final String FILE_PATH = "The path of the file";
+    public static final String FILE_URI = "The uri of the file";
+    public static final String FILE_EXTERNAL = "Indicates the file is external or not";
+    public static final String FILE_SIZE = "The size of the file";
+    public static final String FILE_SOFTWARE = "Software related with file";
+    public static final String FILE_EXPERIMENT = "File experiment";
+    public static final String FILE_SAMPLE_IDS = "List of sample ids of the file";
+    public static final String FILE_JOB_ID = "File job id";
+    public static final String FILE_TAGS = "File tags";
+    public static final String FILE_RELATED_FILES = "List of objects FileRelatedFiles describing related files";
+
+
+    //ToolInfo
+    public static final String TOOL_INFO_SCOPE_DESCRIPTION = "Tool info scope can have the values GLOBAL, PROJECT and STUDY";
+    public static final String TOOL_INFO_TYPE_DESCRIPTION = "Tool info type can have the values OPERATION and ANALYSIS";
+    public static final String TOOL_INFO_RESOURCE_DESCRIPTION = "Tool info resource can have the values AUDIT, USER, PROJECT, "
+            + "STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, "
+            + "VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL";
+
+    //Job
+    public static final String JOB_TOOL = "Job tool info";
+    public static final String JOB_USER_ID = "Job user id";
+    public static final String JOB_COMMAND_LINE = "Job command line";
+    public static final String JOB_PARAMS = "Job params";
+    public static final String JOB_PRIORITY_DESCRIPTION = "Job priority";
+
+
+    //FileInternal
+    public static final String FILE_INTERNAL_STATUS_DESCRIPTION = "File status can have the values READY, DELETED, "
+            + "TRASHED, STAGE, MISSING, PENDING_DELETE, DELETING, REMOVED and MISSING_SAMPLES";
+    public static final String FILE_INTERNAL_INDEX_DESCRIPTION = "File index";
+
+    //FileIndex
+    public static final String FILE_INDEX_USER_ID_DESCRIPTION = "Index user id";
+    public static final String FILE_INDEX_STATUS_DESCRIPTION = "File status can have the values READY, DELETED, NONE, "
+            + "TRANSFORMED, TRANSFORMING, LOADING and INDEXING \n"
+            + "         \n"
+            + "   NONE --> TRANSFORMING --> TRANSFORMED --> LOADING --> READY\n"
+            + "       \\                                              /\n"
+            + "         ------------------> INDEXING ----------------/";
+
+    public static final String FILE_INDEX_JOB_ID_DESCRIPTION = "Index job id";
+    public static final String FILE_INTERNAL_SAMPLE_MAP_DESCRIPTION = "Map of samples";
+    public static final String FILE_INTERNAL_MISSING_SAMPLE_DESCRIPTION = "Object describes missing samples";
+
+    //MissingSamples
+    public static final String MISSING_SAMPLE_EXISTING_DESCRIPTION = "List of existing samples";
+    public static final String MISSING_SAMPLE_NON_EXISTING_DESCRIPTION = "List of non existing samples";
+
+    //Panel
+    public static final String PANEL_VERSION_DESCRIPTION = "OpenCGA version of this panel, this is incremented when the panel is updated.";
+    public static final String PANEL_AUTHOR_DESCRIPTION = "Author of the panel";
+    public static final String PANEL_STATUS_DESCRIPTION = "Panel status can have the values READY or DELETED";
+    public static final String PANEL_STUDY_UID_DESCRIPTION = "Panel reference to study";
+    //JobInternal
+    public static final String JOB_INTERNAL_STATUS_DESCRIPTION = "Job internal status can have the values PENDING, QUEUED, RUNNING, DONE, "
+            + "ERROR, UNKNOWN, REGISTERING, UNREGISTERED, ABORTED, DELETED";
+    public static final String JOB_INTERNAL_EVENTS_DESCRIPTION = "Events of the internal job";
+    public static final String JOB_INTERNAL_WEBHOOK_DESCRIPTION = "Job internal Webhook";
+
+    //JobInternalWebhook
+    public static final String JOB_INTERNAL_WEBHOOK_URL_DESCRIPTION = "Webhook URL";
+    public static final String JOB_INTERNAL_WEBHOOK_STATUS_DESCRIPTION = "Webhook status map can have the values SUCCESS or ERROR";
+
+    public static final String JOB_OUT_DIR_DESCRIPTION = "Output dir for the job";
+    public static final String JOB_INPUT_DESCRIPTION = "List of input files";
+    public static final String JOB_OUTPUT_DESCRIPTION = "List of output files";
+    public static final String JOB_TAGS_DESCRIPTION = "List of tags for the job";
+    public static final String JOB_DEPENDS_ON_DESCRIPTION = "List of jobs the current job depends on";
+    public static final String JOB_EXECUTION_DESCRIPTION = "Result of the execution";
 }

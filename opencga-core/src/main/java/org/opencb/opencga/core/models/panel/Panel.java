@@ -20,6 +20,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.OntologyTerm;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
@@ -32,19 +34,37 @@ import java.util.Map;
 
 public class Panel extends DiseasePanel implements IPrivateStudyUid {
 
+    @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String uuid;
+
+    @DataField(id = "release", indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
     /**
      * OpenCGA version of this panel, this is incremented when the panel is updated.
      */
+    @DataField(id = "version", indexed = true,
+            description = FieldConstants.PANEL_VERSION_DESCRIPTION)
     private int version;
 
+    @DataField(id = "author", indexed = true, deprecated = true,
+            description = FieldConstants.PANEL_AUTHOR_DESCRIPTION)
     @Deprecated
     private String author;
+
+
+    @DataField(id = "status", indexed = true,
+            description = FieldConstants.PANEL_STATUS_DESCRIPTION)
     private Status status;
 
     // Private fields
+    @DataField(id = "studyUid", indexed = true,
+            description = FieldConstants.PANEL_STUDY_UID_DESCRIPTION)
     private long studyUid;
+
+    @DataField(id = "uid", indexed = true,
+            description = FieldConstants.PANEL_STUDY_UID_DESCRIPTION)
     private long uid;
 
     public Panel() {
@@ -73,6 +93,7 @@ public class Panel extends DiseasePanel implements IPrivateStudyUid {
 
     /**
      * Static method to load and parse a JSON string from an InputStream.
+     *
      * @param diseasePanelInputStream InputStream with the JSON string representing this panel.
      * @return A DiseasePanel object.
      * @throws IOException Propagate Jackson IOException.

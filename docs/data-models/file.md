@@ -1,10 +1,11 @@
 # File
 ## Overview
-Created by jacobo on 11/09/14.
+Data model details for class: org.opencb.opencga.core.models.file.File
 ### Summary 
 | Field | Create | Update | Unique | Required|
 | :--- | :---: | :---: |:---: |:---: |
-| id | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |
+| id | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |
+| uuid | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | name | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | type | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | format | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
@@ -12,6 +13,9 @@ Created by jacobo on 11/09/14.
 | checksum | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | uri | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | path | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| release | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| creationDate | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| modificationDate | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | description | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | external | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | size | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
@@ -24,343 +28,138 @@ Created by jacobo on 11/09/14.
 | qualityControl | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | stats | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | status | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
+| internal | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 | attributes | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
-| uuid | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/yes.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
-| release | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
-| creationDate | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
-| modificationDate | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
-| internal | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |<img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> | <img src="https://github.com/opencb/opencga/blob/develop/docs/data-models/no.png?raw=true"> |
 
 ## Data Model
 
 ### File
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File.java).
 
 | Field | Description |
 | :---  | :--- |
-| **id**<br> *String* <br> | <p>File ID is a mandatory parameter when creating a new File, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
-| **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the File creation and cannot be changed.</p>_Tags_: _internal, unique, immutable_ |
-| **name**<br> *String* <br> | <p></p> |
-| **type**<br>*<a href="file.md#enum-filetype"><em>File.Type</em></a>* <br> | <p>Formats: file, folder, index.</p> |
-| **format**<br>*<a href="file.md#enum-fileformat"><em>File.Format</em></a>* <br> | <p>Formats: txt, executable, image, ...</p> |
-| **bioformat**<br>*<a href="file.md#enum-filebioformat"><em>File.Bioformat</em></a>* <br> | <p>BAM, VCF, ...</p> |
-| **checksum**<br> *String* <br> | <p></p> |
-| **uri**<br> *URI* <br> | <p></p> |
-| **path**<br> *String* <br> | <p></p> |
-| **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
-| **creationDate**<br> *String* <br> | <p>String representing when the File was created, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **modificationDate**<br> *String* <br> | <p>String representing when was the last time the File was modified, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **description**<br> *String* <br> | <p>An string to describe the properties of the File.</p> |
-| **external**<br> *boolean* <br> | <p></p> |
-| **size**<br> *long* <br> | <p></p> |
-| **software**<br> *Software* <br> | <p></p> |
-| **experiment**<br>*<a href="file.md#FileExperiment"><em>FileExperiment</em></a>* <br> | <p></p> |
-| **sampleIds**<br> List<*String*> <br> | <p></p> |
-| **jobId**<br> *String* <br> | <p></p> |
-| **tags**<br> List<*String*> <br> | <p></p> |
-| **relatedFiles**<br> List<*<a href="file.md#FileRelatedFile"><em>FileRelatedFile</em></a>*> <br> | <p></p> |
-| **qualityControl**<br>*<a href="file.md#FileQualityControl"><em>FileQualityControl</em></a>* <br> | <p></p> |
-| **stats**<br> Map<*Object*,*String*> <br> | <p></p> |
-| **status**<br>*<a href="file.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the File.</p> |
-| **internal**<br>*<a href="file.md#FileInternal"><em>FileInternal</em></a>* <br> | <p>An object describing the internal information of the File. This is managed by OpenCGA.</p>_Tags_: _internal_ |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
-
-### FileExperiment
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment.java).
-
-| Field | Description |
-| :---  | :--- |
-| **technology**<br>*<a href="file.md#enum-fileexperimenttechnology"><em>FileExperiment.Technology</em></a>* <br> | <p></p> |
-| **method**<br>*<a href="file.md#enum-fileexperimentmethod"><em>FileExperiment.Method</em></a>* <br> | <p></p> |
-| **nucleicAcidType**<br>*<a href="file.md#enum-fileexperimentnucleicacidtype"><em>FileExperiment.NucleicAcidType</em></a>* <br> | <p></p> |
-| **manufacturer**<br> *String* <br> | <p></p> |
-| **platform**<br> *String* <br> | <p></p> |
-| **library**<br> *String* <br> | <p></p> |
-| **date**<br> *String* <br> | <p></p> |
-| **center**<br> *String* <br> | <p></p> |
-| **lab**<br> *String* <br> | <p></p> |
-| **responsible**<br> *String* <br> | <p></p> |
-| **description**<br> *String* <br> | <p></p> |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
-
-### Enum FileExperiment.Method
-_Enumeration class._
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment/Method.java).
-
-| Field | Description |
-| :---  | :--- |
-| **WHOLE_EXOME_SEQUENCING** <br> | <p></p> |
-| **WHOLE_GENOME_SEQUENCING** <br> | <p></p> |
-| **TARGETED_DNA_SEQUENCING** <br> | <p></p> |
-| **AMPLICON_SEQUENCING** <br> | <p></p> |
-| **GENOTYPING_MICROARRAY** <br> | <p></p> |
-
-### Enum FileExperiment.NucleicAcidType
-_Enumeration class._
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment/NucleicAcidType.java).
-
-| Field | Description |
-| :---  | :--- |
-| **DNA** <br> | <p></p> |
-| **RNA** <br> | <p></p> |
-
-### Enum FileExperiment.Technology
-_Enumeration class._
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment/Technology.java).
-
-| Field | Description |
-| :---  | :--- |
-| **SEQUENCING** <br> | <p></p> |
-| **MICROARRAY** <br> | <p></p> |
+| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
+| **uuid**<br>*String* <br> | <p>Unique 32-character identifier assigned automatically by OpenCGA.</p> |
+| **name**<br>*String* <br> | <p>The name of the file</p> |
+| **type**<br>*Type* <br> | <p>The type can have the values FILE or DIRECTORY</p> |
+| **format**<br>*Format* <br> | <p>The format can have the values VCF, BCF, GVCF, TBI, BIGWIG, SAM, BAM, BAI, CRAM, CRAI, FASTQ, FASTA, PED, TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, IMAGE, PLAIN, BINARY, NONE and UNKNOWN</p> |
+| **bioformat**<br>*Bioformat* <br> | <p>The bioformat can have the values MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT, MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX, MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX, MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT, MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX, DATAMATRIX_EXPRESSION, IDLIST, IDLIST_RANKED, ANNOTATION_GENEVSANNOTATION, OTHER_NEWICK, OTHER_BLAST, OTHER_INTERACTION, OTHER_GENOTYPE, OTHER_PLINK, OTHER_VCF, OTHER_PED, @Deprecated VCF4, VARIANT, ALIGNMENT, COVERAGE, SEQUENCE, PEDIGREE, REFERENCE_GENOME, NONE and UNKNOWN</p> |
+| **checksum**<br>*String* <br> | <p>The checksum of the file</p> |
+| **uri**<br>*[URI](https://docs.opencga.opencb.org/data-models/file#uri)* <br> | <p>The uri of the file</p> |
+| **path**<br>*String* <br> | <p>The path of the file</p> |
+| **release**<br>*int* <br> | <p>An integer describing the current data release.</p> |
+| **creationDate**<br>*String* <br> | <p>Autogenerated date following the format YYYYMMDDhhmmss containing the date when the entry was first registered.</p> |
+| **modificationDate**<br>*String* <br><br>_since_: 1.0 | <p>Autogenerated date following the format YYYYMMDDhhmmss containing the date when the entry was last modified.</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **external**<br>*boolean* <br> | <p>Indicates the file is external or not</p> |
+| **size**<br>*long* <br> | <p>The size of the file</p> |
+| **software**<br>*[Software](https://docs.opencga.opencb.org/data-models/file#software)* <br> | <p>Software related with file</p> |
+| **experiment**<br>*[FileExperiment](https://docs.opencga.opencb.org/data-models/file#fileexperiment)* <br> | <p>File experiment</p> |
+| **sampleIds**<br>*List<<em>String</em>>* <br> | <p>List of sample ids of the file</p> |
+| **jobId**<br>*String* <br> | <p>File job id</p> |
+| **tags**<br>*List<<em>String</em>>* <br> | <p>File tags</p> |
+| **relatedFiles**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/file#filerelatedfile"><em>FileRelatedFile</em></a>>* <br> | <p>List of objects FileRelatedFiles describing related files</p> |
+| **qualityControl**<br>*[FileQualityControl](https://docs.opencga.opencb.org/data-models/file#filequalitycontrol)* <br> | <p>Contains different metrics to evaluate the quality of the individual.</p> |
+| **~~stats~~**<br>*Map<String,Object>* <br><br>_Deprecated_ | <p>Stats of the object</p> |
+| **status**<br>*[CustomStatus](https://docs.opencga.opencb.org/data-models/file#customstatus)* <br> | <p>Object to set a custom status</p> |
+| **internal**<br>*[FileInternal](https://docs.opencga.opencb.org/data-models/file#fileinternal)* <br> | <p>Internal field for manage the object</p> |
+| **attributes**<br>*Map<String,Object>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 
 ### CustomStatus
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
 
 | Field | Description |
 | :---  | :--- |
-| **name**<br> *String* <br> | <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh<br> interdum finibus.</p>_Tags_: _required, immutable_ |
-| **description**<br> *String* <br> | <p>Proin aliquam ante in ligula tincidunt, cursus volutpat urna suscipit. Phasellus interdum, libero at posuere blandit, felis dui<br> dignissim leo, quis ullamcorper felis elit a augue.</p>_Tags_: _required_ |
-| **date**<br> *String* <br> | <p>Nullam commodo tortor nec lectus cursus finibus. Sed quis orci fringilla, cursus diam quis, vehicula sapien. Etiam bibendum dapibus<br> lectus, ut ultrices nunc vulputate ac.</p>_Tags_: _internal, unique, immutable_ |
+| **CustomStatus.name**<br>*String* <br> | <p>Name of the status</p> |
+| **CustomStatus.description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **CustomStatus.date**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
 
-### Enum File.Format
-_Enumeration class._
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File/Format.java).
-
-| Field | Description |
-| :---  | :--- |
-| **VCF** <br> | <p></p> |
-| **BCF** <br> | <p></p> |
-| **GVCF** <br> | <p></p> |
-| **TBI** <br> | <p></p> |
-| **BIGWIG** <br> | <p></p> |
-| **SAM** <br> | <p></p> |
-| **BAM** <br> | <p></p> |
-| **BAI** <br> | <p></p> |
-| **CRAM** <br> | <p></p> |
-| **CRAI** <br> | <p></p> |
-| **FASTQ** <br> | <p></p> |
-| **FASTA** <br> | <p></p> |
-| **PED** <br> | <p></p> |
-| **TAB_SEPARATED_VALUES** <br> | <p></p> |
-| **COMMA_SEPARATED_VALUES** <br> | <p></p> |
-| **XML** <br> | <p></p> |
-| **PROTOCOL_BUFFER** <br> | <p></p> |
-| **JSON** <br> | <p></p> |
-| **AVRO** <br> | <p></p> |
-| **PARQUET** <br> | <p></p> |
-| **IMAGE** <br> | <p></p> |
-| **PLAIN** <br> | <p></p> |
-| **BINARY** <br> | <p></p> |
-| **NONE** <br> | <p></p> |
-| **UNKNOWN** <br> | <p></p> |
-
-### FileQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileQualityControl.java).
+### FileInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
 
 | Field | Description |
 | :---  | :--- |
-| **variant**<br>*<a href="file.md#VariantFileQualityControl"><em>VariantFileQualityControl</em></a>* <br> | <p></p> |
-| **alignment**<br>*<a href="file.md#AlignmentFileQualityControl"><em>AlignmentFileQualityControl</em></a>* <br> | <p></p> |
-| **coverage**<br>*<a href="file.md#CoverageFileQualityControl"><em>CoverageFileQualityControl</em></a>* <br> | <p></p> |
-| **comments**<br> List<*ClinicalComment*> <br> | <p></p> |
-
-### AlignmentFileQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/alignment/AlignmentFileQualityControl.java).
-
-| Field | Description |
-| :---  | :--- |
-| **fastQcMetrics**<br> *FastQcMetrics* <br> | <p></p> |
-| **samtoolsStats**<br> *SamtoolsStats* <br> | <p></p> |
-| **samtoolsFlagStats**<br> *SamtoolsFlagstats* <br> | <p></p> |
-| **hsMetrics**<br> *HsMetrics* <br> | <p></p> |
-
-### CoverageFileQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/alignment/CoverageFileQualityControl.java).
-
-| Field | Description |
-| :---  | :--- |
-| **geneCoverageStats**<br> List<*GeneCoverageStats*> <br> | <p></p> |
-
-### VariantFileQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/variant/VariantFileQualityControl.java).
-
-| Field | Description |
-| :---  | :--- |
-| **variantSetMetrics**<br> *VariantSetStats* <br> | <p></p> |
-| **ascatMetrics**<br> *AscatMetrics* <br> | <p></p> |
+| **status**<br>*[FileStatus](https://docs.opencga.opencb.org/data-models/file#filestatus)* <br> | <p>File status can have the values READY, DELETED, TRASHED, STAGE, MISSING, PENDING_DELETE, DELETING, REMOVED and MISSING_SAMPLES</p> |
+| **index**<br>*[FileIndex](https://docs.opencga.opencb.org/data-models/file#fileindex)* <br> | <p>File index</p> |
+| **index**<br>*Map<String,String>* <br> | <p>Map of samples</p> |
+| **index**<br>*[MissingSamples](https://docs.opencga.opencb.org/data-models/file#missingsamples)* <br> | <p>Object describes missing samples</p> |
+| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/file#status)* <br> | <p>Status of the internal object</p> |
+| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object</p> |
+| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object</p> |
 
 ### FileRelatedFile
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileRelatedFile.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileRelatedFile.java).
+
+
+### FileQualityControl
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileQualityControl.java).
+
+
+### Software
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/interpretation/Software.java).
 
 | Field | Description |
 | :---  | :--- |
-| **file**<br>*<a href="file.md#File"><em>File</em></a>* <br> | <p></p> |
-| **relation**<br>*<a href="file.md#enum-filerelatedfilerelation"><em>FileRelatedFile.Relation</em></a>* <br> | <p></p> |
+| **name**<br>*String* <br> | <p>Software name</p> |
+| **version**<br>*String* <br> | <p>Software version</p> |
+| **repository**<br>*String* <br> | <p>Software repository</p> |
+| **commit**<br>*String* <br> | <p>Software commit</p> |
+| **website**<br>*String* <br> | <p>Software website</p> |
+| **params**<br>*Map<String,String>* <br> | <p>Software params</p> |
 
-### File
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File.java).
+### FileExperiment
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment.java).
 
-| Field | Description |
-| :---  | :--- |
-| **id**<br> *String* <br> | <p>File ID is a mandatory parameter when creating a new File, this ID cannot be changed at the moment.</p>_Tags_: _required, immutable, unique_ |
-| **uuid**<br> *String* <br> | <p>Global unique ID at the whole OpenCGA installation. This is automatically created during the File creation and cannot be changed.</p>_Tags_: _internal, unique, immutable_ |
-| **name**<br> *String* <br> | <p></p> |
-| **type**<br>*<a href="file.md#enum-filetype"><em>File.Type</em></a>* <br> | <p>Formats: file, folder, index.</p> |
-| **format**<br>*<a href="file.md#enum-fileformat"><em>File.Format</em></a>* <br> | <p>Formats: txt, executable, image, ...</p> |
-| **bioformat**<br>*<a href="file.md#enum-filebioformat"><em>File.Bioformat</em></a>* <br> | <p>BAM, VCF, ...</p> |
-| **checksum**<br> *String* <br> | <p></p> |
-| **uri**<br> *URI* <br> | <p></p> |
-| **path**<br> *String* <br> | <p></p> |
-| **release**<br> *int* <br> | <p>An integer describing the current data release.</p>_Tags_: _internal_ |
-| **creationDate**<br> *String* <br> | <p>String representing when the File was created, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **modificationDate**<br> *String* <br> | <p>String representing when was the last time the File was modified, this is automatically set by OpenCGA.</p>_Tags_: _internal_ |
-| **description**<br> *String* <br> | <p>An string to describe the properties of the File.</p> |
-| **external**<br> *boolean* <br> | <p></p> |
-| **size**<br> *long* <br> | <p></p> |
-| **software**<br> *Software* <br> | <p></p> |
-| **experiment**<br>*<a href="file.md#FileExperiment"><em>FileExperiment</em></a>* <br> | <p></p> |
-| **sampleIds**<br> List<*String*> <br> | <p></p> |
-| **jobId**<br> *String* <br> | <p></p> |
-| **tags**<br> List<*String*> <br> | <p></p> |
-| **relatedFiles**<br> List<*<a href="file.md#FileRelatedFile"><em>FileRelatedFile</em></a>*> <br> | <p></p> |
-| **qualityControl**<br>*<a href="file.md#FileQualityControl"><em>FileQualityControl</em></a>* <br> | <p></p> |
-| **stats**<br> Map<*Object*,*String*> <br> | <p></p> |
-| **status**<br>*<a href="file.md#CustomStatus"><em>CustomStatus</em></a>* <br> | <p>An object describing the status of the File.</p> |
-| **internal**<br>*<a href="file.md#FileInternal"><em>FileInternal</em></a>* <br> | <p>An object describing the internal information of the File. This is managed by OpenCGA.</p>_Tags_: _internal_ |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
-### Enum File.Type
-_Enumeration class._
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File/Type.java).
+### URI
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/net/URI.java).
 
-| Field | Description |
-| :---  | :--- |
-| **FILE** <br> | <p></p> |
-| **DIRECTORY** <br> | <p></p> |
-
-### Enum File.Bioformat
-_Enumeration class._
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File/Bioformat.java).
-
-| Field | Description |
-| :---  | :--- |
-| **MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT** <br> | <p></p> |
-| **MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX** <br> | <p></p> |
-| **MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX** <br> | <p></p> |
-| **MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT** <br> | <p></p> |
-| **MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX** <br> | <p></p> |
-| **DATAMATRIX_EXPRESSION** <br> | <p></p> |
-| **IDLIST** <br> | <p></p> |
-| **IDLIST_RANKED** <br> | <p></p> |
-| **ANNOTATION_GENEVSANNOTATION** <br> | <p></p> |
-| **OTHER_NEWICK** <br> | <p></p> |
-| **OTHER_BLAST** <br> | <p></p> |
-| **OTHER_INTERACTION** <br> | <p></p> |
-| **OTHER_GENOTYPE** <br> | <p></p> |
-| **OTHER_PLINK** <br> | <p></p> |
-| **OTHER_VCF** <br> | <p></p> |
-| **OTHER_PED** <br> | <p></p> |
-| **VCF4** <br> | <p></p> |
-| **VARIANT** <br> | <p></p> |
-| **ALIGNMENT** <br> | <p></p> |
-| **COVERAGE** <br> | <p></p> |
-| **SEQUENCE** <br> | <p></p> |
-| **PEDIGREE** <br> | <p></p> |
-| **REFERENCE_GENOME** <br> | <p></p> |
-| **NONE** <br> | <p></p> |
-| **UNKNOWN** <br> | <p></p> |
-
-### FileInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
-
-| Field | Description |
-| :---  | :--- |
-| **status**<br>*<a href="file.md#FileStatus"><em>FileStatus</em></a>* <br> | <p></p> |
-| **index**<br>*<a href="file.md#FileIndex"><em>FileIndex</em></a>* <br> | <p></p> |
-| **sampleMap**<br> Map<*String*> <br> | <p></p> |
-| **missingSamples**<br>*<a href="file.md#MissingSamples"><em>MissingSamples</em></a>* <br> | <p></p> |
 
 ### FileIndex
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileIndex.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileIndex.java).
 
 | Field | Description |
 | :---  | :--- |
-| **userId**<br> *String* <br> | <p></p> |
-| **creationDate**<br> *String* <br> | <p></p> |
-| **status**<br>*<a href="file.md#fileindexindexstatus"><em>FileIndex.IndexStatus</em></a>* <br> | <p></p> |
-| **jobId**<br> *long* <br> | <p></p> |
-| **release**<br> *long* <br> | <p></p> |
-| **transformedFile**<br>*<a href="file.md#fileindextransformedfile"><em>FileIndex.TransformedFile</em></a>* <br> | <p></p> |
-| **localFileIndex**<br>*<a href="file.md#fileindexlocalfileindex"><em>FileIndex.LocalFileIndex</em></a>* <br> | <p></p> |
-| **attributes**<br> Map<*Object*,*String*> <br> | <p></p> |
-
-### FileIndex.TransformedFile
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileIndex/TransformedFile.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br> *long* <br> | <p></p> |
-| **metadataId**<br> *long* <br> | <p></p> |
-
-### FileIndex.LocalFileIndex
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileIndex/LocalFileIndex.java).
-
-| Field | Description |
-| :---  | :--- |
-| **fileId**<br> *long* <br> | <p></p> |
-| **indexer**<br> *String* <br> | <p></p> |
-
-### FileIndex.IndexStatus
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileIndex/IndexStatus.java).
-
-| Field | Description |
-| :---  | :--- |
-| **NONE**<br> *String* <br> | <p></p> |
-| **TRANSFORMING**<br> *String* <br> | <p></p> |
-| **TRANSFORMED**<br> *String* <br> | <p></p> |
-| **LOADING**<br> *String* <br> | <p></p> |
-| **INDEXING**<br> *String* <br> | <p></p> |
-| **STATUS_LIST**<br> List> <br> | <p></p> |
-
-### FileStatus
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileStatus.java).
-
-| Field | Description |
-| :---  | :--- |
-| **TRASHED**<br> *String* <br> | <p>TRASHED name means that the object is marked as deleted although is still available in the database.</p> |
-| **STAGE**<br> *String* <br> | <p></p> |
-| **MISSING**<br> *String* <br> | <p></p> |
-| **PENDING_DELETE**<br> *String* <br> | <p></p> |
-| **DELETING**<br> *String* <br> | <p></p> |
-| **REMOVED**<br> *String* <br> | <p></p> |
-| **MISSING_SAMPLES**<br> *String* <br> | <p></p> |
-| **STATUS_LIST**<br> List<*String*> <br> | <p></p> |
+| **~~userId~~**<br>*String* <br><br>_Deprecated_ | <p>Index user id</p> |
+| **creationDate**<br>*String* <br> | <p>Autogenerated date following the format YYYYMMDDhhmmss containing the date when the entry was first registered.</p> |
+| **status**<br>*[IndexStatus](https://docs.opencga.opencb.org/data-models/file#indexstatus)* <br> | <p>File status can have the values READY, DELETED, NONE, TRANSFORMED, TRANSFORMING, LOADING and INDEXING <br>         <br>   NONE --> TRANSFORMING --> TRANSFORMED --> LOADING --> READY<br>       \                                              /<br>         ------------------> INDEXING ----------------/</p> |
+| **~~jobId~~**<br>*long* <br><br>_Deprecated_ | <p>Index job id</p> |
+| **release**<br>*long* <br> | <p>An integer describing the current data release.</p> |
 
 ### MissingSamples
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/MissingSamples.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/MissingSamples.java).
 
 | Field | Description |
 | :---  | :--- |
-| **existing**<br> List<*String*> <br> | <p></p> |
-| **nonExisting**<br> List<*String*> <br> | <p></p> |
+| **existing**<br>*List<<em>String</em>>* <br> | <p>List of existing samples</p> |
+| **nonExisting**<br>*List<<em>String</em>>* <br> | <p>List of non existing samples</p> |
 
-### Enum FileRelatedFile.Relation
-_Enumeration class._
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileRelatedFile/Relation.java).
-
-| Field | Description |
-| :---  | :--- |
-| **PRODUCED_FROM** <br> | <p></p> |
-| **PART_OF_PAIR** <br> | <p></p> |
-| **PEDIGREE** <br> | <p></p> |
-| **REFERENCE_GENOME** <br> | <p></p> |
-
-### FileInternal
-You can find the Java code [here](https://github.com/opencb/opencga/blob/master/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
+### FileStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileStatus.java).
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*<a href="file.md#FileStatus"><em>FileStatus</em></a>* <br> | <p></p> |
-| **index**<br>*<a href="file.md#FileIndex"><em>FileIndex</em></a>* <br> | <p></p> |
-| **sampleMap**<br> Map<*String*> <br> | <p></p> |
-| **missingSamples**<br>*<a href="file.md#MissingSamples"><em>MissingSamples</em></a>* <br> | <p></p> |
+| **name**<br>*String* <br> | <p>Name of the  Status</p> |
+| **date**<br>*String* <br> | <p>Date has setted the status</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **~~message~~**<br>*String* <br><br>_Deprecated_ | <p>Deprecated: Message describing the status</p> |
+
+### Status
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Status.java).
+
+| Field | Description |
+| :---  | :--- |
+| **name**<br>*String* <br> | <p>Name of the  Status</p> |
+| **date**<br>*String* <br> | <p>Date has setted the status</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **~~message~~**<br>*String* <br><br>_Deprecated_ | <p>Deprecated: Message describing the status</p> |
+
+### IndexStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileIndex/IndexStatus.java).
+
+| Field | Description |
+| :---  | :--- |
+| **name**<br>*String* <br> | <p>Name of the  Status</p> |
+| **date**<br>*String* <br> | <p>Date has setted the status</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **~~message~~**<br>*String* <br><br>_Deprecated_ | <p>Deprecated: Message describing the status</p> |

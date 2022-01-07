@@ -18,6 +18,8 @@ package org.opencb.opencga.core.models.file;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.Software;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -38,6 +40,8 @@ public class File extends Annotable {
      *
      * @apiNote Required, Immutable, Unique
      */
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
 
     /**
@@ -45,27 +49,37 @@ public class File extends Annotable {
      *
      * @apiNote Internal, Unique, Immutable
      */
+    @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String uuid;
+
+    @DataField(id = "name", indexed = true,
+            description = FieldConstants.FILE_NAME)
     private String name;
 
-    /**
-     * Formats: file, folder, index.
-     */
+    @DataField(id = "type", indexed = true,
+            description = FieldConstants.FILE_TYPE)
     private Type type;
 
-    /**
-     * Formats: txt, executable, image, ...
-     */
+    @DataField(id = "format", indexed = true,
+            description = FieldConstants.FILE_FORMAT)
     private Format format;
 
-    /**
-     * BAM, VCF, ...
-     */
+    @DataField(id = "bioformat", indexed = true,
+            description = FieldConstants.FILE_BIOFORMAT)
     private Bioformat bioformat;
 
+    @DataField(id = "checksum", indexed = true,
+            description = FieldConstants.FILE_CHECKSUM)
     private String checksum;
 
+
+    @DataField(id = "uri", indexed = true,
+            description = FieldConstants.FILE_URI)
     private URI uri;
+
+    @DataField(id = "path", indexed = true,
+            description = FieldConstants.FILE_PATH)
     private String path;
 
     /**
@@ -73,20 +87,26 @@ public class File extends Annotable {
      *
      * @apiNote Internal
      */
+    @DataField(id = "release", indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
 
     /**
-     * String representing when the File was created, this is automatically set by OpenCGA.
+     * String representing when the Cohort was created, this is automatically set by OpenCGA.
      *
      * @apiNote Internal
      */
+    @DataField(id = "creationDate", indexed = true,
+            description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
 
     /**
-     * String representing when was the last time the File was modified, this is automatically set by OpenCGA.
+     * String representing when was the last time the Cohort was modified, this is automatically set by OpenCGA.
      *
      * @apiNote Internal
      */
+    @DataField(id = "modificationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
     /**
@@ -94,20 +114,49 @@ public class File extends Annotable {
      *
      * @apiNote
      */
+    @DataField(id = "description", defaultValue = "No description available",
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
+    @DataField(id = "external",
+            description = FieldConstants.FILE_EXTERNAL)
     private boolean external;
 
+    @DataField(id = "size",
+            description = FieldConstants.FILE_SIZE)
     private long size;
+
+    @DataField(id = "software",
+            description = FieldConstants.FILE_SOFTWARE)
     private Software software;
+
+    @DataField(id = "experiment",
+            description = FieldConstants.FILE_EXPERIMENT)
     private FileExperiment experiment;
+
+    @DataField(id = "sampleIds",
+            description = FieldConstants.FILE_SAMPLE_IDS)
     private List<String> sampleIds;
+
+    @DataField(id = "jobId",
+            description = FieldConstants.FILE_JOB_ID)
     private String jobId;
+
+    @DataField(id = "tags",
+            description = FieldConstants.FILE_TAGS)
     private List<String> tags;
+
+    @DataField(id = "relatedFiles",
+            description = FieldConstants.FILE_RELATED_FILES)
     private List<FileRelatedFile> relatedFiles;
 
+    @DataField(id = "qualityControl",
+            description = FieldConstants.GENERIC_QUALITY_CONTROL)
     private FileQualityControl qualityControl;
 
+
+    @DataField(id = "stats", deprecated = true,
+            description = FieldConstants.GENERIC_STATS)
     @Deprecated
     private Map<String, Object> stats;
 
@@ -116,6 +165,8 @@ public class File extends Annotable {
      *
      * @apiNote
      */
+    @DataField(id = "status",
+            description = FieldConstants.GENERIC_CUSTOM_STATUS)
     private CustomStatus status;
 
     /**
@@ -123,6 +174,9 @@ public class File extends Annotable {
      *
      * @apiNote Internal
      */
+
+    @DataField(id = "internal",
+            description = FieldConstants.GENERIC_INTERNAL)
     private FileInternal internal;
 
     /**
@@ -130,6 +184,8 @@ public class File extends Annotable {
      *
      * @apiNote
      */
+    @DataField(id = "attributes",
+            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public File() {

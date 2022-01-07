@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models.job;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.common.Enums;
 
 import static org.opencb.opencga.core.tools.annotations.Tool.Scope;
@@ -23,11 +25,24 @@ import static org.opencb.opencga.core.tools.annotations.Tool.Type;
 
 public class ToolInfo {
 
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
+
+    @DataField(id = "description", defaultValue = "No description available",
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
+    @DataField(id = "scope", defaultValue = "No description available",
+            description = FieldConstants.TOOL_INFO_SCOPE_DESCRIPTION)
     private Scope scope;
+
+    @DataField(id = "type", defaultValue = "No description available",
+            description = FieldConstants.TOOL_INFO_TYPE_DESCRIPTION)
     private Type type;
+
+    @DataField(id = "resource", defaultValue = "No description available",
+            description = FieldConstants.TOOL_INFO_RESOURCE_DESCRIPTION)
     private Enums.Resource resource;
 
 

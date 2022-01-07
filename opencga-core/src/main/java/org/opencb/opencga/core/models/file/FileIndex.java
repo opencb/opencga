@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models.file;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.common.Status;
 
 import java.util.Arrays;
@@ -28,17 +30,30 @@ import java.util.Map;
  */
 public class FileIndex {
 
+    @DataField(id = "userId", indexed = true, deprecated = true,
+            description = FieldConstants.FILE_INDEX_USER_ID_DESCRIPTION)
     @Deprecated
     private String userId;
+
+    @DataField(id = "creationDate", indexed = true,
+            description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
+
+    @DataField(id = "status", indexed = true,
+            description = FieldConstants.FILE_INDEX_STATUS_DESCRIPTION)
     private IndexStatus status;
 
+    @DataField(id = "jobId", indexed = true, deprecated = true,
+            description = FieldConstants.FILE_INDEX_JOB_ID_DESCRIPTION)
     @Deprecated
     private long jobId;
 
+    @DataField(id = "release", indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private long release;
 
     private TransformedFile transformedFile;
+    
     private LocalFileIndex localFileIndex;
 
     private Map<String, Object> attributes;
@@ -64,6 +79,100 @@ public class FileIndex {
 
     public static FileIndex initialize() {
         return new FileIndex("", "", new IndexStatus(IndexStatus.NONE), -1, null, null, new HashMap<>());
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("FileIndex{");
+        sb.append("userId='").append(userId).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", jobId=").append(jobId);
+        sb.append(", transformedFile=").append(transformedFile);
+        sb.append(", localFileIndex=").append(localFileIndex);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public FileIndex setUserId(String userId) {
+        this.userId = userId;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public FileIndex setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public IndexStatus getStatus() {
+        return status;
+    }
+
+    public FileIndex setStatus(IndexStatus status) {
+        this.status = status;
+        return this;
+    }
+
+    public long getJobId() {
+        return jobId;
+    }
+
+    public FileIndex setJobId(long jobId) {
+        this.jobId = jobId;
+        return this;
+    }
+
+    public long getRelease() {
+        return release;
+    }
+
+//    public FileIndex setStatus(String status) {
+//        if (IndexStatus.isValid(status)) {
+//            this.status.setName(status);
+//            this.status.setCurrentDate();
+//        }
+//        return this;
+//    }
+
+    public FileIndex setRelease(long release) {
+        this.release = release;
+        return this;
+    }
+
+    public TransformedFile getTransformedFile() {
+        return transformedFile;
+    }
+
+    public FileIndex setTransformedFile(TransformedFile transformedFile) {
+        this.transformedFile = transformedFile;
+        return this;
+    }
+
+    public LocalFileIndex getLocalFileIndex() {
+        return localFileIndex;
+    }
+
+    public FileIndex setLocalFileIndex(LocalFileIndex localFileIndex) {
+        this.localFileIndex = localFileIndex;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public FileIndex setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+        return this;
     }
 
     public static class IndexStatus extends Status {
@@ -104,11 +213,8 @@ public class FileIndex {
             if (Status.isValid(status)) {
                 return true;
             }
-            if (status != null && (status.equals(NONE) || status.equals(TRANSFORMING) || status.equals(TRANSFORMED)
-                    || status.equals(LOADING) || status.equals(INDEXING))) {
-                return true;
-            }
-            return false;
+            return status != null && (status.equals(NONE) || status.equals(TRANSFORMING) || status.equals(TRANSFORMED)
+                    || status.equals(LOADING) || status.equals(INDEXING));
         }
     }
 
@@ -190,100 +296,6 @@ public class FileIndex {
             this.indexer = indexer;
             return this;
         }
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("FileIndex{");
-        sb.append("userId='").append(userId).append('\'');
-        sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", status=").append(status);
-        sb.append(", jobId=").append(jobId);
-        sb.append(", transformedFile=").append(transformedFile);
-        sb.append(", localFileIndex=").append(localFileIndex);
-        sb.append(", attributes=").append(attributes);
-        sb.append('}');
-        return sb.toString();
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public FileIndex setUserId(String userId) {
-        this.userId = userId;
-        return this;
-    }
-
-    public String getCreationDate() {
-        return creationDate;
-    }
-
-    public FileIndex setCreationDate(String creationDate) {
-        this.creationDate = creationDate;
-        return this;
-    }
-
-    public IndexStatus getStatus() {
-        return status;
-    }
-
-    public FileIndex setStatus(IndexStatus status) {
-        this.status = status;
-        return this;
-    }
-
-//    public FileIndex setStatus(String status) {
-//        if (IndexStatus.isValid(status)) {
-//            this.status.setName(status);
-//            this.status.setCurrentDate();
-//        }
-//        return this;
-//    }
-
-    public long getJobId() {
-        return jobId;
-    }
-
-    public FileIndex setJobId(long jobId) {
-        this.jobId = jobId;
-        return this;
-    }
-
-    public long getRelease() {
-        return release;
-    }
-
-    public FileIndex setRelease(long release) {
-        this.release = release;
-        return this;
-    }
-
-    public TransformedFile getTransformedFile() {
-        return transformedFile;
-    }
-
-    public FileIndex setTransformedFile(TransformedFile transformedFile) {
-        this.transformedFile = transformedFile;
-        return this;
-    }
-
-    public LocalFileIndex getLocalFileIndex() {
-        return localFileIndex;
-    }
-
-    public FileIndex setLocalFileIndex(LocalFileIndex localFileIndex) {
-        this.localFileIndex = localFileIndex;
-        return this;
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public FileIndex setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
-        return this;
     }
 
 }
