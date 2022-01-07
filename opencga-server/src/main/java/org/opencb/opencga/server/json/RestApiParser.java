@@ -1,8 +1,10 @@
 package org.opencb.opencga.server.json;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.json.models.RestApi;
 import org.opencb.opencga.server.json.models.RestCategory;
@@ -13,6 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -21,29 +25,50 @@ import java.util.*;
 
 public class RestApiParser {
 
-    private static Logger logger = LoggerFactory.getLogger(RestApiParser.class);
+    private final Logger logger;
 
-    public static RestApi parse(Class clazz) {
-        RestApi res = new RestApi();
-        res.getCategories().add(getCategory(clazz));
-        return res;
+    // This class might accept some configuration in the future
+    public RestApiParser() {
+        logger = LoggerFactory.getLogger(RestApiParser.class);
     }
 
-    public static RestApi parse(List<Class> classes) {
-        RestApi res = new RestApi();
-        res.setCategories(getCategories(classes));
-        return res;
+    public RestApi parse(Class clazz) {
+        return parse(Collections.singletonList(clazz));
     }
 
-    private static List<RestCategory> getCategories(List<Class> classes) {
-        List<RestCategory> res = new ArrayList<>();
+    public RestApi parse(List<Class> classes) {
+        RestApi restApi = new RestApi();
+        restApi.getCategories().addAll(getCategories(classes));
+        return restApi;
+    }
+
+    public void parseToFile(List<Class> classes, java.nio.file.Path path) throws IOException {
+        // Check if parent folder exists and is writable
+        FileUtils.checkDirectory(path.getParent(), true);
+
+        // Parse REST API
+        RestApi restApi = new RestApi();
+        restApi.getCategories().addAll(getCategories(classes));
+
+        // Prepare Jackson to create JSON pretty string
+        ObjectMapper objectMapper = new ObjectMapper();
+        String restApiJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(restApi);
+
+        // Write string to file
+        BufferedWriter bufferedWriter = FileUtils.newBufferedWriter(path);
+        bufferedWriter.write(restApiJson);
+        bufferedWriter.close();
+    }
+
+    private List<RestCategory> getCategories(List<Class> classes) {
+        List<RestCategory> restCategories = new ArrayList<>();
         for (Class clazz : classes) {
-            res.add(getCategory(clazz));
+            restCategories.add(getCategory(clazz));
         }
-        return res;
+        return restCategories;
     }
 
-    private static RestCategory getCategory(Class clazz) {
+    private RestCategory getCategory(Class clazz) {
         RestCategory restCategory = new RestCategory();
         restCategory.setName(((Api) clazz.getAnnotation(Api.class)).value());
         restCategory.setPath(((Path) clazz.getAnnotation(Path.class)).value());
@@ -136,7 +161,8 @@ public class RestApiParser {
                                         Class<?> aClass = Class.forName(typeClass);
                                         Field[] classFields = aClass.getDeclaredFields();
                                         List<Field> declaredFields = new ArrayList<>(Arrays.asList(classFields));
-                                        if (aClass.getSuperclass() != null && !"java.lang.Object".equals(aClass.getSuperclass().getName())) {
+                                        if (aClass.getSuperclass() != null
+                                                && !"java.lang.Object".equals(aClass.getSuperclass().getName())) {
                                             Field[] parentFields = aClass.getSuperclass().getDeclaredFields();
                                             Collections.addAll(declaredFields, parentFields);
                                         }
@@ -146,12 +172,14 @@ public class RestApiParser {
                                             // Ignore non-private or static fields
                                             if ((Modifier.isPrivate(modifiers) || Modifier.isProtected(modifiers))
                                                     && !Modifier.isStatic(modifiers) && !Modifier.isFinal(modifiers)) {
-                                                RestParameter innerParam = getParameter(declaredField.getName(), variablePrefix, declaredField,
+                                                RestParameter innerParam = getParameter(declaredField.getName(),
+                                                        variablePrefix, declaredField,
                                                         declaredField.getType().getName(), declaredField.getName());
                                                 if (innerParam.isList()) {
                                                     innerParam.setGenericType(declaredField.getGenericType().getTypeName());
                                                 } else {
-                                                    if (innerParam.isComplex() && !innerParam.getTypeClass().replaceAll(";", "").contains("$")) {
+                                                    if (innerParam.isComplex()
+                                                            && !innerParam.getTypeClass().replaceAll(";", "").contains("$")) {
                                                         String classAndPackageName = innerParam.getTypeClass().replaceAll(";", "");
                                                         Class<?> cls = Class.forName(classAndPackageName);
                                                         Field[] fields = cls.getDeclaredFields();
@@ -160,9 +188,9 @@ public class RestApiParser {
                                                             int innerModifiers = field.getModifiers();
                                                             if (CommandLineUtils.isPrimitiveType(field.getType().getSimpleName())
                                                                     && !Modifier.isStatic(innerModifiers)) {
-                                                                RestParameter complexParam =
-                                                                        getParameter(field.getName(), variablePrefix, field,
-                                                                                field.getType().getName(), declaredField.getName());
+                                                                RestParameter complexParam = getParameter(field.getName(),
+                                                                        variablePrefix, field, field.getType().getName(),
+                                                                        declaredField.getName());
                                                                 complexParam.setGenericType(declaredField.getType().getName());
                                                                 complexParam.setInnerParam(true);
                                                                 complexParams.add(complexParam);
@@ -206,7 +234,7 @@ public class RestApiParser {
         return restCategory;
     }
 
-    private static RestParameter getParameter(String paramName, String variablePrefix, Field declaredField, String className,
+    private RestParameter getParameter(String paramName, String variablePrefix, Field declaredField, String className,
                                               String variableName) {
         RestParameter innerParam = new RestParameter();
         innerParam.setName(paramName);
@@ -226,16 +254,15 @@ public class RestApiParser {
         } else {
             innerParam.setDescription("The body web service " + declaredField.getName() + " " + "parameter");
         }
-
         return innerParam;
     }
 
-    private static boolean isRequired(Field declaredField) {
+    private boolean isRequired(Field declaredField) {
         CliParam annotation = declaredField.getAnnotation(CliParam.class);
         return annotation != null && annotation.required();
     }
 
-    private static String normalize(String s) {
+    private String normalize(String s) {
         String res = s.replaceAll(" ", "_").replaceAll("-","_");
         while (res.contains("__")) {
             res = res.replaceAll("__", "_");
@@ -243,7 +270,7 @@ public class RestApiParser {
         return res;
     }
 
-    private static String getMethodName(String inputPath) {
+    private String getMethodName(String inputPath) {
         String res = "";
         String prefix = "";
         String[] array = inputPath.split("}/");
@@ -264,14 +291,14 @@ public class RestApiParser {
         return res;
     }
 
-    private static String getDescriptionField(String fieldName) {
+    private String getDescriptionField(String fieldName) {
         String res = null;
         try {
             Field barField = org.opencb.opencga.core.api.ParamConstants.class.getDeclaredField(fieldName);
             barField.setAccessible(true);
             res = (String) barField.get(null);
         } catch (Exception e) {
-            logger.error("RestApiParser error: ", e);
+            logger.error("RestApiParser error: field: '" + fieldName + "' not found in ParamConstants");
         }
         return res;
     }

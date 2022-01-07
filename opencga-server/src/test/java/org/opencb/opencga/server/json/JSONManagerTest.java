@@ -9,6 +9,6 @@ import java.util.List;
 public class JSONManagerTest extends TestCase {
 
     public void testGetHelp() {
-        RestApiParser.parse(SampleWSServer.class);
+        new RestApiParser().parse(SampleWSServer.class);
     }
 }
