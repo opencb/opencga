@@ -250,8 +250,9 @@ public class RestApiParser {
 
     private static boolean isRequired(Field declaredField) {
         CliParam annotation = declaredField.getAnnotation(CliParam.class);
-        if (annotation != null && annotation.required())
+        if (annotation != null && annotation.required()) {
             return true;
+        }
         return false;
     }
 
