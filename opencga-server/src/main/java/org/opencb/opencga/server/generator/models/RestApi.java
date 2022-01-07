@@ -14,57 +14,59 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.json.beans;
+package org.opencb.opencga.server.generator.models;
 
 import org.opencb.opencga.core.common.GitRepositoryState;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class RestApi {
 
-    private List<Category> categories;
-    private String commit;
     private String version;
+    private String commit;
+    private List<RestCategory> categories;
 
     public RestApi() {
-        commit = GitRepositoryState.get().getCommitId();
-        version = GitRepositoryState.get().getBuildVersion();
+        this(GitRepositoryState.get().getBuildVersion(), GitRepositoryState.get().getCommitId(), new ArrayList<>());
+    }
+
+    public RestApi(String version, String commit, List<RestCategory> categories) {
+        this.version = version;
+        this.commit = commit;
+        this.categories = categories;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("RestApi{");
-        sb.append("categories=").append(categories);
-        sb.append(", commit='").append(commit).append('\'');
-        sb.append(", version='").append(version).append('\'');
-        sb.append('}');
-        return sb.toString();
-    }
-
-    public String getCommit() {
-        return commit;
-    }
-
-    public RestApi setCommit(String commit) {
-        this.commit = commit;
-        return this;
-    }
-
-    public List<Category> getCategories() {
-        return categories;
-    }
-
-    public RestApi setCategories(List<Category> categories) {
-        this.categories = categories;
-        return this;
+        return "RestApi{" +
+                "version='" + version + '\'' +
+                ", commit='" + commit + '\'' +
+                ", categories=" + categories +
+                '}';
     }
 
     public String getVersion() {
         return version;
     }
 
-    public RestApi setVersion(String version) {
+    public void setVersion(String version) {
         this.version = version;
-        return this;
+    }
+
+    public String getCommit() {
+        return commit;
+    }
+
+    public void setCommit(String commit) {
+        this.commit = commit;
+    }
+
+    public List<RestCategory> getCategories() {
+        return categories;
+    }
+
+    public void setCategories(List<RestCategory> categories) {
+        this.categories = categories;
     }
 }

@@ -1,12 +1,12 @@
-package org.opencb.opencga.server.json.beans;
+package org.opencb.opencga.server.generator.models;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.opencb.opencga.server.json.config.CategoryConfig;
-import org.opencb.opencga.server.json.utils.CommandLineUtils;
+import org.opencb.opencga.server.generator.config.CategoryConfig;
+import org.opencb.opencga.server.generator.utils.CommandLineUtils;
 
 import java.util.List;
 
-public class Endpoint {
+public class RestEndpoint {
 
     private String path;
     private String method;
@@ -14,13 +14,12 @@ public class Endpoint {
     private String responseClass;
     private String notes;
     private String description;
-    private List<Parameter> parameters;
+    private List<RestParameter> parameters;
 
     public boolean hasPrimitiveBodyParams(CategoryConfig config, String commandName) {
-
-        for (Parameter parameter : getParameters()) {
-            if (parameter.getData() != null && !parameter.getData().isEmpty()) {
-                for (Parameter bodyParam : parameter.getData()) {
+        for (RestParameter restParameter : getParameters()) {
+            if (CollectionUtils.isNotEmpty(restParameter.getData())) {
+                for (RestParameter bodyParam : restParameter.getData()) {
                     //     if ((config.isAvailableSubCommand(bodyParam.getName()) && !bodyParam.isComplex()) || (bodyParam.isStringList()
                     //     )) {
                     if (config.isAvailableSubCommand(bodyParam.getName(), commandName)) {
@@ -33,8 +32,8 @@ public class Endpoint {
     }
 
     public boolean hasQueryParams() {
-        for (Parameter parameter : getParameters()) {
-            if ("query".equals(parameter.getParam()) && !parameter.isRequired() && (!parameter.isComplex() || parameter.isStringList())) {
+        for (RestParameter restParameter : getParameters()) {
+            if ("query".equals(restParameter.getParam()) && !restParameter.isRequired() && (!restParameter.isComplex() || restParameter.isStringList())) {
                 return true;
             }
         }
@@ -42,9 +41,9 @@ public class Endpoint {
     }
 
     public String getBodyParamsObject() {
-        for (Parameter parameter : getParameters()) {
-            if (parameter.getData() != null) {
-                return parameter.getTypeClass().substring(parameter.getTypeClass().lastIndexOf('.') + 1).replaceAll(";", "").trim();
+        for (RestParameter restParameter : getParameters()) {
+            if (restParameter.getData() != null) {
+                return restParameter.getTypeClass().substring(restParameter.getTypeClass().lastIndexOf('.') + 1).replaceAll(";", "").trim();
             }
         }
         return "";
@@ -64,11 +63,11 @@ public class Endpoint {
 
     public String getMandatoryQueryParams(CategoryConfig config, String commandName) {
         StringBuilder sb = new StringBuilder();
-        for (Parameter parameter : getParameters()) {
-            if (parameter.getParam().equals("query")) {
-                if (config.isAvailableSubCommand(parameter.getName(), commandName) && (!parameter.isComplex() || parameter.isStringList())
-                        && parameter.isRequired()) {
-                    sb.append("commandOptions.").append(CommandLineUtils.getAsVariableName(parameter.getName())).append(", ");
+        for (RestParameter restParameter : getParameters()) {
+            if (restParameter.getParam().equals("query")) {
+                if (config.isAvailableSubCommand(restParameter.getName(), commandName) && (!restParameter.isComplex() || restParameter.isStringList())
+                        && restParameter.isRequired()) {
+                    sb.append("commandOptions.").append(CommandLineUtils.getAsVariableName(restParameter.getName())).append(", ");
                 }
             }
         }
@@ -93,7 +92,7 @@ public class Endpoint {
         return path;
     }
 
-    public Endpoint setPath(String path) {
+    public RestEndpoint setPath(String path) {
         this.path = path;
         return this;
     }
@@ -102,7 +101,7 @@ public class Endpoint {
         return method;
     }
 
-    public Endpoint setMethod(String method) {
+    public RestEndpoint setMethod(String method) {
         this.method = method;
         return this;
     }
@@ -111,7 +110,7 @@ public class Endpoint {
         return response;
     }
 
-    public Endpoint setResponse(String response) {
+    public RestEndpoint setResponse(String response) {
         this.response = response;
         return this;
     }
@@ -120,7 +119,7 @@ public class Endpoint {
         return responseClass;
     }
 
-    public Endpoint setResponseClass(String responseClass) {
+    public RestEndpoint setResponseClass(String responseClass) {
         this.responseClass = responseClass;
         return this;
     }
@@ -129,7 +128,7 @@ public class Endpoint {
         return notes;
     }
 
-    public Endpoint setNotes(String notes) {
+    public RestEndpoint setNotes(String notes) {
         this.notes = notes;
         return this;
     }
@@ -138,17 +137,17 @@ public class Endpoint {
         return description;
     }
 
-    public Endpoint setDescription(String description) {
+    public RestEndpoint setDescription(String description) {
         this.description = description;
         return this;
     }
 
-    public List<Parameter> getParameters() {
+    public List<RestParameter> getParameters() {
         return parameters;
     }
 
-    public Endpoint setParameters(List<Parameter> parameters) {
-        this.parameters = parameters;
+    public RestEndpoint setParameters(List<RestParameter> restParameters) {
+        this.parameters = restParameters;
         return this;
     }
 
