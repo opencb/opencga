@@ -43,13 +43,9 @@ public final class ClientConfiguration {
     private static Logger logger;
 
     private static ClientConfiguration instance;
-    private static Logger privateLogger = LoggerFactory.getLogger(ClientConfiguration.class);
+    private static final Logger privateLogger = LoggerFactory.getLogger(ClientConfiguration.class);
 
     private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
-
-    static {
-        instance = new ClientConfiguration();
-    };
 
     public static ClientConfiguration getInstance() {
         if (instance == null) {
