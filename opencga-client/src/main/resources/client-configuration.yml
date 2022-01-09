@@ -2,7 +2,7 @@
 logLevel: "INFO"
 
 # Number of seconds that session remains open without any activity [10 min]
-cliSessionDuration: 600
+#cliSessionDuration: 600
 
 ## REST client configuration options
 rest:

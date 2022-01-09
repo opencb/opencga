@@ -43,7 +43,7 @@ public final class ClientConfiguration {
     private static Logger logger;
 
     private static ClientConfiguration instance;
-    private static final Logger privateLogger = LoggerFactory.getLogger(ClientConfiguration.class);
+    private static final Logger PRIVATE_LOGGER = LoggerFactory.getLogger(ClientConfiguration.class);
 
     private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
 
@@ -120,10 +120,10 @@ public final class ClientConfiguration {
             String conf = System.getProperty("app.home", System.getenv("OPENCGA_HOME")) + "/conf";
             Path path = Paths.get(conf).resolve("client-configuration.yml");
             if (Files.exists(path)) {
-                privateLogger.debug("Loading configuration from '{}'", path.toAbsolutePath());
+                PRIVATE_LOGGER.debug("Loading configuration from '{}'", path.toAbsolutePath());
                 instance = ClientConfiguration.load(new FileInputStream(path.toFile()));
             } else {
-                privateLogger.debug("Loading configuration from JAR file");
+                PRIVATE_LOGGER.debug("Loading configuration from JAR file");
                 instance = ClientConfiguration
                         .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("client-configuration.yml"));
             }
