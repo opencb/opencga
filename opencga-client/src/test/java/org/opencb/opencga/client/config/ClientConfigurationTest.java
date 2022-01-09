@@ -32,9 +32,9 @@ public class ClientConfigurationTest {
     public void testDefault() {
 
 //        ClientConfiguration.getInstance().setCliSessionDuration(120);
-        List<Host> hosts = new ArrayList();
-        hosts.add(new Host("opencga", "localhost:9090/opencga", true));
-        RestConfig restConfig = new RestConfig(true, new QueryRestConfig(200, 2000), hosts);
+        List<HostConfig> hostConfigs = new ArrayList();
+        hostConfigs.add(new HostConfig("opencga", "localhost:9090/opencga", true));
+        RestConfig restConfig = new RestConfig(hostConfigs, true, new QueryRestConfig(200, 2000));
         GrpcConfig grpcConfig = new GrpcConfig("localhost:9091");
 
         ClientConfiguration.getInstance().setRest(restConfig);

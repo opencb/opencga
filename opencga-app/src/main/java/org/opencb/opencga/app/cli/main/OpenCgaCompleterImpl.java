@@ -19,7 +19,7 @@ package org.opencb.opencga.app.cli.main;
 import org.jline.reader.Candidate;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.config.Host;
+import org.opencb.opencga.client.config.HostConfig;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,10 +64,10 @@ public class OpenCgaCompleterImpl extends OpenCgaCompleter {
     }
 
     private List<Candidate> getHostCandidates() {
-        List<Host> hosts = ClientConfiguration.getInstance().getRest().getHosts();
+        List<HostConfig> hostConfigs = ClientConfiguration.getInstance().getRest().getHosts();
         List<Candidate> res = new ArrayList();
-        for (Host host : hosts) {
-            res.add(new Candidate(host.getName()));
+        for (HostConfig hostConfig : hostConfigs) {
+            res.add(new Candidate(hostConfig.getName()));
         }
         return res;
     }

@@ -16,100 +16,62 @@
 
 package org.opencb.opencga.client.config;
 
+import org.apache.commons.collections4.CollectionUtils;
+
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Created by imedina on 04/05/16.
  */
 public class RestConfig {
 
-    private List<Host> hosts;
+    private List<HostConfig> hosts;
     private boolean tokenAutoRefresh;
     private boolean tlsAllowInvalidCertificates;
-    private Host currentHost;
+    private HostConfig currentHost;
     private QueryRestConfig query;
 
     public RestConfig() {
     }
 
-    public RestConfig(boolean tokenAutoRefresh, QueryRestConfig query, List<Host> hosts) {
+    public RestConfig(List<HostConfig> hosts, boolean tokenAutoRefresh, QueryRestConfig query) {
+        this(hosts, tokenAutoRefresh, false, query);
+    }
+
+    public RestConfig(List<HostConfig> hosts, boolean tokenAutoRefresh, boolean tlsAllowInvalidCertificates,
+                      QueryRestConfig query) {
         this.hosts = hosts;
         this.tokenAutoRefresh = tokenAutoRefresh;
+        this.tlsAllowInvalidCertificates = tlsAllowInvalidCertificates;
         this.query = query;
-        if (hosts != null && !hosts.isEmpty()) {
-            currentHost = hosts.get(0);
+        if (CollectionUtils.isNotEmpty(hosts)) {
+            Optional<HostConfig> first = hosts.stream().filter(HostConfig::isDefaultHost).findFirst();
+            currentHost = first.isPresent() ? first.get() : hosts.get(0);
         }
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("RestConfig{");
-        sb.append("hosts=").append(hosts);
-        sb.append(", tokenAutoRefresh=").append(tokenAutoRefresh);
-        sb.append(", tlsAllowInvalidCertificates=").append(tlsAllowInvalidCertificates);
-        sb.append(", currentHost=").append(currentHost);
-        sb.append(", query=").append(query);
-        sb.append('}');
-        return sb.toString();
-    }
-
-    public List<Host> getHosts() {
-        return hosts;
-    }
-
-    public RestConfig setHosts(List<Host> hosts) {
-        this.hosts = hosts;
-        return this;
-    }
-
-    public boolean isTokenAutoRefresh() {
-        return tokenAutoRefresh;
-    }
-
-    public RestConfig setTokenAutoRefresh(boolean tokenAutoRefresh) {
-        this.tokenAutoRefresh = tokenAutoRefresh;
-        return this;
-    }
-
-    public boolean isTlsAllowInvalidCertificates() {
-        return tlsAllowInvalidCertificates;
-    }
-
-    public RestConfig setTlsAllowInvalidCertificates(boolean tlsAllowInvalidCertificates) {
-        this.tlsAllowInvalidCertificates = tlsAllowInvalidCertificates;
-        return this;
-    }
-
-    public QueryRestConfig getQuery() {
-        return query;
-    }
-
-    public RestConfig setQuery(QueryRestConfig query) {
-        this.query = query;
-        return this;
-    }
-
-    private Host getHostByUrl(String s) {
-        for (Host host : hosts) {
-            if (host.getUrl().equals(s)) {
-                return host;
+    private HostConfig getHostByUrl(String s) {
+        for (HostConfig hostConfig : hosts) {
+            if (hostConfig.getUrl().equals(s)) {
+                return hostConfig;
             }
         }
         return null;
     }
 
-    private Host getHostByName(String s) {
-        for (Host host : hosts) {
-            if (host.getName().equals(s)) {
-                return host;
+    private HostConfig getHostByName(String s) {
+        for (HostConfig hostConfig : hosts) {
+            if (hostConfig.getName().equals(s)) {
+                return hostConfig;
             }
         }
         return null;
     }
 
     private boolean existsUrl(String s) {
-        for (Host host : hosts) {
-            if (host.getUrl().equals(s)) {
+        for (HostConfig hostConfig : hosts) {
+            if (hostConfig.getUrl().equals(s)) {
                 return true;
             }
         }
@@ -117,8 +79,8 @@ public class RestConfig {
     }
 
     public boolean existsName(String s) {
-        for (Host host : hosts) {
-            if (host.getName().equals(s)) {
+        for (HostConfig hostConfig : hosts) {
+            if (hostConfig.getName().equals(s)) {
                 return true;
             }
         }
@@ -148,9 +110,8 @@ public class RestConfig {
     }
 
     public void setCurrentHostname(String name) {
-
         if (!existsName(name)) {
-            currentHost = new Host(name, name, true);
+            currentHost = new HostConfig(name, name, true);
         } else {
             currentHost = getHostByName(name);
         }
@@ -159,10 +120,67 @@ public class RestConfig {
 
     public void setCurrentUrl(String url) {
         if (!existsUrl(url)) {
-            currentHost = new Host(url, url, true);
+            currentHost = new HostConfig(url, url, true);
         } else {
             currentHost = getHostByUrl(url);
         }
         hosts.add(0, currentHost);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("RestConfig{");
+        sb.append("hosts=").append(hosts);
+        sb.append(", tokenAutoRefresh=").append(tokenAutoRefresh);
+        sb.append(", tlsAllowInvalidCertificates=").append(tlsAllowInvalidCertificates);
+        sb.append(", currentHost=").append(currentHost);
+        sb.append(", query=").append(query);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public List<HostConfig> getHosts() {
+        return hosts;
+    }
+
+    public RestConfig setHosts(List<HostConfig> hosts) {
+        this.hosts = hosts;
+        return this;
+    }
+
+    public boolean isTokenAutoRefresh() {
+        return tokenAutoRefresh;
+    }
+
+    public RestConfig setTokenAutoRefresh(boolean tokenAutoRefresh) {
+        this.tokenAutoRefresh = tokenAutoRefresh;
+        return this;
+    }
+
+    public boolean isTlsAllowInvalidCertificates() {
+        return tlsAllowInvalidCertificates;
+    }
+
+    public RestConfig setTlsAllowInvalidCertificates(boolean tlsAllowInvalidCertificates) {
+        this.tlsAllowInvalidCertificates = tlsAllowInvalidCertificates;
+        return this;
+    }
+
+    public HostConfig getCurrentHost() {
+        return currentHost;
+    }
+
+    public RestConfig setCurrentHost(HostConfig currentHost) {
+        this.currentHost = currentHost;
+        return this;
+    }
+
+    public QueryRestConfig getQuery() {
+        return query;
+    }
+
+    public RestConfig setQuery(QueryRestConfig query) {
+        this.query = query;
+        return this;
     }
 }
