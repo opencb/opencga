@@ -80,7 +80,7 @@
      protected static final String DELETE = "DELETE";
 
      private static final int DEFAULT_BATCH_SIZE = 200;
-     private static final int DEFAULT_LIMIT = 10;
+     private static final int DEFAULT_LIMIT = 2000;
      private static final int DEFAULT_SKIP = 0;
 
      private static final int DEFAULT_CONNECT_TIMEOUT = 1000;
