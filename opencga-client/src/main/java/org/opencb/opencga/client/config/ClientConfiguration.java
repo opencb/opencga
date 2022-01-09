@@ -37,19 +37,19 @@ import java.util.Map;
 public final class ClientConfiguration {
 
     private String logLevel;
-
-    private String version;
-    private int cliSessionDuration;
-
     private RestConfig rest;
     private GrpcConfig grpc;
 
-    private VariantClientConfiguration variant;
-
     private static Logger logger;
-    private static final String DEFAULT_CONFIGURATION_FORMAT = "yaml";
+
     private static ClientConfiguration instance;
     private static Logger privateLogger = LoggerFactory.getLogger(ClientConfiguration.class);
+
+    private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
+
+    static {
+        instance = new ClientConfiguration();
+    };
 
     public static ClientConfiguration getInstance() {
         if (instance == null) {
@@ -74,19 +74,19 @@ public final class ClientConfiguration {
     public static ClientConfiguration load(InputStream configurationInputStream, String format) throws IOException {
         ClientConfiguration clientConfiguration;
         ObjectMapper objectMapper;
-        switch (format) {
-            case "json":
+        switch (format.toUpperCase()) {
+            case "JSON":
                 objectMapper = new ObjectMapper();
                 clientConfiguration = objectMapper.readValue(configurationInputStream, ClientConfiguration.class);
                 break;
-            case "yml":
-            case "yaml":
+            case "YML":
+            case "YAML":
             default:
                 objectMapper = new ObjectMapper(new YAMLFactory());
                 clientConfiguration = objectMapper.readValue(configurationInputStream, ClientConfiguration.class);
                 break;
         }
-        overwriteEnvironmentVariables(clientConfiguration);
+        parseEnvironmentVariables(clientConfiguration);
         return clientConfiguration;
     }
 
@@ -95,11 +95,11 @@ public final class ClientConfiguration {
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
     }
 
-    private static void overwriteEnvironmentVariables(ClientConfiguration configuration) {
+    private static void parseEnvironmentVariables(ClientConfiguration configuration) {
         Map<String, String> envVariables = System.getenv();
         for (String variable : envVariables.keySet()) {
             if (variable.startsWith("OPENCGA_")) {
-                logger.debug("Overwriting environment parameter '{}'", variable);
+                logger.debug("Setting environment variable '{}'", variable);
                 switch (variable) {
                     case "OPENCGA_CLIENT_REST_HOST":
                         configuration.getRest().setCurrentUrl(envVariables.get(variable));
@@ -120,7 +120,6 @@ public final class ClientConfiguration {
      */
     public static void loadClientConfiguration() {
         // We load configuration file either from app home folder or from the JAR
-
         try {
             String conf = System.getProperty("app.home", System.getenv("OPENCGA_HOME")) + "/conf";
             Path path = Paths.get(conf).resolve("client-configuration.yml");
@@ -141,11 +140,8 @@ public final class ClientConfiguration {
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClientConfiguration{");
         sb.append("logLevel='").append(logLevel).append('\'');
-        sb.append(", version='").append(version).append('\'');
-        sb.append(", sessionDuration=").append(cliSessionDuration);
         sb.append(", rest=").append(rest);
         sb.append(", grpc=").append(grpc);
-        sb.append(", variant=").append(variant);
         sb.append('}');
         return sb.toString();
     }
@@ -156,37 +152,6 @@ public final class ClientConfiguration {
 
     public ClientConfiguration setLogLevel(String logLevel) {
         this.logLevel = logLevel;
-        return this;
-    }
-
-    @Deprecated
-    public String getLogFile() {
-        return null;
-    }
-
-    @Deprecated
-    public ClientConfiguration setLogFile(String none) {
-        if (none != null) {
-            logger.warn("Deprecated option 'client-configuration.yml#logFile'");
-        }
-        return this;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public ClientConfiguration setVersion(String version) {
-        this.version = version;
-        return this;
-    }
-
-    public int getCliSessionDuration() {
-        return cliSessionDuration;
-    }
-
-    public ClientConfiguration setCliSessionDuration(int cliSessionDuration) {
-        this.cliSessionDuration = cliSessionDuration;
         return this;
     }
 
@@ -205,15 +170,6 @@ public final class ClientConfiguration {
 
     public ClientConfiguration setGrpc(GrpcConfig grpc) {
         this.grpc = grpc;
-        return this;
-    }
-
-    public VariantClientConfiguration getVariant() {
-        return variant;
-    }
-
-    public ClientConfiguration setVariant(VariantClientConfiguration variant) {
-        this.variant = variant;
         return this;
     }
 }

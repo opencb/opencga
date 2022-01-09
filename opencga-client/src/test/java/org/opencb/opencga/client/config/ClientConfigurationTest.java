@@ -31,7 +31,7 @@ public class ClientConfigurationTest {
     @Test
     public void testDefault() {
 
-        ClientConfiguration.getInstance().setCliSessionDuration(120);
+//        ClientConfiguration.getInstance().setCliSessionDuration(120);
         List<Host> hosts = new ArrayList();
         hosts.add(new Host("opencga", "localhost:9090/opencga", true));
         RestConfig restConfig = new RestConfig(true, new QueryRestConfig(200, 2000), hosts);

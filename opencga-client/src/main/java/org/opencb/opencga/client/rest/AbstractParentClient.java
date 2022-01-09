@@ -37,7 +37,6 @@
  import org.opencb.opencga.core.response.OpenCGAResult;
  import org.opencb.opencga.core.response.QueryType;
  import org.opencb.opencga.core.response.RestResponse;
- import org.opencb.opencga.core.response.VariantQueryResult;
  import org.slf4j.Logger;
  import org.slf4j.LoggerFactory;
 
@@ -71,37 +70,49 @@
 
      protected final ObjectMapper jsonObjectMapper;
 
-     private int timeout = 90000;
-     private int batchSize = 2000;
-     private int defaultLimit = 2000;
-     private static final int DEFAULT_SKIP = 0;
+     private int batchSize;
+     private int defaultLimit;
+
+     protected Logger logger;
+
      protected static final String GET = "GET";
      protected static final String POST = "POST";
      protected static final String DELETE = "DELETE";
 
-     protected Logger logger;
+     private static final int DEFAULT_BATCH_SIZE = 200;
+     private static final int DEFAULT_LIMIT = 10;
+     private static final int DEFAULT_SKIP = 0;
+
+     private static final int DEFAULT_CONNECT_TIMEOUT = 1000;
+     private static final int DEFAULT_READ_TIMEOUT = 30000;
 
      protected AbstractParentClient(String token) {
+         this.token = token;
 
          this.logger = LoggerFactory.getLogger(this.getClass().toString());
-         this.token = token;
-         this.client = newClient();
+         this.client = createRestClient();
 
          jsonObjectMapper = new ObjectMapper();
          jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-         if (ClientConfiguration.getInstance().getRest().getTimeout() > 0) {
-             timeout = ClientConfiguration.getInstance().getRest().getTimeout();
-         }
-         if (ClientConfiguration.getInstance().getRest().getQuery().getBatchSize() > 0) {
-             batchSize = ClientConfiguration.getInstance().getRest().getQuery().getBatchSize();
-         }
-         if (ClientConfiguration.getInstance().getRest().getQuery().getLimit() > 0) {
-             defaultLimit = ClientConfiguration.getInstance().getRest().getQuery().getLimit();
+         if (ClientConfiguration.getInstance().getRest().getQuery() != null) {
+             if (ClientConfiguration.getInstance().getRest().getQuery().getBatchSize() > 0) {
+                 batchSize = ClientConfiguration.getInstance().getRest().getQuery().getBatchSize();
+             } else {
+                 batchSize = DEFAULT_BATCH_SIZE;
+             }
+             if (ClientConfiguration.getInstance().getRest().getQuery().getLimit() > 0) {
+                 defaultLimit = ClientConfiguration.getInstance().getRest().getQuery().getLimit();
+             } else {
+                 defaultLimit = DEFAULT_LIMIT;
+             }
+         } else {
+             batchSize = DEFAULT_BATCH_SIZE;
+             defaultLimit = DEFAULT_LIMIT;
          }
      }
 
-     private Client newClient() {
+     private Client createRestClient() {
          ClientBuilder clientBuilder = ClientBuilder.newBuilder();
          clientBuilder.register(JacksonUtils.ObjectMapperProvider.class);
 
@@ -137,9 +148,7 @@
                          return this.hostname.equals(hostname);
                      }
                  };
-                 clientBuilder
-                         .sslContext(sc)
-                         .hostnameVerifier(verifier);
+                 clientBuilder.sslContext(sc).hostnameVerifier(verifier);
              } catch (NoSuchAlgorithmException | KeyManagementException e) {
                  throw new RuntimeException(e);
              }
@@ -150,12 +159,6 @@
      protected AbstractParentClient setThrowExceptionOnError(boolean throwExceptionOnError) {
          this.throwExceptionOnError = throwExceptionOnError;
          return this;
-     }
-
-     protected <T> VariantQueryResult<T> executeVariantQuery(String category, String action, Map<String, Object> params, String method,
-                                                             Class<T> clazz) throws ClientException {
-         RestResponse<T> queryResponse = execute(category, null, action, params, method, clazz);
-         return (VariantQueryResult<T>) queryResponse.first();
      }
 
      protected <T> RestResponse<T> execute(String category, String action, Map<String, Object> params, String method, Class<T> clazz)
@@ -187,10 +190,10 @@
          } else {
              params = new ObjectMap(paramsMap);
          }
-         params.put(QueryOptions.TIMEOUT, timeout);
+         params.put(QueryOptions.TIMEOUT, DEFAULT_READ_TIMEOUT);
 
-         client.property(ClientProperties.CONNECT_TIMEOUT, 1000);
-         client.property(ClientProperties.READ_TIMEOUT, timeout);
+         client.property(ClientProperties.CONNECT_TIMEOUT, DEFAULT_CONNECT_TIMEOUT);
+         client.property(ClientProperties.READ_TIMEOUT, DEFAULT_READ_TIMEOUT);
 
          int skip;
          int limit;
@@ -310,8 +313,9 @@
      }
 
      private boolean isFileUploadServlet(ObjectMap params) {
-         return params != null && params.containsKey("uploadServlet") && Boolean.parseBoolean(String.valueOf(params.get(
-                 "uploadServlet")));
+         return params != null
+                 && params.containsKey("uploadServlet")
+                 && Boolean.parseBoolean(String.valueOf(params.get("uploadServlet")));
      }
 
      /**
@@ -420,7 +424,7 @@
          params.remove("file");
          params.remove("body");
 
-         path.property(ClientProperties.READ_TIMEOUT, timeout * 10);
+         path.property(ClientProperties.READ_TIMEOUT, DEFAULT_READ_TIMEOUT * 10);
          path.register(MultiPartFeature.class);
 
          final FileDataBodyPart filePart = new FileDataBodyPart("file", new File(filePath));

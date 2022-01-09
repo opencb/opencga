@@ -19,6 +19,7 @@ package org.opencb.opencga.client.config;
 /**
  * Created by imedina on 04/05/17.
  */
+@Deprecated
 public class VariantClientConfiguration {
 
     private String unknownGenotype;

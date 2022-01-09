@@ -15,7 +15,7 @@ rest:
       url: "http://localhost:9191/opencga"
   tokenAutoRefresh: true
   tlsAllowInvalidCertificates: false
-  timeout: 90000
+#  timeout: 90000
   query:
     batchSize: 200
     limit: 2000
@@ -24,8 +24,3 @@ rest:
 ## gRPC configuration options
 grpc:
   host: "${OPENCGA.CLIENT.GRPC.HOST}"
-
-
-## Configure the default behaviour when query variants
-variant:
-  unknownGenotype: "0/0"

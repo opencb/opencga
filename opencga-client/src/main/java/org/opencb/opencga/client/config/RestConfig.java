@@ -26,12 +26,10 @@ public class RestConfig {
     private List<Host> hosts;
     private boolean tokenAutoRefresh;
     private boolean tlsAllowInvalidCertificates;
-    private int timeout;
     private Host currentHost;
     private QueryRestConfig query;
 
     public RestConfig() {
-
     }
 
     public RestConfig(boolean tokenAutoRefresh, QueryRestConfig query, List<Host> hosts) {
@@ -49,7 +47,6 @@ public class RestConfig {
         sb.append("hosts=").append(hosts);
         sb.append(", tokenAutoRefresh=").append(tokenAutoRefresh);
         sb.append(", tlsAllowInvalidCertificates=").append(tlsAllowInvalidCertificates);
-        sb.append(", timeout=").append(timeout);
         sb.append(", currentHost=").append(currentHost);
         sb.append(", query=").append(query);
         sb.append('}');
@@ -80,15 +77,6 @@ public class RestConfig {
 
     public RestConfig setTlsAllowInvalidCertificates(boolean tlsAllowInvalidCertificates) {
         this.tlsAllowInvalidCertificates = tlsAllowInvalidCertificates;
-        return this;
-    }
-
-    public int getTimeout() {
-        return timeout;
-    }
-
-    public RestConfig setTimeout(int timeout) {
-        this.timeout = timeout;
         return this;
     }
 
