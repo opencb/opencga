@@ -4,8 +4,10 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.OpencgaCliShellExecutor;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
@@ -57,7 +59,7 @@ public class CliSessionManager {
             CliSession.getInstance().loadCliSessionFile(host);
             setCurrentHost(host);
             CliSession.getInstance().setCurrentHost(host);
-            OpencgaCliShellExecutor.printlnGreen("The new host has set to " + CliSession.getInstance().getCurrentHost());
+            CommandLineUtils.printlnGreen("The new host has set to " + CliSession.getInstance().getCurrentHost());
         } catch (Exception e) {
             OpencgaMain.printErrorMessage(e.getMessage(), e);
         }
@@ -217,7 +219,7 @@ public class CliSessionManager {
 
     public static String getCurrentFile() {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga",
-                getLastHostUsed() + CliSession.SESSION_FILENAME);
+                getLastHostUsed() + CliSession.SESSION_FILE_SUFFIX);
 
         return sessionPath.toString();
     }
@@ -307,6 +309,8 @@ public class CliSessionManager {
             setDefaultCurrentStudy();
         } catch (IOException e) {
             OpencgaMain.printErrorMessage(e.getMessage(), e);
+        } catch (CatalogAuthenticationException e) {
+            e.printStackTrace();
         }
     }
 

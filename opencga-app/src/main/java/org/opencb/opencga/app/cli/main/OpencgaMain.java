@@ -35,7 +35,7 @@ public class OpencgaMain {
                 OpencgaMain.printDebugMessage("Shell created ");
                 CliSessionManager.getShell().execute();
             } else {
-                OpencgaCliProcessor.process(args);
+                OpencgaCliProcessor.execute(args);
             }
         } catch (Exception e) {
             printErrorMessage(e.getMessage(), e);
@@ -58,7 +58,7 @@ public class OpencgaMain {
 
         if (CliSessionManager.isDebug()) {
             if (CliSessionManager.isShell()) {
-                CliSessionManager.getShell().printlnYellow(message);
+                CommandLineUtils.printlnYellow(message);
             } else {
                 System.err.println(message);
             }
@@ -67,13 +67,13 @@ public class OpencgaMain {
 
     public static void printErrorMessage(String s, Throwable e) {
         if (CliSessionManager.isShell()) {
-            CliSessionManager.getShell().printlnRed(s);
+            CommandLineUtils.printlnRed(s);
             if (e != null) {
                 if (CliSessionManager.isDebug()) {
-                    CliSessionManager.getShell().printlnYellow(ExceptionUtils.prettyExceptionStackTrace(e));
+                    CommandLineUtils.printlnYellow(ExceptionUtils.prettyExceptionStackTrace(e));
                 } else {
                     if (!s.equals(e.getMessage())) {
-                        CliSessionManager.getShell().printlnRed(e.getMessage());
+                        CommandLineUtils.printlnRed(e.getMessage());
                     }
                 }
             }
@@ -87,7 +87,7 @@ public class OpencgaMain {
 
     public static void printWarningMessage(String s) {
         if (CliSessionManager.isShell()) {
-            CliSessionManager.getShell().printlnYellow(s);
+            CommandLineUtils.printlnYellow(s);
         } else {
             System.err.println(s);
         }
@@ -95,7 +95,7 @@ public class OpencgaMain {
 
     public static void printInfoMessage(String s) {
         if (CliSessionManager.isShell()) {
-            CliSessionManager.getShell().printlnGreen(s);
+            CommandLineUtils.printlnGreen(s);
         } else {
             System.err.println(s);
         }

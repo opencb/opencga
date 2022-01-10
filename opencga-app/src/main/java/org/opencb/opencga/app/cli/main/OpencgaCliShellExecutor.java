@@ -5,23 +5,23 @@ import org.jline.reader.impl.DefaultHighlighter;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
-import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.io.IOException;
 
-import static org.fusesource.jansi.Ansi.Color.*;
+import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.ansi;
 
-public class OpencgaCliShellExecutor extends CommandExecutor {
+public class OpencgaCliShellExecutor { // extends CommandExecutor {
 
     private LineReader lineReader = null;
     private Terminal terminal = null;
 
-    public OpencgaCliShellExecutor(GeneralCliOptions.CommonCommandOptions options) {
-        super(new GeneralCliOptions.CommonCommandOptions());
+    public OpencgaCliShellExecutor(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
+//        super(options);
     }
 
     private LineReader getTerminal() {
@@ -42,7 +42,7 @@ public class OpencgaCliShellExecutor extends CommandExecutor {
                 try {
                     defaultHistory.save();
                 } catch (IOException e) {
-                    printlnRed("Failed to save terminal history" + e.getMessage());
+                    CommandLineUtils.printlnRed("Failed to save terminal history" + e.getMessage());
                 }
             }));
             reader = LineReaderBuilder.builder()
@@ -51,13 +51,13 @@ public class OpencgaCliShellExecutor extends CommandExecutor {
                     .history(defaultHistory).completer(new OpenCgaCompleterImpl())
                     .build();
         } catch (Exception e) {
-            printlnRed("Failed to create terminal " + e.getMessage());
+            CommandLineUtils.printlnRed("Failed to create terminal " + e.getMessage());
         }
 
         return reader;
     }
 
-    @Override
+//    @Override
     public void execute() throws Exception {
         try {
             if (lineReader == null) {
@@ -72,7 +72,7 @@ public class OpencgaCliShellExecutor extends CommandExecutor {
                 try {
                     line = lineReader.readLine(PROMPT);
                 } catch (UserInterruptException e) {
-                    printlnYellow("If you want to close OpenCGA. Type \"exit\"");
+                    CommandLineUtils.printlnYellow("If you want to close OpenCGA. Type \"exit\"");
                     continue;
                 } catch (EndOfFileException e) {
                     break;
@@ -82,7 +82,7 @@ public class OpencgaCliShellExecutor extends CommandExecutor {
                 }
                 line = line.trim();
                 if (!line.equals("")) {
-                    OpencgaCliProcessor.process(line.split(" "));
+                    OpencgaCliProcessor.execute(line.split(" "));
                 }
                 // Construct the Command and args to pass to that command
 
@@ -105,27 +105,27 @@ public class OpencgaCliShellExecutor extends CommandExecutor {
         printlnBlue("   ╚██████╔╝██║     ███████╗██║ ╚████║╚██████╗╚██████╔╝██║  ██║");
         printlnBlue("    ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝");
         */
-        printlnGreen("     ███████                                    █████████    █████████    █████████  ");
-        printlnGreen("   ███░░░░░███                                 ███░░░░░███  ███░░░░░███  ███░░░░░███ ");
-        printlnGreen("  ███     ░░███ ████████   ██████  ████████   ███     ░░░  ███     ░░░  ░███    ░███ ");
-        printlnGreen("  ███      ░███░░███░░███ ███░░███░░███░░███ ░███         ░███          ░███████████ ");
-        printlnGreen("  ███      ░███ ░███ ░███░███████  ░███ ░███ ░███         ░███    █████ ░███░░░░░███ ");
-        printlnGreen("  ░███     ███  ░███ ░███░███░░░   ░███ ░███ ░░███     ███░░███  ░░███  ░███    ░███ ");
-        printlnGreen("  ░░░███████░   ░███████ ░░██████  ████ █████ ░░█████████  ░░█████████  █████   █████");
-        printlnGreen("    ░░░░░░░     ░███░░░   ░░░░░░  ░░░░ ░░░░░   ░░░░░░░░░    ░░░░░░░░░  ░░░░░   ░░░░░ ");
-        printlnGreen("                ░███                                                                 ");
-        printlnGreen("                █████                                                                ");
-        printlnGreen("               ░░░░░                                                                 ");
+        CommandLineUtils.printlnGreen("     ███████                                    █████████    █████████    █████████  ");
+        CommandLineUtils.printlnGreen("   ███░░░░░███                                 ███░░░░░███  ███░░░░░███  ███░░░░░███ ");
+        CommandLineUtils.printlnGreen("  ███     ░░███ ████████   ██████  ████████   ███     ░░░  ███     ░░░  ░███    ░███ ");
+        CommandLineUtils.printlnGreen("  ███      ░███░░███░░███ ███░░███░░███░░███ ░███         ░███          ░███████████ ");
+        CommandLineUtils.printlnGreen("  ███      ░███ ░███ ░███░███████  ░███ ░███ ░███         ░███    █████ ░███░░░░░███ ");
+        CommandLineUtils.printlnGreen("  ░███     ███  ░███ ░███░███░░░   ░███ ░███ ░░███     ███░░███  ░░███  ░███    ░███ ");
+        CommandLineUtils.printlnGreen("  ░░░███████░   ░███████ ░░██████  ████ █████ ░░█████████  ░░█████████  █████   █████");
+        CommandLineUtils.printlnGreen("    ░░░░░░░     ░███░░░   ░░░░░░  ░░░░ ░░░░░   ░░░░░░░░░    ░░░░░░░░░  ░░░░░   ░░░░░ ");
+        CommandLineUtils.printlnGreen("                ░███                                                                 ");
+        CommandLineUtils.printlnGreen("                █████                                                                ");
+        CommandLineUtils.printlnGreen("               ░░░░░                                                                 ");
 
         System.out.println("");
-        printGreen("\tOpenCGA CLI version: ");
-        printlnYellow("\t" + GitRepositoryState.get().getBuildVersion());
-        printGreen("\tGit version:");
-        printlnYellow("\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
-        printGreen("\tProgram:");
-        printlnYellow("\t\tOpenCGA (OpenCB)");
-        printGreen("\tDescription: ");
-        printlnYellow("\t\tBig Data platform for processing and analysing NGS data");
+        CommandLineUtils.printGreen("\tOpenCGA CLI version: ");
+        CommandLineUtils.printlnYellow("\t" + GitRepositoryState.get().getBuildVersion());
+        CommandLineUtils.printGreen("\tGit version:");
+        CommandLineUtils.printlnYellow("\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+        CommandLineUtils.printGreen("\tProgram:");
+        CommandLineUtils.printlnYellow("\t\tOpenCGA (OpenCB)");
+        CommandLineUtils.printGreen("\tDescription: ");
+        CommandLineUtils.printlnYellow("\t\tBig Data platform for processing and analysing NGS data");
         System.out.println("");
         System.out.println("\nTo close the application type \"exit\"");
         System.out.println("");
@@ -143,35 +143,4 @@ public class OpencgaCliShellExecutor extends CommandExecutor {
         System.out.println("");
     }
 
-    public static void printlnBlue(String message) {
-        System.out.println(ansi().fg(BLUE).a(message).reset());
-    }
-
-    public static void printBlue(String message) {
-        System.out.print(ansi().fg(BLUE).a(message).reset());
-    }
-
-    public static void printlnGreen(String message) {
-        System.out.println(ansi().fg(GREEN).a(message).reset());
-    }
-
-    public static void printGreen(String message) {
-        System.out.print(ansi().fg(GREEN).a(message).reset());
-    }
-
-    public static void printlnYellow(String message) {
-        System.out.println(ansi().fg(YELLOW).a(message).reset());
-    }
-
-    public static void printYellow(String message) {
-        System.out.print(ansi().fg(YELLOW).a(message).reset());
-    }
-
-    public static void printlnRed(String message) {
-        System.out.println(ansi().fg(RED).a(message).reset());
-    }
-
-    public static void printRed(String message) {
-        System.out.print(ansi().fg(RED).a(message).reset());
-    }
 }
