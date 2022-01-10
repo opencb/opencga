@@ -21,9 +21,11 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.ConfigurationUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileLinkParams;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.tools.OpenCgaTool;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -87,6 +89,33 @@ public abstract class OpenCgaAnalysisTool extends OpenCgaTool {
         }
         // Add only if move is successful
         addGeneratedFile(file);
+    }
+
+    protected final void registerExternalFile(String study, String uri, String catalogDirectoryPath, String token) throws ToolException {
+        File file;
+        try {
+            FileLinkParams linkParams = new FileLinkParams(uri, catalogDirectoryPath, "", TimeUtils.getTime(), TimeUtils.getTime(), null,
+                    null, null);
+            file = catalogManager.getFileManager().link(study, linkParams, true, token).first();
+        } catch (Exception e) {
+            throw new ToolException("Error linking file " + uri + " to " + catalogDirectoryPath, e);
+        }
+        // Add only if link is successful
+        addGeneratedFile(file);
+    }
+
+    protected final String getParentDirectory(String path) {
+        if (path.endsWith("/")) {
+            // Remove trailing /
+            path = path.substring(0, path.length() - 1);
+        }
+
+        // Find position of last /
+        int i = path.lastIndexOf("/");
+        if (i > 0) {
+            return path.substring(0, i + 1);
+        }
+        return "/";
     }
 
     protected final void setUpStorageEngineExecutor(String study) throws ToolException {

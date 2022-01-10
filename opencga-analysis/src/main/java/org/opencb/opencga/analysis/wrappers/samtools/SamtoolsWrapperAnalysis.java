@@ -28,14 +28,12 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.SamtoolsWrapperParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMANDS_SUPPORTED;
@@ -51,6 +49,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaToolScopeStudy {
     @ToolParams
     protected final SamtoolsWrapperParams analysisParams = new SamtoolsWrapperParams();
 
+    private String inputFileUri = null;
     private String inputFilePath = null;
 
     protected void check() throws Exception {
@@ -68,7 +67,9 @@ public class SamtoolsWrapperAnalysis extends OpenCgaToolScopeStudy {
         // Get files from catalog
         FileManager fileManager = catalogManager.getFileManager();
         if (StringUtils.isNotEmpty(analysisParams.getInputFile())) {
-            inputFilePath = AnalysisUtils.getCatalogFile(analysisParams.getInputFile(), study, fileManager, token).getUri().getPath();
+            File catalogFile = AnalysisUtils.getCatalogFile(analysisParams.getInputFile(), study, fileManager, token);
+            inputFileUri = catalogFile.getUri().getPath();
+            inputFilePath = catalogFile.getPath();
         }
 
         if (MapUtils.isNotEmpty(analysisParams.getSamtoolsParams())) {
@@ -98,39 +99,38 @@ public class SamtoolsWrapperAnalysis extends OpenCgaToolScopeStudy {
 
             getToolExecutor(SamtoolsWrapperAnalysisExecutor.class)
                     .setCommand(analysisParams.getCommand())
-                    .setInputFile(inputFilePath)
+                    .setInputFile(inputFileUri)
                     .execute();
 
             // Index management
             switch (analysisParams.getCommand()) {
                 case "index": {
-                    String indexFilePath;
+                    String indexFileUri;
                     if (executorParams.containsKey("c")) {
-                        indexFilePath = inputFilePath + ".csi";
+                        indexFileUri = inputFileUri + ".csi";
                     } else {
-                        indexFilePath = inputFilePath + ".bai";
+                        indexFileUri = inputFileUri + ".bai";
                     }
-                    if (new java.io.File(indexFilePath).exists()) {
-                        // Create symobolic link
-                        Path target = Paths.get(indexFilePath);
-                        Path symbolic = getOutDir().resolve(target.getFileName().toString());
-                        Files.createSymbolicLink(symbolic, target);
+                    if (new java.io.File(indexFileUri).exists()) {
+                        // Register externally created file
+                        String catalogDirectoryPath = getParentDirectory(inputFilePath);
+                        registerExternalFile(study, indexFileUri, catalogDirectoryPath, token);
                     }
                     break;
                 }
                 case "faidx": {
-                    String indexFilePath = inputFilePath + ".fai";
-                    if (new java.io.File(indexFilePath).exists()) {
-                        // Create symobolic link
-                        Path target = Paths.get(indexFilePath);
-                        Path symbolic = getOutDir().resolve(target.getFileName().toString());
-                        Files.createSymbolicLink(symbolic, target);
+                    String indexFileUri = inputFileUri + ".fai";
+                    if (new java.io.File(indexFileUri).exists()) {
+                        // Register externally created file
+                        String catalogDirectoryPath = getParentDirectory(inputFilePath);
+                        registerExternalFile(study, indexFileUri, catalogDirectoryPath, token);
                     }
                     break;
                 }
             }
         });
     }
+
 
 
     public static SamtoolsStats parseSamtoolsStats(java.io.File file) throws IOException {
