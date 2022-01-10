@@ -58,7 +58,7 @@ public class OpencgaMain {
 
         if (CliSessionManager.isDebug()) {
             if (CliSessionManager.isShell()) {
-                CommandLineUtils.printlnYellow(message);
+                CommandLineUtils.printColor("YELLOW", message);
             } else {
                 System.err.println(message);
             }
@@ -67,13 +67,13 @@ public class OpencgaMain {
 
     public static void printErrorMessage(String s, Throwable e) {
         if (CliSessionManager.isShell()) {
-            CommandLineUtils.printlnRed(s);
+            CommandLineUtils.printColor("RED", s);
             if (e != null) {
                 if (CliSessionManager.isDebug()) {
-                    CommandLineUtils.printlnYellow(ExceptionUtils.prettyExceptionStackTrace(e));
+                    CommandLineUtils.printColor("YELLOW", ExceptionUtils.prettyExceptionStackTrace(e));
                 } else {
                     if (!s.equals(e.getMessage())) {
-                        CommandLineUtils.printlnRed(e.getMessage());
+                        CommandLineUtils.printColor("RED", e.getMessage());
                     }
                 }
             }
@@ -87,7 +87,7 @@ public class OpencgaMain {
 
     public static void printWarningMessage(String s) {
         if (CliSessionManager.isShell()) {
-            CommandLineUtils.printlnYellow(s);
+            CommandLineUtils.printColor("YELLOW", s);
         } else {
             System.err.println(s);
         }
@@ -95,7 +95,7 @@ public class OpencgaMain {
 
     public static void printInfoMessage(String s) {
         if (CliSessionManager.isShell()) {
-            CommandLineUtils.printlnGreen(s);
+            CommandLineUtils.printColor("GREEN", s);
         } else {
             System.err.println(s);
         }

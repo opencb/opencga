@@ -42,7 +42,7 @@ public class OpencgaCliShellExecutor { // extends CommandExecutor {
                 try {
                     defaultHistory.save();
                 } catch (IOException e) {
-                    CommandLineUtils.printlnRed("Failed to save terminal history" + e.getMessage());
+                    CommandLineUtils.printColor("RED", "Failed to save terminal history" + e.getMessage());
                 }
             }));
             reader = LineReaderBuilder.builder()
@@ -51,13 +51,13 @@ public class OpencgaCliShellExecutor { // extends CommandExecutor {
                     .history(defaultHistory).completer(new OpenCgaCompleterImpl())
                     .build();
         } catch (Exception e) {
-            CommandLineUtils.printlnRed("Failed to create terminal " + e.getMessage());
+            CommandLineUtils.printColor("RED", "Failed to create terminal " + e.getMessage());
         }
 
         return reader;
     }
 
-//    @Override
+    //    @Override
     public void execute() throws Exception {
         try {
             if (lineReader == null) {
@@ -72,7 +72,7 @@ public class OpencgaCliShellExecutor { // extends CommandExecutor {
                 try {
                     line = lineReader.readLine(PROMPT);
                 } catch (UserInterruptException e) {
-                    CommandLineUtils.printlnYellow("If you want to close OpenCGA. Type \"exit\"");
+                    CommandLineUtils.printColor("YELLOW", "If you want to close OpenCGA. Type \"exit\"");
                     continue;
                 } catch (EndOfFileException e) {
                     break;
@@ -105,42 +105,42 @@ public class OpencgaCliShellExecutor { // extends CommandExecutor {
         printlnBlue("   ╚██████╔╝██║     ███████╗██║ ╚████║╚██████╗╚██████╔╝██║  ██║");
         printlnBlue("    ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝");
         */
-        CommandLineUtils.printlnGreen("     ███████                                    █████████    █████████    █████████  ");
-        CommandLineUtils.printlnGreen("   ███░░░░░███                                 ███░░░░░███  ███░░░░░███  ███░░░░░███ ");
-        CommandLineUtils.printlnGreen("  ███     ░░███ ████████   ██████  ████████   ███     ░░░  ███     ░░░  ░███    ░███ ");
-        CommandLineUtils.printlnGreen("  ███      ░███░░███░░███ ███░░███░░███░░███ ░███         ░███          ░███████████ ");
-        CommandLineUtils.printlnGreen("  ███      ░███ ░███ ░███░███████  ░███ ░███ ░███         ░███    █████ ░███░░░░░███ ");
-        CommandLineUtils.printlnGreen("  ░███     ███  ░███ ░███░███░░░   ░███ ░███ ░░███     ███░░███  ░░███  ░███    ░███ ");
-        CommandLineUtils.printlnGreen("  ░░░███████░   ░███████ ░░██████  ████ █████ ░░█████████  ░░█████████  █████   █████");
-        CommandLineUtils.printlnGreen("    ░░░░░░░     ░███░░░   ░░░░░░  ░░░░ ░░░░░   ░░░░░░░░░    ░░░░░░░░░  ░░░░░   ░░░░░ ");
-        CommandLineUtils.printlnGreen("                ░███                                                                 ");
-        CommandLineUtils.printlnGreen("                █████                                                                ");
-        CommandLineUtils.printlnGreen("               ░░░░░                                                                 ");
+        CommandLineUtils.printColor("GREEN", "     ███████                                    █████████    █████████    █████████  ");
+        CommandLineUtils.printColor("GREEN", "   ███░░░░░███                                 ███░░░░░███  ███░░░░░███  ███░░░░░███ ");
+        CommandLineUtils.printColor("GREEN", "  ███     ░░███ ████████   ██████  ████████   ███     ░░░  ███     ░░░  ░███    ░███ ");
+        CommandLineUtils.printColor("GREEN", "  ███      ░███░░███░░███ ███░░███░░███░░███ ░███         ░███          ░███████████ ");
+        CommandLineUtils.printColor("GREEN", "  ███      ░███ ░███ ░███░███████  ░███ ░███ ░███         ░███    █████ ░███░░░░░███ ");
+        CommandLineUtils.printColor("GREEN", "  ░███     ███  ░███ ░███░███░░░   ░███ ░███ ░░███     ███░░███  ░░███  ░███    ░███ ");
+        CommandLineUtils.printColor("GREEN", "  ░░░███████░   ░███████ ░░██████  ████ █████ ░░█████████  ░░█████████  █████   █████");
+        CommandLineUtils.printColor("GREEN", "    ░░░░░░░     ░███░░░   ░░░░░░  ░░░░ ░░░░░   ░░░░░░░░░    ░░░░░░░░░  ░░░░░   ░░░░░ ");
+        CommandLineUtils.printColor("GREEN", "                ░███                                                                 ");
+        CommandLineUtils.printColor("GREEN", "                █████                                                                ");
+        CommandLineUtils.printColor("GREEN", "               ░░░░░                                                                 ");
 
-        System.out.println("");
-        CommandLineUtils.printGreen("\tOpenCGA CLI version: ");
-        CommandLineUtils.printlnYellow("\t" + GitRepositoryState.get().getBuildVersion());
-        CommandLineUtils.printGreen("\tGit version:");
-        CommandLineUtils.printlnYellow("\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
-        CommandLineUtils.printGreen("\tProgram:");
-        CommandLineUtils.printlnYellow("\t\tOpenCGA (OpenCB)");
-        CommandLineUtils.printGreen("\tDescription: ");
-        CommandLineUtils.printlnYellow("\t\tBig Data platform for processing and analysing NGS data");
-        System.out.println("");
+        System.out.println();
+        CommandLineUtils.printColor("GREEN", "\tOpenCGA CLI version: ", false);
+        CommandLineUtils.printColor("YELLOW", "\t" + GitRepositoryState.get().getBuildVersion());
+        CommandLineUtils.printColor("GREEN", "\tGit version:", false);
+        CommandLineUtils.printColor("YELLOW", "\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+        CommandLineUtils.printColor("GREEN", "\tProgram:", false);
+        CommandLineUtils.printColor("YELLOW", "\t\tOpenCGA (OpenCB)");
+        CommandLineUtils.printColor("GREEN", "\tDescription: ", false);
+        CommandLineUtils.printColor("YELLOW", "\t\tBig Data platform for processing and analysing NGS data");
+        System.out.println();
         System.out.println("\nTo close the application type \"exit\"");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
         OpencgaMain.printDebugMessage("Opencga is running in DEBUG mode");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
-        System.out.println("");
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
+        System.out.println();
     }
 
 }

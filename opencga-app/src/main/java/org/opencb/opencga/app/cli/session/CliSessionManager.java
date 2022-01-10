@@ -32,9 +32,9 @@ import static org.fusesource.jansi.Ansi.ansi;
 public class CliSessionManager {
 
     public static final String DEFAULT_PARAMETER = "--default";
+    private static final boolean reloadStudies = false;
     private static OpencgaCliShellExecutor sessionShell;
     private static boolean debug = false;
-    private static final boolean reloadStudies = false;
 
     public static void updateSession() {
         try {
@@ -59,7 +59,7 @@ public class CliSessionManager {
             CliSession.getInstance().loadCliSessionFile(host);
             setCurrentHost(host);
             CliSession.getInstance().setCurrentHost(host);
-            CommandLineUtils.printlnGreen("The new host has set to " + CliSession.getInstance().getCurrentHost());
+            CommandLineUtils.printColor("GREEN", "The new host has set to " + CliSession.getInstance().getCurrentHost());
         } catch (Exception e) {
             OpencgaMain.printErrorMessage(e.getMessage(), e);
         }
