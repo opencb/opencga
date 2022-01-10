@@ -356,6 +356,7 @@
         "unitary_pseudogene",
         "unprocessed_pseudogene",
         "vaultRNA",
+        "vault_RNA",
         "guide_RNA"
       ],
       "rank": 13,
