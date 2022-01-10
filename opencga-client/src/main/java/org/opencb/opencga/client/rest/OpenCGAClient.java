@@ -20,6 +20,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
+import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.clients.*;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -40,32 +41,53 @@ public class OpenCGAClient {
     private String userId;
     private String token;
     private String refreshToken;
+    private ClientConfiguration clientConfiguration;
 
-    private final Map<String, AbstractParentClient> clients;
+    private Map<String, AbstractParentClient> clients;
     private boolean throwExceptionOnError;
 
     public OpenCGAClient() {
-        this(null);
+        this(ClientConfiguration.getInstance());
+    }
+
+    public OpenCGAClient(ClientConfiguration clientConfiguration) {
+        this.init(null, clientConfiguration);
     }
 
     public OpenCGAClient(String user, String password) throws ClientException {
-        this(null);
-        login(user, password);
+        this(user, password, null);
+    }
+
+    public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) throws ClientException {
+        AuthenticationResponse login = login(user, password);
+        this.init(login, clientConfiguration);
     }
 
     public OpenCGAClient(AuthenticationResponse authenticationTokens) {
-        this.clients = new HashMap<>(20);
-
-        init(authenticationTokens);
+        this(authenticationTokens, null);
     }
 
-    private void init(AuthenticationResponse tokens) {
+    public OpenCGAClient(AuthenticationResponse authenticationTokens, ClientConfiguration clientConfiguration) {
+        this.init(authenticationTokens, clientConfiguration);
+    }
+
+    private void init(AuthenticationResponse tokens, ClientConfiguration clientConfiguration) {
+        this.clients = new HashMap<>(25);
+
         if (tokens != null) {
-            this.userId = getUserFromToken(tokens.getToken());
             setToken(tokens.getToken());
             setRefreshToken(tokens.getRefreshToken());
+            this.userId = getUserFromToken(tokens.getToken());
+        }
+
+        if (clientConfiguration == null) {
+            this.clientConfiguration = ClientConfiguration.getInstance();
+        } else {
+            this.clientConfiguration = clientConfiguration;
         }
     }
+
+
 
     protected static String getUserFromToken(String token) {
         // https://github.com/jwtk/jjwt/issues/280
@@ -149,21 +171,6 @@ public class OpenCGAClient {
     }
 
     /**
-     * Logs in the user.
-     *
-     * @param user     userId.
-     * @param password Password.
-     * @return AuthenticationResponse object.
-     * @throws ClientException when it is not possible logging in.
-     */
-    public AuthenticationResponse login(String user, String password) throws ClientException {
-        RestResponse<AuthenticationResponse> login = getUserClient().login(new LoginParams(user, password), null);
-        updateTokenFromClients(login);
-        setUserId(user);
-        return login.firstResult();
-    }
-
-    /**
      * Refresh the user token.
      *
      * @return the new AuthenticationResponse object.
@@ -176,6 +183,21 @@ public class OpenCGAClient {
         RestResponse<AuthenticationResponse> refresh = getUserClient().login(new LoginParams(refreshToken), null);
         updateTokenFromClients(refresh);
         return refresh.firstResult();
+    }
+
+    /**
+     * Logs in the user.
+     *
+     * @param user     userId.
+     * @param password Password.
+     * @return AuthenticationResponse object.
+     * @throws ClientException when it is not possible logging in.
+     */
+    public AuthenticationResponse login(String user, String password) throws ClientException {
+        RestResponse<AuthenticationResponse> login = getUserClient().login(new LoginParams(user, password), null);
+        updateTokenFromClients(login);
+        this.userId = user;
+        return login.firstResult();
     }
 
     public void updateTokenFromClients(RestResponse<AuthenticationResponse> loginResponse) throws ClientException {
@@ -197,6 +219,25 @@ public class OpenCGAClient {
             setToken(null);
             setUserId(null);
         }
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("OpenCGAClient{");
+        sb.append("userId='").append(userId).append('\'');
+        sb.append(", token='").append(token).append('\'');
+        sb.append(", refreshToken='").append(refreshToken).append('\'');
+        sb.append(", clientConfiguration=").append(clientConfiguration);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
     public String getToken() {
@@ -223,21 +264,23 @@ public class OpenCGAClient {
         return this;
     }
 
-    public OpenCGAClient setThrowExceptionOnError(boolean throwExceptionOnError) {
-        this.throwExceptionOnError = throwExceptionOnError;
-        clients.values().stream()
-                .filter(Objects::nonNull)
-                .forEach(abstractParentClient -> {
-                    abstractParentClient.setThrowExceptionOnError(this.throwExceptionOnError);
-                });
+    public ClientConfiguration getClientConfiguration() {
+        return clientConfiguration;
+    }
+
+    public OpenCGAClient setClientConfiguration(ClientConfiguration clientConfiguration) {
+        this.clientConfiguration = clientConfiguration;
         return this;
     }
 
-    public String getUserId() {
-        return userId;
-    }
+    //    public OpenCGAClient setThrowExceptionOnError(boolean throwExceptionOnError) {
+//        this.throwExceptionOnError = throwExceptionOnError;
+//        clients.values().stream()
+//                .filter(Objects::nonNull)
+//                .forEach(abstractParentClient -> {
+//                    abstractParentClient.setThrowExceptionOnError(this.throwExceptionOnError);
+//                });
+//        return this;
+//    }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
 }

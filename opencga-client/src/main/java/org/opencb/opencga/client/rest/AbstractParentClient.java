@@ -66,6 +66,7 @@
      protected final Client client;
 
      private String token;
+     private ClientConfiguration clientConfiguration;
      private boolean throwExceptionOnError = false;
 
      protected final ObjectMapper jsonObjectMapper;
@@ -86,23 +87,32 @@
      private static final int DEFAULT_CONNECT_TIMEOUT = 1000;
      private static final int DEFAULT_READ_TIMEOUT = 30000;
 
+     /**
+      * Creates a parent client with the provided token and a default ClientConfiguration object.
+      * @param token A valid and logged token
+      */
      protected AbstractParentClient(String token) {
-         this.token = token;
+         this(token, ClientConfiguration.getInstance());
+     }
 
-         this.logger = LoggerFactory.getLogger(this.getClass().toString());
+     protected AbstractParentClient(String token, ClientConfiguration clientConfiguration) {
+         this.token = token;
+         this.clientConfiguration = clientConfiguration;
+
+         this.logger = LoggerFactory.getLogger(this.getClass());
          this.client = createRestClient();
 
          jsonObjectMapper = new ObjectMapper();
          jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-         if (ClientConfiguration.getInstance().getRest().getQuery() != null) {
-             if (ClientConfiguration.getInstance().getRest().getQuery().getBatchSize() > 0) {
-                 batchSize = ClientConfiguration.getInstance().getRest().getQuery().getBatchSize();
+         if (this.clientConfiguration.getRest().getQuery() != null) {
+             if (this.clientConfiguration.getRest().getQuery().getBatchSize() > 0) {
+                 batchSize = this.clientConfiguration.getRest().getQuery().getBatchSize();
              } else {
                  batchSize = DEFAULT_BATCH_SIZE;
              }
-             if (ClientConfiguration.getInstance().getRest().getQuery().getLimit() > 0) {
-                 defaultLimit = ClientConfiguration.getInstance().getRest().getQuery().getLimit();
+             if (this.clientConfiguration.getRest().getQuery().getLimit() > 0) {
+                 defaultLimit = this.clientConfiguration.getRest().getQuery().getLimit();
              } else {
                  defaultLimit = DEFAULT_LIMIT;
              }
@@ -116,7 +126,7 @@
          ClientBuilder clientBuilder = ClientBuilder.newBuilder();
          clientBuilder.register(JacksonUtils.ObjectMapperProvider.class);
 
-         if (ClientConfiguration.getInstance().getRest().isTlsAllowInvalidCertificates()) {
+         if (clientConfiguration.getRest().isTlsAllowInvalidCertificates()) {
              logger.debug("Using custom SSLContext to allow invalid certificates");
              try {
                  TrustManager[] trustAllCerts = new TrustManager[]{
@@ -140,7 +150,7 @@
                  sc.init(null, trustAllCerts, new SecureRandom());
 
                  HostnameVerifier verifier = new HostnameVerifier() {
-                     private String hostname = URI.create(ClientConfiguration.getInstance().getRest().getCurrentUrl()).getHost();
+                     private String hostname = URI.create(clientConfiguration.getRest().getCurrentUrl()).getHost();
 
                      @Override
                      public boolean verify(String hostname, SSLSession sslSession) {
@@ -228,7 +238,7 @@
 
              // Build URL
              WebTarget path = client
-                     .target(ClientConfiguration.getInstance().getRest().getCurrentUrl())
+                     .target(clientConfiguration.getRest().getCurrentUrl())
                      .path("webservices")
                      .path("rest")
                      .path("v2")
