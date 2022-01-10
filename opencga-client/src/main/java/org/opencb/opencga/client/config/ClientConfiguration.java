@@ -49,7 +49,9 @@ public final class ClientConfiguration {
 
     public static ClientConfiguration getInstance() {
         if (instance == null) {
-            instance = new ClientConfiguration();
+//            instance = new ClientConfiguration();
+            // TODO discuss this with Juanfe
+            ClientConfiguration.loadClientConfiguration();
         }
         return instance;
     }

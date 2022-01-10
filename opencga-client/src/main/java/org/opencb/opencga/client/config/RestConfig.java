@@ -29,8 +29,9 @@ public class RestConfig {
     private List<HostConfig> hosts;
     private boolean tokenAutoRefresh;
     private boolean tlsAllowInvalidCertificates;
-    private HostConfig currentHost;
     private QueryRestConfig query;
+
+    private HostConfig currentHost;
 
     public RestConfig() {
     }
@@ -45,6 +46,8 @@ public class RestConfig {
         this.tokenAutoRefresh = tokenAutoRefresh;
         this.tlsAllowInvalidCertificates = tlsAllowInvalidCertificates;
         this.query = query;
+
+        // Store the current host
         if (CollectionUtils.isNotEmpty(hosts)) {
             Optional<HostConfig> first = hosts.stream().filter(HostConfig::isDefaultHost).findFirst();
             currentHost = first.isPresent() ? first.get() : hosts.get(0);
@@ -133,7 +136,6 @@ public class RestConfig {
         sb.append("hosts=").append(hosts);
         sb.append(", tokenAutoRefresh=").append(tokenAutoRefresh);
         sb.append(", tlsAllowInvalidCertificates=").append(tlsAllowInvalidCertificates);
-        sb.append(", currentHost=").append(currentHost);
         sb.append(", query=").append(query);
         sb.append('}');
         return sb.toString();
@@ -166,21 +168,21 @@ public class RestConfig {
         return this;
     }
 
-    public HostConfig getCurrentHost() {
-        return currentHost;
-    }
-
-    public RestConfig setCurrentHost(HostConfig currentHost) {
-        this.currentHost = currentHost;
-        return this;
-    }
-
     public QueryRestConfig getQuery() {
         return query;
     }
 
     public RestConfig setQuery(QueryRestConfig query) {
         this.query = query;
+        return this;
+    }
+
+    public HostConfig getCurrentHost() {
+        return currentHost;
+    }
+
+    public RestConfig setCurrentHost(HostConfig currentHost) {
+        this.currentHost = currentHost;
         return this;
     }
 }
