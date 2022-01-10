@@ -24,7 +24,7 @@ public class OpencgaCliProcessor {
         return console;
     }
 
-    public static void process(String[] args) throws CatalogAuthenticationException {
+    public static void execute(String[] args) throws CatalogAuthenticationException {
         console = getConsole();
         OpencgaMain.printDebugMessage("Executing ", args);
 
@@ -33,7 +33,7 @@ public class OpencgaCliProcessor {
             System.exit(0);
         }
         if (args.length == 1 && "exit".equals(args[0])) {
-            OpencgaCliShellExecutor.printlnYellow("\nThanks for using OpenCGA. See you soon.\n\n");
+            CommandLineUtils.printlnYellow("\nThanks for using OpenCGA. See you soon.\n\n");
             System.exit(0);
         }
 
@@ -71,7 +71,7 @@ public class OpencgaCliProcessor {
                     args = getUserPasswordArgs(args, "--user-password");
                 } else {
                     char[] passwordArray =
-                            console.readPassword(String.valueOf(ansi().fg(GREEN).a("\nEnter your secret password: ").reset()));
+                            console.readPassword(String.valueOf(ansi().fg(GREEN).a("\nEnter your password: ").reset()));
                     args = appendArgs(args, new String[]{"--password", new String(passwordArray)});
                 }
             }
@@ -85,14 +85,14 @@ public class OpencgaCliProcessor {
             if (parsedCommand == null || parsedCommand.isEmpty()) {
                 if (cliOptionsParser.getGeneralOptions().version) {
 
-                    OpencgaCliShellExecutor.printGreen("\tOpenCGA CLI version: ");
-                    OpencgaCliShellExecutor.printlnYellow("\t" + GitRepositoryState.get().getBuildVersion());
-                    OpencgaCliShellExecutor.printGreen("\tGit version:");
-                    OpencgaCliShellExecutor.printlnYellow("\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
-                    OpencgaCliShellExecutor.printGreen("\tProgram:");
-                    OpencgaCliShellExecutor.printlnYellow("\t\tOpenCGA (OpenCB)");
-                    OpencgaCliShellExecutor.printGreen("\tDescription: ");
-                    OpencgaCliShellExecutor.printlnYellow("\t\tBig Data platform for processing and analysing NGS data");
+                    CommandLineUtils.printGreen("\tOpenCGA CLI version: ");
+                    CommandLineUtils.printlnYellow("\t" + GitRepositoryState.get().getBuildVersion());
+                    CommandLineUtils.printGreen("\tGit version:");
+                    CommandLineUtils.printlnYellow("\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+                    CommandLineUtils.printGreen("\tProgram:");
+                    CommandLineUtils.printlnYellow("\t\tOpenCGA (OpenCB)");
+                    CommandLineUtils.printGreen("\tDescription: ");
+                    CommandLineUtils.printlnYellow("\t\tBig Data platform for processing and analysing NGS data");
                     System.out.println();
                 } else if (cliOptionsParser.getGeneralOptions().buildVersion) {
                     System.out.println(GitRepositoryState.get().getBuildVersion());
@@ -165,7 +165,7 @@ public class OpencgaCliProcessor {
                                 commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
                                 break;
                             default:
-                                OpencgaCliShellExecutor.printlnRed("ERROR: not valid command passed: '" + parsedCommand + "'");
+                                CommandLineUtils.printlnRed("ERROR: not valid command passed: '" + parsedCommand + "'");
                                 break;
                         }
 
@@ -215,6 +215,8 @@ public class OpencgaCliProcessor {
         }
     }
 
+    @Deprecated
+    // use ArrayUtils.addAll(args, strings);
     private static String[] appendArgs(String[] args, String[] strings) {
         String[] res = new String[args.length + strings.length];
         for (int i = 0; i < res.length; i++) {
@@ -227,6 +229,8 @@ public class OpencgaCliProcessor {
         return res;
     }
 
+    @Deprecated
+    // use ArrayUtils.contains(args, s);
     private static boolean argsContains(String[] args, String s) {
         for (String arg : args) {
             if (arg.contains(s)) {
@@ -236,14 +240,14 @@ public class OpencgaCliProcessor {
         return false;
     }
 
-    public static void forceLogin() throws CatalogAuthenticationException {
+    private static void forceLogin() throws CatalogAuthenticationException {
         console = getConsole();
         String user = console.readLine(String.valueOf(ansi().fg(GREEN).a("\nEnter your user: ").reset()));
         loginUser(user);
         OpencgaMain.printDebugMessage("Login user " + user);
     }
 
-    public static void loginUser(String user) throws CatalogAuthenticationException {
+    private static void loginUser(String user) throws CatalogAuthenticationException {
         console = getConsole();
         char[] passwordArray = console.readPassword(String.valueOf(ansi().fg(GREEN).a("\nEnter your password: ").reset()));
         String[] args = new String[2];
@@ -262,6 +266,7 @@ public class OpencgaCliProcessor {
         }
     }
 
+    @Deprecated
     private static boolean isValidUser(String user) {
         return user.matches("^[A-Za-z][A-Za-z0-9_]{2,29}$");
     }

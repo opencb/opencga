@@ -167,62 +167,62 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
     }
 
-    protected ObjectMap loadFile(String filePath) throws CatalogException {
-        return loadFile(filePath, ObjectMap.class);
-    }
+//    protected ObjectMap loadFile(String filePath) throws CatalogException {
+//        return loadFile(filePath, ObjectMap.class);
+//    }
+//
+//    protected <T> T loadFile(String filePath, Class<T> clazz) throws CatalogException {
+//        File file = Paths.get(filePath).toFile();
+//        if (!file.exists() || file.isDirectory()) {
+//            throw new CatalogException("File " + filePath + " not found");
+//        }
+//        FileInputStream fileInputStream;
+//        try {
+//            fileInputStream = FileUtils.openInputStream(file);
+//        } catch (IOException e) {
+//            throw new CatalogException("Could not open file " + filePath + ". " + e.getMessage(), e);
+//        }
+//        ObjectMapper objectMapper = JacksonUtils.getUpdateObjectMapper();
+//        try {
+//            return objectMapper.readValue(fileInputStream, clazz);
+//        } catch (IOException e) {
+//            throw new CatalogException("Could not parse file " + filePath + ". Is it a valid JSON file?. "
+//                    + e.getMessage(), e);
+//        }
+//    }
 
-    protected <T> T loadFile(String filePath, Class<T> clazz) throws CatalogException {
-        File file = Paths.get(filePath).toFile();
-        if (!file.exists() || file.isDirectory()) {
-            throw new CatalogException("File " + filePath + " not found");
-        }
-        FileInputStream fileInputStream;
-        try {
-            fileInputStream = FileUtils.openInputStream(file);
-        } catch (IOException e) {
-            throw new CatalogException("Could not open file " + filePath + ". " + e.getMessage(), e);
-        }
-        ObjectMapper objectMapper = JacksonUtils.getUpdateObjectMapper();
-        try {
-            return objectMapper.readValue(fileInputStream, clazz);
-        } catch (IOException e) {
-            throw new CatalogException("Could not parse file " + filePath + ". Is it a valid JSON file?. "
-                    + e.getMessage(), e);
-        }
-    }
-
-    protected String extractIdsFromListOrFile(String ids) throws CatalogException {
-        if (StringUtils.isEmpty(ids)) {
-            return null;
-        }
-
-        File file = new File(ids);
-        if (file.exists() && file.isFile()) {
-            // Read the file
-            try (BufferedReader br = new BufferedReader(new FileReader(ids))) {
-                StringBuilder sb = new StringBuilder();
-                String line = br.readLine();
-                boolean isNotFirstLine = false;
-
-                while (line != null) {
-                    if (StringUtils.isNotEmpty(line)) {
-                        if (isNotFirstLine) {
-                            sb.append(",");
-                        } else {
-                            isNotFirstLine = true;
-                        }
-                        sb.append(line);
-                    }
-                    line = br.readLine();
-                }
-                return sb.toString();
-            } catch (IOException e) {
-                throw new CatalogException("File could not be parsed. Does it contain a line per id?");
-            }
-        } else {
-            return ids;
-        }
-    }
+//    protected String extractIdsFromListOrFile(String ids) throws CatalogException {
+//        if (StringUtils.isEmpty(ids)) {
+//            return null;
+//        }
+//
+//        File file = new File(ids);
+//        if (file.exists() && file.isFile()) {
+//            // Read the file
+//            try (BufferedReader br = new BufferedReader(new FileReader(ids))) {
+//                StringBuilder sb = new StringBuilder();
+//                String line = br.readLine();
+//                boolean isNotFirstLine = false;
+//
+//                while (line != null) {
+//                    if (StringUtils.isNotEmpty(line)) {
+//                        if (isNotFirstLine) {
+//                            sb.append(",");
+//                        } else {
+//                            isNotFirstLine = true;
+//                        }
+//                        sb.append(line);
+//                    }
+//                    line = br.readLine();
+//                }
+//                return sb.toString();
+//            } catch (IOException e) {
+//                throw new CatalogException("File could not be parsed. Does it contain a line per id?");
+//            }
+//        } else {
+//            return ids;
+//        }
+//    }
 
     public void createOutput(RestResponse queryResponse) {
         if (queryResponse != null) {
@@ -230,45 +230,45 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
     }
 
-    public ObjectMap getCommonParams(String study) {
-        return getCommonParams(null, study, new HashMap<>());
-    }
+//    public ObjectMap getCommonParams(String study) {
+//        return getCommonParams(null, study, new HashMap<>());
+//    }
+//
+//    public ObjectMap getCommonParams(String study, Map<String, String> initialParams) {
+//        return getCommonParams(null, study, initialParams);
+//    }
+//
+//    public ObjectMap getCommonParams(String project, String study, Map<String, String> initialParams) {
+//        ObjectMap params = new ObjectMap(initialParams);
+//        params.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);
+//        params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
+//        return params;
+//    }
 
-    public ObjectMap getCommonParams(String study, Map<String, String> initialParams) {
-        return getCommonParams(null, study, initialParams);
-    }
+//    public ObjectMap addJobParams(GeneralCliOptions.JobOptions jobOptions, ObjectMap params) {
+//        params.putIfNotEmpty(ParamConstants.JOB_ID, jobOptions.jobId);
+//        params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, jobOptions.jobDescription);
+//        if (jobOptions.jobDependsOn != null) {
+//            params.put(ParamConstants.JOB_DEPENDS_ON, String.join(",", jobOptions.jobDependsOn));
+//        }
+//        if (jobOptions.jobTags != null) {
+//            params.put(ParamConstants.JOB_TAGS, String.join(",", jobOptions.jobTags));
+//        }
+//        return params;
+//    }
 
-    public ObjectMap getCommonParams(String project, String study, Map<String, String> initialParams) {
-        ObjectMap params = new ObjectMap(initialParams);
-        params.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);
-        params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
-        return params;
-    }
-
-    public ObjectMap addJobParams(GeneralCliOptions.JobOptions jobOptions, ObjectMap params) {
-        params.putIfNotEmpty(ParamConstants.JOB_ID, jobOptions.jobId);
-        params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, jobOptions.jobDescription);
-        if (jobOptions.jobDependsOn != null) {
-            params.put(ParamConstants.JOB_DEPENDS_ON, String.join(",", jobOptions.jobDependsOn));
-        }
-        if (jobOptions.jobTags != null) {
-            params.put(ParamConstants.JOB_TAGS, String.join(",", jobOptions.jobTags));
-        }
-        return params;
-    }
-
-    public ObjectMap addNumericParams(GeneralCliOptions.NumericOptions numericOptions, ObjectMap params) {
-        if (numericOptions.limit > 0) {
-            params.put(QueryOptions.LIMIT, numericOptions.limit);
-        }
-        if (numericOptions.skip > 0) {
-            params.put(QueryOptions.SKIP, numericOptions.skip);
-        }
-        if (numericOptions.count) {
-            params.put(QueryOptions.COUNT, numericOptions.count);
-        }
-        return params;
-    }
+//    public ObjectMap addNumericParams(GeneralCliOptions.NumericOptions numericOptions, ObjectMap params) {
+//        if (numericOptions.limit > 0) {
+//            params.put(QueryOptions.LIMIT, numericOptions.limit);
+//        }
+//        if (numericOptions.skip > 0) {
+//            params.put(QueryOptions.SKIP, numericOptions.skip);
+//        }
+//        if (numericOptions.count) {
+//            params.put(QueryOptions.COUNT, numericOptions.count);
+//        }
+//        return params;
+//    }
 
     public void invokeSetter(Object obj, String propertyName, Object variableValue) {
         if (variableValue != null) {
