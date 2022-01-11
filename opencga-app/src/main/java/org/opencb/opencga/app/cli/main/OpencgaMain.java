@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main;
 
 import org.opencb.opencga.app.cli.session.CliSessionManager;
+import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
@@ -29,6 +30,7 @@ public class OpencgaMain {
 
     public static void main(String[] args) {
         try {
+            ClientConfiguration.getInstance().loadClientConfiguration();
             CliSessionManager.init(args);
             if (args.length == 1 && "--shell".equals(args[0]) || (args.length == 2 && "--shell".equals(args[0]) && "--debug".equals(args[1]))) {
                 CliSessionManager.initShell();

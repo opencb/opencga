@@ -33,7 +33,7 @@ public class OpencgaCliProcessor {
             System.exit(0);
         }
         if (args.length == 1 && "exit".equals(args[0])) {
-            CommandLineUtils.printColor("YELLOW", "\nThanks for using OpenCGA. See you soon.\n\n");
+            CommandLineUtils.printColor(CommandLineUtils.Color.YELLOW, "\nThanks for using OpenCGA. See you soon.\n\n");
             System.exit(0);
         }
 
@@ -85,14 +85,14 @@ public class OpencgaCliProcessor {
             if (parsedCommand == null || parsedCommand.isEmpty()) {
                 if (cliOptionsParser.getGeneralOptions().version) {
 
-                    CommandLineUtils.printColor("GREEN", "\tOpenCGA CLI version: ", false);
-                    CommandLineUtils.printColor("YELLOW", "\t" + GitRepositoryState.get().getBuildVersion());
-                    CommandLineUtils.printColor("GREEN", "\tGit version:", false);
-                    CommandLineUtils.printColor("YELLOW", "\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
-                    CommandLineUtils.printColor("GREEN", "\tProgram:", false);
-                    CommandLineUtils.printColor("YELLOW", "\t\tOpenCGA (OpenCB)");
-                    CommandLineUtils.printColor("GREEN", "\tDescription: ", false);
-                    CommandLineUtils.printColor("YELLOW", "\t\tBig Data platform for processing and analysing NGS data");
+                    CommandLineUtils.printColor(CommandLineUtils.Color.GREEN, "\tOpenCGA CLI version: ", false);
+                    CommandLineUtils.printColor(CommandLineUtils.Color.YELLOW, "\t" + GitRepositoryState.get().getBuildVersion());
+                    CommandLineUtils.printColor(CommandLineUtils.Color.GREEN, "\tGit version:", false);
+                    CommandLineUtils.printColor(CommandLineUtils.Color.YELLOW, "\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+                    CommandLineUtils.printColor(CommandLineUtils.Color.GREEN, "\tProgram:", false);
+                    CommandLineUtils.printColor(CommandLineUtils.Color.YELLOW, "\t\tOpenCGA (OpenCB)");
+                    CommandLineUtils.printColor(CommandLineUtils.Color.GREEN, "\tDescription: ", false);
+                    CommandLineUtils.printColor(CommandLineUtils.Color.YELLOW, "\t\tBig Data platform for processing and analysing NGS data");
                     System.out.println();
                 } else if (cliOptionsParser.getGeneralOptions().buildVersion) {
                     System.out.println(GitRepositoryState.get().getBuildVersion());
@@ -165,7 +165,7 @@ public class OpencgaCliProcessor {
                                 commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
                                 break;
                             default:
-                                CommandLineUtils.printColor("RED", "ERROR: not valid command passed: '" + parsedCommand + "'");
+                                CommandLineUtils.printColor(CommandLineUtils.Color.RED, "ERROR: not valid command passed: '" + parsedCommand + "'");
                                 break;
                         }
 

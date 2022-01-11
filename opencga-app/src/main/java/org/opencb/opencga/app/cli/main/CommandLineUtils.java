@@ -24,7 +24,7 @@ public class CommandLineUtils {
     }
 
     public static void printColor(String color, String message, boolean newLine) {
-        Ansi.Color ansiColor = StringUtils.isNotEmpty(color) ? valueOf(color.toUpperCase()) : valueOf("DEFAULT");
+        Ansi.Color ansiColor = StringUtils.isNotEmpty(color) ? valueOf(color.toUpperCase()) : valueOf(Color.DEFAULT);
         if (newLine) {
             System.out.println(ansi().fg(ansiColor).a(message).reset());
         } else {
@@ -32,5 +32,15 @@ public class CommandLineUtils {
         }
     }
 
-
+    public class Color {
+        public final static String BLACK = "BLACK";
+        public final static String RED = "RED";
+        public final static String GREEN = "GREEN";
+        public final static String YELLOW = "YELLOW";
+        public final static String BLUE = "BLUE";
+        public final static String MAGENTA = "MAGENTA";
+        public final static String CYAN = "CYAN";
+        public final static String WHITE = "WHITE";
+        public final static String DEFAULT = "DEFAULT";
+    }
 }

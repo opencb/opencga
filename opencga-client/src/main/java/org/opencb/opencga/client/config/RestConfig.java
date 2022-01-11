@@ -16,22 +16,18 @@
 
 package org.opencb.opencga.client.config;
 
-import org.apache.commons.collections4.CollectionUtils;
-
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Created by imedina on 04/05/16.
  */
 public class RestConfig {
 
+    private int defaultHostIndex = 0;
     private List<HostConfig> hosts;
     private boolean tokenAutoRefresh;
     private boolean tlsAllowInvalidCertificates;
     private QueryRestConfig query;
-
-    private HostConfig currentHost;
 
     public RestConfig() {
     }
@@ -47,11 +43,6 @@ public class RestConfig {
         this.tlsAllowInvalidCertificates = tlsAllowInvalidCertificates;
         this.query = query;
 
-        // Store the current host
-        if (CollectionUtils.isNotEmpty(hosts)) {
-            Optional<HostConfig> first = hosts.stream().filter(HostConfig::isDefaultHost).findFirst();
-            currentHost = first.isPresent() ? first.get() : hosts.get(0);
-        }
     }
 
     private HostConfig getHostByUrl(String s) {
@@ -91,43 +82,19 @@ public class RestConfig {
     }
 
     public String getCurrentHostname() {
-        if (currentHost == null) {
-            if (hosts != null && !hosts.isEmpty()) {
-                currentHost = hosts.get(0);
-            } else {
-                return "";
-            }
-        }
-        return currentHost.getName();
-    }
-
-    public String getCurrentUrl() {
-        if (currentHost == null) {
-            if (hosts != null && !hosts.isEmpty()) {
-                currentHost = hosts.get(0);
-            } else {
-                return "";
-            }
-        }
-        return currentHost.getUrl();
+        return hosts.get(defaultHostIndex).getName();
     }
 
     public void setCurrentHostname(String name) {
-        if (!existsName(name)) {
-            currentHost = new HostConfig(name, name, true);
-        } else {
-            currentHost = getHostByName(name);
-        }
-        hosts.add(0, currentHost);
+        hosts.get(defaultHostIndex).setName(name);
+    }
+
+    public String getCurrentUrl() {
+        return hosts.get(defaultHostIndex).getUrl();
     }
 
     public void setCurrentUrl(String url) {
-        if (!existsUrl(url)) {
-            currentHost = new HostConfig(url, url, true);
-        } else {
-            currentHost = getHostByUrl(url);
-        }
-        hosts.add(0, currentHost);
+        hosts.get(defaultHostIndex).setUrl(url);
     }
 
     @Override
@@ -177,12 +144,12 @@ public class RestConfig {
         return this;
     }
 
-    public HostConfig getCurrentHost() {
-        return currentHost;
+    public int getDefaultHostIndex() {
+        return defaultHostIndex;
     }
 
-    public RestConfig setCurrentHost(HostConfig currentHost) {
-        this.currentHost = currentHost;
+    public RestConfig setDefaultHostIndex(int defaultHostIndex) {
+        this.defaultHostIndex = defaultHostIndex;
         return this;
     }
 }

@@ -36,6 +36,10 @@ import java.util.Map;
  */
 public class CliSession {
 
+    public static final String GUEST_USER = "anonymous";
+    public static final String NO_STUDY = "NO_STUDY";
+    public static final String SESSION_FILE_SUFFIX = "_session.json";
+    private static CliSession instance;
     private final long timestamp;
     private String host;
     private String version;
@@ -45,17 +49,10 @@ public class CliSession {
     private String login;
     private List<String> studies;
     private String currentStudy;
+//    private Logger privateLogger = LoggerFactory.getLogger(CommandExecutor.class);
     private String currentHost;
 
-    public static final String GUEST_USER = "anonymous";
-    public static final String NO_STUDY = "NO_STUDY";
-    public static final String SESSION_FILE_SUFFIX = "_session.json";
-//    private Logger privateLogger = LoggerFactory.getLogger(CommandExecutor.class);
-
-    private static CliSession instance;
-
     private CliSession() {
-        ClientConfiguration.getInstance().loadClientConfiguration();
         host = "localhost";
         version = "";
         user = GUEST_USER;
@@ -135,6 +132,14 @@ public class CliSession {
         }
     }
 
+    public static void updateCliSessionFile(String host) throws IOException {
+        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", host + SESSION_FILE_SUFFIX);
+        if (Files.exists(sessionPath)) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), instance);
+        }
+    }
+
     public void saveCliSessionFile(String host) throws IOException {
         // Check the home folder exists
         if (!Files.exists(Paths.get(System.getProperty("user.home")))) {
@@ -158,14 +163,6 @@ public class CliSession {
             instance.setExpirationTime(TimeUtils.getTime(expiration));
         }*/
         new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), instance);
-    }
-
-    public static void updateCliSessionFile(String host) throws IOException {
-        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", host + SESSION_FILE_SUFFIX);
-        if (Files.exists(sessionPath)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), instance);
-        }
     }
 
     public void logoutCliSessionFile(String host) throws IOException {

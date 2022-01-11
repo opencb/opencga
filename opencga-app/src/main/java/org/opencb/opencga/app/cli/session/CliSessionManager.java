@@ -47,7 +47,7 @@ public class CliSessionManager {
             }
             OpencgaMain.printDebugMessage("Session updated ");
             if (isReloadStudies()) {
-                loadStudies();
+                reloadStudies();
             }
         } catch (Exception e) {
             OpencgaMain.printErrorMessage(e.getMessage(), e);
@@ -59,7 +59,7 @@ public class CliSessionManager {
             CliSession.getInstance().loadCliSessionFile(host);
             setCurrentHost(host);
             CliSession.getInstance().setCurrentHost(host);
-            CommandLineUtils.printColor("GREEN", "The new host has set to " + CliSession.getInstance().getCurrentHost());
+            CommandLineUtils.printColor(CommandLineUtils.Color.GREEN, "The new host has set to " + CliSession.getInstance().getCurrentHost());
         } catch (Exception e) {
             OpencgaMain.printErrorMessage(e.getMessage(), e);
         }
@@ -139,9 +139,7 @@ public class CliSessionManager {
                 + CliSession.getInstance().getUser() + "/>").reset());
     }
 
-    private static void loadStudies() {
-        setReloadStudies(false);
-        OpencgaMain.printDebugMessage("Reloading studies ");
+    private static void loadSessionStudies() {
         if (!StringUtils.isEmpty(CliSession.getInstance().getToken())) {
             OpenCGAClient openCGAClient = new OpenCGAClient();
             try {
@@ -175,6 +173,14 @@ public class CliSessionManager {
             } catch (Exception e) {
                 OpencgaMain.printErrorMessage("Reloading studies failed ", e);
             }
+        }
+    }
+
+    private static void reloadStudies() {
+        setReloadStudies(false);
+        OpencgaMain.printDebugMessage("Reloading studies ");
+        if (!StringUtils.isEmpty(CliSession.getInstance().getToken())) {
+            loadSessionStudies();
         } else {
             OpencgaMain.printErrorMessage("To set a study you must be logged in");
         }
@@ -322,7 +328,9 @@ public class CliSessionManager {
             ClientConfiguration.getInstance().getRest().setCurrentHostname(
                     ClientConfiguration.getInstance().getRest().getHosts().get(0).getName());
         }
+
         setDebug(isDebugModeSet(args));
+        loadSessionStudies();
     }
 
     private static boolean isDebugModeSet(String[] args) {

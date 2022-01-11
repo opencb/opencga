@@ -34,32 +34,32 @@ public class ParentCliOptionsParser extends CliOptionsParser {
     public void printUsage() {
         String parsedCommand = getCommand();
         if (parsedCommand.isEmpty()) {
-            System.err.println("");
+            System.err.println();
             System.err.println("Program:     OpenCGA (OpenCB)");
             System.err.println("Version:     " + GitRepositoryState.get().getBuildVersion());
             System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
             System.err.println("Description: Big Data platform for processing and analysing NGS data");
-            System.err.println("");
+            System.err.println();
             System.err.println("Usage:       opencga.sh [-h|--help] [--version] <command> [options]");
-            System.err.println("");
+            System.err.println();
             printMainUsage();
-            System.err.println("");
+            System.err.println();
         } else {
             String parsedSubCommand = getSubCommand();
             if (parsedSubCommand.isEmpty()) {
-                System.err.println("");
+                System.err.println();
                 System.err.println("Usage:   opencga.sh " + parsedCommand + " <subcommand> [options]");
-                System.err.println("");
+                System.err.println();
                 System.err.println("Subcommands:");
                 printCommands(jCommander.getCommands().get(parsedCommand));
-                System.err.println("");
+                System.err.println();
             } else {
-                System.err.println("");
+                System.err.println();
                 System.err.println("Usage:   opencga.sh " + parsedCommand + " " + parsedSubCommand + " [options]");
-                System.err.println("");
+                System.err.println();
                 System.err.println("Options:");
                 CommandLineUtils.printCommandUsage(jCommander.getCommands().get(parsedCommand).getCommands().get(parsedSubCommand));
-                System.err.println("");
+                System.err.println();
             }
         }
     }
@@ -80,7 +80,7 @@ public class ParentCliOptionsParser extends CliOptionsParser {
             }
         }
 
-        System.err.println("");
+        System.err.println();
         System.err.println("Analysis commands:");
         for (String command : jCommander.getCommands().keySet()) {
             if (analysisCommands.contains(command)) {
@@ -88,7 +88,7 @@ public class ParentCliOptionsParser extends CliOptionsParser {
             }
         }
 
-        System.err.println("");
+        System.err.println();
         System.err.println("Operation commands:");
         for (String command : jCommander.getCommands().keySet()) {
             if (operationsCommands.contains(command)) {
@@ -99,7 +99,7 @@ public class ParentCliOptionsParser extends CliOptionsParser {
 
     private Map<String, String> getOpencgaCommands() {
         Map<String, String> h = new HashMap<>();
-        h.put("--shell", "Interactive mode opencga shell");
+        h.put("shell", "Interactive mode opencga shell");
         h.put("use study <name>", "(Only in interactive mode) Sets the study to be used in the following commands");
         h.put("use host <name>", "Sets the host(server) to be used in the following commands");
         h.put("login [user]", "Authenticates new user in the system");

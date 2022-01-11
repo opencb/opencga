@@ -13,7 +13,7 @@ rest:
       url: "http://localhost:9090/opencga"
     - name: "opencga-demo1"
       url: "http://localhost:9191/opencga"
-  #defaultHostIndex: 0
+  defaultHostIndex: 0
   tokenAutoRefresh: true
   tlsAllowInvalidCertificates: false
   query:
