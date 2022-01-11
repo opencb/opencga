@@ -271,10 +271,20 @@ public class ClinicalInterpretationManager extends StorageManager {
             for (String panelId : panels) {
                 org.opencb.opencga.core.models.panel.Panel panel = catalogQueryUtils.getPanel(studyId, panelId, token);
                 for (DiseasePanel.GenePanel genePanel : panel.getGenes()) {
-                    if (!genePanelMap.containsKey(genePanel.getName())) {
-                        genePanelMap.put(genePanel.getName(), new HashSet<>());
+                    // Check gene name to be inserted in the panel map
+                    if (StringUtils.isNotEmpty(genePanel.getName())) {
+                        if (!genePanelMap.containsKey(genePanel.getName())) {
+                            genePanelMap.put(genePanel.getName(), new HashSet<>());
+                        }
+                        genePanelMap.get(genePanel.getName()).add(panelId);
                     }
-                    genePanelMap.get(genePanel.getName()).add(panelId);
+                    // Check gene ID to be inserted in the panel map
+                    if (StringUtils.isNotEmpty(genePanel.getId())) {
+                        if (!genePanelMap.containsKey(genePanel.getId())) {
+                            genePanelMap.put(genePanel.getId(), new HashSet<>());
+                        }
+                        genePanelMap.get(genePanel.getId()).add(panelId);
+                    }
                 }
             }
         }
