@@ -1,9 +1,12 @@
 package org.opencb.opencga.app.migrations.v2_2_0.catalog;
 
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.UpdateOneModel;
 import org.apache.commons.lang3.StringUtils;
+import org.bson.BsonMaximumSizeExceededException;
 import org.bson.Document;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
@@ -20,37 +23,45 @@ import static com.mongodb.client.model.Filters.eq;
         date = 20220112)
 public class ClinicalVariantEvidenceMigration extends MigrationTool {
 
-    public ClinicalVariantEvidenceMigration() {
-        super(1);
-    }
-
     @Override
     protected void run() throws Exception {
-        migrateCollection(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION,
-                new Document(),
-                Projections.include("_id", "primaryFindings", "secondaryFindings"),
-                (doc, bulk) -> {
-                    List<Document> primaryFindings = doc.getList("primaryFindings", Document.class);
-                    List<Document> secondaryFindings = doc.getList("secondaryFindings", Document.class);
+        MongoCollection<Document> collection = getMongoCollection(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION);
 
-                    Document update = new Document();
-                    if (!primaryFindings.isEmpty()) {
-                        applyChanges(primaryFindings);
-                        update.put("primaryFindings", primaryFindings);
-                    }
-                    if (!secondaryFindings.isEmpty()) {
-                        applyChanges(secondaryFindings);
-                        update.put("secondaryFindings", secondaryFindings);
-                    }
+        int bsonMaximumSizeExceeded = 0;
+        ProgressLogger progressLogger = new ProgressLogger("Execute Interpretation update").setBatchSize(100);
+        try (MongoCursor<Document> it = collection
+                .find(new Document("primaryFindings.evidences.review", new Document("$exists", false)))
+                .projection(Projections.include("_id", "primaryFindings", "secondaryFindings")).cursor()) {
+            while (it.hasNext()) {
+                Document doc = it.next();
 
-                    if (!update.isEmpty()) {
-                        bulk.add(new UpdateOneModel<>(
-                                eq("_id", doc.get("_id")),
-                                new Document("$set", update))
-                        );
+                List<Document> primaryFindings = doc.getList("primaryFindings", Document.class);
+                List<Document> secondaryFindings = doc.getList("secondaryFindings", Document.class);
+
+                Document update = new Document();
+                if (!primaryFindings.isEmpty()) {
+                    applyChanges(primaryFindings);
+                    update.put("primaryFindings", primaryFindings);
+                }
+                if (!secondaryFindings.isEmpty()) {
+                    applyChanges(secondaryFindings);
+                    update.put("secondaryFindings", secondaryFindings);
+                }
+
+                if (!update.isEmpty()) {
+                    try {
+                        collection.updateOne(eq("_id", doc.get("_id")), new Document("$set", update));
+                        progressLogger.increment(1);
+                    } catch (BsonMaximumSizeExceededException e) {
+                        bsonMaximumSizeExceeded++;
                     }
                 }
-        );
+            }
+        }
+
+        if (bsonMaximumSizeExceeded > 0) {
+            logger.warn("{} Interpretations could not be updated because of the size of the document", bsonMaximumSizeExceeded);
+        }
     }
 
     private void applyChanges(List<Document> clinicalVariants) {
