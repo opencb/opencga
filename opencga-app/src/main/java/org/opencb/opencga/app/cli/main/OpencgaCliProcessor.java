@@ -2,8 +2,6 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
 import org.apache.commons.lang3.ArrayUtils;
-import org.opencb.commons.utils.Color;
-import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.*;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
@@ -12,6 +10,8 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.io.Console;
 import java.io.IOException;
+
+import static org.opencb.commons.utils.PrintUtils.*;
 
 
 public class OpencgaCliProcessor {
@@ -31,11 +31,11 @@ public class OpencgaCliProcessor {
 
 
         if (console == null && CliSessionManager.isShell()) {
-            PrintUtils.println("Couldn't get console instance", Color.RED);
+            println("Couldn't get console instance", Color.RED);
             System.exit(0);
         }
         if (args.length == 1 && "exit".equals(args[0])) {
-            PrintUtils.println("\nThanks for using OpenCGA. See you soon.\n\n", Color.YELLOW);
+            println("\nThanks for using OpenCGA. See you soon.\n\n", Color.YELLOW);
             System.exit(0);
         }
 
@@ -73,7 +73,7 @@ public class OpencgaCliProcessor {
                     args = getUserPasswordArgs(args, "--user-password");
                 } else {
                     char[] passwordArray =
-                            console.readPassword(PrintUtils.format("\nEnter your password: ", Color.GREEN));
+                            console.readPassword(format("\nEnter your password: ", Color.GREEN));
                     args = ArrayUtils.addAll(args, "--password", new String(passwordArray));
                 }
             }
@@ -158,7 +158,7 @@ public class OpencgaCliProcessor {
                                 commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
                                 break;
                             default:
-                                PrintUtils.printError("Not valid command passed: '" + parsedCommand + "'");
+                                printError("Not valid command passed: '" + parsedCommand + "'");
                                 break;
                         }
 
@@ -167,10 +167,10 @@ public class OpencgaCliProcessor {
                 }
             }
         } catch (ParameterException e) {
-            PrintUtils.printWarn("\n" + e.getMessage());
+            printWarn("\n" + e.getMessage());
             cliOptionsParser.printUsage();
         } catch (CatalogAuthenticationException e) {
-            PrintUtils.printWarn("\n" + e.getMessage());
+            printWarn("\n" + e.getMessage());
             try {
                 CliSessionManager.logoutCliSessionFile();
             } catch (IOException ex) {
@@ -213,7 +213,7 @@ public class OpencgaCliProcessor {
 
     private static void forceLogin() throws CatalogAuthenticationException {
         console = getConsole();
-        String user = console.readLine(PrintUtils.format("\nEnter your user: ", Color.GREEN));
+        String user = console.readLine(format("\nEnter your user: ", Color.GREEN));
         loginUser(user);
         CommandLineUtils.printDebugMessage("Login user " + user);
 
@@ -221,7 +221,7 @@ public class OpencgaCliProcessor {
 
     private static void loginUser(String user) throws CatalogAuthenticationException {
         console = getConsole();
-        char[] passwordArray = console.readPassword(PrintUtils.format("\nEnter your password: ", Color.GREEN));
+        char[] passwordArray = console.readPassword(format("\nEnter your password: ", Color.GREEN));
         String[] args = new String[2];
         args[0] = "users";
         args[1] = "login";
@@ -232,9 +232,9 @@ public class OpencgaCliProcessor {
             cliOptionsParser.parse(args);
             CommandExecutor commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
             executeCommand(commandExecutor, cliOptionsParser);
-            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Logged user: ", user));
+            println(getKeyValueAsFormattedString("Logged user: ", user));
         } else {
-            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Invalid user name: ", user));
+            println(getKeyValueAsFormattedString("Invalid user name: ", user));
         }
     }
 

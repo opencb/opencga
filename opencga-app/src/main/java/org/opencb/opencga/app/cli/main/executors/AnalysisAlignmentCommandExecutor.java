@@ -1,17 +1,12 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import org.opencb.opencga.app.cli.session.CliSessionManager;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-
-import java.util.List;
 
 import org.opencb.opencga.app.cli.main.options.AnalysisAlignmentCommandOptions;
 
@@ -182,7 +177,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         AlignmentGeneCoverageStatsParams alignmentGeneCoverageStatsParams = (AlignmentGeneCoverageStatsParams) new AlignmentGeneCoverageStatsParams()
             .setBamFile(commandOptions.bamFile)
-            .setGenes(CommandLineUtils.getListValues(commandOptions.genes))
+            .setGenes(CommandLineUtils.splitWithTrim(commandOptions.genes))
             .setOutdir(commandOptions.outdir);
         return openCGAClient.getAlignmentClient().runQcGeneCoverageStats(alignmentGeneCoverageStatsParams, queryParams);
     }

@@ -1,47 +1,33 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import org.opencb.opencga.app.cli.session.CliSessionManager;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
-import java.util.List;
-
 import org.opencb.opencga.app.cli.main.options.FilesCommandOptions;
 
 import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
 
-import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.core.models.file.FileAclUpdateParams;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
-import org.opencb.opencga.core.models.file.FileLinkInternalParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+
 import java.io.DataInputStream;
 import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.file.FileTree;
 import org.opencb.opencga.core.models.file.FileCreateParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
 import org.opencb.biodata.models.clinical.interpretation.Software;
-import org.opencb.opencga.core.models.file.SmallFileInternal;
 import org.opencb.opencga.core.models.file.FileLinkParams;
-import org.opencb.opencga.core.models.file.FileQualityControl;
-import org.opencb.opencga.core.models.file.File.Bioformat;
 import org.opencb.opencga.core.models.file.FileFetch;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.file.File.Format;
 import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.file.FileLinkToolParams;
 import org.opencb.opencga.core.models.file.PostLinkToolParams;
-import java.io.InputStream;
-import java.util.Map;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.file.File;
 
@@ -265,9 +251,9 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             .setContent(commandOptions.content)
             .setPath(commandOptions.path)
             .setDescription(commandOptions.description)
-            .setSampleIds(CommandLineUtils.getListValues(commandOptions.sampleIds))
+            .setSampleIds(CommandLineUtils.splitWithTrim(commandOptions.sampleIds))
             .setSoftware(software)
-            .setTags(CommandLineUtils.getListValues(commandOptions.tags))
+            .setTags(CommandLineUtils.splitWithTrim(commandOptions.tags))
             .setJobId(commandOptions.jobId)
             .setCreationDate(commandOptions.creationDate)
             .setModificationDate(commandOptions.modificationDate);
@@ -383,7 +369,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
 
         FileLinkToolParams fileLinkToolParams = (FileLinkToolParams) new FileLinkToolParams()
-            .setUri(CommandLineUtils.getListValues(commandOptions.uri))
+            .setUri(CommandLineUtils.splitWithTrim(commandOptions.uri))
             .setPath(commandOptions.path)
             .setDescription(commandOptions.description)
             .setParents(commandOptions.parents);
@@ -408,7 +394,7 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
 
         PostLinkToolParams postLinkToolParams = (PostLinkToolParams) new PostLinkToolParams()
-            .setFiles(CommandLineUtils.getListValues(commandOptions.files))
+            .setFiles(CommandLineUtils.splitWithTrim(commandOptions.files))
             .setBatchSize(commandOptions.batchSize);
         return openCGAClient.getFileClient().runPostlink(postLinkToolParams, queryParams);
     }
@@ -568,10 +554,10 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             .setDescription(commandOptions.description)
             .setCreationDate(commandOptions.creationDate)
             .setModificationDate(commandOptions.modificationDate)
-            .setSampleIds(CommandLineUtils.getListValues(commandOptions.sampleIds))
+            .setSampleIds(CommandLineUtils.splitWithTrim(commandOptions.sampleIds))
             .setChecksum(commandOptions.checksum)
             .setSoftware(software)
-            .setTags(CommandLineUtils.getListValues(commandOptions.tags))
+            .setTags(CommandLineUtils.splitWithTrim(commandOptions.tags))
             .setSize(commandOptions.size);
         return openCGAClient.getFileClient().update(commandOptions.files, fileUpdateParams, queryParams);
     }

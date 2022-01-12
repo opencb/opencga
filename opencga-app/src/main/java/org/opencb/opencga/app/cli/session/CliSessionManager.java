@@ -3,8 +3,6 @@ package org.opencb.opencga.app.cli.session;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.utils.Color;
-import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.OpencgaCliShellExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
@@ -25,6 +23,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import static org.opencb.commons.utils.PrintUtils.*;
 
 
 public class CliSessionManager {
@@ -57,16 +57,14 @@ public class CliSessionManager {
             CliSession.getInstance().loadCliSessionFile(host);
             setCurrentHost(host);
             CliSession.getInstance().setCurrentHost(host);
-            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("The new host has set to: ",
+            println(getKeyValueAsFormattedString("The new host has set to: ",
                     CliSession.getInstance().getCurrentHost()));
-
         } catch (Exception e) {
             CommandLineUtils.printError("Failure to switch hosts", e);
         }
     }
 
     public static void setCurrentHost(String name) throws Exception {
-
         if (name == null) {
             throw new Exception("The name of host cannot be null");
         }
@@ -134,9 +132,9 @@ public class CliSessionManager {
     }
 
     public static String getPrompt() {
-        String host = PrintUtils.format("[" + CliSession.getInstance().getCurrentHost() + "]", Color.GREEN);
-        String study = PrintUtils.format("[" + CliSession.getInstance().getCurrentStudy() + "]", Color.BLUE);
-        String user = PrintUtils.format("<" + CliSession.getInstance().getUser() + "/>", Color.YELLOW);
+        String host = format("[" + CliSession.getInstance().getCurrentHost() + "]", Color.GREEN);
+        String study = format("[" + CliSession.getInstance().getCurrentStudy() + "]", Color.BLUE);
+        String user = format("<" + CliSession.getInstance().getUser() + "/>", Color.YELLOW);
         return host + study + user;
     }
 
@@ -183,7 +181,7 @@ public class CliSessionManager {
         if (!StringUtils.isEmpty(CliSession.getInstance().getToken())) {
             loadSessionStudies();
         } else {
-            PrintUtils.printWarn("To set a study you must be logged in");
+            printWarn("To set a study you must be logged in");
         }
     }
 
@@ -202,19 +200,19 @@ public class CliSessionManager {
                         CliSession.getInstance().setCurrentStudy(res.response(0).getResults().get(0).getFqn());
                         CommandLineUtils.printDebugMessage("Validated study " + arg);
                         updateSession();
-                        PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Current study is: ",
+                        println(getKeyValueAsFormattedString("Current study is: ",
                                 CliSession.getInstance().getCurrentStudy()));
                     } else {
-                        PrintUtils.printWarn("Invalid study");
+                        printWarn("Invalid study");
                     }
                 } catch (ClientException e) {
                     CommandLineUtils.printError(e.getMessage(), e);
                 }
             } else {
-                PrintUtils.printError("Client not available");
+                printError("Client not available");
             }
         } else {
-            PrintUtils.printWarn("To set a study you must be logged in");
+            printWarn("To set a study you must be logged in");
         }
     }
 

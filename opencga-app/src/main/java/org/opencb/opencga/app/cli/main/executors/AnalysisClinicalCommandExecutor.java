@@ -1,30 +1,22 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import org.opencb.opencga.app.cli.session.CliSessionManager;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
-import java.util.List;
-
 import org.opencb.opencga.app.cli.main.options.AnalysisClinicalCommandOptions;
 
 import org.opencb.opencga.core.models.clinical.ClinicalReport;
 import org.opencb.opencga.core.models.clinical.ProbandParam;
-import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclUpdateParams;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.core.models.analysis.knockout.RgaKnockoutByGene;
 import org.opencb.opencga.core.models.clinical.InterpretationCreateParams;
 import org.opencb.opencga.core.models.clinical.RgaAnalysisParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.UpdateAction;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariant;
@@ -33,29 +25,21 @@ import org.opencb.opencga.core.models.clinical.FamilyParam;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.clinical.DisorderReferenceParam;
-import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveReplaceAction;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisCreateParams;
 import org.opencb.opencga.core.models.clinical.CancerTieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.TeamInterpretationAnalysisParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.SaveInterpretationAs;
 import org.opencb.opencga.core.models.clinical.ZettaInterpretationAnalysisParams;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.clinical.TieringInterpretationAnalysisParams;
 import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.clinical.PriorityParam;
 import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
-import org.opencb.opencga.core.models.study.configuration.ClinicalConsentAnnotationParam;
 import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
-import org.opencb.opencga.core.models.study.configuration.ClinicalConsentConfiguration;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGeneSummary;
-import java.util.Map;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalystParam;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividualSummary;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByVariantSummary;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysisQualityControlUpdateParam;
-import org.opencb.opencga.core.models.study.configuration.InterpretationStudyConfiguration;
 
 
 /*
@@ -425,7 +409,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         CancerTieringInterpretationAnalysisParams cancerTieringInterpretationAnalysisParams = (CancerTieringInterpretationAnalysisParams) new CancerTieringInterpretationAnalysisParams()
             .setClinicalAnalysis(commandOptions.clinicalAnalysis)
-            .setDiscardedVariants(CommandLineUtils.getListValues(commandOptions.discardedVariants))
+            .setDiscardedVariants(CommandLineUtils.splitWithTrim(commandOptions.discardedVariants))
             .setPrimary(commandOptions.primary);
         return openCGAClient.getClinicalAnalysisClient().runInterpreterCancerTiering(cancerTieringInterpretationAnalysisParams, queryParams);
     }
@@ -449,7 +433,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         TeamInterpretationAnalysisParams teamInterpretationAnalysisParams = (TeamInterpretationAnalysisParams) new TeamInterpretationAnalysisParams()
             .setClinicalAnalysis(commandOptions.clinicalAnalysis)
-            .setPanels(CommandLineUtils.getListValues(commandOptions.panels))
+            .setPanels(CommandLineUtils.splitWithTrim(commandOptions.panels))
             .setFamilySegregation(commandOptions.familySegregation)
             .setPrimary(commandOptions.primary);
         return openCGAClient.getClinicalAnalysisClient().runInterpreterTeam(teamInterpretationAnalysisParams, queryParams);
@@ -474,7 +458,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         TieringInterpretationAnalysisParams tieringInterpretationAnalysisParams = (TieringInterpretationAnalysisParams) new TieringInterpretationAnalysisParams()
             .setClinicalAnalysis(commandOptions.clinicalAnalysis)
-            .setPanels(CommandLineUtils.getListValues(commandOptions.panels))
+            .setPanels(CommandLineUtils.splitWithTrim(commandOptions.panels))
             .setPrimary(commandOptions.primary);
         return openCGAClient.getClinicalAnalysisClient().runInterpreterTiering(tieringInterpretationAnalysisParams, queryParams);
     }
@@ -498,7 +482,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ZettaInterpretationAnalysisParams zettaInterpretationAnalysisParams = (ZettaInterpretationAnalysisParams) new ZettaInterpretationAnalysisParams()
             .setClinicalAnalysis(commandOptions.clinicalAnalysis)
-            .setId(CommandLineUtils.getListValues(commandOptions.id))
+            .setId(CommandLineUtils.splitWithTrim(commandOptions.id))
             .setRegion(commandOptions.region)
             .setType(commandOptions.type)
             .setStudy(commandOptions.bodyStudy)

@@ -1,39 +1,29 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import org.opencb.opencga.app.cli.session.CliSessionManager;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
-import java.util.List;
-
 import org.opencb.opencga.app.cli.main.options.OperationsVariantStorageCommandOptions;
 
 import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
-import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataRepairToolParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
 import org.opencb.opencga.core.models.variant.VariantStatsIndexParams;
 import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
-import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.core.models.variant.VariantSampleDeleteParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
 import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
@@ -294,7 +284,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantFileDeleteParams variantFileDeleteParams = (VariantFileDeleteParams) new VariantFileDeleteParams()
-            .setFile(CommandLineUtils.getListValues(commandOptions.file))
+            .setFile(CommandLineUtils.splitWithTrim(commandOptions.file))
             .setResume(commandOptions.resume);
         return openCGAClient.getVariantOperationClient().deleteVariant(variantFileDeleteParams, queryParams);
     }
@@ -317,7 +307,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantAggregateFamilyParams variantAggregateFamilyParams = (VariantAggregateFamilyParams) new VariantAggregateFamilyParams()
-            .setSamples(CommandLineUtils.getListValues(commandOptions.samples))
+            .setSamples(CommandLineUtils.splitWithTrim(commandOptions.samples))
             .setResume(commandOptions.resume);
         return openCGAClient.getVariantOperationClient().aggregateVariantFamily(variantAggregateFamilyParams, queryParams);
     }
@@ -340,7 +330,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantFamilyIndexParams variantFamilyIndexParams = (VariantFamilyIndexParams) new VariantFamilyIndexParams()
-            .setFamily(CommandLineUtils.getListValues(commandOptions.family))
+            .setFamily(CommandLineUtils.splitWithTrim(commandOptions.family))
             .setOverwrite(commandOptions.overwrite)
             .setSkipIncompleteFamilies(commandOptions.skipIncompleteFamilies);
         return openCGAClient.getVariantOperationClient().indexVariantFamily(variantFamilyIndexParams, queryParams);
@@ -465,7 +455,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         JulieParams julieParams = (JulieParams) new JulieParams()
-            .setCohorts(CommandLineUtils.getListValues(commandOptions.cohorts))
+            .setCohorts(CommandLineUtils.splitWithTrim(commandOptions.cohorts))
             .setRegion(commandOptions.region)
             .setOverwrite(commandOptions.overwrite);
         return openCGAClient.getVariantOperationClient().runVariantJulie(julieParams, queryParams);
@@ -485,7 +475,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantStorageMetadataRepairToolParams variantStorageMetadataRepairToolParams = (VariantStorageMetadataRepairToolParams) new VariantStorageMetadataRepairToolParams()
-            .setStudies(CommandLineUtils.getListValues(commandOptions.studies))
+            .setStudies(CommandLineUtils.splitWithTrim(commandOptions.studies))
             .setSamplesBatchSize(commandOptions.samplesBatchSize);
         return openCGAClient.getVariantOperationClient().repairVariantMetadata(variantStorageMetadataRepairToolParams, queryParams);
     }
@@ -509,7 +499,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
         VariantStorageMetadataSynchronizeParams variantStorageMetadataSynchronizeParams = (VariantStorageMetadataSynchronizeParams) new VariantStorageMetadataSynchronizeParams()
             .setStudy(commandOptions.bodyStudy)
-            .setFiles(CommandLineUtils.getListValues(commandOptions.files));
+            .setFiles(CommandLineUtils.splitWithTrim(commandOptions.files));
         return openCGAClient.getVariantOperationClient().synchronizeVariantMetadata(variantStorageMetadataSynchronizeParams, queryParams);
     }
 
@@ -531,7 +521,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantSampleDeleteParams variantSampleDeleteParams = (VariantSampleDeleteParams) new VariantSampleDeleteParams()
-            .setSample(CommandLineUtils.getListValues(commandOptions.sample))
+            .setSample(CommandLineUtils.splitWithTrim(commandOptions.sample))
             .setResume(commandOptions.resume);
         return openCGAClient.getVariantOperationClient().deleteVariantSample(variantSampleDeleteParams, queryParams);
     }
@@ -554,7 +544,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantSampleIndexParams variantSampleIndexParams = (VariantSampleIndexParams) new VariantSampleIndexParams()
-            .setSample(CommandLineUtils.getListValues(commandOptions.sample))
+            .setSample(CommandLineUtils.splitWithTrim(commandOptions.sample))
             .setBuildIndex(commandOptions.buildIndex)
             .setAnnotate(commandOptions.annotate)
             .setOverwrite(commandOptions.overwrite);
@@ -630,7 +620,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
         VariantSecondaryIndexParams variantSecondaryIndexParams = (VariantSecondaryIndexParams) new VariantSecondaryIndexParams()
             .setRegion(commandOptions.region)
-            .setSample(CommandLineUtils.getListValues(commandOptions.sample))
+            .setSample(CommandLineUtils.splitWithTrim(commandOptions.sample))
             .setOverwrite(commandOptions.overwrite);
         return openCGAClient.getVariantOperationClient().secondaryIndexVariant(variantSecondaryIndexParams, queryParams);
     }
@@ -673,7 +663,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantStatsIndexParams variantStatsIndexParams = (VariantStatsIndexParams) new VariantStatsIndexParams()
-            .setCohort(CommandLineUtils.getListValues(commandOptions.cohort))
+            .setCohort(CommandLineUtils.splitWithTrim(commandOptions.cohort))
             .setRegion(commandOptions.region)
             .setOverwriteStats(commandOptions.overwriteStats)
             .setResume(commandOptions.resume)
