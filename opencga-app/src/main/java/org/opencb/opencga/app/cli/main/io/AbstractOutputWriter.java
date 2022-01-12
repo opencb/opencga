@@ -18,7 +18,8 @@ package org.opencb.opencga.app.cli.main.io;
 
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.app.cli.main.OpencgaMain;
+import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -29,9 +30,6 @@ import java.io.PrintStream;
  */
 public abstract class AbstractOutputWriter {
 
-    protected static final String ANSI_RESET = "\033[0m";
-    protected static final String ANSI_RED = "\033[31m";
-    protected static final String ANSI_YELLOW = "\033[33m";
     protected WriterConfiguration writerConfiguration;
     protected PrintStream ps;
 
@@ -61,7 +59,7 @@ public abstract class AbstractOutputWriter {
         if (ListUtils.isNotEmpty(dataResponse.getEvents())) {
             for (Event event : dataResponse.getEvents()) {
                 if (event.getType() == Event.Type.WARNING) {
-                    System.err.println(ANSI_YELLOW + "WARNING: " + event.getCode() + ": " + event.getMessage() + ANSI_RESET);
+                    PrintUtils.printWarn(event.getCode() + ": " + event.getMessage());
                 }
             }
         }
@@ -70,7 +68,7 @@ public abstract class AbstractOutputWriter {
         if (ListUtils.isNotEmpty(dataResponse.getEvents())) {
             for (Event event : dataResponse.getEvents()) {
                 if (event.getType() == Event.Type.ERROR) {
-                    OpencgaMain.printErrorMessage(event.getMessage(), null);
+                    CommandLineUtils.printError(event.getMessage(), new Exception());
                     errors = true;
                 }
             }
@@ -91,7 +89,7 @@ public abstract class AbstractOutputWriter {
         if (ListUtils.isNotEmpty(dataResponse.getEvents())) {
             for (Event event : dataResponse.getEvents()) {
                 if (event.getType() == Event.Type.INFO && event.getMessage().equals(ParentUsersCommandExecutor.LOGIN_OK)) {
-                    System.out.println(ANSI_YELLOW + event.getMessage() + ANSI_RESET);
+                    PrintUtils.printInfo(event.getMessage());
                     res = true;
                 }
             }

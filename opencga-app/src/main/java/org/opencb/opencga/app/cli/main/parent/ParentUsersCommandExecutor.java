@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
@@ -95,7 +96,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                 if (StringUtils.isNotEmpty(sessionId)) {
                     errorMsg += "Active token detected ";
                 }
-                System.err.println(errorMsg);
+                CommandLineUtils.printError(errorMsg, new Exception());
             }
         } catch (Exception e) {
             Event event = new Event();

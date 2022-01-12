@@ -71,24 +71,50 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **additionalInfo**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/study#additionalinfo"><em>AdditionalInfo</em></a>>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require.</p> |
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
-### Group
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/Group.java).
-
-
-### VariableSet
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/VariableSet.java).
-
-
-### ExternalSource
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/ExternalSource.java).
+### StudyType
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyType.java).
 
 | Field | Description |
 | :---  | :--- |
-| **id**<br>*String* <br> | <p>Source ID...</p> |
-| **name**<br>*String* <br> | <p>Source name...</p> |
-| **description**<br>*String* <br> | <p>Source description...</p> |
-| **source**<br>*String* <br> | <p>Source ...</p> |
-| **url**<br>*String* <br> | <p>Source ID</p> |
+| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+
+### AdditionalInfo
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/AdditionalInfo.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
+| **name**<br>*String* <br> | <p>Name of the .</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **type**<br>*String* <br> | <p>Type of the additional info.</p> |
+| **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
+
+### Enum Entity
+_Enumeration class._
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/Entity.java).
+
+
+### StudyInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
+
+| Field | Description |
+| :---  | :--- |
+| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/study#status)* <br> | <p>Object status.</p> |
+| **index**<br>*[StudyIndex](https://docs.opencga.opencb.org/data-models/study#studyindex)* <br> | <p>Study index.</p> |
+| **configuration**<br>*StudyConfiguration* <br> | <p>Study configuration.</p> |
+| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/study#status)* <br> | <p>Status of the internal object.</p> |
+| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
+| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
+
+### CustomStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
+
+| Field | Description |
+| :---  | :--- |
+| **CustomStatus.name**<br>*String* <br> | <p>Name of the status.</p> |
+| **CustomStatus.description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **CustomStatus.date**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
 
 ### Panel
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/panel/Panel.java).
@@ -103,28 +129,16 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **studyUid**<br>*long* <br> | <p>Panel reference to study.</p> |
 | **uid**<br>*long* <br> | <p>Panel reference to study.</p> |
 
-### StudyInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyInternal.java).
+### VariableSet
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/VariableSet.java).
+
+
+### StudyNotification
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyNotification.java).
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/study#status)* <br> | <p>Object status.</p> |
-| **index**<br>*[StudyIndex](https://docs.opencga.opencb.org/data-models/study#studyindex)* <br> | <p>Study index.</p> |
-| **configuration**<br>*StudyConfiguration* <br> | <p>Study configuration.</p> |
-| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/study#status)* <br> | <p>Status of the internal object.</p> |
-| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
-| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
-
-### AdditionalInfo
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/AdditionalInfo.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
-| **name**<br>*String* <br> | <p>Name of the .</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **type**<br>*String* <br> | <p>Type of the additional info.</p> |
-| **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
+| **webhook**<br>*[URL](https://docs.opencga.opencb.org/data-models/study#url)* <br> | <p>Url of the study notification.</p> |
 
 ### PermissionRule
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/PermissionRule.java).
@@ -140,42 +154,20 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/net/URI.java).
 
 
-### Enum Entity
-_Enumeration class._
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/Entity.java).
+### Group
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/Group.java).
 
 
-### CustomStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
-
-| Field | Description |
-| :---  | :--- |
-| **CustomStatus.name**<br>*String* <br> | <p>Name of the status.</p> |
-| **CustomStatus.description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **CustomStatus.date**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-
-### StudyType
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyType.java).
+### ExternalSource
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/ExternalSource.java).
 
 | Field | Description |
 | :---  | :--- |
-| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-
-### StudyNotification
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyNotification.java).
-
-| Field | Description |
-| :---  | :--- |
-| **webhook**<br>*[URL](https://docs.opencga.opencb.org/data-models/study#url)* <br> | <p>Url of the study notification.</p> |
-
-### StudyIndex
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyIndex.java).
-
-
-### URL
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/net/URL.java).
-
+| **id**<br>*String* <br> | <p>Source ID...</p> |
+| **name**<br>*String* <br> | <p>Source name...</p> |
+| **description**<br>*String* <br> | <p>Source description...</p> |
+| **source**<br>*String* <br> | <p>Source ...</p> |
+| **url**<br>*String* <br> | <p>Source ID</p> |
 
 ### Status
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Status.java).
@@ -186,3 +178,11 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **date**<br>*String* <br> | <p>Date has setted the status.</p> |
 | **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
 | **~~message~~**<br>*String* <br><br>_Deprecated_ | <p>Deprecated: Message describing the status.</p> |
+
+### URL
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/net/URL.java).
+
+
+### StudyIndex
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/StudyIndex.java).
+

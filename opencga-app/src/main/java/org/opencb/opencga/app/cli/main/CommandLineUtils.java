@@ -1,13 +1,13 @@
 package org.opencb.opencga.app.cli.main;
 
-import org.apache.commons.lang3.StringUtils;
-import org.fusesource.jansi.Ansi;
+import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.app.cli.session.CliSessionManager;
+import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.Arrays;
 import java.util.List;
-
-import static org.fusesource.jansi.Ansi.Color.valueOf;
-import static org.fusesource.jansi.Ansi.ansi;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CommandLineUtils {
 
@@ -19,28 +19,35 @@ public class CommandLineUtils {
         return Arrays.asList(vec);
     }
 
-    public static void printColor(String color, String message) {
-        printColor(color, message, true);
+    public static String getVersionString() {
+        String res = PrintUtils.getKeyValueAsFormattedString("\tOpenCGA CLI version: ", "\t" + GitRepositoryState.get().getBuildVersion() + "\n");
+        res += PrintUtils.getKeyValueAsFormattedString("\tGit version:", "\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId() + "\n");
+        res += PrintUtils.getKeyValueAsFormattedString("\tProgram:", "\t\tOpenCGA (OpenCB)" + "\n");
+        res += PrintUtils.getKeyValueAsFormattedString("\tDescription: ", "\t\tBig Data platform for processing and analysing NGS data" + "\n");
+        return res;
     }
 
-    public static void printColor(String color, String message, boolean newLine) {
-        Ansi.Color ansiColor = StringUtils.isNotEmpty(color) ? valueOf(color.toUpperCase()) : valueOf(Color.DEFAULT);
-        if (newLine) {
-            System.out.println(ansi().fg(ansiColor).a(message).reset());
+    public static String getAsCommaSeparatedString(String[] args) {
+        return Stream.of(args).collect(Collectors.joining(","));
+    }
+
+    public static String getAsSpaceSeparatedString(String[] args) {
+        return Stream.of(args).collect(Collectors.joining(" "));
+    }
+
+    public static void printError(String message, Exception e) {
+        if (CliSessionManager.isDebug()) {
+            PrintUtils.printError(message, e);
         } else {
-            System.out.print(ansi().fg(ansiColor).a(message).reset());
+            PrintUtils.printError(message);
         }
     }
 
-    public class Color {
-        public final static String BLACK = "BLACK";
-        public final static String RED = "RED";
-        public final static String GREEN = "GREEN";
-        public final static String YELLOW = "YELLOW";
-        public final static String BLUE = "BLUE";
-        public final static String MAGENTA = "MAGENTA";
-        public final static String CYAN = "CYAN";
-        public final static String WHITE = "WHITE";
-        public final static String DEFAULT = "DEFAULT";
+    public static void printDebugMessage(String s) {
+        if (CliSessionManager.isDebug()) {
+            PrintUtils.printDebugMessage(s);
+        }
     }
+
+
 }

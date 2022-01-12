@@ -18,7 +18,7 @@ package org.opencb.opencga.app.cli.session;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.opencga.app.cli.main.OpencgaMain;
+import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
@@ -49,7 +49,7 @@ public class CliSession {
     private String login;
     private List<String> studies;
     private String currentStudy;
-//    private Logger privateLogger = LoggerFactory.getLogger(CommandExecutor.class);
+    //    private Logger privateLogger = LoggerFactory.getLogger(CommandExecutor.class);
     private String currentHost;
 
     private CliSession() {
@@ -110,7 +110,7 @@ public class CliSession {
             try {
                 Files.createDirectory(sessionDirectory);
             } catch (Exception e) {
-                OpencgaMain.printErrorMessage("Could not create session dir properly", e);
+                CommandLineUtils.printError("Could not create session dir properly", e);
             }
         }
 
@@ -120,14 +120,14 @@ public class CliSession {
                 instance = new CliSession();
                 updateCliSessionFile(host);
             } catch (Exception e) {
-                OpencgaMain.printErrorMessage("Could not create session file properly", e);
+                CommandLineUtils.printError("Could not create session file properly", e);
             }
         } else {
             try {
                 instance = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                         .readValue(sessionPath.toFile(), CliSession.class);
             } catch (IOException e) {
-                OpencgaMain.printErrorMessage("Could not parse the session file properly", e);
+                CommandLineUtils.printError("Could not parse the session file properly", e);
             }
         }
     }

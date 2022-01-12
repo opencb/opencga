@@ -1,6 +1,9 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
+import org.apache.commons.lang3.ArrayUtils;
+import org.opencb.commons.utils.Color;
+import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.*;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
@@ -10,8 +13,6 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import java.io.Console;
 import java.io.IOException;
 
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.ansi;
 
 public class OpencgaCliProcessor {
 
@@ -26,14 +27,15 @@ public class OpencgaCliProcessor {
 
     public static void execute(String[] args) throws CatalogAuthenticationException {
         console = getConsole();
-        OpencgaMain.printDebugMessage("Executing ", args);
+        CommandLineUtils.printDebugMessage("Executing " + CommandLineUtils.getAsSpaceSeparatedString(args));
+
 
         if (console == null && CliSessionManager.isShell()) {
-            System.out.println("Couldn't get console instance");
+            PrintUtils.println("Couldn't get console instance", Color.RED);
             System.exit(0);
         }
         if (args.length == 1 && "exit".equals(args[0])) {
-            CommandLineUtils.printColor(CommandLineUtils.Color.YELLOW, "\nThanks for using OpenCGA. See you soon.\n\n");
+            PrintUtils.println("\nThanks for using OpenCGA. See you soon.\n\n", Color.YELLOW);
             System.exit(0);
         }
 
@@ -66,13 +68,13 @@ public class OpencgaCliProcessor {
 
         //login The first if clause is for scripting login method and the else clause is for the shell login
         if (isNotHelpCommand(args)) {
-            if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1]) && argsContains(args, "--user-password")) {
+            if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1]) && ArrayUtils.contains(args, "--user-password")) {
                 if (!CliSessionManager.isShell()) {
                     args = getUserPasswordArgs(args, "--user-password");
                 } else {
                     char[] passwordArray =
-                            console.readPassword(String.valueOf(ansi().fg(GREEN).a("\nEnter your password: ").reset()));
-                    args = appendArgs(args, new String[]{"--password", new String(passwordArray)});
+                            console.readPassword(PrintUtils.format("\nEnter your password: ", Color.GREEN));
+                    args = ArrayUtils.addAll(args, "--password", new String(passwordArray));
                 }
             }
         }
@@ -84,15 +86,7 @@ public class OpencgaCliProcessor {
             String parsedCommand = cliOptionsParser.getCommand();
             if (parsedCommand == null || parsedCommand.isEmpty()) {
                 if (cliOptionsParser.getGeneralOptions().version) {
-
-                    CommandLineUtils.printColor(CommandLineUtils.Color.GREEN, "\tOpenCGA CLI version: ", false);
-                    CommandLineUtils.printColor(CommandLineUtils.Color.YELLOW, "\t" + GitRepositoryState.get().getBuildVersion());
-                    CommandLineUtils.printColor(CommandLineUtils.Color.GREEN, "\tGit version:", false);
-                    CommandLineUtils.printColor(CommandLineUtils.Color.YELLOW, "\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
-                    CommandLineUtils.printColor(CommandLineUtils.Color.GREEN, "\tProgram:", false);
-                    CommandLineUtils.printColor(CommandLineUtils.Color.YELLOW, "\t\tOpenCGA (OpenCB)");
-                    CommandLineUtils.printColor(CommandLineUtils.Color.GREEN, "\tDescription: ", false);
-                    CommandLineUtils.printColor(CommandLineUtils.Color.YELLOW, "\t\tBig Data platform for processing and analysing NGS data");
+                    System.out.println(CommandLineUtils.getVersionString());
                     System.out.println();
                 } else if (cliOptionsParser.getGeneralOptions().buildVersion) {
                     System.out.println(GitRepositoryState.get().getBuildVersion());
@@ -103,7 +97,6 @@ public class OpencgaCliProcessor {
                 }
             } else {
                 CommandExecutor commandExecutor = null;
-
                 // Check if any command -h option is present
                 if (cliOptionsParser.isHelp()) {
                     cliOptionsParser.printUsage();
@@ -165,7 +158,7 @@ public class OpencgaCliProcessor {
                                 commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
                                 break;
                             default:
-                                CommandLineUtils.printColor(CommandLineUtils.Color.RED, "ERROR: not valid command passed: '" + parsedCommand + "'");
+                                PrintUtils.printError("Not valid command passed: '" + parsedCommand + "'");
                                 break;
                         }
 
@@ -174,20 +167,21 @@ public class OpencgaCliProcessor {
                 }
             }
         } catch (ParameterException e) {
-            OpencgaMain.printWarningMessage("\n" + e.getMessage());
+            PrintUtils.printWarn("\n" + e.getMessage());
             cliOptionsParser.printUsage();
         } catch (CatalogAuthenticationException e) {
-            OpencgaMain.printWarningMessage("\n" + e.getMessage());
+            PrintUtils.printWarn("\n" + e.getMessage());
             try {
                 CliSessionManager.logoutCliSessionFile();
             } catch (IOException ex) {
-                OpencgaMain.printErrorMessage(ex.getMessage(), ex);
+                CommandLineUtils.printError("Failed to save OpenCGA CLI session", ex);
+
             }
         }
     }
 
     private static boolean isNotHelpCommand(String[] args) {
-        return !argsContains(args, "--help") && !argsContains(args, "-h");
+        return !ArrayUtils.contains(args, "--help") && !ArrayUtils.contains(args, "-h");
     }
 
     private static String[] getUserPasswordArgs(String[] args, String s) {
@@ -202,67 +196,45 @@ public class OpencgaCliProcessor {
 
     private static void executeCommand(CommandExecutor commandExecutor, OpencgaCliOptionsParser cliOptionsParser) {
         if (commandExecutor != null) {
+
             try {
                 commandExecutor.execute();
                 CliSessionManager.setDefaultCurrentStudy();
                 CliSessionManager.updateSession();
-            } catch (Exception e) {
-
-                OpencgaMain.printErrorMessage(e.getMessage(), e);
+            } catch (IOException e) {
+                CommandLineUtils.printError("Could not set the default study", e);
+            } catch (Exception ex) {
+                CommandLineUtils.printError("Execution error", ex);
             }
         } else {
             cliOptionsParser.printUsage();
         }
     }
 
-    @Deprecated
-    // use ArrayUtils.addAll(args, strings);
-    private static String[] appendArgs(String[] args, String[] strings) {
-        String[] res = new String[args.length + strings.length];
-        for (int i = 0; i < res.length; i++) {
-            if (i < args.length) {
-                res[i] = args[i];
-            } else {
-                res[i] = strings[i - args.length];
-            }
-        }
-        return res;
-    }
-
-    @Deprecated
-    // use ArrayUtils.contains(args, s);
-    private static boolean argsContains(String[] args, String s) {
-        for (String arg : args) {
-            if (arg.contains(s)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private static void forceLogin() throws CatalogAuthenticationException {
         console = getConsole();
-        String user = console.readLine(String.valueOf(ansi().fg(GREEN).a("\nEnter your user: ").reset()));
+        String user = console.readLine(PrintUtils.format("\nEnter your user: ", Color.GREEN));
         loginUser(user);
-        OpencgaMain.printDebugMessage("Login user " + user);
+        CommandLineUtils.printDebugMessage("Login user " + user);
+
     }
 
     private static void loginUser(String user) throws CatalogAuthenticationException {
         console = getConsole();
-        char[] passwordArray = console.readPassword(String.valueOf(ansi().fg(GREEN).a("\nEnter your password: ").reset()));
+        char[] passwordArray = console.readPassword(PrintUtils.format("\nEnter your password: ", Color.GREEN));
         String[] args = new String[2];
         args[0] = "users";
         args[1] = "login";
         if (isValidUser(user)) {
-            args = appendArgs(args, new String[]{"-u", user});
-            args = appendArgs(args, new String[]{"--password", new String(passwordArray)});
+            args = ArrayUtils.addAll(args, "-u", user);
+            args = ArrayUtils.addAll(args, "--password", new String(passwordArray));
             OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
             cliOptionsParser.parse(args);
             CommandExecutor commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
             executeCommand(commandExecutor, cliOptionsParser);
-            OpencgaMain.printWarningMessage("Logged user " + user);
+            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Logged user: ", user));
         } else {
-            OpencgaMain.printWarningMessage("Invalid user name: " + user);
+            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Invalid user name: ", user));
         }
     }
 

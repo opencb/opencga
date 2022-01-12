@@ -20,6 +20,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
+import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AbstractAclEntry;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -78,7 +79,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
             if (queryResponse.getEvents() != null) {
                 for (Event event : ((RestResponse<?>) queryResponse).getEvents()) {
                     if (StringUtils.isNotEmpty(event.getMessage())) {
-                        ps.println(event.getMessage());
+                        PrintUtils.printInfo(event.getMessage());
                     }
                 }
             }
@@ -94,18 +95,18 @@ public class TextOutputWriter extends AbstractOutputWriter {
         if (queryResponse.getResponses().size() == 0 || ((OpenCGAResult) queryResponse.getResponses().get(0)).getNumResults() == 0) {
             if (queryResponse.getResponses().size() == 1 && queryResponse.first().getNumMatches() > 0) {
                 // count
-                ps.println(queryResponse.first().getNumMatches());
+                PrintUtils.println(String.valueOf(queryResponse.first().getNumMatches()));
             } else {
 
                 if (CollectionUtils.isNotEmpty(queryResponse.getEvents())) {
                     for (Event event : ((RestResponse<?>) queryResponse).getEvents()) {
                         if (StringUtils.isNotEmpty(event.getMessage())) {
-                            ps.println("EVENT: " + event.getMessage());
+                            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("EVENT: ", event.getMessage()));
                         }
                     }
                 }
 
-                ps.println("No results found for the query.");
+                PrintUtils.printInfo("No results found for the query.");
             }
             return;
         }
@@ -143,9 +144,6 @@ public class TextOutputWriter extends AbstractOutputWriter {
             case "Individual":
                 printIndividual(queryResponse.getResponses());
                 break;
-//            case "Family":
-//                printFamily(queryResponse.getResponses());
-//                break;
             case "Job":
                 printJob(queryResponse.getResponses());
                 break;
@@ -162,8 +160,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 ps.println(StringUtils.join((List<String>) queryResponse.first().getResults(), ", "));
                 break;
             default:
-                System.err.println(ANSI_YELLOW + "Warning: " + clazz + " results not yet supported in text format. Using YAML format"
-                        + ANSI_RESET);
+                PrintUtils.printWarn(clazz + " results not yet supported in text format. Using YAML format");
                 YamlOutputWriter yamlOutputWriter = new YamlOutputWriter(writerConfiguration);
                 yamlOutputWriter.print(queryResponse, false);
                 break;
@@ -174,13 +171,11 @@ public class TextOutputWriter extends AbstractOutputWriter {
         StringBuilder sb = new StringBuilder();
         if (writerConfiguration.isMetadata()) {
             int numResults = 0;
-//            int totalResults = 0;
             int time = 0;
 
             List<DataResult> queryResultList = queryResponse.getResponses();
             for (DataResult queryResult : queryResultList) {
                 numResults += queryResult.getNumResults();
-//                totalResults += queryResult.getNumMatches();
                 time += queryResult.getTime();
             }
 
@@ -343,38 +338,6 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
         table.printTable(unwind(queryResultList));
     }
-
-//    private void printFamily(List<DataResult<Family>> queryResultList) {
-//        StringBuilder sb = new StringBuilder();
-//        for (DataResult<Family> queryResult : queryResultList) {
-//            // Write header
-//            if (writerConfiguration.isHeader()) {
-//                sb.append("#NAME\tID\tMOTHER\tFATHER\tMEMBER\tSTATUS\tCREATION_DATE\n");
-//            }
-//
-//            for (Family family : queryResult.getResults()) {
-//                String mother = (family.getMother() != null && StringUtils.isNotEmpty(family.getMother().getName()))
-//                        ? family.getMother().getName() + "(" + family.getMother().getId() + ")"
-//                        : "NA";
-//                String father = (family.getFather() != null && StringUtils.isNotEmpty(family.getFather().getName()))
-//                        ? family.getFather().getName() + "(" + family.getFather().getId() + ")"
-//                        : "NA";
-//                String children = family.getChildren() != null
-//                        ? StringUtils.join(
-//                                family.getChildren().stream()
-//                                    .filter(Objects::nonNull)
-//                                    .filter(individual -> StringUtils.isNotEmpty(individual.getName()))
-//                                    .map(individual -> individual.getName() + "(" + individual.getId() + ")")
-//                                    .collect(Collectors.toList()), ", ")
-//                        : "NA";
-//                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
-//                        family.getName(), family.getId(), mother, father, children,
-//                        family.getStatus().getName(), family.getCreationDate()));
-//            }
-//        }
-//
-//        ps.println(sb.toString());
-//    }
 
     private void printJob(List<DataResult<Job>> queryResultList) {
         List<JobColumns> jobColumns = Arrays.asList(

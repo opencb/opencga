@@ -17,33 +17,26 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.main.OpencgaMain;
+import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
-import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.RestResponse;
 
-import java.io.*;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created on 27/05/16.
@@ -53,11 +46,7 @@ import java.util.Map;
 public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     protected OpenCGAClient openCGAClient;
-
     protected AbstractOutputWriter writer;
-
-    protected static final String ANSI_RESET = "\033[0m";
-    protected static final String ANSI_RED = "\033[31m";
 
     public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
         this(options, false);
@@ -98,12 +87,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             logger.debug("sessionFile = " + CliSessionManager.getCurrentFile());
             if (StringUtils.isNotEmpty(options.token)) {
                 // Ignore session file. Overwrite with command line information (just sessionId)
-
                 CliSessionManager.updateSessionToken(options.token);
-
                 token = options.token;
                 userId = null;
-
                 openCGAClient = new OpenCGAClient(new AuthenticationResponse(options.token));
             } else {
                 // 'logout' field is only null or empty while no logout is executed
@@ -145,14 +131,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         } else {
                             if (CliSessionManager.isShell()) {
                                 throw new CatalogAuthenticationException("Your session has expired. Please, either login again.");
-                           /*     CliSessionManager.getShell().printlnYellow("Your session has expired. Please, either login again.");
-                                CliSessionManager.logoutCliSessionFile();
-                                logger.debug("Session already closed");
-                                openCGAClient = new OpenCGAClient();*/
                             } else {
-                                String message = "ERROR: Your session has expired. Please, either login again or logout to work as "
-                                        + "anonymous.";
-                                System.err.println(ANSI_RED + message + ANSI_RESET);
+                                PrintUtils.printError("Your session has expired. Please, either login again or logout to work as "
+                                        + "anonymous.");
                                 System.exit(1);
                             }
                         }
@@ -163,66 +144,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 }
             }
         } catch (ClientException | IOException e) {
-            OpencgaMain.printErrorMessage("OpencgaCommandExecutor " + e.getMessage(), e);
+            CommandLineUtils.printError("OpencgaCommandExecutorError " + e.getMessage(), e);
         }
     }
-
-//    protected ObjectMap loadFile(String filePath) throws CatalogException {
-//        return loadFile(filePath, ObjectMap.class);
-//    }
-//
-//    protected <T> T loadFile(String filePath, Class<T> clazz) throws CatalogException {
-//        File file = Paths.get(filePath).toFile();
-//        if (!file.exists() || file.isDirectory()) {
-//            throw new CatalogException("File " + filePath + " not found");
-//        }
-//        FileInputStream fileInputStream;
-//        try {
-//            fileInputStream = FileUtils.openInputStream(file);
-//        } catch (IOException e) {
-//            throw new CatalogException("Could not open file " + filePath + ". " + e.getMessage(), e);
-//        }
-//        ObjectMapper objectMapper = JacksonUtils.getUpdateObjectMapper();
-//        try {
-//            return objectMapper.readValue(fileInputStream, clazz);
-//        } catch (IOException e) {
-//            throw new CatalogException("Could not parse file " + filePath + ". Is it a valid JSON file?. "
-//                    + e.getMessage(), e);
-//        }
-//    }
-
-//    protected String extractIdsFromListOrFile(String ids) throws CatalogException {
-//        if (StringUtils.isEmpty(ids)) {
-//            return null;
-//        }
-//
-//        File file = new File(ids);
-//        if (file.exists() && file.isFile()) {
-//            // Read the file
-//            try (BufferedReader br = new BufferedReader(new FileReader(ids))) {
-//                StringBuilder sb = new StringBuilder();
-//                String line = br.readLine();
-//                boolean isNotFirstLine = false;
-//
-//                while (line != null) {
-//                    if (StringUtils.isNotEmpty(line)) {
-//                        if (isNotFirstLine) {
-//                            sb.append(",");
-//                        } else {
-//                            isNotFirstLine = true;
-//                        }
-//                        sb.append(line);
-//                    }
-//                    line = br.readLine();
-//                }
-//                return sb.toString();
-//            } catch (IOException e) {
-//                throw new CatalogException("File could not be parsed. Does it contain a line per id?");
-//            }
-//        } else {
-//            return ids;
-//        }
-//    }
 
     public void createOutput(RestResponse queryResponse) {
         if (queryResponse != null) {
@@ -230,50 +154,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
     }
 
-//    public ObjectMap getCommonParams(String study) {
-//        return getCommonParams(null, study, new HashMap<>());
-//    }
-//
-//    public ObjectMap getCommonParams(String study, Map<String, String> initialParams) {
-//        return getCommonParams(null, study, initialParams);
-//    }
-//
-//    public ObjectMap getCommonParams(String project, String study, Map<String, String> initialParams) {
-//        ObjectMap params = new ObjectMap(initialParams);
-//        params.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);
-//        params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
-//        return params;
-//    }
-
-//    public ObjectMap addJobParams(GeneralCliOptions.JobOptions jobOptions, ObjectMap params) {
-//        params.putIfNotEmpty(ParamConstants.JOB_ID, jobOptions.jobId);
-//        params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, jobOptions.jobDescription);
-//        if (jobOptions.jobDependsOn != null) {
-//            params.put(ParamConstants.JOB_DEPENDS_ON, String.join(",", jobOptions.jobDependsOn));
-//        }
-//        if (jobOptions.jobTags != null) {
-//            params.put(ParamConstants.JOB_TAGS, String.join(",", jobOptions.jobTags));
-//        }
-//        return params;
-//    }
-
-//    public ObjectMap addNumericParams(GeneralCliOptions.NumericOptions numericOptions, ObjectMap params) {
-//        if (numericOptions.limit > 0) {
-//            params.put(QueryOptions.LIMIT, numericOptions.limit);
-//        }
-//        if (numericOptions.skip > 0) {
-//            params.put(QueryOptions.SKIP, numericOptions.skip);
-//        }
-//        if (numericOptions.count) {
-//            params.put(QueryOptions.COUNT, numericOptions.count);
-//        }
-//        return params;
-//    }
-
     public void invokeSetter(Object obj, String propertyName, Object variableValue) {
         if (variableValue != null) {
             try {
-
                 Method setter = obj.getClass().getMethod(getAsSetterName(propertyName), variableValue.getClass());
                 setter.invoke(obj, variableValue);
             } catch (Exception e) {

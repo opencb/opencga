@@ -71,12 +71,12 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-client</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.opencb.opencga</groupId>-->
-<!--            <artifactId>opencga-test</artifactId>-->
-<!--            <version>${opencga.version}</version>-->
-<!--            <type>pom</type>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.opencb.opencga</groupId>-->
+        <!--            <artifactId>opencga-test</artifactId>-->
+        <!--            <version>${opencga.version}</version>-->
+        <!--            <type>pom</type>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
@@ -131,11 +131,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.fusesource.jansi</groupId>
-            <artifactId>jansi</artifactId>
-            <version>1.18</version>
         </dependency>
         <!--JLINE Terminal dependencies-->
         <dependency>
@@ -294,7 +289,9 @@
                                     <arg value="${build.dir}/analysis"/>
                                 </exec>
 
-                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and ${build.dir}/completion</echo>
+                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and
+                                    ${build.dir}/completion
+                                </echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga.sh"/>
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-admin.sh"/>
@@ -358,11 +355,11 @@
                                 </exec>
 
                                 <echo>Copying Acceptance testing files</echo>
-<!--                                <exec executable="mvn">-->
-<!--                                    <arg value="-f"/>-->
-<!--                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>-->
-<!--                                    <arg value="install"/>-->
-<!--                                </exec>-->
+                                <!--                                <exec executable="mvn">-->
+                                <!--                                    <arg value="-f"/>-->
+                                <!--                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>-->
+                                <!--                                    <arg value="install"/>-->
+                                <!--                                </exec>-->
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-test/target/appassembler/bin"/>
