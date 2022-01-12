@@ -40,9 +40,9 @@ import java.util.List;
  */
 public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor {
 
-    public static final String LOGIN_OK = "\n\nYou have been logged in correctly.";
-    public static final String LOGIN_FAIL = "\n\nNot available login service now. Please contact the system administrator.";
-    public static final String LOGOUT = "\n\nYou've been logged out.";
+    public static final String LOGIN_OK = "You have been logged in correctly.";
+    public static final String LOGIN_FAIL = "Not available login service now. Please contact the system administrator.";
+    public static final String LOGOUT = "You've been logged out.";
     private final UsersCommandOptions usersCommandOptions;
 
     public ParentUsersCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,

@@ -12,8 +12,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.io.IOException;
 
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.ansi;
 
 public class OpencgaCliShellExecutor {
 
@@ -32,7 +30,7 @@ public class OpencgaCliShellExecutor {
                         .system(true).nativeSignals(true)
                         .build();
 
-                System.out.print(ansi().eraseScreen());
+                System.out.print(PrintUtils.eraseScreen());
                 printShellHeaderMessage();
             }
             History defaultHistory = new DefaultHistory();
@@ -63,8 +61,8 @@ public class OpencgaCliShellExecutor {
             if (lineReader == null) {
                 lineReader = getTerminal();
             }
-            String PROMPT = String.valueOf(ansi().fg(GREEN).a("\n[OpenCGA]/>").reset());
-
+            String PROMPT = "";
+            CliSessionManager.setDefaultCurrentStudy();
             while (true) {
                 // Read and sanitize the input
                 String line;

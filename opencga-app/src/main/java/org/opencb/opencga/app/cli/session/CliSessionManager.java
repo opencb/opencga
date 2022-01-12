@@ -194,6 +194,7 @@ public class CliSessionManager {
             OpenCGAClient openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSession.getInstance().getToken()));
             if (openCGAClient != null) {
                 try {
+                    
                     RestResponse<Study> res = openCGAClient.getStudyClient().info(arg, new ObjectMap());
                     if (res.allResultsSize() > 0) {
                         CommandLineUtils.printDebugMessage("Validated study " + arg);
