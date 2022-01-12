@@ -43,10 +43,12 @@ public class ClinicalVariantEvidenceMigration extends MigrationTool {
                         update.put("secondaryFindings", secondaryFindings);
                     }
 
-                    bulk.add(new UpdateOneModel<>(
-                            eq("_id", doc.get("_id")),
-                            new Document("$set", update))
-                    );
+                    if (!update.isEmpty()) {
+                        bulk.add(new UpdateOneModel<>(
+                                eq("_id", doc.get("_id")),
+                                new Document("$set", update))
+                        );
+                    }
                 }
         );
     }
