@@ -271,10 +271,20 @@ public class ClinicalInterpretationManager extends StorageManager {
             for (String panelId : panels) {
                 org.opencb.opencga.core.models.panel.Panel panel = catalogQueryUtils.getPanel(studyId, panelId, token);
                 for (DiseasePanel.GenePanel genePanel : panel.getGenes()) {
-                    if (!genePanelMap.containsKey(genePanel.getName())) {
-                        genePanelMap.put(genePanel.getName(), new HashSet<>());
+                    // Check gene name to be inserted in the panel map
+                    if (StringUtils.isNotEmpty(genePanel.getName())) {
+                        if (!genePanelMap.containsKey(genePanel.getName())) {
+                            genePanelMap.put(genePanel.getName(), new HashSet<>());
+                        }
+                        genePanelMap.get(genePanel.getName()).add(panelId);
                     }
-                    genePanelMap.get(genePanel.getName()).add(panelId);
+                    // Check gene ID to be inserted in the panel map
+                    if (StringUtils.isNotEmpty(genePanel.getId())) {
+                        if (!genePanelMap.containsKey(genePanel.getId())) {
+                            genePanelMap.put(genePanel.getId(), new HashSet<>());
+                        }
+                        genePanelMap.get(genePanel.getId()).add(panelId);
+                    }
                 }
             }
         }
@@ -394,16 +404,12 @@ public class ClinicalInterpretationManager extends StorageManager {
                     for (String panelId : panelIds) {
                         evidence = createEvidence(variant.getId(), ct, gFeature, panelId, null, null, variant.getAnnotation(),
                                 roleInCancer, actionableVariants, config);
-                        if (config == null || !config.isSkipUntieredVariants() || evidence.getClassification().getTier() != UNTIERED) {
-                            evidences.add(evidence);
-                        }
+                        evidences.add(evidence);
                     }
                 } else if (genePanelMap.size() == 0) {
                     evidence = createEvidence(variant.getId(), ct, gFeature, null, null, null, variant.getAnnotation(), roleInCancer,
                             actionableVariants, config);
-                    if (config == null || !config.isSkipUntieredVariants() || evidence.getClassification().getTier() != UNTIERED) {
-                        evidences.add(evidence);
-                    }
+                    evidences.add(evidence);
                 }
             }
         }
@@ -443,14 +449,14 @@ public class ClinicalInterpretationManager extends StorageManager {
         clinicalVariantEvidence.setPanelId(panelId);
 
         // Panel ID and compute tier based on SO terms
-        String tier = UNTIERED;
-        if (config != null) {
-            if (isTier1(panelId, consequenceType.getSequenceOntologyTerms(), config)) {
-                tier = TIER_1;
-            } else if (isTier2(panelId, consequenceType.getSequenceOntologyTerms(), config)) {
-                tier = TIER_2;
-            }
-        }
+//        String tier = UNTIERED;
+//        if (config != null) {
+//            if (isTier1(panelId, consequenceType.getSequenceOntologyTerms(), config)) {
+//                tier = TIER_1;
+//            } else if (isTier2(panelId, consequenceType.getSequenceOntologyTerms(), config)) {
+//                tier = TIER_2;
+//            }
+//        }
 
         // Mode of inheritance
         if (mois != null) {
@@ -484,11 +490,11 @@ public class ClinicalInterpretationManager extends StorageManager {
             clinicalVariantEvidence.setActionable(true);
 
             // Set tier 3 only if it is null or untiered
-            if (UNTIERED.equals(tier)) {
-                clinicalVariantEvidence.getClassification().setTier(TIER_3);
-            } else {
-                clinicalVariantEvidence.getClassification().setTier(tier);
-            }
+//            if (UNTIERED.equals(tier)) {
+//                clinicalVariantEvidence.getClassification().setTier(TIER_3);
+//            } else {
+//                clinicalVariantEvidence.getClassification().setTier(tier);
+//            }
 
             // Add 'actionable' phenotypes
             if (CollectionUtils.isNotEmpty(actionableVariants.get(variantId))) {
@@ -500,8 +506,8 @@ public class ClinicalInterpretationManager extends StorageManager {
                     clinicalVariantEvidence.setPhenotypes(phenotypes);
                 }
             }
-        } else {
-            clinicalVariantEvidence.getClassification().setTier(tier);
+//        } else {
+//            clinicalVariantEvidence.getClassification().setTier(tier);
         }
 
         return clinicalVariantEvidence;
