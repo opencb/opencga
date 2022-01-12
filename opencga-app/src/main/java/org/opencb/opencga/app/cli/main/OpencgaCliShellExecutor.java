@@ -5,15 +5,13 @@ import org.jline.reader.impl.DefaultHighlighter;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
-import org.opencb.commons.utils.Color;
-import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.io.IOException;
 
-import static org.fusesource.jansi.Ansi.Color.GREEN;
 import static org.fusesource.jansi.Ansi.ansi;
+import static org.opencb.commons.utils.PrintUtils.*;
 
 public class OpencgaCliShellExecutor {
 
@@ -63,8 +61,7 @@ public class OpencgaCliShellExecutor {
             if (lineReader == null) {
                 lineReader = getTerminal();
             }
-            String PROMPT = String.valueOf(ansi().fg(GREEN).a("\n[OpenCGA]/>").reset());
-
+            String PROMPT;
             while (true) {
                 // Read and sanitize the input
                 String line;
@@ -72,7 +69,7 @@ public class OpencgaCliShellExecutor {
                 try {
                     line = lineReader.readLine(PROMPT);
                 } catch (UserInterruptException e) {
-                    PrintUtils.printWarn("If you want to close OpenCGA. Type \"exit\"");
+                    printWarn("If you want to close OpenCGA. Type \"exit\"");
                     continue;
                 } catch (EndOfFileException e) {
                     break;
@@ -85,7 +82,6 @@ public class OpencgaCliShellExecutor {
                     OpencgaCliProcessor.execute(line.split(" "));
                 }
                 // Construct the Command and args to pass to that command
-
             }
             terminal.writer().flush();
         } catch (Exception e) {
@@ -95,22 +91,22 @@ public class OpencgaCliShellExecutor {
 
     private void printShellHeaderMessage() {
 
-        PrintUtils.println("     ███████                                    █████████    █████████    █████████  ", Color.GREEN);
-        PrintUtils.println("   ███░░░░░███                                 ███░░░░░███  ███░░░░░███  ███░░░░░███ ", Color.GREEN);
-        PrintUtils.println("  ███     ░░███ ████████   ██████  ████████   ███     ░░░  ███     ░░░  ░███    ░███ ", Color.GREEN);
-        PrintUtils.println("  ███      ░███░░███░░███ ███░░███░░███░░███ ░███         ░███          ░███████████ ", Color.GREEN);
-        PrintUtils.println("  ███      ░███ ░███ ░███░███████  ░███ ░███ ░███         ░███    █████ ░███░░░░░███ ", Color.GREEN);
-        PrintUtils.println("  ░███     ███  ░███ ░███░███░░░   ░███ ░███ ░░███     ███░░███  ░░███  ░███    ░███ ", Color.GREEN);
-        PrintUtils.println("  ░░░███████░   ░███████ ░░██████  ████ █████ ░░█████████  ░░█████████  █████   █████", Color.GREEN);
-        PrintUtils.println("    ░░░░░░░     ░███░░░   ░░░░░░  ░░░░ ░░░░░   ░░░░░░░░░    ░░░░░░░░░  ░░░░░   ░░░░░ ", Color.GREEN);
-        PrintUtils.println("                ░███                                                                 ", Color.GREEN);
-        PrintUtils.println("                █████                                                                ", Color.GREEN);
-        PrintUtils.println("               ░░░░░                                                                 ", Color.GREEN);
+        println("     ███████                                    █████████    █████████    █████████  ", Color.GREEN);
+        println("   ███░░░░░███                                 ███░░░░░███  ███░░░░░███  ███░░░░░███ ", Color.GREEN);
+        println("  ███     ░░███ ████████   ██████  ████████   ███     ░░░  ███     ░░░  ░███    ░███ ", Color.GREEN);
+        println("  ███      ░███░░███░░███ ███░░███░░███░░███ ░███         ░███          ░███████████ ", Color.GREEN);
+        println("  ███      ░███ ░███ ░███░███████  ░███ ░███ ░███         ░███    █████ ░███░░░░░███ ", Color.GREEN);
+        println("  ░███     ███  ░███ ░███░███░░░   ░███ ░███ ░░███     ███░░███  ░░███  ░███    ░███ ", Color.GREEN);
+        println("  ░░░███████░   ░███████ ░░██████  ████ █████ ░░█████████  ░░█████████  █████   █████", Color.GREEN);
+        println("    ░░░░░░░     ░███░░░   ░░░░░░  ░░░░ ░░░░░   ░░░░░░░░░    ░░░░░░░░░  ░░░░░   ░░░░░ ", Color.GREEN);
+        println("                ░███                                                                 ", Color.GREEN);
+        println("                █████                                                                ", Color.GREEN);
+        println("               ░░░░░                                                                 ", Color.GREEN);
 
         System.out.println();
         System.out.println(CommandLineUtils.getVersionString());
         System.out.println();
-        PrintUtils.println("\nTo close the application type \"exit\"", Color.BLUE);
+        println("\nTo close the application type \"exit\"", Color.BLUE);
         System.out.println();
         System.out.println();
         System.out.println();

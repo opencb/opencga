@@ -1,17 +1,12 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import org.opencb.opencga.app.cli.session.CliSessionManager;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-
-import java.util.List;
 
 import org.opencb.opencga.app.cli.main.options.AnalysisVariantCommandOptions;
 
@@ -21,7 +16,6 @@ import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
 import org.opencb.opencga.core.models.variant.VariantExportParams;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
-import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.opencga.core.models.variant.IndividualQcAnalysisParams;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -35,16 +29,12 @@ import org.opencb.opencga.core.models.variant.CohortVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
-import java.util.Map;
-import org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.opencga.core.models.variant.GatkWrapperParams;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
@@ -363,7 +353,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
         CohortVariantStatsAnalysisParams cohortVariantStatsAnalysisParams = (CohortVariantStatsAnalysisParams) new CohortVariantStatsAnalysisParams()
             .setCohort(commandOptions.cohort)
-            .setSamples(CommandLineUtils.getListValues(commandOptions.samples))
+            .setSamples(CommandLineUtils.splitWithTrim(commandOptions.samples))
             .setIndex(commandOptions.index)
             .setSampleAnnotation(commandOptions.sampleAnnotation)
             .setOutdir(commandOptions.outdir);
@@ -590,10 +580,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             .setIndexScoreId(commandOptions.indexScoreId)
             .setCaseCohort(commandOptions.caseCohort)
             .setCaseCohortSamplesAnnotation(commandOptions.caseCohortSamplesAnnotation)
-            .setCaseCohortSamples(CommandLineUtils.getListValues(commandOptions.caseCohortSamples))
+            .setCaseCohortSamples(CommandLineUtils.splitWithTrim(commandOptions.caseCohortSamples))
             .setControlCohort(commandOptions.controlCohort)
             .setControlCohortSamplesAnnotation(commandOptions.controlCohortSamplesAnnotation)
-            .setControlCohortSamples(CommandLineUtils.getListValues(commandOptions.controlCohortSamples))
+            .setControlCohortSamples(CommandLineUtils.splitWithTrim(commandOptions.controlCohortSamples))
             .setOutdir(commandOptions.outdir);
         return openCGAClient.getVariantClient().runGwas(gwasAnalysisParams, queryParams);
     }
@@ -749,9 +739,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
 
         KnockoutAnalysisParams knockoutAnalysisParams = (KnockoutAnalysisParams) new KnockoutAnalysisParams()
-            .setSample(CommandLineUtils.getListValues(commandOptions.sample))
-            .setGene(CommandLineUtils.getListValues(commandOptions.gene))
-            .setPanel(CommandLineUtils.getListValues(commandOptions.panel))
+            .setSample(CommandLineUtils.splitWithTrim(commandOptions.sample))
+            .setGene(CommandLineUtils.splitWithTrim(commandOptions.gene))
+            .setPanel(CommandLineUtils.splitWithTrim(commandOptions.panel))
             .setBiotype(commandOptions.biotype)
             .setConsequenceType(commandOptions.consequenceType)
             .setFilter(commandOptions.filter)
@@ -996,8 +986,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
 
         RelatednessAnalysisParams relatednessAnalysisParams = (RelatednessAnalysisParams) new RelatednessAnalysisParams()
-            .setIndividuals(CommandLineUtils.getListValues(commandOptions.individuals))
-            .setSamples(CommandLineUtils.getListValues(commandOptions.samples))
+            .setIndividuals(CommandLineUtils.splitWithTrim(commandOptions.individuals))
+            .setSamples(CommandLineUtils.splitWithTrim(commandOptions.samples))
             .setMinorAlleleFreq(commandOptions.minorAlleleFreq)
             .setMethod(commandOptions.method)
             .setOutdir(commandOptions.outdir);
@@ -1183,8 +1173,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
 
         SampleVariantFilterParams sampleVariantFilterParams = (SampleVariantFilterParams) new SampleVariantFilterParams()
-            .setGenotypes(CommandLineUtils.getListValues(commandOptions.genotypes))
-            .setSample(CommandLineUtils.getListValues(commandOptions.sample))
+            .setGenotypes(CommandLineUtils.splitWithTrim(commandOptions.genotypes))
+            .setSample(CommandLineUtils.splitWithTrim(commandOptions.sample))
             .setSamplesInAllVariants(commandOptions.samplesInAllVariants)
             .setMaxVariants(commandOptions.maxVariants)
             .setId(commandOptions.id)
@@ -1262,8 +1252,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
 
         SampleVariantStatsAnalysisParams sampleVariantStatsAnalysisParams = (SampleVariantStatsAnalysisParams) new SampleVariantStatsAnalysisParams()
-            .setSample(CommandLineUtils.getListValues(commandOptions.sample))
-            .setIndividual(CommandLineUtils.getListValues(commandOptions.individual))
+            .setSample(CommandLineUtils.splitWithTrim(commandOptions.sample))
+            .setIndividual(CommandLineUtils.splitWithTrim(commandOptions.individual))
             .setOutdir(commandOptions.outdir)
             .setIndex(commandOptions.index)
             .setIndexOverwrite(commandOptions.indexOverwrite)
@@ -1292,7 +1282,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
 
         VariantStatsExportParams variantStatsExportParams = (VariantStatsExportParams) new VariantStatsExportParams()
-            .setCohorts(CommandLineUtils.getListValues(commandOptions.cohorts))
+            .setCohorts(CommandLineUtils.splitWithTrim(commandOptions.cohorts))
             .setOutput(commandOptions.output)
             .setRegion(commandOptions.region)
             .setGene(commandOptions.gene)
@@ -1318,8 +1308,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
 
         VariantStatsAnalysisParams variantStatsAnalysisParams = (VariantStatsAnalysisParams) new VariantStatsAnalysisParams()
-            .setCohort(CommandLineUtils.getListValues(commandOptions.cohort))
-            .setSamples(CommandLineUtils.getListValues(commandOptions.samples))
+            .setCohort(CommandLineUtils.splitWithTrim(commandOptions.cohort))
+            .setSamples(CommandLineUtils.splitWithTrim(commandOptions.samples))
             .setRegion(commandOptions.region)
             .setGene(commandOptions.gene)
             .setOutdir(commandOptions.outdir)

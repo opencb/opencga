@@ -1,25 +1,18 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import org.opencb.opencga.app.cli.session.CliSessionManager;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
-import java.util.List;
-
 import org.opencb.opencga.app.cli.main.options.DiseasePanelsCommandOptions;
 
-import java.util.Map;
 import org.opencb.opencga.core.models.panel.PanelCreateParams;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelAclUpdateParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 
 
@@ -133,7 +126,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             .setName(commandOptions.name)
             .setDescription(commandOptions.description)
             .setAuthor(commandOptions.author)
-            .setTags(CommandLineUtils.getListValues(commandOptions.tags));
+            .setTags(CommandLineUtils.splitWithTrim(commandOptions.tags));
         return openCGAClient.getDiseasePanelClient().create(panelCreateParams, queryParams);
     }
 
@@ -277,7 +270,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             .setName(commandOptions.name)
             .setDescription(commandOptions.description)
             .setAuthor(commandOptions.author)
-            .setTags(CommandLineUtils.getListValues(commandOptions.tags));
+            .setTags(CommandLineUtils.splitWithTrim(commandOptions.tags));
         return openCGAClient.getDiseasePanelClient().update(commandOptions.panels, panelUpdateParams, queryParams);
     }
 }

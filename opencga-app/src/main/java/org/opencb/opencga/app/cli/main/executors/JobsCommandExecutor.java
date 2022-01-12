@@ -1,29 +1,22 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import org.opencb.opencga.app.cli.session.CliSessionManager;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
-import java.util.List;
-
 import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
 
 import org.opencb.opencga.core.models.job.JobTop;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobRetryParams;
-import java.util.Map;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.core.models.job.JobAclUpdateParams;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.models.file.FileContent;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.models.job.JobCreateParams;
 import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.job.JobUpdateParams;
@@ -183,7 +176,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             .setCommandLine(commandOptions.commandLine)
             .setCreationDate(commandOptions.creationDate)
             .setModificationDate(commandOptions.modificationDate)
-            .setTags(CommandLineUtils.getListValues(commandOptions.tags));
+            .setTags(CommandLineUtils.splitWithTrim(commandOptions.tags));
         return openCGAClient.getJobClient().create(jobCreateParams, queryParams);
     }
 
@@ -364,7 +357,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobUpdateParams jobUpdateParams = (JobUpdateParams) new JobUpdateParams()
             .setDescription(commandOptions.description)
-            .setTags(CommandLineUtils.getListValues(commandOptions.tags))
+            .setTags(CommandLineUtils.splitWithTrim(commandOptions.tags))
             .setVisited(commandOptions.visited);
         return openCGAClient.getJobClient().update(commandOptions.jobs, jobUpdateParams, queryParams);
     }

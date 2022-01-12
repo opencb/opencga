@@ -1,53 +1,35 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 import org.opencb.opencga.app.cli.session.CliSessionManager;
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
-import java.util.List;
-
 import org.opencb.opencga.app.cli.main.options.StudiesCommandOptions;
 
 import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
 
-import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.models.study.StudyType;
-import org.opencb.opencga.core.models.common.Enums.Entity;
-import org.opencb.opencga.core.models.common.Enums.PermissionRuleAction;
 import org.opencb.opencga.core.models.study.StudyAclUpdateParams;
 import org.opencb.opencga.core.models.study.CustomGroup;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.study.GroupCreateParams;
-import java.io.InputStream;
 import org.opencb.opencga.core.models.study.VariableSetCreateParams;
 import org.opencb.opencga.core.models.study.PermissionRule;
-import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveForceRemoveAction;
 import org.opencb.opencga.core.models.study.StudyCreateParams;
-import java.util.Map;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.study.StudyUpdateParams;
-import org.opencb.opencga.core.models.audit.AuditRecord.Status.Result;
-import java.util.Set;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.TemplateParams;
-import org.opencb.opencga.core.models.study.StudyNotification;
-import org.opencb.opencga.core.models.common.Enums.Resource;
 
 
 /*
@@ -318,7 +300,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
 
         GroupCreateParams groupCreateParams = (GroupCreateParams) new GroupCreateParams()
             .setId(commandOptions.id)
-            .setUsers(CommandLineUtils.getListValues(commandOptions.users));
+            .setUsers(CommandLineUtils.splitWithTrim(commandOptions.users));
         return openCGAClient.getStudyClient().updateGroups(commandOptions.study, groupCreateParams, queryParams);
     }
 
@@ -333,7 +315,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
 
 
         GroupUpdateParams groupUpdateParams = (GroupUpdateParams) new GroupUpdateParams()
-            .setUsers(CommandLineUtils.getListValues(commandOptions.users));
+            .setUsers(CommandLineUtils.splitWithTrim(commandOptions.users));
         return openCGAClient.getStudyClient().updateUsers(commandOptions.study, commandOptions.group, groupUpdateParams, queryParams);
     }
 
@@ -357,8 +339,8 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
 
         PermissionRule permissionRule = (PermissionRule) new PermissionRule()
             .setId(commandOptions.id)
-            .setMembers(CommandLineUtils.getListValues(commandOptions.members))
-            .setPermissions(CommandLineUtils.getListValues(commandOptions.permissions));
+            .setMembers(CommandLineUtils.splitWithTrim(commandOptions.members))
+            .setPermissions(CommandLineUtils.splitWithTrim(commandOptions.permissions));
         return openCGAClient.getStudyClient().updatePermissionRules(commandOptions.study, commandOptions.entity, permissionRule, queryParams);
     }
 
@@ -475,8 +457,8 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             .setDefaultValue(commandOptions.defaultValue)
             .setRequired(commandOptions.required)
             .setMultiValue(commandOptions.multiValue)
-            .setAllowedValues(CommandLineUtils.getListValues(commandOptions.allowedValues))
-            .setAllowedKeys(CommandLineUtils.getListValues(commandOptions.allowedKeys))
+            .setAllowedValues(CommandLineUtils.splitWithTrim(commandOptions.allowedValues))
+            .setAllowedKeys(CommandLineUtils.splitWithTrim(commandOptions.allowedKeys))
             .setRank(commandOptions.rank)
             .setDependsOn(commandOptions.dependsOn)
             .setDescription(commandOptions.description);

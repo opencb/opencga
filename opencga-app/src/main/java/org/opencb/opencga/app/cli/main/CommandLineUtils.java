@@ -4,19 +4,22 @@ import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class CommandLineUtils {
 
-    public static List getListValues(String value) {
-        String[] vec = value.split(",");
-        for (int i = 0; i < vec.length; i++) {
-            vec[i] = vec[i].trim();
+    public static List<String> splitWithTrim(String value) {
+        return splitWithTrim(value, ",");
+    }
+
+    public static List<String> splitWithTrim(String value, String separator) {
+        String[] splitFields = value.split(separator);
+        List<String> result = new ArrayList<>(splitFields.length);
+        for (String s : splitFields) {
+            result.add(s.trim());
         }
-        return Arrays.asList(vec);
+        return result;
     }
 
     public static String getVersionString() {
@@ -27,12 +30,9 @@ public class CommandLineUtils {
         return res;
     }
 
-    public static String getAsCommaSeparatedString(String[] args) {
-        return Stream.of(args).collect(Collectors.joining(","));
-    }
-
+    @Deprecated
     public static String getAsSpaceSeparatedString(String[] args) {
-        return Stream.of(args).collect(Collectors.joining(" "));
+        return String.join(" ", args);
     }
 
     public static void printError(String message, Exception e) {
@@ -45,7 +45,7 @@ public class CommandLineUtils {
 
     public static void printDebugMessage(String s) {
         if (CliSessionManager.isDebug()) {
-            PrintUtils.printDebugMessage(s);
+            PrintUtils.printDebug(s);
         }
     }
 
