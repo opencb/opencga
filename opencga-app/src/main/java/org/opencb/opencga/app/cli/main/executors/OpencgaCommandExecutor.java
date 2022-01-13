@@ -53,7 +53,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     }
 
     public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) throws CatalogAuthenticationException {
-        super(options);
+        super(options, true);
 
         init(options, skipDuration);
     }

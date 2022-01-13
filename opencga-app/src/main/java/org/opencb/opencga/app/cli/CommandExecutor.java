@@ -53,18 +53,19 @@ public abstract class CommandExecutor {
 
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
+    protected ClientConfiguration clientConfiguration;
 
     protected GeneralCliOptions.CommonCommandOptions options;
 
     protected Logger logger;
     private Logger privateLogger;
 
-    public CommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
+    public CommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean loadClientConfiguration) {
         this.options = options;
-        init(options.logLevel, options.conf);
+        init(options.logLevel, options.conf, loadClientConfiguration);
     }
 
-    protected void init(String logLevel, String conf) {
+    protected void init(String logLevel, String conf, boolean loadClientConfiguration) {
         this.logLevel = logLevel;
         this.conf = conf;
 
@@ -88,6 +89,12 @@ public abstract class CommandExecutor {
 
             // This code assumes general configuration will be always needed and general configuration is overwritten,
             // maybe in the near future this should be an if/else.
+            if (loadClientConfiguration) {
+                loadClientConfiguration();
+                if (StringUtils.isNotEmpty(this.clientConfiguration.getLogLevel())) {
+                    this.configuration.setLogLevel(this.clientConfiguration.getLogLevel());
+                }
+            }
 
             if (StringUtils.isNotEmpty(ClientConfiguration.getInstance().getLogLevel())) {
                 this.configuration.setLogLevel(ClientConfiguration.getInstance().getLogLevel());
@@ -199,6 +206,25 @@ public abstract class CommandExecutor {
             privateLogger.debug("Loading storage configuration from JAR file");
             this.storageConfiguration = StorageConfiguration
                     .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
+        }
+    }
+
+    /**
+     * This method attempts to first data configuration from CLI parameter, if not present then uses
+     * the configuration from installation directory, if not exists then loads JAR client-configuration.yml.
+     *
+     * @throws IOException If any IO problem occurs
+     */
+    public void loadClientConfiguration() throws IOException {
+        // We load configuration file either from app home folder or from the JAR
+        Path path = Paths.get(this.conf).resolve("client-configuration.yml");
+        if (Files.exists(path)) {
+            privateLogger.debug("Loading configuration from '{}'", path.toAbsolutePath());
+            this.clientConfiguration = ClientConfiguration.load(new FileInputStream(path.toFile()));
+        } else {
+            privateLogger.debug("Loading configuration from JAR file");
+            this.clientConfiguration = ClientConfiguration
+                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("client-configuration.yml"));
         }
     }
 

@@ -41,7 +41,7 @@ public abstract class InternalCommandExecutor extends CommandExecutor {
     protected ToolRunner toolRunner;
 
     public InternalCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
-        super(options);
+        super(options, false);
     }
 
     protected void configure() throws IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
