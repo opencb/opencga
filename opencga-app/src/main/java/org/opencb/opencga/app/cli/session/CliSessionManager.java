@@ -3,6 +3,7 @@ package org.opencb.opencga.app.cli.session;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.OpencgaCliShellExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
@@ -192,7 +193,7 @@ public class CliSessionManager {
             OpenCGAClient openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSession.getInstance().getToken()));
             if (openCGAClient != null) {
                 try {
-                    
+
                     RestResponse<Study> res = openCGAClient.getStudyClient().info(arg, new ObjectMap());
                     if (res.allResultsSize() > 0) {
                         CommandLineUtils.printDebug("Validated study " + arg);
@@ -311,7 +312,7 @@ public class CliSessionManager {
 
     public static void initShell() {
         try {
-            OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor();
+            OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
             setShell(shell);
             setDefaultCurrentStudy();
         } catch (IOException e) {

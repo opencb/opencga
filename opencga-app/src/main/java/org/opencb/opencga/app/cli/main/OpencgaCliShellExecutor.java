@@ -5,6 +5,8 @@ import org.jline.reader.impl.DefaultHighlighter;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
@@ -13,12 +15,13 @@ import java.io.IOException;
 import static org.opencb.commons.utils.PrintUtils.*;
 
 
-public class OpencgaCliShellExecutor {
+public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
 
     private LineReader lineReader = null;
     private Terminal terminal = null;
 
-    public OpencgaCliShellExecutor() throws CatalogAuthenticationException {
+    public OpencgaCliShellExecutor(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
+        super(options);
 
     }
 
