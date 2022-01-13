@@ -37,13 +37,13 @@ public class CliSessionManager {
     public static void updateSession() {
         try {
             if (isShell()) {
-                CommandLineUtils.printDebugMessage("Updating session for host " + ClientConfiguration.getInstance().getRest().getCurrentHostname());
+                CommandLineUtils.printDebug("Updating session for host " + ClientConfiguration.getInstance().getRest().getCurrentHostname());
                 CliSession.getInstance().saveCliSessionFile(ClientConfiguration.getInstance().getRest().getCurrentHostname());
             } else {
-                CommandLineUtils.printDebugMessage("Updating session for host " + getLastHostUsed());
+                CommandLineUtils.printDebug("Updating session for host " + getLastHostUsed());
                 CliSession.getInstance().saveCliSessionFile(getLastHostUsed());
             }
-            CommandLineUtils.printDebugMessage("Session updated ");
+            CommandLineUtils.printDebug("Session updated ");
             if (isReloadStudies()) {
                 reloadStudies();
             }
@@ -177,7 +177,7 @@ public class CliSessionManager {
 
     private static void reloadStudies() {
         setReloadStudies(false);
-        CommandLineUtils.printDebugMessage("Reloading studies ");
+        CommandLineUtils.printDebug("Reloading studies ");
         if (!StringUtils.isEmpty(CliSession.getInstance().getToken())) {
             loadSessionStudies();
         } else {
@@ -187,7 +187,7 @@ public class CliSessionManager {
 
     public static void setValidatedCurrentStudy(String arg) {
         if (!StringUtils.isEmpty(CliSession.getInstance().getToken())) {
-            CommandLineUtils.printDebugMessage("Check study " + arg);
+            CommandLineUtils.printDebug("Check study " + arg);
 
             OpenCGAClient openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSession.getInstance().getToken()));
             if (openCGAClient != null) {
@@ -195,10 +195,10 @@ public class CliSessionManager {
                     
                     RestResponse<Study> res = openCGAClient.getStudyClient().info(arg, new ObjectMap());
                     if (res.allResultsSize() > 0) {
-                        CommandLineUtils.printDebugMessage("Validated study " + arg);
+                        CommandLineUtils.printDebug("Validated study " + arg);
 
                         CliSession.getInstance().setCurrentStudy(res.response(0).getResults().get(0).getFqn());
-                        CommandLineUtils.printDebugMessage("Validated study " + arg);
+                        CommandLineUtils.printDebug("Validated study " + arg);
                         updateSession();
                         println(getKeyValueAsFormattedString("Current study is: ",
                                 CliSession.getInstance().getCurrentStudy()));

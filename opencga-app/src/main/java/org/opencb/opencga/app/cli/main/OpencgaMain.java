@@ -33,7 +33,7 @@ public class OpencgaMain {
             CliSessionManager.init(args);
             if (args.length == 1 && "--shell".equals(args[0]) || (args.length == 2 && "--shell".equals(args[0]) && "--debug".equals(args[1]))) {
                 CliSessionManager.initShell();
-                CommandLineUtils.printDebugMessage("Shell created ");
+                CommandLineUtils.printDebug("Shell created ");
                 CliSessionManager.getShell().execute();
             } else {
                 OpencgaCliProcessor.execute(args);

@@ -27,7 +27,7 @@ public class OpencgaCliProcessor {
 
     public static void execute(String[] args) throws CatalogAuthenticationException {
         console = getConsole();
-        CommandLineUtils.printDebugMessage("Executing " + CommandLineUtils.getAsSpaceSeparatedString(args));
+        CommandLineUtils.printDebug("Executing " + CommandLineUtils.getAsSpaceSeparatedString(args));
 
 
         if (console == null && CliSessionManager.isShell()) {
@@ -215,7 +215,7 @@ public class OpencgaCliProcessor {
         console = getConsole();
         String user = console.readLine(format("\nEnter your user: ", Color.GREEN));
         loginUser(user);
-        CommandLineUtils.printDebugMessage("Login user " + user);
+        CommandLineUtils.printDebug("Login user " + user);
 
     }
 

@@ -43,7 +43,7 @@ public class CommandLineUtils {
         }
     }
 
-    public static void printDebugMessage(String s) {
+    public static void printDebug(String s) {
         if (CliSessionManager.isDebug()) {
             PrintUtils.printDebug(s);
         }

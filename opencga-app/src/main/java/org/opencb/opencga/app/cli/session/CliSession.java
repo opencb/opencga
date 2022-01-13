@@ -67,7 +67,7 @@ public class CliSession {
 
     static CliSession getInstance() {
         if (instance == null) {
-            CommandLineUtils.printDebugMessage("Using: " + getLastHostUsed());
+            CommandLineUtils.printDebug("Using: " + getLastHostUsed());
             loadCliSessionFile(getLastHostUsed());
         }
         return instance;
@@ -105,7 +105,7 @@ public class CliSession {
     public static void loadCliSessionFile(String host) {
         Path sessionDirectory = Paths.get(System.getProperty("user.home")).resolve(".opencga");
         Path sessionPath = sessionDirectory.resolve(host + SESSION_FILE_SUFFIX);
-        CommandLineUtils.printDebugMessage("Loading " + sessionPath);
+        CommandLineUtils.printDebug("Loading " + sessionPath);
         // Check if .opencga folder exists
         if (!Files.exists(sessionDirectory)) {
             try {
