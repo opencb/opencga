@@ -59,6 +59,8 @@ public abstract class OpenCgaAnalysisTool extends OpenCgaTool {
 
     public final OpenCgaAnalysisTool setUp(String opencgaHome, ObjectMap params, Path outDir, String token) throws ToolException {
         try {
+            this.opencgaHome = opencgaHome;
+
             loadConfiguration();
             loadStorageConfiguration();
 

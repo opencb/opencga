@@ -18,15 +18,22 @@ package org.opencb.opencga.analysis.wrappers.deeptools;
 
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.core.api.ParamConstants.DEEPTOOLS_COMMANDS_SUPPORTED;
@@ -83,6 +90,28 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaToolScopeStudy {
             getToolExecutor(DeeptoolsWrapperAnalysisExecutor.class)
                     .setCommand(analysisParams.getCommand())
                     .execute();
+
+            // Post-processing
+            switch (analysisParams.getCommand()) {
+                case "bamCoverage": {
+                    // Register file next to bam and bai file
+                    Path bwFilePath = getOutDir().resolve(analysisParams.getDeeptoolsParams().get("o"));
+                    if (bwFilePath.toFile().exists()) {
+                        // Search BAM file document in Catalog
+                        URI bamFileUri = UriUtils.createUri(analysisParams.getDeeptoolsParams().get("b"));
+                        Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), bamFileUri);
+                        File catalogBamFile = catalogManager.getFileManager().search(study, query, FileManager.INCLUDE_FILE_URI_PATH, token).first();
+
+                        String catalogPath = getParentDirectory(catalogBamFile.getPath());
+                        Path targetUri = Paths.get(bamFileUri).getParent();
+
+                        moveFile(study, bwFilePath, targetUri, catalogPath, token);
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
         });
     }
 
