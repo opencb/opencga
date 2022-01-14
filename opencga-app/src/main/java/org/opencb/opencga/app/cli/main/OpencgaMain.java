@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.app.cli.main;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.main.processors.CliProcessor;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.rest.OpenCGAClient;
 
 /**
  * Created by imedina on 27/05/16.
@@ -29,17 +29,16 @@ public class OpencgaMain {
 
     private static OpencgaCliShellExecutor shell;
 
-    public OpencgaMain() {
-
-    }
 
     public static void main(String[] args) {
 
+        CliSessionManager.getInstance().setDebug(ArrayUtils.contains(args, "--debug"));
         try {
-            if (args.length == 1 && "--shell".equals(args[0]) || (args.length == 2 && "--shell".equals(args[0]) && "--debug".equals(args[1]))) {
+            if (ArrayUtils.contains(args, "--shell")) {
                 initShell(args);
             } else {
-                OpencgaCliProcessor.execute(args);
+                CliProcessor processor = new CliProcessor();
+                processor.execute(args);
             }
         } catch (Exception e) {
             CommandLineUtils.printError("Failed to initialize OpenCGA CLI", e);
@@ -49,8 +48,9 @@ public class OpencgaMain {
     public static void initShell(String[] args) {
         try {
             shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
+            CliSessionManager.setShell(shell);
             CliSessionManager.getInstance().init(args, shell);
-            CliSessionManager.getInstance().loadSessionStudies();
+            CliSessionManager.getInstance().loadSessionStudies(shell);
             CommandLineUtils.printDebug("Shell created ");
             shell.execute();
         } catch (CatalogAuthenticationException e) {
@@ -60,23 +60,5 @@ public class OpencgaMain {
         }
     }
 
-    public static boolean isShell() {
-        return shell != null;
-    }
 
-    public static OpencgaCliShellExecutor getShell() {
-        return shell;
-    }
-
-    public static void setShell(OpencgaCliShellExecutor shell) {
-        OpencgaMain.shell = shell;
-    }
-
-    public static ClientConfiguration getClientConfiguration() {
-        return shell.getClientConfiguration();
-    }
-
-    public static OpenCGAClient getClient() {
-        return shell.getOpenCGAClient();
-    }
 }

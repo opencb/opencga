@@ -347,7 +347,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         }
         if (enc) {
             if (studyPresent) {
-                res += "        if(queryParams.get(\"study\")==null && OpencgaMain.isShell()){\n";
+                res += "        if(queryParams.get(\"study\")==null && CliSessionManager.getInstance().isShell()){\n";
                 res += "                queryParams.putIfNotEmpty(\"study\", CliSessionManager.getInstance().getCurrentStudy());\n";
                 res += "        }\n";
             }

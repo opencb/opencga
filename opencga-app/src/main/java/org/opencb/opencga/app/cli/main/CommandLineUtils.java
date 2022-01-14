@@ -7,7 +7,7 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 
 public class CommandLineUtils {
 
-    private static final boolean forceDebug = true;
+    private static final boolean forceDebug = false;
 
     public static String getVersionString() {
         String res = PrintUtils.getKeyValueAsFormattedString("\tOpenCGA CLI version: ", "\t" + GitRepositoryState.get().getBuildVersion() + "\n");
@@ -17,10 +17,6 @@ public class CommandLineUtils {
         return res;
     }
 
-    @Deprecated
-    public static String getAsSpaceSeparatedString(String[] args) {
-        return String.join(" ", args);
-    }
 
     public static void printError(String message, Exception e) {
         if (CliSessionManager.isDebug() || forceDebug) {
@@ -36,5 +32,7 @@ public class CommandLineUtils {
         }
     }
 
-
+    public static boolean isValidUser(String user) {
+        return user.matches("^[A-Za-z][A-Za-z0-9_]{2,29}$");
+    }
 }

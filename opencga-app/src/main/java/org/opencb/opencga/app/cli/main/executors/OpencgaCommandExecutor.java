@@ -23,7 +23,6 @@ import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
-import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.app.cli.session.CliSession;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
@@ -157,7 +156,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         } else {
 
                             CommandLineUtils.printDebug("session has expired ");
-                            if (OpencgaMain.isShell()) {
+                            if (CliSessionManager.getInstance().isShell()) {
                                 throw new CatalogAuthenticationException("Your session has expired. Please, either login again.");
                             } else {
                                 PrintUtils.printError("Your session has expired. Please, either login again or logout to work as "

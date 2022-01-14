@@ -41,7 +41,7 @@ public abstract class InternalCommandExecutor extends CommandExecutor {
     protected ToolRunner toolRunner;
 
     public InternalCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
-        super(options, false);
+        super(options, true);
     }
 
     protected void configure() throws IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
@@ -57,7 +57,7 @@ public abstract class InternalCommandExecutor extends CommandExecutor {
 
     protected Map<Long, String> getStudyIds(String sessionId) throws CatalogException {
         return catalogManager.getStudyManager().search(new Query(), new QueryOptions("include", "projects.studies.id,projects.studies" +
-                ".alias"), sessionId)
+                        ".alias"), sessionId)
                 .getResults()
                 .stream()
                 .collect(Collectors.toMap(Study::getUid, Study::getId));

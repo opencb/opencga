@@ -7,6 +7,7 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.processors.ShellProcessor;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
@@ -65,7 +66,7 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
                 lineReader = getTerminal();
             }
             String PROMPT;
-
+            ShellProcessor processor = new ShellProcessor();
             while (true) {
                 // Read and sanitize the input
                 String line;
@@ -83,7 +84,7 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
                 }
                 line = line.trim();
                 if (!line.equals("")) {
-                    OpencgaCliProcessor.execute(line.split(" "));
+                    processor.execute(line.split(" "));
                 }
                 // Construct the Command and args to pass to that command
             }
@@ -125,6 +126,5 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
         System.out.println();
         System.out.println();
     }
-
 
 }
