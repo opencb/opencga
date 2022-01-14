@@ -63,37 +63,22 @@
   */
  public abstract class AbstractParentClient {
 
-     protected final Client client;
-
-     private String token;
-     private ClientConfiguration clientConfiguration;
-     private boolean throwExceptionOnError = false;
-
-     protected final ObjectMapper jsonObjectMapper;
-
-     private int batchSize;
-     private int defaultLimit;
-
-     protected Logger logger;
-
      protected static final String GET = "GET";
      protected static final String POST = "POST";
      protected static final String DELETE = "DELETE";
-
      private static final int DEFAULT_BATCH_SIZE = 200;
      private static final int DEFAULT_LIMIT = 2000;
      private static final int DEFAULT_SKIP = 0;
-
      private static final int DEFAULT_CONNECT_TIMEOUT = 1000;
      private static final int DEFAULT_READ_TIMEOUT = 30000;
-
-     /**
-      * Creates a parent client with the provided token and a default ClientConfiguration object.
-      * @param token A valid and logged token
-      */
-     protected AbstractParentClient(String token) {
-         this(token, ClientConfiguration.getInstance());
-     }
+     protected final Client client;
+     protected final ObjectMapper jsonObjectMapper;
+     private final ClientConfiguration clientConfiguration;
+     private final int batchSize;
+     private final int defaultLimit;
+     protected Logger logger;
+     private String token;
+     private boolean throwExceptionOnError = false;
 
      protected AbstractParentClient(String token, ClientConfiguration clientConfiguration) {
          this.token = token;
@@ -125,7 +110,6 @@
      private Client createRestClient() {
          ClientBuilder clientBuilder = ClientBuilder.newBuilder();
          clientBuilder.register(JacksonUtils.ObjectMapperProvider.class);
-
          if (clientConfiguration.getRest().isTlsAllowInvalidCertificates()) {
              logger.debug("Using custom SSLContext to allow invalid certificates");
              try {
@@ -150,7 +134,7 @@
                  sc.init(null, trustAllCerts, new SecureRandom());
 
                  HostnameVerifier verifier = new HostnameVerifier() {
-                     private String hostname = URI.create(clientConfiguration.getRest().getCurrentUrl()).getHost();
+                     private final String hostname = URI.create(clientConfiguration.getRest().getCurrentUrl()).getHost();
 
                      @Override
                      public boolean verify(String hostname, SSLSession sslSession) {

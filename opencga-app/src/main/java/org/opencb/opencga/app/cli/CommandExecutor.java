@@ -65,6 +65,10 @@ public abstract class CommandExecutor {
         init(options.logLevel, options.conf, loadClientConfiguration);
     }
 
+    public static String getParsedSubCommand(JCommander jCommander) {
+        return CliOptionsParser.getSubCommand(jCommander);
+    }
+
     protected void init(String logLevel, String conf, boolean loadClientConfiguration) {
         this.logLevel = logLevel;
         this.conf = conf;
@@ -96,8 +100,8 @@ public abstract class CommandExecutor {
                 }
             }
 
-            if (StringUtils.isNotEmpty(ClientConfiguration.getInstance().getLogLevel())) {
-                this.configuration.setLogLevel(ClientConfiguration.getInstance().getLogLevel());
+            if (StringUtils.isNotEmpty(this.clientConfiguration.getLogLevel())) {
+                this.configuration.setLogLevel(this.clientConfiguration.getLogLevel());
             }
 
             // Do not change the order here, we can only configure logger after loading the configuration files,
@@ -106,13 +110,13 @@ public abstract class CommandExecutor {
 
             // Let's check the session file, maybe the session is still valid
 
-            privateLogger.debug("CLI session file is: {}", CliSessionManager.getCurrentFile());
+            privateLogger.debug("CLI session file is: {}", CliSessionManager.getInstance().getCurrentFile());
 
             if (StringUtils.isNotBlank(options.token)) {
                 this.token = options.token;
             } else {
-                this.token = CliSessionManager.getToken();
-                this.userId = CliSessionManager.getUser();
+                this.token = CliSessionManager.getInstance().getToken();
+                this.userId = CliSessionManager.getInstance().getUser();
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -241,10 +245,6 @@ public abstract class CommandExecutor {
         }
     }
 
-    public static String getParsedSubCommand(JCommander jCommander) {
-        return CliOptionsParser.getSubCommand(jCommander);
-    }
-
     public Configuration getConfiguration() {
         return configuration;
     }
@@ -275,5 +275,14 @@ public abstract class CommandExecutor {
 
     public Logger getLogger() {
         return logger;
+    }
+
+    public ClientConfiguration getClientConfiguration() {
+        return clientConfiguration;
+    }
+
+    public CommandExecutor setClientConfiguration(ClientConfiguration clientConfiguration) {
+        this.clientConfiguration = clientConfiguration;
+        return this;
     }
 }

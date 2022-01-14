@@ -78,7 +78,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                     }
                     // write CLI session file
 
-                    CliSessionManager.initUserSession(response.getToken(), user, response.getRefreshToken(), studies);
+                    CliSessionManager.getInstance().initUserSession(response.getToken(), user, response.getRefreshToken(), studies);
                     Event event = new Event();
                     event.setMessage(LOGIN_OK);
                     event.setType(Event.Type.INFO);
@@ -113,7 +113,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
         RestResponse<AuthenticationResponse> res = new RestResponse();
         try {
             openCGAClient.logout();
-            CliSessionManager.logoutCliSessionFile();
+            CliSessionManager.getInstance().logoutCliSessionFile();
             Event event = new Event();
             event.setMessage(LOGOUT);
             event.setType(Event.Type.ERROR);

@@ -16,25 +16,28 @@
 
 package org.opencb.opencga.app.cli.main;
 
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.client.rest.OpenCGAClient;
 
 /**
  * Created by imedina on 27/05/16.
  */
 public class OpencgaMain {
 
-    public static final String VERSION = GitRepositoryState.get().getBuildVersion();
+    private static OpencgaCliShellExecutor shell;
+
+    public OpencgaMain() {
+
+    }
 
     public static void main(String[] args) {
+
         try {
-            ClientConfiguration.getInstance().loadClientConfiguration();
-            CliSessionManager.init(args);
             if (args.length == 1 && "--shell".equals(args[0]) || (args.length == 2 && "--shell".equals(args[0]) && "--debug".equals(args[1]))) {
-                CliSessionManager.initShell();
-                CommandLineUtils.printDebug("Shell created ");
-                CliSessionManager.getShell().execute();
+                initShell(args);
             } else {
                 OpencgaCliProcessor.execute(args);
             }
@@ -43,5 +46,37 @@ public class OpencgaMain {
         }
     }
 
+    public static void initShell(String[] args) {
+        try {
+            shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
+            CliSessionManager.getInstance().init(args, shell);
+            CliSessionManager.getInstance().loadSessionStudies();
+            CommandLineUtils.printDebug("Shell created ");
+            shell.execute();
+        } catch (CatalogAuthenticationException e) {
+            CommandLineUtils.printError("Failed to initialize shell", e);
+        } catch (Exception e) {
+            CommandLineUtils.printError("Failed to execute shell", e);
+        }
+    }
 
+    public static boolean isShell() {
+        return shell != null;
+    }
+
+    public static OpencgaCliShellExecutor getShell() {
+        return shell;
+    }
+
+    public static void setShell(OpencgaCliShellExecutor shell) {
+        OpencgaMain.shell = shell;
+    }
+
+    public static ClientConfiguration getClientConfiguration() {
+        return shell.getClientConfiguration();
+    }
+
+    public static OpenCGAClient getClient() {
+        return shell.getOpenCGAClient();
+    }
 }

@@ -31,17 +31,17 @@ public class ClientConfigurationTest {
     @Test
     public void testDefault() {
 
-//        ClientConfiguration.getInstance().setCliSessionDuration(120);
+        ClientConfiguration config = new ClientConfiguration();
         List<HostConfig> hostConfigs = new ArrayList();
         hostConfigs.add(new HostConfig("opencga", "localhost:9090/opencga", true));
         RestConfig restConfig = new RestConfig(hostConfigs, true, new QueryRestConfig(200, 2000));
         GrpcConfig grpcConfig = new GrpcConfig("localhost:9091");
 
-        ClientConfiguration.getInstance().setRest(restConfig);
-        ClientConfiguration.getInstance().setGrpc(grpcConfig);
+        config.setRest(restConfig);
+        config.setGrpc(grpcConfig);
 
         try {
-            ClientConfiguration.getInstance().serialize(new FileOutputStream("/tmp/client-configuration-test.yml"));
+            config.serialize(new FileOutputStream("/tmp/client-configuration-test.yml"));
         } catch (IOException e) {
             e.printStackTrace();
         }

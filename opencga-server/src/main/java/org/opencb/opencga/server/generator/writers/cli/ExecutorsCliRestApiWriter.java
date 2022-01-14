@@ -18,12 +18,12 @@ package org.opencb.opencga.server.generator.writers.cli;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.server.generator.config.CategoryConfig;
+import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
+import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.models.RestCategory;
 import org.opencb.opencga.server.generator.models.RestEndpoint;
 import org.opencb.opencga.server.generator.models.RestParameter;
-import org.opencb.opencga.server.generator.models.RestApi;
-import org.opencb.opencga.server.generator.config.CategoryConfig;
-import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.utils.CommandLineUtils;
 import org.opencb.opencga.server.generator.writers.ParentClientRestApiWriter;
 
@@ -114,11 +114,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         }
         String[] excluded = new String[]{"java.lang.Object", "java.lang."};
 
-        if (Arrays.asList(excluded).contains(string)) {
-            return false;
-        }
-
-        return true;
+        return !Arrays.asList(excluded).contains(string);
     }
 
     @Override
@@ -275,7 +271,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                             } else {
                                 if (bodyParam.isStringList()) {
                                     sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
-                                            "(CommandLineUtils.getListValues(commandOptions."
+                                            "(splitWithTrim(commandOptions."
                                             + normaliceNames(getAsCamelCase(bodyParam.getName())) + "))");
                                 } else {
                                     if (bodyParam.isInnerParam()) {
@@ -351,8 +347,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         }
         if (enc) {
             if (studyPresent) {
-                res += "        if(queryParams.get(\"study\")==null && CliSessionManager.isShell()){\n";
-                res += "                queryParams.putIfNotEmpty(\"study\", CliSessionManager.getCurrentStudy());\n";
+                res += "        if(queryParams.get(\"study\")==null && OpencgaMain.isShell()){\n";
+                res += "                queryParams.putIfNotEmpty(\"study\", CliSessionManager.getInstance().getCurrentStudy());\n";
                 res += "        }\n";
             }
             return res + "\n";

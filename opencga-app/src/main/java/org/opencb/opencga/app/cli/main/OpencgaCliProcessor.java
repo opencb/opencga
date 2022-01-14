@@ -27,10 +27,9 @@ public class OpencgaCliProcessor {
 
     public static void execute(String[] args) throws CatalogAuthenticationException {
         console = getConsole();
+        CommandExecutor commandExecutor = null;
         CommandLineUtils.printDebug("Executing " + CommandLineUtils.getAsSpaceSeparatedString(args));
-
-
-        if (console == null && CliSessionManager.isShell()) {
+        if (console == null && OpencgaMain.isShell()) {
             println("Couldn't get console instance", Color.RED);
             System.exit(0);
         }
@@ -53,15 +52,15 @@ public class OpencgaCliProcessor {
         }
 
         if (args.length == 3 && "use".equals(args[0]) && "study".equals(args[1])) {
-            CliSessionManager.setValidatedCurrentStudy(args[2]);
+            CliSessionManager.getInstance().setValidatedCurrentStudy(args[2]);
             return;
         }
 
         if (args.length == 3 && "use".equals(args[0]) && "host".equals(args[1])) {
             if (CliSessionManager.DEFAULT_PARAMETER.equals(args[2])) {
-                CliSessionManager.switchDefaultSessionHost();
+                CliSessionManager.getInstance().switchDefaultSessionHost();
             } else {
-                CliSessionManager.switchSessionHost(args[2]);
+                CliSessionManager.getInstance().switchSessionHost(args[2]);
             }
             return;
         }
@@ -69,7 +68,7 @@ public class OpencgaCliProcessor {
         //login The first if clause is for scripting login method and the else clause is for the shell login
         if (isNotHelpCommand(args)) {
             if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1]) && ArrayUtils.contains(args, "--user-password")) {
-                if (!CliSessionManager.isShell()) {
+                if (!OpencgaMain.isShell()) {
                     args = getUserPasswordArgs(args, "--user-password");
                 } else {
                     char[] passwordArray =
@@ -96,7 +95,6 @@ public class OpencgaCliProcessor {
                     cliOptionsParser.printUsage();
                 }
             } else {
-                CommandExecutor commandExecutor = null;
                 // Check if any command -h option is present
                 if (cliOptionsParser.isHelp()) {
                     cliOptionsParser.printUsage();
@@ -115,7 +113,6 @@ public class OpencgaCliProcessor {
                                 break;
                             case "studies":
                                 commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getStudiesCommandOptions());
-                                CliSessionManager.setReloadStudies(true);
                                 break;
                             case "files":
                                 commandExecutor = new FilesCommandExecutor(cliOptionsParser.getFilesCommandOptions());
@@ -161,7 +158,10 @@ public class OpencgaCliProcessor {
                                 printError("Not valid command passed: '" + parsedCommand + "'");
                                 break;
                         }
-
+                        if (!OpencgaMain.isShell()) {
+                            CliSessionManager.getInstance().init(args, commandExecutor);
+                            CommandLineUtils.printDebug("Current Token is " + CliSessionManager.getInstance().getToken());
+                        }
                         executeCommand(commandExecutor, cliOptionsParser);
                     }
                 }
@@ -172,7 +172,7 @@ public class OpencgaCliProcessor {
         } catch (CatalogAuthenticationException e) {
             printWarn("\n" + e.getMessage());
             try {
-                CliSessionManager.logoutCliSessionFile();
+                CliSessionManager.getInstance().logoutCliSessionFile();
             } catch (IOException ex) {
                 CommandLineUtils.printError("Failed to save OpenCGA CLI session", ex);
 
@@ -199,8 +199,7 @@ public class OpencgaCliProcessor {
 
             try {
                 commandExecutor.execute();
-                CliSessionManager.setDefaultCurrentStudy();
-                CliSessionManager.updateSession();
+                CliSessionManager.getInstance().updateSession();
             } catch (IOException e) {
                 CommandLineUtils.printError("Could not set the default study", e);
             } catch (Exception ex) {

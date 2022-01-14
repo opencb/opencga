@@ -19,7 +19,6 @@ package org.opencb.opencga.app.cli.session;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
-import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -61,16 +60,20 @@ public class CliSession {
         login = "";
         currentStudy = NO_STUDY;
         studies = Collections.emptyList();
-        currentHost = ClientConfiguration.getInstance().getRest().getCurrentHostname();
+        currentHost = host;
         timestamp = System.currentTimeMillis();
     }
 
-    static CliSession getInstance() {
+    public static CliSession getInstance() {
         if (instance == null) {
-            CommandLineUtils.printDebug("Using: " + getLastHostUsed());
-            loadCliSessionFile(getLastHostUsed());
+            instance = new CliSession();
         }
         return instance;
+    }
+
+    public static void init() {
+        CommandLineUtils.printDebug("Using: " + getLastHostUsed());
+        loadCliSessionFile(getLastHostUsed());
     }
 
     public static String getLastHostUsed() {

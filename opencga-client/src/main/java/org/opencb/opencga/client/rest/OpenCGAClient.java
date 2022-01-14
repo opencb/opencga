@@ -46,10 +46,6 @@ public class OpenCGAClient {
     private Map<String, AbstractParentClient> clients;
     private boolean throwExceptionOnError;
 
-    public OpenCGAClient() {
-        this(ClientConfiguration.getInstance());
-    }
-
     public OpenCGAClient(ClientConfiguration clientConfiguration) {
         this.init(null, clientConfiguration);
     }
@@ -71,24 +67,6 @@ public class OpenCGAClient {
         this.init(authenticationTokens, clientConfiguration);
     }
 
-    private void init(AuthenticationResponse tokens, ClientConfiguration clientConfiguration) {
-        this.clients = new HashMap<>(25);
-
-        if (tokens != null) {
-            setToken(tokens.getToken());
-            setRefreshToken(tokens.getRefreshToken());
-            this.userId = getUserFromToken(tokens.getToken());
-        }
-
-        if (clientConfiguration == null) {
-            this.clientConfiguration = ClientConfiguration.getInstance();
-        } else {
-            this.clientConfiguration = clientConfiguration;
-        }
-    }
-
-
-
     protected static String getUserFromToken(String token) {
         // https://github.com/jwtk/jjwt/issues/280
         // https://github.com/jwtk/jjwt/issues/86
@@ -101,64 +79,78 @@ public class OpenCGAClient {
         return claims.getSubject();
     }
 
+    private void init(AuthenticationResponse tokens, ClientConfiguration clientConfiguration) {
+        this.clients = new HashMap<>(25);
+
+        if (tokens != null) {
+            setToken(tokens.getToken());
+            setRefreshToken(tokens.getRefreshToken());
+            this.userId = getUserFromToken(tokens.getToken());
+        }
+
+
+        this.clientConfiguration = clientConfiguration;
+
+    }
+
     public UserClient getUserClient() {
-        return getClient(UserClient.class, () -> new UserClient(token));
+        return getClient(UserClient.class, () -> new UserClient(token, clientConfiguration));
     }
 
     public ProjectClient getProjectClient() {
-        return getClient(ProjectClient.class, () -> new ProjectClient(token));
+        return getClient(ProjectClient.class, () -> new ProjectClient(token, clientConfiguration));
     }
 
     public StudyClient getStudyClient() {
-        return getClient(StudyClient.class, () -> new StudyClient(token));
+        return getClient(StudyClient.class, () -> new StudyClient(token, clientConfiguration));
     }
 
     public FileClient getFileClient() {
-        return getClient(FileClient.class, () -> new FileClient(token));
+        return getClient(FileClient.class, () -> new FileClient(token, clientConfiguration));
     }
 
     public JobClient getJobClient() {
-        return getClient(JobClient.class, () -> new JobClient(token));
+        return getClient(JobClient.class, () -> new JobClient(token, clientConfiguration));
     }
 
     public IndividualClient getIndividualClient() {
-        return getClient(IndividualClient.class, () -> new IndividualClient(token));
+        return getClient(IndividualClient.class, () -> new IndividualClient(token, clientConfiguration));
     }
 
     public SampleClient getSampleClient() {
-        return getClient(SampleClient.class, () -> new SampleClient(token));
+        return getClient(SampleClient.class, () -> new SampleClient(token, clientConfiguration));
     }
 
     public CohortClient getCohortClient() {
-        return getClient(CohortClient.class, () -> new CohortClient(token));
+        return getClient(CohortClient.class, () -> new CohortClient(token, clientConfiguration));
     }
 
     public ClinicalAnalysisClient getClinicalAnalysisClient() {
-        return getClient(ClinicalAnalysisClient.class, () -> new ClinicalAnalysisClient(token));
+        return getClient(ClinicalAnalysisClient.class, () -> new ClinicalAnalysisClient(token, clientConfiguration));
     }
 
     public DiseasePanelClient getDiseasePanelClient() {
-        return getClient(DiseasePanelClient.class, () -> new DiseasePanelClient(token));
+        return getClient(DiseasePanelClient.class, () -> new DiseasePanelClient(token, clientConfiguration));
     }
 
     public FamilyClient getFamilyClient() {
-        return getClient(FamilyClient.class, () -> new FamilyClient(token));
+        return getClient(FamilyClient.class, () -> new FamilyClient(token, clientConfiguration));
     }
 
     public AlignmentClient getAlignmentClient() {
-        return getClient(AlignmentClient.class, () -> new AlignmentClient(token));
+        return getClient(AlignmentClient.class, () -> new AlignmentClient(token, clientConfiguration));
     }
 
     public VariantClient getVariantClient() {
-        return getClient(VariantClient.class, () -> new VariantClient(token));
+        return getClient(VariantClient.class, () -> new VariantClient(token, clientConfiguration));
     }
 
     public VariantOperationClient getVariantOperationClient() {
-        return getClient(VariantOperationClient.class, () -> new VariantOperationClient(token));
+        return getClient(VariantOperationClient.class, () -> new VariantOperationClient(token, clientConfiguration));
     }
 
     public MetaClient getMetaClient() {
-        return getClient(MetaClient.class, () -> new MetaClient(token));
+        return getClient(MetaClient.class, () -> new MetaClient(token, clientConfiguration));
     }
 
     @SuppressWarnings("unchecked")

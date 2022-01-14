@@ -65,26 +65,13 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **internal**<br>*[FileInternal](https://docs.opencga.opencb.org/data-models/file#fileinternal)* <br> | <p>Internal field for manage the object.</p> |
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
-### FileRelatedFile
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileRelatedFile.java).
+### URI
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/net/URI.java).
 
 
 ### FileQualityControl
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileQualityControl.java).
 
-
-### FileInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
-
-| Field | Description |
-| :---  | :--- |
-| **status**<br>*[FileStatus](https://docs.opencga.opencb.org/data-models/file#filestatus)* <br> | <p>File status can have the values READY, DELETED, TRASHED, STAGE, MISSING, PENDING_DELETE, DELETING, REMOVED and MISSING_SAMPLES.</p> |
-| **index**<br>*[FileIndex](https://docs.opencga.opencb.org/data-models/file#fileindex)* <br> | <p>File index.</p> |
-| **sampleMap**<br>*Map<String,String>* <br> | <p>Map of samples.</p> |
-| **missingSamples**<br>*[MissingSamples](https://docs.opencga.opencb.org/data-models/file#missingsamples)* <br> | <p>Object describes missing samples.</p> |
-| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/file#status)* <br> | <p>Status of the internal object.</p> |
-| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
-| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
 
 ### Software
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/interpretation/Software.java).
@@ -102,6 +89,23 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment.java).
 
 
+### FileRelatedFile
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileRelatedFile.java).
+
+
+### FileInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
+
+| Field | Description |
+| :---  | :--- |
+| **status**<br>*[FileStatus](https://docs.opencga.opencb.org/data-models/file#filestatus)* <br> | <p>File status can have the values READY, DELETED, TRASHED, STAGE, MISSING, PENDING_DELETE, DELETING, REMOVED and MISSING_SAMPLES.</p> |
+| **index**<br>*[FileIndex](https://docs.opencga.opencb.org/data-models/file#fileindex)* <br> | <p>File index.</p> |
+| **sampleMap**<br>*Map<String,String>* <br> | <p>Map of samples.</p> |
+| **missingSamples**<br>*[MissingSamples](https://docs.opencga.opencb.org/data-models/file#missingsamples)* <br> | <p>Object describes missing samples.</p> |
+| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/file#status)* <br> | <p>Status of the internal object.</p> |
+| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
+| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
+
 ### CustomStatus
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
 
@@ -110,10 +114,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **CustomStatus.name**<br>*String* <br> | <p>Name of the status.</p> |
 | **CustomStatus.description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
 | **CustomStatus.date**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-
-### URI
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/net/URI.java).
-
 
 ### FileIndex
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileIndex.java).

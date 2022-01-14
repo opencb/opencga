@@ -69,7 +69,7 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
             while (true) {
                 // Read and sanitize the input
                 String line;
-                PROMPT = CliSessionManager.getPrompt();
+                PROMPT = CliSessionManager.getInstance().getPrompt();
                 try {
                     line = lineReader.readLine(PROMPT);
                 } catch (UserInterruptException e) {
@@ -125,5 +125,6 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
         System.out.println();
         System.out.println();
     }
+
 
 }

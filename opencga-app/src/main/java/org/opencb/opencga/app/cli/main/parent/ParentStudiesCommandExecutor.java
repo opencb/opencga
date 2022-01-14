@@ -45,7 +45,7 @@ import java.util.List;
  */
 public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecutor {
 
-    private StudiesCommandOptions studiesCommandOptions;
+    private final StudiesCommandOptions studiesCommandOptions;
 
     public ParentStudiesCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
                                         StudiesCommandOptions studiesCommandOptions) throws CatalogAuthenticationException {
@@ -137,7 +137,7 @@ public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecuto
             return study;
         } else {
             // Third, check if there is only one single project and study for this user in the current CLI session file.
-            List<String> studies = CliSessionManager.getStudies();
+            List<String> studies = CliSessionManager.getInstance().getStudies();
             if (ListUtils.isNotEmpty(studies) && studies.size() == 1) {
                 study = studies.get(0);
             } else {

@@ -4,23 +4,10 @@ import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
-import java.util.ArrayList;
-import java.util.List;
 
 public class CommandLineUtils {
 
-    public static List<String> splitWithTrim(String value) {
-        return splitWithTrim(value, ",");
-    }
-
-    public static List<String> splitWithTrim(String value, String separator) {
-        String[] splitFields = value.split(separator);
-        List<String> result = new ArrayList<>(splitFields.length);
-        for (String s : splitFields) {
-            result.add(s.trim());
-        }
-        return result;
-    }
+    private static final boolean forceDebug = true;
 
     public static String getVersionString() {
         String res = PrintUtils.getKeyValueAsFormattedString("\tOpenCGA CLI version: ", "\t" + GitRepositoryState.get().getBuildVersion() + "\n");
@@ -36,7 +23,7 @@ public class CommandLineUtils {
     }
 
     public static void printError(String message, Exception e) {
-        if (CliSessionManager.isDebug()) {
+        if (CliSessionManager.isDebug() || forceDebug) {
             PrintUtils.printError(message, e);
         } else {
             PrintUtils.printError(message);
@@ -44,7 +31,7 @@ public class CommandLineUtils {
     }
 
     public static void printDebug(String s) {
-        if (CliSessionManager.isDebug()) {
+        if (CliSessionManager.isDebug() || forceDebug) {
             PrintUtils.printDebug(s);
         }
     }

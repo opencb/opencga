@@ -22,13 +22,10 @@ import org.opencb.commons.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 
 /**
@@ -36,27 +33,15 @@ import java.util.Map;
  */
 public final class ClientConfiguration {
 
+    private static final Logger PRIVATE_LOGGER = LoggerFactory.getLogger(ClientConfiguration.class);
+    private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
+    private static Logger logger;
     private String logLevel;
     private RestConfig rest;
     private GrpcConfig grpc;
 
-    private static Logger logger;
 
-    private static ClientConfiguration instance;
-    private static final Logger PRIVATE_LOGGER = LoggerFactory.getLogger(ClientConfiguration.class);
-
-    private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
-
-    public static ClientConfiguration getInstance() {
-        if (instance == null) {
-//            instance = new ClientConfiguration();
-            // TODO discuss this with Juanfe
-            ClientConfiguration.loadClientConfiguration();
-        }
-        return instance;
-    }
-
-    private ClientConfiguration() {
+    public ClientConfiguration() {
         logger = LoggerFactory.getLogger(ClientConfiguration.class);
     }
 
@@ -88,11 +73,6 @@ public final class ClientConfiguration {
         return clientConfiguration;
     }
 
-    public void serialize(OutputStream configurationOutputStream) throws IOException {
-        ObjectMapper jsonMapper = new ObjectMapper(new YAMLFactory());
-        jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
-    }
-
     private static void parseEnvironmentVariables(ClientConfiguration configuration) {
         Map<String, String> envVariables = System.getenv();
         for (String variable : envVariables.keySet()) {
@@ -112,26 +92,10 @@ public final class ClientConfiguration {
         }
     }
 
-    /**
-     * This method attempts to first data configuration from CLI parameter, if not present then uses the configuration from installation
-     * directory, if not exists then loads JAR client-configuration.yml.
-     */
-    public static void loadClientConfiguration() {
-        // We load configuration file either from app home folder or from the JAR
-        try {
-            String conf = System.getProperty("app.home", System.getenv("OPENCGA_HOME")) + "/conf";
-            Path path = Paths.get(conf).resolve("client-configuration.yml");
-            if (Files.exists(path)) {
-                PRIVATE_LOGGER.debug("Loading configuration from '{}'", path.toAbsolutePath());
-                instance = ClientConfiguration.load(new FileInputStream(path.toFile()));
-            } else {
-                PRIVATE_LOGGER.debug("Loading configuration from JAR file");
-                instance = ClientConfiguration
-                        .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("client-configuration.yml"));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+
+    public void serialize(OutputStream configurationOutputStream) throws IOException {
+        ObjectMapper jsonMapper = new ObjectMapper(new YAMLFactory());
+        jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
     }
 
     @Override

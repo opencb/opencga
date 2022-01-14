@@ -3,11 +3,9 @@ package org.opencb.opencga.app.cli.session;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
-import org.opencb.opencga.app.cli.main.OpencgaCliShellExecutor;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -31,117 +29,152 @@ import static org.opencb.commons.utils.PrintUtils.*;
 public class CliSessionManager {
 
     public static final String DEFAULT_PARAMETER = "--default";
-    private static final boolean reloadStudies = false;
-    private static OpencgaCliShellExecutor sessionShell;
     private static boolean debug = false;
 
-    public static void updateSession() {
-        try {
-            if (isShell()) {
-                CommandLineUtils.printDebug("Updating session for host " + ClientConfiguration.getInstance().getRest().getCurrentHostname());
-                CliSession.getInstance().saveCliSessionFile(ClientConfiguration.getInstance().getRest().getCurrentHostname());
+    private static CliSessionManager instance;
+
+    private CliSessionManager() {
+
+    }
+
+    public static CliSessionManager getInstance() {
+        if (instance == null) {
+            instance = new CliSessionManager();
+        }
+        return instance;
+    }
+
+    public static boolean isDebug() {
+        return debug;
+    }
+
+    public static void setDebug(boolean debug) {
+        CliSessionManager.debug = debug;
+    }
+
+    private static boolean isDebugModeSet(String[] args) {
+        for (String s : args) {
+            if ("--debug".equals(s)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void switchDefaultSessionHost() {
+        switchSessionHost(getDefaultHost());
+    }
+
+    private String getDefaultHost() {
+        return OpencgaMain.getShell().getClientConfiguration().getRest().getHosts().get(0).getName();
+    }
+
+    public void logoutCliSessionFile() throws IOException {
+        if (OpencgaMain.isShell()) {
+            CliSession.getInstance().logoutCliSessionFile(OpencgaMain.getShell().getClientConfiguration().getRest().getCurrentHostname());
+        } else {
+            CliSession.getInstance().logoutCliSessionFile(getLastHostUsed());
+        }
+    }
+
+    private void reloadStudies() {
+        CommandLineUtils.printDebug("Reloading studies ");
+        if (!StringUtils.isEmpty(CliSession.getInstance().getToken())) {
+            loadSessionStudies();
+        } else {
+            printWarn("To set a study you must be logged in");
+        }
+    }
+
+    public void setValidatedCurrentStudy(String arg) {
+        if (!StringUtils.isEmpty(CliSession.getInstance().getToken())) {
+            CommandLineUtils.printDebug("Check study " + arg);
+
+            OpenCGAClient openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSession.getInstance().getToken()));
+            if (openCGAClient != null) {
+                try {
+
+                    RestResponse<Study> res = openCGAClient.getStudyClient().info(arg, new ObjectMap());
+                    if (res.allResultsSize() > 0) {
+                        CommandLineUtils.printDebug("Validated study " + arg);
+
+                        CliSession.getInstance().setCurrentStudy(res.response(0).getResults().get(0).getFqn());
+                        CommandLineUtils.printDebug("Validated study " + arg);
+                        updateSession();
+                        println(getKeyValueAsFormattedString("Current study is: ",
+                                CliSession.getInstance().getCurrentStudy()));
+                    } else {
+                        printWarn("Invalid study");
+                    }
+                } catch (ClientException e) {
+                    CommandLineUtils.printError(e.getMessage(), e);
+                }
             } else {
-                CommandLineUtils.printDebug("Updating session for host " + getLastHostUsed());
-                CliSession.getInstance().saveCliSessionFile(getLastHostUsed());
+                printError("Client not available");
             }
-            CommandLineUtils.printDebug("Session updated ");
-            if (isReloadStudies()) {
-                reloadStudies();
-            }
-        } catch (Exception e) {
+        } else {
+            printWarn("To set a study you must be logged in");
+        }
+    }
+
+    public String getToken() {
+        return CliSession.getInstance().getToken();
+    }
+
+    public String getUser() {
+        return CliSession.getInstance().getUser();
+    }
+
+    public String getCurrentFile() {
+        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga",
+                getLastHostUsed() + CliSession.SESSION_FILE_SUFFIX);
+
+        return sessionPath.toString();
+    }
+
+    public void updateSessionToken(String token) {
+        CliSession.getInstance().setToken(token);
+        CliSession.getInstance().setHost(OpencgaMain.getShell().getClientConfiguration().getRest().getCurrentUrl());
+        CliSession.getInstance().setCurrentHost(OpencgaMain.getShell().getClientConfiguration().getRest().getCurrentHostname());
+        updateSession();
+    }
+
+    public String getRefreshToken() {
+        return CliSession.getInstance().getRefreshToken();
+    }
+
+    public void updateTokens(String token, String refreshToken) {
+        CliSession.getInstance().setToken(token);
+        CliSession.getInstance().setRefreshToken(refreshToken);
+        try {
+            CliSession.getInstance().updateCliSessionFile(OpencgaMain.getShell().getClientConfiguration().getRest().getCurrentHostname());
+        } catch (IOException e) {
             CommandLineUtils.printError(e.getMessage(), e);
         }
     }
 
-    public static void switchSessionHost(String host) {
-        try {
-            CliSession.getInstance().loadCliSessionFile(host);
-            setCurrentHost(host);
-            CliSession.getInstance().setCurrentHost(host);
-            println(getKeyValueAsFormattedString("The new host has set to: ",
-                    CliSession.getInstance().getCurrentHost()));
-        } catch (Exception e) {
-            CommandLineUtils.printError("Failure to switch hosts", e);
-        }
+    public String getCurrentStudy() {
+        return CliSession.getInstance().getCurrentStudy();
     }
 
-    public static void setCurrentHost(String name) throws Exception {
-        if (name == null) {
-            throw new Exception("The name of host cannot be null");
-        }
-        if (!ClientConfiguration.getInstance().getRest().existsName(name)) {
-            throw new Exception("Host not found");
-        }
-        ClientConfiguration.getInstance().getRest().setCurrentHostname(name);
+    public List<String> getStudies() {
+        return CliSession.getInstance().getStudies();
+    }
+
+    public void initUserSession(String token, String user, String refreshToken, List<String> studies) throws IOException {
+
+        CliSession.getInstance().setToken(token);
+        CliSession.getInstance().setUser(user);
+        CliSession.getInstance().setVersion(GitRepositoryState.get().getBuildVersion());
+        CliSession.getInstance().setRefreshToken(refreshToken);
+        CliSession.getInstance().setStudies(studies);
+        CliSession.getInstance().setLogin(TimeUtils.getTime(new Date()));
         updateSession();
     }
 
-    public static void setDefaultCurrentStudy() throws IOException {
-        if ((CliSession.getInstance().getCurrentStudy().equals(CliSession.NO_STUDY) ||
-                !CliSession.getInstance().getStudies().contains(CliSession.getInstance().getCurrentStudy()))) {
-            if (CollectionUtils.isNotEmpty(CliSession.getInstance().getStudies())) {
-                for (String study : CliSession.getInstance().getStudies()) {
-                    if (study.startsWith(CliSession.getInstance().getUser())) {
-                        CliSession.getInstance().setCurrentStudy(study);
-                    }
-                }
-                if (CliSession.getInstance().getCurrentStudy().equals(CliSession.NO_STUDY)) {
-                    CliSession.getInstance().setCurrentStudy(CliSession.getInstance().getStudies().get(0));
-                }
-
-                updateSession();
-            } else if (CliSession.getInstance().getUser().equals(CliSession.GUEST_USER)) {
-
-                OpenCGAClient openCGAClient = new OpenCGAClient();
-                try {
-                    RestResponse<Project> res = openCGAClient.getProjectClient().search(new ObjectMap());
-                    setUserStudies(res);
-                } catch (ClientException e) {
-                    CommandLineUtils.printError("Reloading projects failed: ", e);
-                }
-            } else {
-                OpenCGAClient openCGAClient = new OpenCGAClient();
-                try {
-                    RestResponse<Project> res = openCGAClient.getUserClient().projects(CliSession.getInstance().getUser(), new ObjectMap());
-                    setUserStudies(res);
-                } catch (ClientException e) {
-                    CommandLineUtils.printError("Reloading projects failed ", e);
-                }
-            }
-        }
-    }
-
-    private static void setUserStudies(RestResponse<Project> res) throws IOException {
-        List<String> studies = new ArrayList<>();
-        List<OpenCGAResult<Project>> responses = res.getResponses();
-        for (OpenCGAResult<Project> p : responses) {
-            for (Project project : p.getResults()) {
-                for (Study study : project.getStudies()) {
-                    studies.add(study.getFqn());
-                }
-            }
-        }
-        if (!studies.isEmpty()) {
-            CliSession.getInstance().setStudies(studies);
-            setDefaultCurrentStudy();
-        }
-        updateSession();
-    }
-
-    public static String getLastHostUsed() {
-        return CliSession.getInstance().getLastHostUsed();
-    }
-
-    public static String getPrompt() {
-        String host = format("[" + CliSession.getInstance().getCurrentHost() + "]", Color.GREEN);
-        String study = format("[" + CliSession.getInstance().getCurrentStudy() + "]", Color.BLUE);
-        String user = format("<" + CliSession.getInstance().getUser() + "/>", Color.YELLOW);
-        return host + study + user;
-    }
-
-    private static void loadSessionStudies() {
+    public void loadSessionStudies() {
         if (!StringUtils.isEmpty(CliSession.getInstance().getToken())) {
-            OpenCGAClient openCGAClient = new OpenCGAClient();
+            OpenCGAClient openCGAClient = OpencgaMain.getClient();
             try {
                 RestResponse<Project> res = openCGAClient.getProjectClient().search(new ObjectMap());
                 List<String> studies = new ArrayList<>();
@@ -176,179 +209,119 @@ public class CliSessionManager {
         }
     }
 
-    private static void reloadStudies() {
-        setReloadStudies(false);
-        CommandLineUtils.printDebug("Reloading studies ");
-        if (!StringUtils.isEmpty(CliSession.getInstance().getToken())) {
-            loadSessionStudies();
-        } else {
-            printWarn("To set a study you must be logged in");
+    public void updateSession() {
+        try {
+            if (OpencgaMain.isShell()) {
+                CommandLineUtils.printDebug("Updating session for host " + OpencgaMain.getShell().getClientConfiguration().getRest().getCurrentHostname());
+                CliSession.getInstance().saveCliSessionFile(OpencgaMain.getShell().getClientConfiguration().getRest().getCurrentHostname());
+            } else {
+                CommandLineUtils.printDebug("Updating session for host " + getLastHostUsed());
+                CliSession.getInstance().saveCliSessionFile(getLastHostUsed());
+            }
+            CommandLineUtils.printDebug("Session updated ");
+
+        } catch (Exception e) {
+            CommandLineUtils.printError(e.getMessage(), e);
         }
     }
 
-    public static void setValidatedCurrentStudy(String arg) {
-        if (!StringUtils.isEmpty(CliSession.getInstance().getToken())) {
-            CommandLineUtils.printDebug("Check study " + arg);
+    public void switchSessionHost(String host) {
+        try {
+            CliSession.getInstance().loadCliSessionFile(host);
+            setCurrentHost(host);
+            CliSession.getInstance().setCurrentHost(host);
+            println(getKeyValueAsFormattedString("The new host has set to: ",
+                    CliSession.getInstance().getCurrentHost()));
+        } catch (Exception e) {
+            CommandLineUtils.printError("Failure to switch hosts", e);
+        }
+    }
 
-            OpenCGAClient openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSession.getInstance().getToken()));
-            if (openCGAClient != null) {
-                try {
+    public void setCurrentHost(String name) throws Exception {
+        if (name == null) {
+            throw new Exception("The name of host cannot be null");
+        }
+        if (!OpencgaMain.getShell().getClientConfiguration().getRest().existsName(name)) {
+            throw new Exception("Host not found");
+        }
+        OpencgaMain.getShell().getClientConfiguration().getRest().setCurrentHostname(name);
+        updateSession();
+    }
 
-                    RestResponse<Study> res = openCGAClient.getStudyClient().info(arg, new ObjectMap());
-                    if (res.allResultsSize() > 0) {
-                        CommandLineUtils.printDebug("Validated study " + arg);
-
-                        CliSession.getInstance().setCurrentStudy(res.response(0).getResults().get(0).getFqn());
-                        CommandLineUtils.printDebug("Validated study " + arg);
-                        updateSession();
-                        println(getKeyValueAsFormattedString("Current study is: ",
-                                CliSession.getInstance().getCurrentStudy()));
-                    } else {
-                        printWarn("Invalid study");
+    public void setDefaultCurrentStudy() throws IOException {
+        if ((CliSession.getInstance().getCurrentStudy().equals(CliSession.NO_STUDY) ||
+                !CliSession.getInstance().getStudies().contains(CliSession.getInstance().getCurrentStudy()))) {
+            if (CollectionUtils.isNotEmpty(CliSession.getInstance().getStudies())) {
+                for (String study : CliSession.getInstance().getStudies()) {
+                    if (study.startsWith(CliSession.getInstance().getUser())) {
+                        CliSession.getInstance().setCurrentStudy(study);
                     }
+                }
+                if (CliSession.getInstance().getCurrentStudy().equals(CliSession.NO_STUDY)) {
+                    CliSession.getInstance().setCurrentStudy(CliSession.getInstance().getStudies().get(0));
+                }
+
+                updateSession();
+            } else if (CliSession.getInstance().getUser().equals(CliSession.GUEST_USER)) {
+
+                OpenCGAClient openCGAClient = OpencgaMain.getClient();
+                try {
+                    RestResponse<Project> res = openCGAClient.getProjectClient().search(new ObjectMap());
+                    setUserStudies(res);
                 } catch (ClientException e) {
-                    CommandLineUtils.printError(e.getMessage(), e);
+                    CommandLineUtils.printError("Reloading projects failed: ", e);
                 }
             } else {
-                printError("Client not available");
+                OpenCGAClient openCGAClient = OpencgaMain.getClient();
+                try {
+                    RestResponse<Project> res = openCGAClient.getUserClient().projects(CliSession.getInstance().getUser(), new ObjectMap());
+                    setUserStudies(res);
+                } catch (ClientException e) {
+                    CommandLineUtils.printError("Reloading projects failed ", e);
+                }
             }
-        } else {
-            printWarn("To set a study you must be logged in");
         }
     }
 
-    public static String getToken() {
-        return CliSession.getInstance().getToken();
-    }
-
-    public static String getUser() {
-        return CliSession.getInstance().getUser();
-    }
-
-    public static String getCurrentFile() {
-        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga",
-                getLastHostUsed() + CliSession.SESSION_FILE_SUFFIX);
-
-        return sessionPath.toString();
-    }
-
-    public static void updateSessionToken(String token) {
-        CliSession.getInstance().setToken(token);
-        CliSession.getInstance().setHost(ClientConfiguration.getInstance().getRest().getCurrentUrl());
-        CliSession.getInstance().setCurrentHost(ClientConfiguration.getInstance().getRest().getCurrentHostname());
-        updateSession();
-    }
-
-    public static String getRefreshToken() {
-        return CliSession.getInstance().getRefreshToken();
-    }
-
-    public static void updateTokens(String token, String refreshToken) {
-        CliSession.getInstance().setToken(token);
-        CliSession.getInstance().setRefreshToken(refreshToken);
-        try {
-            CliSession.getInstance().updateCliSessionFile(ClientConfiguration.getInstance().getRest().getCurrentHostname());
-        } catch (IOException e) {
-            CommandLineUtils.printError(e.getMessage(), e);
+    private void setUserStudies(RestResponse<Project> res) throws IOException {
+        List<String> studies = new ArrayList<>();
+        List<OpenCGAResult<Project>> responses = res.getResponses();
+        for (OpenCGAResult<Project> p : responses) {
+            for (Project project : p.getResults()) {
+                for (Study study : project.getStudies()) {
+                    studies.add(study.getFqn());
+                }
+            }
         }
-    }
-
-    public static String getCurrentStudy() {
-        return CliSession.getInstance().getCurrentStudy();
-    }
-
-    public static OpencgaCliShellExecutor getShell() {
-        return sessionShell;
-    }
-
-    public static boolean isShell() {
-        return sessionShell != null;
-    }
-
-    public static void setShell(OpencgaCliShellExecutor shell) {
-        sessionShell = shell;
-    }
-
-    public static List<String> getStudies() {
-        return CliSession.getInstance().getStudies();
-    }
-
-    public static void initUserSession(String token, String user, String refreshToken, List<String> studies) throws IOException {
-
-        setReloadStudies(true);
-        CliSession.getInstance().setToken(token);
-        CliSession.getInstance().setUser(user);
-        CliSession.getInstance().setVersion(GitRepositoryState.get().getBuildVersion());
-        CliSession.getInstance().setRefreshToken(refreshToken);
-        CliSession.getInstance().setStudies(studies);
-        CliSession.getInstance().setLogin(TimeUtils.getTime(new Date()));
-        //CliSession.getInstance().setCurrentHost();
-        updateSession();
-    }
-
-    public static void logoutCliSessionFile() throws IOException {
-        if (isShell()) {
-            CliSession.getInstance().logoutCliSessionFile(ClientConfiguration.getInstance().getRest().getCurrentHostname());
-        } else {
-            CliSession.getInstance().logoutCliSessionFile(getLastHostUsed());
-        }
-    }
-
-    public static void switchDefaultSessionHost() {
-        switchSessionHost(getDefaultHost());
-    }
-
-    private static String getDefaultHost() {
-        return ClientConfiguration.getInstance().getRest().getHosts().get(0).getName();
-    }
-
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    public static void setDebug(boolean debug) {
-        CliSessionManager.debug = debug;
-    }
-
-    public static void initShell() {
-        try {
-            OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
-            setShell(shell);
+        if (!studies.isEmpty()) {
+            CliSession.getInstance().setStudies(studies);
             setDefaultCurrentStudy();
-        } catch (IOException e) {
-            CommandLineUtils.printError(e.getMessage(), e);
-        } catch (CatalogAuthenticationException e) {
-            e.printStackTrace();
         }
+        updateSession();
     }
 
-    public static void init(String[] args) {
-        CliSession.getInstance();
+    public String getLastHostUsed() {
+        return CliSession.getInstance().getLastHostUsed();
+    }
+
+    public String getPrompt() {
+        String host = format("[" + CliSession.getInstance().getCurrentHost() + "]", Color.GREEN);
+        String study = format("[" + CliSession.getInstance().getCurrentStudy() + "]", Color.BLUE);
+        String user = format("<" + CliSession.getInstance().getUser() + "/>", Color.YELLOW);
+        return host + study + user;
+    }
+
+    public void init(String[] args, CommandExecutor executor) {
+
         if (StringUtils.isEmpty(CliSession.getInstance().getCurrentHost())) {
-            ClientConfiguration.getInstance().getRest().setCurrentHostname(CliSession.getInstance().getCurrentHost());
+            executor.getClientConfiguration().getRest().setCurrentHostname(CliSession.getInstance().getCurrentHost());
         } else {
-            ClientConfiguration.getInstance().getRest().setCurrentHostname(
-                    ClientConfiguration.getInstance().getRest().getHosts().get(0).getName());
+            executor.getClientConfiguration().getRest().setCurrentHostname(
+                    executor.getClientConfiguration().getRest().getHosts().get(0).getName());
         }
 
         setDebug(isDebugModeSet(args));
-        loadSessionStudies();
     }
 
-    private static boolean isDebugModeSet(String[] args) {
-        for (String s : args) {
-            if ("--debug".equals(s)) {
-                return true;
-            }
-        }
-        return false;
-    }
 
-    public static boolean isReloadStudies() {
-        return reloadStudies;
-    }
-
-    public static void setReloadStudies(boolean reloadStudies) {
-        reloadStudies = reloadStudies;
-    }
 }
