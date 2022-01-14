@@ -20,6 +20,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.clients.ProjectClient;
 import org.opencb.opencga.core.models.project.Project;
@@ -34,14 +35,15 @@ import static org.junit.Assert.assertNotNull;
 public class ProjectClientTest {
     private OpenCGAClient openCGAClient;
     private ProjectClient projectClient;
+    private ClientConfiguration clientConfiguration;
 
     private static WSTestServer wsTestServer;
 
     public ProjectClientTest() throws ClientException {
         try {
-
+            clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration.yml"));
 //            clientConfiguration.getRest().setHost("http://localhost:8890/opencga/webservices/rest");
-            openCGAClient = new OpenCGAClient("swaathi", "swaathi");
+            openCGAClient = new OpenCGAClient("swaathi", "swaathi", clientConfiguration);
         } catch (Exception e) {
             e.printStackTrace();
         }

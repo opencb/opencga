@@ -20,6 +20,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.rules.ExternalResource;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
+import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.server.RestServer;
@@ -42,6 +43,7 @@ public class WorkEnvironmentTest extends ExternalResource {
     protected CatalogManager catalogManager;
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
+    protected ClientConfiguration clientConfiguration;
     protected RestServer restServer;
 
     @Override
@@ -90,7 +92,8 @@ public class WorkEnvironmentTest extends ExternalResource {
         restServer.start();
 
 //        catalogManager = new CatalogManager(configuration);
-        openCGAClient = new OpenCGAClient("user1", "user1_pass");
+        clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
+        openCGAClient = new OpenCGAClient("user1", "user1_pass", clientConfiguration);
     }
 
     @Override

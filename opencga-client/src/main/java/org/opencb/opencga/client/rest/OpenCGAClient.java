@@ -50,17 +50,9 @@ public class OpenCGAClient {
         this.init(null, clientConfiguration);
     }
 
-    public OpenCGAClient(String user, String password) throws ClientException {
-        this(user, password, null);
-    }
-
     public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) throws ClientException {
         AuthenticationResponse login = login(user, password);
         this.init(login, clientConfiguration);
-    }
-
-    public OpenCGAClient(AuthenticationResponse authenticationTokens) {
-        this(authenticationTokens, null);
     }
 
     public OpenCGAClient(AuthenticationResponse authenticationTokens, ClientConfiguration clientConfiguration) {

@@ -109,15 +109,17 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 CliSessionManager.getInstance().updateSessionToken(options.token);
                 token = options.token;
                 userId = null;
-                openCGAClient = new OpenCGAClient(new AuthenticationResponse(options.token));
+                openCGAClient = new OpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration);
             } else {
                 // 'logout' field is only null or empty while no logout is executed
                 if (StringUtils.isNotEmpty(CliSessionManager.getInstance().getToken())) {
                     // no timeout checks
                     if (skipDuration) {
                         CommandLineUtils.printDebug("skipDuration");
-                        openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSessionManager.getInstance().getToken(),
-                                CliSessionManager.getInstance().getRefreshToken()));
+                        openCGAClient = new OpenCGAClient(
+                                new AuthenticationResponse(CliSessionManager.getInstance().getToken()
+                                        , CliSessionManager.getInstance().getRefreshToken())
+                                , clientConfiguration);
                         openCGAClient.setUserId(CliSessionManager.getInstance().getUser());
                         if (options.token == null) {
                             options.token = CliSessionManager.getInstance().getToken();
@@ -136,14 +138,17 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
                         if (currentDate.before(expirationDate) || !claimsMap.containsKey("exp")) {
                             CommandLineUtils.printDebug("Session ok!!");
-                            openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSessionManager.getInstance().getToken(),
-                                    CliSessionManager.getInstance().getRefreshToken()));
+                            openCGAClient = new OpenCGAClient(
+                                    new AuthenticationResponse(CliSessionManager.getInstance().getToken(),
+                                            CliSessionManager.getInstance().getRefreshToken()),
+                                    clientConfiguration);
                             openCGAClient.setUserId(CliSessionManager.getInstance().getUser());
 
                             // Update token
                             if (clientConfiguration.getRest().isTokenAutoRefresh() && claimsMap.containsKey("exp")) {
                                 AuthenticationResponse refreshResponse = openCGAClient.refresh();
-                                CliSessionManager.getInstance().updateTokens(refreshResponse.getToken(), refreshResponse.getRefreshToken());
+                                // FIXME we need to discuss this
+//                                CliSessionManager.getInstance().updateTokens(refreshResponse.getToken(), refreshResponse.getRefreshToken());
                             }
 
                             if (options.token == null) {

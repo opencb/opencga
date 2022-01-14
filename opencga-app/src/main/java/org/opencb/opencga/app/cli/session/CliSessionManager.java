@@ -90,7 +90,8 @@ public class CliSessionManager {
         if (!StringUtils.isEmpty(CliSession.getInstance().getToken())) {
             CommandLineUtils.printDebug("Check study " + arg);
 
-            OpenCGAClient openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSession.getInstance().getToken()));
+            // FIXME This needs to be refactor
+            OpenCGAClient openCGAClient = new OpenCGAClient(new AuthenticationResponse(CliSession.getInstance().getToken()), null);
             if (openCGAClient != null) {
                 try {
 
