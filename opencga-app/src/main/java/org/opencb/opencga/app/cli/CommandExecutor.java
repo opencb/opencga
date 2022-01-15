@@ -42,12 +42,9 @@ import java.nio.file.Paths;
 public abstract class CommandExecutor {
 
     protected String logLevel;
-    @Deprecated
-    protected String logFile;
-
-    protected String appHome;
     protected String conf;
 
+    protected String appHome;
     protected String userId;
     protected String token;
 
@@ -62,21 +59,16 @@ public abstract class CommandExecutor {
 
     public CommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean loadClientConfiguration) {
         this.options = options;
-        init(options.logLevel, options.conf, loadClientConfiguration);
-    }
 
-    public static String getParsedSubCommand(JCommander jCommander) {
-        return CliOptionsParser.getSubCommand(jCommander);
+        init(options.logLevel, options.conf, loadClientConfiguration);
     }
 
     protected void init(String logLevel, String conf, boolean loadClientConfiguration) {
         this.logLevel = logLevel;
         this.conf = conf;
 
-        /**
-         * System property 'app.home' is automatically set up in opencga.sh. If by any reason
-         * this is 'null' then OPENCGA_HOME environment variable is used instead.
-         */
+        // System property 'app.home' is automatically set up in opencga.sh. If by any reason
+        // this is 'null' then OPENCGA_HOME environment variable is used instead.
         this.appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
 
         if (StringUtils.isEmpty(conf)) {
@@ -88,20 +80,14 @@ public abstract class CommandExecutor {
         privateLogger = LoggerFactory.getLogger(CommandExecutor.class);
 
         try {
-            // At the moment this is needed for all three command lines, this might change soon since REST client should not need this one.
+            // FIXME This is not needed for the client command line,
+            //  this class needs to be refactor in next release 2.3.0
             loadConfiguration();
+            loadStorageConfiguration();
 
-            // This code assumes general configuration will be always needed and general configuration is overwritten,
-            // maybe in the near future this should be an if/else.
+            // client configuration is only loaded under demand
             if (loadClientConfiguration) {
                 loadClientConfiguration();
-                if (StringUtils.isNotEmpty(this.clientConfiguration.getLogLevel())) {
-                    this.configuration.setLogLevel(this.clientConfiguration.getLogLevel());
-                }
-            }
-
-            if (StringUtils.isNotEmpty(this.clientConfiguration.getLogLevel())) {
-                this.configuration.setLogLevel(this.clientConfiguration.getLogLevel());
             }
 
             // Do not change the order here, we can only configure logger after loading the configuration files,
@@ -109,7 +95,6 @@ public abstract class CommandExecutor {
             configureLogger();
 
             // Let's check the session file, maybe the session is still valid
-
             privateLogger.debug("CLI session file is: {}", CliSessionManager.getInstance().getCurrentFile());
 
             if (StringUtils.isNotBlank(options.token)) {
@@ -120,7 +105,6 @@ public abstract class CommandExecutor {
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
-            // e.printStackTrace();
         }
 
         // Update the timestamp every time one executed command finishes
@@ -132,8 +116,6 @@ public abstract class CommandExecutor {
 //            }
 //        }));
     }
-
-    public abstract void execute() throws Exception;
 
     private void configureLogger() throws IOException {
         // Command line parameters have preference over configuration file
@@ -147,29 +129,10 @@ public abstract class CommandExecutor {
         Configurator.reconfigure();
     }
 
-    @Deprecated
-    public boolean loadConfigurations() {
-        try {
-            loadConfiguration();
-        } catch (IOException ex) {
-            if (getLogger() == null) {
-                ex.printStackTrace();
-            } else {
-                getLogger().error("Error reading OpenCGA Catalog configuration: " + ex.getMessage());
-            }
-            return false;
-        }
-        try {
-            loadStorageConfiguration();
-        } catch (IOException ex) {
-            if (getLogger() == null) {
-                ex.printStackTrace();
-            } else {
-                getLogger().error("Error reading OpenCGA Storage configuration: " + ex.getMessage());
-            }
-            return false;
-        }
-        return true;
+    public abstract void execute() throws Exception;
+
+    public static String getParsedSubCommand(JCommander jCommander) {
+        return CliOptionsParser.getSubCommand(jCommander);
     }
 
     /**
@@ -232,49 +195,49 @@ public abstract class CommandExecutor {
         }
     }
 
-    protected void checkSignatureRelease(String release) throws ClientException {
-        switch (release) {
-            case "2":
-            case "3":
-            case "3.1":
-            case "3.2":
-                break;
-            default:
-                throw new ClientException("Invalid value " + release + " for the mutational signature release. "
-                        + "Valid values are: 2, 3, 3.1 and 3.2");
-        }
-    }
-
-    public Configuration getConfiguration() {
-        return configuration;
-    }
-
-    public void setConfiguration(Configuration configuration) {
-        this.configuration = configuration;
-    }
-
     public String getLogLevel() {
         return logLevel;
     }
 
-    public String getLogFile() {
-        return logFile;
-    }
-
-    public void setLogFile(String logFile) {
-        this.logFile = logFile;
+    public CommandExecutor setLogLevel(String logLevel) {
+        this.logLevel = logLevel;
+        return this;
     }
 
     public String getConf() {
         return conf;
     }
 
-    public void setConf(String conf) {
+    public CommandExecutor setConf(String conf) {
         this.conf = conf;
+        return this;
     }
 
-    public Logger getLogger() {
-        return logger;
+    public String getAppHome() {
+        return appHome;
+    }
+
+    public CommandExecutor setAppHome(String appHome) {
+        this.appHome = appHome;
+        return this;
+    }
+
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+
+    public CommandExecutor setConfiguration(Configuration configuration) {
+        this.configuration = configuration;
+        return this;
+    }
+
+    public StorageConfiguration getStorageConfiguration() {
+        return storageConfiguration;
+    }
+
+    public CommandExecutor setStorageConfiguration(StorageConfiguration storageConfiguration) {
+        this.storageConfiguration = storageConfiguration;
+        return this;
     }
 
     public ClientConfiguration getClientConfiguration() {
