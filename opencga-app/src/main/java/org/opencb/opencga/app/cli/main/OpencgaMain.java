@@ -27,11 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
  */
 public class OpencgaMain {
 
-    private static OpencgaCliShellExecutor shell;
-
-
     public static void main(String[] args) {
-
         CliSessionManager.getInstance().setDebug(ArrayUtils.contains(args, "--debug"));
         try {
             if (ArrayUtils.contains(args, "--shell")) {
@@ -47,7 +43,7 @@ public class OpencgaMain {
 
     public static void initShell(String[] args) {
         try {
-            shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
+            OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
             CliSessionManager.setShell(shell);
             CliSessionManager.getInstance().init(args, shell);
             CliSessionManager.getInstance().loadSessionStudies(shell);

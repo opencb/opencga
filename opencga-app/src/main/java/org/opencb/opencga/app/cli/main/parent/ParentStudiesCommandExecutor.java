@@ -15,6 +15,7 @@
  */
 package org.opencb.opencga.app.cli.main.parent;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.ListUtils;
@@ -40,16 +41,12 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- * Created by imedina on 02/03/15.
- */
 public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecutor {
 
     private final StudiesCommandOptions studiesCommandOptions;
 
     public ParentStudiesCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
                                         StudiesCommandOptions studiesCommandOptions) throws CatalogAuthenticationException {
-
         super(options, command);
         this.studiesCommandOptions = studiesCommandOptions;
     }
@@ -138,7 +135,7 @@ public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecuto
         } else {
             // Third, check if there is only one single project and study for this user in the current CLI session file.
             List<String> studies = CliSessionManager.getInstance().getStudies();
-            if (ListUtils.isNotEmpty(studies) && studies.size() == 1) {
+            if (CollectionUtils.isNotEmpty(studies) && studies.size() == 1) {
                 study = studies.get(0);
             } else {
                 throw new CatalogException("None or more than one study found");

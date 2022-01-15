@@ -54,30 +54,20 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         this(options, false);
     }
 
+    @Deprecated
     public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) throws CatalogAuthenticationException {
         super(options, true);
+
         init(options, skipDuration);
     }
 
-    public static List<String> splitWithTrim(String value) {
-        return splitWithTrim(value, ",");
-    }
-
-    public static List<String> splitWithTrim(String value, String separator) {
-        String[] splitFields = value.split(separator);
-        List<String> result = new ArrayList<>(splitFields.length);
-        for (String s : splitFields) {
-            result.add(s.trim());
-        }
-        return result;
-    }
-
     private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) throws CatalogAuthenticationException {
-
         try {
-            CommandLineUtils.printDebug("init OpencgaCommandExecutor ");
+            logger.debug("init OpencgaCommandExecutor ");
             CliSession.getInstance().init();
             CommandLineUtils.printDebug("TOKEN::::: " + CliSessionManager.getInstance().getToken());
+
+            // Configure CLI output writer
             WriterConfiguration writerConfiguration = new WriterConfiguration();
             writerConfiguration.setMetadata(options.metadata);
             writerConfiguration.setHeader(!options.noHeader);
@@ -88,6 +78,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 case "json":
                     this.writer = new JsonOutputWriter(writerConfiguration);
                     break;
+                case "yml":
                 case "yaml":
                     this.writer = new YamlOutputWriter(writerConfiguration);
                     break;
@@ -104,17 +95,17 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             logger.debug("sessionFile = " + CliSessionManager.getInstance().getCurrentFile());
             if (StringUtils.isNotEmpty(options.token)) {
                 // Ignore session file. Overwrite with command line information (just sessionId)
-                CommandLineUtils.printDebug("CLI TOKEN ");
+                logger.debug("A token has been provided");
                 CliSessionManager.getInstance().updateSessionToken(options.token);
                 token = options.token;
                 userId = null;
                 openCGAClient = new OpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration);
             } else {
-                // 'logout' field is only null or empty while no logout is executed
                 if (StringUtils.isNotEmpty(CliSessionManager.getInstance().getToken())) {
-                    // no timeout checks
+                    // FIXME it seems skipDuration is not longer used,
+                    //  this should be either implemented or removed
                     if (skipDuration) {
-                        CommandLineUtils.printDebug("skipDuration");
+                        logger.debug("Skip duration set to {}, THIS MUST BE REMOVED", skipDuration);
                         openCGAClient = new OpenCGAClient(
                                 new AuthenticationResponse(CliSessionManager.getInstance().getToken()
                                         , CliSessionManager.getInstance().getRefreshToken())
@@ -124,7 +115,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                             options.token = CliSessionManager.getInstance().getToken();
                         }
                     } else {
-                        CommandLineUtils.printDebug("skipDuration FALSE");
+                        logger.debug("Skip duration set to {}", skipDuration);
 
                         // Get the expiration of the token stored in the session file
                         String myClaims = StringUtils.split(CliSessionManager.getInstance().getToken(), ".")[1];
@@ -132,11 +123,10 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         ObjectMap claimsMap = new ObjectMapper().readValue(decodedClaimsString, ObjectMap.class);
 
                         Date expirationDate = new Date(claimsMap.getLong("exp") * 1000L);
-
                         Date currentDate = new Date();
-
+                        // Check if session has expired
                         if (currentDate.before(expirationDate) || !claimsMap.containsKey("exp")) {
-                            CommandLineUtils.printDebug("Session ok!!");
+                            logger.debug("Session expiration is fine, valid until: {}", expirationDate);
                             openCGAClient = new OpenCGAClient(
                                     new AuthenticationResponse(CliSessionManager.getInstance().getToken(),
                                             CliSessionManager.getInstance().getRefreshToken()),
@@ -154,13 +144,12 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                                 options.token = CliSessionManager.getInstance().getToken();
                             }
                         } else {
-
-                            CommandLineUtils.printDebug("session has expired ");
+                            logger.debug("Session has expired: {}", expirationDate);
                             if (CliSessionManager.getInstance().isShell()) {
                                 throw new CatalogAuthenticationException("Your session has expired. Please, either login again.");
                             } else {
-                                PrintUtils.printError("Your session has expired. Please, either login again or logout to work as "
-                                        + "anonymous.");
+                                PrintUtils.printError("Your session has expired. "
+                                        + "Please, either login again or logout to work as anonymous.");
                                 System.exit(1);
                             }
                         }
@@ -173,20 +162,21 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         } catch (ClientException | IOException e) {
             CommandLineUtils.printError("OpencgaCommandExecutorError " + e.getMessage(), e);
         }
-        CommandLineUtils.printDebug("openCGAClient " + openCGAClient);
-
     }
 
     public void createOutput(RestResponse queryResponse) {
-        if (queryResponse != null) {
+        if (writer != null && queryResponse != null) {
             writer.print(queryResponse);
+        } else {
+            logger.error("Null object found: writer set to '{}' and queryResponse set to '{}'", writer, queryResponse);
         }
     }
 
-    public void invokeSetter(Object obj, String propertyName, Object variableValue) {
-        if (variableValue != null) {
+    protected void invokeSetter(Object obj, String propertyName, Object variableValue) {
+        if (obj != null && variableValue != null) {
             try {
-                Method setter = obj.getClass().getMethod(getAsSetterName(propertyName), variableValue.getClass());
+                String setMethodName = "set" + StringUtils.capitalize(propertyName);
+                Method setter = obj.getClass().getMethod(setMethodName, variableValue.getClass());
                 setter.invoke(obj, variableValue);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -194,14 +184,17 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
     }
 
-    private String getAsSetterName(String propertyName) {
-        return "set" + upperCaseFirst(propertyName);
+    public static List<String> splitWithTrim(String value) {
+        return splitWithTrim(value, ",");
     }
 
-    public String upperCaseFirst(String val) {
-        char[] arr = val.toCharArray();
-        arr[0] = Character.toUpperCase(arr[0]);
-        return new String(arr);
+    public static List<String> splitWithTrim(String value, String separator) {
+        String[] splitFields = value.split(separator);
+        List<String> result = new ArrayList<>(splitFields.length);
+        for (String s : splitFields) {
+            result.add(s.trim());
+        }
+        return result;
     }
 
     public OpenCGAClient getOpenCGAClient() {

@@ -24,16 +24,12 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.response.RestResponse;
 
-/**
- * Created by imedina on 02/03/15.
- */
 public abstract class ParentFilesCommandExecutor extends OpencgaCommandExecutor {
 
     private FilesCommandOptions filesCommandOptions;
 
     public ParentFilesCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
                                       FilesCommandOptions filesCommandOptions) throws CatalogAuthenticationException {
-
         super(options, command);
         this.filesCommandOptions = filesCommandOptions;
     }
@@ -53,7 +49,7 @@ public abstract class ParentFilesCommandExecutor extends OpencgaCommandExecutor 
         params.putIfNotEmpty("description", commandOptions.description);
         params.putIfNotEmpty("fileName", commandOptions.fileName);
         params.putIfNotEmpty("file", commandOptions.inputFile);
-        params.put("uploadServlet", new Boolean(true));
+        params.put("uploadServlet", Boolean.TRUE);
 
         return openCGAClient.getFileClient().upload(params);
     }

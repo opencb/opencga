@@ -8,6 +8,7 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.executors.*;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.io.Console;
@@ -26,7 +27,6 @@ abstract class AbstractProcessor {
         }
         return console;
     }
-
 
     protected void process(OpencgaCliOptionsParser cliOptionsParser) {
         CommandExecutor commandExecutor = null;
@@ -110,9 +110,8 @@ abstract class AbstractProcessor {
             printWarn("\n" + e.getMessage());
             try {
                 CliSessionManager.getInstance().logoutCliSessionFile();
-            } catch (IOException ex) {
+            } catch (IOException | ClientException ex) {
                 CommandLineUtils.printError("Failed to save OpenCGA CLI session", ex);
-
             }
         }
     }

@@ -35,9 +35,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by imedina on 02/03/15.
- */
 public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor {
 
     public static final String LOGIN_OK = "You have been logged in correctly.";
@@ -47,14 +44,13 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
 
     public ParentUsersCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
                                       UsersCommandOptions usersCommandOptions) throws CatalogAuthenticationException {
-
         super(options, command);
         this.usersCommandOptions = usersCommandOptions;
     }
 
     protected RestResponse<AuthenticationResponse> login() throws Exception {
         logger.debug("Login");
-        RestResponse<AuthenticationResponse> res = new RestResponse();
+        RestResponse<AuthenticationResponse> res = new RestResponse<>();
         try {
             String user = usersCommandOptions.loginCommandOptions.user;
             String password = usersCommandOptions.loginCommandOptions.password;
