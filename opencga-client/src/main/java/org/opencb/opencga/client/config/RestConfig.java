@@ -23,8 +23,8 @@ import java.util.List;
  */
 public class RestConfig {
 
-    private int defaultHostIndex = 0;
     private List<HostConfig> hosts;
+    private int defaultHostIndex = 0;
     private boolean tokenAutoRefresh;
     private boolean tlsAllowInvalidCertificates;
     private QueryRestConfig query;
@@ -33,68 +33,21 @@ public class RestConfig {
     }
 
     public RestConfig(List<HostConfig> hosts, boolean tokenAutoRefresh, QueryRestConfig query) {
-        this(hosts, tokenAutoRefresh, false, query);
+        this(hosts, 0, tokenAutoRefresh, false, query);
     }
 
     public RestConfig(List<HostConfig> hosts, boolean tokenAutoRefresh, boolean tlsAllowInvalidCertificates,
                       QueryRestConfig query) {
+        this(hosts, 0, tokenAutoRefresh, tlsAllowInvalidCertificates, query);
+    }
+
+    public RestConfig(List<HostConfig> hosts, int defaultHostIndex, boolean tokenAutoRefresh,
+                      boolean tlsAllowInvalidCertificates, QueryRestConfig query) {
         this.hosts = hosts;
+        this.defaultHostIndex = hosts != null && hosts.size() > 0 ? defaultHostIndex : -1;
         this.tokenAutoRefresh = tokenAutoRefresh;
         this.tlsAllowInvalidCertificates = tlsAllowInvalidCertificates;
         this.query = query;
-
-    }
-
-    private HostConfig getHostByUrl(String s) {
-        for (HostConfig hostConfig : hosts) {
-            if (hostConfig.getUrl().equals(s)) {
-                return hostConfig;
-            }
-        }
-        return null;
-    }
-
-    private HostConfig getHostByName(String s) {
-        for (HostConfig hostConfig : hosts) {
-            if (hostConfig.getName().equals(s)) {
-                return hostConfig;
-            }
-        }
-        return null;
-    }
-
-    private boolean existsUrl(String s) {
-        for (HostConfig hostConfig : hosts) {
-            if (hostConfig.getUrl().equals(s)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public boolean existsName(String s) {
-        for (HostConfig hostConfig : hosts) {
-            if (hostConfig.getName().equals(s)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public String getCurrentHostname() {
-        return hosts.get(defaultHostIndex).getName();
-    }
-
-    public void setCurrentHostname(String name) {
-        hosts.get(defaultHostIndex).setName(name);
-    }
-
-    public String getCurrentUrl() {
-        return hosts.get(defaultHostIndex).getUrl();
-    }
-
-    public void setCurrentUrl(String url) {
-        hosts.get(defaultHostIndex).setUrl(url);
     }
 
     @Override

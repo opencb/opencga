@@ -32,8 +32,8 @@ public class ClientConfigurationTest {
     public void testDefault() {
 
         ClientConfiguration config = new ClientConfiguration();
-        List<HostConfig> hostConfigs = new ArrayList();
-        hostConfigs.add(new HostConfig("opencga", "localhost:9090/opencga", true));
+        List<HostConfig> hostConfigs = new ArrayList<>();
+        hostConfigs.add(new HostConfig("opencga", "localhost:9090/opencga"));
         RestConfig restConfig = new RestConfig(hostConfigs, true, new QueryRestConfig(200, 2000));
         GrpcConfig grpcConfig = new GrpcConfig("localhost:9091");
 

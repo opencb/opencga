@@ -134,7 +134,10 @@
                  sc.init(null, trustAllCerts, new SecureRandom());
 
                  HostnameVerifier verifier = new HostnameVerifier() {
-                     private final String hostname = URI.create(clientConfiguration.getRest().getCurrentUrl()).getHost();
+                     private final String hostname = URI
+                             .create(clientConfiguration.getRest().getHosts()
+                                     .get(clientConfiguration.getRest().getDefaultHostIndex()).getUrl())
+                             .getHost();
 
                      @Override
                      public boolean verify(String hostname, SSLSession sslSession) {
@@ -222,7 +225,7 @@
 
              // Build URL
              WebTarget path = client
-                     .target(clientConfiguration.getRest().getCurrentUrl())
+                     .target(clientConfiguration.getCurrentHost().getUrl())
                      .path("webservices")
                      .path("rest")
                      .path("v2")

@@ -4,15 +4,13 @@ public class HostConfig {
 
     private String name;
     private String url;
-    private boolean defaultHost;
 
     public HostConfig() {
     }
 
-    public HostConfig(String name, String url, boolean defaultHost) {
+    public HostConfig(String name, String url) {
         this.name = name;
         this.url = url;
-        this.defaultHost = defaultHost;
     }
 
     @Override
@@ -20,7 +18,6 @@ public class HostConfig {
         final StringBuilder sb = new StringBuilder("HostConfig{");
         sb.append("name='").append(name).append('\'');
         sb.append(", url='").append(url).append('\'');
-        sb.append(", defaultHost=").append(defaultHost);
         sb.append('}');
         return sb.toString();
     }
@@ -43,12 +40,4 @@ public class HostConfig {
         return this;
     }
 
-    public boolean isDefaultHost() {
-        return defaultHost;
-    }
-
-    public HostConfig setDefaultHost(boolean defaultHost) {
-        this.defaultHost = defaultHost;
-        return this;
-    }
 }

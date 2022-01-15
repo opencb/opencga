@@ -19,6 +19,7 @@ package org.opencb.opencga.client.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,20 +34,20 @@ import java.util.Map;
  */
 public final class ClientConfiguration {
 
-    private static final Logger PRIVATE_LOGGER = LoggerFactory.getLogger(ClientConfiguration.class);
-    private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
-    private static Logger logger;
     private String logLevel;
     private RestConfig rest;
     private GrpcConfig grpc;
 
+    private static Logger logger;
+    private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
 
     public ClientConfiguration() {
         logger = LoggerFactory.getLogger(ClientConfiguration.class);
     }
 
-    public static ClientConfiguration load(Path configurationPath) throws IOException {
-        InputStream inputStream = FileUtils.newInputStream(configurationPath);
+    public static ClientConfiguration load(Path clientConfigurationPath) throws IOException {
+        logger.debug("Loading client configuration file from '{}'", clientConfigurationPath.toString());
+        InputStream inputStream = FileUtils.newInputStream(clientConfigurationPath);
         return load(inputStream, DEFAULT_CONFIGURATION_FORMAT);
     }
 
@@ -64,12 +65,33 @@ public final class ClientConfiguration {
                 break;
             case "YML":
             case "YAML":
-            default:
                 objectMapper = new ObjectMapper(new YAMLFactory());
                 clientConfiguration = objectMapper.readValue(configurationInputStream, ClientConfiguration.class);
                 break;
+            default:
+                logger.warn("Not valid client configuration format '{}'", format);
+                logger.warn("Creating an empty client configuration object, information can be set by env variables");
+                clientConfiguration = new ClientConfiguration();
+                break;
         }
+
+        // Multiple hosts can exist, we must check and set a valid defaultHostIndex
+        if (clientConfiguration.getRest().getHosts() != null && clientConfiguration.getRest().getHosts().size() > 0) {
+            // If hosts are defined then defaultHostIndex must be a value between 0 and the number of hosts
+            int defaultHostIndex = clientConfiguration.getRest().getDefaultHostIndex();
+            if (defaultHostIndex < 0 || defaultHostIndex >= clientConfiguration.getRest().getHosts().size()) {
+                logger.warn("Setting defaultHostIndex to first host");
+                clientConfiguration.getRest().setDefaultHostIndex(0);
+            }
+        } else {
+            // If no hosts exist then defaultHostIndex is set to -1
+            logger.warn("No hosts found, setting defaultHostIndex to -1");
+            clientConfiguration.getRest().setDefaultHostIndex(-1);
+        }
+
+        // Overwrite client configuration file with environment variables
         parseEnvironmentVariables(clientConfiguration);
+
         return clientConfiguration;
     }
 
@@ -78,9 +100,19 @@ public final class ClientConfiguration {
         for (String variable : envVariables.keySet()) {
             if (variable.startsWith("OPENCGA_")) {
                 logger.debug("Setting environment variable '{}'", variable);
-                switch (variable) {
+                switch (variable.toUpperCase()) {
+                    case "OPENCGA_CLIENT_REST_URL":
                     case "OPENCGA_CLIENT_REST_HOST":
-                        configuration.getRest().setCurrentUrl(envVariables.get(variable));
+                        if (configuration.getRest().getHosts().size() == 0) {
+                            configuration.getRest().getHosts().add(new HostConfig("default", variable));
+                        } else {
+                            int defaultHostIndex = configuration.getRest().getDefaultHostIndex();
+                            configuration.getRest().getHosts().get(defaultHostIndex).setUrl(envVariables.get(variable));
+                        }
+                        break;
+                    case "TLS_ALLOW_INVALID_CERTIFICATES":
+                        configuration.getRest()
+                                .setTlsAllowInvalidCertificates("TRUE".equalsIgnoreCase(envVariables.get(variable)));
                         break;
                     case "OPENCGA_CLIENT_GRPC_HOST":
                         configuration.getGrpc().setHost(envVariables.get(variable));
@@ -92,10 +124,28 @@ public final class ClientConfiguration {
         }
     }
 
-
     public void serialize(OutputStream configurationOutputStream) throws IOException {
         ObjectMapper jsonMapper = new ObjectMapper(new YAMLFactory());
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
+    }
+
+    public HostConfig getCurrentHost() throws ClientException {
+        if (rest.getHosts() == null || rest.getDefaultHostIndex() < 0) {
+            throw new ClientException("Hosts not found");
+        }
+        return rest.getHosts().get(rest.getDefaultHostIndex());
+    }
+
+    public HostConfig getHostByName(String name) throws ClientException {
+        if (rest.getHosts() == null || rest.getDefaultHostIndex() < 0) {
+            throw new ClientException("Hosts not found");
+        }
+        for (HostConfig hostConfig : rest.getHosts()) {
+            if (hostConfig.getName().equalsIgnoreCase(name)) {
+                return hostConfig;
+            }
+        }
+        return null;
     }
 
     @Override
