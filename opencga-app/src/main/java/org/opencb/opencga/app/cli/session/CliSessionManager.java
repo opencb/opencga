@@ -74,12 +74,11 @@ public class CliSessionManager {
         return shell.getOpenCGAClient();
     }
 
-    public void init(String[] args, CommandExecutor executor) {
+    public void init(String[] args, CommandExecutor executor) throws ClientException {
         if (StringUtils.isEmpty(CliSession.getInstance().getCurrentHost())) {
-            executor.getClientConfiguration().getRest().setCurrentHostname(CliSession.getInstance().getCurrentHost());
+            executor.getClientConfiguration().getCurrentHost().setName(CliSession.getInstance().getCurrentHost());
         } else {
-            executor.getClientConfiguration().getRest().setCurrentHostname(
-                    executor.getClientConfiguration().getRest().getHosts().get(0).getName());
+            executor.getClientConfiguration().getCurrentHost().setName(executor.getClientConfiguration().getRest().getHosts().get(0).getName());
         }
     }
 
@@ -103,9 +102,9 @@ public class CliSessionManager {
         return CliSession.getInstance().getRefreshToken();
     }
 
-    public void logoutCliSessionFile() throws IOException {
+    public void logoutCliSessionFile() throws IOException, ClientException {
         if (isShell()) {
-            CliSession.getInstance().logoutCliSessionFile(shell.getClientConfiguration().getRest().getCurrentHostname());
+            CliSession.getInstance().logoutCliSessionFile(shell.getClientConfiguration().getCurrentHost().getName());
         } else {
             CliSession.getInstance().logoutCliSessionFile(getLastHostUsed());
         }
@@ -148,10 +147,10 @@ public class CliSessionManager {
         return sessionPath.toString();
     }
 
-    public void updateSessionToken(String token) {
+    public void updateSessionToken(String token) throws ClientException {
         CliSession.getInstance().setToken(token);
-        CliSession.getInstance().setHost(shell.getClientConfiguration().getRest().getCurrentUrl());
-        CliSession.getInstance().setCurrentHost(shell.getClientConfiguration().getRest().getCurrentHostname());
+        CliSession.getInstance().setHost(shell.getClientConfiguration().getCurrentHost().getUrl());
+        CliSession.getInstance().setCurrentHost(shell.getClientConfiguration().getCurrentHost().getName());
         updateSession();
     }
 
@@ -177,8 +176,8 @@ public class CliSessionManager {
     public void updateSession() {
         try {
             if (isShell()) {
-                CommandLineUtils.printDebug("Updating session for host " + shell.getClientConfiguration().getRest().getCurrentHostname());
-                CliSession.getInstance().saveCliSessionFile(shell.getClientConfiguration().getRest().getCurrentHostname());
+                CommandLineUtils.printDebug("Updating session for host " + shell.getClientConfiguration().getCurrentHost().getName());
+                CliSession.getInstance().saveCliSessionFile(shell.getClientConfiguration().getCurrentHost().getName());
             } else {
                 CommandLineUtils.printDebug("Updating session for host " + getLastHostUsed());
                 CliSession.getInstance().saveCliSessionFile(getLastHostUsed());
@@ -242,10 +241,11 @@ public class CliSessionManager {
         if (name == null) {
             throw new Exception("The name of host cannot be null");
         }
-        if (!shell.getClientConfiguration().getRest().existsName(name)) {
+        if (shell.getClientConfiguration().getHostByName(name) == null) {
             throw new Exception("Host not found");
         }
-        shell.getClientConfiguration().getRest().setCurrentHostname(name);
+
+        shell.getClientConfiguration().getCurrentHost().setName(name);
         CliSessionManager.getInstance().updateSession();
     }
 
