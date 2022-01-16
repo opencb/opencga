@@ -9,8 +9,8 @@ rest:
   hosts:
     - name: "opencga"
       url: "${OPENCGA.CLIENT.REST.HOST}"
-    - name: "opencga-demo"
-      url: "http://localhost:9090/opencga"
+    - name: "opencga-test"
+      url: "https://ws.opencb.org/opencga-test"
     - name: "opencga-demo1"
       url: "http://localhost:9191/opencga"
   defaultHostIndex: 0

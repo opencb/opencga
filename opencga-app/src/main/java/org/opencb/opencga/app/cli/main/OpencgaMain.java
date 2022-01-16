@@ -31,17 +31,23 @@ public class OpencgaMain {
         CliSessionManager.getInstance().setDebug(ArrayUtils.contains(args, "--debug"));
         try {
             if (ArrayUtils.contains(args, "--shell")) {
-                initShell(args);
+                executeShell(args);
             } else {
-                CliProcessor processor = new CliProcessor();
-                processor.execute(args);
+                executeCli(args);
             }
         } catch (Exception e) {
             CommandLineUtils.printError("Failed to initialize OpenCGA CLI", e);
         }
     }
 
-    public static void initShell(String[] args) {
+    private static void executeCli(String[] args) throws CatalogAuthenticationException {
+        // TODO maybe we should process specific args here?
+
+        CliProcessor processor = new CliProcessor();
+        processor.execute(args);
+    }
+
+    public static void executeShell(String[] args) {
         try {
             OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
             CliSessionManager.setShell(shell);

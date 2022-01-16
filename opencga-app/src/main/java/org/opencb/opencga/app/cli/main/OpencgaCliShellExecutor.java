@@ -23,7 +23,6 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
 
     public OpencgaCliShellExecutor(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
         super(options);
-
     }
 
     private LineReader getTerminal() {

@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli.main.processors;
 
 import com.beust.jcommander.ParameterException;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
@@ -17,9 +18,15 @@ import java.io.IOException;
 import static org.opencb.commons.utils.PrintUtils.*;
 
 
-abstract class AbstractProcessor {
+public abstract class AbstractProcessor {
 
     protected Console console;
+
+    abstract void parseParams(String[] args) throws CatalogAuthenticationException;
+
+    protected AbstractProcessor() {
+        this.console = getConsole();
+    }
 
     private Console getConsole() {
         if (console == null) {
@@ -28,23 +35,47 @@ abstract class AbstractProcessor {
         return console;
     }
 
+    public void execute(String[] args) throws CatalogAuthenticationException {
+        if (!isLoginCommand(args)) {
+            if (args.length == 1 && "logout".equals(args[0])) {
+                args = new String[]{"users", "logout"};
+            } else {
+                parseParams(args);
+            }
+            OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
+            cliOptionsParser.parse(args);
+            if (cliOptionsParser.isHelp()) {
+                cliOptionsParser.printUsage();
+            } else {
+                process(cliOptionsParser);
+            }
+        }
+    }
+
     protected void process(OpencgaCliOptionsParser cliOptionsParser) {
         CommandExecutor commandExecutor = null;
         try {
+            // 1. Check if a command has been provided
             String parsedCommand = cliOptionsParser.getCommand();
-            if (parsedCommand == null || parsedCommand.isEmpty()) {
+            if (StringUtils.isEmpty(parsedCommand)) {
                 if (cliOptionsParser.getGeneralOptions().version) {
                     println(CommandLineUtils.getVersionString());
+                    System.exit(0);
                 } else if (cliOptionsParser.getGeneralOptions().buildVersion) {
                     println(GitRepositoryState.get().getBuildVersion());
+                    System.exit(0);
                 } else {
                     cliOptionsParser.printUsage();
+                    System.exit(0);
                 }
             } else {
+                // 2. Check if a subcommand has been provided
                 String parsedSubCommand = cliOptionsParser.getSubCommand();
-                if (parsedSubCommand == null || parsedSubCommand.isEmpty()) {
+                if (StringUtils.isEmpty(parsedSubCommand)) {
                     cliOptionsParser.printUsage();
+                    System.exit(0);
                 } else {
+                    // 3. Create the command executor
                     switch (parsedCommand) {
                         case "users":
                             commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
@@ -101,7 +132,6 @@ abstract class AbstractProcessor {
                     }
                     executeCommand(commandExecutor, cliOptionsParser);
                 }
-
             }
         } catch (ParameterException e) {
             printWarn("\n" + e.getMessage());
@@ -123,11 +153,14 @@ abstract class AbstractProcessor {
                 CliSessionManager.getInstance().updateSession();
             } catch (IOException e) {
                 CommandLineUtils.printError("Could not set the default study", e);
+                System.exit(1);
             } catch (Exception ex) {
                 CommandLineUtils.printError("Execution error", ex);
+                System.exit(1);
             }
         } else {
             cliOptionsParser.printUsage();
+            System.exit(1);
         }
     }
 
@@ -136,7 +169,6 @@ abstract class AbstractProcessor {
         String user = console.readLine(format("\nEnter your user: ", Color.GREEN));
         loginUser(user);
         CommandLineUtils.printDebug("Login user " + user);
-
     }
 
     protected void loginUser(String user) throws CatalogAuthenticationException {
@@ -158,44 +190,19 @@ abstract class AbstractProcessor {
         }
     }
 
-    public void execute(String[] args) throws CatalogAuthenticationException {
-        console = getConsole();
-     /*   if (console == null) {
-            CommandLineUtils.printError("Couldn't get console instance", null);
-            System.exit(0);
-        }*/
-        if (!isLoginCommand(args)) {
-            if (args.length == 1 && "logout".equals(args[0])) {
-                args = new String[]{"users", "logout"};
-            } else {
-                parseParams(args);
-            }
-            OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
-            cliOptionsParser.parse(args);
-            if (cliOptionsParser.isHelp()) {
-                cliOptionsParser.printUsage();
-            } else {
-                process(cliOptionsParser);
-            }
-        }
-    }
-
     private boolean isLoginCommand(String[] args) throws CatalogAuthenticationException {
         if (args.length == 1 && "login".equals(args[0])) {
             forceLogin();
             return true;
         }
-        if (args.length == 2 && "login".equals(args[0])) {
+        if (args.length == 2 && "login".equals(args[1])) {
             loginUser(args[1]);
             return true;
         }
         return false;
     }
 
-
     protected boolean isNotHelpCommand(String[] args) {
         return !ArrayUtils.contains(args, "--help") && !ArrayUtils.contains(args, "-h");
     }
-
-    abstract void parseParams(String[] args) throws CatalogAuthenticationException;
 }
