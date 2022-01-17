@@ -16,8 +16,11 @@
 
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.opencga.core.models.common.AdditionalInfo;
 import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.ExternalSource;
 
+import java.util.List;
 import java.util.Map;
 
 public class StudyCreateParams {
@@ -25,45 +28,46 @@ public class StudyCreateParams {
     private String id;
     private String name;
     private String alias;
+    private StudyType type;
+    private List<ExternalSource> sources;
     private String description;
     private String creationDate;
     private String modificationDate;
     private StudyNotification notification;
     private CustomStatusParams status;
+    private List<AdditionalInfo> additionalInfo;
     private Map<String, Object> attributes;
 
     public StudyCreateParams() {
     }
 
-    public StudyCreateParams(String id, String name, String alias, String description, String creationDate, String modificationDate,
-                             StudyNotification notification, Map<String, Object> attributes, CustomStatusParams status) {
+    public StudyCreateParams(String id, String name, String alias, StudyType type, List<ExternalSource> sources, String description,
+                             String creationDate, String modificationDate, StudyNotification notification, Map<String, Object> attributes,
+                             List<AdditionalInfo> additionalInfo, CustomStatusParams status) {
         this.id = id;
         this.name = name;
         this.alias = alias;
+        this.type = type;
+        this.sources = sources;
         this.description = description;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.notification = notification;
         this.attributes = attributes;
+        this.additionalInfo = additionalInfo;
         this.status = status;
     }
 
     public static StudyCreateParams of(Study study) {
-        return new StudyCreateParams(study.getId(), study.getName(), study.getAlias(), study.getDescription(), study.getCreationDate(),
-                study.getModificationDate(), study.getNotification(), study.getAttributes(), CustomStatusParams.of(study.getStatus()));
+        return new StudyCreateParams(study.getId(), study.getName(), study.getAlias(), study.getType(), study.getSources(),
+                study.getDescription(), study.getCreationDate(), study.getModificationDate(), study.getNotification(),
+                study.getAttributes(), study.getAdditionalInfo(), CustomStatusParams.of(study.getStatus()));
     }
 
     public Study toStudy() {
-        return new Study()
-                .setId(id)
-                .setName(name)
-                .setAlias(alias)
-                .setDescription(description)
-                .setCreationDate(creationDate)
-                .setModificationDate(modificationDate)
-                .setNotification(notification)
-                .setStatus(status != null ? status.toCustomStatus() : null)
-                .setAttributes(attributes);
+        return new Study(id, name, alias, creationDate, modificationDate, description, type, sources, notification, 0, null, null, null,
+                null, null, null, null, null, null, null, null, null, 0, status != null ? status.toCustomStatus() : null, null,
+                additionalInfo, attributes);
     }
 
     @Override
@@ -72,11 +76,14 @@ public class StudyCreateParams {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", alias='").append(alias).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", sources=").append(sources);
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", notification=").append(notification);
         sb.append(", status=").append(status);
+        sb.append(", additionalInfo=").append(additionalInfo);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -106,6 +113,24 @@ public class StudyCreateParams {
 
     public StudyCreateParams setAlias(String alias) {
         this.alias = alias;
+        return this;
+    }
+
+    public StudyType getType() {
+        return type;
+    }
+
+    public StudyCreateParams setType(StudyType type) {
+        this.type = type;
+        return this;
+    }
+
+    public List<ExternalSource> getSources() {
+        return sources;
+    }
+
+    public StudyCreateParams setSources(List<ExternalSource> sources) {
+        this.sources = sources;
         return this;
     }
 
@@ -151,6 +176,15 @@ public class StudyCreateParams {
 
     public StudyCreateParams setStatus(CustomStatusParams status) {
         this.status = status;
+        return this;
+    }
+
+    public List<AdditionalInfo> getAdditionalInfo() {
+        return additionalInfo;
+    }
+
+    public StudyCreateParams setAdditionalInfo(List<AdditionalInfo> additionalInfo) {
+        this.additionalInfo = additionalInfo;
         return this;
     }
 

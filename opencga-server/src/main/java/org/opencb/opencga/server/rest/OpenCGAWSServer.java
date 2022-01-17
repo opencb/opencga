@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
 import io.swagger.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
@@ -44,6 +45,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
@@ -56,7 +58,6 @@ import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.slf4j.Logger;
@@ -295,7 +296,6 @@ public class OpenCGAWSServer {
     /**
      * This method initialize CatalogManager and StorageManagerFactory.
      * This must be only executed once.
-     *
      */
     private static void initOpenCGAObjects() {
         try {
@@ -435,6 +435,9 @@ public class OpenCGAWSServer {
                     break;
                 case ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM: // SampleWS
                     queryOptions.put(ParamConstants.SAMPLE_INCLUDE_INDIVIDUAL_PARAM, Boolean.parseBoolean(value));
+                    break;
+                case ParamConstants.INCLUDE_RESULT_PARAM:
+                    queryOptions.put(ParamConstants.INCLUDE_RESULT_PARAM, Boolean.parseBoolean(value));
                     break;
                 case "lazy":
                     lazy = Boolean.parseBoolean(value);
@@ -630,11 +633,29 @@ public class OpenCGAWSServer {
         for (OpenCGAResult<?> openCGAResult : list) {
             setFederationServer(openCGAResult, uriInfo);
         }
+        Response.Status status = getResponseStatus(list);
+
         queryResponse.setResponses(list);
 
-        Response response = createJsonResponse(queryResponse);
+        Response response = Response.fromResponse(createJsonResponse(queryResponse)).status(status).build();
         logResponse(response.getStatusInfo(), queryResponse);
         return response;
+    }
+
+    private Response.Status getResponseStatus(List<OpenCGAResult<?>> list) {
+        if (list != null) {
+            for (OpenCGAResult<?> openCGAResult : list) {
+                if (CollectionUtils.isNotEmpty(openCGAResult.getEvents())) {
+                    for (Event event : openCGAResult.getEvents()) {
+                        if (event.getType().equals(Event.Type.ERROR)) {
+                            return Response.Status.BAD_REQUEST;
+                        }
+                    }
+                }
+            }
+        }
+
+        return Response.Status.OK;
     }
 
     protected Response createRawOkResponse(Object obj) {
@@ -797,7 +818,7 @@ public class OpenCGAWSServer {
     }
 
     public Response submitJob(String toolId, String project, String study, Map<String, Object> paramsMap,
-                               String jobName, String jobDescription, String jobDependsOne, String jobTags) {
+                              String jobName, String jobDescription, String jobDependsOne, String jobTags) {
         return run(() -> submitJobRaw(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags));
     }
 
@@ -807,7 +828,7 @@ public class OpenCGAWSServer {
     }
 
     public Response submitJobAdmin(String toolId, ToolParams bodyParams, String jobId, String jobDescription,
-                              String jobDependsOnStr, String jobTagsStr) {
+                                   String jobDependsOnStr, String jobTagsStr) {
         return run(() -> {
             if (!catalogManager.getUserManager().getUserId(token).equals(ParamConstants.OPENCGA_USER_ID)) {
                 throw new CatalogAuthenticationException("Only user '" + ParamConstants.OPENCGA_USER_ID + "' can run this operation!");
@@ -822,7 +843,7 @@ public class OpenCGAWSServer {
     }
 
     protected DataResult<Job> submitJobRaw(String toolId, String project, String study, ToolParams bodyParams,
-                                         String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
+                                           String jobId, String jobDescription, String jobDependsOnStr, String jobTagsStr)
             throws CatalogException {
         Map<String, Object> paramsMap = bodyParams.toParams();
         if (StringUtils.isNotEmpty(study)) {

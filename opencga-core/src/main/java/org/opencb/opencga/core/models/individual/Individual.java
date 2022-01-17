@@ -19,9 +19,10 @@ package org.opencb.opencga.core.models.individual;
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty.KaryotypicSex;
 import org.opencb.biodata.models.pedigree.IndividualProperty.LifeStatus;
-import org.opencb.biodata.models.pedigree.IndividualProperty.Sex;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -58,9 +59,9 @@ public class Individual extends Annotable {
 
     private IndividualQualityControl qualityControl;
 
-    private Sex sex;
+    private SexOntologyTermAnnotation sex;
     private KaryotypicSex karyotypicSex;
-    private String ethnicity;
+    private OntologyTermAnnotation ethnicity;
     private IndividualPopulation population;
     private String dateOfBirth;
 
@@ -131,8 +132,8 @@ public class Individual extends Annotable {
     public Individual() {
     }
 
-    public Individual(String id, String name, Individual father, Individual mother, Location location, Sex sex,
-                      KaryotypicSex karyotypicSex, String ethnicity, IndividualPopulation population, LifeStatus lifeStatus,
+    public Individual(String id, String name, Individual father, Individual mother, Location location, SexOntologyTermAnnotation sex,
+                      KaryotypicSex karyotypicSex, OntologyTermAnnotation ethnicity, IndividualPopulation population, LifeStatus lifeStatus,
                       String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity, int release,
                       List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, List<Disorder> disorders,
                       IndividualInternal internal, Map<String, Object> attributes) {
@@ -142,11 +143,11 @@ public class Individual extends Annotable {
     }
 
     public Individual(String id, String name, Individual father, Individual mother, List<String> familyIds, Location location,
-                      IndividualQualityControl qualityControl, Sex sex, KaryotypicSex karyotypicSex, String ethnicity,
-                      IndividualPopulation population, String dateOfBirth, int release, int version, String creationDate,
-                      String modificationDate, LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders,
-                      List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets, CustomStatus status,
-                      IndividualInternal internal, Map<String, Object> attributes) {
+                      IndividualQualityControl qualityControl, SexOntologyTermAnnotation sex, KaryotypicSex karyotypicSex,
+                      OntologyTermAnnotation ethnicity, IndividualPopulation population, String dateOfBirth, int release, int version,
+                      String creationDate, String modificationDate, LifeStatus lifeStatus, List<Phenotype> phenotypes,
+                      List<Disorder> disorders, List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets,
+                      CustomStatus status, IndividualInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = ObjectUtils.defaultIfNull(father, new Individual());
@@ -333,11 +334,11 @@ public class Individual extends Annotable {
         return this;
     }
 
-    public Sex getSex() {
+    public SexOntologyTermAnnotation getSex() {
         return sex;
     }
 
-    public Individual setSex(Sex sex) {
+    public Individual setSex(SexOntologyTermAnnotation sex) {
         this.sex = sex;
         return this;
     }
@@ -351,11 +352,11 @@ public class Individual extends Annotable {
         return this;
     }
 
-    public String getEthnicity() {
+    public OntologyTermAnnotation getEthnicity() {
         return ethnicity;
     }
 
-    public Individual setEthnicity(String ethnicity) {
+    public Individual setEthnicity(OntologyTermAnnotation ethnicity) {
         this.ethnicity = ethnicity;
         return this;
     }

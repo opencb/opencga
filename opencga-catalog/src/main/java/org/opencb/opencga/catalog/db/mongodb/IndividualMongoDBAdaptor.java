@@ -26,7 +26,6 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
@@ -514,9 +513,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
      * Calculates the new list of disorders and phenotypes considering Individual individual belongs to Family family and that individual
      * has a new list of disorders and phenotypes stored.
      *
-     * @param family Current Family as stored in DB.
-     * @param disorders List of disorders of member of the family individualUid .
-     * @param phenotypes List of phenotypes of member of the family individualUid.
+     * @param family        Current Family as stored in DB.
+     * @param disorders     List of disorders of member of the family individualUid .
+     * @param phenotypes    List of phenotypes of member of the family individualUid.
      * @param individualUid Individual uid.
      * @return A new ObjectMap tp update the list of disorders and phenotypes in the Family.
      */
@@ -561,7 +560,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
      * Update Individual references from any Clinical Analysis where it was used.
      *
      * @param clientSession Client session.
-     * @param individual Individual object containing the version stored in the Clinical Analysis (before the version increment).
+     * @param individual    Individual object containing the version stored in the Clinical Analysis (before the version increment).
      */
     private void updateClinicalAnalysisIndividualReferences(ClientSession clientSession, Individual individual)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -599,7 +598,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
      * Update Individual references from any Family where it was used.
      *
      * @param clientSession Client session.
-     * @param individual Individual object containing the previous version (before the version increment).
+     * @param individual    Individual object containing the previous version (before the version increment).
      */
     private void updateFamilyIndividualReferences(ClientSession clientSession, Individual individual)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -644,7 +643,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
      * Checks whether the individual that is going to be updated is in use in any locked Clinical Analysis.
      *
      * @param clientSession Client session.
-     * @param individual Individual to be updated.
+     * @param individual    Individual to be updated.
      * @throws CatalogDBException CatalogDBException if the individual is in use in any Clinical Analysis.
      */
     private void checkInUseInLockedClinicalAnalysis(ClientSession clientSession, Individual individual)
@@ -725,9 +724,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
-                QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_DESCRIPTION.key(),
-                QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(), QueryParams.DATE_OF_BIRTH.key(), };
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(),
+                QueryParams.POPULATION_DESCRIPTION.key(), QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(),
+                QueryParams.DATE_OF_BIRTH.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
@@ -743,16 +742,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
         }
 
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.SEX.key()), IndividualProperty.Sex.class);
-        filterEnumParams(parameters, document.getSet(), acceptedEnums);
-
         String[] acceptedIntParams = {QueryParams.FATHER_UID.key(), QueryParams.MOTHER_UID.key()};
         filterLongParams(parameters, document.getSet(), acceptedIntParams);
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] acceptedObjectParams = {QueryParams.LOCATION.key(), QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key()};
+        String[] acceptedObjectParams = {QueryParams.LOCATION.key(), QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key(),
+                QueryParams.ETHNICITY.key(), QueryParams.SEX.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -1204,7 +1201,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
@@ -1226,7 +1223,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
@@ -1418,8 +1415,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     case MOTHER_UID:
                     case FAMILY_IDS:
                     case DATE_OF_BIRTH:
-                    case SEX:
-                    case ETHNICITY:
+                    case SEX_ID:
+                    case ETHNICITY_ID:
                     case POPULATION_NAME:
                     case POPULATION_SUBPOPULATION:
                     case KARYOTYPIC_SEX:

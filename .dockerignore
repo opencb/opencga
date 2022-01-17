@@ -1,9 +1,0 @@
-.vscode
-README.md
-LICENSE
-.git*
-build/test
-build/migration
-build/examples
-build/LICENSE
-build/README.md

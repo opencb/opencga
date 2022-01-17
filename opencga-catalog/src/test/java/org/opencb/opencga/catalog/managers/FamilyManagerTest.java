@@ -25,7 +25,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -76,6 +76,8 @@ public class FamilyManagerTest extends GenericTest {
     private FamilyManager familyManager;
     protected String sessionIdUser;
 
+    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
     @Before
     public void setUp() throws IOException, CatalogException {
         catalogManager = catalogManagerResource.getCatalogManager();
@@ -88,7 +90,7 @@ public class FamilyManagerTest extends GenericTest {
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
+                null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
         catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser);
     }
 
@@ -213,8 +215,8 @@ public class FamilyManagerTest extends GenericTest {
         Individual father = new Individual().setId("father").setFather(paternalGrandfather).setMother(paternalGrandmother);
         Individual mother = new Individual().setId("mother").setMother(maternalGrandmother).setFather(maternalGrandfather);
         Individual proband = new Individual().setId("proband").setFather(father).setMother(mother);
-        Individual brother = new Individual().setId("brother").setFather(father).setMother(mother).setSex(IndividualProperty.Sex.MALE);
-        Individual sister = new Individual().setId("sister").setFather(father).setMother(mother).setSex(IndividualProperty.Sex.FEMALE);
+        Individual brother = new Individual().setId("brother").setFather(father).setMother(mother).setSex(SexOntologyTermAnnotation.initMale());
+        Individual sister = new Individual().setId("sister").setFather(father).setMother(mother).setSex(SexOntologyTermAnnotation.initFemale());
         Individual sibling = new Individual().setId("sibling").setFather(father).setMother(mother);
 
         catalogManager.getFamilyManager().create(STUDY, new Family().setId("family").setMembers(
@@ -409,7 +411,7 @@ public class FamilyManagerTest extends GenericTest {
         }
 
         familyManager.updateAcl(STUDY, new FamilyAclParams("VIEW", "Martinez-Martinez", null, null,
-                        FamilyAclParams.Propagate.YES_AND_VARIANT_VIEW), "user2", ParamUtils.AclAction.SET, sessionIdUser);
+                FamilyAclParams.Propagate.YES_AND_VARIANT_VIEW), "user2", ParamUtils.AclAction.SET, sessionIdUser);
         familyDataResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
         assertEquals(1, familyDataResult.getNumResults());
         assertEquals(5, familyDataResult.first().getMembers().size());
@@ -714,7 +716,7 @@ public class FamilyManagerTest extends GenericTest {
         Family family = new Family(familyName, familyName, null, null, members, "", 5,
                 Collections.emptyList(), Collections.emptyMap());
 
-        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, memberIds, QueryOptions.empty(), sessionIdUser);
+        OpenCGAResult<Family> familyOpenCGAResult = familyManager.create(STUDY, family, memberIds, INCLUDE_RESULT, sessionIdUser);
 
         if (createMissingMembers) {
             catalogManager.getIndividualManager().update(STUDY, relChild1.getId(),
@@ -782,10 +784,10 @@ public class FamilyManagerTest extends GenericTest {
         Family family = new Family()
                 .setId("test")
                 .setPhenotypes(Arrays.asList(new Phenotype("E00", "blabla", "blabla")))
-                .setMembers(Arrays.asList(new Individual().setId("proband").setSex(IndividualProperty.Sex.MALE),
+                .setMembers(Arrays.asList(new Individual().setId("proband").setSex(SexOntologyTermAnnotation.initMale()),
                         new Individual().setFather(new Individual().setId("proband")).setId("child")
-                                .setSex(IndividualProperty.Sex.FEMALE)));
-        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+                                .setSex(SexOntologyTermAnnotation.initFemale())));
+        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, INCLUDE_RESULT, sessionIdUser);
 
         assertEquals(2, familyDataResult.first().getMembers().size());
     }
@@ -881,14 +883,14 @@ public class FamilyManagerTest extends GenericTest {
                 Arrays.asList(relFather, relMother, relChild1, relChild2, relChild1), "", -1, Collections.emptyList(), Collections.emptyMap
                 ());
 
-        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, INCLUDE_RESULT, sessionIdUser);
         assertEquals(4, familyDataResult.first().getMembers().size());
     }
 
     @Test
     public void createEmptyFamily() throws CatalogException {
         Family family = new Family("xxx", "xxx", null, null, null, "", -1, Collections.emptyList(), Collections.emptyMap());
-        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, familyDataResult.getNumResults());
     }
 
@@ -977,7 +979,7 @@ public class FamilyManagerTest extends GenericTest {
         assertEquals(1, updatedFamily.getNumUpdated());
 
         updatedFamily = familyManager.get(STUDY, originalFamily.first().getId(), QueryOptions.empty(), sessionIdUser);
-        assertTrue(Arrays.asList("file1", "file2").containsAll(updatedFamily.first().getQualityControl().getFileIds()));
+        assertTrue(Arrays.asList("file1", "file2").containsAll(updatedFamily.first().getQualityControl().getFiles()));
         assertEquals(1, updatedFamily.first().getQualityControl().getComments().size());
         assertEquals("author", updatedFamily.first().getQualityControl().getComments().get(0).getAuthor());
         assertEquals("message", updatedFamily.first().getQualityControl().getComments().get(0).getMessage());

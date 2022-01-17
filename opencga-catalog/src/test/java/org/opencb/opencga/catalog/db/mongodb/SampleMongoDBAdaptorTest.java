@@ -87,18 +87,20 @@ public class SampleMongoDBAdaptorTest {
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        catalogSampleDBAdaptor.insert(studyId, new Sample("s1", null, null, null, null, null, 1, 1, "", false,
+        catalogSampleDBAdaptor.insert(studyId, new Sample("s1", null, null, null, null, null, null, 1, 1, "", false,
                 Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()), Collections.emptyList(), null);
-        catalogSampleDBAdaptor.insert(studyId, new Sample("s2", null, null, null, null, null, 1, 1, "", false,
+        catalogSampleDBAdaptor.insert(studyId, new Sample("s2", null, null, null, null, null, null, 1, 1, "", false,
                 Collections.emptyList(), new ArrayList<>(), new CustomStatus(), SampleInternal.init(), Collections.emptyMap()), Collections.emptyList(), null);
     }
 
-    DataResult<Sample> getSample(long studyUid, String sampleId, QueryOptions options) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    DataResult<Sample> getSample(long studyUid, String sampleId, QueryOptions options) throws CatalogDBException,
+            CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
         return catalogSampleDBAdaptor.get(query, options);
     }
+
 //    @Test
 //    public void testAnnotateSample() throws Exception {
 //        long sampleId = s1.getId();
@@ -269,6 +271,31 @@ public class SampleMongoDBAdaptorTest {
     }
 
     @Test
+    public void createSampleCohortTest() throws Exception {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
+
+        Sample sample = new Sample("test1", null, "A description", 1);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, sample, Collections.emptyList(), null);
+
+        List<Sample> samples = new ArrayList<>();
+        samples.add(sample);
+        Cohort cohort = new Cohort("id_cohort_1", Enums.CohortType.CASE_CONTROL, "20210702", "20210702",
+                "Test cohort", samples, 5, Collections.emptyMap());
+
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().insert(studyId, cohort, Collections.emptyList(), null);
+
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ID.key(), "test1")
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
+        DataResult<Sample> result = catalogSampleDBAdaptor.get(query, QueryOptions.empty());
+
+        assertEquals(sample.getId(), result.first().getId());
+        assertEquals(sample.getDescription(), result.first().getDescription());
+        assertTrue(result.first().getUid() > 0);
+        assertTrue(result.first().getCohortIds().size() > 0);
+    }
+
+    @Test
     public void createSampleTest() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
@@ -409,7 +436,6 @@ public class SampleMongoDBAdaptorTest {
 
     }
 
-
     // Test if we can search for samples of an individual
     @Test
     public void getSampleWithIndividual() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -444,7 +470,6 @@ public class SampleMongoDBAdaptorTest {
         DataResult<Sample> inexistentIndividualQuery = catalogSampleDBAdaptor.get(query, queryOptions);
         assertEquals(0, inexistentIndividualQuery.getNumResults());
     }
-
 
     @Test
     public void deleteSampleTest() throws Exception {
@@ -542,7 +567,6 @@ public class SampleMongoDBAdaptorTest {
             });
         }
 
-
         assertEquals(numCohorts * numThreads - numCohorts, numFailures.intValue());
         List<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor().get(
                 new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyId), null).getResults();
@@ -552,7 +576,5 @@ public class SampleMongoDBAdaptorTest {
             String cohortName = getCohortName.apply(c);
             names.contains(cohortName);
         }
-
     }
-
 }

@@ -4,10 +4,10 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariantEvidence;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationFindingStats;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.clinical.InterpretationFindingStats;
-import org.opencb.opencga.core.models.clinical.InterpretationStats;
 
 import java.util.HashSet;
 import java.util.List;
@@ -32,8 +32,8 @@ public class InterpretationUtils {
         for (ClinicalVariant clinicalVariant : clinicalVariantList) {
             // Populate variant status
             if (clinicalVariant.getStatus() != null) {
-                int count = stats.getVariantStatusCount().get(clinicalVariant.getStatus()) + 1;
-                stats.getVariantStatusCount().put(clinicalVariant.getStatus(), count);
+                int count = stats.getStatusCount().get(clinicalVariant.getStatus()) + 1;
+                stats.getStatusCount().put(clinicalVariant.getStatus(), count);
             }
 
             // Populate tierCount

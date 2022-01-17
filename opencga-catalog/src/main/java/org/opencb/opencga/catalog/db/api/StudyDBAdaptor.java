@@ -406,7 +406,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
     OpenCGAResult<VariableSet> getVariableSets(Query query, QueryOptions queryOptions, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    OpenCGAResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user)
+    OpenCGAResult<VariableSet> deleteVariableSet(long studyUid, VariableSet variableSet, boolean force)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
@@ -423,6 +423,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
+        TYPE("type", OBJECT, ""),
+        SOURCES("sources", TEXT_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
@@ -444,6 +446,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         PROJECT_ID("projectId", TEXT, ""),
         PROJECT_UID("projectUid", INTEGER, ""),
         PROJECT_UUID("projectUuid", TEXT, ""),
+        ADDITIONAL_INFO("additionalInfo", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"

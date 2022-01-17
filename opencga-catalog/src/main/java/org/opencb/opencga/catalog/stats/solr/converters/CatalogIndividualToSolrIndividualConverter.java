@@ -76,14 +76,14 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
         individualSolrModel.setHasMother(individual.getMother() != null && individual.getMother().getUid() > 0);
 
         if (individual.getSex() != null) {
-            individualSolrModel.setSex(individual.getSex().name());
+            individualSolrModel.setSex(individual.getSex().getSex().name());
         }
 
         if (individual.getKaryotypicSex() != null) {
             individualSolrModel.setKaryotypicSex(individual.getKaryotypicSex().name());
         }
 
-        individualSolrModel.setEthnicity(individual.getEthnicity());
+        individualSolrModel.setEthnicity(individual.getEthnicity().getId());
 
         if (individual.getPopulation() != null) {
             individualSolrModel.setPopulation(individual.getPopulation().getName());

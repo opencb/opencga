@@ -79,12 +79,11 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
  */
 public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> implements SampleDBAdaptor {
 
+    private static final String PRIVATE_INDIVIDUAL_UID = "_individualUid";
     private final MongoDBCollection sampleCollection;
     private final MongoDBCollection deletedSampleCollection;
     private SampleConverter sampleConverter;
     private IndividualMongoDBAdaptor individualDBAdaptor;
-
-    private static final String PRIVATE_INDIVIDUAL_UID = "_individualUid";
 
     public SampleMongoDBAdaptor(MongoDBCollection sampleCollection, MongoDBCollection deletedSampleCollection, Configuration configuration,
                                 MongoDBAdaptorFactory dbAdaptorFactory) {
@@ -92,8 +91,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.sampleCollection = sampleCollection;
         this.deletedSampleCollection = deletedSampleCollection;
-        this.sampleConverter = new SampleConverter();
-        this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
+        sampleConverter = new SampleConverter();
+        individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
     }
 
     @Override
@@ -375,6 +374,35 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return endWrite(tmpStartTime, 1, 1, events);
     }
 
+    void updateCohortReferences(ClientSession clientSession, long studyUid, List<Long> sampleUids, String cohortId,
+                                ParamUtils.BasicUpdateAction action)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+
+        Bson bsonUpdate;
+        switch (action) {
+            case ADD:
+                bsonUpdate = Updates.addToSet(SampleDBAdaptor.QueryParams.COHORT_IDS.key(), cohortId);
+                break;
+            case REMOVE:
+                bsonUpdate = Updates.pull(SampleDBAdaptor.QueryParams.COHORT_IDS.key(), cohortId);
+                break;
+            case SET:
+            default:
+                throw new IllegalArgumentException("Unexpected action '" + action + "'");
+        }
+
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.UID.key(), sampleUids);
+        Bson bsonQuery = parseQuery(query);
+
+        DataResult update = sampleCollection.update(clientSession, bsonQuery, bsonUpdate,
+                new QueryOptions(MongoDBCollection.MULTI, true));
+        if (update.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not update cohort references in samples");
+        }
+    }
+
     /**
      * Update Sample references from any Individual where it was used.
      *
@@ -565,8 +593,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.COLLECTION.key(), QueryParams.PROCESSING.key(), QueryParams.STATUS.key(),
-                QueryParams.QUALITY_CONTROL.key()};
+        final String[] acceptedObjectParams = {QueryParams.SOURCE.key(), QueryParams.COLLECTION.key(), QueryParams.PROCESSING.key(),
+                QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -1325,15 +1353,16 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         break;
                     case ID:
                     case UUID:
-                    case PROCESSING_PRODUCT:
+                    case PROCESSING_PRODUCT_ID:
                     case PROCESSING_PREPARATION_METHOD:
                     case PROCESSING_EXTRACTION_METHOD:
                     case PROCESSING_LAB_SAMPLE_ID:
-                    case COLLECTION_TISSUE:
-                    case COLLECTION_ORGAN:
+                    case COLLECTION_FROM_ID:
                     case COLLECTION_METHOD:
+                    case COLLECTION_TYPE:
                     case RELEASE:
                     case FILE_IDS:
+                    case COHORT_IDS:
                     case VERSION:
                     case INDIVIDUAL_ID:
                     case INTERNAL_RGA_STATUS:

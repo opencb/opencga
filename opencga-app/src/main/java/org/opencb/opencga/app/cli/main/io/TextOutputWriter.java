@@ -311,9 +311,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
         Table<Individual> table = new Table<Individual>(tableType)
                 .addColumn("ID", Individual::getId)
                 .addColumn("NAME", Individual::getId)
-                .addColumnEnum("SEX", Individual::getSex)
+                .addColumnEnum("SEX", i -> i.getSex().getSex())
                 .addColumnEnum("KARYOTYPIC_SEX", Individual::getKaryotypicSex)
-                .addColumn("ETHNICITY", Individual::getEthnicity)
+                .addColumn("ETHNICITY", i -> i.getEthnicity().getId(), "NA")
                 .addColumn("POPULATION", i -> i.getPopulation().getName(), "NA")
                 .addColumn("SUBPOPULATION", i -> i.getPopulation().getSubpopulation(), "NA")
                 .addColumnEnum("LIFE_STATUS", Individual::getLifeStatus)
@@ -423,7 +423,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 ? SIMPLE_DATE_FORMAT.format(getStart(job)) : "")),
         END(new Table.TableColumnSchema<>("End", job -> getEnd(job) != null
                 ? SIMPLE_DATE_FORMAT.format(getEnd(job)) : "")),
-        INPUT(new Table.TableColumnSchema<>("Input",  j -> j.getInput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
+        INPUT(new Table.TableColumnSchema<>("Input", j -> j.getInput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
         OUTPUT(new Table.TableColumnSchema<>("Output", j -> j.getOutput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
         OUTPUT_DIRECTORY(new Table.TableColumnSchema<>("Output directory", j -> j.getOutDir().getPath(), 45));
 
@@ -536,7 +536,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
             sb.append("\n");
 
             if (file.getType() == File.Type.DIRECTORY) {
-                printRecursiveTree(fileTree.getChildren(), sb, indent + (iterator.hasNext()? "│   " : "    "));
+                printRecursiveTree(fileTree.getChildren(), sb, indent + (iterator.hasNext() ? "│   " : "    "));
             }
         }
     }

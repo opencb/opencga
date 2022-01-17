@@ -18,8 +18,6 @@ package org.opencb.opencga.core.models.analysis.knockout;
 
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.pedigree.IndividualProperty.Sex;
-import org.opencb.opencga.core.common.JacksonUtils;
 
 import java.util.*;
 
@@ -31,7 +29,7 @@ public class KnockoutByIndividual {
     private String motherSampleId;
     private String fatherId;
     private String fatherSampleId;
-    private Sex sex;
+    private String sex;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
 
@@ -42,7 +40,7 @@ public class KnockoutByIndividual {
     }
 
     public KnockoutByIndividual(String id, String sampleId, String motherId, String motherSampleId, String fatherId, String fatherSampleId,
-                                Sex sex, List<Phenotype> phenotypes, List<Disorder> disorders, GeneKnockoutByIndividualStats stats) {
+                                String sex, List<Phenotype> phenotypes, List<Disorder> disorders, GeneKnockoutByIndividualStats stats) {
         this.id = id;
         this.sampleId = sampleId;
         this.motherId = motherId;
@@ -55,7 +53,7 @@ public class KnockoutByIndividual {
         this.stats = stats;
     }
 
-    public KnockoutByIndividual(String id, String sampleId, Sex sex, List<Phenotype> phenotypes, List<Disorder> disorders,
+    public KnockoutByIndividual(String id, String sampleId, String sex, List<Phenotype> phenotypes, List<Disorder> disorders,
                                 GeneKnockoutByIndividualStats stats) {
         this.id = id;
         this.sampleId = sampleId;
@@ -137,11 +135,11 @@ public class KnockoutByIndividual {
         return this;
     }
 
-    public Sex getSex() {
+    public String getSex() {
         return sex;
     }
 
-    public KnockoutByIndividual setSex(Sex sex) {
+    public KnockoutByIndividual setSex(String sex) {
         this.sex = sex;
         return this;
     }

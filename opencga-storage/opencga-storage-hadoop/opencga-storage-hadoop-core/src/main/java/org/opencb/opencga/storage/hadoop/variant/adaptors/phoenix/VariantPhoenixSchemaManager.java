@@ -127,7 +127,7 @@ public class VariantPhoenixSchemaManager {
         if (fileIds == null || fileIds.isEmpty()) {
             return;
         }
-        List<Integer> sampleIds = new ArrayList<>();
+        Set<Integer> sampleIds = new HashSet<>();
         for (Integer fileId : fileIds) {
             sampleIds.addAll(metadataManager.getFileMetadata(studyId, fileId).getSamples());
         }
@@ -136,7 +136,9 @@ public class VariantPhoenixSchemaManager {
             columns.add(buildFileColumnKey(studyId, fileId, new StringBuilder()));
         }
         for (Integer sampleId : sampleIds) {
-            columns.add(buildSampleColumnKey(studyId, sampleId, new StringBuilder()));
+            for (PhoenixHelper.Column sampleColumn : getSampleColumns(metadataManager.getSampleMetadata(studyId, sampleId), fileIds)) {
+                columns.add(sampleColumn.column());
+            }
         }
         phoenixHelper.dropColumns(con, variantsTableName, columns, DEFAULT_TABLE_TYPE);
         con.commit();
@@ -252,13 +254,14 @@ public class VariantPhoenixSchemaManager {
             stopWatch.stop();
             String msg;
             if (pendingColumns.isEmpty()) {
-                msg = "Columns already in phoenix. Nothing to do! Had to wait " + TimeUtils.durationToString(stopWatch.now());
+                msg = "Columns already in phoenix. Nothing to do! Had to wait "
+                        + TimeUtils.durationToString(stopWatch.now(TimeUnit.MILLISECONDS));
             } else {
                 phoenixHelper
                         .addMissingColumns(con, variantsTableName, pendingColumns, DEFAULT_TABLE_TYPE, Collections.emptySet());
                 // Final update to remove new added columns
                 removeAddedColumnsFromPending(pendingColumns);
-                msg = "Added new columns to Phoenix in " + TimeUtils.durationToString(stopWatch.now());
+                msg = "Added new columns to Phoenix in " + TimeUtils.durationToString(stopWatch.now(TimeUnit.MILLISECONDS));
             }
             if (stopWatch.now(TimeUnit.SECONDS) < 10) {
                 logger.info(msg);

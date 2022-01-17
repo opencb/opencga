@@ -25,7 +25,7 @@ public abstract class AbstractMain {
     protected static ObjectMapper objectMapper = new ObjectMapper()
             .configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
 
-    protected static <T> T read(String file, Class<T> type) throws java.io.IOException {
+    protected static <T> T readFile(String file, Class<T> type) throws java.io.IOException {
         return objectMapper.readValue(Paths.get(file).toFile(), type);
     }
 
@@ -61,7 +61,7 @@ public abstract class AbstractMain {
                 Stream<?> stream = (Stream<?>) obj;
                 print(stream.iterator());
             } else {
-                System.out.println(objectWriter.writeValueAsString(obj));
+                println(objectWriter.writeValueAsString(obj));
             }
             if (obj instanceof AutoCloseable) {
                 ((AutoCloseable) obj).close();
@@ -71,6 +71,10 @@ public abstract class AbstractMain {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected void println(String msg) {
+        System.out.println(msg);
     }
 
     protected String getArg(String[] args, int i, String def) {

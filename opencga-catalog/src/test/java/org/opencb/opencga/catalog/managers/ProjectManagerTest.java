@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.user.Account;
@@ -38,7 +39,6 @@ import java.io.IOException;
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * Created by pfurio on 28/11/16.
@@ -63,6 +63,8 @@ public class ProjectManagerTest extends GenericTest {
     private String studyId2;
     private String studyId3;
 
+    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
     @Before
     public void setUp() throws IOException, CatalogException {
         catalogManager = catalogManagerResource.getCatalogManager();
@@ -79,16 +81,16 @@ public class ProjectManagerTest extends GenericTest {
         sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
 
         project1 = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
+                null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
         project2 = catalogManager.getProjectManager().create("pmp", "Project Management Project", "life art intelligent system",
-                "Homo sapiens", null, "GRCh38", new QueryOptions(), sessionIdUser2).first().getId();
+                "Homo sapiens", null, "GRCh38", INCLUDE_RESULT, sessionIdUser2).first().getId();
         project3 = catalogManager.getProjectManager().create("p1", "project 1", "", "Homo sapiens",
-                null, "GRCh38", new QueryOptions(), sessionIdUser3).first().getId();
+                null, "GRCh38", INCLUDE_RESULT, sessionIdUser3).first().getId();
 
-        studyId = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser).first().getFqn();
-        studyId2 = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", "d", null, null, null, null, null, sessionIdUser).first().getFqn();
+        studyId = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first().getFqn();
+        studyId2 = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", "d", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first().getFqn();
 
-        studyId3 = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", "", null, null, null, null, null, sessionIdUser2).first().getFqn();
+        studyId3 = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first().getFqn();
     }
 
     @Test
@@ -114,7 +116,7 @@ public class ProjectManagerTest extends GenericTest {
         }
 
         // Create a new study in project2 with some dummy permissions for user
-        String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", "", null, null, null, null, null, sessionIdUser2).first().getId();
+        String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser2).first().getId();
         catalogManager.getStudyManager().updateGroup(s2, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user")), sessionIdUser2);
 
@@ -132,7 +134,7 @@ public class ProjectManagerTest extends GenericTest {
         assertEquals("user2@pmp", queryResult.first().getFqn());
 
         // Add permissions to user in a study of user3
-        String s3 = catalogManager.getStudyManager().create(project3, "s3", null, "StudyProject3", "", null, null, null, null, null, sessionIdUser3).first().getId();
+        String s3 = catalogManager.getStudyManager().create(project3, "s3", null, "StudyProject3", "", null, null, null, null, INCLUDE_RESULT, sessionIdUser3).first().getId();
         catalogManager.getStudyManager().updateGroup(String.valueOf(s3), "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("user")), sessionIdUser3);
 
@@ -150,7 +152,7 @@ public class ProjectManagerTest extends GenericTest {
     @Test
     public void updateOrganismInProject() throws CatalogException {
         Project pr = catalogManager.getProjectManager().create("project2", "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", null, sessionIdUser).first();
+                null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
 
         assertEquals("Homo sapiens", pr.getOrganism().getScientificName());
         assertEquals("", pr.getOrganism().getCommonName());
@@ -159,7 +161,7 @@ public class ProjectManagerTest extends GenericTest {
         ObjectMap objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), "common");
 
-        OpenCGAResult<Project> update = catalogManager.getProjectManager().update(pr.getId(), objectMap, null, sessionIdUser);
+        OpenCGAResult<Project> update = catalogManager.getProjectManager().update(pr.getId(), objectMap, INCLUDE_RESULT, sessionIdUser);
         assertEquals(1, update.getNumResults());
         OpenCGAResult<Project> queryResult = catalogManager.getProjectManager().get(pr.getId(), null, sessionIdUser);
 

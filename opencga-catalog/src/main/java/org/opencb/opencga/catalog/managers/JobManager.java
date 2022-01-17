@@ -248,6 +248,8 @@ public class JobManager extends ResourceManager<Job> {
                 .append("options", options)
                 .append("token", token);
         try {
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
             ParamUtils.checkObj(job, "Job");
@@ -307,12 +309,16 @@ public class JobManager extends ResourceManager<Job> {
             }
 
             job.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.JOB));
-            jobDBAdaptor.insert(study.getUid(), job, options);
-            OpenCGAResult<Job> queryResult = getJob(study.getUid(), job.getUuid(), options);
+            OpenCGAResult<Job> insert = jobDBAdaptor.insert(study.getUid(), job, options);
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created job
+                OpenCGAResult<Job> queryResult = getJob(study.getUid(), job.getUuid(), options);
+                insert.setResults(queryResult.getResults());
+            }
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return queryResult;
+            return insert;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -727,6 +733,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot delete job {}: {}", jobId, e.getMessage(), e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, jobId, jobUuid,
@@ -800,6 +807,7 @@ public class JobManager extends ResourceManager<Job> {
 
                 Event event = new Event(Event.Type.ERROR, job.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
@@ -962,6 +970,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, job.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update job {}: {}", job.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
@@ -1037,6 +1046,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update job {}: {}", jobId, e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
@@ -1090,6 +1100,7 @@ public class JobManager extends ResourceManager<Job> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Could not update job {}: {}", jobId, e.getMessage(), e);
             auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
@@ -1159,7 +1170,14 @@ public class JobManager extends ResourceManager<Job> {
 //            updateParams.setErrorLog(getFile(study.getUid(), updateParams.getErrorLog().getPath(), userId));
 //        }
 
-        return jobDBAdaptor.update(job.getUid(), updateMap, options);
+        OpenCGAResult<Job> update = jobDBAdaptor.update(job.getUid(), updateMap, options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated job
+            OpenCGAResult<Job> result = jobDBAdaptor.get(study.getUid(), new Query(JobDBAdaptor.QueryParams.UID.key(), job.getUid()),
+                    options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     private File getFile(long studyUid, String path, String userId) throws CatalogException {
@@ -1227,6 +1245,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, job.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update job {}: {}", job.getId(), e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
@@ -1278,6 +1297,7 @@ public class JobManager extends ResourceManager<Job> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Cannot update job {}: {}", jobId, e.getMessage());
             auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
@@ -1338,6 +1358,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update job {}: {}", jobId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, jobId, jobUuid, study.getId(),

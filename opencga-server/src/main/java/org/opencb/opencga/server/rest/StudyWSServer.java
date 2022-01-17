@@ -66,8 +66,15 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new study", response = Study.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response createStudyPOST(
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(value = ParamConstants.STUDY_PARAM, required = true) StudyCreateParams study) {
         try {
             return createOkResponse(catalogManager.getStudyManager().create(project, study != null ? study.toStudy() : new Study(),
@@ -123,12 +130,19 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some study attributes", response = Study.class)
-    public Response updateByPost(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION,
-            required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                 @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyUpdateParams updateParams) {
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
+    public Response updateByPost(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyUpdateParams updateParams) {
         try {
             ObjectUtils.defaultIfNull(updateParams, new StudyUpdateParams());
-            DataResult queryResult = catalogManager.getStudyManager().update(studyStr, updateParams, null, token);
+            DataResult queryResult = catalogManager.getStudyManager().update(studyStr, updateParams, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -191,7 +205,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateGroupPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         try {
             if (action == null) {
@@ -236,7 +250,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response getPermissionRules(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Entity where the permission rules should be applied to", required = true)
-                @QueryParam("entity") Enums.Entity entity) {
+            @QueryParam("entity") Enums.Entity entity) {
         try {
             ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(catalogManager.getStudyManager().getPermissionRules(studyStr, entity, token));
@@ -388,16 +402,17 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Add or remove a variableSet", response = VariableSet.class)
     public Response createOrRemoveVariableSets(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a variableSet", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @ApiParam(value = "Action to be performed: ADD, REMOVE or FORCE_REMOVE a variableSet",
+                    allowableValues = "ADD,REMOVE,FORCE_REMOVE", defaultValue = "ADD")
+            @QueryParam("action") ParamUtils.AddRemoveForceRemoveAction action,
             @ApiParam(value = "JSON containing the VariableSet to be created or removed.", required = true) VariableSetCreateParams params) {
         try {
             if (action == null) {
-                action = ParamUtils.AddRemoveAction.ADD;
+                action = ParamUtils.AddRemoveForceRemoveAction.ADD;
             }
 
             DataResult<VariableSet> queryResult;
-            if (action == ParamUtils.AddRemoveAction.ADD) {
+            if (action == ParamUtils.AddRemoveForceRemoveAction.ADD) {
                 // Fix variable set params to support 1.3.x
                 // TODO: Remove in version 2.1.0-SNAPSHOT
                 params.setId(StringUtils.isNotEmpty(params.getId()) ? params.getId() : params.getName());
@@ -408,7 +423,8 @@ public class StudyWSServer extends OpenCGAWSServer {
                 queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.getId(), params.getName(), params.getUnique(),
                         params.getConfidential(), params.getDescription(), null, params.getVariables(), params.getEntities(), token);
             } else {
-                queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, params.getId(), token);
+                boolean force = ParamUtils.AddRemoveForceRemoveAction.FORCE_REMOVE.equals(action);
+                queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, params.getId(), force, token);
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -433,7 +449,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "VariableSet id of the VariableSet to be updated") @PathParam("variableSet") String variableSetId,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a variable", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.AddRemoveAction action,
+            @QueryParam("action") ParamUtils.AddRemoveAction action,
             @ApiParam(value = "JSON containing the variable to be added or removed. For removing, only the variable id will be needed.", required = true) Variable variable) {
         try {
             if (action == null) {
@@ -502,7 +518,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @POST
+    @DELETE
     @Path("/{study}/templates/{templateId}/delete")
     @ApiOperation(value = "Delete template", response = Boolean.class)
     public Response delete(

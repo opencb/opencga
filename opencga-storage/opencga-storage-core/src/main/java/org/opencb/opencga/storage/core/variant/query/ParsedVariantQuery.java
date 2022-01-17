@@ -9,10 +9,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyResourceMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ParsedVariantQuery {
 
@@ -173,6 +170,13 @@ public class ParsedVariantQuery {
          */
         public List<String> getOtherXrefs() {
             return otherXrefs;
+        }
+
+        public List<String> getIDsAndXrefs() {
+            List<String> all = new ArrayList<>(ids.size() + otherXrefs.size());
+            all.addAll(ids);
+            all.addAll(otherXrefs);
+            return all;
         }
     }
 }

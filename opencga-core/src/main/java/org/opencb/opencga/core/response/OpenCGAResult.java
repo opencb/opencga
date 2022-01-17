@@ -41,42 +41,63 @@ public class OpenCGAResult<T> extends DataResult<T> {
     }
 
     public OpenCGAResult(int time, List<Event> events, long numMatches, long numInserted, long numUpdated, long numDeleted) {
-        super(time, events, numMatches, numInserted, numUpdated, numDeleted);
+        super(time, events, numMatches, numInserted, numUpdated, numDeleted, 0);
     }
 
-    public OpenCGAResult(int time, List<Event> events, long numMatches, long numInserted, long numUpdated, long numDeleted, 
+    public OpenCGAResult(int time, List<Event> events, long numMatches, long numInserted, long numUpdated, long numDeleted,
+                         long numErrors) {
+        super(time, events, numMatches, numInserted, numUpdated, numDeleted, numErrors);
+    }
+
+    public OpenCGAResult(int time, List<Event> events, long numMatches, long numInserted, long numUpdated, long numDeleted,
                          ObjectMap attributes) {
-        super(time, events, numMatches, numInserted, numUpdated, numDeleted, attributes);
+        super(time, events, numMatches, numInserted, numUpdated, numDeleted, 0, attributes);
     }
 
-    public OpenCGAResult(int time, List<Event> events, int numResults, List<T> results, long numMatches, long numInserted, long numUpdated, 
+    public OpenCGAResult(int time, List<Event> events, long numMatches, long numInserted, long numUpdated, long numDeleted, long numErrors,
+                         ObjectMap attributes) {
+        super(time, events, numMatches, numInserted, numUpdated, numDeleted, numErrors, attributes);
+    }
+
+    public OpenCGAResult(int time, List<Event> events, int numResults, List<T> results, long numMatches, long numInserted, long numUpdated,
                          long numDeleted, ObjectMap attributes) {
-        super(time, events, numResults, results, numMatches, numInserted, numUpdated, numDeleted, attributes);
+        super(time, events, numResults, results, numMatches, numInserted, numUpdated, numDeleted, 0, attributes);
+    }
+
+    public OpenCGAResult(int time, List<Event> events, int numResults, List<T> results, long numMatches, long numInserted, long numUpdated,
+                         long numDeleted, long numErrors, ObjectMap attributes) {
+        super(time, events, numResults, results, numMatches, numInserted, numUpdated, numDeleted, numErrors, attributes);
     }
 
     public OpenCGAResult(int time, List<Event> events, int numResults, List<T> results, long numMatches, long numInserted, long numUpdated,
                          long numDeleted, ObjectMap attributes, FederationNode node) {
-        super(time, events, numResults, results, numMatches, numInserted, numUpdated, numDeleted, attributes);
+        super(time, events, numResults, results, numMatches, numInserted, numUpdated, numDeleted, 0, attributes);
+        this.node = node;
+    }
+
+    public OpenCGAResult(int time, List<Event> events, int numResults, List<T> results, long numMatches, long numInserted, long numUpdated,
+                         long numDeleted, long numErrors, ObjectMap attributes, FederationNode node) {
+        super(time, events, numResults, results, numMatches, numInserted, numUpdated, numDeleted, numErrors, attributes);
         this.node = node;
     }
 
     public OpenCGAResult(DataResult<T> result) {
         this(result.getTime(), result.getEvents(), result.getNumResults(), result.getResults(), result.getNumMatches(),
-                result.getNumInserted(), result.getNumUpdated(), result.getNumDeleted(), result.getAttributes());
+                result.getNumInserted(), result.getNumUpdated(), result.getNumDeleted(), result.getNumErrors(), result.getAttributes());
     }
 
     @Deprecated
     public static OpenCGAResult empty() {
-        return new OpenCGAResult<>(0, new ArrayList<>(), 0, new ArrayList<>(), 0, 0, 0, 0, new ObjectMap());
+        return new OpenCGAResult<>(0, new ArrayList<>(), 0, new ArrayList<>(), 0, 0, 0, 0, 0, new ObjectMap());
     }
 
     public static <T> OpenCGAResult<T> empty(Class<T> c) {
-        return new OpenCGAResult<T>(0, new ArrayList<>(), 0, new ArrayList<>(), 0, 0, 0, 0, new ObjectMap())
+        return new OpenCGAResult<T>(0, new ArrayList<>(), 0, new ArrayList<>(), 0, 0, 0, 0, 0, new ObjectMap())
                 .setResultType(c.getCanonicalName());
     }
 
     public static <T> OpenCGAResult<T> empty(Class<T> c, int time) {
-        return new OpenCGAResult<T>(time, new ArrayList<>(), 0, new ArrayList<>(), 0, 0, 0, 0, new ObjectMap())
+        return new OpenCGAResult<T>(time, new ArrayList<>(), 0, new ArrayList<>(), 0, 0, 0, 0, 0, new ObjectMap())
                 .setResultType(c.getCanonicalName());
     }
 
@@ -90,6 +111,7 @@ public class OpenCGAResult<T> extends DataResult<T> {
                 results.stream().map(OpenCGAResult::getNumInserted).reduce(0L, Long::sum),
                 results.stream().map(OpenCGAResult::getNumUpdated).reduce(0L, Long::sum),
                 results.stream().map(OpenCGAResult::getNumDeleted).reduce(0L, Long::sum),
+                results.stream().map(OpenCGAResult::getNumErrors).reduce(0L, Long::sum),
                 new ObjectMap());
 
         return result;
@@ -108,6 +130,7 @@ public class OpenCGAResult<T> extends DataResult<T> {
         sb.append(", numInserted=").append(numInserted);
         sb.append(", numUpdated=").append(numUpdated);
         sb.append(", numDeleted=").append(numDeleted);
+        sb.append(", numErrors=").append(numErrors);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -211,6 +234,15 @@ public class OpenCGAResult<T> extends DataResult<T> {
         return this;
     }
 
+    public long getNumErrors() {
+        return numErrors;
+    }
+
+    public OpenCGAResult<T> setNumErrors(long numErrors) {
+        this.numErrors = numErrors;
+        return this;
+    }
+
     public String getResultType() {
         return resultType;
     }
@@ -228,7 +260,7 @@ public class OpenCGAResult<T> extends DataResult<T> {
         this.attributes = attributes;
         return this;
     }
-    
+
     public FederationNode getFederationNode() {
         return node;
     }

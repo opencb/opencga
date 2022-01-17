@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.rga;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByIndividual;
 import org.slf4j.Logger;
@@ -22,7 +21,7 @@ public abstract class AbstractRgaConverter {
         knockoutByIndividual.setMotherId(rgaDataModel.getMotherId());
         knockoutByIndividual.setMotherSampleId(rgaDataModel.getMotherSampleId());
         knockoutByIndividual.setFatherSampleId(rgaDataModel.getFatherSampleId());
-        knockoutByIndividual.setSex(rgaDataModel.getSex() != null ? IndividualProperty.Sex.valueOf(rgaDataModel.getSex()) : null);
+        knockoutByIndividual.setSex(rgaDataModel.getSex());
         if (rgaDataModel.getPhenotypeJson() != null) {
             List<Phenotype> phenotypes = new ArrayList<>(rgaDataModel.getPhenotypeJson().size());
             for (String phenotype : rgaDataModel.getPhenotypeJson()) {

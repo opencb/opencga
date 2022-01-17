@@ -16,14 +16,16 @@
 
 package org.opencb.opencga.analysis.variant.operations;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.common.StringUtils;
-import org.opencb.commons.utils.CollectionUtils;
-import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+
+import java.net.URI;
 
 /**
  * Created on 07/07/17.
@@ -38,14 +40,13 @@ public class VariantFileDeleteOperationTool extends OperationTool {
     public static final String DESCRIPTION = "Remove variant files from the variant storage";
 
     private String study;
-    private VariantFileDeleteParams variantFileDeleteParams;
-    private boolean removeStudy;
+    @ToolParams
+    protected VariantFileDeleteParams variantFileDeleteParams;
 
     @Override
     protected void check() throws Exception {
         super.check();
         study = getStudyFqn();
-        variantFileDeleteParams = VariantFileDeleteParams.fromParams(VariantFileDeleteParams.class, params);
 
         if (StringUtils.isEmpty(study)) {
             throw new ToolException("Missing study");
@@ -53,9 +54,6 @@ public class VariantFileDeleteOperationTool extends OperationTool {
         if (CollectionUtils.isEmpty(variantFileDeleteParams.getFile())) {
             throw new ToolException("Missing file/s");
         }
-        removeStudy = variantFileDeleteParams.getFile().size() == 1
-                && variantFileDeleteParams.getFile().get(0).equalsIgnoreCase(VariantQueryUtils.ALL);
-
         params.put(VariantStorageOptions.RESUME.key(), variantFileDeleteParams.isResume());
     }
 
@@ -63,11 +61,8 @@ public class VariantFileDeleteOperationTool extends OperationTool {
     protected void run() throws Exception {
 
         step(() -> {
-            if (removeStudy) {
-                variantStorageManager.removeStudy(study, params, token);
-            } else {
-                variantStorageManager.removeFile(study, variantFileDeleteParams.getFile(), params, token);
-            }
+            URI outdir = getOutDir(keepIntermediateFiles).toUri();
+            variantStorageManager.removeFile(study, variantFileDeleteParams.getFile(), params, outdir, token);
         });
     }
 

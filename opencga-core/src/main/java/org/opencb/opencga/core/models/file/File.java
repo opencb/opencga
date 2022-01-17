@@ -139,8 +139,8 @@ public class File extends Annotable {
                 long size, int release) {
         this(name, type, format, bioformat, uri, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
                 false, size, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "", release,
-                Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(), new CustomStatus(), internal,
-                Collections.emptyMap());
+                Collections.emptyList(), Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(), new CustomStatus(),
+                internal, Collections.emptyMap());
     }
 
     public File(Type type, Format format, Bioformat bioformat, String path, String description, FileInternal internal, long size,
@@ -148,12 +148,12 @@ public class File extends Annotable {
                 Map<String, Object> attributes) {
         this("", type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
                 false, size, software, new FileExperiment(), sampleIds, Collections.emptyList(), jobId, -1, Collections.emptyList(),
-                qualityControl, stats, new CustomStatus(), internal, attributes);
+                Collections.emptyList(), qualityControl, stats, new CustomStatus(), internal, attributes);
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String checksum, String creationDate,
                 String modificationDate, String description, boolean external, long size, Software software, FileExperiment experiment,
-                List<String> sampleIds, List<FileRelatedFile> relatedFiles, String jobId, int release,
+                List<String> sampleIds, List<FileRelatedFile> relatedFiles, String jobId, int release, List<String> tags,
                 List<AnnotationSet> annotationSets, FileQualityControl qualityControl, Map<String, Object> stats, CustomStatus status,
                 FileInternal internal, Map<String, Object> attributes) {
         id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
@@ -174,7 +174,7 @@ public class File extends Annotable {
         this.software = software;
         this.experiment = experiment;
         this.sampleIds = sampleIds;
-        tags = Collections.emptyList();
+        this.tags = tags;
         this.relatedFiles = relatedFiles;
         this.annotationSets = annotationSets;
         this.jobId = jobId;

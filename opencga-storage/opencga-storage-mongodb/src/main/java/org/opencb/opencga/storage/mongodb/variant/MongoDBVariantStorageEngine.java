@@ -182,7 +182,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void removeFiles(String study, List<String> files) throws StorageEngineException {
+    public void removeFiles(String study, List<String> files, URI outdir) throws StorageEngineException {
 
         TaskMetadata task = preRemove(study, files, Collections.emptyList());
         List<Integer> fileIds = task.getFileIds();
@@ -206,7 +206,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void removeStudy(String studyName) throws StorageEngineException {
+    public void removeStudy(String studyName, URI outdir) throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         AtomicReference<TaskMetadata> batchFileOperation = new AtomicReference<>();
         AtomicReference<TaskMetadata> taskMetadata = new AtomicReference<>();

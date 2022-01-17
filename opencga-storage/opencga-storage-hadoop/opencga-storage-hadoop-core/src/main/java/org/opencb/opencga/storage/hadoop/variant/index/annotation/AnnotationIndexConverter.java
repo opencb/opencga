@@ -98,7 +98,7 @@ public class AnnotationIndexConverter {
                 biotypes.add(biotype);
                 List<String> ctTranscriptFlags = ct.getTranscriptFlags();
                 if (ctTranscriptFlags == null) {
-                    ctTranscriptFlags = ct.getTranscriptAnnotationFlags();
+                    ctTranscriptFlags = ct.getTranscriptFlags();
                     if (ctTranscriptFlags == null) {
                         ctTranscriptFlags = Collections.singletonList("OTHER");
                     }

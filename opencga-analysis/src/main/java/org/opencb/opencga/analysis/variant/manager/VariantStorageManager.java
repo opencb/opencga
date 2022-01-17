@@ -173,16 +173,15 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
      * @param queryOptions  Query options
      * @param token         User's session id
      * @throws CatalogException if there is any error with Catalog
-     * @throws IOException  If there is any IO error
      * @throws StorageEngineException  If there is any error exporting variants
      */
     public void exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
                            Query query, QueryOptions queryOptions, String token)
-            throws CatalogException, IOException, StorageEngineException {
-        Query finalQuery = catalogUtils.parseQuery(query, queryOptions, token);
-        checkSamplesPermissions(finalQuery, queryOptions, token);
-        String anyStudy = catalogUtils.getAnyStudy(finalQuery, token);
+            throws CatalogException, StorageEngineException {
+        String anyStudy = catalogUtils.getAnyStudy(query, token);
         secureOperation(VariantExportTool.ID, anyStudy, queryOptions, token, engine -> {
+            Query finalQuery = catalogUtils.parseQuery(query, queryOptions, engine.getCellBaseUtils(), token);
+            checkSamplesPermissions(finalQuery, queryOptions, token);
             new VariantExportOperationManager(this, engine).export(outputFile, outputFormat, variantsFile, finalQuery, queryOptions, token);
             return null;
         });
@@ -229,26 +228,26 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
-    public void removeStudy(String study, ObjectMap params, String token)
+    public void removeStudy(String study, ObjectMap params, URI outdir, String token)
             throws CatalogException, StorageEngineException {
         secureOperation(VariantFileDeleteOperationTool.ID, study, params, token, engine -> {
-            new VariantDeleteOperationManager(this, engine).removeStudy(getStudyFqn(study, token), token);
+            new VariantDeleteOperationManager(this, engine).removeStudy(getStudyFqn(study, token), outdir, token);
             return null;
         });
     }
 
-    public void removeFile(String study, List<String> files, ObjectMap params, String token)
+    public void removeFile(String study, List<String> files, ObjectMap params, URI outdir, String token)
             throws CatalogException, StorageEngineException {
         secureOperation(VariantFileDeleteOperationTool.ID, study, params, token, engine -> {
-            new VariantDeleteOperationManager(this, engine).removeFile(study, files, token);
+            new VariantDeleteOperationManager(this, engine).removeFile(study, files, outdir, token);
             return null;
         });
     }
 
-    public void removeSample(String study, List<String> samples, ObjectMap params, String token)
+    public void removeSample(String study, List<String> samples, ObjectMap params, URI outdir, String token)
             throws CatalogException, StorageEngineException {
         secureOperation(VariantSampleDeleteOperationTool.ID, study, params, token, engine -> {
-            new VariantDeleteOperationManager(this, engine).removeSample(study, samples, token);
+            new VariantDeleteOperationManager(this, engine).removeSample(study, samples, outdir, token);
             return null;
         });
     }
@@ -689,7 +688,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public VariantDBIterator iterator(Query query, QueryOptions queryOptions, String token)
             throws CatalogException, StorageEngineException {
         VariantStorageEngine storageEngine = getVariantStorageEngine(query, token);
-        query = catalogUtils.parseQuery(query, queryOptions, token);
+        query = catalogUtils.parseQuery(query, queryOptions, storageEngine.getCellBaseUtils(), token);
         checkSamplesPermissions(query, queryOptions, storageEngine.getMetadataManager(), token);
         return storageEngine.iterator(query, queryOptions);
     }
@@ -1164,7 +1163,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     private <R> R secure(Query query, QueryOptions queryOptions, String token, VariantReadOperation<R> supplier)
             throws CatalogException, StorageEngineException {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, token);
-        catalogUtils.parseQuery(query, token);
+        catalogUtils.parseQuery(query, null, variantStorageEngine.getCellBaseUtils(), token);
         checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), token);
         return supplier.apply(variantStorageEngine);
     }
@@ -1181,10 +1180,11 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         StopWatch totalStopWatch = StopWatch.createStarted();
         StopWatch storageStopWatch = null;
         try {
-            StopWatch stopWatch = StopWatch.createStarted();
-            query = catalogUtils.parseQuery(query, queryOptions, token);
-            auditAttributes.append("catalogParseQueryTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, token);
+
+            StopWatch stopWatch = StopWatch.createStarted();
+            query = catalogUtils.parseQuery(query, queryOptions, variantStorageEngine.getCellBaseUtils(), token);
+            auditAttributes.append("catalogParseQueryTimeMillis", stopWatch.getTime(TimeUnit.MILLISECONDS));
 
             stopWatch = StopWatch.createStarted();
             checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), auditAction, token);
@@ -1422,38 +1422,16 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public static Query getVariantQuery(Map<String, ?> queryOptions) {
         Query query = new Query();
 
-        for (VariantQueryParam queryParams : VariantQueryParam.values()) {
-            if (queryOptions.containsKey(queryParams.key())) {
-                query.put(queryParams.key(), queryOptions.get(queryParams.key()));
+        for (VariantQueryParam queryParam : VariantQueryParam.values()) {
+            if (queryOptions.containsKey(queryParam.key())) {
+                query.put(queryParam.key(), queryOptions.get(queryParam.key()));
             }
         }
-        if (queryOptions.containsKey(VariantCatalogQueryUtils.SAMPLE_ANNOTATION.key())) {
-            query.put(VariantCatalogQueryUtils.SAMPLE_ANNOTATION.key(), queryOptions.get(VariantCatalogQueryUtils.SAMPLE_ANNOTATION.key()));
+        for (QueryParam queryParam : VariantCatalogQueryUtils.VARIANT_CATALOG_QUERY_PARAMS) {
+            if (queryOptions.containsKey(queryParam.key())) {
+                query.put(queryParam.key(), queryOptions.get(queryParam.key()));
+            }
         }
-        if (queryOptions.containsKey(VariantCatalogQueryUtils.PROJECT.key())) {
-            query.put(VariantCatalogQueryUtils.PROJECT.key(), queryOptions.get(VariantCatalogQueryUtils.PROJECT.key()));
-        }
-        if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY.key())) {
-            query.put(VariantCatalogQueryUtils.FAMILY.key(), queryOptions.get(VariantCatalogQueryUtils.FAMILY.key()));
-        }
-        if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY_DISORDER.key())) {
-            query.put(VariantCatalogQueryUtils.FAMILY_DISORDER.key(), queryOptions.get(VariantCatalogQueryUtils.FAMILY_DISORDER.key()));
-        }
-        if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY_PROBAND.key())) {
-            query.put(VariantCatalogQueryUtils.FAMILY_PROBAND.key(), queryOptions.get(VariantCatalogQueryUtils.FAMILY_PROBAND.key()));
-        }
-        if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key())) {
-            query.put(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key(),
-                    queryOptions.get(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key()));
-        }
-        if (queryOptions.containsKey(VariantCatalogQueryUtils.FAMILY_MEMBERS.key())) {
-            query.put(VariantCatalogQueryUtils.FAMILY_MEMBERS.key(),
-                    queryOptions.get(VariantCatalogQueryUtils.FAMILY_MEMBERS.key()));
-        }
-        if (queryOptions.containsKey(VariantCatalogQueryUtils.PANEL.key())) {
-            query.put(VariantCatalogQueryUtils.PANEL.key(), queryOptions.get(VariantCatalogQueryUtils.PANEL.key()));
-        }
-
         return query;
     }
 

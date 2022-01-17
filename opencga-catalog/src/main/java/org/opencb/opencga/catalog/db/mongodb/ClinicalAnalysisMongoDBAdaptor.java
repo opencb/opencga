@@ -50,6 +50,7 @@ import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -303,12 +304,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         switch (operation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
+                clinicalConverter.validateFilesToUpdate(document.getSet());
                 break;
             case REMOVE:
-                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                fixFilesForRemoval(parameters);
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
                 break;
             case ADD:
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                clinicalConverter.validateFilesToUpdate(document.getAddToSet());
                 break;
             default:
                 throw new IllegalStateException("Unknown operation " + basicOperation);
@@ -439,6 +443,20 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             }
         }
         parameters.put(PANELS.key(), panelParamList);
+    }
+
+    static void fixFilesForRemoval(ObjectMap parameters) {
+        if (parameters.get(FILES.key()) == null) {
+            return;
+        }
+
+        List<Document> fileParamList = new LinkedList<>();
+        for (Object file : parameters.getAsList(FILES.key())) {
+            if (file instanceof File) {
+                fileParamList.add(new Document("uid", ((File) file).getUid()));
+            }
+        }
+        parameters.put(FILES.key(), fileParamList);
     }
 
     @Override

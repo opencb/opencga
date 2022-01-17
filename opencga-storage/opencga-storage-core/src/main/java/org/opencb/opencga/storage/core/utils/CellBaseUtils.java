@@ -67,14 +67,18 @@ public class CellBaseUtils {
     }
 
     public List<Region> getGeneRegion(List<String> geneStrs, boolean skipMissing) {
+        return new ArrayList<>(getGeneRegionMap(geneStrs, skipMissing).values());
+    }
+
+    public Map<String, Region> getGeneRegionMap(List<String> geneStrs, boolean skipMissing) {
         geneStrs = new LinkedList<>(geneStrs);
-        List<Region> regions = new ArrayList<>(geneStrs.size());
+        Map<String, Region> regions = new HashMap<>(geneStrs.size());
         Iterator<String> iterator = geneStrs.iterator();
         while (iterator.hasNext()) {
             String gene = iterator.next();
             Region region = cache.get(gene);
             if (region != null) {
-                regions.add(region);
+                regions.put(gene, region);
                 iterator.remove();
             }
         }
@@ -134,7 +138,7 @@ public class CellBaseUtils {
                 int start = Math.max(1, gene.getStart() - GENE_EXTRA_REGION);
                 int end = gene.getEnd() + GENE_EXTRA_REGION;
                 Region region = new Region(gene.getChromosome(), start, end);
-                regions.add(region);
+                regions.put(geneStr, region);
                 cache.put(gene.getName(), region);
                 cache.put(gene.getId(), region);
                 cache.put(geneStr, region);

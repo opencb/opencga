@@ -13,11 +13,11 @@ import java.util.List;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 
-@Migration(id="rename_datastore_configuration_to_options", description = "Rename project.internal.datastores.variant.configuration to options", version = "2.1.0",
+@Migration(id = "rename_datastore_configuration_to_options", description = "Rename project.internal.datastores.variant.configuration to options", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         patch = 1,
-        rank = 12)
+        date = 20210617)
 public class RenameDatastoreConfigurationToOptions extends MigrationTool {
 
     @Override

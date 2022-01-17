@@ -35,6 +35,7 @@ public class SampleSolrModel extends CatalogSolrModel {
     private boolean somatic;
 
     @Field
+    @Deprecated
     private String product;
 
     @Field
@@ -47,9 +48,11 @@ public class SampleSolrModel extends CatalogSolrModel {
     private String labSampleId;
 
     @Field
+    @Deprecated
     private String tissue;
 
     @Field
+    @Deprecated
     private String organ;
 
     @Field

@@ -28,10 +28,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
@@ -53,8 +55,10 @@ public class CatalogFileUtilsTest {
     private long studyUid;
     private String studyFqn;
     private String userSessionId;
-//    private String adminSessionId;
+    //    private String adminSessionId;
     private CatalogManager catalogManager;
+
+    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
 
     @Before
     public void before() throws CatalogException, IOException, URISyntaxException {
@@ -80,8 +84,8 @@ public class CatalogFileUtilsTest {
         userSessionId = catalogManager.getUserManager().login("user", "asdf").getToken();
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResults().get(0).getString("sessionId");
         String projectId = catalogManager.getProjectManager().create("proj", "proj", "", "Homo sapiens",
-                null, "GRCh38", new QueryOptions(), userSessionId).getResults().get(0).getId();
-        Study study = catalogManager.getStudyManager().create(projectId, "std", "std", "std", "", null, null, null, null, null,
+                null, "GRCh38", INCLUDE_RESULT, userSessionId).getResults().get(0).getId();
+        Study study = catalogManager.getStudyManager().create(projectId, "std", "std", "std", "", null, null, null, null, INCLUDE_RESULT,
                 userSessionId).getResults().get(0);
         studyUid = study.getUid();
         studyFqn = study.getFqn();
@@ -94,9 +98,15 @@ public class CatalogFileUtilsTest {
         File file;
         File returnedFile;
 
-        file = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
-                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", 0, null, null, true,
-                RandomStringUtils.randomAlphanumeric(100), null, userSessionId).first();
+        file = catalogManager.getFileManager().create(studyFqn,
+                new FileCreateParams()
+                        .setType(File.Type.FILE)
+                        .setFormat(File.Format.PLAIN)
+                        .setBioformat(File.Bioformat.NONE)
+                        .setPath("item." + TimeUtils.getTimeMillis() + ".txt")
+                        .setDescription("file at root")
+                        .setContent(RandomStringUtils.randomAlphanumeric(100)),
+                true, userSessionId).first();
         returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
 
         assertSame("Should not modify the status, so should return the same file.", file, returnedFile);

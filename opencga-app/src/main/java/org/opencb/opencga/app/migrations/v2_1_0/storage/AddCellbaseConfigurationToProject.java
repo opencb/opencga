@@ -10,11 +10,11 @@ import org.opencb.opencga.core.models.project.Project;
 
 import static org.opencb.opencga.core.api.ParamConstants.USER_PROJECT_SEPARATOR;
 
-@Migration(id="add_cellbase_configuration_to_project", description = "Add cellbase configuration from storage-configuration.yml to project.internal.cellbase", version = "2.1.0",
+@Migration(id = "add_cellbase_configuration_to_project", description = "Add cellbase configuration from storage-configuration.yml to project.internal.cellbase", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.STORAGE,
         patch = 3,
-        rank = 11)
+        date = 20210616)
 public class AddCellbaseConfigurationToProject extends MigrationTool {
 
     @Override

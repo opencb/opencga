@@ -24,7 +24,8 @@ import org.opencb.opencga.core.models.variant.VariantSampleDeleteParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
+
+import java.net.URI;
 
 /**
  * Created on 07/07/17.
@@ -42,7 +43,6 @@ public class VariantSampleDeleteOperationTool extends OperationTool {
 
     @ToolParams
     protected VariantSampleDeleteParams variantSampleDeleteParams;
-    private boolean removeStudy;
 
     @Override
     protected void check() throws Exception {
@@ -55,8 +55,6 @@ public class VariantSampleDeleteOperationTool extends OperationTool {
         if (CollectionUtils.isEmpty(variantSampleDeleteParams.getSample())) {
             throw new ToolException("Missing sample/s");
         }
-        removeStudy = variantSampleDeleteParams.getSample().size() == 1
-                && variantSampleDeleteParams.getSample().get(0).equalsIgnoreCase(VariantQueryUtils.ALL);
 
         params.put(VariantStorageOptions.RESUME.key(), variantSampleDeleteParams.isResume());
     }
@@ -64,11 +62,8 @@ public class VariantSampleDeleteOperationTool extends OperationTool {
     @Override
     protected void run() throws Exception {
         step(() -> {
-            if (removeStudy) {
-                variantStorageManager.removeStudy(study, params, token);
-            } else {
-                variantStorageManager.removeSample(study, variantSampleDeleteParams.getSample(), params, token);
-            }
+            URI outdir = getOutDir(keepIntermediateFiles).toUri();
+            variantStorageManager.removeSample(study, variantSampleDeleteParams.getSample(), params, outdir, token);
         });
     }
 
