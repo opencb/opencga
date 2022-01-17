@@ -22,13 +22,18 @@ import org.opencb.opencga.app.cli.main.processors.CliProcessor;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Created by imedina on 27/05/16.
  */
 public class OpencgaMain {
 
     public static void main(String[] args) {
-        CliSessionManager.getInstance().setDebug(ArrayUtils.contains(args, "--debug"));
+        args = checkDebugMode(args);
+        CommandLineUtils.printDebug(Arrays.toString(args));
         try {
             if (ArrayUtils.contains(args, "--shell")) {
                 initShell(args);
@@ -41,9 +46,27 @@ public class OpencgaMain {
         }
     }
 
+    private static String[] checkDebugMode(String[] args) {
+        CliSessionManager.getInstance().setDebug(ArrayUtils.contains(args, "--debug"));
+        if (CliSessionManager.getInstance().isDebug()) {
+            List<String> list = new ArrayList<>(Arrays.asList(args));
+            list.remove("--debug");
+            args = list.toArray(new String[list.size()]);
+        }
+        return args;
+    }
+
     public static void initShell(String[] args) {
         try {
-            OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(new GeneralCliOptions.CommonCommandOptions());
+            GeneralCliOptions.CommonCommandOptions options = new GeneralCliOptions.CommonCommandOptions();
+            if (ArrayUtils.contains(args, "--host")) {
+                List<String> list = new ArrayList<>(Arrays.asList(args));
+                options.host = args[list.indexOf("--host") + 1];
+                list.remove("--host");
+                list.remove(options.host);
+                args = list.toArray(new String[list.size()]);
+            }
+            OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(options);
             CliSessionManager.setShell(shell);
             CliSessionManager.getInstance().init(args, shell);
             CliSessionManager.getInstance().loadSessionStudies(shell);

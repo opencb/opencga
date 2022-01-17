@@ -131,23 +131,21 @@ abstract class AbstractProcessor {
         }
     }
 
-    protected void forceLogin() throws CatalogAuthenticationException {
+    protected void forceLogin(String[] args) throws CatalogAuthenticationException {
         console = getConsole();
         String user = console.readLine(format("\nEnter your user: ", Color.GREEN));
-        loginUser(user);
+        loginUser(args, user);
         CommandLineUtils.printDebug("Login user " + user);
 
     }
 
-    protected void loginUser(String user) throws CatalogAuthenticationException {
+    protected void loginUser(String[] args, String user) throws CatalogAuthenticationException {
         console = getConsole();
         char[] passwordArray = console.readPassword(format("\nEnter your password: ", Color.GREEN));
-        String[] args = new String[2];
-        args[0] = "users";
-        args[1] = "login";
         if (CommandLineUtils.isValidUser(user)) {
             args = ArrayUtils.addAll(args, "-u", user);
             args = ArrayUtils.addAll(args, "--password", new String(passwordArray));
+            CommandLineUtils.printDebug(ArrayUtils.toString(args));
             OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
             cliOptionsParser.parse(args);
             CommandExecutor commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
@@ -160,13 +158,9 @@ abstract class AbstractProcessor {
 
     public void execute(String[] args) throws CatalogAuthenticationException {
         console = getConsole();
-     /*   if (console == null) {
-            CommandLineUtils.printError("Couldn't get console instance", null);
-            System.exit(0);
-        }*/
         if (!isLoginCommand(args)) {
-            if (args.length == 1 && "logout".equals(args[0])) {
-                args = new String[]{"users", "logout"};
+            if (ArrayUtils.contains(args, "logout")) {
+                args = normaliceCLIUsersArgs(args);
             } else {
                 parseParams(args);
             }
@@ -180,16 +174,34 @@ abstract class AbstractProcessor {
         }
     }
 
-    private boolean isLoginCommand(String[] args) throws CatalogAuthenticationException {
-        if (args.length == 1 && "login".equals(args[0])) {
-            forceLogin();
-            return true;
-        }
-        if (args.length == 2 && "login".equals(args[0])) {
-            loginUser(args[1]);
-            return true;
+    private boolean isLoginCommand(String[] consoleArgs) throws CatalogAuthenticationException {
+        if (ArrayUtils.contains(consoleArgs, "login")) {
+            String[] args = normaliceCLIUsersArgs(consoleArgs);
+            if (consoleArgs.length == 1 && "login".equals(consoleArgs[0])) {
+                forceLogin(args);
+                return true;
+            }
+            if (consoleArgs.length > 1 && "login".equals(consoleArgs[0])) {
+                if (consoleArgs[1].equals("--host")) {
+                    forceLogin(args);
+                } else {
+                    args = ArrayUtils.remove(args, 2);
+                    loginUser(args, consoleArgs[1]);
+                }
+                return true;
+            }
+
         }
         return false;
+    }
+
+    private String[] normaliceCLIUsersArgs(String[] consoleArgs) {
+        String[] args = new String[consoleArgs.length + 1];
+        args[0] = "users";
+        for (int i = 1; i < args.length; i++) {
+            args[i] = consoleArgs[i - 1];
+        }
+        return args;
     }
 
 

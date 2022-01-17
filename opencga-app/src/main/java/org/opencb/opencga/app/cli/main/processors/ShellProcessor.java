@@ -23,14 +23,7 @@ public class ShellProcessor extends AbstractProcessor {
             CliSessionManager.getInstance().setValidatedCurrentStudy(args[2]);
             return;
         }
-        if (args.length == 3 && "use".equals(args[0]) && "host".equals(args[1])) {
-            if (CliSessionManager.DEFAULT_PARAMETER.equals(args[2])) {
-                CliSessionManager.getInstance().switchDefaultSessionHost();
-            } else {
-                CliSessionManager.getInstance().switchSessionHost(args[2]);
-            }
-            return;
-        }
+      
         //login The first if clause is for scripting login method and the else clause is for the shell login
         if (isNotHelpCommand(args)) {
             if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1]) && ArrayUtils.contains(args, "--user-password")) {

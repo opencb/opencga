@@ -61,12 +61,29 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         init(options, skipDuration);
     }
 
+    public static List<String> splitWithTrim(String value) {
+        return splitWithTrim(value, ",");
+    }
+
+    public static List<String> splitWithTrim(String value, String separator) {
+        String[] splitFields = value.split(separator);
+        List<String> result = new ArrayList<>(splitFields.length);
+        for (String s : splitFields) {
+            result.add(s.trim());
+        }
+        return result;
+    }
+
     private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) throws CatalogAuthenticationException {
         try {
             logger.debug("init OpencgaCommandExecutor ");
             CliSession.getInstance().init();
             CommandLineUtils.printDebug("TOKEN::::: " + CliSessionManager.getInstance().getToken());
-
+            if (options.host != null) {
+                CommandLineUtils.printDebug("Switching host to ::::: " + options.host);
+                clientConfiguration.setDefaultIndexByName(options.host);
+                CommandLineUtils.printDebug("Switched default index to ::::: " + clientConfiguration.getRest().getDefaultHostIndex());
+            }
             // Configure CLI output writer
             WriterConfiguration writerConfiguration = new WriterConfiguration();
             writerConfiguration.setMetadata(options.metadata);
@@ -182,19 +199,6 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 e.printStackTrace();
             }
         }
-    }
-
-    public static List<String> splitWithTrim(String value) {
-        return splitWithTrim(value, ",");
-    }
-
-    public static List<String> splitWithTrim(String value, String separator) {
-        String[] splitFields = value.split(separator);
-        List<String> result = new ArrayList<>(splitFields.length);
-        for (String s : splitFields) {
-            result.add(s.trim());
-        }
-        return result;
     }
 
     public OpenCGAClient getOpenCGAClient() {

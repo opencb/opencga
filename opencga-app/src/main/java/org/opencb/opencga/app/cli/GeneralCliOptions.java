@@ -74,6 +74,9 @@ public class GeneralCliOptions {
         @Parameter(names = {"--token"}, description = "Token session ID", arity = 1, hidden = true)
         public String token;
 
+        @Parameter(names = {"--host"}, description = "Use this server host instead of the default one in the client configuration", arity = 1)
+        public String host;
+
         @Parameter(names = {"-M", "--metadata"}, description = "Include metadata information", required = false, arity = 0, hidden = true)
         public boolean metadata = false;
 

@@ -18,6 +18,7 @@ package org.opencb.opencga.client.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.slf4j.Logger;
@@ -34,12 +35,11 @@ import java.util.Map;
  */
 public final class ClientConfiguration {
 
+    private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
+    private static Logger logger;
     private String logLevel;
     private RestConfig rest;
     private GrpcConfig grpc;
-
-    private static Logger logger;
-    private static final String DEFAULT_CONFIGURATION_FORMAT = "YAML";
 
     public ClientConfiguration() {
         logger = LoggerFactory.getLogger(ClientConfiguration.class);
@@ -130,14 +130,16 @@ public final class ClientConfiguration {
     }
 
     public HostConfig getCurrentHost() throws ClientException {
-        if (rest.getHosts() == null || rest.getDefaultHostIndex() < 0) {
+        if (CollectionUtils.isEmpty(rest.getHosts()) || rest.getDefaultHostIndex() < 0
+                || rest.getDefaultHostIndex() > rest.getHosts().size()) {
             throw new ClientException("Hosts not found");
         }
         return rest.getHosts().get(rest.getDefaultHostIndex());
     }
 
     public HostConfig getHostByName(String name) throws ClientException {
-        if (rest.getHosts() == null || rest.getDefaultHostIndex() < 0) {
+        if (CollectionUtils.isEmpty(rest.getHosts()) || rest.getDefaultHostIndex() < 0
+                || rest.getDefaultHostIndex() > rest.getHosts().size()) {
             throw new ClientException("Hosts not found");
         }
         for (HostConfig hostConfig : rest.getHosts()) {
@@ -146,6 +148,23 @@ public final class ClientConfiguration {
             }
         }
         return null;
+    }
+
+    public void setDefaultIndexByName(String name) throws ClientException {
+        if (CollectionUtils.isEmpty(rest.getHosts()) || rest.getDefaultHostIndex() < 0
+                || rest.getDefaultHostIndex() > rest.getHosts().size()) {
+            throw new ClientException("Hosts not found");
+        }
+        boolean finded = false;
+        for (int i = 0; i < rest.getHosts().size(); i++) {
+            if (rest.getHosts().get(i).getName().equalsIgnoreCase(name)) {
+                rest.setDefaultHostIndex(i);
+                finded = true;
+            }
+        }
+        if (!finded) {
+            throw new ClientException("Invalid name. Host not found");
+        }
     }
 
     @Override

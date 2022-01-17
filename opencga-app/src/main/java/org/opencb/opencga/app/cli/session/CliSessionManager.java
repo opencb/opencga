@@ -82,14 +82,6 @@ public class CliSessionManager {
         }
     }
 
-    public void switchDefaultSessionHost() {
-        switchSessionHost(getDefaultHost());
-    }
-
-    private String getDefaultHost() {
-        return shell.getClientConfiguration().getRest().getHosts().get(0).getName();
-    }
-
     public String getToken() {
         return CliSession.getInstance().getToken();
     }
@@ -237,30 +229,6 @@ public class CliSessionManager {
         }
     }
 
-    public void setCurrentHost(String name) throws Exception {
-        if (name == null) {
-            throw new Exception("The name of host cannot be null");
-        }
-        if (shell.getClientConfiguration().getHostByName(name) == null) {
-            throw new Exception("Host not found");
-        }
-
-        shell.getClientConfiguration().getCurrentHost().setName(name);
-        CliSessionManager.getInstance().updateSession();
-    }
-
-    public void switchSessionHost(String host) {
-        try {
-            CliSession.getInstance().loadCliSessionFile(host);
-            setCurrentHost(host);
-            CliSession.getInstance().setCurrentHost(host);
-            println(getKeyValueAsFormattedString("The new host has set to: ",
-                    CliSession.getInstance().getCurrentHost()));
-        } catch (Exception e) {
-            CommandLineUtils.printError("Failure to switch hosts", e);
-        }
-    }
-
     public void setDefaultCurrentStudy() throws IOException {
         if ((CliSession.getInstance().getCurrentStudy().equals(CliSession.NO_STUDY) ||
                 !CliSession.getInstance().getStudies().contains(CliSession.getInstance().getCurrentStudy()))) {
@@ -273,7 +241,6 @@ public class CliSessionManager {
                 if (CliSession.getInstance().getCurrentStudy().equals(CliSession.NO_STUDY)) {
                     CliSession.getInstance().setCurrentStudy(CliSession.getInstance().getStudies().get(0));
                 }
-
                 updateSession();
             } else if (CliSession.getInstance().getUser().equals(CliSession.GUEST_USER)) {
 
