@@ -35,13 +35,14 @@ public class OpencgaMain {
         args = checkDebugMode(args);
         CommandLineUtils.printDebug(Arrays.toString(args));
         try {
-            if (ArrayUtils.contains(args, "--shell")) {
+            CliSessionManager.getInstance().setShellMode(ArrayUtils.contains(args, "--shell"));
+            if (CliSessionManager.getInstance().isShellMode()) {
                 executeShell(args);
             } else {
                 executeCli(args);
             }
         } catch (Exception e) {
-            CommandLineUtils.printError("Failed to initialize OpenCGA CLI", e);
+            CommandLineUtils.printError("Failed to initialize OpenCGA CLI " + e.getMessage(), e);
         }
     }
 
@@ -65,20 +66,19 @@ public class OpencgaMain {
     }
 
     public static void executeShell(String[] args) {
+        CommandLineUtils.printDebug("Initializing Shell...  ");
 
         try {
             GeneralCliOptions.CommonCommandOptions options = new GeneralCliOptions.CommonCommandOptions();
             if (ArrayUtils.contains(args, "--host")) {
-                List<String> list = new ArrayList<>(Arrays.asList(args));
-                options.host = args[list.indexOf("--host") + 1];
-                list.remove("--host");
-                list.remove(options.host);
-                args = list.toArray(new String[list.size()]);
+                options.host = args[ArrayUtils.indexOf(args, "--host") + 1];
             }
             OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(options);
             CliSessionManager.setShell(shell);
-            CliSessionManager.getInstance().init(args, shell);
-            CliSessionManager.getInstance().loadSessionStudies(shell);
+            CliSessionManager.getInstance().initSession(shell);
+            if (CliSessionManager.getInstance().existsToken()) {
+                CliSessionManager.getInstance().loadSessionStudies(shell);
+            }
             CommandLineUtils.printDebug("Shell created ");
             shell.execute();
         } catch (CatalogAuthenticationException e) {

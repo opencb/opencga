@@ -3,7 +3,6 @@ package org.opencb.opencga.app.cli.main.processors;
 import com.beust.jcommander.ParameterException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.executors.*;
@@ -24,9 +23,10 @@ public abstract class AbstractProcessor {
 
     protected AbstractProcessor() {
         this.console = getConsole();
+        CliSessionManager.initSession();
     }
 
-    abstract void parseParams(String[] args) throws CatalogAuthenticationException;
+    abstract boolean parseParams(String[] args) throws CatalogAuthenticationException;
 
     private Console getConsole() {
         if (console == null) {
@@ -35,9 +35,29 @@ public abstract class AbstractProcessor {
         return console;
     }
 
+    public void execute(String[] args) throws CatalogAuthenticationException {
+        if (!isLoginCommand(args)) {
+            boolean processCommand = false;
+            if (ArrayUtils.contains(args, "logout")) {
+                args = normalizeCLIUsersArgs(args);
+            } else {
+                processCommand = parseParams(args);
+            }
+            if (processCommand) {
+                OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
+                cliOptionsParser.parse(args);
+                if (cliOptionsParser.isHelp()) {
+                    cliOptionsParser.printUsage();
+                } else {
+                    process(cliOptionsParser);
+                }
+            }
+        }
+    }
+
 
     protected void process(OpencgaCliOptionsParser cliOptionsParser) {
-        CommandExecutor commandExecutor = null;
+        OpencgaCommandExecutor commandExecutor = null;
         try {
             // 1. Check if a command has been provided
             String parsedCommand = cliOptionsParser.getCommand();
@@ -123,30 +143,14 @@ public abstract class AbstractProcessor {
         } catch (CatalogAuthenticationException e) {
             printWarn("\n" + e.getMessage());
             try {
-                CliSessionManager.getInstance().logoutCliSessionFile();
+                CliSessionManager.getInstance().logoutCliSessionFile(commandExecutor);
             } catch (IOException | ClientException ex) {
                 CommandLineUtils.printError("Failed to save OpenCGA CLI session", ex);
             }
         }
     }
 
-    private void executeCommand(CommandExecutor commandExecutor, OpencgaCliOptionsParser cliOptionsParser) {
-        if (commandExecutor != null) {
-            try {
-                commandExecutor.execute();
-                CliSessionManager.getInstance().updateSession();
-            } catch (IOException e) {
-                CommandLineUtils.printError("Could not set the default study", e);
-                System.exit(1);
-            } catch (Exception ex) {
-                CommandLineUtils.printError("Execution error", ex);
-                System.exit(1);
-            }
-        } else {
-            cliOptionsParser.printUsage();
-            System.exit(1);
-        }
-    }
+    abstract void executeCommand(OpencgaCommandExecutor commandExecutor, OpencgaCliOptionsParser cliOptionsParser);
 
     protected void forceLogin(String[] args) throws CatalogAuthenticationException {
         String user = getConsole().readLine(format("\nEnter your user: ", Color.GREEN));
@@ -162,7 +166,7 @@ public abstract class AbstractProcessor {
             CommandLineUtils.printDebug(ArrayUtils.toString(args));
             OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
             cliOptionsParser.parse(args);
-            CommandExecutor commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+            OpencgaCommandExecutor commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
             executeCommand(commandExecutor, cliOptionsParser);
             println(getKeyValueAsFormattedString("Logged user: ", user));
         } else {
@@ -170,23 +174,6 @@ public abstract class AbstractProcessor {
         }
     }
 
-
-    public void execute(String[] args) throws CatalogAuthenticationException {
-        if (!isLoginCommand(args)) {
-            if (ArrayUtils.contains(args, "logout")) {
-                args = normalizeCLIUsersArgs(args);
-            } else {
-                parseParams(args);
-            }
-            OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
-            cliOptionsParser.parse(args);
-            if (cliOptionsParser.isHelp()) {
-                cliOptionsParser.printUsage();
-            } else {
-                process(cliOptionsParser);
-            }
-        }
-    }
 
     private boolean isLoginCommand(String[] consoleArgs) throws CatalogAuthenticationException {
         if (ArrayUtils.contains(consoleArgs, "login")) {

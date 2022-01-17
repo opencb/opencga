@@ -51,7 +51,7 @@ public class OpenCgaCompleterImpl extends OpenCgaCompleter {
     }
 
     private List<Candidate> getHostCandidates() {
-        List<HostConfig> hostConfigs = CliSessionManager.getInstance().getClientConfiguration().getRest().getHosts();
+        List<HostConfig> hostConfigs = CliSessionManager.getInstance().getShellClientConfiguration().getRest().getHosts();
         List<Candidate> res = new ArrayList();
         for (HostConfig hostConfig : hostConfigs) {
             res.add(new Candidate(hostConfig.getName()));

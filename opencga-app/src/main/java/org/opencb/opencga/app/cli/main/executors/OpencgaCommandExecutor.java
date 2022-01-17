@@ -24,7 +24,6 @@ import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.io.*;
-import org.opencb.opencga.app.cli.session.CliSession;
 import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -77,7 +76,6 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) throws CatalogAuthenticationException {
         try {
             logger.debug("init OpencgaCommandExecutor ");
-            CliSession.getInstance().init();
             CommandLineUtils.printDebug("TOKEN::::: " + CliSessionManager.getInstance().getToken());
             if (options.host != null) {
                 CommandLineUtils.printDebug("Switching host to ::::: " + options.host);
@@ -113,7 +111,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             if (StringUtils.isNotEmpty(options.token)) {
                 // Ignore session file. Overwrite with command line information (just sessionId)
                 logger.debug("A token has been provided");
-                CliSessionManager.getInstance().updateSessionToken(options.token);
+                CliSessionManager.getInstance().updateSessionToken(options.token, this);
                 token = options.token;
                 userId = null;
                 openCGAClient = new OpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration);
@@ -162,7 +160,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                             }
                         } else {
                             logger.debug("Session has expired: {}", expirationDate);
-                            if (CliSessionManager.getInstance().isShell()) {
+                            if (CliSessionManager.getInstance().isShellMode()) {
                                 throw new CatalogAuthenticationException("Your session has expired. Please, either login again.");
                             } else {
                                 PrintUtils.printError("Your session has expired. "

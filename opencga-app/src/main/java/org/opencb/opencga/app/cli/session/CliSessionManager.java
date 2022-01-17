@@ -1,9 +1,10 @@
 package org.opencb.opencga.app.cli.session;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.OpencgaCliShellExecutor;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
@@ -18,21 +19,26 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static org.opencb.commons.utils.PrintUtils.*;
 
 
 public class CliSessionManager {
 
-    public static final String DEFAULT_PARAMETER = "--default";
+    public static final String SESSION_FILE_SUFFIX = "_session.json";
+    private static final String NO_STUDY = "NO_STUDY";
+    private static final String GUEST_USER = "anonymous";
+    private static final String NO_TOKEN = "NO_TOKEN";
     private static CliSessionManager instance;
     private static boolean debug = false;
+    private static boolean shellMode = false;
     private static OpencgaCliShellExecutor shell;
+    private static CliSession session;
 
     private CliSessionManager() {
 
@@ -45,6 +51,11 @@ public class CliSessionManager {
         return instance;
     }
 
+    public static void initSession() {
+        CommandLineUtils.printDebug("Using: " + getLastHostUsed());
+        loadCliSessionFile(getLastHostUsed());
+    }
+
     public static boolean isDebug() {
         return debug;
     }
@@ -54,8 +65,13 @@ public class CliSessionManager {
         return this;
     }
 
-    public static boolean isShell() {
-        return shell != null;
+    public static boolean isShellMode() {
+        return shellMode;
+    }
+
+    public CliSessionManager setShellMode(boolean shellMode) {
+        CliSessionManager.shellMode = shellMode;
+        return this;
     }
 
     public static OpencgaCliShellExecutor getShell() {
@@ -66,58 +82,135 @@ public class CliSessionManager {
         CliSessionManager.shell = shell;
     }
 
-    public static ClientConfiguration getClientConfiguration() {
-        return shell.getClientConfiguration();
+
+    public static String getLastHostUsed() {
+        Path sessionDir = Paths.get(System.getProperty("user.home"), ".opencga");
+        if (!Files.exists(sessionDir)) {
+            return "";
+        }
+        Map<String, Long> mapa = new HashMap<>();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(sessionDir)) {
+            for (Path path : stream) {
+                if (!Files.isDirectory(path)) {
+                    if (path.endsWith(SESSION_FILE_SUFFIX)) {
+                        CliSession cli = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                                .readValue(path.toFile(), CliSession.class);
+                        mapa.put(cli.getCurrentHost(), cli.getTimestamp());
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        String res = "";
+        Long max = new Long(0);
+        for (Map.Entry entry : mapa.entrySet()) {
+            if (((Long) entry.getValue()) > max) {
+                res = String.valueOf(entry.getKey());
+            }
+        }
+        return res;
     }
 
-    public static OpenCGAClient getClient() {
-        return shell.getOpenCGAClient();
+    public static void loadCliSessionFile(String host) {
+        Path sessionDirectory = Paths.get(System.getProperty("user.home")).resolve(".opencga");
+        if (!Files.exists(sessionDirectory)) {
+            try {
+                Files.createDirectory(sessionDirectory);
+            } catch (Exception e) {
+                CommandLineUtils.printError("Could not create session dir properly", e);
+            }
+        }
+        Path sessionPath = sessionDirectory.resolve(host + SESSION_FILE_SUFFIX);
+        CommandLineUtils.printDebug("Loading " + sessionPath);
+        // Check if .opencga folder exists
+
+        if (!Files.exists(sessionPath)) {
+            try {
+                Files.createFile(sessionPath);
+                session = getClearSession();
+                updateCliSessionFile(host);
+            } catch (Exception e) {
+                CommandLineUtils.printError("Could not create session file properly", e);
+            }
+        } else {
+            try {
+                session = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                        .readValue(sessionPath.toFile(), CliSession.class);
+            } catch (IOException e) {
+                CommandLineUtils.printError("Could not parse the session file properly", e);
+            }
+        }
     }
 
-    public void init(String[] args, CommandExecutor executor) throws ClientException {
-        if (StringUtils.isEmpty(CliSession.getInstance().getCurrentHost())) {
-            executor.getClientConfiguration().getCurrentHost().setName(CliSession.getInstance().getCurrentHost());
+    private static CliSession getClearSession() {
+        CliSession res = new CliSession();
+        res.setHost("localhost");
+        res.setVersion("");
+        res.setUser("anonymous");
+        res.setToken(NO_TOKEN);
+        res.setRefreshToken("");
+        res.setLogin("");
+        res.setCurrentStudy("NO_STUDY");
+        res.setStudies(Collections.emptyList());
+        res.setCurrentHost("localhost");
+        res.setTimestamp(System.currentTimeMillis());
+        return res;
+
+    }
+
+    public static void updateCliSessionFile(String host) throws IOException {
+        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", host + SESSION_FILE_SUFFIX);
+        if (Files.exists(sessionPath)) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), instance);
+        }
+    }
+
+    public void initSession(OpencgaCommandExecutor executor) throws ClientException {
+        initSession();
+        if (StringUtils.isEmpty(session.getCurrentHost())) {
+            executor.getClientConfiguration().getCurrentHost().setName(session.getCurrentHost());
         } else {
             executor.getClientConfiguration().getCurrentHost().setName(executor.getClientConfiguration().getRest().getHosts().get(0).getName());
         }
+        CommandLineUtils.printDebug("Current host:::  " + executor.getClientConfiguration().getCurrentHost().getName());
+
     }
 
     public String getToken() {
-        return CliSession.getInstance().getToken();
+        return session.getToken();
     }
 
     public String getUser() {
-        return CliSession.getInstance().getUser();
+        return session.getUser();
     }
 
     public String getRefreshToken() {
-        return CliSession.getInstance().getRefreshToken();
+        return session.getRefreshToken();
     }
 
-    public void logoutCliSessionFile() throws IOException, ClientException {
-        if (isShell()) {
-            CliSession.getInstance().logoutCliSessionFile(shell.getClientConfiguration().getCurrentHost().getName());
-        } else {
-            CliSession.getInstance().logoutCliSessionFile(getLastHostUsed());
-        }
+    public void logoutCliSessionFile(OpencgaCommandExecutor executor) throws IOException, ClientException {
+        session = getClearSession();
+        updateSession(executor);
     }
 
-    public void setValidatedCurrentStudy(String arg) {
-        if (!StringUtils.isEmpty(CliSession.getInstance().getToken())) {
+    public void setValidatedCurrentStudy(String arg, OpencgaCommandExecutor executor) {
+        if (!StringUtils.isEmpty(session.getToken())) {
             CommandLineUtils.printDebug("Check study " + arg);
             // FIXME This needs to be refactor
             //TODO Nacho must check the refactorized code
-            OpenCGAClient openCGAClient = shell.getOpenCGAClient();
+            OpenCGAClient openCGAClient = executor.getOpenCGAClient();
             if (openCGAClient != null) {
                 try {
                     RestResponse<Study> res = openCGAClient.getStudyClient().info(arg, new ObjectMap());
                     if (res.allResultsSize() > 0) {
                         CommandLineUtils.printDebug("Validated study " + arg);
-                        CliSession.getInstance().setCurrentStudy(res.response(0).getResults().get(0).getFqn());
+                        session.setCurrentStudy(res.response(0).getResults().get(0).getFqn());
                         CommandLineUtils.printDebug("Validated study " + arg);
-                        updateSession();
+                        updateSession(executor);
                         println(getKeyValueAsFormattedString("Current study is: ",
-                                CliSession.getInstance().getCurrentStudy()));
+                                session.getCurrentStudy()));
                     } else {
                         printWarn("Invalid study");
                     }
@@ -134,66 +227,57 @@ public class CliSessionManager {
 
     public String getCurrentFile() {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga",
-                getLastHostUsed() + CliSession.SESSION_FILE_SUFFIX);
+                getLastHostUsed() + SESSION_FILE_SUFFIX);
 
         return sessionPath.toString();
     }
 
-    public void updateSessionToken(String token) throws ClientException {
-        CliSession.getInstance().setToken(token);
-        CliSession.getInstance().setHost(shell.getClientConfiguration().getCurrentHost().getUrl());
-        CliSession.getInstance().setCurrentHost(shell.getClientConfiguration().getCurrentHost().getName());
-        updateSession();
+    public void updateSessionToken(String token, OpencgaCommandExecutor executor) throws ClientException {
+        session.setToken(token);
+        session.setHost(executor.getClientConfiguration().getCurrentHost().getUrl());
+        session.setCurrentHost(executor.getClientConfiguration().getCurrentHost().getName());
+        updateSession(executor);
     }
 
     public String getCurrentStudy() {
-        return CliSession.getInstance().getCurrentStudy();
+        return session.getCurrentStudy();
     }
 
     public List<String> getStudies() {
-        return CliSession.getInstance().getStudies();
+        return session.getStudies();
     }
 
-    public void initUserSession(String token, String user, String refreshToken, List<String> studies) throws IOException {
+    public void initUserSession(String token, String user, String refreshToken, List<String> studies, OpencgaCommandExecutor executor) throws IOException {
 
-        CliSession.getInstance().setToken(token);
-        CliSession.getInstance().setUser(user);
-        CliSession.getInstance().setVersion(GitRepositoryState.get().getBuildVersion());
-        CliSession.getInstance().setRefreshToken(refreshToken);
-        CliSession.getInstance().setStudies(studies);
-        CliSession.getInstance().setLogin(TimeUtils.getTime(new Date()));
-        updateSession();
+        session.setToken(token);
+        session.setUser(user);
+        session.setVersion(GitRepositoryState.get().getBuildVersion());
+        session.setRefreshToken(refreshToken);
+        session.setStudies(studies);
+        session.setLogin(TimeUtils.getTime(new Date()));
+        updateSession(executor);
     }
 
-    public void updateSession() {
+    public void updateSession(OpencgaCommandExecutor executor) {
         try {
-            if (isShell()) {
-                CommandLineUtils.printDebug("Updating session for host " + shell.getClientConfiguration().getCurrentHost().getName());
-                CliSession.getInstance().saveCliSessionFile(shell.getClientConfiguration().getCurrentHost().getName());
-            } else {
-                CommandLineUtils.printDebug("Updating session for host " + getLastHostUsed());
-                CliSession.getInstance().saveCliSessionFile(getLastHostUsed());
-            }
-            CommandLineUtils.printDebug("Session updated ");
-
+            CommandLineUtils.printDebug("Updating session for host " + executor.getClientConfiguration().getCurrentHost().getName());
+            saveCliSessionFile(executor.getClientConfiguration().getCurrentHost().getName());
+            CommandLineUtils.printDebug("Session updated for ");
         } catch (Exception e) {
             CommandLineUtils.printError(e.getMessage(), e);
         }
     }
 
-    public String getLastHostUsed() {
-        return CliSession.getInstance().getLastHostUsed();
-    }
 
     public String getPrompt() {
-        String host = format("[" + CliSession.getInstance().getCurrentHost() + "]", Color.GREEN);
-        String study = format("[" + CliSession.getInstance().getCurrentStudy() + "]", Color.BLUE);
-        String user = format("<" + CliSession.getInstance().getUser() + "/>", Color.YELLOW);
+        String host = format("[" + session.getCurrentHost() + "]", Color.GREEN);
+        String study = format("[" + session.getCurrentStudy() + "]", Color.BLUE);
+        String user = format("<" + session.getUser() + "/>", Color.YELLOW);
         return host + study + user;
     }
 
     public void loadSessionStudies(OpencgaCommandExecutor executor) {
-        if (!StringUtils.isEmpty(CliSession.getInstance().getToken())) {
+        if (!StringUtils.isEmpty(session.getToken())) {
             OpenCGAClient openCGAClient = executor.getOpenCGAClient();
             try {
                 RestResponse<Project> res = openCGAClient.getProjectClient().search(new ObjectMap());
@@ -207,21 +291,21 @@ public class CliSessionManager {
                     }
                 }
                 if (!studies.isEmpty()) {
-                    CliSession.getInstance().setStudies(studies);
-                    if (!studies.contains(CliSession.getInstance().getCurrentStudy())) {
+                    session.setStudies(studies);
+                    if (!studies.contains(session.getCurrentStudy())) {
                         boolean enc = false;
-                        for (String study : CliSession.getInstance().getStudies()) {
-                            if (study.startsWith(CliSession.getInstance().getUser())) {
-                                CliSession.getInstance().setCurrentStudy(study);
+                        for (String study : session.getStudies()) {
+                            if (study.startsWith(session.getUser())) {
+                                session.setCurrentStudy(study);
                                 enc = true;
                                 break;
                             }
                         }
                         if (!enc) {
-                            CliSession.getInstance().setCurrentStudy(CliSession.getInstance().getStudies().get(0));
+                            session.setCurrentStudy(session.getStudies().get(0));
                         }
                     }
-                    updateSession();
+                    updateSession(executor);
                 }
             } catch (Exception e) {
                 CommandLineUtils.printError("Reloading studies failed ", e);
@@ -229,33 +313,33 @@ public class CliSessionManager {
         }
     }
 
-    public void setDefaultCurrentStudy() throws IOException {
-        if ((CliSession.getInstance().getCurrentStudy().equals(CliSession.NO_STUDY) ||
-                !CliSession.getInstance().getStudies().contains(CliSession.getInstance().getCurrentStudy()))) {
-            if (CollectionUtils.isNotEmpty(CliSession.getInstance().getStudies())) {
-                for (String study : CliSession.getInstance().getStudies()) {
-                    if (study.startsWith(CliSession.getInstance().getUser())) {
-                        CliSession.getInstance().setCurrentStudy(study);
+    public void setDefaultCurrentStudy(OpencgaCommandExecutor executor) throws IOException {
+        if ((session.getCurrentStudy().equals(CliSessionManager.NO_STUDY) ||
+                !session.getStudies().contains(session.getCurrentStudy()))) {
+            if (CollectionUtils.isNotEmpty(session.getStudies())) {
+                for (String study : session.getStudies()) {
+                    if (study.startsWith(session.getUser())) {
+                        session.setCurrentStudy(study);
                     }
                 }
-                if (CliSession.getInstance().getCurrentStudy().equals(CliSession.NO_STUDY)) {
-                    CliSession.getInstance().setCurrentStudy(CliSession.getInstance().getStudies().get(0));
+                if (session.getCurrentStudy().equals(CliSessionManager.NO_STUDY)) {
+                    session.setCurrentStudy(session.getStudies().get(0));
                 }
-                updateSession();
-            } else if (CliSession.getInstance().getUser().equals(CliSession.GUEST_USER)) {
+                updateSession(executor);
+            } else if (session.getUser().equals(CliSessionManager.GUEST_USER)) {
 
-                OpenCGAClient openCGAClient = shell.getOpenCGAClient();
+                OpenCGAClient openCGAClient = executor.getOpenCGAClient();
                 try {
                     RestResponse<Project> res = openCGAClient.getProjectClient().search(new ObjectMap());
-                    setUserStudies(res);
+                    setUserStudies(res, executor);
                 } catch (ClientException e) {
                     CommandLineUtils.printError("Reloading projects failed: ", e);
                 }
             } else {
-                OpenCGAClient openCGAClient = shell.getOpenCGAClient();
+                OpenCGAClient openCGAClient = executor.getOpenCGAClient();
                 try {
-                    RestResponse<Project> res = openCGAClient.getUserClient().projects(CliSession.getInstance().getUser(), new ObjectMap());
-                    setUserStudies(res);
+                    RestResponse<Project> res = openCGAClient.getUserClient().projects(session.getUser(), new ObjectMap());
+                    setUserStudies(res, executor);
                 } catch (ClientException e) {
                     CommandLineUtils.printError("Reloading projects failed ", e);
                 }
@@ -263,7 +347,7 @@ public class CliSessionManager {
         }
     }
 
-    private void setUserStudies(RestResponse<Project> res) throws IOException {
+    private void setUserStudies(RestResponse<Project> res, OpencgaCommandExecutor executor) throws IOException {
         List<String> studies = new ArrayList<>();
         List<OpenCGAResult<Project>> responses = res.getResponses();
         for (OpenCGAResult<Project> p : responses) {
@@ -274,10 +358,44 @@ public class CliSessionManager {
             }
         }
         if (!studies.isEmpty()) {
-            CliSession.getInstance().setStudies(studies);
-            setDefaultCurrentStudy();
+            session.setStudies(studies);
+            setDefaultCurrentStudy(executor);
         }
-        updateSession();
+        updateSession(executor);
     }
+
+    public void saveCliSessionFile(String host) throws IOException {
+        // Check the home folder exists
+        if (!Files.exists(Paths.get(System.getProperty("user.home")))) {
+            System.out.println("WARNING: Could not store token. User home folder '" + System.getProperty("user.home")
+                    + "' not found. Please, manually provide the token for any following command lines with '-S {token}'.");
+            return;
+        }
+
+        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga");
+        // check if ~/.opencga folder exists
+        if (!Files.exists(sessionPath)) {
+            Files.createDirectory(sessionPath);
+        }
+        sessionPath = sessionPath.resolve(host + SESSION_FILE_SUFFIX);
+
+        // we remove the part where the token signature is to avoid key verification
+      /*  if (StringUtils.isNotEmpty(token) &&) {
+            int i = token.lastIndexOf('.');
+            String withoutSignature = token.substring(0, i + 1);
+            Date expiration = Jwts.parser().parseClaimsJwt(withoutSignature).getBody().getExpiration();
+            instance.setExpirationTime(TimeUtils.getTime(expiration));
+        }*/
+        new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), session);
+    }
+
+    public ClientConfiguration getShellClientConfiguration() {
+        return shell.getClientConfiguration();
+    }
+
+    public boolean existsToken() {
+        return !session.getToken().equals(NO_TOKEN);
+    }
+
 
 }
