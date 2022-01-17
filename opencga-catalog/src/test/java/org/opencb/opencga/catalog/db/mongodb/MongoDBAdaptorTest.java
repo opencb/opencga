@@ -190,7 +190,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                 Collections.emptyList(), 1, ProjectInternal.init(), Collections.emptyMap()
         ), "imedina", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr1"), null).first(),
-                new Study("name", "Study name", "ph1", TimeUtils.getTime(), "", null, 0,
+                new Study("name", "Study name", "ph1", TimeUtils.getTime(), TimeUtils.getTime(), "", null, null, null, 0,
                         Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
                         new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, "",
                                 FileInternal.init(), 1000, 1),
@@ -198,7 +198,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                 FileInternal.init(), 1000, 1)
                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
-                        null, null, 1, new Status(), StudyInternal.init(), Collections.emptyMap()), null);
+                        null, null, 1, new Status(), StudyInternal.init(), new LinkedList<>(), Collections.emptyMap()), null);
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "Organization", null, new UserInternal(new UserStatus()),
                 new UserQuota(-1, -1, -1, -1), Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new LinkedList<>(),
@@ -208,7 +208,7 @@ public class MongoDBAdaptorTest extends GenericTest {
         catalogProjectDBAdaptor.insert(new Project("pr", "lncRNAs", TimeUtils.getTime(), TimeUtils.getTime(), "My description", null,
                 Collections.emptyList(), 1, ProjectInternal.init(), Collections.emptyMap()), "pfurio", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
-                new Study("spongeScan", "spongeScan", "sponges", TimeUtils.getTime(), "", null,
+                new Study("spongeScan", "spongeScan", "sponges", TimeUtils.getTime(), TimeUtils.getTime(), "", null, null, null,
                         0, Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
                         new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
                                 null, "Description", FileInternal.init(), 10, 1),
@@ -220,9 +220,9 @@ public class MongoDBAdaptorTest extends GenericTest {
                                 "data/alignment.bam", null, "Tophat alignment file", FileInternal.init(), 5000, 1)
                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new Status(),
-                        StudyInternal.init(), Collections.emptyMap()), null);
+                        StudyInternal.init(), new LinkedList<>(), Collections.emptyMap()), null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
-                new Study("mineco", "MINECO", "mineco", TimeUtils.getTime(), "", null, 0,
+                new Study("mineco", "MINECO", "mineco", TimeUtils.getTime(), TimeUtils.getTime(), "", null, null, null, 0,
                         Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
                         new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
                                 null, "Description", FileInternal.init(), 10, 1),
@@ -232,7 +232,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                 "data/alignment.bam", null, "Tophat alignment file", FileInternal.init(), 5000, 1)
                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), null, null, 1, new Status(),
-                        StudyInternal.init(), Collections.emptyMap()), null);
+                        StudyInternal.init(), new LinkedList<>(), Collections.emptyMap()), null);
 
         QueryOptions options = new QueryOptions("includeStudies", true);
         options.put("includeFiles", true);

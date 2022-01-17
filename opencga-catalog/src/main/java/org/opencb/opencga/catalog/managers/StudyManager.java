@@ -296,6 +296,8 @@ public class StudyManager extends AbstractManager {
                 .append("token", token);
 
         try {
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+
             /* Check project permissions */
             if (!project.getFqn().startsWith(userId + "@")) {
                 throw new CatalogException("Permission denied: Only the owner of the project can create studies.");
@@ -307,6 +309,8 @@ public class StudyManager extends AbstractManager {
             study.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.STUDY));
             study.setName(ParamUtils.defaultString(study.getName(), study.getId()));
             study.setAlias(ParamUtils.defaultString(study.getAlias(), study.getId()));
+            study.setType(ParamUtils.defaultObject(study.getType(), StudyType::init));
+            study.setSources(ParamUtils.defaultObject(study.getSources(), Collections::emptyList));
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
             study.setInternal(StudyInternal.init());
             study.setStatus(ParamUtils.defaultObject(study.getStatus(), Status::new));
@@ -317,6 +321,7 @@ public class StudyManager extends AbstractManager {
             study.setRelease(project.getCurrentRelease());
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
             study.setPermissionRules(ParamUtils.defaultObject(study.getPermissionRules(), HashMap::new));
+            study.setAdditionalInfo(ParamUtils.defaultObject(study.getAdditionalInfo(), Collections::emptyList));
             study.setAttributes(ParamUtils.defaultObject(study.getAttributes(), HashMap::new));
 
             study.setClinicalAnalyses(ParamUtils.defaultObject(study.getClinicalAnalyses(), ArrayList::new));
@@ -372,7 +377,9 @@ public class StudyManager extends AbstractManager {
             auditManager.auditCreate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            result.setResults(Arrays.asList(study));
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                result.setResults(Arrays.asList(study));
+            }
             return result;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.STUDY, study.getId(), "", study.getId(), "", auditParams,
@@ -624,6 +631,7 @@ public class StudyManager extends AbstractManager {
         }
 
         try {
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
             ParamUtils.checkObj(parameters, "Parameters");
 
             authorizationManager.checkCanEditStudy(study.getUid(), userId);
@@ -646,14 +654,17 @@ public class StudyManager extends AbstractManager {
                 throw new CatalogException("Jackson casting error: " + e.getMessage(), e);
             }
 
-            OpenCGAResult result = studyDBAdaptor.update(study.getUid(), update, options);
+            OpenCGAResult<Study> updateResult = studyDBAdaptor.update(study.getUid(), update, options);
             auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            OpenCGAResult<Study> queryResult = studyDBAdaptor.get(study.getUid(), options);
-            queryResult.setTime(queryResult.getTime() + result.getTime());
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated study
+                OpenCGAResult<Study> result = studyDBAdaptor.get(study.getUid(), options);
+                updateResult.setResults(result.getResults());
+            }
 
-            return queryResult;
+            return updateResult;
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1363,7 +1374,8 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.getVariableSets(query, options, userId);
     }
 
-    public OpenCGAResult<VariableSet> deleteVariableSet(String studyId, String variableSetId, String token) throws CatalogException {
+    public OpenCGAResult<VariableSet> deleteVariableSet(String studyId, String variableSetId, boolean force, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId, StudyManager.INCLUDE_VARIABLE_SET);
         VariableSet variableSet = extractVariableSet(study, variableSetId, userId);
@@ -1371,10 +1383,11 @@ public class StudyManager extends AbstractManager {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyId)
                 .append("variableSetId", variableSetId)
+                .append("force", force)
                 .append("token", token);
         try {
             authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
-            OpenCGAResult writeResult = studyDBAdaptor.deleteVariableSet(variableSet.getUid(), QueryOptions.empty(), userId);
+            OpenCGAResult writeResult = studyDBAdaptor.deleteVariableSet(study.getUid(), variableSet, force);
             auditManager.audit(userId, Enums.Action.DELETE_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(), "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 

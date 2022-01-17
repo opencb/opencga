@@ -27,6 +27,7 @@ import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
+import org.opencb.biodata.models.clinical.interpretation.InterpretationStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
@@ -48,11 +49,9 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
-import org.opencb.opencga.core.models.clinical.InterpretationStats;
 import org.opencb.opencga.core.models.clinical.InterpretationStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
-import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -510,9 +509,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     interpretationConverter.validatePanelsToUpdate(document.getSet());
                     break;
                 case REMOVE:
-                    fixPanelsForRemoval(parameters);
-                    filterObjectParams(parameters, document.getPullAll(), panelParams);
-                    interpretationConverter.validatePanelsToUpdate(document.getPullAll());
+                    clinicalDBAdaptor.fixPanelsForRemoval(parameters);
+                    filterObjectParams(parameters, document.getPull(), panelParams);
                     break;
                 case ADD:
                     filterObjectParams(parameters, document.getAddToSet(), panelParams);
@@ -535,20 +533,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         return document;
-    }
-
-    static void fixPanelsForRemoval(ObjectMap parameters) {
-        if (parameters.get(QueryParams.PANELS.key()) == null) {
-            return;
-        }
-
-        List<Panel> panelParamList = new LinkedList<>();
-        for (Object panel : parameters.getAsList(QueryParams.PANELS.key())) {
-            if (panel instanceof Panel) {
-                panelParamList.add(new Panel().setId(((Panel) panel).getId()));
-            }
-        }
-        parameters.put(QueryParams.PANELS.key(), panelParamList);
     }
 
     static void fixFindingsForRemoval(ObjectMap parameters, String findingsKey) {
@@ -970,8 +954,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     public DBIterator<Document> nativeIterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-        queryOptions.put(NATIVE_QUERY, true);
-
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
         return new InterpretationCatalogMongoDBIterator(mongoCursor, null, dbAdaptorFactory, queryOptions);
     }

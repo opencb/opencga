@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.InternalStatus;
@@ -57,6 +58,8 @@ public class CatalogFileUtilsTest {
     //    private String adminSessionId;
     private CatalogManager catalogManager;
 
+    private static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
     @Before
     public void before() throws CatalogException, IOException, URISyntaxException {
         Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
@@ -81,8 +84,8 @@ public class CatalogFileUtilsTest {
         userSessionId = catalogManager.getUserManager().login("user", "asdf").getToken();
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResults().get(0).getString("sessionId");
         String projectId = catalogManager.getProjectManager().create("proj", "proj", "", "Homo sapiens",
-                null, "GRCh38", new QueryOptions(), userSessionId).getResults().get(0).getId();
-        Study study = catalogManager.getStudyManager().create(projectId, "std", "std", "std", "", null, null, null, null, null,
+                null, "GRCh38", INCLUDE_RESULT, userSessionId).getResults().get(0).getId();
+        Study study = catalogManager.getStudyManager().create(projectId, "std", "std", "std", "", null, null, null, null, INCLUDE_RESULT,
                 userSessionId).getResults().get(0);
         studyUid = study.getUid();
         studyFqn = study.getFqn();

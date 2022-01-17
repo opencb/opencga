@@ -6,16 +6,15 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.Table;
-import org.opencb.biodata.models.core.Region;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
+import org.opencb.opencga.storage.hadoop.variant.index.query.LocusQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 
 public class RawSingleSampleIndexVariantDBIterator extends CloseableIterator<SampleVariantIndexEntry> {
 
@@ -24,20 +23,20 @@ public class RawSingleSampleIndexVariantDBIterator extends CloseableIterator<Sam
 
     public RawSingleSampleIndexVariantDBIterator(Table table, SingleSampleIndexQuery query, SampleIndexSchema schema,
                                                  SampleIndexDBAdaptor dbAdaptor) {
-        Collection<List<Region>> regionGroups;
-        if (CollectionUtils.isEmpty(query.getRegionGroups())) {
-            // If no regionGroups are defined, get a list of one null element to initialize the stream.
-            regionGroups = Collections.singletonList(null);
+        Collection<LocusQuery> locusQueries;
+        if (CollectionUtils.isEmpty(query.getLocusQueries())) {
+            // If no locusQueries are defined, get a list of one null element to initialize the stream.
+            locusQueries = Collections.singletonList(null);
         } else {
-            regionGroups = query.getRegionGroups();
+            locusQueries = query.getLocusQueries();
         }
 
-        Iterator<Iterator<SampleVariantIndexEntry>> iterators = regionGroups.stream()
-                .map(regions -> {
-                    // One scan per region group
-                    Scan scan = dbAdaptor.parseIncludeAll(query, regions);
+        Iterator<Iterator<SampleVariantIndexEntry>> iterators = locusQueries.stream()
+                .map(locusQuery -> {
+                    // One scan per locus query
+                    Scan scan = dbAdaptor.parseIncludeAll(query, locusQuery);
                     HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(schema);
-                    RawSampleIndexEntryFilter filter = new RawSampleIndexEntryFilter(query, regions);
+                    RawSampleIndexEntryFilter filter = new RawSampleIndexEntryFilter(query, locusQuery);
                     try {
                         ResultScanner scanner = table.getScanner(scan);
                         addCloseable(scanner);

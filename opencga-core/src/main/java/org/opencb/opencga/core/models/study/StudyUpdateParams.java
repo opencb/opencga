@@ -17,33 +17,43 @@
 package org.opencb.opencga.core.models.study;
 
 import org.opencb.opencga.core.models.common.StatusParams;
+import org.opencb.opencga.core.models.common.AdditionalInfo;
+import org.opencb.opencga.core.models.common.ExternalSource;
 
+import java.util.List;
 import java.util.Map;
 
 public class StudyUpdateParams {
 
     private String name;
     private String alias;
+    private StudyType type;
+    private List<ExternalSource> sources;
     private String description;
     private String creationDate;
     private String modificationDate;
     private StudyNotification notification;
     private Map<String, Object> attributes;
     private StatusParams status;
+    private List<AdditionalInfo> additionalInfo;
 
     public StudyUpdateParams() {
     }
 
-    public StudyUpdateParams(String name, String alias, String description, String creationDate, String modificationDate,
-                             StudyNotification notification, Map<String, Object> attributes, StatusParams status) {
+    public StudyUpdateParams(String name, String alias, StudyType type, List<ExternalSource> sources, String description,
+                             String creationDate, String modificationDate, StudyNotification notification, StatusParams status,
+                             List<AdditionalInfo> additionalInfo, Map<String, Object> attributes) {
         this.name = name;
         this.alias = alias;
+        this.type = type;
+        this.sources = sources;
         this.description = description;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.notification = notification;
-        this.attributes = attributes;
         this.status = status;
+        this.additionalInfo = additionalInfo;
+        this.attributes = attributes;
     }
 
     @Override
@@ -51,12 +61,15 @@ public class StudyUpdateParams {
         final StringBuilder sb = new StringBuilder("StudyUpdateParams{");
         sb.append("name='").append(name).append('\'');
         sb.append(", alias='").append(alias).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", sources=").append(sources);
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", notification=").append(notification);
-        sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
+        sb.append(", additionalInfo=").append(additionalInfo);
+        sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
@@ -76,6 +89,24 @@ public class StudyUpdateParams {
 
     public StudyUpdateParams setAlias(String alias) {
         this.alias = alias;
+        return this;
+    }
+
+    public StudyType getType() {
+        return type;
+    }
+
+    public StudyUpdateParams setType(StudyType type) {
+        this.type = type;
+        return this;
+    }
+
+    public List<ExternalSource> getSources() {
+        return sources;
+    }
+
+    public StudyUpdateParams setSources(List<ExternalSource> sources) {
+        this.sources = sources;
         return this;
     }
 
@@ -121,6 +152,15 @@ public class StudyUpdateParams {
 
     public StudyUpdateParams setStatus(StatusParams status) {
         this.status = status;
+        return this;
+    }
+
+    public List<AdditionalInfo> getAdditionalInfo() {
+        return additionalInfo;
+    }
+
+    public StudyUpdateParams setAdditionalInfo(List<AdditionalInfo> additionalInfo) {
+        this.additionalInfo = additionalInfo;
         return this;
     }
 

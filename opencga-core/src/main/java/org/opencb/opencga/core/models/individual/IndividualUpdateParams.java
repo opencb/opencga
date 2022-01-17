@@ -20,6 +20,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -45,8 +47,8 @@ public class IndividualUpdateParams {
     private String modificationDate;
     private Boolean parentalConsanguinity;
     private Location location;
-    private IndividualProperty.Sex sex;
-    private String ethnicity;
+    private SexOntologyTermAnnotation sex;
+    private OntologyTermAnnotation ethnicity;
     private IndividualPopulation population;
     private String dateOfBirth;
     private IndividualProperty.KaryotypicSex karyotypicSex;
@@ -64,11 +66,11 @@ public class IndividualUpdateParams {
 
     public IndividualUpdateParams(String id, String name, IndividualReferenceParam father, IndividualReferenceParam mother,
                                   String creationDate, String modificationDate, Boolean parentalConsanguinity, Location location,
-                                  IndividualProperty.Sex sex, String ethnicity, IndividualPopulation population, String dateOfBirth,
-                                  IndividualProperty.KaryotypicSex karyotypicSex, IndividualProperty.LifeStatus lifeStatus,
-                                  List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
-                                  List<Disorder> disorders, StatusParams status, IndividualQualityControl qualityControl,
-                                  Map<String, Object> attributes) {
+                                  SexOntologyTermAnnotation sex, OntologyTermAnnotation ethnicity, IndividualPopulation population,
+                                  String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
+                                  IndividualProperty.LifeStatus lifeStatus, List<SampleReferenceParam> samples,
+                                  List<AnnotationSet> annotationSets, List<Phenotype> phenotypes, List<Disorder> disorders,
+                                  StatusParams status, IndividualQualityControl qualityControl, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = father;
@@ -221,20 +223,20 @@ public class IndividualUpdateParams {
         return this;
     }
 
-    public IndividualProperty.Sex getSex() {
+    public SexOntologyTermAnnotation getSex() {
         return sex;
     }
 
-    public IndividualUpdateParams setSex(IndividualProperty.Sex sex) {
+    public IndividualUpdateParams setSex(SexOntologyTermAnnotation sex) {
         this.sex = sex;
         return this;
     }
 
-    public String getEthnicity() {
+    public OntologyTermAnnotation getEthnicity() {
         return ethnicity;
     }
 
-    public IndividualUpdateParams setEthnicity(String ethnicity) {
+    public IndividualUpdateParams setEthnicity(OntologyTermAnnotation ethnicity) {
         this.ethnicity = ethnicity;
         return this;
     }

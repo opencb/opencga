@@ -60,10 +60,7 @@ public class HBaseWriterDriver extends AbstractHBaseDriver {
     protected void setupJob(Job job, String table) throws IOException {
 //        ObjectMap options = new ObjectMap();
 //        getConf().iterator().forEachRemaining(entry -> options.put(entry.getKey(), entry.getValue()));
-        int serversSize;
-        try (HBaseManager hBaseManager = new HBaseManager(getConf())) {
-            serversSize = hBaseManager.act(table, (t, admin) -> admin.getClusterStatus().getServersSize());
-        }
+        int serversSize = getServersSize(table);
         float factor = getConf().getFloat(WRITE_MAPPERS_LIMIT_FACTOR.key(),
                 WRITE_MAPPERS_LIMIT_FACTOR.defaultValue());
         if (factor <= 0) {

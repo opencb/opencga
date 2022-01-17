@@ -76,13 +76,13 @@
 {"collection": "sample", "fields": {"individualId": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "sample", "fields": {"processing.product": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "sample", "fields": {"processing.product.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"processing.preparationMethod": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"processing.extractionMethod": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"processing.labSampleId": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "sample", "fields": {"collection.tissue": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "sample", "fields": {"collection.organ": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "sample", "fields": {"collection.from.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"collection.method": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "sample", "fields": {"collection.type": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1, "_acl": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
@@ -103,9 +103,9 @@
 {"collection": "individual", "fields": {"father.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"mother.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"familyIds": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "individual", "fields": {"sex": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "individual", "fields": {"sex.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"karyotypicSex": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "individual", "fields": {"ethnicity": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "individual", "fields": {"ethnicity.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"dateOfBirth": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"lifeStatus": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"samples.uid": 1, "studyUid": 1}, "options": {"background": true}}

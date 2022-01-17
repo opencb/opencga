@@ -20,7 +20,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -114,11 +114,11 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 .setDisorders(Collections.singletonList(getDisorder()))
                 .setFather(getFather())
                 .setMother(getMother())
-                .setSex(IndividualProperty.Sex.MALE)
+                .setSex(SexOntologyTermAnnotation.initMale())
                 .setSamples(Collections.singletonList(new Sample().setId("s3")));
     }
 
-    private Family getFamily () {
+    private Family getFamily() {
         return new Family("family", "family", null, null, Arrays.asList(getChild(), getFather(), getMother()), "", 3,
                 Collections.emptyList(), Collections.emptyMap());
     }

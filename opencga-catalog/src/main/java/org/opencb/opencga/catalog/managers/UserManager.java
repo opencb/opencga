@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
@@ -666,6 +667,7 @@ public class UserManager extends AbstractManager {
                 .append("options", options)
                 .append("token", token);
         try {
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
             ParamUtils.checkParameter(userId, "userId");
             ParamUtils.checkObj(parameters, "parameters");
             ParamUtils.checkParameter(token, "token");
@@ -680,14 +682,17 @@ public class UserManager extends AbstractManager {
             if (parameters.containsKey("email")) {
                 checkEmail(parameters.getString("email"));
             }
-            OpenCGAResult result = userDBAdaptor.update(userId, parameters);
+            OpenCGAResult<User> updateResult = userDBAdaptor.update(userId, parameters);
             auditManager.auditUpdate(loggedUser, Enums.Resource.USER, userId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            OpenCGAResult<User> queryResult = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
-            queryResult.setTime(queryResult.getTime() + result.getTime());
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated user
+                OpenCGAResult<User> result = userDBAdaptor.get(userId, options);
+                updateResult.setResults(result.getResults());
+            }
 
-            return queryResult;
+            return updateResult;
         } catch (CatalogException e) {
             auditManager.auditUpdate(loggedUser, Enums.Resource.USER, userId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

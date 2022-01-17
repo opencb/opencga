@@ -593,7 +593,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.COLLECTION.key(), QueryParams.PROCESSING.key(), QueryParams.STATUS.key(),
+        final String[] acceptedObjectParams = {QueryParams.SOURCE.key(), QueryParams.COLLECTION.key(), QueryParams.PROCESSING.key(),
+                QueryParams.STATUS.key(),
                 QueryParams.QUALITY_CONTROL.key(), QueryParams.INTERNAL_VARIANT_INDEX.key(),
                 QueryParams.INTERNAL_VARIANT_GENOTYPE_INDEX.key(), QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
                 QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key()};
@@ -1357,13 +1358,13 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         break;
                     case ID:
                     case UUID:
-                    case PROCESSING_PRODUCT:
+                    case PROCESSING_PRODUCT_ID:
                     case PROCESSING_PREPARATION_METHOD:
                     case PROCESSING_EXTRACTION_METHOD:
                     case PROCESSING_LAB_SAMPLE_ID:
-                    case COLLECTION_TISSUE:
-                    case COLLECTION_ORGAN:
+                    case COLLECTION_FROM_ID:
                     case COLLECTION_METHOD:
+                    case COLLECTION_TYPE:
                     case RELEASE:
                     case FILE_IDS:
                     case COHORT_IDS:

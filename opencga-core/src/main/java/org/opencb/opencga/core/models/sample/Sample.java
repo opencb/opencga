@@ -22,6 +22,7 @@ import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.ExternalSource;
 
 import java.util.*;
 
@@ -45,6 +46,8 @@ public class Sample extends Annotable {
      * @apiNote Immutable, Unique
      */
     private String uuid;
+
+    private ExternalSource source;
 
     /**
      * Describes how the sample was processed in the lab.
@@ -141,32 +144,34 @@ public class Sample extends Annotable {
     }
 
     public Sample(String id, String individualId, String description, int release) {
-        this(id, null, new SampleProcessing("", "", "", "", "", "", new HashMap<>()), new SampleCollection("", "", "", "", "",
-                        new HashMap<>()), release, 1, "", "", description, false, new LinkedList<>(), individualId, new LinkedList<>(),
+        this(id, null, null, null, null, release, 1, "", "", description, false, new LinkedList<>(), individualId, new LinkedList<>(),
                 new Status(), null, new LinkedList<>(), new HashMap<>());
     }
 
-    public Sample(String id, String creationDate, String modificationDate, String individualId, SampleProcessing processing,
-                  SampleCollection collection, int release, int version, String description, boolean somatic, List<Phenotype> phenotypes,
-                  List<AnnotationSet> annotationSets, Status status, SampleInternal internal, Map<String, Object> attributes) {
-        this(id, null, processing, collection, release, version, creationDate, modificationDate, description, somatic, phenotypes,
+    public Sample(String id, String creationDate, String modificationDate, String individualId, ExternalSource source,
+                  SampleProcessing processing, SampleCollection collection, int release, int version, String description, boolean somatic,
+                  List<Phenotype> phenotypes, List<AnnotationSet> annotationSets, Status status, SampleInternal internal,
+                  Map<String, Object> attributes) {
+        this(id, null, source, processing, collection, release, version, creationDate, modificationDate, description, somatic, phenotypes,
                 individualId, new LinkedList<>(), status, internal, annotationSets, attributes);
     }
 
-    public Sample(String id, String uuid, SampleProcessing processing, SampleCollection collection, int release, int version,
-                  String creationDate, String modificationDate, String description, boolean somatic, List<Phenotype> phenotypes,
-                  String individualId, List<String> fileIds, Status status, SampleInternal internal,
+    public Sample(String id, String uuid, ExternalSource source, SampleProcessing processing, SampleCollection collection, int release,
+                  int version, String creationDate, String modificationDate, String description, boolean somatic,
+                  List<Phenotype> phenotypes, String individualId, List<String> fileIds, Status status, SampleInternal internal,
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, uuid, processing, collection, null, release, version, creationDate, modificationDate, description,
+        this(id, uuid, source, processing, collection, null, release, version, creationDate, modificationDate, description,
                 somatic, phenotypes, individualId, Collections.emptyList(), fileIds, status, internal, annotationSets, attributes);
     }
 
-    public Sample(String id, String uuid, SampleProcessing processing, SampleCollection collection, SampleQualityControl qualityControl,
-                  int release, int version, String creationDate, String modificationDate, String description, boolean somatic,
-                  List<Phenotype> phenotypes, String individualId, List<String> cohortIds, List<String> fileIds, Status status,
-                  SampleInternal internal, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public Sample(String id, String uuid, ExternalSource source, SampleProcessing processing, SampleCollection collection,
+                  SampleQualityControl qualityControl, int release, int version, String creationDate, String modificationDate,
+                  String description, boolean somatic, List<Phenotype> phenotypes, String individualId, List<String> cohortIds,
+                  List<String> fileIds, Status status, SampleInternal internal, List<AnnotationSet> annotationSets,
+                  Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
+        this.source = source;
         this.processing = processing;
         this.collection = collection;
         this.qualityControl = qualityControl;
@@ -191,6 +196,7 @@ public class Sample extends Annotable {
         final StringBuilder sb = new StringBuilder("Sample{");
         sb.append("id='").append(id).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", source=").append(source);
         sb.append(", processing=").append(processing);
         sb.append(", collection=").append(collection);
         sb.append(", qualityControl=").append(qualityControl);
@@ -293,6 +299,15 @@ public class Sample extends Annotable {
     @Override
     public Sample setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public ExternalSource getSource() {
+        return source;
+    }
+
+    public Sample setSource(ExternalSource source) {
+        this.source = source;
         return this;
     }
 

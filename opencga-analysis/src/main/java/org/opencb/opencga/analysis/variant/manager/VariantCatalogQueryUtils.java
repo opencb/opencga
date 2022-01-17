@@ -27,6 +27,7 @@ import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.clinical.pedigree.PedigreeManager;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
@@ -691,11 +692,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 query.put(GENE.key(), panelGenes);
                 query.put(SKIP_MISSING_GENES, true);
             } else {
+                logger.info("Panel intersection");
                 // Intersect panel with query!
                 // genesFinal
                 //  - Genes in QUERY + genes in PANEL
-                //  - Genes in QUERY + REGIONS from PANEL (partial)
-                //  - Genes in PANEL + REGIONS from QUERY (partial)
+                //  - Genes in QUERY + REGIONS from PANEL (potentially partial)
+                //  - Genes in PANEL + REGIONS from QUERY (potentially partial)
                 // regionsFinal
                 //  - Regions in QUERY + regions in PANEL
                 // variantsFinal
@@ -758,6 +760,12 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     }
                 }
 
+                logger.info("- Panel : {genes: {}, regions: {} }", panelGenes.size(), panelRegions.size());
+                logger.info("- Query : {genes: {}, regions: {}, variants: {} }",
+                        queryGenes.size(), queryRegions.size(), queryVariants.size());
+                logger.info("- Intersection : {genes: {}, partialGenes:{}, regions: {}, variants: {} }",
+                        genesFinal.size(), Math.max(0, geneRegionsFinal.size() - genesFinal.size()),
+                        regionsFinal.size(), variantsFinal.size());
                 if (!geneRegionsFinal.isEmpty()) {
                     // Partial genes. Translate finalGenes to Regions
                     List<Region> geneRegions = new ArrayList<>(geneRegionsFinal.values());
@@ -782,6 +790,9 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     query.remove(REGION.key());
                 } else {
                     query.put(REGION.key(), regionsFinal);
+                }
+                if (genesFinal.isEmpty() && variantsFinal.isEmpty() && regionsFinal.isEmpty()) {
+                    query.put(REGION.key(), VariantQueryUtils.NON_EXISTING_REGION);
                 }
             }
         } else {
@@ -935,7 +946,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 Set<Long> indexedSampleUids = fetchIndexedSampleUIds(token, defaultStudyStr);
                 Individual individual = catalogManager.getIndividualManager().get(defaultStudyStr, sample.getIndividualId(), new QueryOptions(), token).first();
 
-                Member member = new Member(sampleId, sampleId, Member.Sex.getEnum(String.valueOf(individual.getSex())));
+                Member member = new Member(sampleId, sampleId, individual.getSex());
                 member.setDisorders(individual.getDisorders());
 
                 if (individual.getFather() != null) {
@@ -952,7 +963,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         throw VariantQueryException.malformedParam(SAMPLE, sampleFilterValue,
                                 "Multiple samples found for individual '" + father.getId() + "'");
                     } else if (numSamples == 1) {
-                        member.setFather(new Member(fatherId, fatherId, Member.Sex.MALE).setDisorders(father.getDisorders()));
+                        member.setFather(new Member(fatherId, fatherId, SexOntologyTermAnnotation.initMale()).setDisorders(father.getDisorders()));
                     }
                 }
                 if (individual.getMother() != null) {
@@ -969,7 +980,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                         throw VariantQueryException.malformedParam(SAMPLE, sampleFilterValue,
                                 "Multiple samples found for individual '" + mother.getId() + "'");
                     } else if (numSamples == 1) {
-                        member.setMother(new Member(motherId, motherId, Member.Sex.FEMALE).setDisorders(mother.getDisorders()));
+                        member.setMother(new Member(motherId, motherId, SexOntologyTermAnnotation.initFemale()).setDisorders(mother.getDisorders()));
                     }
                 }
 

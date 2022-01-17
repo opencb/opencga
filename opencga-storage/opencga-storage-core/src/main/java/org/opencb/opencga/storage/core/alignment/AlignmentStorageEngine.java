@@ -16,19 +16,13 @@
 
 package org.opencb.opencga.storage.core.alignment;
 
-import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.opencb.opencga.storage.core.StorageEngine;
 
 /**
  * Created by pfurio on 07/11/16.
  */
 public abstract class AlignmentStorageEngine extends StorageEngine<AlignmentDBAdaptor> {
-
-    public static final String ALIGNMENT_STATS_VARIABLE_SET = "opencga_alignment_stats";
-
-    private Logger logger = LoggerFactory.getLogger(AlignmentStorageEngine.class);
 
     public AlignmentStorageEngine() {
     }

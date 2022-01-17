@@ -94,10 +94,16 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/create")
-    @ApiOperation(value = "Create sample", response = Sample.class,
-            notes = "Create a sample and optionally associate it to an existing individual.")
+    @ApiOperation(value = "Create sample", response = Sample.class, notes = "Create a sample and optionally associate it to an existing individual.")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response createSamplePOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(value = "JSON containing sample information", required = true) SampleCreateParams params) {
         try {
             params = ObjectUtils.defaultIfNull(params, new SampleCreateParams());
@@ -162,8 +168,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_PREPARATION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_PREPARATION_METHOD_PARAM) String preparationMethod,
             @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_EXTRACTION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_EXTRACTION_METHOD_PARAM) String extractionMethod,
             @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_LAB_SAMPLE_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_LAB_SAMPLE_ID_PARAM) String labSampleId,
-            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_TISSUE_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_TISSUE_PARAM) String tissue,
-            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_ORGAN_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_ORGAN_PARAM) String organ,
+            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_FROM_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_FROM_PARAM) String from,
+            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_TYPE_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_TYPE_PARAM) String type,
             @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_METHOD_PARAM) String method,
             @ApiParam(value = ParamConstants.PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.PHENOTYPES_PARAM) String phenotypes,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,
@@ -214,8 +220,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_PREPARATION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_PREPARATION_METHOD_PARAM) String preparationMethod,
             @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_EXTRACTION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_EXTRACTION_METHOD_PARAM) String extractionMethod,
             @ApiParam(value = ParamConstants.SAMPLE_PROCESSING_LAB_SAMPLE_ID_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_PROCESSING_LAB_SAMPLE_ID_PARAM) String labSampleId,
-            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_TISSUE_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_TISSUE_PARAM) String tissue,
-            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_ORGAN_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_ORGAN_PARAM) String organ,
+            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_FROM_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_FROM_PARAM) String tissue,
+            @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_TYPE_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_TYPE_PARAM) String organ,
             @ApiParam(value = ParamConstants.SAMPLE_COLLECTION_METHOD_DESCRIPTION) @QueryParam(ParamConstants.SAMPLE_COLLECTION_METHOD_PARAM) String method,
             @ApiParam(value = ParamConstants.PHENOTYPES_DESCRIPTION) @QueryParam(ParamConstants.PHENOTYPES_PARAM) String phenotypes,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam(Constants.ANNOTATION) String annotation,
@@ -294,6 +300,12 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{samples}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some sample attributes", response = Sample.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response updateByPost(
             @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @PathParam("samples") String sampleStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -301,8 +313,8 @@ public class SampleWSServer extends OpenCGAWSServer {
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
-            @ApiParam(value = ParamConstants.SAMPLE_PHENOTYPES_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-            @QueryParam(ParamConstants.SAMPLE_PHENOTYPES_ACTION_PARAM) ParamUtils.BasicUpdateAction phenotypesAction,
+            @ApiParam(value = ParamConstants.SAMPLE_PHENOTYPES_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam(ParamConstants.SAMPLE_PHENOTYPES_ACTION_PARAM) ParamUtils.BasicUpdateAction phenotypesAction,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(value = "body") SampleUpdateParams parameters) {
         try {
             if (annotationSetsAction == null) {
@@ -314,9 +326,9 @@ public class SampleWSServer extends OpenCGAWSServer {
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
             actionMap.put(SampleDBAdaptor.QueryParams.PHENOTYPES.key(), phenotypesAction);
-            QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+            queryOptions.put(Constants.ACTIONS, actionMap);
 
-            return createOkResponse(sampleManager.update(studyStr, getIdList(sampleStr), parameters, true, options, token));
+            return createOkResponse(sampleManager.update(studyStr, getIdList(sampleStr), parameters, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

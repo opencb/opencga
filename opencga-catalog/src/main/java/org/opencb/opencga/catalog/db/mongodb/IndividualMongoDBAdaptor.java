@@ -26,7 +26,6 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
@@ -725,9 +724,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
-                QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_DESCRIPTION.key(),
-                QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(), QueryParams.DATE_OF_BIRTH.key()};
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(),
+                QueryParams.POPULATION_DESCRIPTION.key(), QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(),
+                QueryParams.DATE_OF_BIRTH.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
@@ -743,16 +742,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
         }
 
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.SEX.key()), IndividualProperty.Sex.class);
-        filterEnumParams(parameters, document.getSet(), acceptedEnums);
-
         String[] acceptedIntParams = {QueryParams.FATHER_UID.key(), QueryParams.MOTHER_UID.key()};
         filterLongParams(parameters, document.getSet(), acceptedIntParams);
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] acceptedObjectParams = {QueryParams.LOCATION.key(), QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key()};
+        String[] acceptedObjectParams = {QueryParams.LOCATION.key(), QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key(),
+                QueryParams.ETHNICITY.key(), QueryParams.SEX.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -1420,8 +1417,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     case MOTHER_UID:
                     case FAMILY_IDS:
                     case DATE_OF_BIRTH:
-                    case SEX:
-                    case ETHNICITY:
+                    case SEX_ID:
+                    case ETHNICITY_ID:
                     case POPULATION_NAME:
                     case POPULATION_SUBPOPULATION:
                     case KARYOTYPIC_SEX:

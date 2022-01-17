@@ -17,6 +17,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.index.query.LocusQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
@@ -221,8 +222,8 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
         if (regions.isEmpty()) {
             iterator = VariantDBIterator.emptyIterator();
         } else {
-            Collection<List<Region>> regionGroups = regions.stream().map(Collections::singletonList).collect(Collectors.toList());
-            SampleIndexQuery query = new SampleIndexQuery(regionGroups, sampleIndexQuery);
+            Collection<LocusQuery> locusQueries = regions.stream().map(LocusQuery::buildLocusQuery).collect(Collectors.toList());
+            SampleIndexQuery query = new SampleIndexQuery(locusQueries, sampleIndexQuery);
             iterator = sampleIndexDBAdaptor.iterator(query);
         }
         loadMoreResults();

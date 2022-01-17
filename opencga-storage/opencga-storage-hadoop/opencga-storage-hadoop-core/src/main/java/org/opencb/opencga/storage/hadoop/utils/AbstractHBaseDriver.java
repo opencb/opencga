@@ -366,6 +366,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         return paths;
     }
 
+    protected final int getServersSize(String table) throws IOException {
+        int serversSize;
+        try (HBaseManager hBaseManager = new HBaseManager(getConf())) {
+            serversSize = hBaseManager.act(table, (t, admin) -> admin.getClusterStatus().getServersSize());
+        }
+        return serversSize;
+    }
+
     public static String[] buildArgs(String table, ObjectMap options) {
         List<String> args = new ArrayList<>(1 + options.size() * 2);
 

@@ -29,6 +29,7 @@ import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.models.user.UserInternal;
 import org.opencb.opencga.core.models.user.UserStatus;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -94,8 +95,8 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         user = catalogUserDBAdaptor.get(user3.getId(), new QueryOptions("exclude", Arrays.asList("projects")));
         assertEquals(null, user.first().getProjects());
 
-        thrown.expect(CatalogDBException.class);
-        catalogUserDBAdaptor.get("NonExistingUser", null);
+        OpenCGAResult<User> nonExistingUser = catalogUserDBAdaptor.get("NonExistingUser", null);
+        assertEquals(0, nonExistingUser.getNumResults());
     }
 
     @Test

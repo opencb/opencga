@@ -1625,10 +1625,8 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(0, fileDataResult.first().getSampleIds().size());
 
         // Create two samples
-        Sample sample1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample1"), QueryOptions.empty(),
-                token).first();
-        Sample sample2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample2"), QueryOptions.empty(),
-                token).first();
+        Sample sample1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample1"), INCLUDE_RESULT, token).first();
+        Sample sample2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample2"), INCLUDE_RESULT, token).first();
 
         // Associate the two samples to the file
         fileManager.update(studyFqn, "data/test/", new FileUpdateParams().setSampleIds(Arrays.asList(sample1.getId(), sample2.getId())),

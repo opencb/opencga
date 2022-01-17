@@ -662,7 +662,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                         new Region("6", 33_200_000, 34_800_000),
                         new Region("8", 144_671_680, 144_690_000),
                         new Region("8", 144_700_000, 144_995_738),
-                        new Region("8", 145_100_000, 146_100_000)))
+                        new Region("8", 145_100_000, 146_100_000))),
+                new Query(ID.key(), "1:101704674:T:C,1:107979396:A:C,7:30915262:C:T,7:31009576:G:T")
         );
 
         for (String study : studies) {

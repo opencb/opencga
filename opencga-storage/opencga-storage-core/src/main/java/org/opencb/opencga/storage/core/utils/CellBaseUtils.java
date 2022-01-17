@@ -92,9 +92,11 @@ public class CellBaseUtils {
             logger.info("Query genes from CellBase " + cellBaseClient.getSpecies() + ":" + assembly + " " + geneStrs + "  -> "
                     + (System.currentTimeMillis() - ts) / 1000.0 + "s ");
             List<String> missingGenes = null;
+            iterator = geneStrs.iterator();
             for (CellBaseDataResult<Gene> result : response.getResponses()) {
                 Gene gene = null;
-                String geneStr = result.getId();
+//                String geneStr = result.getId(); // result.id might come empty! Do not use it
+                String geneStr = iterator.next();
                 // It may happen that CellBase returns more than 1 result for the same gene name.
                 // Pick the gene where the given geneStr matches with the name,id,transcript.id,transcript.name or transcript.proteinId
                 if (result.getResults().size() > 1) {
@@ -132,7 +134,7 @@ public class CellBaseUtils {
                     if (missingGenes == null) {
                         missingGenes = new ArrayList<>();
                     }
-                    missingGenes.add(result.getId());
+                    missingGenes.add(geneStr);
                     continue;
                 }
                 int start = Math.max(1, gene.getStart() - GENE_EXTRA_REGION);

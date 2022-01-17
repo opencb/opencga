@@ -80,7 +80,7 @@ public class AuthorizationMongoDBAdaptorTest {
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s1", TimeUtils.getTime(), TimeUtils.getTime(), null, null,
-                null, 1, 1, "", false, Collections.emptyList(), new ArrayList<>(), new Status(), SampleInternal.init(),
+                null, null, 1, 1, "", false, Collections.emptyList(), new ArrayList<>(), new Status(), SampleInternal.init(),
                 Collections.emptyMap()), Collections.emptyList(), QueryOptions.empty());
         s1 = getSample(studyId, "s1");
         acls = new HashMap<>();
@@ -244,7 +244,7 @@ public class AuthorizationMongoDBAdaptorTest {
     public void testPermissionRulesPlusManualPermissions() throws CatalogException {
         // We create a new sample s2
         dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, new Sample("s2", TimeUtils.getTime(), TimeUtils.getTime(), null, null,
-                null, 1, 1, "", false, Collections.emptyList(), new ArrayList<>(), new Status(), SampleInternal.init(),
+                null, null, 1, 1, "", false, Collections.emptyList(), new ArrayList<>(), new Status(), SampleInternal.init(),
                 Collections.emptyMap()), Collections.emptyList(), QueryOptions.empty());
         Sample s2 = getSample(studyId, "s2");
 

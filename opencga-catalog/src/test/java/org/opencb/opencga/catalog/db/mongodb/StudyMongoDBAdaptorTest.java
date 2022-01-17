@@ -62,7 +62,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void createStudySameAliasDifferentProject() throws CatalogException {
-        catalogStudyDBAdaptor.insert(user1.getProjects().get(0), new Study("Phase 1", "ph1", "", StudyInternal.init(), null, 1), null);
+        catalogStudyDBAdaptor.insert(user1.getProjects().get(0), new Study("Phase 1", "ph1", "", null, StudyInternal.init(), null, 1), null);
         Study ph1 = getStudy(user1.getProjects().get(0).getUid(), "ph1");
         assertTrue("It is impossible creating an study with an existing alias on a different project.", ph1.getUid() > 0);
     }
