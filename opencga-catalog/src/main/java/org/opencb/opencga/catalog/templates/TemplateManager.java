@@ -631,6 +631,9 @@ public class TemplateManager {
             while (iterator.hasNext()) {
                 TemplateFile file = iterator.next();
 
+                if (StringUtils.isEmpty(file.getPath())) {
+                    throw new CatalogException("Missing mandatory parameter 'path'");
+                }
                 Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), file.getPath());
                 boolean exists = catalogManager.getFileManager().count(studyFqn, query, token).getNumMatches() > 0;
 
@@ -640,6 +643,10 @@ public class TemplateManager {
 
                 boolean incomplete = false;
                 if (!exists) {
+                    if (StringUtils.isEmpty(file.getUri())) {
+                        throw new CatalogException("Missing mandatory parameter 'uri'. Could not link file.");
+                    }
+
                     if (count == 0) {
                         logger.info("Creating File for study '{}'", studyFqn);
                     }

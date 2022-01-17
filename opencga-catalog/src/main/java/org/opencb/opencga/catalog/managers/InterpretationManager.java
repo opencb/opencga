@@ -213,7 +213,9 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             QueryOptions clinicalOptions = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
                     Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(),
                             ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key(),
-                            ClinicalAnalysisDBAdaptor.QueryParams.AUDIT.key()));
+                            ClinicalAnalysisDBAdaptor.QueryParams.AUDIT.key(),
+                            ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION_ID.key(),
+                            ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS_ID.key()));
             ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), clinicalAnalysisStr,
                     clinicalOptions, userId).first();
 
@@ -266,6 +268,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 count++;
             }
         }
+
         interpretation.setId(clinicalAnalysis.getId() + "." + count);
 
         interpretation.setClinicalAnalysisId(clinicalAnalysis.getId());
@@ -417,6 +420,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 actionMap.put(InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS.key(), ParamUtils.BasicUpdateAction.SET);
                 actionMap.put(InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS.key(), ParamUtils.BasicUpdateAction.SET);
                 actionMap.put(InterpretationDBAdaptor.QueryParams.METHOD.key(), ParamUtils.BasicUpdateAction.SET);
+                actionMap.put(InterpretationDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.SET);
                 QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
 
                 InterpretationUpdateParams params = new InterpretationUpdateParams("", new ClinicalAnalystParam(),

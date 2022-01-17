@@ -147,7 +147,7 @@ public class FileClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<File> create(FileCreateParamsOld data, ObjectMap params) throws ClientException {
+    public RestResponse<File> create(FileCreateParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("files", null, null, null, "create", params, POST, File.class);

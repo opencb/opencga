@@ -1,0 +1,11 @@
+#familyId	id
+family1	mother1
+family1	father1
+family1	child1
+family2	mother2
+family2	father2
+family2	child22
+family3	father
+family3	mother
+family3	child
+family3	sister

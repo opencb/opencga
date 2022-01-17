@@ -28,16 +28,6 @@ public class BwaWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
-    public String getDockerImageName() {
-        return "alexcoppe/bwa";
-    }
-
-    @Override
-    public String getDockerImageVersion() {
-        return null;
-    }
-
-    @Override
     public void run() throws ToolException {
         switch (command) {
             case "index":
@@ -55,12 +45,12 @@ public class BwaWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
         StringBuilder sb = initCommandLine();
 
         // Append mounts
-        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getFastaFile(), null,
-                getExecutorParams());
+        List<Pair<String, String>> inputFilenames = DockerWrapperAnalysisExecutor.getInputFilenames(getFastaFile(),
+                null, getExecutorParams());
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
-        appendCommand(command, sb);
+        appendCommand("bwa " + command, sb);
 
         // Append other params
         appendOtherParams(null, sb);
@@ -108,7 +98,8 @@ public class BwaWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor {
         if (getExecutorParams().containsKey("o")) {
             String value = getExecutorParams().getString("o");
             if (StringUtils.isNotEmpty(value)) {
-                List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("o", value)));
+                List<Pair<String, String>> outputFilenames = new ArrayList<>(Arrays.asList(new ImmutablePair<>("o",
+                        value)));
                 appendOutputFiles(outputFilenames, sb);
             }
         }
