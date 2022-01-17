@@ -47,6 +47,20 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **release**<br>*int* <br> | <p>An integer describing the current data release.</p> |
 | **version**<br>*int* <br> | <p>Autoincremental version assigned to the registered entry. By default, updates does not create new versions. To enable versioning, users must set the `incVersion` flag from the /update web service when updating the document.</p> |
 
+### Phenotype
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Phenotype.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Id to identify the object</p> |
+| **ageOfOnset**<br>*String* <br> | <p>Indicates the age of on set of the phenotype</p> |
+| **status**<br>*Status* <br> | <p>Status of phenotype OBSERVED, NOT_OBSERVED, UNKNOWN</p> |
+| **name**<br>*String* <br> | <p>Object name</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **source**<br>*String* <br> | <p>Ontology source</p> |
+| **url**<br>*String* <br> | <p>Ontology url</p> |
+| **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
+
 ### FamilyInternal
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
 
@@ -64,20 +78,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **CustomStatus.name**<br>*String* <br> | <p>Name of the status.</p> |
 | **CustomStatus.description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
 | **CustomStatus.date**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-
-### Phenotype
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Phenotype.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Id to identify the object</p> |
-| **ageOfOnset**<br>*String* <br> | <p>Indicates the age of on set of the phenotype</p> |
-| **status**<br>*Status* <br> | <p>Status of phenotype OBSERVED, NOT_OBSERVED, UNKNOWN</p> |
-| **name**<br>*String* <br> | <p>Object name</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **source**<br>*String* <br> | <p>Ontology source</p> |
-| **url**<br>*String* <br> | <p>Ontology url</p> |
-| **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 
 ### Disorder
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Disorder.java).
@@ -110,16 +110,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
 | **~~message~~**<br>*String* <br><br>_Deprecated_ | <p>Deprecated: Message describing the status.</p> |
 
-### ClinicalComment
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalComment.java).
-
-| Field | Description |
-| :---  | :--- |
-| **author**<br>*String* <br> | <p>Clinical comment author</p> |
-| **message**<br>*String* <br> | <p>Clinical comment message</p> |
-| **tags**<br>*List<<em>String</em>>* <br> | <p>List of tags for the clinical comment</p> |
-| **date**<br>*String* <br> | <p>Date of the clinical comment</p> |
-
 ### RelatednessReport
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/RelatednessReport.java).
 
@@ -129,3 +119,13 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **maf**<br>*String* <br> | <p>Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU>0.35, cohort:ALL>0.05</p> |
 | **scores**<br>*List<<em>RelatednessScore</em>>* <br> | <p>Relatedness scores for pair of samples</p> |
 | **files**<br>*List<<em>String</em>>* <br> | <p>List of files of Relatedness Report</p> |
+
+### ClinicalComment
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalComment.java).
+
+| Field | Description |
+| :---  | :--- |
+| **author**<br>*String* <br> | <p>Clinical comment author</p> |
+| **message**<br>*String* <br> | <p>Clinical comment message</p> |
+| **tags**<br>*List<<em>String</em>>* <br> | <p>List of tags for the clinical comment</p> |
+| **date**<br>*String* <br> | <p>Date of the clinical comment</p> |

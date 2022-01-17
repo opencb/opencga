@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli.main.processors;
 
 import com.beust.jcommander.ParameterException;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
@@ -17,9 +18,15 @@ import java.io.IOException;
 import static org.opencb.commons.utils.PrintUtils.*;
 
 
-abstract class AbstractProcessor {
+public abstract class AbstractProcessor {
 
     protected Console console;
+
+    protected AbstractProcessor() {
+        this.console = getConsole();
+    }
+
+    abstract void parseParams(String[] args) throws CatalogAuthenticationException;
 
     private Console getConsole() {
         if (console == null) {
@@ -28,23 +35,31 @@ abstract class AbstractProcessor {
         return console;
     }
 
+
     protected void process(OpencgaCliOptionsParser cliOptionsParser) {
         CommandExecutor commandExecutor = null;
         try {
+            // 1. Check if a command has been provided
             String parsedCommand = cliOptionsParser.getCommand();
-            if (parsedCommand == null || parsedCommand.isEmpty()) {
+            if (StringUtils.isEmpty(parsedCommand)) {
                 if (cliOptionsParser.getGeneralOptions().version) {
                     println(CommandLineUtils.getVersionString());
+                    System.exit(0);
                 } else if (cliOptionsParser.getGeneralOptions().buildVersion) {
                     println(GitRepositoryState.get().getBuildVersion());
+                    System.exit(0);
                 } else {
                     cliOptionsParser.printUsage();
+                    System.exit(0);
                 }
             } else {
+                // 2. Check if a subcommand has been provided
                 String parsedSubCommand = cliOptionsParser.getSubCommand();
-                if (parsedSubCommand == null || parsedSubCommand.isEmpty()) {
+                if (StringUtils.isEmpty(parsedSubCommand)) {
                     cliOptionsParser.printUsage();
+                    System.exit(0);
                 } else {
+                    // 3. Create the command executor
                     switch (parsedCommand) {
                         case "users":
                             commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
@@ -101,7 +116,6 @@ abstract class AbstractProcessor {
                     }
                     executeCommand(commandExecutor, cliOptionsParser);
                 }
-
             }
         } catch (ParameterException e) {
             printWarn("\n" + e.getMessage());
@@ -123,25 +137,25 @@ abstract class AbstractProcessor {
                 CliSessionManager.getInstance().updateSession();
             } catch (IOException e) {
                 CommandLineUtils.printError("Could not set the default study", e);
+                System.exit(1);
             } catch (Exception ex) {
                 CommandLineUtils.printError("Execution error", ex);
+                System.exit(1);
             }
         } else {
             cliOptionsParser.printUsage();
+            System.exit(1);
         }
     }
 
     protected void forceLogin(String[] args) throws CatalogAuthenticationException {
-        console = getConsole();
-        String user = console.readLine(format("\nEnter your user: ", Color.GREEN));
+        String user = getConsole().readLine(format("\nEnter your user: ", Color.GREEN));
         loginUser(args, user);
         CommandLineUtils.printDebug("Login user " + user);
-
     }
 
     protected void loginUser(String[] args, String user) throws CatalogAuthenticationException {
-        console = getConsole();
-        char[] passwordArray = console.readPassword(format("\nEnter your password: ", Color.GREEN));
+        char[] passwordArray = getConsole().readPassword(format("\nEnter your password: ", Color.GREEN));
         if (CommandLineUtils.isValidUser(user)) {
             args = ArrayUtils.addAll(args, "-u", user);
             args = ArrayUtils.addAll(args, "--password", new String(passwordArray));
@@ -156,11 +170,11 @@ abstract class AbstractProcessor {
         }
     }
 
+
     public void execute(String[] args) throws CatalogAuthenticationException {
-        console = getConsole();
         if (!isLoginCommand(args)) {
             if (ArrayUtils.contains(args, "logout")) {
-                args = normaliceCLIUsersArgs(args);
+                args = normalizeCLIUsersArgs(args);
             } else {
                 parseParams(args);
             }
@@ -176,7 +190,8 @@ abstract class AbstractProcessor {
 
     private boolean isLoginCommand(String[] consoleArgs) throws CatalogAuthenticationException {
         if (ArrayUtils.contains(consoleArgs, "login")) {
-            String[] args = normaliceCLIUsersArgs(consoleArgs);
+            //adds in position 0 command "users"
+            String[] args = normalizeCLIUsersArgs(consoleArgs);
             if (consoleArgs.length == 1 && "login".equals(consoleArgs[0])) {
                 forceLogin(args);
                 return true;
@@ -195,7 +210,8 @@ abstract class AbstractProcessor {
         return false;
     }
 
-    private String[] normaliceCLIUsersArgs(String[] consoleArgs) {
+
+    private String[] normalizeCLIUsersArgs(String[] consoleArgs) {
         String[] args = new String[consoleArgs.length + 1];
         args[0] = "users";
         for (int i = 1; i < args.length; i++) {
@@ -208,6 +224,4 @@ abstract class AbstractProcessor {
     protected boolean isNotHelpCommand(String[] args) {
         return !ArrayUtils.contains(args, "--help") && !ArrayUtils.contains(args, "-h");
     }
-
-    abstract void parseParams(String[] args) throws CatalogAuthenticationException;
 }

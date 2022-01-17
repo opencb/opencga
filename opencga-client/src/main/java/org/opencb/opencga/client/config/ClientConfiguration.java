@@ -130,16 +130,21 @@ public final class ClientConfiguration {
     }
 
     public HostConfig getCurrentHost() throws ClientException {
-        if (CollectionUtils.isEmpty(rest.getHosts()) || rest.getDefaultHostIndex() < 0
-                || rest.getDefaultHostIndex() > rest.getHosts().size()) {
+        if (rest.getHosts() == null
+                || rest.getDefaultHostIndex() < 0 || rest.getDefaultHostIndex() >= rest.getHosts().size()) {
+
             throw new ClientException("Hosts not found");
         }
+        logger.debug("Default host index: {}, value: {}", rest.getDefaultHostIndex(),
+                rest.getHosts().get(rest.getDefaultHostIndex()));
         return rest.getHosts().get(rest.getDefaultHostIndex());
     }
 
     public HostConfig getHostByName(String name) throws ClientException {
-        if (CollectionUtils.isEmpty(rest.getHosts()) || rest.getDefaultHostIndex() < 0
-                || rest.getDefaultHostIndex() > rest.getHosts().size()) {
+
+        if (rest.getHosts() == null
+                || rest.getDefaultHostIndex() < 0 || rest.getDefaultHostIndex() >= rest.getHosts().size()) {
+
             throw new ClientException("Hosts not found");
         }
         for (HostConfig hostConfig : rest.getHosts()) {
