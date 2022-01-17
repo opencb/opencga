@@ -1,4 +1,4 @@
-FROM debian:11
+FROM debian:bullseye
 
 LABEL org.label-schema.vendor="OpenCB" \
       org.label-schema.name="opencga-ext-tools" \
