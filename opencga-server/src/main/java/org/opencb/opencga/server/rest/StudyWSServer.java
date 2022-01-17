@@ -518,7 +518,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @POST
+    @DELETE
     @Path("/{study}/templates/{templateId}/delete")
     @ApiOperation(value = "Delete template", response = Boolean.class)
     public Response delete(

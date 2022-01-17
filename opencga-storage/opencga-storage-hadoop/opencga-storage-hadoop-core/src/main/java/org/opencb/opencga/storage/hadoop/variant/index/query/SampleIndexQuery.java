@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.query;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.core.variant.query.Values;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
@@ -31,7 +32,7 @@ public class SampleIndexQuery {
     }
 
     private final SampleIndexSchema schema;
-    private final Collection<List<Region>> regionGroups;
+    private final Collection<LocusQuery> locusQueries;
     private final Set<VariantType> variantTypes;
     private final String study;
     private final Map<String, List<String>> samplesMap;
@@ -48,9 +49,9 @@ public class SampleIndexQuery {
     private final boolean onlyDeNovo;
     private final QueryOperation queryOperation;
 
-    public SampleIndexQuery(Collection<List<Region>> regionGroups, SampleIndexQuery query) {
+    public SampleIndexQuery(Collection<LocusQuery> locusQueries, SampleIndexQuery query) {
         this.schema = query.schema;
-        this.regionGroups = regionGroups;
+        this.locusQueries = locusQueries;
         this.variantTypes = query.variantTypes;
         this.study = query.study;
         this.samplesMap = query.samplesMap;
@@ -65,21 +66,21 @@ public class SampleIndexQuery {
         this.queryOperation = query.queryOperation;
     }
 
-    public SampleIndexQuery(SampleIndexSchema schema, Collection<List<Region>> regionGroups, String study, Map<String,
+    public SampleIndexQuery(SampleIndexSchema schema, Collection<LocusQuery> locusQueries, String study, Map<String,
             List<String>> samplesMap, QueryOperation queryOperation) {
-        this(schema, regionGroups, null, study, samplesMap, Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(),
+        this(schema, locusQueries, null, study, samplesMap, Collections.emptySet(), null, Collections.emptyMap(), Collections.emptyMap(),
                 Collections.emptyMap(),
                 new SampleAnnotationIndexQuery(schema), Collections.emptySet(), false, queryOperation);
     }
 
-    public SampleIndexQuery(SampleIndexSchema schema, Collection<List<Region>> regionGroups, Set<VariantType> variantTypes, String study,
+    public SampleIndexQuery(SampleIndexSchema schema, Collection<LocusQuery> locusQueries, Set<VariantType> variantTypes, String study,
                             Map<String, List<String>> samplesMap, Set<String> multiFileSamplesSet,
                             Set<String> negatedSamples, Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
                             Map<String, Values<SampleFileIndexQuery>> fileFilterMap,
                             SampleAnnotationIndexQuery annotationIndexQuery,
                             Set<String> mendelianErrorSet, boolean onlyDeNovo, QueryOperation queryOperation) {
         this.schema = schema;
-        this.regionGroups = regionGroups;
+        this.locusQueries = locusQueries;
         this.variantTypes = variantTypes;
         this.study = study;
         this.samplesMap = samplesMap;
@@ -98,12 +99,22 @@ public class SampleIndexQuery {
         return schema;
     }
 
-    public Collection<List<Region>> getRegionGroups() {
-        return regionGroups;
+    public Collection<LocusQuery> getLocusQueries() {
+        return locusQueries;
     }
 
-    public List<Region> getRegions() {
-        return regionGroups.stream().flatMap(Collection::stream).collect(Collectors.toList());
+    public List<Region> getAllRegions() {
+        return locusQueries.stream()
+                .map(LocusQuery::getRegions)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+    }
+
+    public List<Variant> getAllVariants() {
+        return locusQueries.stream()
+                .map(LocusQuery::getVariants)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
     }
 
     public Set<VariantType> getVariantTypes() {
