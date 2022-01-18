@@ -26,11 +26,11 @@ import org.opencb.opencga.core.response.RestResponse;
 
 public abstract class ParentFilesCommandExecutor extends OpencgaCommandExecutor {
 
-    private FilesCommandOptions filesCommandOptions;
+    private final FilesCommandOptions filesCommandOptions;
 
-    public ParentFilesCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
+    public ParentFilesCommandExecutor(GeneralCliOptions.CommonCommandOptions options,
                                       FilesCommandOptions filesCommandOptions) throws CatalogAuthenticationException {
-        super(options, command);
+        super(options);
         this.filesCommandOptions = filesCommandOptions;
     }
 

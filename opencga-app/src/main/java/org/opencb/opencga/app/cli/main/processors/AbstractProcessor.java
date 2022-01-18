@@ -10,7 +10,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.io.Console;
-import java.util.Arrays;
 
 import static org.opencb.commons.utils.PrintUtils.*;
 
@@ -24,7 +23,7 @@ public abstract class AbstractProcessor {
 //        CliSessionManager.initSession();
     }
 
-    abstract boolean parseParams(String[] args) throws CatalogAuthenticationException;
+    abstract String[] parseParams(String[] args) throws CatalogAuthenticationException;
 
     private Console getConsole() {
         if (console == null) {
@@ -34,23 +33,32 @@ public abstract class AbstractProcessor {
     }
 
     public void execute(String[] args) throws CatalogAuthenticationException {
-        if (!isLoginCommand(args)) {
-            boolean processCommand = true;
-            if (ArrayUtils.contains(args, "logout")) {
-                CommandLineUtils.printDebug("Logging out... ");
-                args = normalizeCLIUsersArgs(args);
+        args = checkShortCut(args);
+        if (ArrayUtils.contains(args, "logout")) {
+            CommandLineUtils.printDebug("Logging out... ");
+            args = normalizeCLIUsersArgs(args);
+        } else {
+            args = parseParams(args);
+        }
+        if (args != null) {
+            OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
+            cliOptionsParser.parse(args);
+            CommandLineUtils.printDebug("PARSED OPTIONS ::: " + ArrayUtils.toString(args));
+            if (cliOptionsParser.isHelp()) {
+                cliOptionsParser.printUsage();
             } else {
-                processCommand = parseParams(args);
+                process(cliOptionsParser);
             }
-            if (processCommand) {
-                OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
-                cliOptionsParser.parse(args);
-                if (cliOptionsParser.isHelp()) {
-                    cliOptionsParser.printUsage();
-                } else {
-                    process(cliOptionsParser);
-                }
-            }
+        }
+
+    }
+
+    private String[] checkShortCut(String[] args) throws CatalogAuthenticationException {
+        switch (args[0]) {
+            case "login":
+                return parseLoginCommand(args);
+            default:
+                return args;
         }
     }
 
@@ -151,51 +159,48 @@ public abstract class AbstractProcessor {
 
     abstract void executeCommand(OpencgaCommandExecutor commandExecutor, OpencgaCliOptionsParser cliOptionsParser);
 
-    protected void forceLogin(String[] args) throws CatalogAuthenticationException {
+    protected String[] forceLogin(String[] args) {
         String user = getConsole().readLine(format("\nEnter your user: ", Color.GREEN));
-        loginUser(args, user);
         CommandLineUtils.printDebug("Login user " + user);
+        return loginUser(args, user);
     }
 
-    protected void loginUser(String[] args, String user) throws CatalogAuthenticationException {
+    protected String[] loginUser(String[] args, String user) {
         char[] passwordArray = getConsole().readPassword(format("\nEnter your password: ", Color.GREEN));
         if (CommandLineUtils.isValidUser(user)) {
             args = ArrayUtils.addAll(args, "-u", user);
             args = ArrayUtils.addAll(args, "--password", new String(passwordArray));
             CommandLineUtils.printDebug(ArrayUtils.toString(args));
-            System.out.println("args = " + Arrays.toString(args));
-            OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
-            cliOptionsParser.parse(args);
-            OpencgaCommandExecutor commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
-            executeCommand(commandExecutor, cliOptionsParser);
-
-            println(getKeyValueAsFormattedString("Logged user: ", user));
         } else {
             println(getKeyValueAsFormattedString("Invalid user name: ", user));
         }
+        return args;
     }
 
 
-    private boolean isLoginCommand(String[] consoleArgs) throws CatalogAuthenticationException {
+    private String[] parseLoginCommand(String[] consoleArgs) {
         if (ArrayUtils.contains(consoleArgs, "login")) {
             //adds in position 0 command "users"
             String[] args = normalizeCLIUsersArgs(consoleArgs);
+            //case opencga.sh login OR [opencga][demo@project:study]<demo/>login
             if (consoleArgs.length == 1 && "login".equals(consoleArgs[0])) {
-                forceLogin(args);
-                return true;
+                return forceLogin(args);
+
             }
+            //CASES
+            //case opencga.sh login --host ...... OR [opencga][demo@project:study]<demo/>login --host ......
+            //case opencga.sh login user1 [.....] OR [opencga][demo@project:study]<demo/>login user1 [.....]
             if (consoleArgs.length > 1 && "login".equals(consoleArgs[0])) {
                 if (consoleArgs[1].equals("--host")) {
-                    forceLogin(args);
+                    return forceLogin(args);
                 } else {
                     args = ArrayUtils.remove(args, 2);
-                    loginUser(args, consoleArgs[1]);
+                    return loginUser(args, consoleArgs[1]);
                 }
-                return true;
             }
 
         }
-        return false;
+        return consoleArgs;
     }
 
 

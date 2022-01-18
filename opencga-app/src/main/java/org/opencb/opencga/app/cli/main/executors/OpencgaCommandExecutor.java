@@ -113,13 +113,13 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 // Ignore session file. Overwrite with command line information (just sessionId)
                 logger.debug("A token has been provided");
 //                CliSessionManager.getInstance().updateSessionToken(options.token, this);
-                this.cliSession = this.sessionManager.updateSessionToken(options.token, this.host);
+                this.sessionManager.updateSessionToken(options.token, this.host);
                 token = options.token;
                 userId = null;
                 openCGAClient = new OpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration);
             } else {
 //                if (StringUtils.isNotEmpty(CliSessionManager.getInstance().getToken())) {
-                if (this.cliSession != null && StringUtils.isNotEmpty(this.cliSession.getToken())) {
+                if (sessionManager.hasSessionToken()) {
                     // FIXME it seems skipDuration is not longer used,
                     //  this should be either implemented or removed
                     if (skipDuration) {
@@ -137,7 +137,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
                         // Get the expiration of the token stored in the session file
 //                        String myClaims = StringUtils.split(CliSessionManager.getInstance().getToken(), ".")[1];
-                        String myClaims = StringUtils.split(this.cliSession.getToken(), ".")[1];
+                        String myClaims = StringUtils.split(sessionManager.getToken(), ".")[1];
                         String decodedClaimsString = new String(Base64.getDecoder().decode(myClaims), StandardCharsets.UTF_8);
                         ObjectMap claimsMap = new ObjectMapper().readValue(decodedClaimsString, ObjectMap.class);
 
@@ -152,10 +152,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 //                                    clientConfiguration);
 //                            openCGAClient.setUserId(CliSessionManager.getInstance().getUser());
                             openCGAClient = new OpenCGAClient(
-                                    new AuthenticationResponse(this.cliSession.getToken(), this.cliSession.getRefreshToken()),
+                                    new AuthenticationResponse(sessionManager.getToken(), sessionManager.getRefreshToken()),
                                     clientConfiguration);
-                            openCGAClient.setUserId(this.cliSession.getUser());
-
+                            openCGAClient.setUserId(sessionManager.getUser());
                             // Update token
                             if (clientConfiguration.getRest().isTokenAutoRefresh() && claimsMap.containsKey("exp")) {
                                 AuthenticationResponse refreshResponse = openCGAClient.refresh();
@@ -164,7 +163,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                             }
 
                             if (options.token == null) {
-                                options.token = this.cliSession.getToken();
+                                options.token = sessionManager.getToken();
                             }
                         } else {
                             logger.debug("Session has expired: {}", expirationDate);

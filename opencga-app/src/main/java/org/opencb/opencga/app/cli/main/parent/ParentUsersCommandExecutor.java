@@ -34,16 +34,19 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.opencb.commons.utils.PrintUtils.getKeyValueAsFormattedString;
+import static org.opencb.commons.utils.PrintUtils.println;
+
 public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor {
 
-    public static final String LOGIN_OK = "You have been logged in correctly.";
+    public static final String LOGIN_OK = "You have been logged in correctly: ";
     public static final String LOGIN_FAIL = "Not available login service now. Please contact the system administrator.";
     public static final String LOGOUT = "You've been logged out.";
     private final UsersCommandOptions usersCommandOptions;
 
-    public ParentUsersCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
+    public ParentUsersCommandExecutor(GeneralCliOptions.CommonCommandOptions options,
                                       UsersCommandOptions usersCommandOptions) throws CatalogAuthenticationException {
-        super(options, command);
+        super(options);
         this.usersCommandOptions = usersCommandOptions;
     }
 
@@ -75,11 +78,8 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
 
 //                    CliSessionManager.getInstance().initUserSession(response.getToken(), user, response.getRefreshToken(), studies, this);
                     this.sessionManager.saveCliSession(user, response.getToken(), response.getRefreshToken(), studies, this.host);
-                    Event event = new Event();
-                    event.setMessage(LOGIN_OK);
-                    event.setType(Event.Type.INFO);
-                    res.getEvents().add(event);
                     res.setType(QueryType.VOID);
+                    println(getKeyValueAsFormattedString(LOGIN_OK, user));
                 } else {
                     Event event = new Event();
                     event.setMessage(LOGIN_FAIL);

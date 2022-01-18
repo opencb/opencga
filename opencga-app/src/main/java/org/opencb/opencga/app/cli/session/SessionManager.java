@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -110,11 +111,11 @@ public class SessionManager {
 
     }
 
-    public CliSession updateSessionToken(String token) throws IOException {
-        return updateSessionToken(token, this.host);
+    public void updateSessionToken(String token) throws IOException {
+        updateSessionToken(token, this.host);
     }
 
-    public CliSession updateSessionToken(String token, String host) throws IOException {
+    public void updateSessionToken(String token, String host) throws IOException {
         // Get current Session and update token
         CliSession cliSession = getCliSession(host);
         cliSession.setToken(token);
@@ -122,7 +123,7 @@ public class SessionManager {
         // Save updated Session
         saveCliSession(cliSession);
 
-        return cliSession;
+
     }
 
     public void saveCliSession(String user, String token, String refreshToken, List<String> studies, String host)
@@ -167,6 +168,10 @@ public class SessionManager {
         saveCliSession(getCleanSession(getCurrentHost()));
     }
 
+
+    public boolean hasSessionToken() {
+        return !StringUtils.isEmpty(getToken()) && !SessionManager.NO_TOKEN.equals(getToken());
+    }
     //Wrapers de getters
 
     public String getHost() {

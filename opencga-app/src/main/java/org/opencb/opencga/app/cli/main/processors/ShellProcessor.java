@@ -7,7 +7,6 @@ import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
@@ -29,11 +28,11 @@ public class ShellProcessor extends AbstractProcessor {
         super();
     }
 
-    public boolean parseParams(String[] args) throws CatalogAuthenticationException {
+    public String[] parseParams(String[] args) throws CatalogAuthenticationException {
         CommandLineUtils.printDebug("Executing " + String.join(" ", args));
         if (ArrayUtils.contains(args, "--host")) {
             printDebug("To change host you must exit the shell and launch it again with the --host parameter.");
-            return false;
+            return null;
         }
 
         if (args.length == 1 && "exit".equals(args[0].trim())) {
@@ -43,20 +42,20 @@ public class ShellProcessor extends AbstractProcessor {
 
         if (args.length == 3 && "use".equals(args[0]) && "study".equals(args[1])) {
             setValidatedCurrentStudy(args[2], OpencgaMain.getShell());
-            return false;
+            return null;
         }
 
         //Is for scripting login method
         if (isNotHelpCommand(args)) {
-            if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1]) && ArrayUtils.contains(args, "--user-password")) {
+            if (ArrayUtils.contains(args, "--user-password")) {
                 char[] passwordArray =
                         console.readPassword(format("\nEnter your password: ", Color.GREEN));
                 args = ArrayUtils.addAll(args, "--password", new String(passwordArray));
-
+                return args;
             }
         }
 
-        return true;
+        return args;
     }
 
 
@@ -81,7 +80,7 @@ public class ShellProcessor extends AbstractProcessor {
 
 
     public void loadSessionStudies(OpencgaCommandExecutor commandExecutor) {
-        if (isValidToken(commandExecutor.getSessionManager().getToken())) {
+        if (commandExecutor.getSessionManager().hasSessionToken()) {
             CommandLineUtils.printDebug("Loading session studies using token: " + commandExecutor.getSessionManager().getToken());
             OpenCGAClient openCGAClient = commandExecutor.getOpenCGAClient();
             try {
@@ -118,9 +117,6 @@ public class ShellProcessor extends AbstractProcessor {
         }
     }
 
-    private boolean isValidToken(String token) {
-        return !StringUtils.isEmpty(token) && !SessionManager.NO_TOKEN.equals(token);
-    }
 
     public void setValidatedCurrentStudy(String arg, OpencgaCommandExecutor commandExecutor) {
         if (!StringUtils.isEmpty(commandExecutor.getSessionManager().getToken())) {

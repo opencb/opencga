@@ -16,7 +16,7 @@ public class CliProcessor extends AbstractProcessor {
         super();
     }
 
-    private static String[] getUserPasswordArgs(String[] args, String s) {
+    private static String[] normalizePasswordArgs(String[] args, String s) {
         for (int i = 0; i < args.length; i++) {
             if (s.equals(args[i])) {
                 args[i] = "--password";
@@ -27,15 +27,14 @@ public class CliProcessor extends AbstractProcessor {
     }
 
 
-    public boolean parseParams(String[] args) throws CatalogAuthenticationException {
+    public String[] parseParams(String[] args) throws CatalogAuthenticationException {
         CommandLineUtils.printDebug("Executing " + String.join(" ", args));
-        //login The first if clause is for scripting login method and the else clause is for the shell login
         if (isNotHelpCommand(args)) {
-            if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1]) && ArrayUtils.contains(args, "--user-password")) {
-                args = getUserPasswordArgs(args, "--user-password");
+            if (ArrayUtils.contains(args, "--user-password")) {
+                return normalizePasswordArgs(args, "--user-password");
             }
         }
-        return true;
+        return args;
     }
 
 

@@ -43,9 +43,9 @@ public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecuto
 
     private final StudiesCommandOptions studiesCommandOptions;
 
-    public ParentStudiesCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean command,
+    public ParentStudiesCommandExecutor(GeneralCliOptions.CommonCommandOptions options,
                                         StudiesCommandOptions studiesCommandOptions) throws CatalogAuthenticationException {
-        super(options, command);
+        super(options);
         this.studiesCommandOptions = studiesCommandOptions;
     }
 

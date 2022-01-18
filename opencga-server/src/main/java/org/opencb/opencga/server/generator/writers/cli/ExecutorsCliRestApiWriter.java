@@ -43,7 +43,6 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         CategoryConfig categoryConfig = availableCategoryConfigs.get(key);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         sb.append("package ").append(config.getOptions().getExecutorsPackage()).append(";\n\n");
-        sb.append("import org.opencb.opencga.app.cli.session.CliSessionManager;\n");
         sb.append("import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;\n");
         sb.append("import org.opencb.opencga.app.cli.main.*;\n");
         sb.append("import org.opencb.opencga.core.response.RestResponse;\n");
@@ -130,9 +129,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                 + "CommandOptions " + getAsVariableName(getAsCamelCase(restCategory.getName()))
                 + "CommandOptions) throws CatalogAuthenticationException {\n");
         if (config.isExecutorExtended()) {
-            sb.append("        super(" + getAsVariableName(getAsCamelCase(restCategory.getName())) + "CommandOptions.commonCommandOptions, "
-                    + "getParsedSubCommand(" + getAsVariableName(getAsCamelCase(restCategory.getName()))
-                    + "CommandOptions.jCommander).startsWith(\"log\")," + getAsVariableName(getAsCamelCase(restCategory.getName())) +
+            sb.append("        super(" + getAsVariableName(getAsCamelCase(restCategory.getName())) + "CommandOptions.commonCommandOptions," + getAsVariableName(getAsCamelCase(restCategory.getName())) +
                     "CommandOptions);\n");
         } else {
             sb.append("        super(" + getAsVariableName(getAsCamelCase(restCategory.getName())) + "CommandOptions.commonCommandOptions);\n");
