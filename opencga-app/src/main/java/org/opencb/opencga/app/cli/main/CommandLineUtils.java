@@ -1,7 +1,6 @@
 package org.opencb.opencga.app.cli.main;
 
 import org.opencb.commons.utils.PrintUtils;
-import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 
@@ -19,7 +18,7 @@ public class CommandLineUtils {
 
 
     public static void printError(String message, Exception e) {
-        if (CliSessionManager.isDebug() || forceDebug) {
+        if (OpencgaMain.isDebug() || forceDebug) {
             PrintUtils.printError(message, e);
         } else {
             PrintUtils.printError(message);
@@ -27,7 +26,7 @@ public class CommandLineUtils {
     }
 
     public static void printDebug(String s) {
-        if (CliSessionManager.isDebug() || forceDebug) {
+        if (OpencgaMain.isDebug() || forceDebug) {
             PrintUtils.printDebug(s);
         }
     }

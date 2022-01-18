@@ -18,11 +18,9 @@ package org.opencb.opencga.app.cli.main.parent;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.StudiesCommandOptions;
-import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.IOManager;
@@ -134,7 +132,7 @@ public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecuto
             return study;
         } else {
             // Third, check if there is only one single project and study for this user in the current CLI session file.
-            List<String> studies = CliSessionManager.getInstance().getStudies();
+            List<String> studies = sessionManager.getStudies();
             if (CollectionUtils.isNotEmpty(studies) && studies.size() == 1) {
                 study = studies.get(0);
             } else {

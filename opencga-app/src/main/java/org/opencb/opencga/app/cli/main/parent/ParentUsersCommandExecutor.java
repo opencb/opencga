@@ -22,7 +22,6 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
-import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.models.project.Project;
@@ -100,7 +99,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
             event.setMessage(e.getMessage());
             event.setType(Event.Type.ERROR);
             res.getEvents().add(event);
-            //    e.printStackTrace();
+            e.printStackTrace();
         }
         return res;
     }
@@ -108,20 +107,16 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
     protected RestResponse<AuthenticationResponse> logout() throws IOException {
         logger.debug("Logout");
         RestResponse<AuthenticationResponse> res = new RestResponse();
+        CommandLineUtils.printDebug("Logging out: " + LOGOUT);
         try {
-            openCGAClient.logout();
-            CliSessionManager.getInstance().logoutCliSessionFile(this);
+            sessionManager.logoutCliSessionFile();
             Event event = new Event();
             event.setMessage(LOGOUT);
-            event.setType(Event.Type.ERROR);
+            event.setType(Event.Type.INFO);
             res.getEvents().add(event);
             res.setType(QueryType.VOID);
         } catch (Exception e) {
-            Event event = new Event();
-            event.setMessage(e.getMessage());
-            event.setType(Event.Type.ERROR);
-            res.getEvents().add(event);
-            //    e.printStackTrace();
+            CommandLineUtils.printError("Logout fail", e);
         }
         return res;
     }

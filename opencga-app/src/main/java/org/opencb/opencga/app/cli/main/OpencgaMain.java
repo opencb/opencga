@@ -19,24 +19,27 @@ package org.opencb.opencga.app.cli.main;
 import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.processors.CliProcessor;
-import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by imedina on 27/05/16.
  */
 public class OpencgaMain {
 
+    public static Mode mode = Mode.CLI;
+    public static boolean debug = false;
+    public static OpencgaCliShellExecutor shell;
+
     public static void main(String[] args) {
         args = checkDebugMode(args);
         CommandLineUtils.printDebug(Arrays.toString(args));
         try {
-            CliSessionManager.getInstance().setShellMode(ArrayUtils.contains(args, "--shell"));
-            if (CliSessionManager.getInstance().isShellMode()) {
+            if (ArrayUtils.contains(args, "--shell")) {
+                setMode(Mode.SHELL);
+            }
+            if (Mode.SHELL.equals(getMode())) {
                 executeShell(args);
             } else {
                 executeCli(args);
@@ -49,11 +52,9 @@ public class OpencgaMain {
 
 
     private static String[] checkDebugMode(String[] args) {
-        CliSessionManager.getInstance().setDebug(ArrayUtils.contains(args, "--debug"));
-        if (CliSessionManager.getInstance().isDebug()) {
-            List<String> list = new ArrayList<>(Arrays.asList(args));
-            list.remove("--debug");
-            args = list.toArray(new String[list.size()]);
+        setDebug(ArrayUtils.contains(args, "--debug"));
+        if (isDebug()) {
+            args = ArrayUtils.remove(args, ArrayUtils.indexOf(args, "--debug"));
         }
         return args;
     }
@@ -74,12 +75,7 @@ public class OpencgaMain {
             if (ArrayUtils.contains(args, "--host")) {
                 options.host = args[ArrayUtils.indexOf(args, "--host") + 1];
             }
-            OpencgaCliShellExecutor shell = new OpencgaCliShellExecutor(options);
-            CliSessionManager.setShell(shell);
-            CliSessionManager.getInstance().initSession(shell);
-            if (CliSessionManager.getInstance().existsToken()) {
-                CliSessionManager.getInstance().loadSessionStudies(shell);
-            }
+            shell = new OpencgaCliShellExecutor(options);
             CommandLineUtils.printDebug("Shell created ");
             shell.execute();
         } catch (CatalogAuthenticationException e) {
@@ -89,5 +85,35 @@ public class OpencgaMain {
         }
     }
 
+    public static Mode getMode() {
+        return mode;
+    }
 
+    public static void setMode(Mode mode) {
+        OpencgaMain.mode = mode;
+    }
+
+    public static boolean isDebug() {
+        return debug;
+    }
+
+    public static void setDebug(boolean debug) {
+        OpencgaMain.debug = debug;
+    }
+
+    public static boolean isShellMode() {
+        return getMode().equals(Mode.SHELL);
+    }
+
+    public static OpencgaCliShellExecutor getShell() {
+        return shell;
+    }
+
+    public static void setShell(OpencgaCliShellExecutor shell) {
+        OpencgaMain.shell = shell;
+    }
+
+    public enum Mode {
+        SHELL, CLI
+    }
 }

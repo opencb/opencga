@@ -20,13 +20,13 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.opencb.commons.utils.FileUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,17 +35,16 @@ import java.util.List;
 
 public class SessionManager {
 
-    private ClientConfiguration clientConfiguration;
-    private String host;
-
+    public static final String NO_TOKEN = "NO_TOKEN";
+    private static final String NO_STUDY = "NO_STUDY";
+    private static final String ANONYMOUS = "anonymous";
+    public final String SESSION_FILENAME_SUFFIX = "_session.json";
+    private final ClientConfiguration clientConfiguration;
+    private final String host;
     private Path sessionFolder;
-
     private ObjectWriter objectWriter;
     private ObjectReader objectReader;
-
     private Logger logger;
-
-    public final String SESSION_FILENAME_SUFFIX = "_session.json";
 
     public SessionManager(ClientConfiguration clientConfiguration) throws ClientException {
         this(clientConfiguration, clientConfiguration.getCurrentHost().getName());
@@ -54,8 +53,16 @@ public class SessionManager {
     public SessionManager(ClientConfiguration clientConfiguration, String host) {
         this.clientConfiguration = clientConfiguration;
         this.host = host;
-
         this.init();
+    }
+
+    private CliSession getCleanSession(String host) {
+        CliSession clisession = new CliSession();
+        clisession.setCurrentStudy(NO_STUDY);
+        clisession.setToken(NO_TOKEN);
+        clisession.setUser(ANONYMOUS);
+        clisession.setCurrentHost(host);
+        return clisession;
     }
 
     private void init() {
@@ -93,9 +100,15 @@ public class SessionManager {
                 logger.debug("Could not parse the session file properly");
             }
         }
-        return null;
-    }
+        CliSession clisession = getCleanSession(host);
+        try {
+            saveCliSession(clisession);
+        } catch (IOException e) {
+            logger.debug("Could not create the session file properly");
+        }
+        return clisession;
 
+    }
 
     public CliSession updateSessionToken(String token) throws IOException {
         return updateSessionToken(token, this.host);
@@ -115,7 +128,19 @@ public class SessionManager {
     public void saveCliSession(String user, String token, String refreshToken, List<String> studies, String host)
             throws IOException {
         CliSession cliSession = new CliSession(host, user, token, refreshToken, studies);
+        cliSession.setCurrentHost(host);
+        if (!CollectionUtils.isEmpty(studies)) {
+            cliSession.setCurrentStudy(studies.get(0));
+        } else {
+            cliSession.setCurrentStudy(NO_STUDY);
+        }
         saveCliSession(cliSession, host);
+    }
+
+
+    public void saveCliSession()
+            throws IOException {
+        saveCliSession(getCliSession(), host);
     }
 
     public void saveCliSession(CliSession cliSession) throws IOException {
@@ -132,11 +157,57 @@ public class SessionManager {
         objectWriter.writeValue(sessionPath.toFile(), cliSession);
     }
 
-    protected void logoutCliSessionFile() throws IOException {
-        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME_SUFFIX);
+    public void logoutCliSessionFile() throws IOException {
+        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", host + SESSION_FILENAME_SUFFIX);
+        CommandLineUtils.printDebug("Logging out: " + sessionPath);
         if (Files.exists(sessionPath)) {
             Files.delete(sessionPath);
+            CommandLineUtils.printDebug("Deleted file session: " + sessionPath);
         }
+        saveCliSession(getCleanSession(getCurrentHost()));
+    }
+
+    //Wrapers de getters
+
+    public String getHost() {
+        return host;
+    }
+
+
+    public String getUser() {
+        return getCliSession().getUser();
+    }
+
+    public String getToken() {
+        return getCliSession().getToken();
+    }
+
+    public String getRefreshToken() {
+        return getCliSession().getRefreshToken();
+    }
+
+    public String getVersion() {
+        return getCliSession().getVersion();
+    }
+
+    public String getLogin() {
+        return getCliSession().getLogin();
+    }
+
+    public List<String> getStudies() {
+        return getCliSession().getStudies();
+    }
+
+    public long getTimestamp() {
+        return getCliSession().getTimestamp();
+    }
+
+    public String getCurrentStudy() {
+        return getCliSession().getCurrentStudy();
+    }
+
+    public String getCurrentHost() {
+        return getCliSession().getCurrentHost();
     }
 
 }

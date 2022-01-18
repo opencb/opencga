@@ -35,8 +35,9 @@ public abstract class AbstractProcessor {
 
     public void execute(String[] args) throws CatalogAuthenticationException {
         if (!isLoginCommand(args)) {
-            boolean processCommand = false;
+            boolean processCommand = true;
             if (ArrayUtils.contains(args, "logout")) {
+                CommandLineUtils.printDebug("Logging out... ");
                 args = normalizeCLIUsersArgs(args);
             } else {
                 processCommand = parseParams(args);
@@ -167,6 +168,7 @@ public abstract class AbstractProcessor {
             cliOptionsParser.parse(args);
             OpencgaCommandExecutor commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
             executeCommand(commandExecutor, cliOptionsParser);
+
             println(getKeyValueAsFormattedString("Logged user: ", user));
         } else {
             println(getKeyValueAsFormattedString("Invalid user name: ", user));

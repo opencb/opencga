@@ -17,8 +17,6 @@
 package org.opencb.opencga.app.cli.main;
 
 import org.jline.reader.Candidate;
-import org.opencb.opencga.app.cli.session.CliSessionManager;
-import org.opencb.opencga.client.config.HostConfig;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,9 +29,7 @@ public class OpenCgaCompleterImpl extends OpenCgaCompleter {
         List<Candidate> res = new ArrayList();
         if (line.trim().contains(" ") || candidatesMap.containsKey(line)) {
             String[] commandLine = line.split(" ");
-            if (commandLine.length == 2 && commandLine[0].equals("use") && commandLine[1].equals("host")) {
-                res = getHostCandidates();
-            } else if (commandLine.length == 2 && commandLine[0].equals("use") && commandLine[1].equals("study")) {
+            if (commandLine.length == 2 && commandLine[0].equals("use") && commandLine[1].equals("study")) {
                 res = getStudyCandidates();
             } else if (commandLine.length == 2) {
                 for (String candidate : candidatesMap.keySet()) {
@@ -50,17 +46,9 @@ public class OpenCgaCompleterImpl extends OpenCgaCompleter {
         return res;
     }
 
-    private List<Candidate> getHostCandidates() {
-        List<HostConfig> hostConfigs = CliSessionManager.getInstance().getShellClientConfiguration().getRest().getHosts();
-        List<Candidate> res = new ArrayList();
-        for (HostConfig hostConfig : hostConfigs) {
-            res.add(new Candidate(hostConfig.getName()));
-        }
-        return res;
-    }
 
     private List<Candidate> getStudyCandidates() {
-        List<String> studies = CliSessionManager.getInstance().getStudies();
+        List<String> studies = OpencgaMain.getShell().getSessionManager().getStudies();
         List<Candidate> res = new ArrayList();
         for (String study : studies) {
             res.add(new Candidate(study));

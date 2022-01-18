@@ -4,7 +4,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.io.IOException;
@@ -44,7 +43,7 @@ public class CliProcessor extends AbstractProcessor {
         if (commandExecutor != null) {
             try {
                 commandExecutor.execute();
-                CliSessionManager.getInstance().updateSession(commandExecutor);
+                commandExecutor.getSessionManager().saveCliSession();
             } catch (IOException e) {
                 CommandLineUtils.printError("Could not set the default study", e);
                 System.exit(1);

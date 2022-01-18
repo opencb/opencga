@@ -68,6 +68,10 @@ public abstract class CommandExecutor {
         init(options.logLevel, options.conf, loadClientConfiguration);
     }
 
+    public static String getParsedSubCommand(JCommander jCommander) {
+        return CliOptionsParser.getSubCommand(jCommander);
+    }
+
     protected void init(String logLevel, String conf, boolean loadClientConfiguration) {
         this.logLevel = logLevel;
         this.conf = conf;
@@ -149,10 +153,6 @@ public abstract class CommandExecutor {
     }
 
     public abstract void execute() throws Exception;
-
-    public static String getParsedSubCommand(JCommander jCommander) {
-        return CliOptionsParser.getSubCommand(jCommander);
-    }
 
     /**
      * This method attempts to load general configuration from CLI 'conf' parameter, if not exists then loads JAR configuration.yml.
@@ -265,6 +265,15 @@ public abstract class CommandExecutor {
 
     public CommandExecutor setClientConfiguration(ClientConfiguration clientConfiguration) {
         this.clientConfiguration = clientConfiguration;
+        return this;
+    }
+
+    public SessionManager getSessionManager() {
+        return sessionManager;
+    }
+
+    public CommandExecutor setSessionManager(SessionManager sessionManager) {
+        this.sessionManager = sessionManager;
         return this;
     }
 }
