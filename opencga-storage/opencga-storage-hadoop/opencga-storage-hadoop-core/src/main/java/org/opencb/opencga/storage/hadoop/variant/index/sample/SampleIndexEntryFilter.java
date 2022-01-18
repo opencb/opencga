@@ -1,11 +1,10 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
-import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.hadoop.variant.index.query.LocusQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 
 import java.util.Comparator;
-import java.util.List;
 
 public class SampleIndexEntryFilter extends AbstractSampleIndexEntryFilter<Variant> {
 
@@ -13,8 +12,8 @@ public class SampleIndexEntryFilter extends AbstractSampleIndexEntryFilter<Varia
         super(query);
     }
 
-    public SampleIndexEntryFilter(SingleSampleIndexQuery query, List<Region> regions) {
-        super(query, regions);
+    public SampleIndexEntryFilter(SingleSampleIndexQuery query, LocusQuery locusQuery) {
+        super(query, locusQuery);
     }
 
     @Override

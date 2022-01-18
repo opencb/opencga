@@ -4,7 +4,7 @@ These Dockerfiles contain:
  - **opencga-base** : A base image including the OpenCGA build output directory
  - **opencga-init** : An image to manipulate OpenCGA configuration files with overrides
  - **opencga-demo** : An standalone image with a complete opencga installation. Launch with --env load=true to preload test data.
- - **opencga-r**    : An image to run R based analysis
+ - **opencga-ext-tools** : An image to run external tools, such as samtoools, bwa, fastqc, R scripts,...
 
 # Build
 We have provided a python script to make it simple to work with the included Dockerfiles as part of a local development process or continous integration system.
@@ -35,7 +35,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --images IMAGES       comma separated list of images to be made, e.g.
-                        base,init,demo,r
+                        base,init,demo,ext-tools
   --tag TAG             the tag for this code, e.g. v2.0.0-hdp3.1
   --build-folder BUILD_FOLDER
                         the location of the build folder, if not default
