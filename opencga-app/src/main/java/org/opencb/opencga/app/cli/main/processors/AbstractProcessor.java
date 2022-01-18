@@ -32,23 +32,30 @@ public abstract class AbstractProcessor {
         return console;
     }
 
-    public void execute(String[] args) throws CatalogAuthenticationException {
-        args = checkShortCut(args);
-        if (ArrayUtils.contains(args, "logout")) {
-            CommandLineUtils.printDebug("Logging out... ");
-            args = normalizeCLIUsersArgs(args);
-        } else {
-            args = parseParams(args);
-        }
-        if (args != null) {
-            OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
-            cliOptionsParser.parse(args);
-            CommandLineUtils.printDebug("PARSED OPTIONS ::: " + ArrayUtils.toString(args));
-            if (cliOptionsParser.isHelp()) {
-                cliOptionsParser.printUsage();
+    public void execute(String[] args) {
+
+        OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
+        try {
+            args = checkShortCut(args);
+            if (ArrayUtils.contains(args, "logout")) {
+                CommandLineUtils.printDebug("Logging out... ");
+                args = normalizeCLIUsersArgs(args);
             } else {
-                process(cliOptionsParser);
+                args = parseParams(args);
             }
+            if (args != null) {
+
+                cliOptionsParser.parse(args);
+                CommandLineUtils.printDebug("PARSED OPTIONS ::: " + ArrayUtils.toString(args));
+                if (cliOptionsParser.isHelp()) {
+                    cliOptionsParser.printUsage();
+                } else {
+                    process(cliOptionsParser);
+                }
+            }
+        } catch (Exception e) {
+            printError(e.getMessage());
+            cliOptionsParser.printUsage();
         }
 
     }
@@ -182,11 +189,12 @@ public abstract class AbstractProcessor {
         if (ArrayUtils.contains(consoleArgs, "login")) {
             //adds in position 0 command "users"
             String[] args = normalizeCLIUsersArgs(consoleArgs);
+
             //case opencga.sh login OR [opencga][demo@project:study]<demo/>login
             if (consoleArgs.length == 1 && "login".equals(consoleArgs[0])) {
                 return forceLogin(args);
-
             }
+
             //CASES
             //case opencga.sh login --host ...... OR [opencga][demo@project:study]<demo/>login --host ......
             //case opencga.sh login user1 [.....] OR [opencga][demo@project:study]<demo/>login user1 [.....]

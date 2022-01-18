@@ -84,7 +84,9 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
                 }
                 line = line.trim();
                 if (!line.equals("")) {
+
                     processor.execute(line.split(" "));
+
                 }
                 // Construct the Command and args to pass to that command
             }
