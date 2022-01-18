@@ -74,7 +74,8 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                     }
                     // write CLI session file
 
-                    CliSessionManager.getInstance().initUserSession(response.getToken(), user, response.getRefreshToken(), studies, this);
+//                    CliSessionManager.getInstance().initUserSession(response.getToken(), user, response.getRefreshToken(), studies, this);
+                    this.sessionManager.saveCliSession(user, response.getToken(), response.getRefreshToken(), studies, this.host);
                     Event event = new Event();
                     event.setMessage(LOGIN_OK);
                     event.setType(Event.Type.INFO);

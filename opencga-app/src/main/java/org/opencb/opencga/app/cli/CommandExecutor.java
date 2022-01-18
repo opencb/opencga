@@ -21,7 +21,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.app.cli.session.CliSessionManager;
+import org.opencb.opencga.app.cli.session.CliSession;
+import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.config.Configuration;
@@ -51,6 +52,10 @@ public abstract class CommandExecutor {
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
     protected ClientConfiguration clientConfiguration;
+
+    protected String host;
+    protected CliSession cliSession;
+    protected SessionManager sessionManager;
 
     protected GeneralCliOptions.CommonCommandOptions options;
 
@@ -90,21 +95,35 @@ public abstract class CommandExecutor {
                 loadClientConfiguration();
             }
 
+            // Create the SessionManager and store current session
+            this.host = StringUtils.isNotEmpty(options.host)
+                    ? options.host
+                    : clientConfiguration.getCurrentHost().getName();
+            sessionManager = new SessionManager(clientConfiguration, this.host);
+            this.cliSession = sessionManager.getCliSession();
+
             // Do not change the order here, we can only configure logger after loading the configuration files,
             // this still relies on general configuration file.
             configureLogger();
 
             // Let's check the session file, maybe the session is still valid
-            privateLogger.debug("CLI session file is: {}", CliSessionManager.getInstance().getCurrentFile());
+//            privateLogger.debug("CLI session file is: {}", CliSessionManager.getInstance().getCurrentFile());
+            privateLogger.debug("CLI session file is: {}", this.sessionManager.getCliSessionPath(this.host).toString());
 
             if (StringUtils.isNotBlank(options.token)) {
                 this.token = options.token;
             } else {
-                this.token = CliSessionManager.getInstance().getToken();
-                this.userId = CliSessionManager.getInstance().getUser();
+//                this.token = CliSessionManager.getInstance().getToken();
+//                this.userId = CliSessionManager.getInstance().getUser();
+                if (cliSession != null) {
+                    this.token = cliSession.getToken();
+                    this.userId = cliSession.getUser();
+                }
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        } catch (ClientException e) {
+            e.printStackTrace();
         }
 
         // Update the timestamp every time one executed command finishes

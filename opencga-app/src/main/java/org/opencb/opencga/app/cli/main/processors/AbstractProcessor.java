@@ -6,13 +6,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.executors.*;
-import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.io.Console;
-import java.io.IOException;
+import java.util.Arrays;
 
 import static org.opencb.commons.utils.PrintUtils.*;
 
@@ -23,7 +21,7 @@ public abstract class AbstractProcessor {
 
     protected AbstractProcessor() {
         this.console = getConsole();
-        CliSessionManager.initSession();
+//        CliSessionManager.initSession();
     }
 
     abstract boolean parseParams(String[] args) throws CatalogAuthenticationException;
@@ -142,11 +140,11 @@ public abstract class AbstractProcessor {
             cliOptionsParser.printUsage();
         } catch (CatalogAuthenticationException e) {
             printWarn("\n" + e.getMessage());
-            try {
-                CliSessionManager.getInstance().logoutCliSessionFile(commandExecutor);
-            } catch (IOException | ClientException ex) {
-                CommandLineUtils.printError("Failed to save OpenCGA CLI session", ex);
-            }
+//            try {
+//                CliSessionManager.getInstance().logoutCliSessionFile(commandExecutor);
+//            } catch (IOException | ClientException ex) {
+//                CommandLineUtils.printError("Failed to save OpenCGA CLI session", ex);
+//            }
         }
     }
 
@@ -164,6 +162,7 @@ public abstract class AbstractProcessor {
             args = ArrayUtils.addAll(args, "-u", user);
             args = ArrayUtils.addAll(args, "--password", new String(passwordArray));
             CommandLineUtils.printDebug(ArrayUtils.toString(args));
+            System.out.println("args = " + Arrays.toString(args));
             OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
             cliOptionsParser.parse(args);
             OpencgaCommandExecutor commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());

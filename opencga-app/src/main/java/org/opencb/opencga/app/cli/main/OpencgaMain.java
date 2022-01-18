@@ -43,6 +43,7 @@ public class OpencgaMain {
             }
         } catch (Exception e) {
             CommandLineUtils.printError("Failed to initialize OpenCGA CLI " + e.getMessage(), e);
+            e.printStackTrace();
         }
     }
 

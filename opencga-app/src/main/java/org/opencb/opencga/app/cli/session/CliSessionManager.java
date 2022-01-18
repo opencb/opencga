@@ -17,6 +17,8 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -40,8 +42,9 @@ public class CliSessionManager {
     private static OpencgaCliShellExecutor shell;
     private static CliSession session;
 
-    private CliSessionManager() {
+    private static final Logger logger = LoggerFactory.getLogger(CliSessionManager.class);
 
+    private CliSessionManager() {
     }
 
     public static CliSessionManager getInstance() {
@@ -89,8 +92,8 @@ public class CliSessionManager {
             return "";
         }
         Map<String, Long> mapa = new HashMap<>();
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(sessionDir)) {
-            for (Path path : stream) {
+        try (DirectoryStream<Path> paths = Files.newDirectoryStream(sessionDir)) {
+            for (Path path : paths) {
                 if (!Files.isDirectory(path)) {
                     if (path.endsWith(SESSION_FILE_SUFFIX)) {
                         CliSession cli = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -102,10 +105,13 @@ public class CliSessionManager {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        logger.debug(mapa.toString());
+
         String res = "";
-        Long max = new Long(0);
-        for (Map.Entry entry : mapa.entrySet()) {
-            if (((Long) entry.getValue()) > max) {
+        Long max = 0L;
+        for (Map.Entry<String, Long> entry : mapa.entrySet()) {
+            if (entry.getValue() > max) {
                 res = String.valueOf(entry.getKey());
             }
         }
@@ -124,7 +130,7 @@ public class CliSessionManager {
         Path sessionPath = sessionDirectory.resolve(host + SESSION_FILE_SUFFIX);
         CommandLineUtils.printDebug("Loading " + sessionPath);
         // Check if .opencga folder exists
-
+        System.out.println("sessionPath = " + sessionPath);
         if (!Files.exists(sessionPath)) {
             try {
                 Files.createFile(sessionPath);
@@ -377,6 +383,7 @@ public class CliSessionManager {
         if (!Files.exists(sessionPath)) {
             Files.createDirectory(sessionPath);
         }
+        logger.debug("Save session: {}", host);
         sessionPath = sessionPath.resolve(host + SESSION_FILE_SUFFIX);
 
         // we remove the part where the token signature is to avoid key verification

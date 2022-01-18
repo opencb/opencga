@@ -23,32 +23,53 @@ import java.util.List;
  */
 public class CliSession {
 
-    private long timestamp;
     private String host;
-    private String version;
     private String user;
     private String token;
     private String refreshToken;
+    private String version;
     private String login;
     private List<String> studies;
+    private long timestamp;
     private String currentStudy;
     private String currentHost;
 
     public CliSession() {
+    }
 
+    public CliSession(String host, String user, String token, String refreshToken, List<String> studies) {
+        this.host = host;
+        this.user = user;
+        this.token = token;
+        this.refreshToken = refreshToken;
+        this.studies = studies;
+    }
+
+    public CliSession(String host, String user, String token, String refreshToken, String version, String login,
+                      List<String> studies, long timestamp, String currentStudy, String currentHost) {
+        this.host = host;
+        this.user = user;
+        this.token = token;
+        this.refreshToken = refreshToken;
+        this.version = version;
+        this.login = login;
+        this.studies = studies;
+        this.timestamp = timestamp;
+        this.currentStudy = currentStudy;
+        this.currentHost = currentHost;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CliSession{");
-        sb.append("timestamp=").append(timestamp);
-        sb.append(", host='").append(host).append('\'');
-        sb.append(", version='").append(version).append('\'');
+        sb.append("host='").append(host).append('\'');
         sb.append(", user='").append(user).append('\'');
         sb.append(", token='").append(token).append('\'');
         sb.append(", refreshToken='").append(refreshToken).append('\'');
+        sb.append(", version='").append(version).append('\'');
         sb.append(", login='").append(login).append('\'');
         sb.append(", studies=").append(studies);
+        sb.append(", timestamp=").append(timestamp);
         sb.append(", currentStudy='").append(currentStudy).append('\'');
         sb.append(", currentHost='").append(currentHost).append('\'');
         sb.append('}');
@@ -61,15 +82,6 @@ public class CliSession {
 
     public CliSession setHost(String host) {
         this.host = host;
-        return this;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public CliSession setVersion(String version) {
-        this.version = version;
         return this;
     }
 
@@ -100,6 +112,15 @@ public class CliSession {
         return this;
     }
 
+    public String getVersion() {
+        return version;
+    }
+
+    public CliSession setVersion(String version) {
+        this.version = version;
+        return this;
+    }
+
     public String getLogin() {
         return login;
     }
@@ -113,8 +134,18 @@ public class CliSession {
         return studies;
     }
 
-    public void setStudies(List<String> studies) {
+    public CliSession setStudies(List<String> studies) {
         this.studies = studies;
+        return this;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public CliSession setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+        return this;
     }
 
     public String getCurrentStudy() {
@@ -134,15 +165,4 @@ public class CliSession {
         this.currentHost = currentHost;
         return this;
     }
-
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    public CliSession setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
-        return this;
-    }
-
-    
 }

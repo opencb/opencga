@@ -19,12 +19,10 @@ package org.opencb.opencga.app.cli.main.executors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.io.*;
-import org.opencb.opencga.app.cli.session.CliSessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
@@ -76,7 +74,8 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) throws CatalogAuthenticationException {
         try {
             logger.debug("init OpencgaCommandExecutor ");
-            CommandLineUtils.printDebug("TOKEN::::: " + CliSessionManager.getInstance().getToken());
+//            CommandLineUtils.printDebug("TOKEN::::: " + CliSessionManager.getInstance().getToken());
+//            CommandLineUtils.printDebug("TOKEN::::: " + this.cliSession.getToken());
             if (options.host != null) {
                 CommandLineUtils.printDebug("Switching host to ::::: " + options.host);
                 clientConfiguration.setDefaultIndexByName(options.host);
@@ -106,34 +105,39 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                     break;
             }
 
-            CommandLineUtils.printDebug("CurrentFile::::: " + CliSessionManager.getInstance().getCurrentFile());
-            logger.debug("sessionFile = " + CliSessionManager.getInstance().getCurrentFile());
+//            CommandLineUtils.printDebug("CurrentFile::::: " + CliSessionManager.getInstance().getCurrentFile());
+            CommandLineUtils.printDebug("CurrentFile::::: "
+                    + this.sessionManager.getCliSessionPath(this.host).toString());
+            logger.debug("sessionFile = " + this.sessionManager.getCliSessionPath(this.host).toString());
             if (StringUtils.isNotEmpty(options.token)) {
                 // Ignore session file. Overwrite with command line information (just sessionId)
                 logger.debug("A token has been provided");
-                CliSessionManager.getInstance().updateSessionToken(options.token, this);
+//                CliSessionManager.getInstance().updateSessionToken(options.token, this);
+                this.cliSession = this.sessionManager.updateSessionToken(options.token, this.host);
                 token = options.token;
                 userId = null;
                 openCGAClient = new OpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration);
             } else {
-                if (StringUtils.isNotEmpty(CliSessionManager.getInstance().getToken())) {
+//                if (StringUtils.isNotEmpty(CliSessionManager.getInstance().getToken())) {
+                if (this.cliSession != null && StringUtils.isNotEmpty(this.cliSession.getToken())) {
                     // FIXME it seems skipDuration is not longer used,
                     //  this should be either implemented or removed
                     if (skipDuration) {
                         logger.debug("Skip duration set to {}, THIS MUST BE REMOVED", skipDuration);
-                        openCGAClient = new OpenCGAClient(
-                                new AuthenticationResponse(CliSessionManager.getInstance().getToken()
-                                        , CliSessionManager.getInstance().getRefreshToken())
-                                , clientConfiguration);
-                        openCGAClient.setUserId(CliSessionManager.getInstance().getUser());
-                        if (options.token == null) {
-                            options.token = CliSessionManager.getInstance().getToken();
-                        }
+//                        openCGAClient = new OpenCGAClient(
+//                                new AuthenticationResponse(CliSessionManager.getInstance().getToken()
+//                                        , CliSessionManager.getInstance().getRefreshToken())
+//                                , clientConfiguration);
+//                        openCGAClient.setUserId(CliSessionManager.getInstance().getUser());
+//                        if (options.token == null) {
+//                            options.token = CliSessionManager.getInstance().getToken();
+//                        }
                     } else {
                         logger.debug("Skip duration set to {}", skipDuration);
 
                         // Get the expiration of the token stored in the session file
-                        String myClaims = StringUtils.split(CliSessionManager.getInstance().getToken(), ".")[1];
+//                        String myClaims = StringUtils.split(CliSessionManager.getInstance().getToken(), ".")[1];
+                        String myClaims = StringUtils.split(this.cliSession.getToken(), ".")[1];
                         String decodedClaimsString = new String(Base64.getDecoder().decode(myClaims), StandardCharsets.UTF_8);
                         ObjectMap claimsMap = new ObjectMapper().readValue(decodedClaimsString, ObjectMap.class);
 
@@ -142,11 +146,15 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         // Check if session has expired
                         if (currentDate.before(expirationDate) || !claimsMap.containsKey("exp")) {
                             logger.debug("Session expiration is fine, valid until: {}", expirationDate);
+//                            openCGAClient = new OpenCGAClient(
+//                                    new AuthenticationResponse(CliSessionManager.getInstance().getToken(),
+//                                            CliSessionManager.getInstance().getRefreshToken()),
+//                                    clientConfiguration);
+//                            openCGAClient.setUserId(CliSessionManager.getInstance().getUser());
                             openCGAClient = new OpenCGAClient(
-                                    new AuthenticationResponse(CliSessionManager.getInstance().getToken(),
-                                            CliSessionManager.getInstance().getRefreshToken()),
+                                    new AuthenticationResponse(this.cliSession.getToken(), this.cliSession.getRefreshToken()),
                                     clientConfiguration);
-                            openCGAClient.setUserId(CliSessionManager.getInstance().getUser());
+                            openCGAClient.setUserId(this.cliSession.getUser());
 
                             // Update token
                             if (clientConfiguration.getRest().isTokenAutoRefresh() && claimsMap.containsKey("exp")) {
@@ -156,17 +164,17 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                             }
 
                             if (options.token == null) {
-                                options.token = CliSessionManager.getInstance().getToken();
+                                options.token = this.cliSession.getToken();
                             }
                         } else {
                             logger.debug("Session has expired: {}", expirationDate);
-                            if (CliSessionManager.getInstance().isShellMode()) {
-                                throw new CatalogAuthenticationException("Your session has expired. Please, either login again.");
-                            } else {
-                                PrintUtils.printError("Your session has expired. "
-                                        + "Please, either login again or logout to work as anonymous.");
-                                System.exit(1);
-                            }
+//                            if (CliSessionManager.getInstance().isShellMode()) {
+//                                throw new CatalogAuthenticationException("Your session has expired. Please, either login again.");
+//                            } else {
+//                                PrintUtils.printError("Your session has expired. "
+//                                        + "Please, either login again or logout to work as anonymous.");
+//                                System.exit(1);
+//                            }
                         }
                     }
                 } else {
