@@ -20,7 +20,7 @@ public class FileInternalVariantIndex {
     }
 
     public static FileInternalVariantIndex init() {
-        return new FileInternalVariantIndex(VariantIndexStatus.init(), -1, Transform.init());
+        return new FileInternalVariantIndex(VariantIndexStatus.init(), -1, null);
     }
 
     @Override

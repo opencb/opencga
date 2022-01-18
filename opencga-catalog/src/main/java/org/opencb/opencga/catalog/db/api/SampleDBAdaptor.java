@@ -127,7 +127,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         INTERNAL_RGA_STATUS("internal.rga.status", TEXT, ""),
         INTERNAL_VARIANT("internal.variant", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_INDEX("internal.variant.index", TEXT_ARRAY, ""),
-        INTERNAL_VARIANT_GENOTYPE_INDEX("internal.variant.genotypeIndex", TEXT_ARRAY, ""),
+        INTERNAL_VARIANT_GENOTYPE_INDEX("internal.variant.sampleGenotypeIndex", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_ANNOTATION_INDEX("internal.variant.annotationIndex", TEXT_ARRAY, ""),
         INTERNAL_VARIANT_SECONDARY_INDEX("internal.variant.secondaryIndex", TEXT_ARRAY, ""),
         RELEASE("release", INTEGER, ""), //  Release where the sample was created

@@ -1,22 +1,22 @@
 package org.opencb.opencga.core.models.file;
 
-import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.common.IndexStatus;
 
 import java.util.Objects;
 
 public class FileInternalVariantAnnotationIndex {
 
-    private InternalStatus status;
+    private IndexStatus status;
 
     public FileInternalVariantAnnotationIndex() {
     }
 
-    public FileInternalVariantAnnotationIndex(InternalStatus status) {
+    public FileInternalVariantAnnotationIndex(IndexStatus status) {
         this.status = status;
     }
 
     public static FileInternalVariantAnnotationIndex init() {
-        return new FileInternalVariantAnnotationIndex(null);
+        return new FileInternalVariantAnnotationIndex(new IndexStatus());
     }
 
     @Override
@@ -27,11 +27,11 @@ public class FileInternalVariantAnnotationIndex {
         return sb.toString();
     }
 
-    public InternalStatus getStatus() {
+    public IndexStatus getStatus() {
         return status;
     }
 
-    public FileInternalVariantAnnotationIndex setStatus(InternalStatus status) {
+    public FileInternalVariantAnnotationIndex setStatus(IndexStatus status) {
         this.status = status;
         return this;
     }

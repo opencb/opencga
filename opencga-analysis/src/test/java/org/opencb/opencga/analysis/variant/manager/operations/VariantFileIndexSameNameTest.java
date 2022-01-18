@@ -29,7 +29,6 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline
 
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
