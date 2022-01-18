@@ -494,7 +494,8 @@ public class VariantSearchManager {
             CellBaseDataResponse<Gene> geneCellBaseDataResponse = cellBaseClient.getGeneClient().get(ensemblGeneIds, QueryOptions.empty());
             ensemblGeneIdToGeneName = new HashMap<>();
             for (Gene gene: geneCellBaseDataResponse.allResults()) {
-                ensemblGeneIdToGeneName.put(gene.getId(), gene.getName());
+                String name = StringUtils.isEmpty(gene.getName()) ? gene.getId() : gene.getName();
+                ensemblGeneIdToGeneName.put(gene.getId(), name);
             }
         }
 

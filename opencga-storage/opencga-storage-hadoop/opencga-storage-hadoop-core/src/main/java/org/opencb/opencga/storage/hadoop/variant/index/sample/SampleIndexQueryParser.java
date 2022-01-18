@@ -4,6 +4,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
@@ -28,6 +29,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.core.filters.NoOpIndexFie
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 import org.opencb.opencga.storage.hadoop.variant.index.query.*;
+import org.opencb.opencga.storage.hadoop.variant.index.query.LocusQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +41,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser.DEFAULT_LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
 
 /**
  * Created by jacobo on 06/01/19.
@@ -60,8 +63,8 @@ public class SampleIndexQueryParser {
      */
     public static boolean validSampleIndexQuery(Query query) {
         ParsedVariantQuery.VariantQueryXref xref = VariantQueryParser.parseXrefs(query);
-        if (!xref.getIds().isEmpty() || !xref.getVariants().isEmpty() || !xref.getOtherXrefs().isEmpty()) {
-            // Can not be used for specific variant IDs. Only regions and genes
+        if (!xref.getIds().isEmpty() || !xref.getOtherXrefs().isEmpty()) {
+            // Can not be used for specific variant xrefs. Only variant, regions and genes
             return false;
         }
 
@@ -126,8 +129,6 @@ public class SampleIndexQueryParser {
      * @see SampleIndexQueryParser#validSampleIndexQuery(Query)
      */
     public SampleIndexQuery parse(Query query) {
-        // TODO: Accept variant IDs?
-
         // Extract study
         StudyMetadata defaultStudy = VariantQueryParser.getDefaultStudy(query, metadataManager);
 
@@ -439,7 +440,8 @@ public class SampleIndexQueryParser {
                 query.remove(GENE.key());
             }
         }
-        List<List<Region>> regionGroups = groupRegions(regions);
+
+        Collection<LocusQuery> regionGroups = buildLocusQueries(regions, VariantQueryParser.parseXrefs(query).getVariants());
 
         return new SampleIndexQuery(schema, regionGroups, variantTypes, study, samplesMap, multiFileSamples, negatedSamples,
                 fatherFilterMap, motherFilterMap,
@@ -453,40 +455,50 @@ public class SampleIndexQueryParser {
      * Each group will be translated to a SCAN.
      *
      * @param regions List of regions to group
-     * @return Grouped regions
+     * @param variants List of variants to group
+     * @return Locus Queries
      */
-    public static List<List<Region>> groupRegions(List<Region> regions) {
+    public static Collection<LocusQuery> buildLocusQueries(List<Region> regions, List<Variant> variants) {
         regions = mergeRegions(regions);
-        List<List<Region>> regionGroups = new ArrayList<>(regions
-                .stream()
-                .collect(Collectors.groupingBy(r -> r.getChromosome() + "_" + SampleIndexSchema.getChunkStart(r.getStart())))
-                .values());
+        Map<Region, LocusQuery> groupsMap = new HashMap<>();
+        for (Region region : regions) {
+            Region chunkRegion = SampleIndexSchema.getChunkRegion(region);
+            groupsMap.computeIfAbsent(chunkRegion, LocusQuery::new).getRegions().add(region);
+        }
+        for (Variant variant : variants) {
+            Region chunkRegion = SampleIndexSchema.getChunkRegion(variant);
+            groupsMap.computeIfAbsent(chunkRegion, LocusQuery::new).getVariants().add(variant);
+        }
 
-        if (!regionGroups.isEmpty()) {
-            regionGroups.forEach(l -> l.sort(REGION_COMPARATOR));
-            regionGroups.sort(Comparator.comparing(l -> l.get(0), REGION_COMPARATOR));
+        List<LocusQuery> locusQueries = new ArrayList<>(groupsMap.values());
+
+        if (!locusQueries.isEmpty()) {
+            locusQueries.forEach(rg -> rg.getRegions().sort(REGION_COMPARATOR));
+            locusQueries.forEach(rg -> rg.getVariants().sort(INTRA_CHROMOSOME_VARIANT_COMPARATOR));
+            locusQueries.sort(Comparator.comparing(LocusQuery::getChunkRegion, REGION_COMPARATOR));
 
             //Merge consecutive groups
-            Iterator<List<Region>> iterator = regionGroups.iterator();
-            List<Region> prevGroup = iterator.next();
+            Iterator<LocusQuery> iterator = locusQueries.iterator();
+            LocusQuery prevQuery = iterator.next();
             while (iterator.hasNext()) {
-                List<Region> group = iterator.next();
-                Region prevRegion = prevGroup.get(prevGroup.size() - 1);
-                Region region = group.get(0);
+                LocusQuery query = iterator.next();
+                Region prevRegion = prevQuery.getChunkRegion();
+                Region region = query.getChunkRegion();
                 // Merge if the distance between groups is less than 1 batch size
                 // TODO: This rule could be changed to reduce the number of small queries, even if more data is fetched.
                 if (region.getChromosome().equals(prevRegion.getChromosome())
-                        && Math.abs(region.getStart() - prevRegion.getEnd()) < SampleIndexSchema.BATCH_SIZE) {
+                        && (region.getStart() - prevRegion.getEnd()) < SampleIndexSchema.BATCH_SIZE) {
                     // Merge groups
-                    prevGroup.addAll(group);
+                    prevQuery.merge(query);
                     iterator.remove();
                 } else {
-                    prevGroup = group;
+                    prevQuery = query;
                 }
             }
         }
-        return regionGroups;
+        return locusQueries;
     }
+
 
     protected static boolean hasNegatedGenotypeFilter(QueryOperation queryOperation, List<String> gts) {
         boolean anyNegated = false;
@@ -1073,8 +1085,8 @@ public class SampleIndexQueryParser {
 
         Boolean intergenic = null;
 
+        ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
         if (!isValidParam(query, REGION)) {
-            ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
             if (!variantQueryXref.getGenes().isEmpty()
                     && variantQueryXref.getIds().isEmpty()
                     && variantQueryXref.getOtherXrefs().isEmpty()

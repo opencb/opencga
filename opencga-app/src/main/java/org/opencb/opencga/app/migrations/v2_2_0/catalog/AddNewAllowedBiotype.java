@@ -20,6 +20,7 @@ import static com.mongodb.client.model.Filters.eq;
         description = "Add new allowed biotype 'guide_RNA', #1856", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
+        patch = 2,
         date = 20211209)
 public class AddNewAllowedBiotype extends MigrationTool {
 
@@ -38,6 +39,10 @@ public class AddNewAllowedBiotype extends MigrationTool {
                                     List<String> allowedKeys = new ArrayList<>(variable.getAllowedKeys());
                                     if (!allowedKeys.contains("guide_RNA")) {
                                         allowedKeys.add("guide_RNA");
+                                        variable.setAllowedKeys(allowedKeys);
+                                    }
+                                    if (!allowedKeys.contains("vault_RNA")) {
+                                        allowedKeys.add("vault_RNA");
                                         variable.setAllowedKeys(allowedKeys);
                                     }
                                 }

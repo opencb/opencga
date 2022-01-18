@@ -23,16 +23,6 @@ public class FastqcWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
-    public String getDockerImageName() {
-        return "dceoy/fastqc";
-    }
-
-    @Override
-    public String getDockerImageVersion() {
-        return "";
-    }
-
-    @Override
     protected void run() throws Exception {
         StringBuilder sb = initCommandLine();
 
@@ -42,7 +32,7 @@ public class FastqcWrapperAnalysisExecutor extends DockerWrapperAnalysisExecutor
         Map<String, String> mountMap = appendMounts(inputFilenames, sb);
 
         // Append docker image, version and command
-        appendCommand("", sb);
+        appendCommand("fastqc", sb);
 
         // Append input file params
         appendInputFiles(inputFilenames, mountMap, sb);

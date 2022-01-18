@@ -45,7 +45,7 @@ solr:
 
     image:
       repository: "library/solr" # TODO: Value not supported yet
-      tag: 8.7.0
+      tag: 8.8.2
       imagePullSecret: ""
 
     javaMem: "-Xms1g -Xmx3g"
