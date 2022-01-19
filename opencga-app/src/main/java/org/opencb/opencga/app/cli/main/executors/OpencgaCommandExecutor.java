@@ -28,6 +28,8 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -46,6 +48,8 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     protected OpenCGAClient openCGAClient;
     protected AbstractOutputWriter writer;
+
+    private Logger privateLogger;
 
     public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
         this(options, false);
@@ -73,19 +77,19 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) throws CatalogAuthenticationException {
         try {
-            logger.debug("init OpencgaCommandExecutor ");
-//            CommandLineUtils.printDebug("TOKEN::::: " + CliSessionManager.getInstance().getToken());
-//            CommandLineUtils.printDebug("TOKEN::::: " + this.cliSession.getToken());
-            if (options.host != null) {
-                CommandLineUtils.printDebug("Switching host to ::::: " + options.host);
-                clientConfiguration.setDefaultIndexByName(options.host);
-                CommandLineUtils.printDebug("Switched default index to ::::: " + clientConfiguration.getRest().getDefaultHostIndex());
-            }
+            privateLogger = LoggerFactory.getLogger(OpencgaCommandExecutor.class);
+            privateLogger.debug("Executing OpencgaCommandExecutor 'init' method ...");
+
+//            if (options.host != null) {
+//                CommandLineUtils.printDebug("Switching host to ::::: " + options.host);
+//                clientConfiguration.setDefaultIndexByName(options.host);
+//                CommandLineUtils.printDebug("Switched default index to ::::: " + clientConfiguration.getRest().getDefaultHostIndex());
+//            }
+
             // Configure CLI output writer
             WriterConfiguration writerConfiguration = new WriterConfiguration();
             writerConfiguration.setMetadata(options.metadata);
             writerConfiguration.setHeader(!options.noHeader);
-
             switch (options.outputFormat.toLowerCase()) {
                 case "json_pretty":
                     writerConfiguration.setPretty(true);
@@ -105,17 +109,15 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                     break;
             }
 
-//            CommandLineUtils.printDebug("CurrentFile::::: " + CliSessionManager.getInstance().getCurrentFile());
             CommandLineUtils.printDebug("CurrentFile::::: "
                     + this.sessionManager.getCliSessionPath(this.host).toString());
-            logger.debug("sessionFile = " + this.sessionManager.getCliSessionPath(this.host).toString());
+            privateLogger.debug("sessionFile = " + this.sessionManager.getCliSessionPath(this.host).toString());
             if (StringUtils.isNotEmpty(options.token)) {
                 // Ignore session file. Overwrite with command line information (just sessionId)
-                logger.debug("A token has been provided");
-//                CliSessionManager.getInstance().updateSessionToken(options.token, this);
-                this.sessionManager.updateSessionToken(options.token, this.host);
-                token = options.token;
+                privateLogger.debug("A new token has been provided, updating session");
                 userId = null;
+                token = options.token;
+                sessionManager.updateSessionToken(token, host);
                 openCGAClient = new OpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration);
             } else {
 //                if (StringUtils.isNotEmpty(CliSessionManager.getInstance().getToken())) {
@@ -123,7 +125,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                     // FIXME it seems skipDuration is not longer used,
                     //  this should be either implemented or removed
                     if (skipDuration) {
-                        logger.debug("Skip duration set to {}, THIS MUST BE REMOVED", skipDuration);
+                        privateLogger.debug("Skip duration set to {}, THIS MUST BE REMOVED", skipDuration);
 //                        openCGAClient = new OpenCGAClient(
 //                                new AuthenticationResponse(CliSessionManager.getInstance().getToken()
 //                                        , CliSessionManager.getInstance().getRefreshToken())
@@ -133,7 +135,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 //                            options.token = CliSessionManager.getInstance().getToken();
 //                        }
                     } else {
-                        logger.debug("Skip duration set to {}", skipDuration);
+                        privateLogger.debug("Skip duration set to {}", skipDuration);
 
                         // Get the expiration of the token stored in the session file
 //                        String myClaims = StringUtils.split(CliSessionManager.getInstance().getToken(), ".")[1];
@@ -145,7 +147,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         Date currentDate = new Date();
                         // Check if session has expired
                         if (currentDate.before(expirationDate) || !claimsMap.containsKey("exp")) {
-                            logger.debug("Session expiration is fine, valid until: {}", expirationDate);
+                            privateLogger.debug("Session expiration is fine, valid until: {}", expirationDate);
 //                            openCGAClient = new OpenCGAClient(
 //                                    new AuthenticationResponse(CliSessionManager.getInstance().getToken(),
 //                                            CliSessionManager.getInstance().getRefreshToken()),
@@ -166,7 +168,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                                 options.token = sessionManager.getToken();
                             }
                         } else {
-                            logger.debug("Session has expired: {}", expirationDate);
+                            privateLogger.debug("Session has expired: {}", expirationDate);
 //                            if (CliSessionManager.getInstance().isShellMode()) {
 //                                throw new CatalogAuthenticationException("Your session has expired. Please, either login again.");
 //                            } else {
@@ -177,7 +179,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         }
                     }
                 } else {
-                    logger.debug("Session already closed");
+                    privateLogger.debug("Session already closed");
                     openCGAClient = new OpenCGAClient(clientConfiguration);
                 }
             }
@@ -190,7 +192,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         if (writer != null && queryResponse != null) {
             writer.print(queryResponse);
         } else {
-            logger.error("Null object found: writer set to '{}' and queryResponse set to '{}'", writer, queryResponse);
+            privateLogger.error("Null object found: writer set to '{}' and queryResponse set to '{}'", writer, queryResponse);
         }
     }
 
