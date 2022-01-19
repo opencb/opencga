@@ -92,7 +92,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                 if (StringUtils.isNotEmpty(sessionId)) {
                     errorMsg += "Active token detected ";
                 }
-                CommandLineUtils.printError(errorMsg, new Exception());
+                CommandLineUtils.printLog(errorMsg, new Exception());
             }
         } catch (Exception e) {
             Event event = new Event();
@@ -107,7 +107,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
     protected RestResponse<AuthenticationResponse> logout() throws IOException {
         logger.debug("Logout");
         RestResponse<AuthenticationResponse> res = new RestResponse();
-        CommandLineUtils.printDebug("Logging out: " + LOGOUT);
+        CommandLineUtils.printLog("Logging out: " + LOGOUT);
         try {
             sessionManager.logoutCliSessionFile();
             Event event = new Event();
@@ -116,7 +116,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
             res.getEvents().add(event);
             res.setType(QueryType.VOID);
         } catch (Exception e) {
-            CommandLineUtils.printError("Logout fail", e);
+            CommandLineUtils.printLog("Logout fail", e);
         }
         return res;
     }

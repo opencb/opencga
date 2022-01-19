@@ -22,19 +22,21 @@ import org.opencb.opencga.app.cli.main.processors.CliProcessor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.Arrays;
+import java.util.Locale;
 
 /**
  * Created by imedina on 27/05/16.
  */
 public class OpencgaMain {
 
+    public static final String[] logLevels = {"info", "debug", "warn", "error"};
     public static Mode mode = Mode.CLI;
-    public static boolean debug = false;
     public static OpencgaCliShellExecutor shell;
+    public static String logLevel = "info";
 
     public static void main(String[] args) {
         args = checkDebugMode(args);
-        CommandLineUtils.printDebug(Arrays.toString(args));
+        CommandLineUtils.printLog(Arrays.toString(args));
         try {
             if (ArrayUtils.contains(args, "--shell")) {
                 setMode(Mode.SHELL);
@@ -45,17 +47,20 @@ public class OpencgaMain {
                 executeCli(args);
             }
         } catch (Exception e) {
-            CommandLineUtils.printError("Failed to initialize OpenCGA CLI " + e.getMessage(), e);
+            CommandLineUtils.printLog("Failed to initialize OpenCGA CLI " + e.getMessage(), e);
             e.printStackTrace();
         }
     }
 
 
     private static String[] checkDebugMode(String[] args) {
-        setDebug(ArrayUtils.contains(args, "--debug"));
-        if (isDebug()) {
-            args = ArrayUtils.remove(args, ArrayUtils.indexOf(args, "--debug"));
+        if (ArrayUtils.contains(args, "--log-level")) {
+            String level = args[ArrayUtils.indexOf(args, "--log-level") + 1].toLowerCase(Locale.ROOT);
+            if (ArrayUtils.contains(logLevels, level)) {
+                setLogLevel(level);
+            }
         }
+
         return args;
     }
 
@@ -68,7 +73,7 @@ public class OpencgaMain {
     }
 
     public static void executeShell(String[] args) {
-        CommandLineUtils.printDebug("Initializing Shell...  ");
+        CommandLineUtils.printLog("Initializing Shell...  ");
 
         try {
             GeneralCliOptions.CommonCommandOptions options = new GeneralCliOptions.CommonCommandOptions();
@@ -76,12 +81,12 @@ public class OpencgaMain {
                 options.host = args[ArrayUtils.indexOf(args, "--host") + 1];
             }
             shell = new OpencgaCliShellExecutor(options);
-            CommandLineUtils.printDebug("Shell created ");
+            CommandLineUtils.printLog("Shell created ");
             shell.execute();
         } catch (CatalogAuthenticationException e) {
-            CommandLineUtils.printError("Failed to initialize shell", e);
+            CommandLineUtils.printLog("Failed to initialize shell", e);
         } catch (Exception e) {
-            CommandLineUtils.printError("Failed to execute shell", e);
+            CommandLineUtils.printLog("Failed to execute shell", e);
         }
     }
 
@@ -91,14 +96,6 @@ public class OpencgaMain {
 
     public static void setMode(Mode mode) {
         OpencgaMain.mode = mode;
-    }
-
-    public static boolean isDebug() {
-        return debug;
-    }
-
-    public static void setDebug(boolean debug) {
-        OpencgaMain.debug = debug;
     }
 
     public static boolean isShellMode() {
@@ -111,6 +108,14 @@ public class OpencgaMain {
 
     public static void setShell(OpencgaCliShellExecutor shell) {
         OpencgaMain.shell = shell;
+    }
+
+    public static String getLogLevel() {
+        return logLevel;
+    }
+
+    public static void setLogLevel(String logLevel) {
+        OpencgaMain.logLevel = logLevel;
     }
 
     public enum Mode {

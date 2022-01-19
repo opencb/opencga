@@ -28,7 +28,7 @@ public class CliProcessor extends AbstractProcessor {
 
 
     public String[] parseParams(String[] args) throws CatalogAuthenticationException {
-        CommandLineUtils.printDebug("Executing " + String.join(" ", args));
+        CommandLineUtils.printLog("Executing " + String.join(" ", args));
         if (isNotHelpCommand(args)) {
             if (ArrayUtils.contains(args, "--user-password")) {
                 return normalizePasswordArgs(args, "--user-password");
@@ -44,10 +44,10 @@ public class CliProcessor extends AbstractProcessor {
                 commandExecutor.execute();
                 commandExecutor.getSessionManager().saveCliSession();
             } catch (IOException e) {
-                CommandLineUtils.printError("Could not set the default study", e);
+                CommandLineUtils.printLog("Could not set the default study", e);
                 System.exit(1);
             } catch (Exception ex) {
-                CommandLineUtils.printError("Execution error: " + ex.getMessage(), ex);
+                CommandLineUtils.printLog("Execution error: " + ex.getMessage(), ex);
                 System.exit(1);
             }
         } else {

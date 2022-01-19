@@ -77,7 +77,7 @@ public class JsonOutputWriter extends AbstractOutputWriter {
         try {
             ps.println(objectWriter.writeValueAsString(toPrint));
         } catch (IOException e) {
-            CommandLineUtils.printError("Could not parse the queryResponse to print as "
+            CommandLineUtils.printLog("Could not parse the queryResponse to print as "
                     + (writerConfiguration.isPretty() ? "a beautiful" : "") + " JSON", e);
         }
     }

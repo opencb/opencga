@@ -59,14 +59,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **study**<br>*[JobStudyParam](https://docs.opencga.opencb.org/data-models/job#jobstudyparam)* <br> | <p>Job study.</p> |
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
-### JobStudyParam
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobStudyParam.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
-| **others**<br>*List<<em>String</em>>* <br> | <p>List of strings.</p> |
-
 ### ToolInfo
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/job/ToolInfo.java).
 
@@ -77,6 +69,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **scope**<br>*Scope* <br> | <p>Tool info scope can have the values GLOBAL, PROJECT and STUDY.</p> |
 | **type**<br>*Type* <br> | <p>Tool info type can have the values OPERATION and ANALYSIS.</p> |
 | **resource**<br>*Resource* <br> | <p>Tool info resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.</p> |
+
+### JobStudyParam
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobStudyParam.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
+| **others**<br>*List<<em>String</em>>* <br> | <p>List of strings.</p> |
 
 ### JobInternal
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternal.java).
@@ -105,41 +105,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **events**<br>*List<<em>Event</em>>* <br> | <p>List of Event.</p> |
 | **attributes**<br>*ObjectMap* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
-### ExecutionStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/ExecutionStatus.java).
-
-| Field | Description |
-| :---  | :--- |
-| **name**<br>*String* <br> | <p>Name of the . Status</p> |
-| **date**<br>*String* <br> | <p>Date has setted the status.</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **~~message~~**<br>*String* <br><br>_Deprecated_ | <p>Deprecated: Message describing the status.</p> |
-
-### Status
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Status.java).
-
-| Field | Description |
-| :---  | :--- |
-| **name**<br>*String* <br> | <p>Name of the . Status</p> |
-| **date**<br>*String* <br> | <p>Date has setted the status.</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **~~message~~**<br>*String* <br><br>_Deprecated_ | <p>Deprecated: Message describing the status.</p> |
-
-### Date
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/util/Date.java).
-
-
-### ExecutorInfo
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ExecutorInfo.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
-| **clazz**<br>*String* <br> | <p>ExecutorInfo class.</p> |
-| **params**<br>*ObjectMap* <br> | <p>ExecutorInfo params.</p> |
-| **source**<br>*Source* <br> | <p>Executor info source can have the values FILE, PARQUET_FILE, MONGODB,  HBASE, STORAGE.</p> |
-| **framework**<br>*Framework* <br> | <p>Executor info framework can have the values LOCAL, MAP_REDUCE, SPARK.</p> |
-
 ### ToolStep
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ToolStep.java).
 
@@ -159,9 +124,38 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **webhook**<br>*[URL](https://docs.opencga.opencb.org/data-models/job#url)* <br> | <p>Webhook URL.</p> |
 | **status**<br>*Map<String,Status>* <br> | <p>Webhook status map can have the values SUCCESS or ERROR.</p> |
 
+### ExecutionStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/ExecutionStatus.java).
+
+| Field | Description |
+| :---  | :--- |
+| **name**<br>*String* <br> | <p>Name of the . Status</p> |
+| **date**<br>*String* <br> | <p>Date has setted the status.</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **~~message~~**<br>*String* <br><br>_Deprecated_ | <p>Deprecated: Message describing the status.</p> |
+
 ### URI
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/net/URI.java).
 
+
+### Date
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/util/Date.java).
+
+
+### Status
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/Status.java).
+
+
+### ExecutorInfo
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ExecutorInfo.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
+| **clazz**<br>*String* <br> | <p>ExecutorInfo class.</p> |
+| **params**<br>*ObjectMap* <br> | <p>ExecutorInfo params.</p> |
+| **source**<br>*Source* <br> | <p>Executor info source can have the values FILE, PARQUET_FILE, MONGODB,  HBASE, STORAGE.</p> |
+| **framework**<br>*Framework* <br> | <p>Executor info framework can have the values LOCAL, MAP_REDUCE, SPARK.</p> |
 
 ### URL
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/net/URL.java).

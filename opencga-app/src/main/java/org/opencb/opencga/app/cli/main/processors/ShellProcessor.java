@@ -29,7 +29,7 @@ public class ShellProcessor extends AbstractProcessor {
     }
 
     public String[] parseParams(String[] args) throws CatalogAuthenticationException {
-        CommandLineUtils.printDebug("Executing " + String.join(" ", args));
+        CommandLineUtils.printLog("Executing " + String.join(" ", args));
         if (ArrayUtils.contains(args, "--host")) {
             printDebug("To change host you must exit the shell and launch it again with the --host parameter.");
             return null;
@@ -66,10 +66,10 @@ public class ShellProcessor extends AbstractProcessor {
                 commandExecutor.getSessionManager().saveCliSession();
                 loadSessionStudies(commandExecutor);
             } catch (IOException e) {
-                CommandLineUtils.printError("Could not set the default study", e);
+                CommandLineUtils.printLog("Could not set the default study", e);
                 System.exit(1);
             } catch (Exception ex) {
-                CommandLineUtils.printError("Execution error: " + ex.getMessage(), ex);
+                CommandLineUtils.printLog("Execution error: " + ex.getMessage(), ex);
                 System.exit(1);
             }
         } else {
@@ -81,7 +81,7 @@ public class ShellProcessor extends AbstractProcessor {
 
     public void loadSessionStudies(OpencgaCommandExecutor commandExecutor) {
         if (commandExecutor.getSessionManager().hasSessionToken()) {
-            CommandLineUtils.printDebug("Loading session studies using token: " + commandExecutor.getSessionManager().getToken());
+            CommandLineUtils.printLog("Loading session studies using token: " + commandExecutor.getSessionManager().getToken());
             OpenCGAClient openCGAClient = commandExecutor.getOpenCGAClient();
             try {
                 RestResponse<Project> res = openCGAClient.getProjectClient().search(new ObjectMap());
@@ -112,7 +112,7 @@ public class ShellProcessor extends AbstractProcessor {
                     commandExecutor.getSessionManager().saveCliSession();
                 }
             } catch (Exception e) {
-                CommandLineUtils.printError("Reloading studies failed ", e);
+                CommandLineUtils.printLog("Reloading studies failed ", e);
             }
         }
     }
@@ -120,17 +120,15 @@ public class ShellProcessor extends AbstractProcessor {
 
     public void setValidatedCurrentStudy(String arg, OpencgaCommandExecutor commandExecutor) {
         if (!StringUtils.isEmpty(commandExecutor.getSessionManager().getToken())) {
-            CommandLineUtils.printDebug("Check study " + arg);
-            // FIXME This needs to be refactor
-            //TODO Nacho must check the refactorized code
+            CommandLineUtils.printLog("Check study " + arg);
             OpenCGAClient openCGAClient = commandExecutor.getOpenCGAClient();
             if (openCGAClient != null) {
                 try {
                     RestResponse<Study> res = openCGAClient.getStudyClient().info(arg, new ObjectMap());
                     if (res.allResultsSize() > 0) {
-                        CommandLineUtils.printDebug("Validated study " + arg);
+                        CommandLineUtils.printLog("Validated study " + arg);
                         commandExecutor.getSessionManager().getCliSession().setCurrentStudy(res.response(0).getResults().get(0).getFqn());
-                        CommandLineUtils.printDebug("Validated study " + arg);
+                        CommandLineUtils.printLog("Validated study " + arg);
                         commandExecutor.getSessionManager().saveCliSession();
                         println(getKeyValueAsFormattedString("Current study is: ",
                                 commandExecutor.getSessionManager().getCliSession().getCurrentStudy()));
@@ -138,9 +136,9 @@ public class ShellProcessor extends AbstractProcessor {
                         printWarn("Invalid study");
                     }
                 } catch (ClientException e) {
-                    CommandLineUtils.printError(e.getMessage(), e);
+                    CommandLineUtils.printLog(e.getMessage(), e);
                 } catch (IOException e) {
-                    CommandLineUtils.printError(e.getMessage(), e);
+                    CommandLineUtils.printLog(e.getMessage(), e);
                 }
             } else {
                 printError("Client not available");

@@ -25,7 +25,6 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.RestResponse;
@@ -161,7 +160,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 }
             }
         } catch (IOException e) {
-            CommandLineUtils.printError("OpencgaCommandExecutorError " + e.getMessage(), e);
+            CommandLineUtils.printLog("OpencgaCommandExecutorError " + e.getMessage(), e);
         }
     }
 

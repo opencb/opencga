@@ -38,7 +38,7 @@ public abstract class AbstractProcessor {
         try {
             args = checkShortCut(args);
             if (ArrayUtils.contains(args, "logout")) {
-                CommandLineUtils.printDebug("Logging out... ");
+                CommandLineUtils.printLog("Logging out... ");
                 args = normalizeCLIUsersArgs(args);
             } else {
                 args = parseParams(args);
@@ -46,7 +46,7 @@ public abstract class AbstractProcessor {
             if (args != null) {
 
                 cliOptionsParser.parse(args);
-                CommandLineUtils.printDebug("PARSED OPTIONS ::: " + ArrayUtils.toString(args));
+                CommandLineUtils.printLog("PARSED OPTIONS ::: " + ArrayUtils.toString(args));
                 if (cliOptionsParser.isHelp()) {
                     cliOptionsParser.printUsage();
                 } else {
@@ -168,7 +168,7 @@ public abstract class AbstractProcessor {
 
     protected String[] forceLogin(String[] args) {
         String user = getConsole().readLine(format("\nEnter your user: ", Color.GREEN));
-        CommandLineUtils.printDebug("Login user " + user);
+        CommandLineUtils.printLog("Login user " + user);
         return loginUser(args, user);
     }
 
@@ -177,7 +177,7 @@ public abstract class AbstractProcessor {
         if (CommandLineUtils.isValidUser(user)) {
             args = ArrayUtils.addAll(args, "-u", user);
             args = ArrayUtils.addAll(args, "--password", new String(passwordArray));
-            CommandLineUtils.printDebug(ArrayUtils.toString(args));
+            CommandLineUtils.printLog(ArrayUtils.toString(args));
         } else {
             println(getKeyValueAsFormattedString("Invalid user name: ", user));
         }

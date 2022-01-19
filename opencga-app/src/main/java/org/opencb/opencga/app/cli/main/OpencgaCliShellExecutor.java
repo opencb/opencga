@@ -43,7 +43,7 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
                 try {
                     defaultHistory.save();
                 } catch (IOException e) {
-                    CommandLineUtils.printError("Failed to save terminal history", e);
+                    CommandLineUtils.printLog("Failed to save terminal history", e);
                 }
             }));
             reader = LineReaderBuilder.builder()
@@ -52,7 +52,7 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
                     .history(defaultHistory).completer(new OpenCgaCompleterImpl())
                     .build();
         } catch (Exception e) {
-            CommandLineUtils.printError("Failed to create terminal ", e);
+            CommandLineUtils.printLog("Failed to create terminal ", e);
 
         }
 
@@ -92,10 +92,10 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
             }
             terminal.writer().flush();
         } catch (Exception e) {
-            CommandLineUtils.printError("OpenCGA execution error ", e);
+            CommandLineUtils.printLog("OpenCGA execution error ", e);
             e.printStackTrace();
-            CommandLineUtils.printError("sessionManager:" + sessionManager, null);
-            CommandLineUtils.printError("getCliSession:" + sessionManager.getCliSession(), null);
+            CommandLineUtils.printLog("sessionManager:" + sessionManager, null);
+            CommandLineUtils.printLog("getCliSession:" + sessionManager.getCliSession(), null);
 
         }
     }
@@ -130,7 +130,7 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
         System.out.println();
         System.out.println();
         System.out.println();
-        CommandLineUtils.printDebug("Opencga is running in DEBUG mode");
+        CommandLineUtils.printLog("Opencga is running in DEBUG mode");
         System.out.println();
         System.out.println();
         System.out.println();

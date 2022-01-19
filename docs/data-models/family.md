@@ -61,15 +61,6 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **url**<br>*String* <br> | <p>Ontology url</p> |
 | **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 
-### CustomStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
-
-| Field | Description |
-| :---  | :--- |
-| **CustomStatus.name**<br>*String* <br> | <p>Name of the status.</p> |
-| **CustomStatus.description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **CustomStatus.date**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-
 ### FamilyInternal
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
 
@@ -91,6 +82,15 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **url**<br>*String* <br> | <p>Ontology url</p> |
 | **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 
+### CustomStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
+
+| Field | Description |
+| :---  | :--- |
+| **CustomStatus.name**<br>*String* <br> | <p>Name of the status.</p> |
+| **CustomStatus.description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **CustomStatus.date**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+
 ### FamilyQualityControl
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyQualityControl.java).
 
@@ -99,16 +99,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **relatedness**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/family#relatednessreport"><em>RelatednessReport</em></a>>* <br> | <p>Reports of family relationship.</p> |
 | **files**<br>*List<<em>String</em>>* <br> | <p>File IDs related to the quality control.</p> |
 | **comments**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/family#clinicalcomment"><em>ClinicalComment</em></a>>* <br> | <p>Comments related to the quality control.</p> |
-
-### Status
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Status.java).
-
-| Field | Description |
-| :---  | :--- |
-| **name**<br>*String* <br> | <p>Name of the . Status</p> |
-| **date**<br>*String* <br> | <p>Date has setted the status.</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **~~message~~**<br>*String* <br><br>_Deprecated_ | <p>Deprecated: Message describing the status.</p> |
 
 ### ClinicalComment
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalComment.java).
@@ -119,6 +109,16 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **message**<br>*String* <br> | <p>Clinical comment message</p> |
 | **tags**<br>*List<<em>String</em>>* <br> | <p>List of tags for the clinical comment</p> |
 | **date**<br>*String* <br> | <p>Date of the clinical comment</p> |
+
+### Status
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Status.java).
+
+| Field | Description |
+| :---  | :--- |
+| **name**<br>*String* <br> | <p>Name of the . Status</p> |
+| **date**<br>*String* <br> | <p>Date has setted the status.</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **~~message~~**<br>*String* <br><br>_Deprecated_ | <p>Deprecated: Message describing the status.</p> |
 
 ### RelatednessReport
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/RelatednessReport.java).

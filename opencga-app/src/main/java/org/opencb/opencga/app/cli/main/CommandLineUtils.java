@@ -6,8 +6,7 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 
 public class CommandLineUtils {
 
-    private static final boolean forceDebug = false;
-
+  
     public static String getVersionString() {
         String res = PrintUtils.getKeyValueAsFormattedString("\tOpenCGA CLI version: ", "\t" + GitRepositoryState.get().getBuildVersion() + "\n");
         res += PrintUtils.getKeyValueAsFormattedString("\tGit version:", "\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId() + "\n");
@@ -17,18 +16,26 @@ public class CommandLineUtils {
     }
 
 
-    public static void printError(String message, Exception e) {
-        if (OpencgaMain.isDebug() || forceDebug) {
-            PrintUtils.printError(message, e);
-        } else {
-            PrintUtils.printError(message);
+    public static void printLog(String message, Exception e) {
+
+        switch (OpencgaMain.getLogLevel()) {
+            case "info":
+                PrintUtils.printInfo(message);
+                break;
+            case "warn":
+                PrintUtils.printWarn(message);
+                break;
+            case "debug":
+                PrintUtils.printDebug(message);
+                break;
+            case "error":
+                PrintUtils.printError(message, e);
+                break;
         }
     }
 
-    public static void printDebug(String s) {
-        if (OpencgaMain.isDebug() || forceDebug) {
-            PrintUtils.printDebug(s);
-        }
+    public static void printLog(String s) {
+        printLog(s, null);
     }
 
     public static boolean isValidUser(String user) {
