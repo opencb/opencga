@@ -62,7 +62,6 @@ public class SessionManager {
         clisession.setCurrentStudy(NO_STUDY);
         clisession.setToken(NO_TOKEN);
         clisession.setUser(ANONYMOUS);
-        clisession.setCurrentHost(host);
         return clisession;
     }
 
@@ -129,7 +128,6 @@ public class SessionManager {
     public void saveCliSession(String user, String token, String refreshToken, List<String> studies, String host)
             throws IOException {
         CliSession cliSession = new CliSession(host, user, token, refreshToken, studies);
-        cliSession.setCurrentHost(host);
         if (!CollectionUtils.isEmpty(studies)) {
             cliSession.setCurrentStudy(studies.get(0));
         } else {
@@ -139,8 +137,7 @@ public class SessionManager {
     }
 
 
-    public void saveCliSession()
-            throws IOException {
+    public void saveCliSession() throws IOException {
         saveCliSession(getCliSession(), host);
     }
 
@@ -165,7 +162,7 @@ public class SessionManager {
             Files.delete(sessionPath);
             CommandLineUtils.printDebug("Deleted file session: " + sessionPath);
         }
-        saveCliSession(getCleanSession(getCurrentHost()));
+        saveCliSession(getCleanSession(this.host));
     }
 
 
@@ -209,10 +206,6 @@ public class SessionManager {
 
     public String getCurrentStudy() {
         return getCliSession().getCurrentStudy();
-    }
-
-    public String getCurrentHost() {
-        return getCliSession().getCurrentHost();
     }
 
 }

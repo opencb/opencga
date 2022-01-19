@@ -101,7 +101,7 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
     }
 
     public String getPrompt() {
-        String host = format("[" + sessionManager.getCliSession().getCurrentHost() + "]", PrintUtils.Color.GREEN);
+        String host = format("[" + sessionManager.getHost() + "]", PrintUtils.Color.GREEN);
         String study = format("[" + sessionManager.getCliSession().getCurrentStudy() + "]", PrintUtils.Color.BLUE);
         String user = format("<" + sessionManager.getCliSession().getUser() + "/>", PrintUtils.Color.YELLOW);
         return host + study + user;

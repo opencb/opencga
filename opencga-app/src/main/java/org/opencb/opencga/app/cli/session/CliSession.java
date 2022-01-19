@@ -32,7 +32,6 @@ public class CliSession {
     private List<String> studies;
     private long timestamp;
     private String currentStudy;
-    private String currentHost;
 
     public CliSession() {
     }
@@ -45,8 +44,7 @@ public class CliSession {
         this.studies = studies;
     }
 
-    public CliSession(String host, String user, String token, String refreshToken, String version, String login,
-                      List<String> studies, long timestamp, String currentStudy, String currentHost) {
+    public CliSession(String host, String user, String token, String refreshToken, String version, String login, List<String> studies, long timestamp, String currentStudy) {
         this.host = host;
         this.user = user;
         this.token = token;
@@ -56,7 +54,6 @@ public class CliSession {
         this.studies = studies;
         this.timestamp = timestamp;
         this.currentStudy = currentStudy;
-        this.currentHost = currentHost;
     }
 
     @Override
@@ -71,7 +68,6 @@ public class CliSession {
         sb.append(", studies=").append(studies);
         sb.append(", timestamp=").append(timestamp);
         sb.append(", currentStudy='").append(currentStudy).append('\'');
-        sb.append(", currentHost='").append(currentHost).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -154,15 +150,6 @@ public class CliSession {
 
     public CliSession setCurrentStudy(String currentStudy) {
         this.currentStudy = currentStudy;
-        return this;
-    }
-
-    public String getCurrentHost() {
-        return currentHost;
-    }
-
-    public CliSession setCurrentHost(String currentHost) {
-        this.currentHost = currentHost;
         return this;
     }
 }
