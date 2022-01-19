@@ -11,6 +11,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationInde
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
+import org.opencb.opencga.storage.hadoop.variant.index.query.LocusQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
@@ -34,7 +35,7 @@ import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.testPar
 public abstract class AbstractSampleIndexEntryFilter<T> {
 
     private final SingleSampleIndexQuery query;
-    private final List<Region> regionsFilter;
+    private final LocusQuery locusQuery;
     private final Logger logger = LoggerFactory.getLogger(AbstractSampleIndexEntryFilter.class);
     private final List<Integer> annotationIndexPositions;
     private final SampleIndexVariantBiConverter converter;
@@ -61,10 +62,10 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         this(query, null);
     }
 
-    public AbstractSampleIndexEntryFilter(SingleSampleIndexQuery query, List<Region> regionsFilter) {
+    public AbstractSampleIndexEntryFilter(SingleSampleIndexQuery query, LocusQuery locusQuery) {
         this.query = query;
         converter = new SampleIndexVariantBiConverter(query.getSchema());
-        this.regionsFilter = regionsFilter == null || regionsFilter.isEmpty() ? null : regionsFilter;
+        this.locusQuery = locusQuery == null || locusQuery.isEmpty() ? null : locusQuery;
 
         int[] countsPerBit = IndexUtils.countPerBit(new byte[]{query.getAnnotationIndex()});
 
@@ -128,9 +129,9 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         Map<String, SampleIndexGtEntry> gts = entry.getGts();
         List<List<T>> variantsByGt = new ArrayList<>(gts.size());
         int numVariants = 0;
-        // Use countIterator only if don't need to filter by region or by type
+        // Use countIterator only if don't need to filter by locus or by type
         boolean countIterator = count
-                && regionsFilter == null
+                && locusQuery == null
                 && CollectionUtils.isEmpty(query.getVariantTypes())
                 && !query.isMultiFileSample();
         for (SampleIndexGtEntry gtEntry : gts.values()) {
@@ -379,7 +380,7 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
     private T filter(T v) {
         Variant variant = toVariant(v);
         //Test region filter (if any)
-        if (filterRegion(variant)) {
+        if (filterLocus(variant)) {
 
             // Test type filter (if any)
             if (CollectionUtils.isEmpty(query.getVariantTypes()) || query.getVariantTypes().contains(variant.getType())) {
@@ -389,13 +390,18 @@ public abstract class AbstractSampleIndexEntryFilter<T> {
         return null;
     }
 
-    private boolean filterRegion(Variant variant) {
-        if (regionsFilter == null) {
-            // No region filter defined. Skip filter.
+    private boolean filterLocus(Variant variant) {
+        if (locusQuery == null) {
+            // No locus filter defined. Skip filter.
             return true;
         }
-        for (Region region : regionsFilter) {
+        for (Region region : locusQuery.getRegions()) {
             if (region.contains(variant.getChromosome(), variant.getStart())) {
+                return true;
+            }
+        }
+        for (Variant queryVariant : locusQuery.getVariants()) {
+            if (variant.sameGenomicVariant(queryVariant)) {
                 return true;
             }
         }

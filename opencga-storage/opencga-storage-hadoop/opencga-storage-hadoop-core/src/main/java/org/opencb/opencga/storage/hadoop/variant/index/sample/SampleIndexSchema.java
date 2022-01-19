@@ -6,6 +6,7 @@ import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PVarchar;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -197,6 +198,22 @@ public final class SampleIndexSchema {
 
     public static int getChunkStart(Integer start) {
         return (start / BATCH_SIZE) * BATCH_SIZE;
+    }
+
+    public static Region getChunkRegion(Region region) {
+        return getChunkRegion(region.getChromosome(), region.getStart(), region.getEnd());
+    }
+
+    public static Region getChunkRegion(Variant variant) {
+        // We only care about the variant start for the chunk region, not the end
+        return getChunkRegion(variant.getChromosome(), variant.getStart(), variant.getStart());
+    }
+
+    public static Region getChunkRegion(String chromosome, int start, int end) {
+        return new Region(chromosome, SampleIndexSchema.getChunkStart(start),
+                end == Integer.MAX_VALUE
+                        ? Integer.MAX_VALUE
+                        : SampleIndexSchema.getChunkStart(end + SampleIndexSchema.BATCH_SIZE));
     }
 
     public static int getExpectedSize(String chromosome) {
