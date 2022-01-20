@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Created by imedina on 13/07/15.
  */
-public class CliSession {
+public class Session {
 
     private String host;
     private String user;
@@ -33,10 +33,10 @@ public class CliSession {
     private long timestamp;
     private String currentStudy;
 
-    public CliSession() {
+    public Session() {
     }
 
-    public CliSession(String host, String user, String token, String refreshToken, List<String> studies) {
+    public Session(String host, String user, String token, String refreshToken, List<String> studies) {
         this.host = host;
         this.user = user;
         this.token = token;
@@ -44,7 +44,7 @@ public class CliSession {
         this.studies = studies;
     }
 
-    public CliSession(String host, String user, String token, String refreshToken, String version, String login, List<String> studies, long timestamp, String currentStudy) {
+    public Session(String host, String user, String token, String refreshToken, String version, String login, List<String> studies, long timestamp, String currentStudy) {
         this.host = host;
         this.user = user;
         this.token = token;
@@ -76,7 +76,7 @@ public class CliSession {
         return host;
     }
 
-    public CliSession setHost(String host) {
+    public Session setHost(String host) {
         this.host = host;
         return this;
     }
@@ -85,7 +85,7 @@ public class CliSession {
         return user;
     }
 
-    public CliSession setUser(String user) {
+    public Session setUser(String user) {
         this.user = user;
         return this;
     }
@@ -94,7 +94,7 @@ public class CliSession {
         return token;
     }
 
-    public CliSession setToken(String token) {
+    public Session setToken(String token) {
         this.token = token;
         return this;
     }
@@ -103,7 +103,7 @@ public class CliSession {
         return refreshToken;
     }
 
-    public CliSession setRefreshToken(String refreshToken) {
+    public Session setRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
         return this;
     }
@@ -112,7 +112,7 @@ public class CliSession {
         return version;
     }
 
-    public CliSession setVersion(String version) {
+    public Session setVersion(String version) {
         this.version = version;
         return this;
     }
@@ -121,7 +121,7 @@ public class CliSession {
         return login;
     }
 
-    public CliSession setLogin(String login) {
+    public Session setLogin(String login) {
         this.login = login;
         return this;
     }
@@ -130,7 +130,7 @@ public class CliSession {
         return studies;
     }
 
-    public CliSession setStudies(List<String> studies) {
+    public Session setStudies(List<String> studies) {
         this.studies = studies;
         return this;
     }
@@ -139,7 +139,7 @@ public class CliSession {
         return timestamp;
     }
 
-    public CliSession setTimestamp(long timestamp) {
+    public Session setTimestamp(long timestamp) {
         this.timestamp = timestamp;
         return this;
     }
@@ -148,7 +148,7 @@ public class CliSession {
         return currentStudy;
     }
 
-    public CliSession setCurrentStudy(String currentStudy) {
+    public Session setCurrentStudy(String currentStudy) {
         this.currentStudy = currentStudy;
         return this;
     }

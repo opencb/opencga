@@ -79,7 +79,11 @@ public class TextOutputWriter extends AbstractOutputWriter {
             if (queryResponse.getEvents() != null) {
                 for (Event event : ((RestResponse<?>) queryResponse).getEvents()) {
                     if (StringUtils.isNotEmpty(event.getMessage())) {
-                        PrintUtils.printInfo(event.getMessage());
+                        if (event.getType().equals(Event.Type.ERROR)) {
+                            PrintUtils.printError(event.getMessage());
+                        } else {
+                            PrintUtils.printInfo(event.getMessage());
+                        }
                     }
                 }
             }

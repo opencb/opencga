@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class ShellCommandProcessor extends CommandProcessor {
+public class ShellCommandProcessor extends AbstractCommandProcessor {
 
 
     public ShellCommandProcessor(ParamParser parser) {
@@ -27,7 +27,7 @@ public class ShellCommandProcessor extends CommandProcessor {
         if (commandExecutor != null) {
             try {
                 commandExecutor.execute();
-                commandExecutor.getSessionManager().saveCliSession();
+                commandExecutor.getSessionManager().saveSession();
                 loadSessionStudies(commandExecutor);
             } catch (IOException e) {
                 CommandLineUtils.error("Could not set the default study", e);
@@ -61,28 +61,28 @@ public class ShellCommandProcessor extends CommandProcessor {
                     }
                 }
                 if (!studies.isEmpty()) {
-                    commandExecutor.getSessionManager().getCliSession().setStudies(studies);
+                    commandExecutor.getSessionManager().getSession().setStudies(studies);
                     if (!studies.contains(commandExecutor.getSessionManager().getCurrentStudy())) {
                         boolean enc = false;
                         for (String study : commandExecutor.getSessionManager().getStudies()) {
                             if (study.startsWith(commandExecutor.getSessionManager().getUser())) {
-                                commandExecutor.getSessionManager().getCliSession().setCurrentStudy(study);
+                                commandExecutor.getSessionManager().getSession().setCurrentStudy(study);
                                 enc = true;
                                 break;
                             }
                         }
                         if (!enc) {
-                            commandExecutor.getSessionManager().getCliSession().setCurrentStudy(commandExecutor.getSessionManager().getStudies().get(0));
+                            commandExecutor.getSessionManager().getSession().setCurrentStudy(commandExecutor.getSessionManager().getStudies().get(0));
                         }
                     }
-                    commandExecutor.getSessionManager().saveCliSession();
+                    commandExecutor.getSessionManager().saveSession();
                 }
             } catch (Exception e) {
                 CommandLineUtils.error("Reloading studies failed ", e);
 
             }
             CommandLineUtils.debug("Session studies: " + commandExecutor.getSessionManager().getStudies().toString());
-            CommandLineUtils.debug("Current study: " + commandExecutor.getSessionManager().getCliSession().getCurrentStudy());
+            CommandLineUtils.debug("Current study: " + commandExecutor.getSessionManager().getSession().getCurrentStudy());
         }
 
 

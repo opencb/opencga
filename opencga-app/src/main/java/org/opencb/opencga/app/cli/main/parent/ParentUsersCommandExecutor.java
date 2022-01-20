@@ -40,7 +40,8 @@ import static org.opencb.commons.utils.PrintUtils.println;
 public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor {
 
     public static final String LOGIN_OK = "You have been logged in correctly: ";
-    public static final String LOGIN_FAIL = "Not available login service now. Please contact the system administrator.";
+    public static final String LOGIN_FAIL = "Incorrect username or password.";
+    public static final String LOGIN_ERROR = "Not available login service now. Please contact the system administrator.";
     public static final String LOGOUT = "You've been logged out.";
     private final UsersCommandOptions usersCommandOptions;
 
@@ -58,7 +59,16 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
             String password = usersCommandOptions.loginCommandOptions.password;
 
             if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
-                AuthenticationResponse response = openCGAClient.login(user, password);
+                AuthenticationResponse response = null;
+                try {
+                    response = openCGAClient.login(user, password);
+                } catch (Exception e) {
+                    Event event = new Event();
+                    event.setMessage(LOGIN_FAIL);
+                    event.setType(Event.Type.ERROR);
+                    res.setType(QueryType.VOID);
+                    res.getEvents().add(event);
+                }
                 if (response != null) {
                     List<String> studies = new ArrayList<>();
 
@@ -77,14 +87,9 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                     // write CLI session file
 
 //                    CliSessionManager.getInstance().initUserSession(response.getToken(), user, response.getRefreshToken(), studies, this);
-                    this.sessionManager.saveCliSession(user, response.getToken(), response.getRefreshToken(), studies, this.host);
+                    this.sessionManager.saveSession(user, response.getToken(), response.getRefreshToken(), studies, this.host);
                     res.setType(QueryType.VOID);
                     println(getKeyValueAsFormattedString(LOGIN_OK, user));
-                } else {
-                    Event event = new Event();
-                    event.setMessage(LOGIN_FAIL);
-                    event.setType(Event.Type.ERROR);
-                    res.getEvents().add(event);
                 }
             } else {
                 String sessionId = usersCommandOptions.commonCommandOptions.token;
@@ -96,7 +101,8 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
             }
         } catch (Exception e) {
             Event event = new Event();
-            event.setMessage(e.getMessage());
+            event.setMessage(LOGIN_ERROR + e.getMessage());
+            res.setType(QueryType.VOID);
             event.setType(Event.Type.ERROR);
             res.getEvents().add(event);
             e.printStackTrace();
@@ -109,7 +115,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
         RestResponse<AuthenticationResponse> res = new RestResponse();
         CommandLineUtils.printLog("Logging out: " + LOGOUT);
         try {
-            sessionManager.logoutCliSessionFile();
+            sessionManager.logoutSessionFile();
             Event event = new Event();
             event.setMessage(LOGOUT);
             event.setType(Event.Type.INFO);

@@ -74,34 +74,34 @@ public class SessionManager {
         ObjectMapper objectMapper = new ObjectMapper();
         this.objectWriter = objectMapper
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .writerFor(CliSession.class)
+                .writerFor(Session.class)
                 .withDefaultPrettyPrinter();
         this.objectReader = objectMapper
-                .readerFor(CliSession.class);
+                .readerFor(Session.class);
     }
 
-    private CliSession createEmptySession() {
-        CliSession clisession = new CliSession();
-        clisession.setHost(host);
-        clisession.setCurrentStudy(NO_STUDY);
-        clisession.setToken(NO_TOKEN);
-        clisession.setUser(ANONYMOUS);
-        return clisession;
+    private Session createEmptySession() {
+        Session session = new Session();
+        session.setHost(host);
+        session.setCurrentStudy(NO_STUDY);
+        session.setToken(NO_TOKEN);
+        session.setUser(ANONYMOUS);
+        return session;
     }
 
-    public Path getCliSessionPath() {
-        return getCliSessionPath(this.host);
+    public Path getSessionPath() {
+        return getSessionPath(this.host);
     }
 
-    public Path getCliSessionPath(String host) {
+    public Path getSessionPath(String host) {
         return sessionFolder.resolve(host + SESSION_FILENAME_SUFFIX);
     }
 
-    public CliSession getCliSession() {
-        return getCliSession(this.host);
+    public Session getSession() {
+        return getSession(this.host);
     }
 
-    public CliSession getCliSession(String host) {
+    public Session getSession(String host) {
         Path sessionPath = sessionFolder.resolve(host + SESSION_FILENAME_SUFFIX);
         if (Files.exists(sessionPath)) {
             try {
@@ -111,61 +111,58 @@ public class SessionManager {
             }
         }
 
-        CliSession clisession = createEmptySession();
+        Session session = createEmptySession();
         try {
-            saveCliSession(clisession);
+            saveSession(session);
         } catch (IOException e) {
             logger.debug("Could not create the session file properly");
         }
-        return clisession;
+        return session;
     }
 
-    public void updateSessionToken(String token) throws IOException {
-        updateSessionToken(token, host);
-    }
 
     public void updateSessionToken(String token, String host) throws IOException {
         // Get current Session and update token
-        CliSession cliSession = getCliSession(host);
-        cliSession.setToken(token);
+        Session session = getSession(host);
+        session.setToken(token);
 
         // Save updated Session
-        saveCliSession(cliSession);
+        saveSession(session);
     }
 
-    public void saveCliSession(String user, String token, String refreshToken, List<String> studies, String host)
+    public void saveSession(String user, String token, String refreshToken, List<String> studies, String host)
             throws IOException {
-        CliSession cliSession = new CliSession(host, user, token, refreshToken, studies);
+        Session session = new Session(host, user, token, refreshToken, studies);
         if (CollectionUtils.isNotEmpty(studies)) {
-            cliSession.setCurrentStudy(studies.get(0));
+            session.setCurrentStudy(studies.get(0));
         } else {
-            cliSession.setCurrentStudy(NO_STUDY);
+            session.setCurrentStudy(NO_STUDY);
         }
-        saveCliSession(cliSession, host);
+        saveSession(session, host);
     }
 
-    public void saveCliSession() throws IOException {
-        saveCliSession(getCliSession(), host);
+    public void saveSession() throws IOException {
+        saveSession(getSession(), host);
     }
 
-    public void saveCliSession(CliSession cliSession) throws IOException {
-        saveCliSession(cliSession, host);
+    public void saveSession(Session session) throws IOException {
+        saveSession(session, host);
     }
 
-    public void saveCliSession(CliSession cliSession, String host) throws IOException {
+    public void saveSession(Session session, String host) throws IOException {
         // Check if ~/.opencga folder exists
         if (!Files.exists(sessionFolder)) {
             Files.createDirectory(sessionFolder);
         }
 
         Path sessionPath = sessionFolder.resolve(host + SESSION_FILENAME_SUFFIX);
-        objectWriter.writeValue(sessionPath.toFile(), cliSession);
+        objectWriter.writeValue(sessionPath.toFile(), session);
     }
 
-    public void logoutCliSessionFile() throws IOException {
+    public void logoutSessionFile() throws IOException {
         // We just need to save an empty session, this will delete user and token for this host
         logger.debug("Session logout for host '{}'", host);
-        saveCliSession(createEmptySession(), host);
+        saveSession(createEmptySession(), host);
     }
 
 
@@ -180,35 +177,35 @@ public class SessionManager {
     }
 
     public String getUser() {
-        return getCliSession().getUser();
+        return getSession().getUser();
     }
 
     public String getToken() {
-        return getCliSession().getToken();
+        return getSession().getToken();
     }
 
     public String getRefreshToken() {
-        return getCliSession().getRefreshToken();
+        return getSession().getRefreshToken();
     }
 
     public String getVersion() {
-        return getCliSession().getVersion();
+        return getSession().getVersion();
     }
 
     public String getLogin() {
-        return getCliSession().getLogin();
+        return getSession().getLogin();
     }
 
     public List<String> getStudies() {
-        return getCliSession().getStudies();
+        return getSession().getStudies();
     }
 
     public long getTimestamp() {
-        return getCliSession().getTimestamp();
+        return getSession().getTimestamp();
     }
 
     public String getCurrentStudy() {
-        return getCliSession().getCurrentStudy();
+        return getSession().getCurrentStudy();
     }
 
 
@@ -217,7 +214,7 @@ public class SessionManager {
         final StringBuffer sb = new StringBuffer("SessionManager{");
         sb.append("clientConfiguration=").append(clientConfiguration);
         sb.append(", host='").append(host).append('\'');
-        sb.append(", Session='").append(getCliSession().toString()).append('\'');
+        sb.append(", Session='").append(getSession().toString()).append('\'');
         sb.append('}');
         return sb.toString();
     }

@@ -5,7 +5,7 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.parser.ParamParser;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 
-public class CliCommandProcessor extends CommandProcessor {
+public class CliCommandProcessor extends AbstractCommandProcessor {
 
 
     public CliCommandProcessor(ParamParser parser) {
@@ -16,7 +16,7 @@ public class CliCommandProcessor extends CommandProcessor {
         if (commandExecutor != null) {
             try {
                 commandExecutor.execute();
-                commandExecutor.getSessionManager().saveCliSession();
+                commandExecutor.getSessionManager().saveSession();
             } catch (Exception ex) {
                 CommandLineUtils.error("Execution error: " + ex.getMessage(), ex);
                 System.exit(1);

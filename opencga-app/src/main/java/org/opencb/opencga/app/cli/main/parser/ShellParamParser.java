@@ -61,11 +61,11 @@ public class ShellParamParser implements ParamParser {
                     RestResponse<Study> res = openCGAClient.getStudyClient().info(arg, new ObjectMap());
                     if (res.allResultsSize() > 0) {
                         CommandLineUtils.printLog("Validated study " + arg);
-                        commandExecutor.getSessionManager().getCliSession().setCurrentStudy(res.response(0).getResults().get(0).getFqn());
+                        commandExecutor.getSessionManager().getSession().setCurrentStudy(res.response(0).getResults().get(0).getFqn());
                         CommandLineUtils.printLog("Validated study " + arg);
-                        commandExecutor.getSessionManager().saveCliSession();
+                        commandExecutor.getSessionManager().saveSession();
                         println(getKeyValueAsFormattedString("Current study is: ",
-                                commandExecutor.getSessionManager().getCliSession().getCurrentStudy()));
+                                commandExecutor.getSessionManager().getSession().getCurrentStudy()));
                     } else {
                         printWarn("Invalid study");
                     }

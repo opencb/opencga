@@ -97,15 +97,15 @@ public class Shell extends OpencgaCommandExecutor {
         } catch (Exception e) {
             CommandLineUtils.error("OpenCGA execution error ", e);
             CommandLineUtils.debug("sessionManager:" + sessionManager);
-            CommandLineUtils.debug("getCliSession:" + sessionManager.getCliSession());
+            CommandLineUtils.debug("getCliSession:" + sessionManager.getSession());
 
         }
     }
 
     public String getPrompt() {
         String host = format("[" + sessionManager.getHost() + "]", PrintUtils.Color.GREEN);
-        String study = format("[" + sessionManager.getCliSession().getCurrentStudy() + "]", PrintUtils.Color.BLUE);
-        String user = format("<" + sessionManager.getCliSession().getUser() + "/>", PrintUtils.Color.YELLOW);
+        String study = format("[" + sessionManager.getSession().getCurrentStudy() + "]", PrintUtils.Color.BLUE);
+        String user = format("<" + sessionManager.getSession().getUser() + "/>", PrintUtils.Color.YELLOW);
         return host + study + user;
     }
 

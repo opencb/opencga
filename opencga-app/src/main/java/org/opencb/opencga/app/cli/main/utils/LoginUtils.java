@@ -8,7 +8,7 @@ import static org.opencb.commons.utils.PrintUtils.*;
 public class LoginUtils {
 
     public static String[] forceLogin(String[] args) {
-        String user = System.console().readLine(format("\nEnter your user: ", PrintUtils.Color.GREEN));
+        String user = System.console().readLine(format("\nEnter your user: ", PrintUtils.Color.GREEN)).trim();
         CommandLineUtils.debug("Login user " + user);
         return loginUser(args, user);
     }
@@ -17,10 +17,10 @@ public class LoginUtils {
         char[] passwordArray = System.console().readPassword(format("\nEnter your password: ", PrintUtils.Color.GREEN));
         if (CommandLineUtils.isValidUser(user)) {
             args = ArrayUtils.addAll(args, "-u", user);
-            args = ArrayUtils.addAll(args, "--password", new String(passwordArray));
+            args = ArrayUtils.addAll(args, "--password", new String(passwordArray).trim());
             CommandLineUtils.debug(ArrayUtils.toString(args));
         } else {
-            println(getKeyValueAsFormattedString("Invalid user name: ", user));
+            println(PrintUtils.format("Invalid user name: ", Color.RED) + PrintUtils.format(user, Color.DEFAULT));
         }
         return args;
     }

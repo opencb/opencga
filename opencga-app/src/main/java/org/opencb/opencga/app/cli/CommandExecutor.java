@@ -109,7 +109,7 @@ public abstract class CommandExecutor {
 
             // Let's check the session file, maybe the session is still valid
 //            privateLogger.debug("CLI session file is: {}", CliSessionManager.getInstance().getCurrentFile());
-            privateLogger.debug("CLI session file is: {}", this.sessionManager.getCliSessionPath(this.host).toString());
+            privateLogger.debug("CLI session file is: {}", this.sessionManager.getSessionPath(this.host).toString());
 
             if (StringUtils.isNotBlank(options.token)) {
                 this.token = options.token;
@@ -273,5 +273,5 @@ public abstract class CommandExecutor {
         return this;
     }
 
-   
+
 }

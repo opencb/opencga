@@ -104,7 +104,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                     break;
             }
 
-            privateLogger.debug("Using sessionFile '{}'", this.sessionManager.getCliSessionPath().toString());
+            privateLogger.debug("Using sessionFile '{}'", this.sessionManager.getSessionPath().toString());
             if (StringUtils.isNotEmpty(options.token)) {
                 privateLogger.debug("A new token has been provided, updating session and client");
 
@@ -150,7 +150,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 //                            }
                         } else {
                             privateLogger.debug("Session has expired '{}'. Logging out session", expirationDate);
-                            sessionManager.logoutCliSessionFile();
+                            sessionManager.logoutSessionFile();
                             openCGAClient = new OpenCGAClient(clientConfiguration);
                         }
                     }
