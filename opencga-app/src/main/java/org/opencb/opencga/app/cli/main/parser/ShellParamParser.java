@@ -20,11 +20,11 @@ import static org.opencb.commons.utils.PrintUtils.*;
 public class ShellParamParser implements ParamParser {
 
 
-    public String[] parseParams(String[] args) throws CatalogAuthenticationException {
+    public void parseParams(String[] args) throws CatalogAuthenticationException {
         CommandLineUtils.printLog("Executing " + String.join(" ", args));
         if (ArrayUtils.contains(args, "--host")) {
             printDebug("To change host you must exit the shell and launch it again with the --host parameter.");
-            return null;
+            return;
         }
 
         if (args.length == 1 && "exit".equals(args[0].trim())) {
@@ -34,7 +34,7 @@ public class ShellParamParser implements ParamParser {
 
         if (args.length == 3 && "use".equals(args[0]) && "study".equals(args[1])) {
             setValidatedCurrentStudy(args[2], OpencgaMain.getShell());
-            return null;
+            return;
         }
 
         //Is for scripting login method
@@ -42,13 +42,13 @@ public class ShellParamParser implements ParamParser {
             if (ArrayUtils.contains(args, "--user-password")) {
                 char[] passwordArray =
                         System.console().readPassword(format("\nEnter your password: ", Color.GREEN));
-                args = ArrayUtils.addAll(args, "--password", new String(passwordArray));
-                return args;
+                ArrayUtils.addAll(args, "--password", new String(passwordArray));
+                return;
             }
         }
-        CommandLineUtils.printLog("PARSED::: " + String.join(" ", args));
+        CommandLineUtils.debug("SHELL PARSED PARAMS ::: " + String.join(", ", args));
 
-        return args;
+
     }
 
 

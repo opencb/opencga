@@ -22,14 +22,15 @@ public class CliParamParser implements ParamParser {
         return args;
     }
 
-    public String[] parseParams(String[] args) throws CatalogAuthenticationException {
+    public void parseParams(String[] args) throws CatalogAuthenticationException {
         CommandLineUtils.printLog("Executing " + String.join(" ", args));
         if (isNotHelpCommand(args)) {
             if (ArrayUtils.contains(args, "--user-password")) {
-                return normalizePasswordArgs(args, "--user-password");
+                normalizePasswordArgs(args, "--user-password");
             }
         }
-        return args;
+        CommandLineUtils.printLog("CLI PARSED PARAMS ::: " + String.join(", ", args));
+
     }
 
 

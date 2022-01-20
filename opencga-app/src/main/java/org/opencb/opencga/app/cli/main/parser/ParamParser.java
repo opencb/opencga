@@ -4,7 +4,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 public interface ParamParser {
 
-    String[] parseParams(String[] args) throws CatalogAuthenticationException;
+    void parseParams(String[] args) throws CatalogAuthenticationException;
 
 
 }
