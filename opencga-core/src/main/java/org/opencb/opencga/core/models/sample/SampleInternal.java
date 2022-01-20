@@ -18,8 +18,10 @@ package org.opencb.opencga.core.models.sample;
 
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.common.RgaIndex;
-import org.opencb.opencga.core.models.common.Status;
+
+import java.util.Objects;
 
 /**
  * Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vestibulum aliquet lobortis. Pellentesque venenatis lacus quis nibh interdum
@@ -28,33 +30,40 @@ import org.opencb.opencga.core.models.common.Status;
 public class SampleInternal extends Internal {
 
     private RgaIndex rga;
+    private SampleInternalVariant variant;
 
     public SampleInternal() {
     }
 
-    public SampleInternal(String registrationDate, String modificationDate, Status status, RgaIndex rga) {
+    public SampleInternal(String registrationDate, String modificationDate, InternalStatus status, RgaIndex rga,
+                          SampleInternalVariant variant) {
         super(status, registrationDate, modificationDate);
         this.rga = rga;
+        this.variant = variant;
     }
 
     public static SampleInternal init() {
-        return new SampleInternal(TimeUtils.getTime(), TimeUtils.getTime(), new Status(Status.READY), RgaIndex.init());
+        return new SampleInternal(TimeUtils.getTime(), TimeUtils.getTime(), new InternalStatus(InternalStatus.READY), RgaIndex.init(),
+                SampleInternalVariant.init());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleInternal{");
         sb.append("status=").append(status);
+        sb.append(", registrationDate='").append(registrationDate).append('\'');
+        sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append(", rga=").append(rga);
+        sb.append(", variant=").append(variant);
         sb.append('}');
         return sb.toString();
     }
 
-    public Status getStatus() {
+    public InternalStatus getStatus() {
         return status;
     }
 
-    public SampleInternal setStatus(Status status) {
+    public SampleInternal setStatus(InternalStatus status) {
         this.status = status;
         return this;
     }
@@ -65,6 +74,15 @@ public class SampleInternal extends Internal {
 
     public SampleInternal setRga(RgaIndex rga) {
         this.rga = rga;
+        return this;
+    }
+
+    public SampleInternalVariant getVariant() {
+        return variant;
+    }
+
+    public SampleInternal setVariant(SampleInternalVariant variant) {
+        this.variant = variant;
         return this;
     }
 
@@ -84,5 +102,22 @@ public class SampleInternal extends Internal {
     public SampleInternal setLastModified(String lastModified) {
         this.lastModified = lastModified;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        SampleInternal that = (SampleInternal) o;
+        return Objects.equals(rga, that.rga) && Objects.equals(variant, that.variant);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(rga, variant);
     }
 }

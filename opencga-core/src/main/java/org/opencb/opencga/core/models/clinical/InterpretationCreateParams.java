@@ -105,7 +105,7 @@ public class InterpretationCreateParams {
                 creationDate, modificationDate, primaryFindings, secondaryFindings,
                 panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
-                status != null ? status.toCustomStatus() : null, attributes);
+                status != null ? status.toStatus() : null, attributes);
     }
 
     public ObjectMap toInterpretationObjectMap() throws JsonProcessingException {

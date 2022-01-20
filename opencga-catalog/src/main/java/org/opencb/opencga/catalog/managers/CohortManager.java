@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
@@ -42,7 +43,6 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.*;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
@@ -192,7 +192,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                         SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
                 cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
                         cohortParams.getModificationDate(), cohortParams.getDescription(), sampleList, 0, cohortParams.getAnnotationSets(),
-                        1, cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
+                        1, cohortParams.getStatus() != null ? cohortParams.getStatus().toStatus() : new Status(), null,
                         cohortParams.getAttributes()));
 
             } else if (StringUtils.isNotEmpty(variableSetId)) {
@@ -232,7 +232,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
                             cohortParams.getModificationDate(), cohortParams.getDescription(), sampleResults.getResults(), 0,
                             cohortParams.getAnnotationSets(), 1,
-                            cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
+                            cohortParams.getStatus() != null ? cohortParams.getStatus().toStatus() : new Status(), null,
                             cohortParams.getAttributes()));
                 }
             } else {
@@ -383,7 +383,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         cohort.setRelease(studyManager.getCurrentRelease(study));
         cohort.setInternal(CohortInternal.init());
         cohort.setSamples(ParamUtils.defaultObject(cohort.getSamples(), Collections::emptyList));
-        cohort.setStatus(ParamUtils.defaultObject(cohort.getStatus(), CustomStatus::new));
+        cohort.setStatus(ParamUtils.defaultObject(cohort.getStatus(), Status::new));
         cohort.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.COHORT));
 
         validateNewAnnotationSets(study.getVariableSets(), cohort.getAnnotationSets());
@@ -525,7 +525,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);
-        changeQueryId(query, ParamConstants.COHORT_INTERNAL_STATUS_PARAM, CohortDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
+        changeQueryId(query, ParamConstants.COHORT_INTERNAL_STATUS_PARAM, CohortDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key());
 
         if (query.containsKey(ParamConstants.COHORT_SAMPLES_PARAM)) {
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
@@ -1055,12 +1055,12 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         if (updateParams != null && (ListUtils.isNotEmpty(updateParams.getSamples())
                 || StringUtils.isNotEmpty(updateParams.getId()))) {
-            switch (cohort.getInternal().getStatus().getName()) {
+            switch (cohort.getInternal().getStatus().getId()) {
                 case CohortStatus.CALCULATING:
                     throw new CatalogException("Unable to modify a cohort while it's in status \"" + CohortStatus.CALCULATING
                             + "\"");
                 case CohortStatus.READY:
-                    parameters.putIfAbsent(CohortDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), CohortStatus.INVALID);
+                    parameters.putIfAbsent(CohortDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), CohortStatus.INVALID);
                     break;
                 case CohortStatus.NONE:
                 case CohortStatus.INVALID:
@@ -1154,7 +1154,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             }
 
             ObjectMap parameters = new ObjectMap();
-            parameters.putIfNotNull(CohortDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), status);
+            parameters.putIfNotNull(CohortDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), status);
             parameters.putIfNotNull(CohortDBAdaptor.QueryParams.INTERNAL_STATUS_DESCRIPTION.key(), message);
 
             cohortDBAdaptor.update(cohort.getUid(), parameters, new QueryOptions());

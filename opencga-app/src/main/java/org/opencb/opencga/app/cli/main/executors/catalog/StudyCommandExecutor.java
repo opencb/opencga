@@ -31,7 +31,7 @@ import org.opencb.opencga.catalog.io.IOManager;
 import org.opencb.opencga.catalog.io.IOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.RestResponse;
@@ -126,6 +126,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     /**
      * This method selects a single valid study from these sources and in this order. First, checks if CLI param exists,
      * second it reads the projects and studies from the session file.
+     *
      * @param study parameter from the CLI
      * @return a single valid Study from the CLI, configuration or from the session file
      * @throws CatalogException when no possible single study can be chosen
@@ -188,7 +189,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 .setAlias(c.alias)
                 .setDescription(c.description);
         if (StringUtils.isNotEmpty(c.status)) {
-            updateParams.setStatus(new CustomStatusParams(c.status, ""));
+            updateParams.setStatus(new StatusParams(c.status, c.status, ""));
         }
 
         return openCGAClient.getStudyClient().update(getSingleValidStudy(c.study), updateParams);
@@ -226,7 +227,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.FQN.key(), c.fqn);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.CREATION_DATE.key(), c.creationDate);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.MODIFICATION_DATE.key(), c.modificationDate);
-        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), c.status);
+        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), c.status);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), c.attributes);
         params.putIfNotNull(StudyDBAdaptor.QueryParams.RELEASE.key(), c.release);
         params.putAll(c.commonOptions.params);

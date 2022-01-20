@@ -21,7 +21,6 @@ import org.opencb.opencga.catalog.stats.solr.FamilySolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogFamilyToSolrFamilyConverter;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyInternal;
-import org.opencb.opencga.core.models.family.FamilyStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.Study;
 
@@ -47,7 +46,7 @@ public class CatalogFamilyToSolrFamilyConverterTest {
         FamilySolrModel familySolrModel = new CatalogFamilyToSolrFamilyConverter(study).convertToStorageType(family);
 
         assertEquals(familySolrModel.getUid(), family.getUid());
-        assertEquals(familySolrModel.getStatus(), family.getInternal().getStatus().getName());
+        assertEquals(familySolrModel.getStatus(), family.getInternal().getStatus().getId());
         assertEquals(familySolrModel.getNumMembers(), family.getMembers().size());
         assertEquals(familySolrModel.getRelease(), family.getRelease());
         assertEquals(familySolrModel.getVersion(), family.getVersion());

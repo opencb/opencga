@@ -43,10 +43,11 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
@@ -312,7 +313,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 List<String> includeFiles = new ArrayList<>();
                 QueryOptions fileOptions = new QueryOptions(INCLUDE, FileDBAdaptor.QueryParams.UID.key());
                 Query fileQuery = new Query(FileDBAdaptor.QueryParams.RELEASE.key(), "<=" + release)
-                        .append(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
+                        .append(FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX_STATUS_ID.key(), VariantIndexStatus.READY);
 
                 for (String study : studies) {
                     for (File file : catalogManager.getFileManager().search(study, fileQuery, fileOptions, token)
@@ -1283,7 +1284,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected final QueryOptions RELEASE_OPTIONS = new QueryOptions(INCLUDE, Arrays.asList(
                 FileDBAdaptor.QueryParams.ID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(),
-                FileDBAdaptor.QueryParams.INTERNAL_INDEX.key(),
+                FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX.key(),
                 FileDBAdaptor.QueryParams.RELEASE.key()));
 
         /**
@@ -1429,11 +1430,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 return files.getResults().stream().map(File::getName).collect(Collectors.toList());
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getFileManager(), File::getName,
-                        file -> ((int) file.getInternal().getIndex().getRelease()), file -> {
-                            if (file.getInternal().getIndex() == null
-                                    || file.getInternal().getIndex().getStatus() == null
-                                    || file.getInternal().getIndex().getStatus().getName() == null
-                                    || !file.getInternal().getIndex().getStatus().getName().equals(Status.READY)) {
+                        file -> file.getInternal().getVariant().getIndex().getRelease(), file -> {
+                            if (!FileInternal.getVariantIndexStatusId(file.getInternal()).equals(InternalStatus.READY)) {
                                 throw new VariantQueryException("File '" + file.getName() + "' is not indexed");
                             }
                         },

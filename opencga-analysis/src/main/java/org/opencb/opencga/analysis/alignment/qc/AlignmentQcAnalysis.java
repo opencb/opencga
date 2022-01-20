@@ -198,7 +198,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
             Thread.sleep(3000);
             OpenCGAResult<Job> result = catalogManager.getJobManager().search(study, query, QueryOptions.empty(), token);
             job = result.first();
-            status = job.getInternal().getStatus().getName();
+            status = job.getInternal().getStatus().getId();
         } while (status.equals(Enums.ExecutionStatus.PENDING) || status.equals(Enums.ExecutionStatus.RUNNING)
                 || status.equals(Enums.ExecutionStatus.QUEUED) || status.equals(Enums.ExecutionStatus.READY)
                 || status.equals(Enums.ExecutionStatus.REGISTERING));

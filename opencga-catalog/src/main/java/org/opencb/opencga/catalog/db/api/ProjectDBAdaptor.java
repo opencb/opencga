@@ -54,7 +54,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         CURRENT_RELEASE("currentRelease", INTEGER, ""),
         FQN("fqn", TEXT, ""),
         INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
-        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_MSG("internal.status.msg", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         USER_ID("userId", TEXT, ""),
@@ -78,6 +78,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         ACL_USER_ID("acl.userId", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map = new HashMap<>();
+
         static {
             for (QueryParams params : QueryParams.values()) {
                 map.put(params.key(), params);

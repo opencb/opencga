@@ -1,7 +1,7 @@
 package org.opencb.opencga.core.models.file;
 
 import org.opencb.biodata.models.clinical.interpretation.Software;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.StatusParams;
 
 import java.util.List;
 import java.util.Map;
@@ -20,7 +20,7 @@ public class FileCreateParams {
     private String jobId;
     private String creationDate;
     private String modificationDate;
-    private CustomStatusParams status;
+    private StatusParams status;
     private Map<String, Object> attributes;
 
     public FileCreateParams() {
@@ -28,7 +28,7 @@ public class FileCreateParams {
 
     public FileCreateParams(String content, String path, String description, File.Type type, File.Format format, File.Bioformat bioformat,
                             List<String> sampleIds, Software software, List<String> tags, String jobId, String creationDate,
-                            String modificationDate, CustomStatusParams status, Map<String, Object> attributes) {
+                            String modificationDate, StatusParams status, Map<String, Object> attributes) {
         this.content = content;
         this.path = path;
         this.description = description;
@@ -174,11 +174,11 @@ public class FileCreateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public FileCreateParams setStatus(CustomStatusParams status) {
+    public FileCreateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

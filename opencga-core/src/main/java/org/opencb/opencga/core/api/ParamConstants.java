@@ -38,8 +38,10 @@ public class ParamConstants {
     public static final String RELEASE_DESCRIPTION = "Release when it was created";
     public static final String INTERNAL_STATUS_PARAM = "internalStatus";
     public static final String INTERNAL_STATUS_DESCRIPTION = "Filter by internal status";
+    @Deprecated // Use INTERNAL_VARIANT_INDEX_STATUS_PARAM
     public static final String INTERNAL_INDEX_STATUS_PARAM = "internalIndexStatus";
-    public static final String INTERNAL_INDEX_STATUS_DESCRIPTION = "Filter by internal index status";
+    public static final String INTERNAL_VARIANT_INDEX_STATUS_PARAM = "internalVariantIndexStatus";
+    public static final String INTERNAL_VARIANT_INDEX_STATUS_DESCRIPTION = "Filter by internal variant index status";
     public static final String STATUS_PARAM = "status";
     public static final String STATUS_DESCRIPTION = "Filter by status";
     public static final String ACL_PARAM = "acl";

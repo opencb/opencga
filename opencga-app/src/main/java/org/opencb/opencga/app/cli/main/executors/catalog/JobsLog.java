@@ -60,7 +60,7 @@ public class JobsLog {
         if (logMultipleJobs) {
             openCGAClient.getJobClient()
                     .search(new ObjectMap(ParamConstants.STUDY_PARAM, c.study)
-                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), RUNNING)
+                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), RUNNING)
                             .append(QueryOptions.INCLUDE, "id"))
                     .allResults()
                     .forEach(job -> jobs.put(job.getId(), null));
@@ -94,7 +94,7 @@ public class JobsLog {
                 do {
                     secureOp(() -> openCGAClient.getJobClient()
                             .search(new ObjectMap(ParamConstants.STUDY_PARAM, c.study)
-                                    .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), RUNNING)
+                                    .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), RUNNING)
                                     .append(QueryOptions.INCLUDE, "id"))
                             .allResults()
                             .forEach(job -> jobs.putIfAbsent(job.getId(), null)));
@@ -144,7 +144,7 @@ public class JobsLog {
                 if (c.follow) {
                     // Check job status
                     Job job = secureOp(() -> openCGAClient.getJobClient().info(jobId, new ObjectMap(ParamConstants.STUDY_PARAM, c.study)).firstResult());
-                    if (job.getInternal().getStatus().getName().equals(RUNNING)) {
+                    if (job.getInternal().getStatus().getId().equals(RUNNING)) {
                         // The job is still running. eof=false and break
                         eof = false;
                         break;

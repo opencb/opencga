@@ -40,10 +40,12 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileCreateParams;
+import org.opencb.opencga.core.models.file.FileInternalVariantIndex;
+import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.Location;
@@ -221,7 +223,9 @@ public class VariantCatalogQueryUtilsTest {
                 true, sessionId).first();
         if (indexed) {
             int release = catalog.getProjectManager().get("p1", null, sessionId).first().getCurrentRelease();
-            catalog.getFileManager().updateFileIndexStatus(file, Status.READY, "", release, sessionId);
+            catalog.getFileManager().updateFileInternalVariantIndex(file, new FileInternalVariantIndex()
+                    .setStatus(new VariantIndexStatus(InternalStatus.READY))
+                    .setRelease(release), sessionId);
         }
         return file;
     }
@@ -471,6 +475,16 @@ public class VariantCatalogQueryUtilsTest {
                 .append(FAMILY.key(), "f1")
                 .append(FAMILY_SEGREGATION.key(), "autosomal_dominant")
                 .append(FAMILY_DISORDER.key(), "asdf"), null, sessionId);
+    }
+
+    @Test
+    public void queryByFile() throws Exception {
+        Query query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FILE.key(), file1.getId()), null, cellBaseUtils, sessionId);
+        assertEquals(set(file1.getName()), set(query, FILE));
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FILE.key(), file1.getUuid()), null, cellBaseUtils, sessionId);
+        assertEquals(set(file1.getName()), set(query, FILE));
+        query = queryUtils.parseQuery(new Query(STUDY.key(), "s1").append(FILE.key(), file1.getPath()), null, cellBaseUtils, sessionId);
+        assertEquals(set(file1.getName()), set(query, FILE));
     }
 
     @Test

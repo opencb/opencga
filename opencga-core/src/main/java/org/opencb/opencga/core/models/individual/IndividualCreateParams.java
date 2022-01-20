@@ -19,12 +19,12 @@ package org.opencb.opencga.core.models.individual;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleCreateParams;
 
@@ -55,7 +55,7 @@ public class IndividualCreateParams {
     private List<AnnotationSet> annotationSets;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
-    private CustomStatusParams status;
+    private StatusParams status;
     private Map<String, Object> attributes;
 
     public IndividualCreateParams() {
@@ -66,7 +66,7 @@ public class IndividualCreateParams {
                                   SexOntologyTermAnnotation sex, OntologyTermAnnotation ethnicity, Boolean parentalConsanguinity,
                                   IndividualPopulation population, String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
                                   IndividualProperty.LifeStatus lifeStatus, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
-                                  List<Disorder> disorders, CustomStatusParams status, Map<String, Object> attributes) {
+                                  List<Disorder> disorders, StatusParams status, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = father;
@@ -104,7 +104,7 @@ public class IndividualCreateParams {
                 individual.getSex(), individual.getEthnicity(), individual.isParentalConsanguinity(), individual.getPopulation(),
                 individual.getDateOfBirth(), individual.getKaryotypicSex(), individual.getLifeStatus(),
                 individual.getAnnotationSets(), individual.getPhenotypes(), individual.getDisorders(),
-                CustomStatusParams.of(individual.getStatus()), individual.getAttributes());
+                StatusParams.of(individual.getStatus()), individual.getAttributes());
     }
 
     @Override
@@ -155,7 +155,7 @@ public class IndividualCreateParams {
         return new Individual(individualId, individualName, father, mother, Collections.emptyList(), location, null, sex,
                 karyotypicSex, ethnicity, population, dateOfBirth, 1, 1, creationDate, modificationDate, lifeStatus, phenotypes, disorders,
                 sampleList, parentalConsanguinity != null ? parentalConsanguinity : false,
-                annotationSets, status != null ? status.toCustomStatus() : new CustomStatus(), null, attributes);
+                annotationSets, status != null ? status.toStatus() : new Status(), null, attributes);
     }
 
     public String getId() {
@@ -320,11 +320,11 @@ public class IndividualCreateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public IndividualCreateParams setStatus(CustomStatusParams status) {
+    public IndividualCreateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

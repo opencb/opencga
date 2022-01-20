@@ -54,8 +54,8 @@ public class JobsTopManager {
     public JobsTopManager(OpenCGAClient openCGAClient, Query query, Integer iterations, Integer jobsLimit, long delay, boolean plain, List<TextOutputWriter.JobColumns> columns) {
         this.openCGAClient = openCGAClient;
         this.baseQuery = new Query(query)
-            .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key())
-            .append(QueryOptions.ORDER, QueryOptions.DESCENDING);
+                .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key())
+                .append(QueryOptions.ORDER, QueryOptions.DESCENDING);
         this.buffer = new ByteArrayOutputStream();
         this.iterations = iterations == null || iterations <= 0 ? -1 : iterations;
         if (jobsLimit == null || jobsLimit <= 0) {
@@ -153,7 +153,7 @@ public class JobsTopManager {
 
     private List<Job> processJobs(List<Job> jobs) {
         List<Job> jobList = new LinkedList<>();
-        jobs.sort(Comparator.comparing(j -> j.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.RUNNING) ? 0 : 1));
+        jobs.sort(Comparator.comparing(j -> j.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.RUNNING) ? 0 : 1));
         jobs = trimJobs(jobs);
 
         int jobDependsMax = 5;
@@ -167,7 +167,7 @@ public class JobsTopManager {
                     TreeMap<String, Integer> byType = dependsOn
                             .stream()
                             .collect(Collectors.groupingBy(
-                                    j -> j.getInternal().getStatus().getName(),
+                                    j -> j.getInternal().getStatus().getId(),
                                     TreeMap::new,
                                     Collectors.summingInt(j -> 1)));
                     int maxStatus = byType.keySet().stream().mapToInt(String::length).max().orElse(0);

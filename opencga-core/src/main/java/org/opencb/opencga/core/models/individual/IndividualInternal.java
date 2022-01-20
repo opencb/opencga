@@ -18,19 +18,19 @@ package org.opencb.opencga.core.models.individual;
 
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 
 public class IndividualInternal extends Internal {
 
     public IndividualInternal() {
     }
 
-    public IndividualInternal(Status status, String registrationDate, String modificationDate) {
+    public IndividualInternal(InternalStatus status, String registrationDate, String modificationDate) {
         super(status, registrationDate, modificationDate);
     }
 
     public static IndividualInternal init() {
-        return new IndividualInternal(new Status(Status.READY), TimeUtils.getTime(), TimeUtils.getTime());
+        return new IndividualInternal(new InternalStatus(InternalStatus.READY), TimeUtils.getTime(), TimeUtils.getTime());
     }
 
     @Override
@@ -43,11 +43,11 @@ public class IndividualInternal extends Internal {
         return sb.toString();
     }
 
-    public Status getStatus() {
+    public InternalStatus getStatus() {
         return status;
     }
 
-    public IndividualInternal setStatus(Status status) {
+    public IndividualInternal setStatus(InternalStatus status) {
         this.status = status;
         return this;
     }

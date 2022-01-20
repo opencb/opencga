@@ -25,8 +25,6 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
-import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.project.Datastores;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectInternal;
 

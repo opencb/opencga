@@ -79,7 +79,7 @@ public class FileUtils {
         }
 
         File modifiedFile = file;
-        switch (file.getInternal().getStatus().getName()) {
+        switch (file.getInternal().getStatus().getId()) {
             case FileStatus.READY:
             case FileStatus.MISSING: {
                 URI fileUri = catalogManager.getFileManager().getUri(file);
@@ -92,13 +92,13 @@ public class FileUtils {
 
                 if (!ioManager.exists(fileUri)) {
                     logger.warn("File { id:" + file.getPath() + ", path:\"" + file.getPath() + "\" } lost tracking from file " + fileUri);
-                    if (!file.getInternal().getStatus().getName().equals(FileStatus.MISSING)) {
+                    if (!file.getInternal().getStatus().getId().equals(FileStatus.MISSING)) {
                         logger.info("Set status to " + FileStatus.MISSING);
                         ObjectMap params = new ObjectMap(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), FileStatus.MISSING);
                         catalogManager.getFileManager().update(studyStr, file.getPath(), params, null, sessionId);
                         modifiedFile = catalogManager.getFileManager().get(studyStr, file.getPath(), null, sessionId).first();
                     }
-                } else if (file.getInternal().getStatus().getName().equals(FileStatus.MISSING)) {
+                } else if (file.getInternal().getStatus().getId().equals(FileStatus.MISSING)) {
                     logger.info("File { path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
                     logger.info("Set status to " + FileStatus.READY);
                     ObjectMap params = getModifiedFileAttributes(file, fileUri, calculateChecksum);
@@ -134,7 +134,7 @@ public class FileUtils {
      * @param file              file
      * @param fileUri           If null, calls to getFileUri()
      *                          <p>
-     *                          TODO: Lazy checksum: Only calculate checksum if the size has changed.
+     *                                                   TODO: Lazy checksum: Only calculate checksum if the size has changed.
      * @param calculateChecksum Calculate checksum to check if have changed
      * @return ObjectMap ObjectMap
      * @throws CatalogException CatalogException

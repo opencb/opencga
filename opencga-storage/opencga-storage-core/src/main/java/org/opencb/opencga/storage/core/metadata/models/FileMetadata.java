@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.metadata.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.LinkedHashSet;
@@ -54,28 +55,43 @@ public class FileMetadata extends StudyResourceMetadata<FileMetadata> {
 //        return this;
 //    }
 
+    @JsonIgnore
     public boolean isIndexed() {
         return TaskMetadata.Status.READY.equals(getIndexStatus());
     }
 
+    @JsonIgnore
     public TaskMetadata.Status getIndexStatus() {
         return getStatus("index");
     }
 
+    @JsonIgnore
     public FileMetadata setIndexStatus(TaskMetadata.Status indexStatus) {
         return setStatus("index", indexStatus);
     }
 
+    @JsonIgnore
     public boolean isAnnotated() {
         return TaskMetadata.Status.READY.equals(getAnnotationStatus());
     }
 
+    @JsonIgnore
     public TaskMetadata.Status getAnnotationStatus() {
         return getStatus("annotation");
     }
 
+    @JsonIgnore
     public FileMetadata setAnnotationStatus(TaskMetadata.Status annotationStatus) {
         return setStatus("annotation", annotationStatus);
+    }
+
+    @JsonIgnore
+    public TaskMetadata.Status getSecondaryIndexStatus() {
+        return getStatus("secondaryIndex");
+    }
+    @JsonIgnore
+    public FileMetadata setSecondaryIndexStatus(TaskMetadata.Status annotationStatus) {
+        return setStatus("secondaryIndex", annotationStatus);
     }
 
     @Override
