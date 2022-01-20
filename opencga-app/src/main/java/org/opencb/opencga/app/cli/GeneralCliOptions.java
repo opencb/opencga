@@ -44,14 +44,17 @@ public class GeneralCliOptions {
 
     public static class GeneralOptions {
 
-        @Parameter(names = {"-h", "--help"}, help = true)
+        @Parameter(names = {"-h", "--help", "?", "help"}, help = true)
         public boolean help;
 
-        @Parameter(names = {"--version"})
+        @Parameter(names = {"version"})
         public boolean version;
 
-        @Parameter(names = {"--build-version"})
+        @Parameter(names = {"build-version"})
         public boolean buildVersion;
+
+        @Parameter(names = {"login"})
+        public boolean login;
     }
 
     /**

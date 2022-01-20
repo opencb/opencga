@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.config.HostConfig;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,17 +35,16 @@ import java.util.List;
 
 public class SessionManager {
 
+    public static final String SESSION_FILENAME_SUFFIX = "_session.json";
+    private static final String NO_TOKEN = "NO_TOKEN";
+    private static final String NO_STUDY = "NO_STUDY";
+    private static final String ANONYMOUS = "anonymous";
     private final ClientConfiguration clientConfiguration;
     private final String host;
     private Path sessionFolder;
     private ObjectWriter objectWriter;
     private ObjectReader objectReader;
     private Logger logger;
-
-    public static final String SESSION_FILENAME_SUFFIX = "_session.json";
-    private static final String NO_TOKEN = "NO_TOKEN";
-    private static final String NO_STUDY = "NO_STUDY";
-    private static final String ANONYMOUS = "anonymous";
 
     public SessionManager(ClientConfiguration clientConfiguration) throws ClientException {
         this(clientConfiguration, clientConfiguration.getCurrentHost().getName());
@@ -213,4 +211,14 @@ public class SessionManager {
         return getCliSession().getCurrentStudy();
     }
 
+
+    @Override
+    public String toString() {
+        final StringBuffer sb = new StringBuffer("SessionManager{");
+        sb.append("clientConfiguration=").append(clientConfiguration);
+        sb.append(", host='").append(host).append('\'');
+        sb.append(", Session='").append(getCliSession().toString()).append('\'');
+        sb.append('}');
+        return sb.toString();
+    }
 }

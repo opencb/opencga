@@ -18,58 +18,73 @@ package org.opencb.opencga.app.cli.main;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.main.processors.CliProcessor;
+import org.opencb.opencga.app.cli.main.parser.CliParamParser;
+import org.opencb.opencga.app.cli.main.processors.CliCommandProcessor;
+import org.opencb.opencga.app.cli.main.shell.Shell;
+import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
+import org.opencb.opencga.app.cli.session.LogLevel;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.Arrays;
 import java.util.Locale;
+
 
 /**
  * Created by imedina on 27/05/16.
  */
 public class OpencgaMain {
 
-    public static final String[] logLevels = {"info", "debug", "warn", "error"};
     public static Mode mode = Mode.CLI;
-    public static OpencgaCliShellExecutor shell;
-    public static String logLevel = "info";
+    public static Shell shell;
+    public static LogLevel logLevel = LogLevel.OFF;
 
     public static void main(String[] args) {
-        args = checkDebugMode(args);
+        checkLogLevel(args);
+        checkMode(args);
         CommandLineUtils.printLog(Arrays.toString(args));
         try {
-            if (ArrayUtils.contains(args, "--shell")) {
-                setMode(Mode.SHELL);
-            }
             if (Mode.SHELL.equals(getMode())) {
                 executeShell(args);
             } else {
                 executeCli(args);
             }
         } catch (Exception e) {
-            CommandLineUtils.printLog("Failed to initialize OpenCGA CLI " + e.getMessage(), e);
+            CommandLineUtils.error("Failed to initialize OpenCGA CLI " + e.getMessage(), e);
             e.printStackTrace();
         }
     }
 
+    private static void checkMode(String[] args) {
+        if (ArrayUtils.contains(args, "--shell")) {
+            setMode(Mode.SHELL);
+        } else {
+            setMode(Mode.CLI);
+        }
+        CommandLineUtils.printLog("Execution mode " + getMode());
+    }
 
-    private static String[] checkDebugMode(String[] args) {
+
+    private static void checkLogLevel(String[] args) {
         if (ArrayUtils.contains(args, "--log-level")) {
-            String level = args[ArrayUtils.indexOf(args, "--log-level") + 1].toLowerCase(Locale.ROOT);
-            if (ArrayUtils.contains(logLevels, level)) {
-                setLogLevel(level);
+            try {
+                String level = args[ArrayUtils.indexOf(args, "--log-level") + 1].toUpperCase(Locale.ROOT);
+                setLogLevel(LogLevel.valueOf(level));
+            } catch (Exception e) {
+                setLogLevel(LogLevel.ERROR);
+                CommandLineUtils.error("Invalid log level. Valid values are INFO, WARN, DEBUG, ERROR", e);
+                System.exit(0);
             }
         }
 
-        return args;
+
     }
 
 
     private static void executeCli(String[] args) throws CatalogAuthenticationException {
         // TODO maybe we should process specific args here?
 
-        CliProcessor processor = new CliProcessor();
-        processor.execute(args);
+        CliCommandProcessor processor = new CliCommandProcessor(new CliParamParser());
+        processor.process(args);
     }
 
     public static void executeShell(String[] args) {
@@ -80,7 +95,7 @@ public class OpencgaMain {
             if (ArrayUtils.contains(args, "--host")) {
                 options.host = args[ArrayUtils.indexOf(args, "--host") + 1];
             }
-            shell = new OpencgaCliShellExecutor(options);
+            shell = new Shell(options);
             CommandLineUtils.printLog("Shell created ");
             shell.execute();
         } catch (CatalogAuthenticationException e) {
@@ -102,23 +117,25 @@ public class OpencgaMain {
         return getMode().equals(Mode.SHELL);
     }
 
-    public static OpencgaCliShellExecutor getShell() {
+    public static Shell getShell() {
         return shell;
     }
 
-    public static void setShell(OpencgaCliShellExecutor shell) {
+    public static void setShell(Shell shell) {
         OpencgaMain.shell = shell;
     }
 
-    public static String getLogLevel() {
+    public static LogLevel getLogLevel() {
         return logLevel;
     }
 
-    public static void setLogLevel(String logLevel) {
+    public static void setLogLevel(LogLevel logLevel) {
         OpencgaMain.logLevel = logLevel;
     }
 
     public enum Mode {
         SHELL, CLI
     }
+
+
 }

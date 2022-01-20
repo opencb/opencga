@@ -24,7 +24,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.opencga.app.cli.main.CommandLineUtils;
+import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;

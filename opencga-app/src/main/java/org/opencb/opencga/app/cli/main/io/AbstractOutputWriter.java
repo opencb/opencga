@@ -19,8 +19,8 @@ package org.opencb.opencga.app.cli.main.io;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.commons.utils.PrintUtils;
-import org.opencb.opencga.app.cli.main.CommandLineUtils;
 import org.opencb.opencga.app.cli.main.parent.ParentUsersCommandExecutor;
+import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.PrintStream;

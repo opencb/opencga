@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.cli.main;
+package org.opencb.opencga.app.cli.main.shell;
 
 import org.jline.reader.*;
 import org.jline.reader.impl.DefaultHighlighter;
@@ -7,21 +7,26 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.main.OpenCgaCompleterImpl;
+import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.processors.ShellProcessor;
+import org.opencb.opencga.app.cli.main.parser.ShellParamParser;
+import org.opencb.opencga.app.cli.main.processors.ShellCommandProcessor;
+import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
+import org.opencb.opencga.app.cli.session.LogLevel;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.io.IOException;
 
 import static org.opencb.commons.utils.PrintUtils.*;
 
+public class Shell extends OpencgaCommandExecutor {
 
-public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
 
     private LineReader lineReader = null;
     private Terminal terminal = null;
 
-    public OpencgaCliShellExecutor(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
+    public Shell(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
         super(options);
     }
 
@@ -43,7 +48,7 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
                 try {
                     defaultHistory.save();
                 } catch (IOException e) {
-                    CommandLineUtils.printLog("Failed to save terminal history", e);
+                    CommandLineUtils.error("Failed to save terminal history", e);
                 }
             }));
             reader = LineReaderBuilder.builder()
@@ -52,7 +57,7 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
                     .history(defaultHistory).completer(new OpenCgaCompleterImpl())
                     .build();
         } catch (Exception e) {
-            CommandLineUtils.printLog("Failed to create terminal ", e);
+            CommandLineUtils.error("Failed to create terminal ", e);
 
         }
 
@@ -66,7 +71,7 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
                 lineReader = getTerminal();
             }
             String PROMPT;
-            ShellProcessor processor = new ShellProcessor();
+            ShellCommandProcessor processor = new ShellCommandProcessor(new ShellParamParser());
             while (true) {
                 // Read and sanitize the input
                 String line;
@@ -84,18 +89,15 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
                 }
                 line = line.trim();
                 if (!line.equals("")) {
-
-                    processor.execute(line.split(" "));
+                    processor.process(line.split(" "));
 
                 }
-                // Construct the Command and args to pass to that command
             }
             terminal.writer().flush();
         } catch (Exception e) {
-            CommandLineUtils.printLog("OpenCGA execution error ", e);
-            e.printStackTrace();
-            CommandLineUtils.printLog("sessionManager:" + sessionManager, null);
-            CommandLineUtils.printLog("getCliSession:" + sessionManager.getCliSession(), null);
+            CommandLineUtils.error("OpenCGA execution error ", e);
+            CommandLineUtils.debug("sessionManager:" + sessionManager);
+            CommandLineUtils.debug("getCliSession:" + sessionManager.getCliSession());
 
         }
     }
@@ -122,23 +124,25 @@ public class OpencgaCliShellExecutor extends OpencgaCommandExecutor {
         println("                █████                                                                ", Color.GREEN);
         println("               ░░░░░                                                                 ", Color.GREEN);
 
-        System.out.println();
+        println("");
         System.out.println(CommandLineUtils.getVersionString());
-        System.out.println();
+        println("");
         println("\nTo close the application type \"exit\"", Color.BLUE);
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        CommandLineUtils.printLog("Opencga is running in DEBUG mode");
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
-        System.out.println();
+        println("");
+        println("");
+        println("");
+        println("");
+        if (!OpencgaMain.getLogLevel().equals(LogLevel.OFF)) {
+            CommandLineUtils.printLog("Opencga is running in " + OpencgaMain.getLogLevel() + " mode");
+        }
+        println("");
+        println("");
+        println("");
+        println("");
+        println("");
+        println("");
+        println("");
+        println("");
     }
 
 }
