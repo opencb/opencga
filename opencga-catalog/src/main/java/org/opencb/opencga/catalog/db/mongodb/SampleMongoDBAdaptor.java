@@ -314,7 +314,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             createNewVersion(clientSession, studyUid, sampleUid);
         } else {
-            checkInUseInLockedClinicalAnalysis(clientSession, sampleDocument);
+            boolean internalUpdateOnly = parameters.keySet().stream().allMatch(key -> key.startsWith("internal."));
+            // Don't need to check if locked when updating only internal fields
+            if (!internalUpdateOnly) {
+                checkInUseInLockedClinicalAnalysis(clientSession, sampleDocument);
+            }
         }
 
         // Perform the update

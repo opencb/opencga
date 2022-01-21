@@ -398,7 +398,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             createNewVersion(clientSession, individual.getStudyUid(), individual.getUid());
         } else {
-            checkInUseInLockedClinicalAnalysis(clientSession, individual);
+            boolean internalUpdateOnly = parameters.keySet().stream().allMatch(key -> key.startsWith("internal."));
+            // Don't need to check if locked when updating only internal fields
+            if (!internalUpdateOnly) {
+                checkInUseInLockedClinicalAnalysis(clientSession, individual);
+            }
         }
 
         DataResult result = updateAnnotationSets(clientSession, individual.getUid(), parameters, variableSetList, queryOptions, true);
