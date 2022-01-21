@@ -1,6 +1,7 @@
 package org.opencb.opencga.app.cli.main.parent;
 
 import com.beust.jcommander.JCommander;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
@@ -17,6 +18,7 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
     }
 
+
     @Override
     public boolean isHelp() {
         String parsedCommand = jCommander.getParsedCommand();
@@ -28,6 +30,20 @@ public class ParentCliOptionsParser extends CliOptionsParser {
             }
         }
         return commonCommandOptions.help;
+    }
+
+
+    public boolean isValid(String parsedCommand) {
+        if (StringUtils.isEmpty(parsedCommand)) {
+            // 1. Check if a command has been provided
+            org.opencb.opencga.app.cli.main.utils.CommandLineUtils.debug("IS EMPTY COMMAND " + parsedCommand);
+            return false;
+        } else {
+            // 2. Check if a subcommand has been provided
+            String parsedSubCommand = getSubCommand();
+            org.opencb.opencga.app.cli.main.utils.CommandLineUtils.debug("PARSED SUBCOMMAND " + parsedCommand);
+            return !StringUtils.isEmpty(parsedSubCommand);
+        }
     }
 
     @Override

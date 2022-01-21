@@ -48,7 +48,7 @@ public class OpenCgaCompleterImpl extends OpenCgaCompleter {
 
 
     private List<Candidate> getStudyCandidates() {
-        List<String> studies = OpencgaMain.getShell().getSessionManager().getStudies();
+        List<String> studies = OpencgaMain.getShell().getSessionManager().getSession().getStudies();
         List<Candidate> res = new ArrayList();
         for (String study : studies) {
             res.add(new Candidate(study));

@@ -1,22 +1,28 @@
 package org.opencb.opencga.app.cli.main.shell;
 
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jline.reader.*;
 import org.jline.reader.impl.DefaultHighlighter;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.OpenCgaCompleterImpl;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.parser.ShellParamParser;
-import org.opencb.opencga.app.cli.main.processors.ShellCommandProcessor;
+import org.opencb.opencga.app.cli.main.processors.CommandProcessor;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
-import org.opencb.opencga.app.cli.session.LogLevel;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
+import java.util.logging.Level;
 
 import static org.opencb.commons.utils.PrintUtils.*;
 
@@ -25,9 +31,13 @@ public class Shell extends OpencgaCommandExecutor {
 
     private LineReader lineReader = null;
     private Terminal terminal = null;
+    private String host = null;
 
     public Shell(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
         super(options);
+        if (options.host != null) {
+            host = options.host;
+        }
     }
 
     private LineReader getTerminal() {
@@ -72,7 +82,7 @@ public class Shell extends OpencgaCommandExecutor {
             }
             String PROMPT;
             // Create a command processor to process all the shell commands
-            ShellCommandProcessor processor = new ShellCommandProcessor(new ShellParamParser());
+            CommandProcessor processor = new CommandProcessor();
             while (true) {
                 // Read and sanitize the input
                 String line;
@@ -96,8 +106,12 @@ public class Shell extends OpencgaCommandExecutor {
 
                 // Send the line read to the processor for process
                 if (!line.equals("")) {
-                    processor.process(line.split(" "));
-
+                    String[] args = line.split(" ");
+                    args = parseParams(args);
+                    if (!ArrayUtils.isEmpty(args)) {
+                        ArrayUtils.addAll(args, "--host", this.host);
+                        processor.process(args);
+                    }
                 }
             }
             terminal.writer().flush();
@@ -110,7 +124,7 @@ public class Shell extends OpencgaCommandExecutor {
     }
 
     public String getPrompt() {
-        String host = format("[" + sessionManager.getHost() + "]", PrintUtils.Color.GREEN);
+        String host = format("[" + sessionManager.getSession().getHost() + "]", PrintUtils.Color.GREEN);
         String study = format("[" + sessionManager.getSession().getCurrentStudy() + "]", PrintUtils.Color.BLUE);
         String user = format("<" + sessionManager.getSession().getUser() + "/>", PrintUtils.Color.YELLOW);
         return host + study + user;
@@ -139,7 +153,7 @@ public class Shell extends OpencgaCommandExecutor {
         println("");
         println("");
         println("");
-        if (!OpencgaMain.getLogLevel().equals(LogLevel.OFF)) {
+        if (!OpencgaMain.getLogLevel().equals(Level.OFF)) {
             CommandLineUtils.printLog("Opencga is running in " + OpencgaMain.getLogLevel() + " mode");
         }
         println("");
@@ -152,4 +166,69 @@ public class Shell extends OpencgaCommandExecutor {
         println("");
     }
 
+
+    public String[] parseParams(String[] args) throws CatalogAuthenticationException {
+        CommandLineUtils.printLog("Executing " + String.join(" ", args));
+        if (ArrayUtils.contains(args, "--host")) {
+            printDebug("To change host you must exit the shell and launch it again with the --host parameter.");
+            return null;
+        }
+
+        if (args.length == 1 && "exit".equals(args[0].trim())) {
+            println("\nThanks for using OpenCGA. See you soon.\n\n", Color.YELLOW);
+            System.exit(0);
+        }
+
+        if (args.length == 3 && "use".equals(args[0]) && "study".equals(args[1])) {
+            setValidatedCurrentStudy(args[2]);
+            return null;
+        }
+
+        //Is for scripting login method
+        if (isNotHelpCommand(args)) {
+            if (ArrayUtils.contains(args, "--user-password")) {
+                char[] passwordArray =
+                        System.console().readPassword(format("\nEnter your password: ", Color.GREEN));
+                ArrayUtils.addAll(args, "--password", new String(passwordArray));
+                return args;
+            }
+        }
+        return CommandLineUtils.processShortCuts(args);
+
+    }
+
+
+    public void setValidatedCurrentStudy(String arg) {
+        if (!StringUtils.isEmpty(getSessionManager().getSession().getToken())) {
+            CommandLineUtils.debug("Check study " + arg);
+            OpenCGAClient openCGAClient = getOpenCGAClient();
+            if (openCGAClient != null) {
+                try {
+                    RestResponse<Study> res = openCGAClient.getStudyClient().info(arg, new ObjectMap());
+                    if (res.allResultsSize() > 0) {
+                        CommandLineUtils.printLog("Validated study " + arg);
+                        getSessionManager().getSession().setCurrentStudy(res.response(0).getResults().get(0).getFqn());
+                        CommandLineUtils.printLog("Validated study " + arg);
+                        getSessionManager().saveSession();
+                        println(getKeyValueAsFormattedString("Current study is: ",
+                                getSessionManager().getSession().getCurrentStudy()));
+                    } else {
+                        printWarn("Invalid study");
+                    }
+                } catch (ClientException e) {
+                    CommandLineUtils.error(e);
+                } catch (IOException e) {
+                    CommandLineUtils.error(e);
+                }
+            } else {
+                printError("Client not available");
+            }
+        } else {
+            printWarn("To set a study you must be logged in");
+        }
+    }
+
+    protected boolean isNotHelpCommand(String[] args) {
+        return !ArrayUtils.contains(args, "--help") && !ArrayUtils.contains(args, "-h");
+    }
 }

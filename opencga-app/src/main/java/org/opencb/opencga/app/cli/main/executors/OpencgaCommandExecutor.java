@@ -24,6 +24,7 @@ import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
+import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
@@ -118,7 +119,8 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 openCGAClient = new OpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration);
             } else {
                 privateLogger.debug("No token has been provided, reading session file");
-                if (sessionManager.hasSessionToken()) {
+                if (!StringUtils.isEmpty(sessionManager.getSession().getToken())
+                        && !SessionManager.NO_TOKEN.equals(sessionManager.getSession().getToken())) {
                     // FIXME it seems skipDuration is not longer used,
                     //  this should be either implemented or removed
                     if (skipDuration) {
@@ -132,7 +134,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         privateLogger.debug("Skip duration set to {}", skipDuration);
 
                         // Get token claims
-                        ObjectMap claimsMap = parseTokenClaims(sessionManager.getToken());
+                        ObjectMap claimsMap = parseTokenClaims(sessionManager.getSession().getToken());
 
                         // Check if session has expired
                         Date expirationDate = new Date(claimsMap.getLong("exp") * 1000L);
@@ -140,9 +142,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         if (currentDate.before(expirationDate) || !claimsMap.containsKey("exp")) {
                             privateLogger.debug("Session expiration time is ok, valid until: {}", expirationDate);
                             openCGAClient = new OpenCGAClient(
-                                    new AuthenticationResponse(sessionManager.getToken(), sessionManager.getRefreshToken()),
+                                    new AuthenticationResponse(sessionManager.getSession().getToken(), sessionManager.getSession().getRefreshToken()),
                                     clientConfiguration);
-                            openCGAClient.setUserId(sessionManager.getUser());
+                            openCGAClient.setUserId(sessionManager.getSession().getUser());
 
                             // FIXME This looks weird, commenting it
 //                            if (options.token == null) {

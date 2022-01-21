@@ -46,6 +46,7 @@ apiConfig:
           ignore: True
         - name: login
           executorExtended: True
+          optionExtended: True
         - name: logout
           executorExtended: True
           optionExtended: True

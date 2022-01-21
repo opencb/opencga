@@ -27,28 +27,27 @@ public class LoginUtils {
 
 
     public static String[] parseLoginCommand(String[] args) {
-        if (ArrayUtils.contains(args, "login")) {
-            //adds in position 0 command "users"
-            args = ArrayUtils.addAll(new String[]{"users"}, args);
+        //adds in position 0 command "users"
+        args = ArrayUtils.addAll(new String[]{"users"}, args);
 
-            //case opencga.sh login OR [opencga][demo@project:study]<demo/>login
-            if (args.length == 2 && "login".equals(args[1])) {
-                return forceLogin(args);
-            }
-
-            //CASES
-            //case opencga.sh login --host ...... OR [opencga][demo@project:study]<demo/>login --host ......
-            //case opencga.sh login user1 [.....] OR [opencga][demo@project:study]<demo/>login user1 [.....]
-            if (args.length > 2 && "login".equals(args[1])) {
-                if (args[2].equals("--host")) {
-                    return forceLogin(args);
-                } else {
-                    args = ArrayUtils.remove(args, 2);
-                    return loginUser(args, args[2]);
-                }
-            }
-
+        //case opencga.sh login OR [opencga][demo@project:study]<demo/>login
+        if (args.length == 2 && "login".equals(args[1])) {
+            return forceLogin(args);
         }
+
+        //CASES
+        //case opencga.sh login --host ...... OR [opencga][demo@project:study]<demo/>login --host ......
+        //case opencga.sh login user1 [.....] OR [opencga][demo@project:study]<demo/>login user1 [.....]
+        if (args.length > 2 && "login".equals(args[1])) {
+            if (args[2].equals("--host")) {
+                return forceLogin(args);
+            } else {
+                String user = args[2];
+                args = ArrayUtils.remove(args, 2);
+                return loginUser(args, user);
+            }
+        }
+
         return args;
     }
 

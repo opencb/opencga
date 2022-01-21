@@ -116,8 +116,8 @@ public abstract class CommandExecutor {
             } else {
 //                this.token = CliSessionManager.getInstance().getToken();
 //                this.userId = CliSessionManager.getInstance().getUser();
-                this.token = sessionManager.getToken();
-                this.userId = sessionManager.getUser();
+                this.token = sessionManager.getSession().getToken();
+                this.userId = sessionManager.getSession().getUser();
 
             }
         } catch (IOException e) {

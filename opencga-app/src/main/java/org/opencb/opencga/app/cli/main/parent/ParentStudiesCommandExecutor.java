@@ -132,7 +132,7 @@ public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecuto
             return study;
         } else {
             // Third, check if there is only one single project and study for this user in the current CLI session file.
-            List<String> studies = sessionManager.getStudies();
+            List<String> studies = sessionManager.getSession().getStudies();
             if (CollectionUtils.isNotEmpty(studies) && studies.size() == 1) {
                 study = studies.get(0);
             } else {

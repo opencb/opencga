@@ -48,7 +48,6 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("import org.opencb.opencga.core.response.RestResponse;\n");
         sb.append("import org.opencb.opencga.client.exceptions.ClientException;\n");
         sb.append("import org.opencb.commons.datastore.core.ObjectMap;\n\n");
-        sb.append("import org.opencb.opencga.app.cli.main.CommandLineUtils;\n\n");
         sb.append("import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;\n\n");
 
         sb.append("import java.util.List;\n\n");
@@ -345,7 +344,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         if (enc) {
             if (studyPresent) {
                 res += "        if(queryParams.get(\"study\")==null && OpencgaMain.isShellMode()){\n";
-                res += "                queryParams.putIfNotEmpty(\"study\", sessionManager.getCurrentStudy());\n";
+                res += "                queryParams.putIfNotEmpty(\"study\", sessionManager.getSession().getCurrentStudy());\n";
                 res += "        }\n";
             }
             return res + "\n";

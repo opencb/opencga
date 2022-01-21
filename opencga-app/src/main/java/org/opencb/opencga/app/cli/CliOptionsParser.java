@@ -2,14 +2,8 @@ package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
-import org.apache.commons.lang3.ArrayUtils;
-import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
-import org.opencb.opencga.app.cli.main.utils.LoginUtils;
-import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.Map;
-
-import static org.opencb.commons.utils.PrintUtils.println;
 
 /**
  * Created on 08/09/17.
@@ -36,39 +30,8 @@ public abstract class CliOptionsParser {
         }
     }
 
-    public String[] parse(String[] args) throws ParameterException {
-
-        //Process the shortcuts login, help, version, logout...
-        args = processShortCuts(args);
-        if (!ArrayUtils.isEmpty(args)) {
-            jCommander.parse(args);
-        }
-        return args;
-    }
-
-    public String[] processShortCuts(String[] args) {
-        switch (args[0]) {
-            case "login":
-                return LoginUtils.parseLoginCommand(args);
-            case "--help":
-            case "help":
-            case "-h":
-            case "?":
-                printUsage();
-                return null;
-            case "--version":
-            case "version":
-                println(CommandLineUtils.getVersionString());
-                return null;
-            case "--build-version":
-            case "build-version":
-                println(GitRepositoryState.get().getBuildVersion());
-                return null;
-            case "logout":
-                return ArrayUtils.addAll(new String[]{"users"}, args);
-            default:
-                return args;
-        }
+    public void parse(String[] args) throws ParameterException {
+        jCommander.parse(args);
     }
 
     public String getCommand() {

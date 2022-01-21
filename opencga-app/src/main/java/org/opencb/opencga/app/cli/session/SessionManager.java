@@ -21,11 +21,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.config.HostConfig;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,12 +33,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 public class SessionManager {
 
     public static final String SESSION_FILENAME_SUFFIX = "_session.json";
-    private static final String NO_TOKEN = "NO_TOKEN";
+    public static final String NO_TOKEN = "NO_TOKEN";
     private static final String NO_STUDY = "NO_STUDY";
     private static final String ANONYMOUS = "anonymous";
     private final ClientConfiguration clientConfiguration;
@@ -96,9 +97,13 @@ public class SessionManager {
     private Session createEmptySession() {
         Session session = new Session();
         session.setHost(host);
+        session.setVersion(GitRepositoryState.get().getBuildVersion());
+        session.setTimestamp(System.currentTimeMillis());
+        session.setStudies(new ArrayList());
         session.setCurrentStudy(NO_STUDY);
         session.setToken(NO_TOKEN);
         session.setUser(ANONYMOUS);
+
         return session;
     }
 
@@ -176,49 +181,6 @@ public class SessionManager {
         // We just need to save an empty session, this will delete user and token for this host
         logger.debug("Session logout for host '{}'", host);
         saveSession(createEmptySession(), host);
-    }
-
-
-    public boolean hasSessionToken() {
-        return !StringUtils.isEmpty(getToken()) && !SessionManager.NO_TOKEN.equals(getToken());
-    }
-
-    // Wrappers to getters
-
-    public String getHost() {
-        return host;
-    }
-
-    public String getUser() {
-        return getSession().getUser();
-    }
-
-    public String getToken() {
-        return getSession().getToken();
-    }
-
-    public String getRefreshToken() {
-        return getSession().getRefreshToken();
-    }
-
-    public String getVersion() {
-        return getSession().getVersion();
-    }
-
-    public String getLogin() {
-        return getSession().getLogin();
-    }
-
-    public List<String> getStudies() {
-        return getSession().getStudies();
-    }
-
-    public long getTimestamp() {
-        return getSession().getTimestamp();
-    }
-
-    public String getCurrentStudy() {
-        return getSession().getCurrentStudy();
     }
 
 
