@@ -91,12 +91,15 @@ public class OpencgaMain {
         CommandLineUtils.printLog("Initializing Shell...  ");
 
         try {
+            // If the shell launch command includes a host it is set to be used
             GeneralCliOptions.CommonCommandOptions options = new GeneralCliOptions.CommonCommandOptions();
             if (ArrayUtils.contains(args, "--host")) {
                 options.host = args[ArrayUtils.indexOf(args, "--host") + 1];
             }
+            // Create a shell executor instance
             shell = new Shell(options);
             CommandLineUtils.printLog("Shell created ");
+            // Launch execute command to begin the execution
             shell.execute();
         } catch (CatalogAuthenticationException e) {
             CommandLineUtils.printLog("Failed to initialize shell", e);

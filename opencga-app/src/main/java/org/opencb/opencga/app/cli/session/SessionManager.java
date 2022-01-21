@@ -22,7 +22,9 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.client.config.HostConfig;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,22 +64,33 @@ public class SessionManager {
         logger = LoggerFactory.getLogger(SessionManager.class);
 
         // TODO should we validate host name provided?
-//        boolean validHost = false;
-//        for (HostConfig hostConfig : clientConfiguration.getRest().getHosts()) {
-//            if (hostConfig.getName().equals(host)) {
-//                validHost = true;
-//                break;
-//            }
-//        }
+        boolean validHost = false;
+        if (clientConfiguration != null) {
+            for (HostConfig hostConfig : clientConfiguration.getRest().getHosts()) {
+                if (hostConfig.getName().equals(host)) {
+                    validHost = true;
+                    break;
+                }
+            }
+        } else {
+            CommandLineUtils.error("The client configuration can not be null. Please check configuration file.", null);
+            System.exit(-1);
+        }
+
 
         // Prepare objects for writing and reading sessions
-        ObjectMapper objectMapper = new ObjectMapper();
-        this.objectWriter = objectMapper
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .writerFor(Session.class)
-                .withDefaultPrettyPrinter();
-        this.objectReader = objectMapper
-                .readerFor(Session.class);
+        if (validHost) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            this.objectWriter = objectMapper
+                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    .writerFor(Session.class)
+                    .withDefaultPrettyPrinter();
+            this.objectReader = objectMapper
+                    .readerFor(Session.class);
+        } else {
+            CommandLineUtils.error("Not valid host. Please check configuration file or host parameter.", null);
+            System.exit(-1);
+        }
     }
 
     private Session createEmptySession() {

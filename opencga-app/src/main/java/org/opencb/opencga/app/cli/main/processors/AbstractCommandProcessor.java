@@ -33,7 +33,7 @@ public abstract class AbstractCommandProcessor {
                     if (!ArrayUtils.isEmpty(args)) {
                         CommandLineUtils.debug("PARSED OPTIONS ::: " + ArrayUtils.toString(args));
                         try {
-                            // 3. Check if a command has been provided is Valid
+                            // 3. Check if a command has been provided is valid
                             String parsedCommand = cliOptionsParser.getCommand();
                             CommandLineUtils.debug("COMMAND TO EXECUTE ::: " + ArrayUtils.toString(args));
                             if (cliOptionsParser.isValid(parsedCommand)) {

@@ -28,6 +28,7 @@ public class ShellCommandProcessor extends AbstractCommandProcessor {
             try {
                 commandExecutor.execute();
                 commandExecutor.getSessionManager().saveSession();
+                // After executing the command, the studies must be reloaded in case they have changed
                 loadSessionStudies(commandExecutor);
             } catch (IOException e) {
                 CommandLineUtils.error("Could not set the default study", e);
@@ -48,8 +49,10 @@ public class ShellCommandProcessor extends AbstractCommandProcessor {
         if (commandExecutor.getSessionManager().hasSessionToken()) {
             CommandLineUtils.debug("Loading session studies using token: "
                     + commandExecutor.getSessionManager().getToken());
+
             OpenCGAClient openCGAClient = commandExecutor.getOpenCGAClient();
             try {
+                // Query the server to retrieve the studies of user projects
                 RestResponse<Project> res = openCGAClient.getProjectClient().search(new ObjectMap());
                 List<String> studies = new ArrayList<>();
                 List<OpenCGAResult<Project>> responses = res.getResponses();
@@ -60,21 +63,27 @@ public class ShellCommandProcessor extends AbstractCommandProcessor {
                         }
                     }
                 }
+
                 if (!studies.isEmpty()) {
+                    //Save all the user studies in session
                     commandExecutor.getSessionManager().getSession().setStudies(studies);
                     if (!studies.contains(commandExecutor.getSessionManager().getCurrentStudy())) {
-                        boolean enc = false;
+                        boolean find = false;
                         for (String study : commandExecutor.getSessionManager().getStudies()) {
+                            // If it has found any study of which the user is the
+                            // owner saves it as the current study
                             if (study.startsWith(commandExecutor.getSessionManager().getUser())) {
                                 commandExecutor.getSessionManager().getSession().setCurrentStudy(study);
-                                enc = true;
+                                find = true;
                                 break;
                             }
                         }
-                        if (!enc) {
+                        // If none is found, save the first one as the current study
+                        if (!find) {
                             commandExecutor.getSessionManager().getSession().setCurrentStudy(commandExecutor.getSessionManager().getStudies().get(0));
                         }
                     }
+                    // The last step is to save the session in file
                     commandExecutor.getSessionManager().saveSession();
                 }
             } catch (Exception e) {

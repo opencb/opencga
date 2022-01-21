@@ -71,11 +71,16 @@ public class Shell extends OpencgaCommandExecutor {
                 lineReader = getTerminal();
             }
             String PROMPT;
+            // Create a command processor to process all the shell commands
             ShellCommandProcessor processor = new ShellCommandProcessor(new ShellParamParser());
             while (true) {
                 // Read and sanitize the input
                 String line;
+
+                // Renew the prompt for set the current study, host and user
                 PROMPT = getPrompt();
+
+                // Read the shell command line for next execution
                 try {
                     line = lineReader.readLine(PROMPT);
                 } catch (UserInterruptException e) {
@@ -88,6 +93,8 @@ public class Shell extends OpencgaCommandExecutor {
                     continue;
                 }
                 line = line.trim();
+
+                // Send the line read to the processor for process
                 if (!line.equals("")) {
                     processor.process(line.split(" "));
 
