@@ -46,6 +46,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.IndexStatus;
 import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.family.Family;
@@ -911,6 +912,11 @@ public class SampleManagerTest extends AbstractManagerTest {
             // Check nothing changed
             checkNothingChanged("sample3", 2);
         }
+
+
+        catalogManager.getSampleManager().updateSampleInternalGenotypeIndex(
+                catalogManager.getSampleManager().get(studyFqn, "sample3", null, token).first(),
+                new SampleInternalVariantGenotypeIndex(new IndexStatus(IndexStatus.READY, "This should be doable!")), token);
 
 //        try {
 //            catalogManager.getSampleManager().update(studyFqn, "sample4", updateParams, QueryOptions.empty(), token);
