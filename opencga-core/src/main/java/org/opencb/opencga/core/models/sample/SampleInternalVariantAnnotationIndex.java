@@ -1,17 +1,17 @@
 package org.opencb.opencga.core.models.sample;
 
-import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.common.IndexStatus;
 
 import java.util.Objects;
 
 public class SampleInternalVariantAnnotationIndex {
 
-    private InternalStatus status;
+    private IndexStatus status;
 
     public SampleInternalVariantAnnotationIndex() {
     }
 
-    public SampleInternalVariantAnnotationIndex(InternalStatus status) {
+    public SampleInternalVariantAnnotationIndex(IndexStatus status) {
         this.status = status;
     }
 
@@ -23,11 +23,11 @@ public class SampleInternalVariantAnnotationIndex {
         return sb.toString();
     }
 
-    public InternalStatus getStatus() {
+    public IndexStatus getStatus() {
         return status;
     }
 
-    public SampleInternalVariantAnnotationIndex setStatus(InternalStatus status) {
+    public SampleInternalVariantAnnotationIndex setStatus(IndexStatus status) {
         this.status = status;
         return this;
     }

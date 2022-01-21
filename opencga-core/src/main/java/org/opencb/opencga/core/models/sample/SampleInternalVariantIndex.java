@@ -1,19 +1,19 @@
 package org.opencb.opencga.core.models.sample;
 
-import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.common.IndexStatus;
 
 import java.util.Objects;
 
 public class SampleInternalVariantIndex {
 
-    private InternalStatus status;
+    private IndexStatus status;
     private int numFiles;
     private boolean multiFile;
 
     public SampleInternalVariantIndex() {
     }
 
-    public SampleInternalVariantIndex(InternalStatus status, int numFiles, boolean multiFile) {
+    public SampleInternalVariantIndex(IndexStatus status, int numFiles, boolean multiFile) {
         this.status = status;
         this.numFiles = numFiles;
         this.multiFile = multiFile;
@@ -29,11 +29,11 @@ public class SampleInternalVariantIndex {
         return sb.toString();
     }
 
-    public InternalStatus getStatus() {
+    public IndexStatus getStatus() {
         return status;
     }
 
-    public SampleInternalVariantIndex setStatus(InternalStatus status) {
+    public SampleInternalVariantIndex setStatus(IndexStatus status) {
         this.status = status;
         return this;
     }

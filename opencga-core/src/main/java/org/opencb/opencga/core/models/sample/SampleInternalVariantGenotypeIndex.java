@@ -1,17 +1,17 @@
 package org.opencb.opencga.core.models.sample;
 
-import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.common.IndexStatus;
 
 import java.util.Objects;
 
 public class SampleInternalVariantGenotypeIndex {
 
-    private InternalStatus status;
+    private IndexStatus status;
 
     public SampleInternalVariantGenotypeIndex() {
     }
 
-    public SampleInternalVariantGenotypeIndex(InternalStatus status) {
+    public SampleInternalVariantGenotypeIndex(IndexStatus status) {
         this.status = status;
     }
 
@@ -23,11 +23,11 @@ public class SampleInternalVariantGenotypeIndex {
         return sb.toString();
     }
 
-    public InternalStatus getStatus() {
+    public IndexStatus getStatus() {
         return status;
     }
 
-    public SampleInternalVariantGenotypeIndex setStatus(InternalStatus status) {
+    public SampleInternalVariantGenotypeIndex setStatus(IndexStatus status) {
         this.status = status;
         return this;
     }
