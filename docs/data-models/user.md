@@ -37,6 +37,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **filters**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/user#userfilter"><em>UserFilter</em></a>>* <br> | <p>A List with related filters.</p> |
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
+### UserInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserInternal.java).
+
+
 ### UserFilter
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserFilter.java).
 
@@ -60,10 +64,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 
 ### UserQuota
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserQuota.java).
-
-
-### UserInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserInternal.java).
 
 
 ### AuthenticationOrigin

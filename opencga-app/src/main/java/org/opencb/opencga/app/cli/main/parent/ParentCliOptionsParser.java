@@ -3,10 +3,10 @@ package org.opencb.opencga.app.cli.main.parent;
 import com.beust.jcommander.JCommander;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.*;
 
@@ -51,12 +51,9 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         String parsedCommand = getCommand();
         if (parsedCommand.isEmpty()) {
             System.err.println();
-            System.err.println("Program:     OpenCGA (OpenCB)");
-            System.err.println("Version:     " + GitRepositoryState.get().getBuildVersion());
-            System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
-            System.err.println("Description: Big Data platform for processing and analysing NGS data");
+            PrintUtils.println(org.opencb.opencga.app.cli.main.utils.CommandLineUtils.getVersionString());
             System.err.println();
-            System.err.println("Usage:       opencga.sh [-h|--help] [--version] <command> [options]");
+            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "       opencga.sh [-h|--help] [--shell] [--host] [--version] <command> [options]"));
             System.err.println();
             printMainUsage();
             System.err.println();
@@ -64,16 +61,16 @@ public class ParentCliOptionsParser extends CliOptionsParser {
             String parsedSubCommand = getSubCommand();
             if (parsedSubCommand.isEmpty()) {
                 System.err.println();
-                System.err.println("Usage:   opencga.sh " + parsedCommand + " <subcommand> [options]");
+                PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "   opencga.sh " + parsedCommand + " <subcommand> [options]"));
                 System.err.println();
-                System.err.println("Subcommands:");
+                PrintUtils.println(PrintUtils.format("Subcommands:", PrintUtils.Color.GREEN));
                 printCommands(jCommander.getCommands().get(parsedCommand));
                 System.err.println();
             } else {
                 System.err.println();
-                System.err.println("Usage:   opencga.sh " + parsedCommand + " " + parsedSubCommand + " [options]");
+                PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "   opencga.sh " + parsedCommand + " " + parsedSubCommand + " [options]"));
                 System.err.println();
-                System.err.println("Options:");
+                PrintUtils.println(PrintUtils.format("Options:", PrintUtils.Color.GREEN));
                 CommandLineUtils.printCommandUsage(jCommander.getCommands().get(parsedCommand).getCommands().get(parsedSubCommand));
                 System.err.println();
             }
@@ -85,31 +82,41 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant", "clinical"));
         Set<String> operationsCommands = new HashSet<>(Collections.singletonList("operations"));
         Map<String, String> opencgaCommands = getOpencgaCommands();
-        System.err.println("Opencga commands:");
+
+        String[] catalog = {"users", "projects", "studies", "files", "jobs", "individuals", "families", "panels", "samples", "cohorts", "meta"};
+        PrintUtils.println(PrintUtils.format("Catalog commands:", PrintUtils.Color.GREEN));
+        for (int i = 0; i < catalog.length; i++) {
+            for (String command : jCommander.getCommands().keySet()) {
+                if (command.equals(catalog[i])) {
+                    PrintUtils.printCommandHelpFormattedString(command, jCommander.getCommandDescription(command));
+                }
+            }
+        }
+        System.err.println();
+        PrintUtils.println(PrintUtils.format("Analysis commands:", PrintUtils.Color.GREEN));
+        String[] analysis = {"alignments", "variant", "clinical"};
+        for (int i = 0; i < analysis.length; i++) {
+            for (String command : jCommander.getCommands().keySet()) {
+                if (command.equals(analysis[i])) {
+                    PrintUtils.printCommandHelpFormattedString(command, jCommander.getCommandDescription(command));
+                }
+            }
+        }
+
+        System.err.println();
+        PrintUtils.println(PrintUtils.format("Operation commands:", PrintUtils.Color.YELLOW));
+        String[] operations = {"alignments", "variant", "clinical"};
+        for (int i = 0; i < operations.length; i++) {
+            for (String command : jCommander.getCommands().keySet()) {
+                if (command.equals(operations[i])) {
+                    PrintUtils.printCommandHelpFormattedString(command, jCommander.getCommandDescription(command));
+                }
+            }
+        }
+
+        PrintUtils.println(PrintUtils.format("Opencga commands:", PrintUtils.Color.YELLOW));
         for (Map.Entry entry : opencgaCommands.entrySet()) {
-            System.err.printf("%30s  %s\n", entry.getKey(), entry.getValue());
-        }
-        System.err.println("Catalog commands:");
-        for (String command : jCommander.getCommands().keySet()) {
-            if (!analysisCommands.contains(command) && !operationsCommands.contains(command)) {
-                System.err.printf("%30s  %s\n", command, jCommander.getCommandDescription(command));
-            }
-        }
-
-        System.err.println();
-        System.err.println("Analysis commands:");
-        for (String command : jCommander.getCommands().keySet()) {
-            if (analysisCommands.contains(command)) {
-                System.err.printf("%30s  %s\n", command, jCommander.getCommandDescription(command));
-            }
-        }
-
-        System.err.println();
-        System.err.println("Operation commands:");
-        for (String command : jCommander.getCommands().keySet()) {
-            if (operationsCommands.contains(command)) {
-                System.err.printf("%30s  %s\n", command, jCommander.getCommandDescription(command));
-            }
+            PrintUtils.printCommandHelpFormattedString(entry.getKey().toString(), entry.getValue().toString());
         }
     }
 
@@ -117,10 +124,10 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         Map<String, String> h = new HashMap<>();
         h.put("shell", "Interactive mode opencga shell");
         h.put("use study <name>", "(Only in interactive mode) Sets the study to be used in the following commands");
-        h.put("use host <name>", "Sets the host(server) to be used in the following commands");
         h.put("login [user]", "Authenticates new user in the system");
         h.put("logout", "Logouts the current user from the system");
         h.put("exit", "Closes the opencga shell");
+        h.put("host", "Set the host server to query data");
         return h;
     }
 }

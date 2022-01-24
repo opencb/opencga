@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
+import org.opencb.commons.utils.PrintUtils;
 
 import java.util.Map;
 
@@ -56,7 +57,7 @@ public abstract class CliOptionsParser {
         pad = Math.max(14, pad);
         pad = Math.min(40, pad);
         for (Map.Entry<String, JCommander> entry : commander.getCommands().entrySet()) {
-            System.err.printf("%" + pad + "s  %s\n", entry.getKey(), commander.getCommandDescription(entry.getKey()));
+            PrintUtils.printCommandHelpFormattedString(entry.getKey(), commander.getCommandDescription(entry.getKey()));
         }
     }
 
