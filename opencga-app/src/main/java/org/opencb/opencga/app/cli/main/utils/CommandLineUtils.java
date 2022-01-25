@@ -2,15 +2,14 @@ package org.opencb.opencga.app.cli.main.utils;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.commons.utils.PrintUtils;
-import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
+import java.util.List;
 import java.util.logging.Level;
 
-import static org.opencb.commons.utils.PrintUtils.printError;
-import static org.opencb.commons.utils.PrintUtils.println;
+import static org.opencb.commons.utils.PrintUtils.*;
 
 
 public class CommandLineUtils {
@@ -21,6 +20,14 @@ public class CommandLineUtils {
         res += PrintUtils.getKeyValueAsFormattedString("\tGit version:", "\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId() + "\n");
         res += PrintUtils.getKeyValueAsFormattedString("\tProgram:", "\t\tOpenCGA (OpenCB)" + "\n");
         res += PrintUtils.getKeyValueAsFormattedString("\tDescription: ", "\t\tBig Data platform for processing and analysing NGS data" + "\n");
+        return res;
+    }
+
+    public static String getHelpVersionString() {
+        String res = PrintUtils.getHelpVersionFormattedString("OpenCGA CLI version: ", "\t" + GitRepositoryState.get().getBuildVersion() + "\n");
+        res += PrintUtils.getHelpVersionFormattedString("Git version:", "\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId() + "\n");
+        res += PrintUtils.getHelpVersionFormattedString("Program:", "\t\tOpenCGA (OpenCB)" + "\n");
+        res += PrintUtils.getHelpVersionFormattedString("Description: ", "\t\tBig Data platform for processing and analysing NGS data" + "\n");
         return res;
     }
 
@@ -47,7 +54,7 @@ public class CommandLineUtils {
         } else if (OpencgaMain.getLogLevel().equals(Level.INFO)) {
             PrintUtils.printInfo(message);
         } else if (OpencgaMain.getLogLevel().equals(Level.WARNING)) {
-            PrintUtils.printWarn(message);
+            printWarn(message);
         } else if (OpencgaMain.getLogLevel().equals(Level.SEVERE)) {
             PrintUtils.printError(message, e);
         }
@@ -91,28 +98,61 @@ public class CommandLineUtils {
 
 
     public static String[] processShortCuts(String[] args) {
-        CliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
-        switch (args[0]) {
+        OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
+        switch (getShortcut(args)) {
             case "login":
                 return LoginUtils.parseLoginCommand(args);
             case "--help":
             case "help":
             case "-h":
             case "?":
-                cliOptionsParser.printUsage();
-                return null;
+                if (ArrayUtils.contains(args, "help")) {
+                    for (int i = 0; i < args.length; i++) {
+                        if (args[i].equals("help") || args[i].equals("?") || args[i].equals("-h")) {
+                            args[i] = "--help";
+                        }
+                    }
+                }
+                try {
+                    cliOptionsParser.printUsage(args);
+                } catch (Exception e) {
+                    // malformed command
+                    return args;
+                }
+                break;
             case "--version":
             case "version":
                 println(CommandLineUtils.getVersionString());
-                return null;
+                break;
             case "--build-version":
             case "build-version":
                 println(GitRepositoryState.get().getBuildVersion());
-                return null;
+                break;
             case "logout":
                 return ArrayUtils.addAll(new String[]{"users"}, args);
+            case "list":
+                if (args.length > 1 && args[1].equals("studies")) {
+                    List<String> studies = OpencgaMain.getShell().getSessionManager().getSession().getStudies();
+                    for (String study : studies) {
+                        printGreen(study);
+                    }
+                } else {
+                    printWarn("Opencga version " + GitRepositoryState.get().getBuildVersion() + " can only list studies");
+                }
+                break;
             default:
                 return args;
         }
+        return null;
+    }
+
+    public static String getShortcut(String[] args) {
+        if (ArrayUtils.contains(args, "--help")
+                || ArrayUtils.contains(args, "--h")
+                || ArrayUtils.contains(args, "?")
+                || ArrayUtils.contains(args, "help")) {
+            return "--help";
+        }
+        return args[0];
     }
 }

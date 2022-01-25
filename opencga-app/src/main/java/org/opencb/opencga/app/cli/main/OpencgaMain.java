@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.processors.CommandProcessor;
 import org.opencb.opencga.app.cli.main.shell.Shell;
@@ -38,6 +39,11 @@ public class OpencgaMain {
     public static Level logLevel = Level.OFF;
 
     public static void main(String[] args) {
+        if (args.length == 0) {
+            CliOptionsParser parser = new OpencgaCliOptionsParser();
+            parser.printUsage();
+            System.exit(0);
+        }
         checkLogLevel(args);
         checkMode(args);
         CommandLineUtils.printLog(Arrays.toString(args));
@@ -145,8 +151,16 @@ public class OpencgaMain {
             }
         }
         CommandLineUtils.printLog("CLI PARSED PARAMS ::: " + String.join(", ", args));
+        String shortcut = CommandLineUtils.getShortcut(args);
+        args = CommandLineUtils.processShortCuts(args);
 
-        return CommandLineUtils.processShortCuts(args);
+        if (args != null) {
+            CommandLineUtils.printLog("CLI SHORTCUT RESULT ::: " + String.join(", ", args));
+        } else {
+            CommandLineUtils.printLog("IS SHORTCUT " + shortcut);
+        }
+
+        return args;
     }
 
     public static Mode getMode() {

@@ -46,12 +46,17 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         }
     }
 
+    public void printUsage(String[] args) {
+        parse(args);
+        printUsage();
+    }
+
     @Override
     public void printUsage() {
         String parsedCommand = getCommand();
         if (parsedCommand.isEmpty()) {
             System.err.println();
-            PrintUtils.println(org.opencb.opencga.app.cli.main.utils.CommandLineUtils.getVersionString());
+            PrintUtils.println(org.opencb.opencga.app.cli.main.utils.CommandLineUtils.getHelpVersionString());
             System.err.println();
             PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "       opencga.sh [-h|--help] [--shell] [--host] [--version] <command> [options]"));
             System.err.println();
@@ -104,8 +109,8 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         }
 
         System.err.println();
-        PrintUtils.println(PrintUtils.format("Operation commands:", PrintUtils.Color.YELLOW));
-        String[] operations = {"alignments", "variant", "clinical"};
+        PrintUtils.println(PrintUtils.format("Operation commands:", PrintUtils.Color.GREEN));
+        String[] operations = {"operations"};
         for (int i = 0; i < operations.length; i++) {
             for (String command : jCommander.getCommands().keySet()) {
                 if (command.equals(operations[i])) {
@@ -114,7 +119,8 @@ public class ParentCliOptionsParser extends CliOptionsParser {
             }
         }
 
-        PrintUtils.println(PrintUtils.format("Opencga commands:", PrintUtils.Color.YELLOW));
+        System.err.println();
+        PrintUtils.println(PrintUtils.format("Opencga commands:", PrintUtils.Color.GREEN));
         for (Map.Entry entry : opencgaCommands.entrySet()) {
             PrintUtils.printCommandHelpFormattedString(entry.getKey().toString(), entry.getValue().toString());
         }
@@ -124,6 +130,7 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         Map<String, String> h = new HashMap<>();
         h.put("shell", "Interactive mode opencga shell");
         h.put("use study <name>", "(Only in interactive mode) Sets the study to be used in the following commands");
+        h.put("list studies", "Print available studies for user");
         h.put("login [user]", "Authenticates new user in the system");
         h.put("logout", "Logouts the current user from the system");
         h.put("exit", "Closes the opencga shell");

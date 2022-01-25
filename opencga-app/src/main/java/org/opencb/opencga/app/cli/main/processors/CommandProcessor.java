@@ -41,6 +41,8 @@ public class CommandProcessor {
                         if (cliOptionsParser.isValid(parsedCommand)) {
                             // 4. Get command executor from ExecutorProvider
                             CommandLineUtils.debug("COMMAND AND SUBCOMMAND ARE VALID");
+                            String parsedSubCommand = cliOptionsParser.getSubCommand();
+
                             OpencgaCommandExecutor commandExecutor = ExecutorProvider.getOpencgaCommandExecutor(cliOptionsParser, parsedCommand);
                             // 5. Execute parsed command with executor provided using CommandProcessor Implementation
                             CommandLineUtils.debug("EXECUTING ::: " + ArrayUtils.toString(args));
