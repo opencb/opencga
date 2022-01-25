@@ -257,14 +257,19 @@ public class OpenCGAClient {
         return this;
     }
 
-    //    public OpenCGAClient setThrowExceptionOnError(boolean throwExceptionOnError) {
-//        this.throwExceptionOnError = throwExceptionOnError;
-//        clients.values().stream()
-//                .filter(Objects::nonNull)
-//                .forEach(abstractParentClient -> {
-//                    abstractParentClient.setThrowExceptionOnError(this.throwExceptionOnError);
-//                });
-//        return this;
-//    }
+    public boolean isThrowExceptionOnError() {
+        return throwExceptionOnError;
+    }
+
+    public OpenCGAClient setThrowExceptionOnError(boolean throwExceptionOnError) {
+        this.throwExceptionOnError = throwExceptionOnError;
+        // We have to set the value to all existing clients
+        clients.values().stream()
+                .filter(Objects::nonNull)
+                .forEach(abstractParentClient -> {
+                    abstractParentClient.setThrowExceptionOnError(this.throwExceptionOnError);
+                });
+        return this;
+    }
 
 }

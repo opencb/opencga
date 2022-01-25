@@ -76,15 +76,20 @@
      private final ClientConfiguration clientConfiguration;
      private final int batchSize;
      private final int defaultLimit;
-     protected Logger logger;
+
      private String token;
      private boolean throwExceptionOnError = false;
+
+     protected Logger logger;
+     private Logger privateLogger;
 
      protected AbstractParentClient(String token, ClientConfiguration clientConfiguration) {
          this.token = token;
          this.clientConfiguration = clientConfiguration;
 
          this.logger = LoggerFactory.getLogger(this.getClass());
+         this.privateLogger = LoggerFactory.getLogger(AbstractParentClient.class);
+
          this.client = createRestClient();
 
          jsonObjectMapper = new ObjectMapper();
@@ -111,7 +116,7 @@
          ClientBuilder clientBuilder = ClientBuilder.newBuilder();
          clientBuilder.register(JacksonUtils.ObjectMapperProvider.class);
          if (clientConfiguration.getRest().isTlsAllowInvalidCertificates()) {
-             logger.debug("Using custom SSLContext to allow invalid certificates");
+             privateLogger.debug("Using custom SSLContext to allow invalid certificates");
              try {
                  TrustManager[] trustAllCerts = new TrustManager[]{
                          new X509TrustManager() {
@@ -141,7 +146,7 @@
 
                      @Override
                      public boolean verify(String hostname, SSLSession sslSession) {
-                         logger.debug("Verify hostname = " + hostname);
+                         privateLogger.debug("Verify hostname = " + hostname);
                          return this.hostname.equals(hostname);
                      }
                  };
@@ -248,7 +253,7 @@
                  path = path.path(id2);
              }
              path = path.path(action);
-             //logger.info("PATH ::: " + path);
+             //privateLogger.info("PATH ::: " + path);
              // Call REST
              RestResponse<T> batchRestResponse = callRest(path, params, clazz, method, action);
              batchNumResults = batchRestResponse.allResultsSize();
@@ -337,7 +342,7 @@
                      }
                  }
 
-                 logger.debug("{} URL: {}", method, path.getUri());
+                 privateLogger.debug("{} URL: {}", method, path.getUri());
                  Invocation.Builder header = path.request().header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
                  if (method.equals(GET)) {
                      response = header.get();
@@ -356,7 +361,7 @@
                  }
 
                  Object paramBody = (params != null && params.get("body") != null) ? params.get("body") : "";
-                 logger.debug("{} URL: {}, Body {}", method, path.getUri(), paramBody);
+                 privateLogger.debug("{} URL: {}, Body {}", method, path.getUri(), paramBody);
                  response = path.request()
                          .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
                          .post(Entity.json(paramBody));
@@ -433,7 +438,7 @@
          }
          final FormDataMultiPart multipart = (FormDataMultiPart) formDataMultiPart.bodyPart(filePart);
 
-         logger.debug(POST + " URL: {}", path.getUri());
+         privateLogger.debug(POST + " URL: {}", path.getUri());
          Response response = path.request()
                  .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
                  .post(Entity.entity(multipart, multipart.getMediaType()));
@@ -573,10 +578,10 @@
              for (Event event : restResponse.getEvents()) {
                  if (Event.Type.ERROR.equals(event.getType())) {
                      if (throwExceptionOnError) {
-                         logger.error("Server error '{}' on {} {}", event.getMessage(), method, path.getUri());
+                         logger.debug("Server error '{}' on {} {}", event.getMessage(), method, path.getUri());
                          throw new ClientException("Got server error '" + event.getMessage() + "'");
                      } else {
-                         logger.debug("Server error '{}' on {} {}", event.getMessage(), method, path.getUri());
+                         privateLogger.debug("Server error '{}' on {} {}", event.getMessage(), method, path.getUri());
                      }
                  }
              }
@@ -588,7 +593,7 @@
              if (throwExceptionOnError) {
                  throw new ClientException(message);
              } else {
-                 logger.debug(message);
+                 privateLogger.debug(message);
              }
          }
      }

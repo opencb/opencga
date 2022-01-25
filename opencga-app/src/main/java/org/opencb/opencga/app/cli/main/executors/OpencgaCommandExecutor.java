@@ -161,6 +161,11 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                     openCGAClient = new OpenCGAClient(clientConfiguration);
                 }
             }
+
+            if (openCGAClient != null) {
+                openCGAClient.setThrowExceptionOnError(true);
+            }
+
         } catch (IOException e) {
             CommandLineUtils.printLog("OpencgaCommandExecutorError " + e.getMessage(), e);
         }
