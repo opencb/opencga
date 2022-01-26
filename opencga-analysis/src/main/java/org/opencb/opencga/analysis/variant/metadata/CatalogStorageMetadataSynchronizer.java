@@ -380,6 +380,8 @@ public class CatalogStorageMetadataSynchronizer {
             }
             if (fileMetadata.getSamples() == null) {
                 logger.warn("File '{}' with null samples", fileMetadata.getName());
+                samples = Collections.emptySet();
+                fileMetadata.setSamples(new LinkedHashSet<>());
                 try {
                     VariantFileMetadata variantFileMetadata =
                             metadataManager.getVariantFileMetadata(study.getId(), fileMetadata.getId(), new QueryOptions()).first();
@@ -387,19 +389,21 @@ public class CatalogStorageMetadataSynchronizer {
                         logger.error("Missing VariantFileMetadata from file {}", fileMetadata.getName());
                     } else {
                         logger.info("Samples from VariantFileMetadata: {}", variantFileMetadata.getSampleIds());
+                        // TODO: Should this case be filling the samples and fileMetadata.samples fields?
                     }
                 } catch (StorageEngineException e) {
                     logger.error("Error reading VariantFileMetadata for file " + fileMetadata.getName(), e);
                 }
-                samples = Collections.emptySet();
             } else {
-                if (fileMetadata.getSamples().contains(null)) {
-                    logger.warn("File '{}' has a null sampleId in samples", fileMetadata.getName());
-                }
-                samples = fileMetadata.getSamples()
-                        .stream()
-                        .map(s -> metadataManager.getSampleName(study.getId(), s))
-                        .collect(Collectors.toSet());
+                samples = new HashSet<>(fileMetadata.getSamples().size());
+                fileMetadata.getSamples().forEach(sid -> {
+                    if (sid == null) {
+                        logger.warn("File '{}' has a null sampleId in samples", fileMetadata.getName());
+                    } else {
+                        String name = metadataManager.getSampleName(study.getId(), sid);
+                        samples.add(name);
+                    }
+                });
             }
             fileSamplesMap.put(fileMetadata.getName(), samples);
             allSamples.addAll(fileMetadata.getSamples());
