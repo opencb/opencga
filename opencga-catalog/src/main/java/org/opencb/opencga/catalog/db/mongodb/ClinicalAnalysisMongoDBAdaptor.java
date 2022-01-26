@@ -49,7 +49,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -576,7 +576,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         deletedClinicalCollection.remove(clientSession, bsonQuery, new QueryOptions(MongoDBCollection.MULTI, true));
 
         // Set status to DELETED
-        nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), result.first());
+        nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"),
+                result.first());
 
         // Add audit
         List<Document> auditList = result.first().getList(AUDIT.key(), Document.class);
@@ -966,11 +967,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         addAutoOrQuery(STATUS_ID.key(), queryParam.key(), queryCopy, STATUS_ID.type(), andBsonList);
                         break;
                     case INTERNAL_STATUS:
-                    case INTERNAL_STATUS_NAME:
+                    case INTERNAL_STATUS_ID:
                         // Convert the status to a positive status
-                        queryCopy.put(queryParam.key(),
-                                Status.getPositiveStatus(ClinicalAnalysisStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
-                        addAutoOrQuery(INTERNAL_STATUS_NAME.key(), queryParam.key(), queryCopy, INTERNAL_STATUS_NAME.type(), andBsonList);
+                        queryCopy.put(queryParam.key(), InternalStatus.getPositiveStatus(ClinicalAnalysisStatus.STATUS_LIST,
+                                queryCopy.getString(queryParam.key())));
+                        addAutoOrQuery(INTERNAL_STATUS_ID.key(), queryParam.key(), queryCopy, INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
                     // Other parameter that can be queried.
                     case ID:

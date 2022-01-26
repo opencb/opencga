@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models.individual;
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty.KaryotypicSex;
@@ -28,7 +29,6 @@ import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.util.*;
@@ -163,7 +163,9 @@ public class Individual extends Annotable {
 
     @DataField(id = "status", since = "2.0",
             description = FieldConstants.GENERIC_CUSTOM_STATUS)
-    private CustomStatus status;
+
+    private Status status;
+
 
     @DataField(id = "internal", since = "2.0",
             description = FieldConstants.GENERIC_INTERNAL)
@@ -188,7 +190,7 @@ public class Individual extends Annotable {
                       IndividualInternal internal, Map<String, Object> attributes) {
         this(id, name, father, mother, Collections.emptyList(), location, null, sex, karyotypicSex, ethnicity, population, dateOfBirth,
                 release, 1, TimeUtils.getTime(), TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples,
-                parentalConsanguinity, annotationSets, new CustomStatus(), internal, attributes);
+                parentalConsanguinity, annotationSets, new Status(), internal, attributes);
     }
 
     public Individual(String id, String name, Individual father, Individual mother, List<String> familyIds, Location location,
@@ -196,7 +198,7 @@ public class Individual extends Annotable {
                       OntologyTermAnnotation ethnicity, IndividualPopulation population, String dateOfBirth, int release, int version,
                       String creationDate, String modificationDate, LifeStatus lifeStatus, List<Phenotype> phenotypes,
                       List<Disorder> disorders, List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets,
-                      CustomStatus status, IndividualInternal internal, Map<String, Object> attributes) {
+                      Status status, IndividualInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = ObjectUtils.defaultIfNull(father, new Individual());
@@ -518,11 +520,11 @@ public class Individual extends Annotable {
         return this;
     }
 
-    public CustomStatus getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public Individual setStatus(CustomStatus status) {
+    public Individual setStatus(Status status) {
         this.status = status;
         return this;
     }

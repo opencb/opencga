@@ -51,7 +51,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.clinical.InterpretationStatus;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -398,8 +398,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
         }
 
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
-            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_ID.key(), parameters.get(QueryParams.INTERNAL_STATUS_ID.key()));
             document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
@@ -1090,12 +1090,12 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                         addAutoOrQuery(STATUS_ID.key(), queryParam.key(), queryCopy, STATUS_ID.type(), andBsonList);
                         break;
                     case INTERNAL_STATUS:
-                    case INTERNAL_STATUS_NAME:
+                    case INTERNAL_STATUS_ID:
                         // Convert the status to a positive status
                         queryCopy.put(queryParam.key(),
-                                Status.getPositiveStatus(Enums.ExecutionStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
-                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), queryCopy,
-                                QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
+                                InternalStatus.getPositiveStatus(Enums.ExecutionStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), queryCopy,
+                                QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
                     case METHOD:
                     case METHOD_NAME:

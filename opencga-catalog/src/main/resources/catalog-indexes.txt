@@ -55,7 +55,7 @@
 {"collection": "file", "fields": {"jobId": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
-{"collection": "file", "fields": {"internal.index.status.name": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "file", "fields": {"internal.variant.index.status.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"studyUid": 1, "_acl": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
 {"collection": "file", "fields": {"customAnnotationSets.as": 1, "studyUid": 1}, "options": {"background": true}}

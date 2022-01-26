@@ -53,11 +53,5 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
 
 ### Status
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Status.java).
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
 
-| Field | Description |
-| :---  | :--- |
-| **name**<br>*String* <br> | <p>Name of the . Status</p> |
-| **date**<br>*String* <br> | <p>Date has setted the status.</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **~~message~~**<br>*String* <br><br>_Deprecated_ | <p>Deprecated: Message describing the status.</p> |

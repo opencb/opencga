@@ -20,12 +20,12 @@ package org.opencb.opencga.core.models.family;
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 
 import java.util.ArrayList;
@@ -132,9 +132,11 @@ public class Family extends Annotable {
      *
      * @apiNote
      */
+
     @DataField(id = "status", since = "2.0",
             description = FieldConstants.GENERIC_CUSTOM_STATUS)
-    private CustomStatus status;
+
+    private Status status;
 
 
     /**
@@ -164,12 +166,12 @@ public class Family extends Annotable {
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
                   String description, int expectedSize, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this(id, name, phenotypes, disorders, members, TimeUtils.getTime(), TimeUtils.getTime(), description, expectedSize, -1, 1,
-                annotationSets, new CustomStatus(), null, null, attributes);
+                annotationSets, new Status(), null, null, attributes);
     }
 
     public Family(String id, String name, List<Phenotype> phenotypes, List<Disorder> disorders, List<Individual> members,
                   String creationDate, String modificationDate, String description, int expectedSize, int release, int version,
-                  List<AnnotationSet> annotationSets, CustomStatus status, FamilyInternal internal,
+                  List<AnnotationSet> annotationSets, Status status, FamilyInternal internal,
                   Map<String, Map<String, FamiliarRelationship>> roles, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -354,11 +356,11 @@ public class Family extends Annotable {
         return this;
     }
 
-    public CustomStatus getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public Family setStatus(CustomStatus status) {
+    public Family setStatus(Status status) {
         this.status = status;
         return this;
     }

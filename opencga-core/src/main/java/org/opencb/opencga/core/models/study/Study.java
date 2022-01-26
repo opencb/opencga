@@ -18,6 +18,7 @@
 package org.opencb.opencga.core.models.study;
 
 import org.apache.commons.lang3.ObjectUtils;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -25,7 +26,6 @@ import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AdditionalInfo;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.ExternalSource;
 import org.opencb.opencga.core.models.family.Family;
@@ -230,7 +230,8 @@ public class Study extends PrivateFields {
 
     @DataField(id = "status", indexed = true,
             description = FieldConstants.GENERIC_CUSTOM_STATUS)
-    private CustomStatus status;
+    private Status status;
+
 
     /**
      * An object describing the internal information of the Sample. This is managed by OpenCGA.
@@ -262,7 +263,7 @@ public class Study extends PrivateFields {
         this(alias, name, alias, TimeUtils.getTime(), TimeUtils.getTime(), description, type, new LinkedList<>(), null, 0,
                 new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new HashMap<>(), uri, release,
-                new CustomStatus(), internal, new LinkedList<>(), new HashMap<>());
+                new Status(), internal, new LinkedList<>(), new HashMap<>());
     }
 
     public Study(String id, String name, String alias, String creationDate, String modificationDate, String description, StudyType type,
@@ -270,7 +271,7 @@ public class Study extends PrivateFields {
                  List<Job> jobs, List<Individual> individuals, List<Family> families, List<Sample> samples, List<Cohort> cohorts,
                  List<org.opencb.opencga.core.models.panel.Panel> panels, List<ClinicalAnalysis> clinicalAnalyses,
                  List<VariableSet> variableSets, Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri, int release,
-                 CustomStatus status, StudyInternal internal, List<AdditionalInfo> additionalInfo, Map<String, Object> attributes) {
+                 Status status, StudyInternal internal, List<AdditionalInfo> additionalInfo, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -576,11 +577,11 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public CustomStatus getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public Study setStatus(CustomStatus status) {
+    public Study setStatus(Status status) {
         this.status = status;
         return this;
     }

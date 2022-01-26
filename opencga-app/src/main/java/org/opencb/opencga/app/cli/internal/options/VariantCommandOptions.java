@@ -387,6 +387,8 @@ public class VariantCommandOptions {
         public String panelConfidence;
         @Parameter(names = {"--panel-role-in-cancer"}, description = PANEL_ROLE_IN_CANCER_DESC, arity = 1)
         public String panelRoleInCancer;
+        @Parameter(names = {"--panel-feature-type"}, description = PANEL_FEATURE_TYPE_DESC, arity = 1)
+        public String panelFeatureType;
         @Parameter(names = {"--panel-intersection"}, description = PANEL_INTERSECTION_DESC, arity = 1)
         public Boolean panelIntersection;
 

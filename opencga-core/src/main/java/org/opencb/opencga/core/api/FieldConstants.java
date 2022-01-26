@@ -247,7 +247,8 @@ public class FieldConstants {
     //FileInternal
     public static final String FILE_INTERNAL_STATUS_DESCRIPTION = "File status can have the values READY, DELETED, "
             + "TRASHED, STAGE, MISSING, PENDING_DELETE, DELETING, REMOVED and MISSING_SAMPLES.";
-    public static final String FILE_INTERNAL_INDEX_DESCRIPTION = "File index.";
+    public static final String FILE_INTERNAL_ALIGNMENT_DESCRIPTION = "File internal alignment.";
+    public static final String FILE_INTERNAL_VARIANT_DESCRIPTION = "File internal variant.";
 
     //FileIndex
     public static final String FILE_INDEX_USER_ID_DESCRIPTION = "Index user id.";
@@ -383,4 +384,5 @@ public class FieldConstants {
             + "VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.";
     public static final String USER_FILTER_QUERY = "User filter query";
     public static final String USER_FILTER_QUERY_OPTIONS = "User filter query options";
+
 }

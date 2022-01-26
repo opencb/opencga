@@ -12,7 +12,8 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
@@ -51,14 +52,14 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
     protected void run() throws Exception {
         Query filesQuery = new Query()
                 .append(FORMAT.key(), Arrays.asList(File.Format.VCF, File.Format.GVCF))
-                .append(INTERNAL_INDEX_STATUS_NAME.key(), "!" + FileIndex.IndexStatus.READY);
+                .append(INTERNAL_VARIANT_INDEX_STATUS_ID.key(), "!" + VariantIndexStatus.READY);
         filesQuery.putIfNotEmpty(NAME.key(), toolParams.getName());
         filesQuery.putIfNotEmpty(DIRECTORY.key(), toolParams.getDirectory());
         QueryOptions filesInclude = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                 FileDBAdaptor.QueryParams.ID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(),
                 FileDBAdaptor.QueryParams.PATH.key(),
-                FileDBAdaptor.QueryParams.INTERNAL_INDEX.key()));
+                FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX.key()));
 
         int submittedJobs = 0;
         int filesPerJob = 1;
@@ -74,14 +75,14 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
             while (dbIterator.hasNext() && submittedJobs != maxJobs) {
                 File file = dbIterator.next();
                 scannedFiles++;
-                String indexStatus = getIndexStatus(file);
+                String indexStatus = getVariantIndexStatus(file);
                 OpenCGAResult<Job> jobsFromFile = getCatalogManager()
                         .getJobManager()
                         .search(getStudy(),
                                 new Query()
                                         .append(JobDBAdaptor.QueryParams.INPUT.key(), file.getId())
                                         .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), VariantIndexOperationTool.ID)
-                                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Arrays.asList(
+                                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Arrays.asList(
                                                 Enums.ExecutionStatus.RUNNING,
                                                 Enums.ExecutionStatus.QUEUED,
                                                 Enums.ExecutionStatus.ERROR,
@@ -93,14 +94,14 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
                                 getToken());
 
                 long errorJobs = jobsFromFile.getResults().stream()
-                        .filter(j -> j.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.ERROR)).count();
+                        .filter(j -> j.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ERROR)).count();
                 long runningJobs = jobsFromFile.getNumResults() - errorJobs;
                 if (runningJobs == 0) {
                     // The file is not indexed and it's not in any pending job.
                     VariantIndexParams indexParams = new VariantIndexParams();
                     indexParams.updateParams(toolParams.getIndexParams().toParams());
                     indexParams.setFile(file.getPath());
-                    if (!indexStatus.equals(FileIndex.IndexStatus.NONE) || errorJobs != 0) {
+                    if (!indexStatus.equals(VariantIndexStatus.NONE) || errorJobs != 0) {
                         if (toolParams.isIgnoreFailed()) {
                             logger.info("Skip file '{}' in status {}. ", file.getId(), indexStatus);
                             continue;
@@ -141,16 +142,8 @@ public class VariantFileIndexJobLauncherTool extends OpenCgaToolScopeStudy {
         return "index_" + fileName + "_" + TimeUtils.getTime();
     }
 
-    private String getIndexStatus(File file) {
-        String indexStatus;
-        if (file.getInternal() == null
-                || file.getInternal().getIndex() == null
-                || file.getInternal().getIndex().getStatus() == null
-                || file.getInternal().getIndex().getStatus().getName() == null) {
-            indexStatus = FileIndex.IndexStatus.NONE;
-        } else {
-            indexStatus = file.getInternal().getIndex().getStatus().getName();
-        }
-        return indexStatus;
+    public static String getVariantIndexStatus(File file) {
+        return FileInternal.getVariantIndexStatusId(file.getInternal());
     }
+
 }

@@ -19,13 +19,14 @@ package org.opencb.opencga.core.models.panel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.core.OntologyTerm;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -77,7 +78,7 @@ public class Panel extends DiseasePanel implements IPrivateStudyUid {
 
     public Panel(String id, String name, List<PanelCategory> categories, List<OntologyTerm> disorders, List<String> tags,
                  List<VariantPanel> variants, List<GenePanel> genes, List<RegionPanel> regions,
-                 List<STR> strs, Map<String, Integer> stats, int release, int version, String author, SourcePanel source, Status status,
+                 List<STR> strs, Map<String, Integer> stats, int release, int version, String author, SourcePanel source, InternalStatus status,
                  String description, Map<String, Object> attributes) {
         super(id, name, categories, disorders, tags, variants, genes, strs, regions, stats, source, TimeUtils.getTime(),
                 TimeUtils.getTime(), description, attributes);

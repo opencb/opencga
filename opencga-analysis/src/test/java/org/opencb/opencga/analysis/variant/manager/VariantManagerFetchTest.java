@@ -72,7 +72,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQuery() throws Exception {
-        Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
+        Query query = new Query(VariantQueryParam.STUDY.key(), studyId).append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), sessionId);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
@@ -82,7 +82,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryProject() throws Exception {
-        Query query = new Query(VariantCatalogQueryUtils.PROJECT.key(), projectId);
+        Query query = new Query(VariantCatalogQueryUtils.PROJECT.key(), projectId).append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), sessionId);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
@@ -93,7 +93,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
     @Test
     public void testCheckSamplePermissionNonIndexedSamples() throws Exception {
         QueryOptions queryOptions = new QueryOptions();
-        Query query = new Query();
+        Query query = new Query().append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
 
         // Without studies
         Map<String, List<String>> map = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
@@ -103,7 +103,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         catalogManager.getSampleManager().create(studyFqn, new Sample().setId("newSample"), new QueryOptions(), sessionId);
 
         queryOptions = new QueryOptions();
-        query = new Query();
+        query = new Query().append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
 
         map = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
         Assert.assertEquals(Collections.singleton(studyFqn), map.keySet());
@@ -116,13 +116,13 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         Query query = new Query();
 
         // Without studies
-        Map<String, List<String>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
-        Assert.assertEquals(Collections.singletonMap(studyFqn, Collections.emptyList()), longListMap);
+        Map<String, List<String>> samples = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
+        Assert.assertEquals(Collections.singletonMap(studyFqn, Collections.emptyList()), samples);
 
         // With studies
         query.append(VariantQueryParam.STUDY.key(), studyFqn);
-        longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
-        Assert.assertEquals(Collections.singletonMap(studyFqn, Collections.emptyList()), longListMap);
+        samples = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
+        Assert.assertEquals(Collections.singletonMap(studyFqn, Collections.emptyList()), samples);
     }
 
     @Test
@@ -165,7 +165,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                 new SampleAclParams().setPermissions(SampleAclEntry.SamplePermissions.VIEW_VARIANTS.name()), // ViewVariants without VIEW should be enough
                 ADD, sessionId);
 
-        Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1");
+        Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
@@ -183,7 +183,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                         .setPermissions(SampleAclEntry.SamplePermissions.VIEW + "," + SampleAclEntry.SamplePermissions.VIEW_VARIANTS),
                 ADD, sessionId);
 
-        Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1");
+        Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {
@@ -248,7 +248,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
                         .setPermissions(StudyAclEntry.StudyPermissions.VIEW_SAMPLE_VARIANTS.name()),
                 ADD, sessionId);
 
-        Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1");
+        Query query = new Query(VariantQueryParam.STUDY.key(), userId + "@p1:s1").append(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
         DataResult<Variant> result = variantManager.get(query, new QueryOptions(), null);
         Assert.assertNotEquals(0, result.getNumResults());
         for (Variant variant : result.getResults()) {

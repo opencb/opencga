@@ -17,8 +17,8 @@
 package org.opencb.opencga.core.models.cohort;
 
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 
 import java.util.Collections;
@@ -36,14 +36,14 @@ public class CohortCreateParams {
     private List<SampleReferenceParam> samples;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
-    private CustomStatusParams status;
+    private StatusParams status;
 
     public CohortCreateParams() {
     }
 
     public CohortCreateParams(String id, Enums.CohortType type, String description, String creationDate, String modificationDate,
                               List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
-                              CustomStatusParams status) {
+                              StatusParams status) {
         this.id = id;
         this.type = type;
         this.description = description;
@@ -58,10 +58,10 @@ public class CohortCreateParams {
     public static CohortCreateParams of(Cohort cohort) {
         return new CohortCreateParams(cohort.getId(), cohort.getType(), cohort.getDescription(), cohort.getCreationDate(),
                 cohort.getModificationDate(), cohort.getSamples() != null
-                        ? cohort.getSamples().stream().map(s -> new SampleReferenceParam(s.getId(), s.getUuid()))
-                        .collect(Collectors.toList())
-                        : Collections.emptyList(),
-                cohort.getAnnotationSets(), cohort.getAttributes(), CustomStatusParams.of(cohort.getStatus()));
+                ? cohort.getSamples().stream().map(s -> new SampleReferenceParam(s.getId(), s.getUuid()))
+                .collect(Collectors.toList())
+                : Collections.emptyList(),
+                cohort.getAnnotationSets(), cohort.getAttributes(), StatusParams.of(cohort.getStatus()));
     }
 
     @Override
@@ -144,11 +144,11 @@ public class CohortCreateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public CohortCreateParams setStatus(CustomStatusParams status) {
+    public CohortCreateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

@@ -380,6 +380,11 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         // Should NOT return the variant // 11:62951221:C:G
         testQueryAnnotationIndex(new Query().append(GENE.key(), "SLC22A10").append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"));
 
+        // Should return the variant     // 11:62951221:C:G
+        testQueryAnnotationIndex(new Query().append(GENE.key(), "SLC22A25")
+                .append(REGION.key(), "2")
+                .append(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant"));
+
 
         testQueryAnnotationIndex(new Query(ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant,stop_gained")
                 .append(ANNOT_BIOTYPE.key(), "protein_coding")

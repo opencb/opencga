@@ -25,7 +25,7 @@ import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 
@@ -57,7 +57,7 @@ public class IndividualUpdateParams {
     private List<AnnotationSet> annotationSets;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
-    private CustomStatusParams status;
+    private StatusParams status;
     private IndividualQualityControl qualityControl;
     private Map<String, Object> attributes;
 
@@ -70,7 +70,7 @@ public class IndividualUpdateParams {
                                   String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
                                   IndividualProperty.LifeStatus lifeStatus, List<SampleReferenceParam> samples,
                                   List<AnnotationSet> annotationSets, List<Phenotype> phenotypes, List<Disorder> disorders,
-                                  CustomStatusParams status, IndividualQualityControl qualityControl, Map<String, Object> attributes) {
+                                  StatusParams status, IndividualQualityControl qualityControl, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = father;
@@ -120,7 +120,7 @@ public class IndividualUpdateParams {
                 samples != null
                         ? samples.stream().map(s -> new Sample().setId(s.getId()).setUuid(s.getUuid())).collect(Collectors.toList())
                         : null, parentalConsanguinity != null && parentalConsanguinity, annotationSets,
-                status != null ? status.toCustomStatus() : null, new IndividualInternal(), attributes);
+                status != null ? status.toStatus() : null, new IndividualInternal(), attributes);
     }
 
     @Override
@@ -313,11 +313,11 @@ public class IndividualUpdateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public IndividualUpdateParams setStatus(CustomStatusParams status) {
+    public IndividualUpdateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

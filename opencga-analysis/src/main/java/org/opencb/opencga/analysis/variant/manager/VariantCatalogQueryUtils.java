@@ -43,10 +43,11 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.FileInternal;
+import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.project.Project;
@@ -144,6 +145,11 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public static final QueryParam PANEL_ROLE_IN_CANCER =
             QueryParam.create("panelRoleInCancer", PANEL_ROLE_IN_CANCER_DESC, QueryParam.Type.TEXT);
 
+    public static final String PANEL_FEATURE_TYPE_DESC = "Filter elements from specific panels by type. " +
+            "Accepted values : [ gene, region, str, variant ]";
+    public static final QueryParam PANEL_FEATURE_TYPE =
+            QueryParam.create("panelFeatureType", PANEL_FEATURE_TYPE_DESC, QueryParam.Type.TEXT);
+
     public static final List<QueryParam> VARIANT_CATALOG_QUERY_PARAMS = Arrays.asList(
             SAMPLE_ANNOTATION,
             PROJECT,
@@ -156,6 +162,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             PANEL_MODE_OF_INHERITANCE,
             PANEL_CONFIDENCE,
             PANEL_ROLE_IN_CANCER,
+            PANEL_FEATURE_TYPE,
             PANEL_INTERSECTION,
             SAVED_FILTER
     );
@@ -306,7 +313,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 List<String> includeFiles = new ArrayList<>();
                 QueryOptions fileOptions = new QueryOptions(INCLUDE, FileDBAdaptor.QueryParams.UID.key());
                 Query fileQuery = new Query(FileDBAdaptor.QueryParams.RELEASE.key(), "<=" + release)
-                        .append(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
+                        .append(FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX_STATUS_ID.key(), VariantIndexStatus.READY);
 
                 for (String study : studies) {
                     for (File file : catalogManager.getFileManager().search(study, fileQuery, fileOptions, token)
@@ -641,21 +648,30 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             Set<Region> panelRegions = new HashSet<>();
             Set<String> variants = new HashSet<>();
             List<String> panels = query.getAsStringList(PANEL.key());
+
+            List<String> featureType = query.getAsStringList(PANEL_FEATURE_TYPE.key());
+
             for (String panelId : panels) {
                 Panel panel = getPanel(defaultStudyStr, panelId, token);
-                panelGenes.addAll(getGenesFromPanel(query, panel));
+                if (featureType.isEmpty() || featureType.contains("gene")) {
+                    panelGenes.addAll(getGenesFromPanel(query, panel));
+                }
 
-                if (CollectionUtils.isNotEmpty(panel.getRegions()) || CollectionUtils.isNotEmpty(panel.getVariants())) {
+                if (CollectionUtils.isNotEmpty(panel.getRegions())
+                        || CollectionUtils.isNotEmpty(panel.getStrs())
+                        || CollectionUtils.isNotEmpty(panel.getVariants())) {
                     if (assembly == null) {
                         Project project = getProjectFromQuery(query, token,
                                 new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()));
                         assembly = project.getOrganism().getAssembly();
                     }
-                    if (panel.getRegions() != null) {
-                        for (DiseasePanel.RegionPanel region : panel.getRegions()) {
-                            for (DiseasePanel.Coordinate coordinate : region.getCoordinates()) {
-                                if (coordinate.getAssembly().equalsIgnoreCase(assembly)) {
-                                    panelRegions.add(Region.parseRegion(coordinate.getLocation()));
+                    if (featureType.isEmpty() || featureType.contains("region")) {
+                        if (panel.getRegions() != null) {
+                            for (DiseasePanel.RegionPanel region : panel.getRegions()) {
+                                for (DiseasePanel.Coordinate coordinate : region.getCoordinates()) {
+                                    if (coordinate.getAssembly().equalsIgnoreCase(assembly)) {
+                                        panelRegions.add(Region.parseRegion(coordinate.getLocation()));
+                                    }
                                 }
                             }
                         }
@@ -806,6 +822,10 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             if (isValidParam(query, PANEL_ROLE_IN_CANCER)) {
                 throw VariantQueryException.malformedParam(PANEL_ROLE_IN_CANCER, query.getString(PANEL_ROLE_IN_CANCER.key()),
                         "Require parameter \"" + PANEL.key() + "\" to use \"" + PANEL_ROLE_IN_CANCER.toString() + "\".");
+            }
+            if (isValidParam(query, PANEL_FEATURE_TYPE)) {
+                throw VariantQueryException.malformedParam(PANEL_FEATURE_TYPE, query.getString(PANEL_FEATURE_TYPE.key()),
+                        "Require parameter \"" + PANEL.key() + "\" to use \"" + PANEL_FEATURE_TYPE.toString() + "\".");
             }
         }
 
@@ -1264,7 +1284,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected final QueryOptions RELEASE_OPTIONS = new QueryOptions(INCLUDE, Arrays.asList(
                 FileDBAdaptor.QueryParams.ID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(),
-                FileDBAdaptor.QueryParams.INTERNAL_INDEX.key(),
+                FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX.key(),
                 FileDBAdaptor.QueryParams.RELEASE.key()));
 
         /**
@@ -1410,11 +1430,8 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                 return files.getResults().stream().map(File::getName).collect(Collectors.toList());
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getFileManager(), File::getName,
-                        file -> ((int) file.getInternal().getIndex().getRelease()), file -> {
-                            if (file.getInternal().getIndex() == null
-                                    || file.getInternal().getIndex().getStatus() == null
-                                    || file.getInternal().getIndex().getStatus().getName() == null
-                                    || !file.getInternal().getIndex().getStatus().getName().equals(Status.READY)) {
+                        file -> file.getInternal().getVariant().getIndex().getRelease(), file -> {
+                            if (!FileInternal.getVariantIndexStatusId(file.getInternal()).equals(InternalStatus.READY)) {
                                 throw new VariantQueryException("File '" + file.getName() + "' is not indexed");
                             }
                         },

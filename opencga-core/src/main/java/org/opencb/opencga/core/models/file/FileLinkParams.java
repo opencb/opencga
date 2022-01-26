@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models.file;
 
-import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.StatusParams;
 
 import java.util.Collections;
 import java.util.List;
@@ -29,14 +29,14 @@ public class FileLinkParams {
     private String creationDate;
     private String modificationDate;
     private List<SmallRelatedFileParams> relatedFiles;
-    private CustomStatusParams status;
+    private StatusParams status;
     private FileLinkInternalParams internal;
 
     public FileLinkParams() {
     }
 
     public FileLinkParams(String uri, String path, String description, String creationDate, String modificationDate,
-                          List<SmallRelatedFileParams> relatedFiles, CustomStatusParams status, FileLinkInternalParams internal) {
+                          List<SmallRelatedFileParams> relatedFiles, StatusParams status, FileLinkInternalParams internal) {
         this.uri = uri;
         this.path = path;
         this.description = description;
@@ -49,9 +49,9 @@ public class FileLinkParams {
 
     public static FileLinkParams of(File file) {
         return new FileLinkParams(file.getUri().toString(), file.getPath(), file.getDescription(), file.getCreationDate(),
-                file.getModificationDate(),  file.getRelatedFiles() != null
-                        ? file.getRelatedFiles().stream().map(SmallRelatedFileParams::of).collect(Collectors.toList())
-                        : Collections.emptyList(), CustomStatusParams.of(file.getStatus()),
+                file.getModificationDate(), file.getRelatedFiles() != null
+                ? file.getRelatedFiles().stream().map(SmallRelatedFileParams::of).collect(Collectors.toList())
+                : Collections.emptyList(), StatusParams.of(file.getStatus()),
                 new FileLinkInternalParams(file.getInternal().getSampleMap()));
     }
 
@@ -135,11 +135,11 @@ public class FileLinkParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public FileLinkParams setStatus(CustomStatusParams status) {
+    public FileLinkParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

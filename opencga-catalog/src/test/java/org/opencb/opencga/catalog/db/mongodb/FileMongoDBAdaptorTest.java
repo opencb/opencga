@@ -30,7 +30,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.file.FileInternal;
@@ -167,7 +167,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         System.out.println(catalogFileDBAdaptor.update(fileId, parameters, QueryOptions.empty()));
 
         file = catalogFileDBAdaptor.get(fileId, null).first();
-        assertEquals(file.getInternal().getStatus().getName(), FileStatus.READY);
+        assertEquals(file.getInternal().getStatus().getId(), FileStatus.READY);
         assertEquals(file.getStats(), stats);
 
         parameters = new ObjectMap();
@@ -217,7 +217,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         List<String> distinctTypes = catalogFileDBAdaptor.distinct(studyUid, FileDBAdaptor.QueryParams.TYPE.key(), null, user3.getId(),
                 String.class).getResults();
-        assertEquals(Arrays.asList("DIRECTORY","FILE"), distinctTypes);
+        assertEquals(Arrays.asList("DIRECTORY", "FILE"), distinctTypes);
 
         List<String> distinctFormats = catalogFileDBAdaptor.distinct(studyUid, FileDBAdaptor.QueryParams.FORMAT.key(), null, user3.getId(),
                 String.class).getResults();
@@ -324,11 +324,11 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testAddSamples() throws Exception {
         long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
-        new Status();
+        new InternalStatus();
         catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample1 = getSample(studyUid, "sample1");
-        new Status();
+        new InternalStatus();
         catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample2 = getSample(studyUid, "sample2");
@@ -360,20 +360,20 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void testRemoveSamples() throws Exception {
         long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
-        new Status();
+        new InternalStatus();
         catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample1").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample1 = getSample(studyUid, "sample1");
-        new Status();
+        new InternalStatus();
         catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample2").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample2 = getSample(studyUid, "sample2");
-        new Status();
+        new InternalStatus();
         catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyUid, new Sample().setId("sample3").setInternal(SampleInternal.init()),
                 Collections.emptyList(), QueryOptions.empty());
         Sample sample3 = getSample(studyUid, "sample3");
         List<File> files = catalogFileDBAdaptor.get(new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), user3.getProjects().get(0).getStudies().get(0).getUid()),
+                        .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), user3.getProjects().get(0).getStudies().get(0).getUid()),
                 QueryOptions.empty()).getResults();
         File file = files.get(0);
         File file2 = files.get(1);
@@ -381,9 +381,9 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         QueryOptions options = new QueryOptions(Constants.ACTIONS, action);
 
         catalogFileDBAdaptor.update(file.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
-                        Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId())), options);
+                Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId())), options);
         catalogFileDBAdaptor.update(file2.getUid(), new ObjectMap(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(),
-                        Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId())), options);
+                Arrays.asList(sample1.getId(), sample2.getId(), sample3.getId())), options);
 
         DataResult<File> fileDataResult = catalogFileDBAdaptor.get(file.getUid(), QueryOptions.empty());
         assertEquals(3, fileDataResult.first().getSampleIds().size());

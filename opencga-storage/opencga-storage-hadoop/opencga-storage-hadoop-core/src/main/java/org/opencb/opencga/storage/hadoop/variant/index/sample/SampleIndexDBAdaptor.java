@@ -53,14 +53,6 @@ import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_M
  */
 public class SampleIndexDBAdaptor implements VariantIterable {
 
-    private static final String SAMPLE_INDEX_STATUS = "sampleIndexGenotypes";
-    private static final String SAMPLE_INDEX_VERSION = "sampleIndexGenotypesVersion";
-    private static final String SAMPLE_INDEX_ANNOTATION_STATUS = "sampleIndexAnnotation";
-    private static final String SAMPLE_INDEX_ANNOTATION_VERSION = "sampleIndexAnnotationVersion";
-
-    @Deprecated // Deprecated to avoid confusion with actual "SAMPLE_INDEX_STATUS"
-    private static final String SAMPLE_INDEX_ANNOTATION_STATUS_OLD = "sampleIndex";
-
     private final HBaseManager hBaseManager;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final VariantStorageMetadataManager metadataManager;
@@ -75,50 +67,19 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public static TaskMetadata.Status getSampleIndexAnnotationStatus(SampleMetadata sampleMetadata, int latestSampleIndexVersion) {
-        TaskMetadata.Status status = sampleMetadata.getStatus(SAMPLE_INDEX_ANNOTATION_STATUS, null);
-        if (status == null) {
-            // The status name was renamed. In case of missing value (null), check for the deprecated value.
-            status = sampleMetadata.getStatus(SAMPLE_INDEX_ANNOTATION_STATUS_OLD);
-        }
-        if (status == TaskMetadata.Status.READY) {
-            int actualSampleIndexVersion = sampleMetadata.getAttributes().getInt(SAMPLE_INDEX_ANNOTATION_VERSION, 1);
-            if (actualSampleIndexVersion != latestSampleIndexVersion) {
-                logger.debug("Sample index annotation version outdated. Actual : " + actualSampleIndexVersion
-                        + " , expected : " + latestSampleIndexVersion);
-                status = TaskMetadata.Status.NONE;
-            }
-        }
-        return status;
+        return sampleMetadata.getSampleIndexAnnotationStatus(latestSampleIndexVersion);
     }
 
     public static SampleMetadata setSampleIndexAnnotationStatus(SampleMetadata sampleMetadata, TaskMetadata.Status status, int version) {
-        // Remove deprecated value.
-        sampleMetadata.getStatus().remove(SAMPLE_INDEX_ANNOTATION_STATUS_OLD);
-        sampleMetadata.setStatus(SAMPLE_INDEX_ANNOTATION_STATUS, status);
-        sampleMetadata.getAttributes().put(SAMPLE_INDEX_ANNOTATION_VERSION, version);
-        return sampleMetadata;
+        return sampleMetadata.setSampleIndexAnnotationStatus(status, version);
     }
 
     public static TaskMetadata.Status getSampleIndexStatus(SampleMetadata sampleMetadata, int latestSampleIndexVersion) {
-        TaskMetadata.Status status = sampleMetadata.getStatus(SAMPLE_INDEX_STATUS, null);
-        if (status == null) {
-            // This is a new status. In case of missing value (null), assume it's READY
-            status = TaskMetadata.Status.READY;
-        }
-        if (status == TaskMetadata.Status.READY) {
-            int actualSampleIndexVersion = sampleMetadata.getAttributes().getInt(SAMPLE_INDEX_VERSION, 1);
-            if (actualSampleIndexVersion != latestSampleIndexVersion) {
-                logger.debug("Sample index version outdated. Actual : " + actualSampleIndexVersion
-                        + " , expected : " + latestSampleIndexVersion);
-                status = TaskMetadata.Status.NONE;
-            }
-        }
-        return status;
+        return sampleMetadata.getSampleIndexStatus(latestSampleIndexVersion);
     }
 
     public static SampleMetadata setSampleIndexStatus(SampleMetadata sampleMetadata, TaskMetadata.Status status, int version) {
-        sampleMetadata.getAttributes().put(SAMPLE_INDEX_VERSION, version);
-        return sampleMetadata.setStatus(SAMPLE_INDEX_STATUS, status);
+        return sampleMetadata.setSampleIndexStatus(status, version);
     }
 
     @Override

@@ -78,7 +78,7 @@ public class CatalogIndividualToSolrIndividualConverterTest {
         assertEquals(localDate.getDayOfWeek().toString(), individualSolrModel.getCreationDayOfWeek());
 
         assertEquals(individualSolrModel.getVersion(), individual.getVersion());
-        assertEquals(individualSolrModel.getStatus(), individual.getInternal().getStatus().getName());
+        assertEquals(individualSolrModel.getStatus(), individual.getInternal().getStatus().getId());
         assertEquals(individualSolrModel.getLifeStatus(), individual.getLifeStatus().name());
         assertEquals(individualSolrModel.getPhenotypes().size(), 0);
         assertEquals(individualSolrModel.isParentalConsanguinity(), individual.isParentalConsanguinity());

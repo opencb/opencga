@@ -118,7 +118,7 @@ public class ClinicalAnalysisUpdateParams {
                 flags != null ? flags.stream().map(FlagValueParam::toFlagAnnotation).collect(Collectors.toList()) : null, creationDate, modificationDate, dueDate,
                 1,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
-                qualityControl != null ? qualityControl.toClinicalQualityControl() : null, null, null, attributes, status != null ? status.toCustomStatus() : null);
+                qualityControl != null ? qualityControl.toClinicalQualityControl() : null, null, null, attributes, status != null ? status.toStatus() : null);
     }
 
     @Override

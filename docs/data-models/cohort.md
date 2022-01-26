@@ -33,18 +33,13 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **samples**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/sample"><em>Sample</em></a>>* <br> | <p>List of cohort samples.</p> |
 | **numSamples**<br>*int* <br> | <p>Number of samples.</p> |
 | **release**<br>*int* <br> | <p>An integer describing the current data release.</p> |
-| **status**<br>*[CustomStatus](https://docs.opencga.opencb.org/data-models/cohort#customstatus)* <br> | <p>Object to set a custom status.</p> |
+| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/cohort#status)* <br> | <p>Object to set a custom status.</p> |
 | **internal**<br>*[CohortInternal](https://docs.opencga.opencb.org/data-models/cohort#cohortinternal)* <br> | <p>Internal field for manage the object.</p> |
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
-### CustomStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/CustomStatus.java).
+### Status
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
 
-| Field | Description |
-| :---  | :--- |
-| **CustomStatus.name**<br>*String* <br> | <p>Name of the status.</p> |
-| **CustomStatus.description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **CustomStatus.date**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
 
 ### CohortInternal
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/CohortInternal.java).
@@ -54,13 +49,3 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/cohort#status)* <br> | <p>Status of the internal object.</p> |
 | **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
-
-### Status
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Status.java).
-
-| Field | Description |
-| :---  | :--- |
-| **name**<br>*String* <br> | <p>Name of the . Status</p> |
-| **date**<br>*String* <br> | <p>Date has setted the status.</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **~~message~~**<br>*String* <br><br>_Deprecated_ | <p>Deprecated: Message describing the status.</p> |

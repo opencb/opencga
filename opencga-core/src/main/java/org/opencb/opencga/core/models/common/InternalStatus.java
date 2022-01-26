@@ -17,8 +17,8 @@
 package org.opencb.opencga.core.models.common;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.annotations.DataField;
-import org.opencb.opencga.core.api.FieldConstants;
+import org.opencb.biodata.models.common.Status;
+import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.*;
@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Created by pfurio on 11/03/16.
  */
-public class Status {
+public class InternalStatus extends Status {
 
 
     /**
@@ -38,41 +38,37 @@ public class Status {
      */
     public static final String DELETED = "DELETED";
     public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED);
-    @DataField(id = "name", indexed = true,
-            description = FieldConstants.GENERIC_NAME + " Status")
-    private String name;
+    private String version;
+    private String commit;
 
-    @DataField(id = "date", indexed = true,
-            description = FieldConstants.STATUS_DATE_DESCRIPTION)
-    private String date;
 
-    @DataField(id = "description", indexed = true,
-            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
-    private String description;
-
-    @DataField(id = "message", indexed = true, deprecated = true,
-            description = FieldConstants.STATUS_MESSAGE_DESCRIPTION)
-    @Deprecated
-    private String message;
-
-    public Status() {
+    public InternalStatus() {
         this(READY, "");
     }
 
-    public Status(String name) {
-        this(name, "");
+    public InternalStatus(String id) {
+        this(id, "");
     }
 
-    public Status(String name, String description) {
-        if (isValid(name)) {
-            init(name, description);
+    public InternalStatus(String id, String description) {
+        if (isValid(id)) {
+            init(id, description);
         } else {
-            throw new IllegalArgumentException("Unknown name '" + name + "'");
+            throw new IllegalArgumentException("Unknown status id '" + id + "'");
         }
     }
 
-    public static boolean isValid(String status) {
-        return status != null && (status.equals(READY) || status.equals(DELETED));
+    public InternalStatus(String id, String name, String description, String date, String version, String commit) {
+        super(id, name, description, date);
+        if (!isValid(id)) {
+            throw new IllegalArgumentException("Unknown status id '" + id + "'");
+        }
+        this.version = version;
+        this.commit = commit;
+    }
+
+    public static boolean isValid(String statusId) {
+        return statusId != null && (statusId.equals(READY) || statusId.equals(DELETED));
     }
 
     public static String getPositiveStatus(List<String> acceptedStatusList, String status) {
@@ -116,46 +112,84 @@ public class Status {
         }
     }
 
-    protected void init(String status, String description) {
-        this.name = status;
-        this.date = TimeUtils.getTime();
-        this.description = description;
+    protected void init(String statusId, String description) {
+        init(statusId, null, description);
+    }
+
+    protected void init(String statusId, String statusName, String description) {
+        super.id = statusId;
+        super.name = statusName;
+        super.description = description;
+        super.date = TimeUtils.getTime();
+        this.version = GitRepositoryState.get().getBuildVersion();
+        this.commit = GitRepositoryState.get().getCommitId();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Status)) {
-            return false;
-        }
-        Status status = (Status) o;
-        return Objects.equals(name, status.name)
-                && Objects.equals(date, status.date)
-                && Objects.equals(description, status.description);
+        if (this == o) return true;
+        if (!(o instanceof InternalStatus)) return false;
+        if (!super.equals(o)) return false;
+
+        InternalStatus that = (InternalStatus) o;
+
+        if (!Objects.equals(version, that.version)) return false;
+        return Objects.equals(commit, that.commit);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, date, description);
+        int result = super.hashCode();
+        result = 31 * result + (version != null ? version.hashCode() : 0);
+        result = 31 * result + (commit != null ? commit.hashCode() : 0);
+        return result;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Status{");
-        sb.append("name='").append(name).append('\'');
-        sb.append(", date='").append(date).append('\'');
+        final StringBuilder sb = new StringBuilder("InternalStatus{");
+        sb.append("version='").append(version).append('\'');
+        sb.append(", commit='").append(commit).append('\'');
+        sb.append(", id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", date='").append(date).append('\'');
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public InternalStatus setVersion(String version) {
+        this.version = version;
+        return this;
+    }
+
+    public String getCommit() {
+        return commit;
+    }
+
+    public InternalStatus setCommit(String commit) {
+        this.commit = commit;
+        return this;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public InternalStatus setId(String id) {
+        this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public Status setName(String name) {
+    public InternalStatus setName(String name) {
         this.name = name;
         return this;
     }
@@ -164,7 +198,7 @@ public class Status {
         return date;
     }
 
-    public Status setDate(String date) {
+    public InternalStatus setDate(String date) {
         this.date = date;
         return this;
     }
@@ -173,8 +207,9 @@ public class Status {
         return description;
     }
 
-    public Status setDescription(String description) {
+    public InternalStatus setDescription(String description) {
         this.description = description;
         return this;
     }
 }
+

@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.study.Study;
 
 import javax.ws.rs.client.WebTarget;
@@ -50,7 +50,7 @@ public class StudyWSServerTest {
         System.out.println("\tname: " + stName);
         System.out.println("\talias: " + stName);
         System.out.println("\ttype: " + Enums.CohortType.CASE_CONTROL);
-        System.out.println("\tstatus: " + Status.READY);
+        System.out.println("\tstatus: " + InternalStatus.READY);
         System.out.println("\tdescription: description");
 
         String s = webTarget.path("studies").path("create")
@@ -59,7 +59,7 @@ public class StudyWSServerTest {
                 .queryParam("name", stName)
                 .queryParam("alias", stName)
                 .queryParam("type", Enums.CohortType.CASE_CONTROL)
-                .queryParam("status", Status.READY)
+                .queryParam("status", InternalStatus.READY)
                 .queryParam("description", "description")
                 .request().get(String.class);
         QueryResponse<Study> queryResponse = WSServerTestUtils.parseResult(s, Study.class);

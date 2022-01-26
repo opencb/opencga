@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 
 import java.util.List;
 import java.util.Map;
@@ -33,7 +33,7 @@ public class Dataset {
     private String description;
 
     private List<Long> files;
-    private Status status;
+    private InternalStatus status;
 
     private Map<String, Object> attributes;
 
@@ -41,7 +41,7 @@ public class Dataset {
     public Dataset() {
     }
 
-    public Dataset(int id, String name, String creationDate, String description, List<Long> files, Status status,
+    public Dataset(int id, String name, String creationDate, String description, List<Long> files, InternalStatus status,
                    Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -111,11 +111,11 @@ public class Dataset {
         return this;
     }
 
-    public Status getStatus() {
+    public InternalStatus getStatus() {
         return status;
     }
 
-    public Dataset setStatus(Status status) {
+    public Dataset setStatus(InternalStatus status) {
         this.status = status;
         return this;
     }
