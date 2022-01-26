@@ -49,6 +49,7 @@ public class SessionManager {
     private ObjectReader objectReader;
     private Logger logger;
 
+    
     public SessionManager(ClientConfiguration clientConfiguration) throws ClientException {
         this(clientConfiguration, clientConfiguration.getCurrentHost().getName());
     }

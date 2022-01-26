@@ -54,7 +54,7 @@ public class CommandProcessor {
                                     loadSessionStudies(commandExecutor);
                                 } catch (Exception ex) {
                                     CommandLineUtils.error("Execution error: " + ex.getMessage(), ex);
-                                    System.exit(1);
+                                    //System.exit(1);
                                 }
                             } else {
                                 cliOptionsParser.printUsage();

@@ -131,13 +131,17 @@ public class CommandLineUtils {
             case "logout":
                 return ArrayUtils.addAll(new String[]{"users"}, args);
             case "list":
-                if (args.length > 1 && args[1].equals("studies")) {
-                    List<String> studies = OpencgaMain.getShell().getSessionManager().getSession().getStudies();
-                    for (String study : studies) {
-                        printGreen(study);
+                if (OpencgaMain.isShellMode()) {
+                    if (args.length > 1 && args[1].equals("studies")) {
+                        List<String> studies = OpencgaMain.getShell().getSessionManager().getSession().getStudies();
+                        for (String study : studies) {
+                            printGreen(study);
+                        }
+                    } else {
+                        printWarn("Opencga version " + GitRepositoryState.get().getBuildVersion() + " can only list studies");
                     }
                 } else {
-                    printWarn("Opencga version " + GitRepositoryState.get().getBuildVersion() + " can only list studies");
+                    printWarn("List studies is only available in Shell mode");
                 }
                 break;
             default:
@@ -148,7 +152,7 @@ public class CommandLineUtils {
 
     public static String getShortcut(String[] args) {
         if (ArrayUtils.contains(args, "--help")
-                || ArrayUtils.contains(args, "--h")
+                || ArrayUtils.contains(args, "-h")
                 || ArrayUtils.contains(args, "?")
                 || ArrayUtils.contains(args, "help")) {
             return "--help";
