@@ -97,10 +97,15 @@ public abstract class CommandExecutor {
                 loadClientConfiguration();
             }
 
+            // We need to check if parameter --host has been provided.
+            // Then set the host and make it the default
+            if (StringUtils.isNotEmpty(options.host)) {
+                this.host = options.host;
+                clientConfiguration.setDefaultIndexByName(this.host);
+            } else {
+                this.host = clientConfiguration.getCurrentHost().getName();
+            }
             // Create the SessionManager and store current session
-            this.host = StringUtils.isNotEmpty(options.host)
-                    ? options.host
-                    : clientConfiguration.getCurrentHost().getName();
             sessionManager = new SessionManager(clientConfiguration, this.host);
 
             // Do not change the order here, we can only configure logger after loading the configuration files,
