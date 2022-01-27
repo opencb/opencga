@@ -95,7 +95,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     protected static Logger logger = LoggerFactory.getLogger(VariantHadoopDBAdaptor.class);
     private final String variantTable;
     private final PhoenixHelper phoenixHelper;
-    private final HBaseCredentials credentials;
     private final AtomicReference<VariantStorageMetadataManager> studyConfigurationManager = new AtomicReference<>(null);
     private final Configuration configuration;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
@@ -108,10 +107,16 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private boolean clientSideSkip;
     private HBaseManager hBaseManager;
 
-    public VariantHadoopDBAdaptor(HBaseManager hBaseManager, HBaseCredentials credentials, StorageConfiguration configuration,
+    public VariantHadoopDBAdaptor(HBaseManager hBaseManager, StorageConfiguration configuration,
                                   Configuration conf, HBaseVariantTableNameGenerator tableNameGenerator)
             throws IOException {
-        this.credentials = credentials;
+        this(hBaseManager, conf, tableNameGenerator,
+                configuration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getOptions());
+    }
+
+    public VariantHadoopDBAdaptor(HBaseManager hBaseManager,
+                                  Configuration conf, HBaseVariantTableNameGenerator tableNameGenerator, ObjectMap options)
+            throws IOException {
         this.configuration = conf;
         this.tableNameGenerator = tableNameGenerator;
         if (hBaseManager == null) {
@@ -121,8 +126,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             this.hBaseManager = new HBaseManager(hBaseManager);
         }
         this.genomeHelper = new GenomeHelper(this.configuration);
-        this.variantTable = credentials.getTable();
-        ObjectMap options = configuration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getOptions();
+        this.variantTable = tableNameGenerator.getVariantTableName();
+
         HBaseVariantStorageMetadataDBAdaptorFactory factory = new HBaseVariantStorageMetadataDBAdaptorFactory(
                 hBaseManager, tableNameGenerator.getMetaTableName(), conf);
         this.studyConfigurationManager.set(new VariantStorageMetadataManager(factory));
@@ -163,10 +168,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     public HBaseManager getHBaseManager() {
         return hBaseManager;
-    }
-
-    public HBaseCredentials getCredentials() {
-        return credentials;
     }
 
     public Configuration getConfiguration() {

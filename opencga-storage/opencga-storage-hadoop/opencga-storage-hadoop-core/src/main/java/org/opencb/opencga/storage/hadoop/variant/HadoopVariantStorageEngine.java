@@ -897,7 +897,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                     try {
                         Configuration configuration = getHadoopConfiguration();
                         configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
-                        dbAdaptor.set(new VariantHadoopDBAdaptor(getHBaseManager(configuration), credentials,
+                        dbAdaptor.set(new VariantHadoopDBAdaptor(getHBaseManager(configuration),
                                 this.configuration, configuration, getTableNameGenerator()));
                     } catch (IOException e) {
                         throw new StorageEngineException("Error creating DB Adapter", e);

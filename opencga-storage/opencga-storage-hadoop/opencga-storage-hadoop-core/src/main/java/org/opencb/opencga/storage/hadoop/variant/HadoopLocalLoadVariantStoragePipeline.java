@@ -549,7 +549,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         boolean excludeGenotypes = includeGenotype == YesNoAuto.NO;
 
         return new VariantHadoopDBWriter(
-                dbAdaptor.getCredentials().getTable(),
+                dbAdaptor.getVariantTable(),
                 getStudyId(),
                 getFileId(),
                 getMetadataManager(),
