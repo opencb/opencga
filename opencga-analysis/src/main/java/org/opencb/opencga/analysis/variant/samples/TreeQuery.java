@@ -151,16 +151,17 @@ public class TreeQuery {
         int endIndex = 0;
         Node.Type type = null;
         boolean complement = false;
+        boolean hasParenthesis = q.contains("(");
         q += " ";
         for (int i = 0; i < q.length(); i++) {
             char c = q.charAt(i);
+
             if (c == '(') {
                 if (level == 0) {
                     beginIndex = i + 1;
                 }
                 level++;
-            }
-            if (c == ')') {
+            } else if (c == ')') {
                 level--;
                 if (level == 0) {
                     endIndex = i;
@@ -180,11 +181,26 @@ public class TreeQuery {
                 }
                 nodes.add(subNode);
 
-                int nextOpen = q.indexOf("(", i);
-                if (nextOpen < 0) {
-                    break;
+                int nextGap = q.indexOf("(", i);
+                if (nextGap < 0) {
+                    hasParenthesis = false;
+                    boolean firstGap = true;
+                    for (int cIdx = i; cIdx < q.length(); cIdx++) {
+                        if (q.charAt(cIdx) == ' ') {
+                            if (!firstGap) {
+                                nextGap = cIdx;
+                                break;
+                            }
+                        } else {
+                            firstGap = false;
+                        }
+                    }
+                    if (nextGap < 0) {
+                        // End of query
+                        break;
+                    }
                 }
-                String operator = q.substring(i, nextOpen).toUpperCase();
+                String operator = q.substring(i, nextGap).toUpperCase();
                 if (operator.contains(OR)) {
                     if (type == null) {
                         type = Node.Type.UNION;
@@ -209,7 +225,14 @@ public class TreeQuery {
                     throw new IllegalArgumentException("Operator not found at '" + operator + "'");
                 }
 //                beginIndex = nextOpen + 1;
-                i = nextOpen - 1;
+//                i = nextGap - 1;
+                if (hasParenthesis) {
+                    i = nextGap - 1;
+                } else {
+                    beginIndex = nextGap;
+                    endIndex = q.length() - 1;
+                    i = endIndex - 1;
+                }
             }
         }
 

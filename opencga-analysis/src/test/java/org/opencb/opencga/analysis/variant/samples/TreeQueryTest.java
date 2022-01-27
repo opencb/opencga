@@ -40,6 +40,10 @@ public class TreeQueryTest {
         assertEquals("(id=A) AND (id=B)", new TreeQuery("(id=A) AND (id=B)").toString());
         assertEquals("(id=A) OR (id=B)", new TreeQuery("id=A OR id=B").toString());
         assertEquals("(id=A AND K=4) OR (id=B)", new TreeQuery("id=A AND K=4 OR id=B").toString());
+        assertEquals("(id=A) OR (K=4 AND id=B)", new TreeQuery("id=A OR K=4 AND id=B").toString());
+        assertEquals("((A=1) OR (B=2)) AND (C=3 AND D=4)", new TreeQuery("((A=1 OR B=2) AND C=3 AND D=4)").toString());
+        assertEquals("((A=1) OR (B=2)) AND (C=3 AND D=4)", new TreeQuery("(A=1 OR B=2) AND C=3 AND D=4").toString());
+        assertEquals("((A=1) OR (B=2)) AND (C=3 and D=4)", new TreeQuery("(A=1 or B=2) and C=3 and D=4").toString());
 
         System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(new TreeQuery("((key=value) AND NOT (key3>50)) OR (key5>=2323)")));
     }
