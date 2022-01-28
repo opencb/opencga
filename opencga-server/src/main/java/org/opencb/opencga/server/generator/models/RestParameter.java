@@ -50,7 +50,7 @@ public class RestParameter {
                 ", complex=" + complex +
                 ", genericType='" + genericType + '\'' +
                 ", innerParam=" + innerParam +
-                '}';
+                "}\n";
     }
 
     public String getName() {

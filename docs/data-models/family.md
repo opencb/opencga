@@ -56,19 +56,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **files**<br>*List<<em>String</em>>* <br> | <p>File IDs related to the quality control.</p> |
 | **comments**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/family#clinicalcomment"><em>ClinicalComment</em></a>>* <br> | <p>Comments related to the quality control.</p> |
 
-### Status
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
-
-
-### FamilyInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
-
-| Field | Description |
-| :---  | :--- |
-| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/family#status)* <br> | <p>Status of the internal object.</p> |
-| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
-| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
-
 ### Disorder
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Disorder.java).
 
@@ -95,15 +82,18 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **url**<br>*String* <br> | <p>Ontology url</p> |
 | **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 
-### RelatednessReport
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/RelatednessReport.java).
+### Status
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
+
+
+### FamilyInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
 
 | Field | Description |
 | :---  | :--- |
-| **method**<br>*String* <br> | <p>Method of the relatedness report</p> |
-| **maf**<br>*String* <br> | <p>Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU>0.35, cohort:ALL>0.05</p> |
-| **scores**<br>*List<<em>RelatednessScore</em>>* <br> | <p>Relatedness scores for pair of samples</p> |
-| **files**<br>*List<<em>String</em>>* <br> | <p>List of files of Relatedness Report</p> |
+| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/family#status)* <br> | <p>Status of the internal object.</p> |
+| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
+| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
 
 ### ClinicalComment
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalComment.java).
@@ -114,3 +104,13 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **message**<br>*String* <br> | <p>Clinical comment message</p> |
 | **tags**<br>*List<<em>String</em>>* <br> | <p>List of tags for the clinical comment</p> |
 | **date**<br>*String* <br> | <p>Date of the clinical comment</p> |
+
+### RelatednessReport
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/RelatednessReport.java).
+
+| Field | Description |
+| :---  | :--- |
+| **method**<br>*String* <br> | <p>Method of the relatedness report</p> |
+| **maf**<br>*String* <br> | <p>Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU>0.35, cohort:ALL>0.05</p> |
+| **scores**<br>*List<<em>RelatednessScore</em>>* <br> | <p>Relatedness scores for pair of samples</p> |
+| **files**<br>*List<<em>String</em>>* <br> | <p>List of files of Relatedness Report</p> |

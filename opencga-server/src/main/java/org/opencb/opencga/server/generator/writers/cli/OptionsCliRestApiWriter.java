@@ -16,13 +16,13 @@
 
 package org.opencb.opencga.server.generator.writers.cli;
 
-import org.opencb.opencga.server.generator.models.RestCategory;
-import org.opencb.opencga.server.generator.models.RestEndpoint;
-import org.opencb.opencga.server.generator.models.RestParameter;
-import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.config.Shortcut;
+import org.opencb.opencga.server.generator.models.RestApi;
+import org.opencb.opencga.server.generator.models.RestCategory;
+import org.opencb.opencga.server.generator.models.RestEndpoint;
+import org.opencb.opencga.server.generator.models.RestParameter;
 import org.opencb.opencga.server.generator.writers.ParentClientRestApiWriter;
 
 import java.text.SimpleDateFormat;
@@ -204,15 +204,6 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         return sb.toString();
     }
 
-    private String reverseCommandName(String commandName) {
-        if (commandName.contains("-")) {
-            String[] phrase = commandName.split("-");
-            if (phrase.length == 2) {
-                commandName = phrase[1] + "-" + phrase[0];
-            }
-        }
-        return commandName;
-    }
 
     private String getVariableName(RestParameter restParameter) {
         String res = "";

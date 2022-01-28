@@ -17,11 +17,11 @@
 package org.opencb.opencga.server.generator.writers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.server.generator.models.RestCategory;
-import org.opencb.opencga.server.generator.models.RestEndpoint;
-import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
+import org.opencb.opencga.server.generator.models.RestApi;
+import org.opencb.opencga.server.generator.models.RestCategory;
+import org.opencb.opencga.server.generator.models.RestEndpoint;
 import org.opencb.opencga.server.generator.utils.CommandLineUtils;
 
 import java.io.File;
@@ -68,6 +68,18 @@ public abstract class ParentClientRestApiWriter {
                 e.printStackTrace();
             }
         }
+    }
+
+    protected String reverseCommandName(String commandName) {
+        if (commandName.contains("-")) {
+            String[] phrase = commandName.split("-");
+            if (phrase.length == 2) {
+                commandName = phrase[1] + "-" + phrase[0];
+            } else if (phrase.length == 3) {
+                commandName = phrase[1] + "-" + phrase[2] + "-" + phrase[0];
+            }
+        }
+        return commandName;
     }
 
     public String getCategoryCommandName(RestCategory restCategory, CategoryConfig categoryConfig) {

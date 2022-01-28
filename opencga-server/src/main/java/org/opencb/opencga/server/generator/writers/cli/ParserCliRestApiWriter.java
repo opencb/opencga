@@ -17,11 +17,11 @@
 package org.opencb.opencga.server.generator.writers.cli;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.opencb.opencga.server.generator.models.RestCategory;
-import org.opencb.opencga.server.generator.models.RestEndpoint;
-import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
+import org.opencb.opencga.server.generator.models.RestApi;
+import org.opencb.opencga.server.generator.models.RestCategory;
+import org.opencb.opencga.server.generator.models.RestEndpoint;
 import org.opencb.opencga.server.generator.writers.ParentClientRestApiWriter;
 
 import java.io.File;
@@ -110,7 +110,7 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
                 String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
                 if ((!"POST".equals(restEndpoint.getMethod()) || restEndpoint.hasPrimitiveBodyParams(config, commandName)) && restEndpoint.hasParameters()) {
                     if (config.isAvailableCommand(commandName)) {
-                        sb.append("        " + getAsVariableName(restCategory.getName()) + "SubCommands.addCommand(\"" + commandName + "\", "
+                        sb.append("        " + getAsVariableName(restCategory.getName()) + "SubCommands.addCommand(\"" + reverseCommandName(commandName) + "\", "
                                 + getAsVariableName(restCategory.getName()) + "CommandOptions." + getAsCamelCase(commandName) +
                                 "CommandOptions);\n");
                     }

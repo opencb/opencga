@@ -39,7 +39,7 @@ public class LoginUtils {
         //case opencga.sh login --host ...... OR [opencga][demo@project:study]<demo/>login --host ......
         //case opencga.sh login user1 [.....] OR [opencga][demo@project:study]<demo/>login user1 [.....]
         if (args.length > 2 && "login".equals(args[1])) {
-            if (args[2].equals("--host")) {
+            if (args[2].startsWith("-")) {
                 return forceLogin(args);
             } else {
                 String user = args[2];

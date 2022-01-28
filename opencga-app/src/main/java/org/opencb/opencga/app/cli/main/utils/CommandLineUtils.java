@@ -65,7 +65,7 @@ public class CommandLineUtils {
     }
 
     public static boolean isValidUser(String user) {
-        return user.matches("^[A-Za-z][A-Za-z0-9_]{2,29}$");
+        return user.matches("^[A-Za-z][A-Za-z0-9_\\-ñÑ]{2,29}$");
     }
 
     private static boolean checkLevel(Level level) {

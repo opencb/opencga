@@ -94,7 +94,7 @@ public class RestApiParser {
                 restEndpoint.setMethod(httpMethod);
                 restEndpoint.setPath(restCategory.getPath() + pathAnnotation.value());
                 restEndpoint.setResponse(StringUtils
-                        .substringAfterLast(apiOperationAnnotation.response().getName().replace("Void", ""),"."));
+                        .substringAfterLast(apiOperationAnnotation.response().getName().replace("Void", ""), "."));
                 String responseClass = apiOperationAnnotation.response().getName().replace("Void", "");
                 restEndpoint.setResponseClass(responseClass.endsWith(";") ? responseClass : responseClass + ";");
                 restEndpoint.setNotes(apiOperationAnnotation.notes());
@@ -235,7 +235,7 @@ public class RestApiParser {
     }
 
     private RestParameter getParameter(String paramName, String variablePrefix, Field declaredField, String className,
-                                              String variableName) {
+                                       String variableName) {
         RestParameter innerParam = new RestParameter();
         innerParam.setName(paramName);
         innerParam.setParam("body");
@@ -263,7 +263,7 @@ public class RestApiParser {
     }
 
     private String normalize(String s) {
-        String res = s.replaceAll(" ", "_").replaceAll("-","_");
+        String res = s.replaceAll(" ", "_").replaceAll("-", "_");
         while (res.contains("__")) {
             res = res.replaceAll("__", "_");
         }
@@ -298,7 +298,8 @@ public class RestApiParser {
             barField.setAccessible(true);
             res = (String) barField.get(null);
         } catch (Exception e) {
-            logger.error("RestApiParser error: field: '" + fieldName + "' not found in ParamConstants");
+            return null;
+            // logger.error("RestApiParser error: field: '" + fieldName + "' not found in ParamConstants");
         }
         return res;
     }

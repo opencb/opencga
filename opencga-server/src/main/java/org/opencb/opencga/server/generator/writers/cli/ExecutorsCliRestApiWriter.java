@@ -245,13 +245,13 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     private String getBodyParams(RestEndpoint restEndpoint, CategoryConfig config, String commandName) {
         StringBuilder sb = new StringBuilder();
         if (restEndpoint.hasPrimitiveBodyParams(config, commandName)) {
-
+            String bodyParamsObject = restEndpoint.getBodyParamsObject();
             for (RestParameter restParameter : restEndpoint.getParameters()) {
                 if (restParameter.getData() != null && !restParameter.getData().isEmpty()) {
                     sb.append(generateBeans(restParameter.getData()));
                 }
             }
-            String bodyParamsObject = restEndpoint.getBodyParamsObject();
+
             sb.append("\n        " + bodyParamsObject + " " + getAsVariableName(bodyParamsObject) + " = (" + bodyParamsObject + ") new " + bodyParamsObject + "()");
             Set<String> variables = new HashSet<>();
             for (RestParameter restParameter : restEndpoint.getParameters()) {
@@ -269,20 +269,24 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                                     sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
                                             "(splitWithTrim(commandOptions."
                                             + normaliceNames(getAsCamelCase(bodyParam.getName())) + "))");
-                                } else {
-                                    if (bodyParam.isInnerParam()) {
-                                        if (!variables.contains(restParameter.getParentParamName())) {
-                                            sb.append("\n            .set" + getAsClassName(bodyParam.getParentParamName()) + "("
-                                                    + CommandLineUtils.getAsVariableName(CommandLineUtils.getClassName(bodyParam.getGenericType()))
-                                                    + ")");
-                                            variables.add(restParameter.getParentParamName());
-                                        }
-                                    }
                                 }
                             }
                         }
+                        //If the parameter is InnerParam (It means it's a field of inner bean) need to add to the variables Set
+                        // for no duplicate set action of Bean (Parent)
+                        if (bodyParam.isInnerParam() && !bodyParam.isCollection()) {
+                            if (!variables.contains(bodyParam.getParentParamName())) {
+                                sb.append("\n            .set" + getAsClassName(bodyParam.getParentParamName()) + "("
+                                        + CommandLineUtils.getAsVariableName(CommandLineUtils.getClassName(bodyParam.getGenericType()))
+                                        + ")");
+                                variables.add(bodyParam.getParentParamName());
+                            }
+
+
+                        }
                     }
                 }
+
             }
             sb.append(";\n");
         }
@@ -299,7 +303,10 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             }
         }
 
+
         for (String nameBean : beans) {
+
+
             sb.append("\n        " + CommandLineUtils.getClassName(nameBean) + " " + CommandLineUtils.getAsVariableName(CommandLineUtils.getClassName(nameBean)) +
                     "= new " + CommandLineUtils.getClassName(nameBean) + "();\n");
             for (RestParameter restParameter : restParameters) {

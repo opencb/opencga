@@ -135,7 +135,6 @@ public class Family extends Annotable {
 
     @DataField(id = "status", since = "2.0",
             description = FieldConstants.GENERIC_CUSTOM_STATUS)
-
     private Status status;
 
 
