@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.user;
 
+import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.api.FieldConstants;
@@ -26,6 +27,8 @@ import java.util.*;
 /**
  * Created by imedina on 11/09/14.
  */
+@DataClass(id = "User", since = "1.0",
+        description = "User data model hosts information about any user.")
 public class User {
 
     /**

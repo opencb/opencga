@@ -71,7 +71,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                 }
                 if (response != null) {
                     List<String> studies = new ArrayList<>();
-
+                    CommandLineUtils.debug(response.toString());
                     RestResponse<Project> projects = openCGAClient.getProjectClient().search(
                             new ObjectMap(ProjectDBAdaptor.QueryParams.OWNER.key(), user));
 
@@ -100,12 +100,14 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                 CommandLineUtils.printLog(errorMsg, new Exception());
             }
         } catch (Exception e) {
+            CommandLineUtils.error(LOGIN_ERROR, e);
+            e.printStackTrace();
             Event event = new Event();
             event.setMessage(LOGIN_ERROR + e.getMessage());
             res.setType(QueryType.VOID);
             event.setType(Event.Type.ERROR);
             res.getEvents().add(event);
-            e.printStackTrace();
+
         }
         return res;
     }

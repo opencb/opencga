@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models.file;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.biodata.models.common.Status;
+import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -33,6 +34,8 @@ import java.util.Map;
 /**
  * Created by jacobo on 11/09/14.
  */
+@DataClass(id = "File", since = "1.0",
+        description = "File data model hosts information about any file.")
 public class File extends Annotable {
 
     /**

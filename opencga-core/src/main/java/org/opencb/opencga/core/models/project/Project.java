@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.project;
 
+import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -30,6 +31,8 @@ import java.util.Map;
 /**
  * Created by jacobo on 11/09/14.
  */
+@DataClass(id = "Project", since = "1.0",
+        description = "Project data model hosts information about any project.")
 public class Project extends PrivateFields {
 
     /**

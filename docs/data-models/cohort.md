@@ -1,6 +1,6 @@
 # Cohort
 ## Overview
-Data model details for class: org.opencb.opencga.core.models.cohort.Cohort
+Cohort data model hosts information about any cohort.
 ### Summary 
 | Field | Create | Update | Unique | Required|
 | :--- | :---: | :---: |:---: |:---: |

@@ -156,7 +156,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
             if ((!"POST".equals(restEndpoint.getMethod()) || restEndpoint.hasPrimitiveBodyParams(config, commandName)) && restEndpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName)) {
-                    sb.append("            case \"" + commandName + "\":\n");
+                    sb.append("            case \"" + reverseCommandName(commandName) + "\":\n");
                     sb.append("                queryResponse = " + getAsCamelCase(commandName) + "();\n");
                     sb.append("                break;\n");
                 }

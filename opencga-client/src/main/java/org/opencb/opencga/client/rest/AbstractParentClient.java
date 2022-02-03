@@ -76,12 +76,10 @@
      private final ClientConfiguration clientConfiguration;
      private final int batchSize;
      private final int defaultLimit;
-
+     private final Logger privateLogger;
+     protected Logger logger;
      private String token;
      private boolean throwExceptionOnError = false;
-
-     protected Logger logger;
-     private Logger privateLogger;
 
      protected AbstractParentClient(String token, ClientConfiguration clientConfiguration) {
          this.token = token;
@@ -592,6 +590,7 @@
                      + " '" + status.getReasonPhrase() + "'";
              if (throwExceptionOnError) {
                  throw new ClientException(message);
+
              } else {
                  privateLogger.debug(message);
              }

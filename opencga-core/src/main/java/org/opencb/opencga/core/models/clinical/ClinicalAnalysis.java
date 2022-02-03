@@ -21,6 +21,7 @@ import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.common.Status;
+import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
@@ -38,6 +39,8 @@ import java.util.Map;
 /**
  * Created by pfurio on 05/06/17.
  */
+@DataClass(id = "ClinicalAnalysis", since = "1.0",
+        description = "ClinicalAnalysis data model hosts information about any analysis.")
 public class ClinicalAnalysis extends PrivateStudyUid {
 
     /**

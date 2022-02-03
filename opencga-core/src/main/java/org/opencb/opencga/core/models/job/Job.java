@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.job;
 
+import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
@@ -29,6 +30,8 @@ import java.util.Map;
 /**
  * Created by jacobo on 11/09/14.
  */
+@DataClass(id = "Job", since = "1.0",
+        description = "Job data model hosts information about any job.")
 public class Job extends PrivateStudyUid {
 
     public static final String OPENCGA_PARENTS = "OPENCGA_PARENTS";

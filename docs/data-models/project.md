@@ -1,6 +1,6 @@
 # Project
 ## Overview
-Data model details for class: org.opencb.opencga.core.models.project.Project
+Project data model hosts information about any project.
 ### Summary 
 | Field | Create | Update | Unique | Required|
 | :--- | :---: | :---: |:---: |:---: |

@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.core.OntologyTerm;
+import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -33,6 +34,8 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
+@DataClass(id = "Panel", since = "1.0",
+        description = "Panel data model hosts information about any panel.")
 public class Panel extends DiseasePanel implements IPrivateStudyUid {
 
     @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,

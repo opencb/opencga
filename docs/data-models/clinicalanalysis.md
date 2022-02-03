@@ -1,6 +1,6 @@
 # ClinicalAnalysis
 ## Overview
-Data model details for class: org.opencb.opencga.core.models.clinical.ClinicalAnalysis
+ClinicalAnalysis data model hosts information about any analysis.
 ### Summary 
 | Field | Create | Update | Unique | Required|
 | :--- | :---: | :---: |:---: |:---: |
@@ -82,24 +82,25 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **signature**<br>*String* <br> | <p>Report signature.</p> |
 | **date**<br>*String* <br> | <p>Report date.</p> |
 
-### ClinicalAnalysisQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/ClinicalAnalysisQualityControl.java).
+### Interpretation
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/Interpretation.java).
 
 | Field | Description |
 | :---  | :--- |
-| **summary**<br>*QualityControlSummary* <br> | <p>ClinicalAnalysisQualityControl summary that can have the values HIGH, MEDIUM, LOW, DISCARD, NEEDS_REVIEW, UNKNOWN.</p> |
-| **comments**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/clinicalanalysis#clinicalcomment"><em>ClinicalComment</em></a>>* <br> | <p>List of ClinicalAnalysisQualityControl comments.</p> |
-| **comments**<br>*List<<em>String</em>>* <br> | <p>List of ClinicalAnalysisQualityControl files.</p> |
+| **studyUid**<br>*long* <br> | <p>Study identifier.</p> |
+| **uid**<br>*long* <br> | <p>Interpretation identifier.</p> |
+| **panels**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/clinicalanalysis#panel"><em>Panel</em></a>>* <br> | <p>Interpretation panel list.</p> |
+| **internal**<br>*[InterpretationInternal](https://docs.opencga.opencb.org/data-models/clinicalanalysis#interpretationinternal)* <br> | <p>Internal field for manage the object.</p> |
+| **release**<br>*int* <br> | <p>An integer describing the current data release.</p> |
 
-### ClinicalPriorityAnnotation
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/ClinicalPriorityAnnotation.java).
+### FlagAnnotation
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/FlagAnnotation.java).
 
 | Field | Description |
 | :---  | :--- |
 | **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
 | **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **rank**<br>*int* <br> | <p>ClinicalPriorityAnnotation rank.</p> |
-| **date**<br>*String* <br> | <p>ClinicalPriorityAnnotation date.</p> |
+| **date**<br>*String* <br> | <p>FlagAnnotation date.</p> |
 
 ### ClinicalConsentAnnotation
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/ClinicalConsentAnnotation.java).
@@ -118,48 +119,14 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
 
-### ClinicalComment
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalComment.java).
+### ClinicalAnalysisQualityControl
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/ClinicalAnalysisQualityControl.java).
 
 | Field | Description |
 | :---  | :--- |
-| **author**<br>*String* <br> | <p>Clinical comment author</p> |
-| **message**<br>*String* <br> | <p>Clinical comment message</p> |
-| **tags**<br>*List<<em>String</em>>* <br> | <p>List of tags for the clinical comment</p> |
-| **date**<br>*String* <br> | <p>Date of the clinical comment</p> |
-
-### ClinicalAnalyst
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalAnalyst.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Id to identify the object</p> |
-| **name**<br>*String* <br> | <p>Object name</p> |
-| **email**<br>*String* <br> | <p>Email of the analyst</p> |
-| **assignedBy**<br>*String* <br> | <p>Assigned by field</p> |
-| **date**<br>*String* <br> | <p>Date of the clinical analyst</p> |
-
-### Panel
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/panel/Panel.java).
-
-| Field | Description |
-| :---  | :--- |
-| **uuid**<br>*String* <br> | <p>Unique 32-character identifier assigned automatically by OpenCGA.</p> |
-| **release**<br>*int* <br> | <p>An integer describing the current data release.</p> |
-| **version**<br>*int* <br> | <p>OpenCGA version of this panel, this is incremented when the panel is updated.</p> |
-| **~~author~~**<br>*String* <br><br>_Deprecated_ | <p>Author of the panel.</p> |
-| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/clinicalanalysis#status)* <br> | <p>Panel status can have the values READY or DELETED.</p> |
-| **studyUid**<br>*long* <br> | <p>Panel reference to study.</p> |
-| **uid**<br>*long* <br> | <p>Panel reference to study.</p> |
-
-### FlagAnnotation
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/FlagAnnotation.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **date**<br>*String* <br> | <p>FlagAnnotation date.</p> |
+| **summary**<br>*QualityControlSummary* <br> | <p>ClinicalAnalysisQualityControl summary that can have the values HIGH, MEDIUM, LOW, DISCARD, NEEDS_REVIEW, UNKNOWN.</p> |
+| **comments**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/clinicalanalysis#clinicalcomment"><em>ClinicalComment</em></a>>* <br> | <p>List of ClinicalAnalysisQualityControl comments.</p> |
+| **comments**<br>*List<<em>String</em>>* <br> | <p>List of ClinicalAnalysisQualityControl files.</p> |
 
 ### ClinicalAudit
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalAudit.java).
@@ -183,26 +150,49 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **url**<br>*String* <br> | <p>Ontology url</p> |
 | **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 
-### Interpretation
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/Interpretation.java).
-
-| Field | Description |
-| :---  | :--- |
-| **studyUid**<br>*long* <br> | <p>Study identifier.</p> |
-| **uid**<br>*long* <br> | <p>Interpretation identifier.</p> |
-| **panels**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/clinicalanalysis#panel"><em>Panel</em></a>>* <br> | <p>Interpretation panel list.</p> |
-| **internal**<br>*[InterpretationInternal](https://docs.opencga.opencb.org/data-models/clinicalanalysis#interpretationinternal)* <br> | <p>Internal field for manage the object.</p> |
-| **release**<br>*int* <br> | <p>An integer describing the current data release.</p> |
-
-### ClinicalConsentParam
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/ClinicalConsentParam.java).
+### ClinicalPriorityAnnotation
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/ClinicalPriorityAnnotation.java).
 
 | Field | Description |
 | :---  | :--- |
 | **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
-| **name**<br>*String* <br> | <p>Name of the .</p> |
 | **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **value**<br>*Value* <br> | <p>Value of the param that can have the values YES, NO and UNKNOWN.</p> |
+| **rank**<br>*int* <br> | <p>ClinicalPriorityAnnotation rank.</p> |
+| **date**<br>*String* <br> | <p>ClinicalPriorityAnnotation date.</p> |
+
+### ClinicalComment
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalComment.java).
+
+| Field | Description |
+| :---  | :--- |
+| **author**<br>*String* <br> | <p>Clinical comment author</p> |
+| **message**<br>*String* <br> | <p>Clinical comment message</p> |
+| **tags**<br>*List<<em>String</em>>* <br> | <p>List of tags for the clinical comment</p> |
+| **date**<br>*String* <br> | <p>Date of the clinical comment</p> |
+
+### Panel
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/panel/Panel.java).
+
+| Field | Description |
+| :---  | :--- |
+| **uuid**<br>*String* <br> | <p>Unique 32-character identifier assigned automatically by OpenCGA.</p> |
+| **release**<br>*int* <br> | <p>An integer describing the current data release.</p> |
+| **version**<br>*int* <br> | <p>OpenCGA version of this panel, this is incremented when the panel is updated.</p> |
+| **~~author~~**<br>*String* <br><br>_Deprecated_ | <p>Author of the panel.</p> |
+| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/clinicalanalysis#status)* <br> | <p>Panel status can have the values READY or DELETED.</p> |
+| **studyUid**<br>*long* <br> | <p>Panel reference to study.</p> |
+| **uid**<br>*long* <br> | <p>Panel reference to study.</p> |
+
+### ClinicalAnalyst
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalAnalyst.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Id to identify the object</p> |
+| **name**<br>*String* <br> | <p>Object name</p> |
+| **email**<br>*String* <br> | <p>Email of the analyst</p> |
+| **assignedBy**<br>*String* <br> | <p>Assigned by field</p> |
+| **date**<br>*String* <br> | <p>Date of the clinical analyst</p> |
 
 ### Status
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
@@ -217,6 +207,16 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/clinicalanalysis#status)* <br> | <p>Status of the internal object.</p> |
 | **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
+
+### ClinicalConsentParam
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/study/configuration/ClinicalConsentParam.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
+| **name**<br>*String* <br> | <p>Name of the .</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **value**<br>*Value* <br> | <p>Value of the param that can have the values YES, NO and UNKNOWN.</p> |
 
 ### InterpretationStatus
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/clinical/InterpretationStatus.java).

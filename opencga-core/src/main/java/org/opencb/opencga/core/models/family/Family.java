@@ -21,6 +21,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.common.Status;
+import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -36,6 +37,8 @@ import java.util.Map;
 /**
  * Created by pfurio on 02/05/17.
  */
+@DataClass(id = "Family", since = "1.0",
+        description = "Family data model hosts information about any family.")
 public class Family extends Annotable {
 
     /**

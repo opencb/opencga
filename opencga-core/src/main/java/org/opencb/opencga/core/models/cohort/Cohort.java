@@ -18,6 +18,7 @@ package org.opencb.opencga.core.models.cohort;
 
 
 import org.opencb.biodata.models.common.Status;
+import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.common.Annotable;
@@ -30,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@DataClass(id = "Cohort", since = "1.0",
+        description = "Cohort data model hosts information about any cohort.")
 public class Cohort extends Annotable {
 
     /**
