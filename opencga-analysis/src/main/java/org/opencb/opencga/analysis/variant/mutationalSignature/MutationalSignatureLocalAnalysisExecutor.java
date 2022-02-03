@@ -235,13 +235,17 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 while (iterator.hasNext()) {
                     Variant variant = iterator.next();
 
-                    // Accessing to the context sequence and write it into the context index file
-                    ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), variant.getStart() - 1,
-                            variant.getEnd() + 1);
-                    String sequence = new String(refSeq.getBases());
+                    try {
+                        // Accessing to the context sequence and write it into the context index file
+                        ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), variant.getStart() - 1,
+                                variant.getEnd() + 1);
+                        String sequence = new String(refSeq.getBases());
 
-                    // Write context index
-                    pw.println(variant.toString() + "\t" + sequence);
+                        // Write context index
+                        pw.println(variant.toString() + "\t" + sequence);
+                    } catch (Exception e) {
+                        logger.error("Skipping variant " + variant.toStringSimple() + " from genome context file; " + e.getMessage());
+                    }
                 }
             }
 
@@ -265,7 +269,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         if (countMap.get(k).containsKey(seq)) {
             countMap.get(k).put(seq, countMap.get(k).get(seq) + 1);
         } else {
-            logger.error("Something wrong happened counting mutational signature substitutions: variant = " + variant.toString()
+            logger.error("Something wrong happened counting mutational signature substitutions: variant = " + variant.toStringSimple()
                     + ", key = " + key + ", k = " + k + ", sequence = " + sequence + ", seq = " + seq);
         }
     }
