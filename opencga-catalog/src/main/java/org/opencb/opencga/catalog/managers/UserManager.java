@@ -734,7 +734,7 @@ public class UserManager extends AbstractManager {
 
                     Query query = new Query()
                             .append(UserDBAdaptor.QueryParams.ID.key(), userId)
-                            .append(UserDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), UserStatus.DELETED);
+                            .append(UserDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), UserStatus.DELETED);
                     OpenCGAResult<User> deletedUser = userDBAdaptor.get(query, QueryOptions.empty());
                     deletedUser.setTime(deletedUser.getTime() + result.getTime());
 

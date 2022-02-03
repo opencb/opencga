@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.AdditionalInfo;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.ExternalSource;
 
 import java.util.List;
@@ -33,15 +33,15 @@ public class StudyUpdateParams {
     private String creationDate;
     private String modificationDate;
     private StudyNotification notification;
-    private CustomStatusParams status;
-    private List<AdditionalInfo> additionalInfo;
     private Map<String, Object> attributes;
+    private StatusParams status;
+    private List<AdditionalInfo> additionalInfo;
 
     public StudyUpdateParams() {
     }
 
     public StudyUpdateParams(String name, String alias, StudyType type, List<ExternalSource> sources, String description,
-                             String creationDate, String modificationDate, StudyNotification notification, CustomStatusParams status,
+                             String creationDate, String modificationDate, StudyNotification notification, StatusParams status,
                              List<AdditionalInfo> additionalInfo, Map<String, Object> attributes) {
         this.name = name;
         this.alias = alias;
@@ -146,11 +146,11 @@ public class StudyUpdateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public StudyUpdateParams setStatus(CustomStatusParams status) {
+    public StudyUpdateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

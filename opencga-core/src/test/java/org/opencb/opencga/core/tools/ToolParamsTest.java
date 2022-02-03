@@ -352,8 +352,12 @@ public class ToolParamsTest {
         MyToolParams p = new MyToolParams();
         p.updateParams(new ObjectMap("myList", "1,2,3"));
         p.updateParams(new ObjectMap("myIntList", "1,2,3"));
+        p.updateParams(new ObjectMap("myKey", Arrays.asList("a", "b")));
+        p.updateParams(new ObjectMap("myInteger", Collections.singletonList("3")));
 
         assertEquals(Arrays.asList("1", "2", "3"), p.getMyList());
         assertEquals(Arrays.asList(1, 2, 3), p.getMyIntList());
+        assertEquals("a,b", p.getMyKey());
+        assertEquals(3, p.getMyInteger());
     }
 }

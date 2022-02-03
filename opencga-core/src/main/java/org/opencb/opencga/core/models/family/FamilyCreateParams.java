@@ -18,7 +18,7 @@ package org.opencb.opencga.core.models.family;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.individual.Individual;
 
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ public class FamilyCreateParams {
 
     private Integer expectedSize;
 
-    private CustomStatusParams status;
+    private StatusParams status;
     private Map<String, Object> attributes;
     private List<AnnotationSet> annotationSets;
 
@@ -47,7 +47,7 @@ public class FamilyCreateParams {
 
     public FamilyCreateParams(String id, String name, String description, String creationDate, String modificationDate,
                               List<IndividualCreateParams> members, Integer expectedSize, Map<String, Object> attributes,
-                              List<AnnotationSet> annotationSets, CustomStatusParams status) {
+                              List<AnnotationSet> annotationSets, StatusParams status) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -66,7 +66,7 @@ public class FamilyCreateParams {
                 family.getMembers() != null
                         ? family.getMembers().stream().map(IndividualCreateParams::of).collect(Collectors.toList())
                         : Collections.emptyList(),
-                family.getExpectedSize(), family.getAttributes(), family.getAnnotationSets(), CustomStatusParams.of(family.getStatus()));
+                family.getExpectedSize(), family.getAttributes(), family.getAnnotationSets(), StatusParams.of(family.getStatus()));
     }
 
     @Override
@@ -100,7 +100,7 @@ public class FamilyCreateParams {
         String familyName = StringUtils.isEmpty(name) ? familyId : name;
         int familyExpectedSize = expectedSize != null ? expectedSize : -1;
         return new Family(familyId, familyName, null, null, relatives, creationDate, modificationDate, description, familyExpectedSize, 1,
-                1, annotationSets, status != null ? status.toCustomStatus() : null, null, null, attributes);
+                1, annotationSets, status != null ? status.toStatus() : null, null, null, attributes);
     }
 
     public String getId() {
@@ -175,11 +175,11 @@ public class FamilyCreateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public FamilyCreateParams setStatus(CustomStatusParams status) {
+    public FamilyCreateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

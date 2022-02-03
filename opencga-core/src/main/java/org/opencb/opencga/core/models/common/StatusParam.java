@@ -18,8 +18,8 @@ public class StatusParam {
         return status != null ? new StatusParam(status.getId()) : null;
     }
 
-    public Status toCustomStatus() {
-        return new Status(id, "", TimeUtils.getTime());
+    public Status toStatus() {
+        return new Status(id, "", "", TimeUtils.getTime());
     }
 
     @Override

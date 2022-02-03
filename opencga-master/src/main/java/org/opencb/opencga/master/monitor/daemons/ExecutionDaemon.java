@@ -165,7 +165,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     static {
-        TOOL_CLI_MAP = new HashMap<String, String>(){{
+        TOOL_CLI_MAP = new HashMap<String, String>() {{
             put(FileUnlinkTask.ID, "files unlink");
             put(FileDeleteTask.ID, "files delete");
             put(FetchAndRegisterTask.ID, "files fetch");
@@ -252,9 +252,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
 
-        pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
-        queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED);
-        runningJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING);
+        pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.PENDING);
+        queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED);
+        runningJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.RUNNING);
         // Sort jobs by priority and creation date
         queryOptions = new QueryOptions()
                 .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
@@ -343,7 +343,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     protected int checkRunningJob(Job job) {
         Enums.ExecutionStatus jobStatus = getCurrentStatus(job);
 
-        switch (jobStatus.getName()) {
+        switch (jobStatus.getId()) {
             case Enums.ExecutionStatus.RUNNING:
                 ExecutionResult result = readExecutionResult(job);
                 if (result != null) {
@@ -370,12 +370,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 return processFinishedJob(job, jobStatus);
             case Enums.ExecutionStatus.QUEUED:
                 // Running job went back to Queued?
-                logger.info("Running job '{}' went back to '{}' status", job.getId(), jobStatus.getName());
+                logger.info("Running job '{}' went back to '{}' status", job.getId(), jobStatus.getId());
                 return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED));
             case Enums.ExecutionStatus.PENDING:
             case Enums.ExecutionStatus.UNKNOWN:
             default:
-                logger.info("Unexpected status '{}' for job '{}'", jobStatus.getName(), job.getId());
+                logger.info("Unexpected status '{}' for job '{}'", jobStatus.getId(), job.getId());
                 return 0;
 
         }
@@ -406,7 +406,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     protected int checkQueuedJob(Job job) {
         Enums.ExecutionStatus status = getCurrentStatus(job);
 
-        switch (status.getName()) {
+        switch (status.getId()) {
             case Enums.ExecutionStatus.QUEUED:
                 // Job is still queued
                 return 0;
@@ -428,7 +428,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 logger.info("Job '{}' in status {}", job.getId(), Enums.ExecutionStatus.UNKNOWN);
                 return 0;
             default:
-                logger.info("Unexpected status '{}' for job '{}'", status.getName(), job.getId());
+                logger.info("Unexpected status '{}' for job '{}'", status.getId(), job.getId());
                 return 0;
         }
     }
@@ -492,8 +492,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             String projectFqn = job.getStudy().getId().substring(0, job.getStudy().getId().indexOf(ParamConstants.PROJECT_STUDY_SEPARATOR));
             try {
                 List<String> studyFqnSet = catalogManager.getStudyManager().search(projectFqn, new Query(),
-                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(),
-                                StudyDBAdaptor.QueryParams.FQN.key())), token)
+                                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.GROUPS.key(),
+                                        StudyDBAdaptor.QueryParams.FQN.key())), token)
                         .getResults()
                         .stream()
                         .map(Study::getFqn)
@@ -704,7 +704,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     private File getValidDefaultOutDir(Job job) throws CatalogException {
         File folder = fileManager.createFolder(job.getStudy().getId(), "JOBS/" + job.getUserId() + "/" + TimeUtils.getDay() + "/"
-                        + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token).first();
+                + job.getId(), true, "Job " + job.getTool().getId(), job.getId(), QueryOptions.empty(), token).first();
 
         // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
         try {
@@ -782,19 +782,19 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     /**
      * Escape args if needed.
-     *
+     * <p>
      * Surround with single quotes. ('value')
      * Detect if the value had any single quote, and escape them with double quotes ("'")
-     *
-     *   --description It's true
-     *   --description 'It'"'"'s true'
-     *
+     * <p>
+     * --description It's true
+     * --description 'It'"'"'s true'
+     * <p>
      * 'It'
      * "'"
      * 's true'
      *
      * @param cliBuilder CommandLine StringBuilder
-     * @param value value to escape
+     * @param value      value to escape
      */
     public static void escapeCliArg(StringBuilder cliBuilder, String value) {
         if (StringUtils.isAlphanumeric(value) || StringUtils.isEmpty(value)) {
@@ -810,9 +810,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private boolean canBeQueued(Job job) {
         if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
             for (Job tmpJob : job.getDependsOn()) {
-                if (!Enums.ExecutionStatus.DONE.equals(tmpJob.getInternal().getStatus().getName())) {
-                    if (Enums.ExecutionStatus.ABORTED.equals(tmpJob.getInternal().getStatus().getName())
-                            || Enums.ExecutionStatus.ERROR.equals(tmpJob.getInternal().getStatus().getName())) {
+                if (!Enums.ExecutionStatus.DONE.equals(tmpJob.getInternal().getStatus().getId())) {
+                    if (Enums.ExecutionStatus.ABORTED.equals(tmpJob.getInternal().getStatus().getId())
+                            || Enums.ExecutionStatus.ERROR.equals(tmpJob.getInternal().getStatus().getId())) {
                         abortJob(job, "Job '" + tmpJob.getId() + "' it depended on did not finish successfully");
                     }
                     return false;
@@ -835,7 +835,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     private boolean canBeQueued(String toolId, int maxJobs) {
         Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED + ","
+                .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED + ","
                         + Enums.ExecutionStatus.RUNNING)
                 .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), toolId);
         long currentJobs = jobsCountByType.computeIfAbsent(toolId, k -> {
@@ -880,7 +880,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             jobManager.update(job.getStudy().getId(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             logger.error("Unexpected error. Cannot update job '{}' to status '{}'. {}", job.getId(),
-                    updateParams.getInternal().getStatus().getName(), e.getMessage(), e);
+                    updateParams.getInternal().getStatus().getId(), e.getMessage(), e);
             return 0;
         }
 
@@ -995,7 +995,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private int processFinishedJob(Job job, Enums.ExecutionStatus status) {
-        logger.info("[{}] - Processing finished job with status {}", job.getId(), status.getName());
+        logger.info("[{}] - Processing finished job with status {}", job.getId(), status.getId());
 
         Path outDirUri = Paths.get(job.getOutDir().getUri());
         Path analysisResultPath = getExecutionResultPath(job);
@@ -1077,7 +1077,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR,
                     "Job could not finish successfully"));
         } else {
-            switch (status.getName()) {
+            switch (status.getId()) {
                 case Enums.ExecutionStatus.DONE:
                 case Enums.ExecutionStatus.READY:
                     updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
@@ -1165,7 +1165,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     .property(ClientProperties.READ_TIMEOUT, 5000)
                     .post(Entity.json(job));
         } catch (ProcessingException e) {
-            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getName(), JobInternalWebhook.Status.ERROR);
+            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getId(), JobInternalWebhook.Status.ERROR);
             jobInternal.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, "Could not notify through webhook. "
                     + e.getMessage())));
 
@@ -1174,9 +1174,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return;
         }
         if (post.getStatus() == HttpStatus.SC_OK) {
-            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getName(), JobInternalWebhook.Status.SUCCESS);
+            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getId(), JobInternalWebhook.Status.SUCCESS);
         } else {
-            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getName(), JobInternalWebhook.Status.ERROR);
+            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getId(), JobInternalWebhook.Status.ERROR);
             jobInternal.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, "Could not notify through webhook. HTTP response "
                     + "code: " + post.getStatus())));
         }

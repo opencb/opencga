@@ -18,10 +18,10 @@ package org.opencb.opencga.core.models.file;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.Software;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
 
 import java.net.URI;
 import java.util.Collections;
@@ -116,7 +116,7 @@ public class File extends Annotable {
      *
      * @apiNote
      */
-    private CustomStatus status;
+    private Status status;
 
     /**
      * An object describing the internal information of the File. This is managed by OpenCGA.
@@ -139,7 +139,7 @@ public class File extends Annotable {
                 long size, int release) {
         this(name, type, format, bioformat, uri, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
                 false, size, new Software(), new FileExperiment(), Collections.emptyList(), Collections.emptyList(), "", release,
-                Collections.emptyList(), Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(), new CustomStatus(),
+                Collections.emptyList(), Collections.emptyList(), new FileQualityControl(), Collections.emptyMap(), new Status(),
                 internal, Collections.emptyMap());
     }
 
@@ -148,13 +148,13 @@ public class File extends Annotable {
                 Map<String, Object> attributes) {
         this("", type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description,
                 false, size, software, new FileExperiment(), sampleIds, Collections.emptyList(), jobId, -1, Collections.emptyList(),
-                Collections.emptyList(), qualityControl, stats, new CustomStatus(), internal, attributes);
+                Collections.emptyList(), qualityControl, stats, new Status(), internal, attributes);
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String checksum, String creationDate,
                 String modificationDate, String description, boolean external, long size, Software software, FileExperiment experiment,
                 List<String> sampleIds, List<FileRelatedFile> relatedFiles, String jobId, int release, List<String> tags,
-                List<AnnotationSet> annotationSets, FileQualityControl qualityControl, Map<String, Object> stats, CustomStatus status,
+                List<AnnotationSet> annotationSets, FileQualityControl qualityControl, Map<String, Object> stats, Status status,
                 FileInternal internal, Map<String, Object> attributes) {
         id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
         this.name = name;
@@ -439,11 +439,11 @@ public class File extends Annotable {
         return this;
     }
 
-    public CustomStatus getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public File setStatus(CustomStatus status) {
+    public File setStatus(Status status) {
         this.status = status;
         return this;
     }

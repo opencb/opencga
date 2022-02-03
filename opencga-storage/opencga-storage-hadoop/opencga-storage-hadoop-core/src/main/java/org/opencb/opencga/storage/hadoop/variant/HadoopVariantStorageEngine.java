@@ -589,7 +589,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         }
 
         // Check if any file is being completely deleted
-        Set<Integer> partiallyDeletedFiles = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds);
+        Set<Integer> partiallyDeletedFiles = metadataManager.getFileIdsFromSampleIds(studyId, sampleIds, true);
         List<String> fullyDeletedFiles = new ArrayList<>();
         List<Integer> fullyDeletedFileIds = new ArrayList<>();
         for (Integer partiallyDeletedFile : partiallyDeletedFiles) {
@@ -726,8 +726,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 return stopWatch.now(TimeUnit.MILLISECONDS);
             });
             // TODO: Remove whole table if removeWholeStudy
-            Future<Long> deleteFromArchive;
+            final Future<Long> deleteFromArchive;
             if (CollectionUtils.isEmpty(files)) {
+                deleteFromArchive = null;
+            } else if (!getDBAdaptor().getHBaseManager().tableExists(archiveTable)) {
+                // Might not exist if the initial index was executed without archive (--load-archive no)
+                logger.info("Archive table '{}' does not exist. Skip delete!", archiveTable);
                 deleteFromArchive = null;
             } else {
                 deleteFromArchive = service.submit(() -> {
@@ -745,8 +749,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             }
             // TODO: Remove whole table if removeWholeStudy
             List<String> samplesToRebuildIndex = new ArrayList<>();
-            Future<Long> deleteFromSampleIndex = null;
-            if (!allSampleIds.isEmpty()) {
+            final Future<Long> deleteFromSampleIndex;
+            if (allSampleIds.isEmpty()) {
+                deleteFromSampleIndex = null;
+            } else if (getDBAdaptor().getHBaseManager().tableExists(sampleIndexTable)) {
+                // Might not exist if the initial index was executed without sample-index (--load-sample-index no)
+                logger.info("Sample index table '{}' does not exist. Skip delete!", sampleIndexTable);
+                deleteFromSampleIndex = null;
+            } else {
                 deleteFromSampleIndex = service.submit(() -> {
                     StopWatch stopWatch = new StopWatch().start();
                     for (Integer sampleId : allSampleIds) {
@@ -887,7 +897,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                     try {
                         Configuration configuration = getHadoopConfiguration();
                         configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
-                        dbAdaptor.set(new VariantHadoopDBAdaptor(getHBaseManager(configuration), credentials,
+                        dbAdaptor.set(new VariantHadoopDBAdaptor(getHBaseManager(configuration),
                                 this.configuration, configuration, getTableNameGenerator()));
                     } catch (IOException e) {
                         throw new StorageEngineException("Error creating DB Adapter", e);

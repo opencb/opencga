@@ -244,7 +244,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
         // Update job with ERROR. Migration gets updated to ERROR.
         Job job = catalogManager.getJobManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
-        catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(), new ObjectMap("internal.status.name", "ERROR"), new QueryOptions(), token);
+        catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(), new ObjectMap("internal.status.id", "ERROR"), new QueryOptions(), token);
 
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
@@ -259,7 +259,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
         // Update job with DONE. Migration gets updated to DONE.
         j = migrationRun.getJobs().get(0);
         job = catalogManager.getJobManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
-        catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(), new ObjectMap("internal.status.name", "DONE"), new QueryOptions(), token);
+        catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(), new ObjectMap("internal.status.id", "DONE"), new QueryOptions(), token);
 
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();

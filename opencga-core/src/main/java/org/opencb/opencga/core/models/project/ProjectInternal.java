@@ -19,7 +19,7 @@ package org.opencb.opencga.core.models.project;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.common.Internal;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 
 public class ProjectInternal extends Internal {
 
@@ -29,7 +29,7 @@ public class ProjectInternal extends Internal {
     public ProjectInternal() {
     }
 
-    public ProjectInternal(Status status, String registrationDate, String modificationDate, Datastores datastores,
+    public ProjectInternal(InternalStatus status, String registrationDate, String modificationDate, Datastores datastores,
                            CellBaseConfiguration cellbase) {
         super(status, registrationDate, modificationDate);
         this.datastores = datastores;
@@ -37,7 +37,7 @@ public class ProjectInternal extends Internal {
     }
 
     public static ProjectInternal init() {
-        return new ProjectInternal(new Status(), TimeUtils.getTime(), TimeUtils.getTime(), new Datastores(), new CellBaseConfiguration());
+        return new ProjectInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), new Datastores(), new CellBaseConfiguration());
     }
 
     @Override
@@ -70,11 +70,11 @@ public class ProjectInternal extends Internal {
         return this;
     }
 
-    public Status getStatus() {
+    public InternalStatus getStatus() {
         return status;
     }
 
-    public ProjectInternal setStatus(Status status) {
+    public ProjectInternal setStatus(InternalStatus status) {
         this.status = status;
         return this;
     }

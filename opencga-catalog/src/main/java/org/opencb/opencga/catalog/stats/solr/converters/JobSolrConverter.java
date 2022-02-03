@@ -65,7 +65,7 @@ public class JobSolrConverter implements ComplexTypeConverter<Job, JobSolrModel>
         jobSolrModel.setCreationMonth(localDate.getMonth().toString());
         jobSolrModel.setCreationDay(localDate.getDayOfMonth());
         jobSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
-        jobSolrModel.setStatus(job.getInternal().getStatus().getName());
+        jobSolrModel.setStatus(job.getInternal().getStatus().getId());
 
         if (job.getTool() != null) {
             jobSolrModel.setToolId(job.getTool().getId());

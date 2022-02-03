@@ -50,9 +50,11 @@ import static org.opencb.opencga.analysis.variant.mutationalSignature.Mutational
 
 @ToolExecutor(id="opencga-local", tool = MutationalSignatureAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
-public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatureAnalysisExecutor implements StorageToolExecutor {
+public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatureAnalysisExecutor
+        implements StorageToolExecutor {
 
-    public final static String R_DOCKER_IMAGE = "opencb/opencga-r:" + GitRepositoryState.get().getBuildVersion();
+    public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:"
+            + GitRepositoryState.get().getBuildVersion();
 
     private Path opencgaHome;
 
@@ -74,7 +76,8 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         queryOptions.append(QueryOptions.INCLUDE, "id");
         queryOptions.append(QueryOptions.LIMIT, "1");
 
-        VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions, getToken());
+        VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions,
+                getToken());
         Variant variant = variantQueryResult.first();
         if (variant == null) {
             // Nothing to do
@@ -135,7 +138,8 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         try {
             Query fileQuery = new Query("name", name);
             QueryOptions fileQueryOptions = new QueryOptions("include", "uri");
-            OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = getVariantStorageManager().getCatalogManager()
+            OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = getVariantStorageManager()
+                    .getCatalogManager()
                     .getFileManager().search(getStudy(), fileQuery, fileQueryOptions, getToken());
 
             long maxSize = 0;
@@ -206,10 +210,12 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     private void createGenomeContextFile(File indexFile) throws ToolExecutorException {
         try {
             // First,
-            ResourceUtils.DownloadedRefGenome refGenome = ResourceUtils.downloadRefGenome(getAssembly(), getOutDir(), opencgaHome);
+            ResourceUtils.DownloadedRefGenome refGenome = ResourceUtils.downloadRefGenome(getAssembly(), getOutDir(),
+                    opencgaHome);
 
             if (refGenome == null) {
-                throw new ToolExecutorException("Something wrong happened accessing reference genome, check local path and public repository");
+                throw new ToolExecutorException("Something wrong happened accessing reference genome, check local path"
+                        + " and public repository");
             }
 
             Path refGenomePath = refGenome.getGzFile().toPath();
@@ -230,8 +236,9 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             String base = refGenomePath.toAbsolutePath().toString();
 
             try (PrintWriter pw = new PrintWriter(indexFile);
-                 BlockCompressedIndexedFastaSequenceFile indexed = new BlockCompressedIndexedFastaSequenceFile(refGenomePath,
-                         new FastaSequenceIndex(new File(base + ".fai")), GZIIndex.loadIndex(Paths.get(base + ".gzi")))) {
+                 BlockCompressedIndexedFastaSequenceFile indexed = new BlockCompressedIndexedFastaSequenceFile(
+                         refGenomePath, new FastaSequenceIndex(new File(base + ".fai")),
+                         GZIIndex.loadIndex(Paths.get(base + ".gzi")))) {
                 while (iterator.hasNext()) {
                     Variant variant = iterator.next();
 
@@ -276,8 +283,8 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
     private String executeRScript() throws IOException, ToolExecutorException {
         // Download signature profiles
-        File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, getMutationalSignatureFilename(), getOutDir(),
-                opencgaHome);
+        File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID,
+                getMutationalSignatureFilename(), getOutDir(), opencgaHome);
         if (signatureFile == null) {
             throw new ToolExecutorException("Error downloading mutational signatures file from " + ResourceUtils.URL);
         }
@@ -285,9 +292,10 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         String rScriptPath = opencgaHome + "/analysis/R/" + getToolId();
         List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
         inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, "/data/input"));
-        AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
-                "/data/output");
-        String scriptParams = "R CMD Rscript --vanilla /data/input/mutational-signature.r /data/output/" + GENOME_CONTEXT_FILENAME + " "
+        AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
+                .toAbsolutePath().toString(), "/data/output");
+        String scriptParams = "R CMD Rscript --vanilla /data/input/mutational-signature.r /data/output/"
+                + GENOME_CONTEXT_FILENAME + " "
                 + "/data/output/" + getMutationalSignatureFilename() + " /data/output ";
 
         String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);

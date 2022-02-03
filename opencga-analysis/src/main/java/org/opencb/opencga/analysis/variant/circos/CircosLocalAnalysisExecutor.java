@@ -57,7 +57,8 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
         framework = ToolExecutor.Framework.LOCAL, source = ToolExecutor.Source.STORAGE)
 public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implements StorageToolExecutor {
 
-    public final static String R_DOCKER_IMAGE = "opencb/opencga-r:" + GitRepositoryState.get().getBuildVersion();
+    public final static String R_DOCKER_IMAGE = "opencb/opencga-ext-tools:"
+            + GitRepositoryState.get().getBuildVersion();
     private VariantStorageManager storageManager;
 
     private File snvsFile;
@@ -77,7 +78,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         super();
     }
 
-    public CircosLocalAnalysisExecutor(String study, CircosAnalysisParams params, VariantStorageManager storageManager) {
+    public CircosLocalAnalysisExecutor(String study, CircosAnalysisParams params,
+                                       VariantStorageManager storageManager) {
         super(study, params);
         this.storageManager = storageManager;
     }
@@ -110,7 +112,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
         futureList.add(threadPool.submit(getNamedThread("SNV", () -> snvQuery(query, storageManager))));
         futureList.add(threadPool.submit(getNamedThread("COPY_NUMBER", () -> copyNumberQuery(query, storageManager))));
         futureList.add(threadPool.submit(getNamedThread("INDEL", () -> indelQuery(query, storageManager))));
-        futureList.add(threadPool.submit(getNamedThread("REARRANGEMENT", () -> rearrangementQuery(query, storageManager))));
+        futureList.add(threadPool.submit(getNamedThread("REARRANGEMENT", () -> rearrangementQuery(query,
+                storageManager))));
 
         threadPool.shutdown();
 
@@ -132,7 +135,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
             String rScriptPath = getExecutorParams().getString("opencgaHome") + "/analysis/R/genome-plot";
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
             inputBindings.add(new AbstractMap.SimpleEntry<>(rScriptPath, DOCKER_INPUT_PATH));
-            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
+            AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir()
+                    .toAbsolutePath().toString(),
                     DOCKER_OUTPUT_PATH);
             String scriptParams = "R CMD Rscript --vanilla " + DOCKER_INPUT_PATH + "/circos.R"
                     + (plotCopynumber ? "" : " --no_copynumber")
@@ -215,7 +219,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                 Variant v = iterator.next();
                 if (v.getStart() > v.getEnd()) {
                     // Sanity check
-                    pwOut.println(v.toString() + "\tStart  (" + v.getStart() + ") is bigger than end (" + v.getEnd() + ")");
+                    pwOut.println(v.toString() + "\tStart  (" + v.getStart() + ") is bigger than end (" + v.getEnd()
+                            + ")");
                 } else {
                     if (!v.getChromosome().equals(currentChrom)) {
                         prevStart = 0;
@@ -223,8 +228,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     }
                     int dist = v.getStart() - prevStart;
                     if (dist < threshold) {
-                        pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t" + v.getReference() + "\t"
-                                + v.getAlternate() + "\t" + Math.log10(dist));
+                        pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\t"
+                                + v.getReference() + "\t" + v.getAlternate() + "\t" + Math.log10(dist));
                     }
                     prevStart = v.getStart();
                 }
@@ -284,8 +289,10 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                         pwOut.println(v.toString() + "\tStudies is empty");
                     } else {
                         StudyEntry studyEntry = v.getStudies().get(0);
-                        String strTcn = studyEntry.getSampleData(query.getString(VariantQueryParam.SAMPLE.key()), "TCN");
-                        String strMcn = studyEntry.getSampleData(query.getString(VariantQueryParam.SAMPLE.key()), "MCN");
+                        String strTcn = studyEntry.getSampleData(query.getString(VariantQueryParam.SAMPLE.key()),
+                                "TCN");
+                        String strMcn = studyEntry.getSampleData(query.getString(VariantQueryParam.SAMPLE.key()),
+                                "MCN");
 
                         if (StringUtils.isEmpty(strTcn)) {
                             pwOut.println(v.toString() + "\tTCN format field is empty");
@@ -296,8 +303,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                                 try {
                                     int tcn = Integer.parseInt(strTcn);
                                     int mcn = Integer.parseInt(strMcn);
-                                    pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tNONE\t"
-                                            + (tcn - mcn) + "\t" + mcn);
+                                    pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd()
+                                            + "\tNONE\t" + (tcn - mcn) + "\t" + mcn);
                                 } catch (NumberFormatException e){
                                     pwOut.println(v.toString() + "\tError parsing TCN/MCN: " + e.getMessage());
                                 }
@@ -438,7 +445,8 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                     Variant v = iterator.next();
 
                     String variantType = v.getType() != null ? v.getType().name() : "";
-                    if (CollectionUtils.isNotEmpty(v.getStudies()) && CollectionUtils.isNotEmpty(v.getStudies().get(0).getFiles())) {
+                    if (CollectionUtils.isNotEmpty(v.getStudies()) && CollectionUtils.isNotEmpty(v.getStudies()
+                            .get(0).getFiles())) {
                         for (FileEntry file : v.getStudies().get(0).getFiles()) {
                             if (file.getData() != null && file.getData().containsKey("EXT_SVTYPE")) {
                                 variantType = file.getData().get("EXT_SVTYPE");
@@ -454,10 +462,11 @@ public class CircosLocalAnalysisExecutor extends CircosAnalysisExecutor implemen
                             if (sv.getBreakend().getMate() != null) {
                                 BreakendMate mate = sv.getBreakend().getMate();
                                 pw.println("chr" + v.getChromosome() + "\t" + v.getStart() + "\t" + v.getEnd() + "\tchr"
-                                        + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition() + "\t"
-                                        + variantType);
+                                        + mate.getChromosome() + "\t" + mate.getPosition() + "\t" + mate.getPosition()
+                                        + "\t" + variantType);
                             } else {
-                                pwOut.println(v.toString() + "\tBreakend mate is empty (variant type: " + variantType + ")");
+                                pwOut.println(v.toString() + "\tBreakend mate is empty (variant type: " + variantType
+                                        + ")");
                             }
                         } else {
                             pwOut.println(v.toString() + "\tBreakend is empty (variant type: " + variantType + ")");

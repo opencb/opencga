@@ -131,7 +131,7 @@ public class FileMetadataReaderTest {
 
         FileMetadataReader.get(catalogManager).addMetadataInformation(study.getFqn(), file);
 
-        assertEquals(FileStatus.READY, file.getInternal().getStatus().getName());
+        assertEquals(FileStatus.READY, file.getInternal().getStatus().getId());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
@@ -182,7 +182,7 @@ public class FileMetadataReaderTest {
             file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, sessionIdUser).first();
         }
-        assertEquals(FileStatus.READY, file.getInternal().getStatus().getName());
+        assertEquals(FileStatus.READY, file.getInternal().getStatus().getId());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
@@ -211,7 +211,7 @@ public class FileMetadataReaderTest {
 
         FileMetadataReader.get(catalogManager).addMetadataInformation(study.getFqn(), file);
 
-        assertEquals(FileStatus.READY, file.getInternal().getStatus().getName());
+        assertEquals(FileStatus.READY, file.getInternal().getStatus().getId());
 //        assertEquals(File.Format.GZIP, file.getFormat());
         assertEquals(File.Bioformat.ALIGNMENT, file.getBioformat());
         assertNotNull(file.getAttributes().get("alignmentHeader"));

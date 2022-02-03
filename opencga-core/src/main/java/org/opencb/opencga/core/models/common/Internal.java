@@ -2,14 +2,14 @@ package org.opencb.opencga.core.models.common;
 
 public abstract class Internal {
 
-    protected Status status;
+    protected InternalStatus status;
     protected String registrationDate;
     protected String lastModified;
 
     public Internal() {
     }
 
-    public Internal(Status status, String registrationDate, String lastModified) {
+    public Internal(InternalStatus status, String registrationDate, String lastModified) {
         this.status = status;
         this.registrationDate = registrationDate;
         this.lastModified = lastModified;
@@ -25,11 +25,11 @@ public abstract class Internal {
         return sb.toString();
     }
 
-    public Status getStatus() {
+    public InternalStatus getStatus() {
         return status;
     }
 
-    public Internal setStatus(Status status) {
+    public Internal setStatus(InternalStatus status) {
         this.status = status;
         return this;
     }

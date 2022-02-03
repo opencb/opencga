@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -45,9 +46,9 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.IndexStatus;
+import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
@@ -716,7 +717,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         SampleCollection collection = new SampleCollection(Collections.singletonList(new OntologyTermAnnotation("id", "name", "desc",
                 "source", "", Collections.emptyMap())), "type", "quantity", "method", "date", Collections.emptyMap());
-        CustomStatusParams statusParams = new CustomStatusParams("status1", "my description");
+        StatusParams statusParams = new StatusParams("status1", "status1", "my description");
         catalogManager.getSampleManager().update(studyFqn, "testSample",
                 new SampleUpdateParams().setCollection(collection).setStatus(statusParams),
                 new QueryOptions(Constants.INCREMENT_VERSION, true), token);
@@ -744,7 +745,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create(studyFqn,
                 new Sample()
                         .setId("HG007")
-                        .setStatus(new CustomStatus("stat1", "my description", time)),
+                        .setStatus(new Status("stat1", "stat1", "my description", time)),
                 INCLUDE_RESULT, token);
         assertEquals(1, sampleDataResult.getNumResults());
         assertEquals("stat1", sampleDataResult.first().getStatus().getName());
@@ -911,6 +912,11 @@ public class SampleManagerTest extends AbstractManagerTest {
             // Check nothing changed
             checkNothingChanged("sample3", 2);
         }
+
+
+        catalogManager.getSampleManager().updateSampleInternalGenotypeIndex(
+                catalogManager.getSampleManager().get(studyFqn, "sample3", null, token).first(),
+                new SampleInternalVariantGenotypeIndex(new IndexStatus(IndexStatus.READY, "This should be doable!")), token);
 
 //        try {
 //            catalogManager.getSampleManager().update(studyFqn, "sample4", updateParams, QueryOptions.empty(), token);
@@ -2468,7 +2474,7 @@ public class SampleManagerTest extends AbstractManagerTest {
         DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search("1000G:phase1", query, new QueryOptions(), token);
 //        DataResult<Sample> sample = catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
         assertEquals(1, sampleDataResult.getNumResults());
-        assertEquals(Status.DELETED, sampleDataResult.first().getInternal().getStatus().getName());
+        assertEquals(InternalStatus.DELETED, sampleDataResult.first().getInternal().getStatus().getId());
     }
 
     @Test

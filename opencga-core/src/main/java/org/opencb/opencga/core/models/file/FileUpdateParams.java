@@ -21,7 +21,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.StatusParams;
 
 import java.util.List;
 import java.util.Map;
@@ -49,7 +49,7 @@ public class FileUpdateParams {
 
     private Long size;
 
-    private CustomStatusParams status;
+    private StatusParams status;
     private List<AnnotationSet> annotationSets;
     private FileQualityControl qualityControl;
     private Map<String, Object> stats;
@@ -61,7 +61,7 @@ public class FileUpdateParams {
     public FileUpdateParams(String name, String description, String creationDate, String modificationDate, List<String> sampleIds,
                             String checksum, File.Format format, File.Bioformat bioformat, Software software, FileExperiment experiment,
                             List<String> tags, SmallFileInternal internal, Long size, List<SmallRelatedFileParams> relatedFiles,
-                            CustomStatusParams status, List<AnnotationSet> annotationSets, FileQualityControl qualityControl,
+                            StatusParams status, List<AnnotationSet> annotationSets, FileQualityControl qualityControl,
                             Map<String, Object> stats, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
@@ -252,11 +252,11 @@ public class FileUpdateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public FileUpdateParams setStatus(CustomStatusParams status) {
+    public FileUpdateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

@@ -22,7 +22,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -316,7 +316,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
                 // Always execute "next" over variantsIterator, to fail if empty
                 variants.add(variantsIterator.next());
             } while (variantsIterator.hasNext() && variants.size() < batchSize);
-            newQuery.append(VariantQueryParam.ID.key(), variants);
+            newQuery.append(VariantQueryUtils.ID_INTERSECT.key(), variants);
             lastBatch = variants;
             totalBatchSizeCount += variants.size();
             lastBatchSize = variants.size();

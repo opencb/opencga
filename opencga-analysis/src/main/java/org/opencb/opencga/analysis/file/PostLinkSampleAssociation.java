@@ -20,7 +20,9 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 @Tool(id = PostLinkSampleAssociation.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION,
         description = PostLinkSampleAssociation.DESCRIPTION)
@@ -45,7 +47,7 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
     @Override
     protected void run() throws Exception {
         // Obtain an iterator to get all the files that were link and not associated to any of its samples
-        Query fileQuery = new Query(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), FileStatus.MISSING_SAMPLES);
+        Query fileQuery = new Query(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.MISSING_SAMPLES);
         QueryOptions options = new QueryOptions(FileManager.INCLUDE_FILE_URI_PATH);
         List<String> includeList = new ArrayList<>(options.getAsStringList(QueryOptions.INCLUDE));
         includeList.add(FileDBAdaptor.QueryParams.INTERNAL_MISSING_SAMPLES.key());
@@ -87,7 +89,7 @@ public class PostLinkSampleAssociation extends OpenCgaToolScopeStudy {
                 numFiles++;
                 logger.info("Processing file {}/{} - {}", numFiles, numPendingFiles, file.getId());
                 // Validate status
-                if (!FileStatus.MISSING_SAMPLES.equals(file.getInternal().getStatus().getName())) {
+                if (!FileStatus.MISSING_SAMPLES.equals(file.getInternal().getStatus().getId())) {
                     // Skip current file. This file seems to be already properly associated
                     continue;
                 }

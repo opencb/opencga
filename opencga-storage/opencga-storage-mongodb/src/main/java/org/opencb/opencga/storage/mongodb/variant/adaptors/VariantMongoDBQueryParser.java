@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
+import com.google.common.collect.Iterables;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
@@ -118,10 +119,11 @@ public class VariantMongoDBQueryParser {
                         variantQueryXref.getOtherXrefs(), builder, QueryOperation.OR);
             }
 
-            if (!variantQueryXref.getVariants().isEmpty()) {
+            List<Variant> idIntersect = query.getAsStringList(ID_INTERSECT.key()).stream().map(Variant::new).collect(Collectors.toList());
+            if (!variantQueryXref.getVariants().isEmpty() || !idIntersect.isEmpty()) {
                 nonGeneRegionFilter = true;
-                List<String> mongoIds = new ArrayList<>(variantQueryXref.getVariants().size());
-                for (Variant variant : variantQueryXref.getVariants()) {
+                List<String> mongoIds = new ArrayList<>(variantQueryXref.getVariants().size() + idIntersect.size());
+                for (Variant variant : Iterables.concat(idIntersect, variantQueryXref.getVariants())) {
                     mongoIds.add(STRING_ID_CONVERTER.buildId(variant));
                 }
                 if (mongoIds.size() == 1) {

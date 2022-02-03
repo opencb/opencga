@@ -140,10 +140,10 @@ public class RgaSolrExtenalResource extends ExternalResource {
 
         System.setProperty("solr.solr.home", solrHomeDir.toPath().toAbsolutePath().normalize().toString());
 
-        final SolrResourceLoader loader = new SolrResourceLoader(solrHomeDir.toPath());
+//        final SolrResourceLoader loader = new SolrResourceLoader(solrHomeDir.toPath());
         final Path configSetPath = Paths.get(configSetHome).toAbsolutePath();
 
-        final NodeConfig config = new NodeConfig.NodeConfigBuilder("embeddedSolrServerNode", loader)
+        final NodeConfig config = new NodeConfig.NodeConfigBuilder("embeddedSolrServerNode", solrHomeDir.toPath())
                 .setConfigSetBaseDirectory(configSetPath.toString())
                 .build();
 

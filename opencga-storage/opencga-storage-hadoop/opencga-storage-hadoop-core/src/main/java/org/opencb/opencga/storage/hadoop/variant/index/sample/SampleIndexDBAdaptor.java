@@ -34,10 +34,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.*;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,18 +53,10 @@ import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_M
  */
 public class SampleIndexDBAdaptor implements VariantIterable {
 
-    private static final String SAMPLE_INDEX_STATUS = "sampleIndexGenotypes";
-    private static final String SAMPLE_INDEX_VERSION = "sampleIndexGenotypesVersion";
-    private static final String SAMPLE_INDEX_ANNOTATION_STATUS = "sampleIndexAnnotation";
-    private static final String SAMPLE_INDEX_ANNOTATION_VERSION = "sampleIndexAnnotationVersion";
-
-    @Deprecated // Deprecated to avoid confusion with actual "SAMPLE_INDEX_STATUS"
-    private static final String SAMPLE_INDEX_ANNOTATION_STATUS_OLD = "sampleIndex";
-
     private final HBaseManager hBaseManager;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final VariantStorageMetadataManager metadataManager;
-    private final byte[] family;
+    private static byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
     private static Logger logger = LoggerFactory.getLogger(SampleIndexDBAdaptor.class);
 
     public SampleIndexDBAdaptor(HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator,
@@ -75,54 +64,22 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         this.hBaseManager = hBaseManager;
         this.tableNameGenerator = tableNameGenerator;
         this.metadataManager = metadataManager;
-        family = GenomeHelper.COLUMN_FAMILY_BYTES;
     }
 
     public static TaskMetadata.Status getSampleIndexAnnotationStatus(SampleMetadata sampleMetadata, int latestSampleIndexVersion) {
-        TaskMetadata.Status status = sampleMetadata.getStatus(SAMPLE_INDEX_ANNOTATION_STATUS, null);
-        if (status == null) {
-            // The status name was renamed. In case of missing value (null), check for the deprecated value.
-            status = sampleMetadata.getStatus(SAMPLE_INDEX_ANNOTATION_STATUS_OLD);
-        }
-        if (status == TaskMetadata.Status.READY) {
-            int actualSampleIndexVersion = sampleMetadata.getAttributes().getInt(SAMPLE_INDEX_ANNOTATION_VERSION, 1);
-            if (actualSampleIndexVersion != latestSampleIndexVersion) {
-                logger.debug("Sample index annotation version outdated. Actual : " + actualSampleIndexVersion
-                        + " , expected : " + latestSampleIndexVersion);
-                status = TaskMetadata.Status.NONE;
-            }
-        }
-        return status;
+        return sampleMetadata.getSampleIndexAnnotationStatus(latestSampleIndexVersion);
     }
 
     public static SampleMetadata setSampleIndexAnnotationStatus(SampleMetadata sampleMetadata, TaskMetadata.Status status, int version) {
-        // Remove deprecated value.
-        sampleMetadata.getStatus().remove(SAMPLE_INDEX_ANNOTATION_STATUS_OLD);
-        sampleMetadata.setStatus(SAMPLE_INDEX_ANNOTATION_STATUS, status);
-        sampleMetadata.getAttributes().put(SAMPLE_INDEX_ANNOTATION_VERSION, version);
-        return sampleMetadata;
+        return sampleMetadata.setSampleIndexAnnotationStatus(status, version);
     }
 
     public static TaskMetadata.Status getSampleIndexStatus(SampleMetadata sampleMetadata, int latestSampleIndexVersion) {
-        TaskMetadata.Status status = sampleMetadata.getStatus(SAMPLE_INDEX_STATUS, null);
-        if (status == null) {
-            // This is a new status. In case of missing value (null), assume it's READY
-            status = TaskMetadata.Status.READY;
-        }
-        if (status == TaskMetadata.Status.READY) {
-            int actualSampleIndexVersion = sampleMetadata.getAttributes().getInt(SAMPLE_INDEX_VERSION, 1);
-            if (actualSampleIndexVersion != latestSampleIndexVersion) {
-                logger.debug("Sample index version outdated. Actual : " + actualSampleIndexVersion
-                        + " , expected : " + latestSampleIndexVersion);
-                status = TaskMetadata.Status.NONE;
-            }
-        }
-        return status;
+        return sampleMetadata.getSampleIndexStatus(latestSampleIndexVersion);
     }
 
     public static SampleMetadata setSampleIndexStatus(SampleMetadata sampleMetadata, TaskMetadata.Status status, int version) {
-        sampleMetadata.getAttributes().put(SAMPLE_INDEX_VERSION, version);
-        return sampleMetadata.setStatus(SAMPLE_INDEX_STATUS, status);
+        return sampleMetadata.setSampleIndexStatus(status, version);
     }
 
     @Override
@@ -405,12 +362,12 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     private long count(SingleSampleIndexQuery query) {
-        Collection<List<Region>> regionGroups;
-        if (CollectionUtils.isEmpty(query.getRegionGroups())) {
-            // If no regions are defined, get a list of one null element to initialize the stream.
-            regionGroups = Collections.singletonList(Collections.emptyList());
+        Collection<LocusQuery> locusQueries;
+        if (CollectionUtils.isEmpty(query.getLocusQueries())) {
+            // If no locus are defined, get a list of one null element to initialize the stream.
+            locusQueries = Collections.singletonList(null);
         } else {
-            regionGroups = query.getRegionGroups();
+            locusQueries = query.getLocusQueries();
         }
 
         String tableName = getSampleIndexTableName(toStudyId(query.getStudy()));
@@ -419,25 +376,29 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         try {
             return hBaseManager.act(tableName, table -> {
                 long count = 0;
-                for (List<Region> regions : regionGroups) {
+                for (LocusQuery locusQuery : locusQueries) {
                     // Split region in countable regions
-                    List<List<Region>> subRegionsGroups;
-                    if (regions.size() == 1) {
-                        subRegionsGroups = Collections.singletonList(splitRegion(regions.get(0)));
+                    List<LocusQuery> subLocusQueries;
+                    if (locusQuery != null && locusQuery.getVariants().isEmpty() && locusQuery.getRegions().size() == 1) {
+                        subLocusQueries = splitRegion(locusQuery.getRegions().get(0))
+                                .stream().map(LocusQuery::buildLocusQuery).collect(Collectors.toList());
                     } else {
                         // Do not split
-                        subRegionsGroups = Collections.singletonList(regions);
+                        subLocusQueries = Collections.singletonList(locusQuery);
                     }
-                    for (List<Region> subRegions : subRegionsGroups) {
-                        boolean noRegionFilter = subRegions.size() == 1 && matchesWithBatch(subRegions.get(0));
+                    for (LocusQuery subLocusQuery : subLocusQueries) {
+                        boolean noLocusFilter = subLocusQuery == null
+                                || (subLocusQuery.getVariants().isEmpty()
+                                && subLocusQuery.getRegions().size() == 1
+                                && matchesWithBatch(subLocusQuery.getRegions().get(0)));
                         // Don't need to parse the variant to filter
                         boolean simpleCount = !query.isMultiFileSample()
                                 && CollectionUtils.isEmpty(query.getVariantTypes())
-                                && noRegionFilter;
+                                && noLocusFilter;
                         try {
                             if (query.emptyOrRegionFilter() && simpleCount) {
                                 // Directly sum counters
-                                Scan scan = parseCount(query, subRegions);
+                                Scan scan = parseCount(query, subLocusQuery);
                                 ResultScanner scanner = table.getScanner(scan);
                                 Result result = scanner.next();
                                 while (result != null) {
@@ -445,14 +406,14 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                                     result = scanner.next();
                                 }
                             } else {
-                                SampleIndexEntryFilter filter = buildSampleIndexEntryFilter(query, subRegions);
+                                SampleIndexEntryFilter filter = buildSampleIndexEntryFilter(query, subLocusQuery);
                                 Scan scan;
                                 if (simpleCount) {
                                     // Fast filter and count. Don't need to parse the variant to filter
-                                    scan = parseCountAndFilter(query, subRegions);
+                                    scan = parseCountAndFilter(query, subLocusQuery);
                                 } else {
                                     // Need to parse the variant to finish filtering. Create a normal scan query.
-                                    scan = parse(query, subRegions);
+                                    scan = parse(query, subLocusQuery);
                                 }
                                 ResultScanner scanner = table.getScanner(scan);
                                 Result result = scanner.next();
@@ -564,11 +525,13 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         return region.getEnd() == Integer.MAX_VALUE || (region.getEnd() + 1) % SampleIndexSchema.BATCH_SIZE == 0;
     }
 
-    public SampleIndexEntryFilter buildSampleIndexEntryFilter(SingleSampleIndexQuery query, List<Region> regions) {
-        if (regions == null || regions.size() == 1 && matchesWithBatch(regions.get(0))) {
+    public SampleIndexEntryFilter buildSampleIndexEntryFilter(SingleSampleIndexQuery query, LocusQuery locusQuery) {
+        if (locusQuery == null
+                || (locusQuery.getVariants().isEmpty() && locusQuery.getRegions().size() == 1
+                && matchesWithBatch(locusQuery.getRegions().get(0)))) {
             return new SampleIndexEntryFilter(query, null);
         } else {
-            return new SampleIndexEntryFilter(query, regions);
+            return new SampleIndexEntryFilter(query, locusQuery);
         }
     }
 
@@ -587,38 +550,36 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         return new SampleIndexQueryParser(metadataManager, getSchema(studyId));
     }
 
-    public Scan parse(SingleSampleIndexQuery query, List<Region> regions) {
+    public Scan parse(SingleSampleIndexQuery query, LocusQuery regions) {
         return parse(query, regions, false, false);
     }
 
-    public Scan parseIncludeAll(SingleSampleIndexQuery query, List<Region> region) {
+    public Scan parseIncludeAll(SingleSampleIndexQuery query, LocusQuery region) {
         return parse(query, region, false, false, true);
     }
 
-    public Scan parseCount(SingleSampleIndexQuery query, List<Region> regions) {
+    public Scan parseCount(SingleSampleIndexQuery query, LocusQuery regions) {
         return parse(query, regions, true, true);
     }
 
-    public Scan parseCountAndFilter(SingleSampleIndexQuery query, List<Region> regions) {
+    public Scan parseCountAndFilter(SingleSampleIndexQuery query, LocusQuery regions) {
         return parse(query, regions, false, true);
     }
 
-    private Scan parse(SingleSampleIndexQuery query, List<Region> regions, boolean onlyCount, boolean skipGtColumn) {
+    private Scan parse(SingleSampleIndexQuery query, LocusQuery regions, boolean onlyCount, boolean skipGtColumn) {
         return parse(query, regions, onlyCount, skipGtColumn, false);
     }
 
-    private Scan parse(SingleSampleIndexQuery query, List<Region> regions, boolean onlyCount, boolean skipGtColumn, boolean includeAll) {
+    private Scan parse(SingleSampleIndexQuery query, LocusQuery locusQuery, boolean onlyCount, boolean skipGtColumn, boolean includeAll) {
 
         Scan scan = new Scan();
         int studyId = toStudyId(query.getStudy());
         int sampleId = toSampleId(studyId, query.getSample());
-        if (!CollectionUtils.isEmpty(regions)) {
+        if (locusQuery != null) {
             // Regions from the same group are sorted and do not overlap.
-            Region first = regions.get(0);
-            Region last = regions.get(regions.size() - 1);
-            scan.setStartRow(SampleIndexSchema.toRowKey(sampleId, first.getChromosome(), first.getStart()));
-            scan.setStopRow(SampleIndexSchema.toRowKey(sampleId, last.getChromosome(),
-                    last.getEnd() + (last.getEnd() == Integer.MAX_VALUE ? 0 : SampleIndexSchema.BATCH_SIZE)));
+            Region region = locusQuery.getChunkRegion();
+            scan.setStartRow(SampleIndexSchema.toRowKey(sampleId, region.getChromosome(), region.getStart()));
+            scan.setStopRow(SampleIndexSchema.toRowKey(sampleId, region.getChromosome(), region.getEnd()));
         } else {
             scan.setStartRow(SampleIndexSchema.toRowKey(sampleId));
             scan.setStopRow(SampleIndexSchema.toRowKey(sampleId + 1));
@@ -674,19 +635,10 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         }
         scan.setCaching(hBaseManager.getConf().getInt("hbase.client.scanner.caching", 100));
 
-        logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()) + " == "
-                + SampleIndexSchema.rowKeyToString(scan.getStartRow()));
-        logger.info("StopRow = " + Bytes.toStringBinary(scan.getStopRow()) + " == "
-                + SampleIndexSchema.rowKeyToString(scan.getStopRow()));
-        if (!CollectionUtils.isEmpty(regions)) {
-            logger.info("Regions: " + regions);
-        }
-        logger.info("columns = " + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
-                .stream().map(Bytes::toString).collect(Collectors.joining(",")));
-//        logger.info("MaxResultSize = " + scan.getMaxResultSize());
-//        logger.info("Filters = " + scan.getFilter());
-//        logger.info("Batch = " + scan.getBatch());
-        logger.info("Caching = " + scan.getCaching());
+        logger.info("---------");
+        logger.info("Sample = \"" + query.getSample() + "\"");
+        printScan(scan);
+        printQuery(locusQuery);
         printQuery(query);
 
 //        try {
@@ -733,12 +685,24 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     public static void printQuery(SampleIndexQuery query) {
         printQuery(query.getAnnotationIndexQuery());
         logger.info("Study  : " + query.getStudy());
-        if (CollectionUtils.isNotEmpty(query.getRegions())) {
-            List<Region> regions = query.getRegions();
-            if (regions.size() > 10) {
-                logger.info("Regions  : #" + regions.size() + " [ " + regions.get(0) + " , " + regions.get(1) + " .... ] ");
-            } else {
-                logger.info("Regions  : #" + regions.size() + " " + regions);
+        if (CollectionUtils.isNotEmpty(query.getLocusQueries())) {
+            List<Region> regions = query.getAllRegions();
+            if (!regions.isEmpty()) {
+                if (regions.size() > 10) {
+                    logger.info("Regions  : #" + regions.size()
+                            + " [ " + regions.get(0) + " , " + regions.get(1) + " .... , " + regions.get(regions.size() - 1) + " ] ");
+                } else {
+                    logger.info("Regions  : #" + regions.size() + " " + regions);
+                }
+            }
+            List<Variant> variants = query.getAllVariants();
+            if (!variants.isEmpty()) {
+                if (variants.size() > 10) {
+                    logger.info("Variants  : #" + variants.size()
+                            + " [ " + variants.get(0) + " , " + variants.get(1) + " .... , " + variants.get(variants.size() - 1) + "] ");
+                } else {
+                    logger.info("Variants  : #" + variants.size() + " " + variants);
+                }
             }
         }
 
@@ -749,6 +713,31 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             printSingleSampleIndexQuery(query.forSample(sample), true);
             if (iterator.hasNext()) {
                 logger.info("SampleIndex " + query.getQueryOperation().name());
+            }
+        }
+    }
+
+    public static void printScan(Scan scan) {
+        logger.info("StartRow = " + Bytes.toStringBinary(scan.getStartRow()) + " == "
+                + SampleIndexSchema.rowKeyToString(scan.getStartRow()));
+        logger.info("StopRow = " + Bytes.toStringBinary(scan.getStopRow()) + " == "
+                + SampleIndexSchema.rowKeyToString(scan.getStopRow()));
+        logger.info("columns = " + scan.getFamilyMap().getOrDefault(family, Collections.emptyNavigableSet())
+                .stream().map(Bytes::toString).collect(Collectors.joining(",")));
+//        logger.info("MaxResultSize = " + scan.getMaxResultSize());
+//        logger.info("Filters = " + scan.getFilter());
+//        logger.info("Batch = " + scan.getBatch());
+        logger.info("Caching = " + scan.getCaching());
+    }
+
+    public static void printQuery(LocusQuery locusQuery) {
+        if (locusQuery != null) {
+            logger.info("ChunkRegion: " + locusQuery.getChunkRegion());
+            if (!locusQuery.getRegions().isEmpty()) {
+                logger.info("  - Regions: " + locusQuery.getRegions());
+            }
+            if (!locusQuery.getVariants().isEmpty()) {
+                logger.info("  - Variants: " + locusQuery.getVariants());
             }
         }
     }

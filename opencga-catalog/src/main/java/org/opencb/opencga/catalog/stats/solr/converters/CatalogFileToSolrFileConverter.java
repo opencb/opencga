@@ -87,9 +87,9 @@ public class CatalogFileToSolrFileConverter implements ComplexTypeConverter<File
         fileSolrModel.setCreationMonth(localDate.getMonth().toString());
         fileSolrModel.setCreationDay(localDate.getDayOfMonth());
         fileSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
-        fileSolrModel.setStatus(file.getInternal().getStatus().getName());
+        fileSolrModel.setStatus(file.getInternal().getStatus().getId());
 
-        fileSolrModel.setStatus(file.getInternal().getStatus().getName());
+        fileSolrModel.setStatus(file.getInternal().getStatus().getId());
         fileSolrModel.setExternal(file.isExternal());
         fileSolrModel.setSize(file.getSize());
         if (file.getSoftware() != null) {

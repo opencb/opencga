@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.core.models.cohort;
 
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 
 import java.util.Arrays;
 import java.util.List;
 
-public class CohortStatus extends Status {
+public class CohortStatus extends InternalStatus {
 
     public static final String NONE = "NONE";
     public static final String CALCULATING = "CALCULATING";
@@ -46,7 +46,7 @@ public class CohortStatus extends Status {
     }
 
     public static boolean isValid(String status) {
-        if (Status.isValid(status)) {
+        if (InternalStatus.isValid(status)) {
             return true;
         }
         if (status != null && (status.equals(NONE) || status.equals(CALCULATING) || status.equals(INVALID))) {
