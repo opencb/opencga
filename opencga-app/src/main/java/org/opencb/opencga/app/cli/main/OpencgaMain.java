@@ -39,6 +39,7 @@ public class OpencgaMain {
     public static Level logLevel = Level.OFF;
 
     public static void main(String[] args) {
+        
         if (args.length == 0) {
             CliOptionsParser parser = new OpencgaCliOptionsParser();
             parser.printUsage();

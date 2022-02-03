@@ -51,7 +51,7 @@ public class ParentUsersCommandOptions {
         @Parameter(names = {"-u", "--user"}, description = "User id, this must be unique in OpenCGA", required = true, arity = 1)
         public String user;
 
-        @Parameter(names = {"-p", "--password"}, description = "User password", arity = 0, required = true, password = true, hidden = true)
+        @Parameter(names = {"-p", "--password"}, description = "User password", arity = 0, required = true, password = true)
         public String password;
 
         @Parameter(names = {"--refresh-token"}, description = "The body web service refreshToken parameter", arity = 1)

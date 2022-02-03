@@ -68,7 +68,9 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                     event.setType(Event.Type.ERROR);
                     res.setType(QueryType.VOID);
                     res.getEvents().add(event);
+                    return res;
                 }
+                CommandLineUtils.debug("Login token ::: " + getSessionManager().getSession().getToken());
                 if (response != null) {
                     List<String> studies = new ArrayList<>();
                     CommandLineUtils.debug(response.toString());
