@@ -30,11 +30,11 @@
                      createOnDemand="true"
                      ignoreExceptions="false">
             <Policies>
-                <SizeBasedTriggeringPolicy size="100 MB" />
+                <SizeBasedTriggeringPolicy size="500 MB" />
 <!--                <OnStartupTriggeringPolicy />-->
 <!--                <TimeBasedTriggeringPolicy />-->
             </Policies>
-            <DefaultRolloverStrategy max="100"/>
+            <DefaultRolloverStrategy max="20"/>
 
             <JSONLayout compact="true" eventEol="true" properties="true" stacktraceAsString="true"/>
             <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
@@ -54,5 +54,6 @@
         </Root>
         <Logger name="org.mongodb.driver.cluster" level="WARN"/>
         <Logger name="org.mongodb.driver.connection" level="WARN"/>
+        <Logger name="org.mongodb.driver.protocol.command" level="WARN"/>
     </Loggers>
 </Configuration>
