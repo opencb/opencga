@@ -85,7 +85,6 @@
             }
         },
         "kubernetesVersion": {
-            "defaultValue": "1.16.13",
             "type": "string",
             "metadata": {
                 "description": "The version of Kubernetes."
@@ -143,7 +142,21 @@
             "defaultValue": "Standard_D2s_v3",
             "type": "string",
             "metadata": {
-                "description": "The size of the Virtual Machine."
+                "description": "The size of the jobs agent pool Virtual Machines."
+            }
+        },
+        "aksMongodbAgentVMSize": {
+            "defaultValue": "Standard_E4s_v3",
+            "type": "string",
+            "metadata": {
+                "description": "The size of the mongodb agent pool Virtual Machines."
+            }
+        },
+        "aksSolrAgentVMSize": {
+            "defaultValue": "Standard_E4s_v3",
+            "type": "string",
+            "metadata": {
+                "description": "The size of the solr agent pool Virtual Machines."
             }
         },
         "mongodbAgentPool" : {
@@ -176,7 +189,7 @@
         {
             "type": "Microsoft.Resources/deployments",
             "name": "RoleAssignmentDeploymentForKubenetesSp",
-            "apiVersion": "2017-05-10",
+            "apiVersion": "2019-05-01",
             "subscriptionId": "[subscription().subscriptionId]",
             "resourceGroup": "[resourceGroup().name]",
             "properties": {
@@ -279,18 +292,19 @@
                     "condition": "[equals(parameters('jobsAgentPoolOrVirtualNode'),'AgentPool')]",
                     "name": "jobs",
                     "type": "agentPools",
-                    "apiVersion": "2020-01-01",
+                    "apiVersion": "2021-10-01",
                     "properties": {
                         "osDiskSizeGB": "[parameters('aksAgentOsDiskSizeGB')]",
-                        "count": 1,
+                        "count": 0,
                         "maxPods": 30,
                         "vmSize": "[parameters('aksJobsAgentVMSize')]",
                         "osType": "Linux",
+                        "mode": "User",
                         "storageProfile": "ManagedDisks",
                         "vnetSubnetID": "[parameters('kubernetesSubnetId')]",
                         "dnsPrefix": "jobs",
                         "enableAutoScaling": true,
-                        "minCount": 1,
+                        "minCount": 0,
                         "maxCount": "[parameters('maxJobsPoolAgents')]",
                         "type": "VirtualMachineScaleSets"
                     },
@@ -302,13 +316,14 @@
                     "condition" : "[parameters('mongodbAgentPool')]",
                     "name": "mongodb",
                     "type": "agentPools",
-                    "apiVersion": "2020-01-01",
+                    "apiVersion": "2021-10-01",
                     "properties": {
                         "osDiskSizeGB": "[parameters('aksAgentOsDiskSizeGB')]",
                         "count": 3,
                         "maxPods": 30,
-                        "vmSize": "Standard_E4s_v3",
+                        "vmSize": "[parameters('aksMongodbAgentVMSize')]",
                         "osType": "Linux",
+                        "mode": "User",
                         "storageProfile": "ManagedDisks",
                         "vnetSubnetID": "[parameters('kubernetesSubnetId')]",
                         "dnsPrefix": "mongodb",
@@ -322,13 +337,14 @@
                     "condition" : "[parameters('solrAgentPool')]",
                     "name": "solr",
                     "type": "agentPools",
-                    "apiVersion": "2020-01-01",
+                    "apiVersion": "2021-10-01",
                     "properties": {
                         "osDiskSizeGB": "[parameters('aksAgentOsDiskSizeGB')]",
                         "count": 2,
                         "maxPods": 30,
-                        "vmSize": "Standard_E4s_v3",
+                        "vmSize": "[parameters('aksSolrAgentVMSize')]",
                         "osType": "Linux",
+                        "mode": "User",
                         "storageProfile": "ManagedDisks",
                         "vnetSubnetID": "[parameters('kubernetesSubnetId')]",
                         "dnsPrefix": "solr",

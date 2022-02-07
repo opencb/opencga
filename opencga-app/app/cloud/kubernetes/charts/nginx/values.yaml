@@ -8,7 +8,7 @@ controller:
   replicaCount: 2
   nodeSelector:
     agentpool: default
-    beta.kubernetes.io/os: linux
+    kubernetes.io/os: linux
   service:
     annotations:
       # Use a private endpoint instead of a public IP
@@ -17,4 +17,4 @@ controller:
 defaultBackend:
   nodeSelector:
     agentpool: default
-    beta.kubernetes.io/os: linux
+    kubernetes.io/os: linux
