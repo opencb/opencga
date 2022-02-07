@@ -21,6 +21,8 @@ mongodb:
     version: "4.2.6"
     replicas: 3
 
+    certificateKeySecretRef: mongodb-tls-certificate
+
     volume:
       size: "128Gi"
 
@@ -124,6 +126,25 @@ azureStorageAccount:
 
 blobfuse:
   enabled: false
+
+# https://artifacthub.io/packages/helm/cert-manager/cert-manager
+tls:
+  publicIssuer:
+    ## WARNING!
+    ##  Manual steps involved to enable public certificate issuer
+    enabled: false
+    # Issuer or ClusterIssuer
+    type: Issuer
+    name: letsencrypt-prod
+    acme:
+      email: # REQUIRED
+  privateIssuer:
+    ## Internal CA self-signed
+    enabled: true
+    selfSignedName: tls-selfsigned-issuer
+    caName: tls-ca-issuer
+    caCertificateSecretRef: tls-ca-key-pair
+
 
 nameOverride: ""
 fullnameOverride: ""
