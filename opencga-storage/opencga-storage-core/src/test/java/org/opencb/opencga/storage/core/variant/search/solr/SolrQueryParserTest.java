@@ -752,6 +752,19 @@ public class SolrQueryParserTest {
         assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score4:[3.2+TO+*]+OR+scorePValue__platinum__score2:{-100.0+TO+0.001}", solrQuery.toString());
     }
 
+    @Test
+    public void parseVariantScoreWithStudyFqn() {
+        QueryOptions queryOptions = new QueryOptions();
+        String studyFqn = "user@project:platinum";
+        Query query = new Query();
+        //query.put(STUDIES.key(), study);
+        query.put(SCORE.key(), studyFqn + ":score2>=3.2;" + studyFqn + ":score3:pvalue<0.02");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score2:[3.2+TO+*]&fq=scorePValue__platinum__score3:{-100.0+TO+0.02}", solrQuery.toString());
+    }
+
 
     @Test
     public void parseFacetAvgProteinSubst() {

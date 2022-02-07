@@ -431,42 +431,32 @@ public class SolrQueryParser {
     }
 
     private String parseVariantScore(String score, String defaultStudyName) {
-        String[] split = splitOperator(score);
-        if (split.length != 3) {
+        KeyOpValue<String, String> keyOpValue = parseKeyOpValue(score);
+        if (StringUtils.isEmpty(keyOpValue.getKey())) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid Solr variant score query: " + score);
         }
-        String name = null;
-        String[] fields = split[0].split(STUDY_POP_FREQ_SEPARATOR);
-        switch (fields.length) {
-            case 1:
-                checkMissingStudy(defaultStudyName, "variant score", score);
-                name = "score" + FIELD_SEPARATOR + defaultStudyName + FIELD_SEPARATOR + split[0];
-                break;
-            case 2:
-                if ("score".equals(fields[1]) || "pvalue".equals(fields[1])) {
-                    checkMissingStudy(defaultStudyName, "variant score", score);
-                    if ("pvalue".equals(fields[1])) {
-                        fields[1] = "scorePValue";
-                    }
-                    name = fields[1] + FIELD_SEPARATOR + defaultStudyName + FIELD_SEPARATOR + fields[0];
-                } else {
-                    name = "score" + FIELD_SEPARATOR + fields[0] + FIELD_SEPARATOR + fields[1];
-                }
-                break;
-            case 3:
-                if ("score".equals(fields[2]) || "pvalue".equals(fields[2])) {
-                    if ("pvalue".equals(fields[2])) {
-                        fields[2] = "scorePValue";
-                    }
-                    name = fields[2] + FIELD_SEPARATOR + fields[0] + FIELD_SEPARATOR + fields[1];
-                } else {
-                    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid Solr variant score query: " + score);
-                }
-                break;
-            default:
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid Solr variant score query: " + score);
+
+        String scoreField = "score";
+        if (keyOpValue.getKey().endsWith(":pvalue")) {
+            scoreField = "scorePValue";
+            keyOpValue.setKey(StringUtils.removeEnd(keyOpValue.getKey(), ":pvalue"));
+        } else if (keyOpValue.getKey().endsWith(":score")) {
+            keyOpValue.setKey(StringUtils.removeEnd(keyOpValue.getKey(), ":score"));
         }
-        return parseNumericValue(name, split[1] + split[2]);
+
+        String[] fields = splitStudyResource(keyOpValue.getKey());
+        String study;
+        String scoreName;
+        if (fields.length == 1) {
+            checkMissingStudy(defaultStudyName, "variant score", score);
+            study = defaultStudyName;
+            scoreName = fields[0];
+        } else {
+            study = VariantSearchToVariantConverter.studyIdToSearchModel(fields[0]);
+            scoreName = fields[1];
+        }
+        String name = scoreField + FIELD_SEPARATOR + study + FIELD_SEPARATOR + scoreName;
+        return getRange(name, keyOpValue.getOp(), keyOpValue.getValue());
     }
 
     private void checkMissingStudy(String studyId, String msg, String value) {
@@ -1010,7 +1000,7 @@ public class SolrQueryParser {
         Matcher matcher = NUMERIC_PATTERN.matcher(value);
         if (matcher.find()) {
             // concat expression, e.g.: value:[0 TO 12]
-            filter.append(getRange("", name, matcher.group(1), matcher.group(2)));
+            filter.append(getRange(name, matcher.group(1), matcher.group(2)));
         } else {
             logger.debug("Invalid expression: {}", value);
             throw new IllegalArgumentException("Invalid expression " +  value);
@@ -1045,7 +1035,7 @@ public class SolrQueryParser {
                 if (matcher.find()) {
                     // concat expression, e.g.: value:[0 TO 12]
                     checkRangeParams(param, matcher.group(1), matcher.group(3));
-                    sb.append(getRange("", matcher.group(1), matcher.group(2), matcher.group(3)));
+                    sb.append(getRange(matcher.group(1), matcher.group(2), matcher.group(3)));
                 } else {
                     throw new IllegalArgumentException("Invalid expression " +  value);
                 }
@@ -1073,7 +1063,7 @@ public class SolrQueryParser {
                         }
 
                         checkRangeParams(param, filterName, filterValue);
-                        list.add(getRange("", filterName, filterOp, filterValue));
+                        list.add(getRange(filterName, filterOp, filterValue));
                     } else {
                         throw new IllegalArgumentException("Invalid expression " +  value);
                     }
@@ -1294,6 +1284,18 @@ public class SolrQueryParser {
             default:
                 return name;
         }
+    }
+
+    /**
+     * Build Solr query range, e.g.: query range [0 TO 23}.
+     *
+     * @param name      Parameter name, e.g.: sift, phylop, gerp, caddRaw,...
+     * @param op        Operator, e.g.: =, !=, <, <=, <<, <<=, >,...
+     * @param value     Parameter value, e.g.: 0.314, tolerated,...
+     * @return          Solr query range
+     */
+    public String getRange(String name, String op, String value) {
+        return getRange("", name, op, value);
     }
 
     /**
