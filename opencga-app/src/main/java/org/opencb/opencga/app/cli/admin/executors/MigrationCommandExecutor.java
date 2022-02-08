@@ -108,18 +108,8 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
             String version = parseVersion(options.version);
 
-            Set<Migration.MigrationDomain> domains;
-            if (options.domain != null) {
-                domains = new HashSet<>();
-                domains.add(options.domain);
-            } else {
-                domains = Collections.emptySet();
-            }
-
-            logger.debug("Searching migrations for version '{}' and domains '{}'", version, domains);
-
             MigrationManager migrationManager = catalogManager.getMigrationManager();
-            migrationManager.runMigration(version, domains, Collections.emptySet(), appHome, token);
+            migrationManager.runMigration(version, options.domain, options.language, appHome, token);
         }
     }
 
@@ -137,14 +127,19 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
     private String parseVersion(String version) {
         if (StringUtils.isEmpty(version)) {
-            version = GitRepositoryState.get().getBuildVersion();
-            // Remove extra information
-            version = version.split("-")[0];
-        }
-        if (version.startsWith("v")) {
+            return getDefaultVersion();
+        } else {
             // Remove "v" (v1.1.0 -> 1.1.0)
-            version = version.substring(1);
+            version = StringUtils.removeStart(version, "v");
+            return version;
         }
+    }
+
+    public static String getDefaultVersion() {
+        String version;
+        version = GitRepositoryState.get().getBuildVersion();
+        // Remove extra information
+        version = version.split("-")[0];
         return version;
     }
 
