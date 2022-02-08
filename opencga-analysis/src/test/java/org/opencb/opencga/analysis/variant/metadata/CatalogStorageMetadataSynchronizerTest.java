@@ -79,12 +79,10 @@ public class CatalogStorageMetadataSynchronizerTest {
     static private FileUtils catalogFileUtils;
     static private long outputId;
     static Logger logger = LoggerFactory.getLogger(CatalogStorageMetadataSynchronizerTest.class);
-    static private String catalogPropertiesFile;
     static private final String userId = "user";
     static private List<File> files = new ArrayList<>();
     static private LinkedHashSet<String> indexedFiles = new LinkedHashSet<>();
     private static String cohortId;
-    private static long cohortUid;
     private VariantStorageMetadataManager metadataManager;
     private CatalogStorageMetadataSynchronizer studyConfigurationFactory;
 
@@ -117,7 +115,6 @@ public class CatalogStorageMetadataSynchronizerTest {
         Cohort cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams().setId(cohortName), null, null, INCLUDE_RESULT,
                 sessionId).first();
         cohortId = cohort.getId();
-        cohortUid = cohort.getUid();
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz"));
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz", true));
         files.add(create("platinum/1K.end.platinum-genomes-vcf-NA12879_S1.genome.vcf.gz"));
