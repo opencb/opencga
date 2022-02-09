@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.tools.result;
 
+import org.opencb.opencga.core.common.GitRepositoryState;
+
 import java.util.Date;
 
 public class Status {
@@ -45,14 +47,23 @@ public class Status {
     private Type name;
     private String step;
     private Date date;
+    private String version;
+    private String commit;
 
-    public Status() {
+    protected Status() {
     }
 
     public Status(Type name, String step, Date date) {
         this.name = name;
         this.step = step;
         this.date = date;
+    }
+
+    public static Status initStatus() {
+        Status status = new Status();
+        status.version = GitRepositoryState.get().getBuildVersion();
+        status.commit = GitRepositoryState.get().getCommitId();
+        return status;
     }
 
     public Type getName() {
@@ -79,6 +90,24 @@ public class Status {
 
     public Status setDate(Date date) {
         this.date = date;
+        return this;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public Status setVersion(String version) {
+        this.version = version;
+        return this;
+    }
+
+    public String getCommit() {
+        return commit;
+    }
+
+    public Status setCommit(String commit) {
+        this.commit = commit;
         return this;
     }
 }
