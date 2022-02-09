@@ -35,7 +35,7 @@
         <opencga-storage-hadoop-deps.artifactId>${artifactId}</opencga-storage-hadoop-deps.artifactId>
         <hdp.dependencies.version>3.1.4.41-5</hdp.dependencies.version>
 
-        <hadoop.version>3.1.1.${hdp.dependencies.version}</hadoop.version>
+        <hadoop.version>2.10.1</hadoop.version>
         <hbase.version>2.0.2.${hdp.dependencies.version}</hbase.version>
         <!--Despite using hbase v2.0.0, this HDP version uses the 2.1.0 thirdparty libraries-->
         <hbase-thirdparty.version>2.1.0</hbase-thirdparty.version>

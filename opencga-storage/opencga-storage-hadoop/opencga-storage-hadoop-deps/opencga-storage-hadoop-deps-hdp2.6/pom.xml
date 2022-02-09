@@ -37,7 +37,7 @@
         <hdp.dependencies.version>2.6.5.298-4</hdp.dependencies.version>
 
         <!--        <guava.version>24.1.1-jre</guava.version>-->
-        <hadoop.version>2.7.3.${hdp.dependencies.version}</hadoop.version>
+        <hadoop.version>2.10.1</hadoop.version>
         <hbase.version>1.1.2.${hdp.dependencies.version}</hbase.version>
         <phoenix.version>4.7.0.${hdp.dependencies.version}</phoenix.version>
         <tephra.version>0.7.0</tephra.version>
