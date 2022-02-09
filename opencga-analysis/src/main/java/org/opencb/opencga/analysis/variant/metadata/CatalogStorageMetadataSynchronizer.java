@@ -17,8 +17,6 @@
 
 package org.opencb.opencga.analysis.variant.metadata;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.mongodb.MongoServerException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -346,7 +344,7 @@ public class CatalogStorageMetadataSynchronizer {
 
     protected boolean synchronizeFiles(StudyMetadata study, List<File> files, String token) throws CatalogException {
         boolean modified = false;
-        BiMap<Integer, String> fileNameMap = HashBiMap.create();
+        Map<String, Integer> fileNameMap = new HashMap<>();
         Map<Integer, String> filePathMap = new HashMap<>();
         Map<String, Set<String>> fileSamplesMap = new HashMap<>();
         LinkedHashSet<Integer> indexedFilesFromStorage = new LinkedHashSet<>();
@@ -364,10 +362,13 @@ public class CatalogStorageMetadataSynchronizer {
             filesIterable = () -> metadataManager.fileMetadataIterator(study.getId());
         } else {
             fullSynchronize = false;
-            filesIterable = () -> files.stream().map(f -> metadataManager.getFileMetadata(study.getId(), f.getName())).iterator();
+            filesIterable = () -> files.stream()
+                    .map(f -> metadataManager.getFileMetadata(study.getId(), f.getName()))
+                    .filter(Objects::nonNull) // Prev line might return null values for files not in storage
+                    .iterator();
         }
         for (FileMetadata fileMetadata : filesIterable) {
-            fileNameMap.put(fileMetadata.getId(), fileMetadata.getName());
+            fileNameMap.put(fileMetadata.getName(), fileMetadata.getId());
             filePathMap.put(fileMetadata.getId(), fileMetadata.getPath());
             Set<String> samples;
             if (fullSynchronize && !fileMetadata.isIndexed()) {
@@ -494,7 +495,7 @@ public class CatalogStorageMetadataSynchronizer {
                 .iterator(study.getName(), indexedFilesQuery, INDEXED_FILES_QUERY_OPTIONS, token)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
-                Integer fileId = fileNameMap.inverse().get(file.getName());
+                Integer fileId = fileNameMap.get(file.getName());
                 if (fileId == null || !indexedFilesFromStorage.contains(fileId)) {
                     String newStatus;
                     FileInternalVariantIndex index = file.getInternal().getVariant().getIndex();
@@ -530,7 +531,7 @@ public class CatalogStorageMetadataSynchronizer {
                 .iterator(study.getName(), runningIndexFilesQuery, INDEXED_FILES_QUERY_OPTIONS, token)) {
             while (iterator.hasNext()) {
                 File file = iterator.next();
-                Integer fileId = fileNameMap.inverse().get(file.getName());
+                Integer fileId = fileNameMap.get(file.getName());
                 FileMetadata fileMetadata;
                 if (fileId == null) {
                     fileMetadata = null;
