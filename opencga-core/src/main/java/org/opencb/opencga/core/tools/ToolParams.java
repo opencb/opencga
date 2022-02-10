@@ -77,12 +77,24 @@ public abstract class ToolParams {
             // Split string lists
             ObjectMap copy = new ObjectMap(params);
             for (Map.Entry<String, Class<?>> entry : loadPropertiesMap().entrySet()) {
-                if (Collection.class.isAssignableFrom(entry.getValue())) {
-                    copy.put(entry.getKey(), copy.getAsStringList(entry.getKey()));
-                } else if (boolean.class == entry.getValue()) {
-                    Object value = copy.get(entry.getKey());
-                    if (value instanceof String && ((String) value).isEmpty()) {
-                        copy.put(entry.getKey(), true);
+                String key = entry.getKey();
+                if (params.containsKey(key)) {
+                    Class<?> type = entry.getValue();
+
+                    if (Collection.class.isAssignableFrom(type)) {
+                        copy.put(key, copy.getAsStringList(key));
+                    } else if (boolean.class == type) {
+                        Object value = copy.get(key);
+                        if (value instanceof String && ((String) value).isEmpty()) {
+                            copy.put(key, true);
+                        } else {
+                            copy.put(key, copy.getBoolean(key));
+                        }
+                    } else {
+                        Object value = copy.get(key);
+                        if (Collection.class.isAssignableFrom(value.getClass())) {
+                            copy.put(key, copy.getString(key));
+                        }
                     }
                 }
             }

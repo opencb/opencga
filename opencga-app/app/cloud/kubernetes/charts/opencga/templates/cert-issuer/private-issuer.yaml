@@ -1,0 +1,46 @@
+{{- if .Values.tls.privateIssuer.enabled }}
+##################
+## cert-manager resources
+##
+## self-signed-issuer -> self-signed-ca-cert -> ca-issuer
+##
+##################
+# self-signed issuer
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ .Values.tls.privateIssuer.selfSignedName }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selfSigned: {}
+---
+# self-signed-ca-cert for the CA issuer
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Values.tls.privateIssuer.caName }}-selfsigned-cert
+  namespace: {{ .Release.Namespace }}
+spec:
+  isCA: true
+  commonName: "*.{{ .Release.Namespace }}.svc.cluster.local"
+  dnsNames:
+    - "*.{{ .Release.Namespace }}.svc.cluster.local"
+  secretName: {{ .Values.tls.privateIssuer.caCertificateSecretRef }}
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: {{ .Values.tls.privateIssuer.selfSignedName }}
+    kind: Issuer
+---
+# CA issuer that uses the self-signed ca certificate
+# This will sign all internal certificates
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ .Values.tls.privateIssuer.caName }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  ca:
+    secretName: {{ .Values.tls.privateIssuer.caCertificateSecretRef }}
+{{- end }}

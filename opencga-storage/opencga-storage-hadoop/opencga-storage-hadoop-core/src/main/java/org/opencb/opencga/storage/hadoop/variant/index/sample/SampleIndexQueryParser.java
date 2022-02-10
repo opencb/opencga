@@ -424,24 +424,50 @@ public class SampleIndexQueryParser {
             }
         }
 
+        ParsedVariantQuery.VariantQueryXref xref = VariantQueryParser.parseXrefs(query);
+        boolean mixRegionsOrIdsWithGenesAndCtBt =
+                (isValidParam(query, REGION) || !xref.getVariants().isEmpty())
+                &&
+                (!xref.getGenes().isEmpty() && (isValidParam(query, ANNOT_CONSEQUENCE_TYPE) || isValidParam(query, ANNOT_BIOTYPE)));
+
         // Extract regions
         List<Region> regions = new ArrayList<>();
         if (isValidParam(query, REGION)) {
             regions.addAll(Region.parseRegions(query.getString(REGION.key()), true));
-            query.remove(REGION.key());
+            if (!mixRegionsOrIdsWithGenesAndCtBt) {
+                query.remove(REGION.key());
+            }
+//            else {
+//                logger.info("Keep region!");
+//            }
+        }
+        // Extract IDs
+        List<Variant> variants = xref.getVariants();
+        if (!variants.isEmpty()) {
+            if (!mixRegionsOrIdsWithGenesAndCtBt) {
+                query.remove(ID.key());
+            }
+//            else {
+//                logger.info("Keep variants!");
+//            }
         }
 
         if (isValidParam(query, ANNOT_GENE_REGIONS)) {
             regions.addAll(Region.parseRegions(query.getString(ANNOT_GENE_REGIONS.key()), true));
-            if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE) || isValidParam(query, ANNOT_BIOTYPE)) {
-                query.put(ANNOT_GENE_REGIONS.key(), SKIP_GENE_REGIONS);
-            } else {
-                query.remove(ANNOT_GENE_REGIONS.key());
-                query.remove(GENE.key());
+            if (!mixRegionsOrIdsWithGenesAndCtBt) {
+                if (isValidParam(query, ANNOT_CONSEQUENCE_TYPE) || isValidParam(query, ANNOT_BIOTYPE)) {
+                    query.put(ANNOT_GENE_REGIONS.key(), SKIP_GENE_REGIONS);
+                } else {
+                    query.remove(ANNOT_GENE_REGIONS.key());
+                    query.remove(GENE.key());
+                }
             }
+//            else {
+//                logger.info("Keep genes!");
+//            }
         }
 
-        Collection<LocusQuery> regionGroups = buildLocusQueries(regions, VariantQueryParser.parseXrefs(query).getVariants());
+        Collection<LocusQuery> regionGroups = buildLocusQueries(regions, variants);
 
         return new SampleIndexQuery(schema, regionGroups, variantTypes, study, samplesMap, multiFileSamples, negatedSamples,
                 fatherFilterMap, motherFilterMap,

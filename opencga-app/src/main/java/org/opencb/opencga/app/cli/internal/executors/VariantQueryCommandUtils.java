@@ -72,6 +72,7 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
         addParam(query, VariantCatalogQueryUtils.PANEL_CONFIDENCE, queryVariantsOptions.panelConfidence);
         addParam(query, VariantCatalogQueryUtils.PANEL_INTERSECTION, queryVariantsOptions.panelIntersection);
         addParam(query, VariantCatalogQueryUtils.PANEL_ROLE_IN_CANCER, queryVariantsOptions.panelRoleInCancer);
+        addParam(query, VariantCatalogQueryUtils.PANEL_FEATURE_TYPE, queryVariantsOptions.panelFeatureType);
         addParam(query, VariantCatalogQueryUtils.SAVED_FILTER, queryVariantsOptions.savedFilter);
 
         if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)

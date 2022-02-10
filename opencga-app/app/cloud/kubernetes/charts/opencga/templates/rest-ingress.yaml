@@ -2,7 +2,7 @@
 {{- $fullName := .Values.rest.name -}}
 {{- $svcPort := .Values.rest.service.port -}}
 {{- $paths := .Values.rest.ingress.paths -}}
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Values.rest.name }}
@@ -30,9 +30,12 @@ spec:
         paths:
         {{- range $paths }}
           - path: {{ . }}
+            pathType: Exact
             backend:
-              serviceName: {{ $fullName }}
-              servicePort: {{ $svcPort }}
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: {{ $svcPort }}
         {{- end }}
   {{- end }}
 {{- end }}

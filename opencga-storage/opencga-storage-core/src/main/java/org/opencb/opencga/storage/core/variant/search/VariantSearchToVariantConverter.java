@@ -56,17 +56,13 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
     private static final String FIELD_SEP = " -- ";
 
     private final Logger logger = LoggerFactory.getLogger(VariantSearchToVariantConverter.class);
-    private Set<VariantField> includeFields;
-
-    private Map<String, StudyEntry> studyEntryMap;
-    private Map<String, VariantScore> scoreStudyMap;
-    private List<String> other = new ArrayList<>();
+    private final Set<VariantField> includeFields;
 
     public VariantSearchToVariantConverter() {
+        this.includeFields = null;
     }
 
     public VariantSearchToVariantConverter(Set<VariantField> includeFields) {
-        this();
         this.includeFields = includeFields;
     }
 
@@ -90,8 +86,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // Study management
-        studyEntryMap = new HashMap<>();
-        scoreStudyMap = new LinkedHashMap<>();
+        Map<String, StudyEntry> studyEntryMap = new HashMap<>();
+        Map<String, VariantScore> scoreStudyMap = new LinkedHashMap<>();
         if (variantSearchModel.getStudies() != null && CollectionUtils.isNotEmpty(variantSearchModel.getStudies())) {
             List<StudyEntry> studies = new ArrayList<>();
             variantSearchModel.getStudies().forEach(studyId -> {
@@ -181,7 +177,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 // key consists of 'altStats' + "__" + studyId + "__" + cohort
                 String[] fields = StringUtils.splitByWholeSeparator(key, FIELD_SEPARATOR);
                 if (studyEntryMap.containsKey(fields[1])) {
-                    VariantStats variantStats = getStatsOrCreate(fields[1], fields[2]);
+                    VariantStats variantStats = getStatsOrCreate(studyEntryMap, fields[1], fields[2]);
                     variantStats.setRefAlleleFreq(1 - variantSearchModel.getAltStats().get(key));
                     variantStats.setAltAlleleFreq(variantSearchModel.getAltStats().get(key));
                     variantStats.setMaf(Math.min(variantSearchModel.getAltStats().get(key), 1 - variantSearchModel.getAltStats().get(key)));
@@ -195,7 +191,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 // key consists of 'passStats' + "__" + studyId + "__" + cohort
                 String[] fields = StringUtils.splitByWholeSeparator(key, FIELD_SEPARATOR);
                 if (studyEntryMap.containsKey(fields[1])) {
-                    VariantStats variantStats = getStatsOrCreate(fields[1], fields[2]);
+                    VariantStats variantStats = getStatsOrCreate(studyEntryMap, fields[1], fields[2]);
                     Map<String, Float> filterFreq = new HashMap<>();
                     filterFreq.put(VCFConstants.PASSES_FILTERS_v4, variantSearchModel.getPassStats().get(key));
                     variantStats.setFilterFreq(filterFreq);
@@ -204,7 +200,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // Process annotation (for performance purposes, variant scores are processed too)
-        variant.setAnnotation(getVariantAnnotation(variantSearchModel, variant));
+        variant.setAnnotation(getVariantAnnotation(variantSearchModel, variant, studyEntryMap, scoreStudyMap));
 
         // Set variant scores from score study map
         if (MapUtils.isNotEmpty(scoreStudyMap)) {
@@ -220,7 +216,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         return variant;
     }
 
-    private VariantStats getStatsOrCreate(String studyId, String cohortId) {
+    private VariantStats getStatsOrCreate(Map<String, StudyEntry> studyEntryMap, String studyId, String cohortId) {
         VariantStats variantStats;
         if (studyEntryMap.get(studyId).getStats() != null) {
             variantStats = studyEntryMap.get(studyId).getStats(cohortId);
@@ -235,10 +231,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         return variantStats;
     }
 
-    public VariantAnnotation getVariantAnnotation(VariantSearchModel variantSearchModel, Variant variant) {
+    public VariantAnnotation getVariantAnnotation(VariantSearchModel variantSearchModel, Variant variant,
+                                                  Map<String, StudyEntry> studyEntryMap, Map<String, VariantScore> scoreStudyMap) {
 
         if (includeFields != null && !includeFields.contains(VariantField.ANNOTATION)) {
-            updateScoreStudyMap(variantSearchModel);
+            updateScoreStudyMap(studyEntryMap, scoreStudyMap, variantSearchModel);
             return null;
         }
 
@@ -299,7 +296,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     variantAnnotation.getHgvs().add(fields[1]);
                     break;
                 case "SC":
-                    updateScoreStudyMap(fields);
+                    updateScoreStudyMap(studyEntryMap, scoreStudyMap, fields);
                     break;
                 case "CB":
                     Cytoband cytoband = Cytoband.newBuilder()
@@ -612,18 +609,19 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         return variantAnnotation;
     }
 
-    private void updateScoreStudyMap(VariantSearchModel variantSearchModel) {
+    private void updateScoreStudyMap(Map<String, StudyEntry> studyEntryMap, Map<String, VariantScore> scoreStudyMap,
+                                     VariantSearchModel variantSearchModel) {
         // Get cohort1 and cohort2
         if (scoreStudyMap.size() > 0 && CollectionUtils.isNotEmpty(variantSearchModel.getOther())) {
             for (String other : variantSearchModel.getOther()) {
                 if (StringUtils.isNotEmpty(other) && other.startsWith("SC")) {
-                    updateScoreStudyMap(StringUtils.splitByWholeSeparatorPreserveAllTokens(other, FIELD_SEP));
+                    updateScoreStudyMap(studyEntryMap, scoreStudyMap, StringUtils.splitByWholeSeparatorPreserveAllTokens(other, FIELD_SEP));
                 }
             }
         }
     }
 
-    private void updateScoreStudyMap(String[] fields) {
+    private void updateScoreStudyMap(Map<String, StudyEntry> studyEntryMap, Map<String, VariantScore> scoreStudyMap, String[] fields) {
         // Fields content: SC -- studyId -- scoreId -- score -- p-value -- cohort1 -- cohort2
         if (studyEntryMap.containsKey(fields[1])) {
             String scoreStudyKey = fields[1] + FIELD_SEP + fields[2];
@@ -652,7 +650,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         VariantSearchModel variantSearchModel = new VariantSearchModel();
 
         // Create the Other list to insert scores and transcripts info (biotype, protein, variant annotation,...)
-        other = new ArrayList<>();
+        List<String> other = new ArrayList<>();
 
         // Set general Variant attributes: id, dbSNP, chromosome, start, end, type
         variantSearchModel.setId(variant.toString());       // Internal unique ID e.g.  3:1000:AT:-
@@ -676,7 +674,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // convert Study related information
-        convertStudies(variant, variantSearchModel);
+        convertStudies(variant, variantSearchModel, other);
 
         // We init all annotation numeric values to MISSING_VALUE, this fixes two different scenarios:
         // 1. No Variant Annotation has been found, probably because it is a SV longer than 100bp.
@@ -1063,7 +1061,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         return variantSearchModel;
     }
 
-    private void convertStudies(Variant variant, VariantSearchModel variantSearchModel) {
+    private void convertStudies(Variant variant, VariantSearchModel variantSearchModel, List<String> other) {
         // Sanity check
         if (CollectionUtils.isEmpty(variant.getStudies())) {
             return;

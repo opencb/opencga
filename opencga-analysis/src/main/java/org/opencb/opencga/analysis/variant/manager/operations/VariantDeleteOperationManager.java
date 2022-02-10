@@ -20,7 +20,7 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.VariantIndexStatus;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -58,8 +58,8 @@ public class VariantDeleteOperationManager extends OperationManager {
         if (inputFiles != null && !inputFiles.isEmpty()) {
             for (String fileStr : inputFiles) {
                 File file = catalogManager.getFileManager().get(study, fileStr, null, token).first();
-                String catalogIndexStatus = file.getInternal().getIndex().getStatus().getName();
-                if (!catalogIndexStatus.equals(FileIndex.IndexStatus.READY)) {
+                String catalogIndexStatus = file.getInternal().getVariant().getIndex().getStatus().getId();
+                if (!catalogIndexStatus.equals(VariantIndexStatus.READY)) {
                     // Might be partially loaded in VariantStorage. Check FileMetadata
                     FileMetadata fileMetadata = variantStorageEngine.getMetadataManager().getFileMetadata(studyMetadata.getId(), fileStr);
                     if (fileMetadata == null || !fileMetadata.getIndexStatus().equals(TaskMetadata.Status.NONE)) {

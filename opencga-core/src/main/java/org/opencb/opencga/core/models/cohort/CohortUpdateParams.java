@@ -20,8 +20,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 
@@ -41,14 +41,14 @@ public class CohortUpdateParams {
     private List<SampleReferenceParam> samples;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
-    private CustomStatusParams status;
+    private StatusParams status;
 
     public CohortUpdateParams() {
     }
 
     public CohortUpdateParams(String id, Enums.CohortType type, String description, String creationDate, String modificationDate,
                               List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
-                              CustomStatusParams status) {
+                              StatusParams status) {
         this.id = id;
         this.type = type;
         this.description = description;
@@ -81,7 +81,7 @@ public class CohortUpdateParams {
                 samples != null ?
                         samples.stream().map(s -> new Sample().setId(s.getId()).setUuid(s.getUuid())).collect(Collectors.toList())
                         : null,
-                samples != null ? samples.size() : 0, annotationSets, 1, status.toCustomStatus(), new CohortInternal(), attributes);
+                samples != null ? samples.size() : 0, annotationSets, 1, status.toStatus(), new CohortInternal(), attributes);
     }
 
     @Override
@@ -163,11 +163,11 @@ public class CohortUpdateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public CohortUpdateParams setStatus(CustomStatusParams status) {
+    public CohortUpdateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

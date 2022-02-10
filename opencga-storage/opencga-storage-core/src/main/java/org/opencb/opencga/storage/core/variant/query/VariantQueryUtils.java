@@ -74,6 +74,8 @@ public final class VariantQueryUtils {
     public static final String GT = "GT";
 
     // Some private query params
+    public static final QueryParam ID_INTERSECT = QueryParam.create("id_intersect",
+            "List of VariantIds that should be intersected with the rest of positional filters", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_EXPRESSION_GENES = QueryParam.create("annot_expression_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GO_GENES = QueryParam.create("annot_go_genes", "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam ANNOT_GENE_REGIONS = QueryParam.create("annot_gene_regions", "", QueryParam.Type.TEXT_ARRAY);
@@ -87,8 +89,11 @@ public final class VariantQueryUtils {
             "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
     public static final QueryParam NUM_TOTAL_SAMPLES = QueryParam.create("numTotalSamples", "", QueryParam.Type.INTEGER);
+
     public static final String NON_EXISTING_REGION = "non_existing_region";
-    public static final List<QueryParam> INTERNAL_VARIANT_QUERY_PARAMS = Arrays.asList(ANNOT_EXPRESSION_GENES,
+    public static final List<QueryParam> INTERNAL_VARIANT_QUERY_PARAMS = Arrays.asList(
+            ID_INTERSECT,
+            ANNOT_EXPRESSION_GENES,
             ANNOT_GO_GENES,
             ANNOT_GENE_REGIONS,
             VARIANTS_TO_INDEX,
@@ -741,7 +746,7 @@ public final class VariantQueryUtils {
     @Deprecated
     public static Pair<QueryOperation, Map<String, String>> parseSampleDataOLD(Query query) {
         ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedQuery = parseSampleData(query);
-        HashMap<String, String> map = new HashMap<>();
+        Map<String, String> map = new LinkedHashMap<>();
         for (KeyValues<String, KeyOpValue<String, String>> sampleFilter : parsedQuery) {
             map.put(sampleFilter.getKey(), sampleFilter.toValues().toQuery());
         }

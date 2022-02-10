@@ -6,6 +6,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.app.cli.admin.executors.MigrationCommandExecutor;
 import org.opencb.opencga.catalog.migration.Migration;
 
 import java.util.List;
@@ -54,10 +55,17 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
 
         @Parameter(names = {"--domain"}, description = "Run migrations of the chosen domain only [CATALOG, STORAGE]")
-        public Migration.MigrationDomain domain;
+        public List<Migration.MigrationDomain> domain;
+
+        @Parameter(names = {"--language"}, description = "Run migrations of the chosen language only [JAVA, JAVASCRIPT]")
+        public List<Migration.MigrationLanguage> language;
 
         @Parameter(names = {"--version"}, description = "Run all pending migrations up to this version number")
         public String version;
+
+        // TODO
+//        @Parameter(names = {"--background"}, description = "Run migrations in background using the execution")
+//        public boolean background;
 
     }
 
@@ -71,7 +79,7 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         public String id;
 
         @Parameter(names = {"--version"}, description = "Migration version")
-        public String version;
+        public String version = MigrationCommandExecutor.getDefaultVersion();
 
         @Parameter(names = {"--force"}, description = "Force migration run even if it's on status DONE, ON_HOLD or REDUNDANT", arity = 0)
         public boolean force;

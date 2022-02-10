@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.core.models.family;
 
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 
 import java.util.Arrays;
 import java.util.List;
 
-public class FamilyStatus extends Status {
+public class FamilyStatus extends InternalStatus {
 
     public static final String INCOMPLETE = "INCOMPLETE";
 
@@ -44,7 +44,7 @@ public class FamilyStatus extends Status {
     }
 
     public static boolean isValid(String status) {
-        if (Status.isValid(status)) {
+        if (InternalStatus.isValid(status)) {
             return true;
         }
         if (status != null && (status.equals(INCOMPLETE))) {

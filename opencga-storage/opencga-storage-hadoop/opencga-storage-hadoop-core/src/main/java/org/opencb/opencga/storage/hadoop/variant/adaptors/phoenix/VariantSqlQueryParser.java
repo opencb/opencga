@@ -483,6 +483,22 @@ public class VariantSqlQueryParser {
             }
         }
 
+        if (isValidParam(query, ID_INTERSECT)) {
+            List<Variant> idIntersect = query.getAsStringList(ID_INTERSECT.key()).stream().map(Variant::new).collect(Collectors.toList());
+            String idIntersectFilter = getVariantFilter(idIntersect);
+            if (regionFilters.isEmpty()) {
+                logger.info("ID_INTERSECT with {} variants", idIntersect.size());
+                regionFilters.add(idIntersectFilter);
+            } else {
+                logger.info("ID_INTERSECT with {} variants, and {} other region filters", idIntersect.size(), regionFilters.size());
+                String allRegionFilters = appendFilters(regionFilters, QueryOperation.OR);
+                String allRegionFiltersAndIdIntersect = appendFilters(
+                        Arrays.asList(idIntersectFilter, allRegionFilters), QueryOperation.AND);
+                regionFilters.clear();
+                regionFilters.add(allRegionFiltersAndIdIntersect);
+            }
+        }
+
 //        if (regionFilters.isEmpty()) {
 //            // chromosome != _METADATA
 //            regionFilters.add(VariantColumn.CHROMOSOME + " != '" + genomeHelper.getMetaRowKeyString() + "'");

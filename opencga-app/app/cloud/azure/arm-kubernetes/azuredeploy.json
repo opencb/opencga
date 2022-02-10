@@ -36,12 +36,25 @@
             },
             "defaultValue": "opencga"
         },
+        "location": {
+            "type": "string",
+            "metadata": {
+                "description": "Location for deployment"
+            }
+        },
+        "uniqueString": {
+            "type": "string",
+            "metadata": {
+                "description": "Random unique string for this deployment"
+            },
+            "defaultValue": "[uniqueString(concat(parameters('location'), subscription().id, parameters('clusterName')))]"
+        },
         "storageNamePrefix": {
             "type": "string",
             "metadata": {
                 "description": "Storage accounts naming prefix"
             },
-            "defaultValue": "[concat(replace(parameters('clusterName'), '-', ''), uniqueString(parameters('rgPrefix')))]"
+            "defaultValue": "[substring(concat(replace(parameters('clusterName'), '-', ''), parameters('uniqueString') ), 0, 20)]"
         },
         "nsgNamePrefix": {
             "type": "string",
@@ -57,22 +70,16 @@
             },
             "defaultValue": "[parameters('clusterName')]"
         },
-        "location": {
-            "type": "string",
-            "metadata": {
-                "description": "Location for deployment"
-            }
-        },
         "storageAccountName": {
             "type": "string",
-            "defaultValue": "[concat(parameters('storageNamePrefix'), 'storage')]",
+            "defaultValue": "[concat(parameters('storageNamePrefix'), 'main')]",
             "metadata": {
                 "description": "Main storage account name. The name must be unique across all existing storage account names in Azure. It must be 3 to 24 characters long, and can contain only lowercase letters and numbers."
             }
         },
         "logAnalyticsWorkspaceName": {
             "type": "string",
-            "defaultValue": "[concat(parameters('clusterName'), uniqueString(parameters('rgPrefix')))]"
+            "defaultValue": "[concat(parameters('clusterName'), parameters('uniqueString') )]"
         },
         "privateDnsZonesName": {
             "type": "string",
@@ -89,7 +96,7 @@
             }
         },
         "kubernetesVersion": {
-            "defaultValue": "1.16.13",
+            "defaultValue": "1.22.4",
             "type": "string",
             "metadata": {
                 "description": "The version of Kubernetes."
@@ -159,7 +166,7 @@
         },
         "HDInsightClusterName": {
             "type": "string",
-            "defaultValue": "[replace(concat(parameters('clusterName'), uniqueString(parameters('rgPrefix'))), '-', '')]",
+            "defaultValue": "[replace(concat(parameters('clusterName'), parameters('uniqueString')), '-', '')]",
             "metadata": {
                 "description": "HDInsight cluster name. Allowed characters: a-z, 0-9, A-Z . Max length: 59. Reserved names: apps. The cluster naming scope is for all Azure, across all subscriptions. So the cluster name must be unique worldwide. First six characters must be unique within a virtual network. See https://docs.microsoft.com/en-us/azure/hdinsight/hdinsight-hadoop-provision-linux-clusters#cluster-name"
             }
@@ -179,6 +186,7 @@
         },
         "HDInsightSshPassword": {
             "type": "securestring",
+            "defaultValue": null,
             "metadata": {
                 "description": "Used to login to HDInsight cluster nodes via SSH. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
             }
@@ -218,7 +226,7 @@
         },
         "loginNodePublicIPAddressDNS": {
             "type": "string",
-            "defaultValue": "[concat(parameters('clusterName'), '-', uniquestring(concat(parameters('location'), parameters('clusterName'))) )]",
+            "defaultValue": "[concat(parameters('clusterName'), '-', parameters('uniqueString') )]",
             "metadata": {
                 "description": "Login node public IP address DNS. There are a number of reserved words that can not be part of the DNS name, such as 'windows' or 'login'. Get more information at https://docs.microsoft.com/en-us/azure/azure-resource-manager/templates/error-reserved-resource-name"
             }
@@ -428,7 +436,7 @@
         {
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2019-05-01",
             "name": "vnet",
             "dependsOn": [
                 "[parameters('rgPrefix')]"
@@ -458,7 +466,7 @@
         {
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2019-05-01",
             "name": "dns",
             "dependsOn": [
                 "vnet",
@@ -483,7 +491,7 @@
         {
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2019-05-01",
             "name": "storageaccount",
             "dependsOn": [
                 "[parameters('rgPrefix')]",
@@ -517,7 +525,7 @@
         {
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2019-05-01",
             "name": "loganalytics",
             "dependsOn": [
                 "[parameters('rgPrefix')]"
@@ -549,7 +557,7 @@
         {
             "resourceGroup": "[concat(parameters('rgPrefix'),'-hdinsight')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2019-05-01",
             "name": "hdinsight",
             "dependsOn": [
                 "[concat(parameters('rgPrefix'),'-hdinsight')]",
@@ -626,7 +634,7 @@
         {
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'))]",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2019-05-01",
             "name": "appinsights",
             "dependsOn": [
                 "vnet",
@@ -645,7 +653,7 @@
         {
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2019-05-01",
             "name": "aks",
             "dependsOn": [
                 "vnet",
@@ -732,7 +740,7 @@
         {
             "resourceGroup": "[parameters('rgPrefix')]",
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2019-05-01",
             "name": "loginNode",
             "condition": "[parameters('loginNode')]",
             "dependsOn": [
@@ -790,7 +798,7 @@
             "condition" : "[parameters('deploySolr')]",
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'),'-solr')]",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2019-05-01",
             "name": "solr",
             "dependsOn": [
                 "vnet",
@@ -864,7 +872,7 @@
             "condition" : "[parameters('deployMongoDB')]",
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[concat(parameters('rgPrefix'),'-mongodb')]",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2019-05-01",
             "name": "mongodb",
             "dependsOn": [
                 "vnet",

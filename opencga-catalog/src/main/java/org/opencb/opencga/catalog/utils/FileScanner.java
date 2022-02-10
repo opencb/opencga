@@ -69,19 +69,19 @@ public class FileScanner {
 
     /**
      * Check tracking from all files from a study.
-     *
+     * <p>
      * Set file status {@link FileStatus#MISSING} if the file (fileUri) is unreachable
      * Set file status to {@link FileStatus#READY} if was {@link FileStatus#MISSING} and file (fileUri) is reachable
      *
      * @param study             The study to check
      * @param sessionId         User sessionId
      * @param calculateChecksum Calculate checksum for "found files"
-     * @throws CatalogException if a Catalog error occurs
      * @return found and lost files
+     * @throws CatalogException if a Catalog error occurs
      */
     public List<File> checkStudyFiles(Study study, boolean calculateChecksum, String sessionId) throws CatalogException {
         Query query = new Query();
-        query.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Arrays.asList(
+        query.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Arrays.asList(
                 FileStatus.READY, FileStatus.MISSING, FileStatus.TRASHED));
 
         DBIterator<File> iterator = catalogManager.getFileManager().iterator(study.getFqn(), query, new QueryOptions(), sessionId);
@@ -101,12 +101,12 @@ public class FileScanner {
     /**
      * Scan the study folder, add all untracked files and check tracking.
      *
-     * @param study                 Study to resync
-     * @param calculateChecksum     Calculates checksum of all the files in the directory to scan
-     * @param sessionId             User sessionId
-     * @return                      New, lost and found files
-     * @throws CatalogException     if a Catalog error occurs
-     * @throws IOException          if an I/O error occurs
+     * @param study             Study to resync
+     * @param calculateChecksum Calculates checksum of all the files in the directory to scan
+     * @param sessionId         User sessionId
+     * @return New, lost and found files
+     * @throws CatalogException if a Catalog error occurs
+     * @throws IOException      if an I/O error occurs
      */
     public List<File> reSync(Study study, boolean calculateChecksum, String sessionId) throws CatalogException, IOException {
         Query query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.DIRECTORY);
@@ -128,10 +128,10 @@ public class FileScanner {
     /**
      * Return all untracked files in a study folder.
      *
-     * @param study         Study to scan
-     * @param sessionId     User sessionId
-     * @return              Untracked files
-     * @throws CatalogException     if a Catalog error occurs
+     * @param study     Study to scan
+     * @param sessionId User sessionId
+     * @return Untracked files
+     * @throws CatalogException if a Catalog error occurs
      */
     public Map<String, URI> untrackedFiles(Study study, String sessionId) throws CatalogException {
         long studyId = study.getUid();
@@ -179,15 +179,15 @@ public class FileScanner {
     /**
      * Scans the files inside the specified URI and adds to the provided directory.
      *
-     * @param directory             Directory where add found files
-     * @param directoryToScan       Directory to scan
-     * @param policy                What to do when there is a file in the target path. See {@link FileScannerPolicy}
-     * @param calculateChecksum     Calculates checksum of all the files in the directory to scan
-     * @param deleteSource          After moving, deletes the source file. If false, force copy.
-     * @param sessionId             User sessionId
+     * @param directory         Directory where add found files
+     * @param directoryToScan   Directory to scan
+     * @param policy            What to do when there is a file in the target path. See {@link FileScannerPolicy}
+     * @param calculateChecksum Calculates checksum of all the files in the directory to scan
+     * @param deleteSource      After moving, deletes the source file. If false, force copy.
+     * @param sessionId         User sessionId
      * @return found and new files.
-     * @throws IOException          if an I/O error occurs
-     * @throws CatalogException     if a Catalog error occurs
+     * @throws IOException      if an I/O error occurs
+     * @throws CatalogException if a Catalog error occurs
      */
     public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
                            boolean calculateChecksum, boolean deleteSource, String sessionId)
@@ -198,16 +198,16 @@ public class FileScanner {
     /**
      * Scans the files inside the specified URI and adds to the provided directory.
      *
-     * @param directory             Directory where add found files
-     * @param directoryToScan       Directory to scan
-     * @param policy                What to do when there is a file in the target path. See {@link FileScannerPolicy}
-     * @param calculateChecksum     Calculates checksum of all the files in the directory to scan
-     * @param deleteSource          After moving, deletes the source file. If false, force copy.
-     * @param filter                File filter. Excludes the file when this predicate returns false.
-     * @param sessionId             User sessionId
+     * @param directory         Directory where add found files
+     * @param directoryToScan   Directory to scan
+     * @param policy            What to do when there is a file in the target path. See {@link FileScannerPolicy}
+     * @param calculateChecksum Calculates checksum of all the files in the directory to scan
+     * @param deleteSource      After moving, deletes the source file. If false, force copy.
+     * @param filter            File filter. Excludes the file when this predicate returns false.
+     * @param sessionId         User sessionId
      * @return found and new files.
-     * @throws IOException          if an I/O error occurs
-     * @throws CatalogException     if a Catalog error occurs
+     * @throws IOException      if an I/O error occurs
+     * @throws CatalogException if a Catalog error occurs
      */
     public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy, boolean calculateChecksum, boolean deleteSource,
                            Predicate<URI> filter, String sessionId) throws CatalogException, IOException {
@@ -305,7 +305,7 @@ public class FileScanner {
                 logger.debug("Created new file entry for " + uri + " { uid:" + file.getUid() + ", path:\"" + file.getPath() + "\" } ");
             } else {
                 if (file.getType() == File.Type.FILE) {
-                    if (file.getInternal().getStatus().getName().equals(FileStatus.MISSING)) {
+                    if (file.getInternal().getStatus().getId().equals(FileStatus.MISSING)) {
                         logger.info("File { uid:" + file.getUid() + ", path:'" + file.getPath() + "' } recover tracking from file " + uri);
                         logger.debug("Set status to " + FileStatus.READY);
                         returnFile = true;      //Return file because was missing

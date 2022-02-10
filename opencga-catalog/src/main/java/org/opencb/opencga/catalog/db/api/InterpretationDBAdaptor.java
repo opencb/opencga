@@ -44,7 +44,7 @@ public interface InterpretationDBAdaptor extends CoreDBAdaptor<Interpretation> {
         CLINICAL_ANALYSIS_ID("clinicalAnalysisId", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         INTERNAL_STATUS("internal.status", TEXT, ""),
-        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         PANELS_UID("panels.uid", LONG, ""),
         ANALYST("analyst", TEXT, ""),

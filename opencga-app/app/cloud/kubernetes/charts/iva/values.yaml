@@ -63,7 +63,8 @@ iva:
       nginx.ingress.kubernetes.io/rewrite-target: /iva/$2
       nginx.ingress.kubernetes.io/configuration-snippet: |
         add_header Cache-Control no-cache;
-      # kubernetes.io/tls-acme: "true"
+#      cert-manager.io/issuer: letsencrypt-prod
+#      cert-manager.io/cluster-issuer: letsencrypt-prod
     hosts:
       - "opencga.local" # This host name should be added to the internal DNS zone pointing to the nginx service external IP
       - ""              # Accept access by IP .Testing purposes only.
@@ -86,7 +87,7 @@ iva:
 
   nodeSelector:
     agentpool: default
-    beta.kubernetes.io/os: linux
+    kubernetes.io/os: linux
     kubernetes.io/role: agent
 
   tolerations: []

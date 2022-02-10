@@ -277,7 +277,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setStudy(new JobStudyParam(study.getFqn()));
 
             if (!Arrays.asList(Enums.ExecutionStatus.ABORTED, Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.UNREGISTERED,
-                    Enums.ExecutionStatus.ERROR).contains(job.getInternal().getStatus().getName())) {
+                    Enums.ExecutionStatus.ERROR).contains(job.getInternal().getStatus().getId())) {
                 throw new CatalogException("Cannot create a job in a status different from one of the final ones.");
             }
 
@@ -420,11 +420,11 @@ public class JobManager extends ResourceManager<Job> {
                                     String jobId, String jobDescription, List<String> jobDependsOn, List<String> jobTags, String token)
             throws CatalogException {
         Job job = get(studyStr, jobRetry.getJob(), new QueryOptions(), token).first();
-        if (job.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.ERROR)
-                || job.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.ABORTED)) {
+        if (job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ERROR)
+                || job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ABORTED)) {
             return submit(studyStr, job.getTool().getId(), priority, job.getParams(), jobId, jobDescription, jobDependsOn, jobTags, token);
         } else {
-            throw new CatalogException("Unable to retry job with status " + job.getInternal().getStatus().getName());
+            throw new CatalogException("Unable to retry job with status " + job.getInternal().getStatus().getId());
         }
     }
 
@@ -539,8 +539,8 @@ public class JobManager extends ResourceManager<Job> {
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);
         changeQueryId(query, ParamConstants.JOB_TOOL_ID_PARAM, JobDBAdaptor.QueryParams.TOOL_ID.key());
-        changeQueryId(query, ParamConstants.JOB_INTERNAL_STATUS_PARAM, JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
-        changeQueryId(query, ParamConstants.JOB_STATUS_PARAM, JobDBAdaptor.QueryParams.STATUS_NAME.key());
+        changeQueryId(query, ParamConstants.JOB_INTERNAL_STATUS_PARAM, JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key());
+        changeQueryId(query, ParamConstants.JOB_STATUS_PARAM, JobDBAdaptor.QueryParams.STATUS_ID.key());
 
         if (query.containsKey(ParamConstants.JOB_INPUT_FILES_PARAM)) {
             List<File> inputFiles = catalogManager.getFileManager().internalGet(study.getUid(),
@@ -820,13 +820,13 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     private void checkJobCanBeDeleted(Job job) throws CatalogException {
-        switch (job.getInternal().getStatus().getName()) {
+        switch (job.getInternal().getStatus().getId()) {
             case Enums.ExecutionStatus.DELETED:
                 throw new CatalogException("Job already deleted.");
             case Enums.ExecutionStatus.PENDING:
             case Enums.ExecutionStatus.RUNNING:
             case Enums.ExecutionStatus.QUEUED:
-                throw new CatalogException("The status of the job is " + job.getInternal().getStatus().getName()
+                throw new CatalogException("The status of the job is " + job.getInternal().getStatus().getId()
                         + ". Please, stop the job before deleting it.");
             default:
                 break;
@@ -869,11 +869,11 @@ public class JobManager extends ResourceManager<Job> {
                 } else {
                     // The log file hasn't yet been registered
                     if (!Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.ABORTED)
-                            .contains(job.getInternal().getStatus().getName())) {
+                            .contains(job.getInternal().getStatus().getId())) {
                         logFile = Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".err");
                     } else {
                         throw new CatalogException("Cannot see stderr log file of job with status '"
-                                + job.getInternal().getStatus().getName() + "'.");
+                                + job.getInternal().getStatus().getId() + "'.");
                     }
                 }
             } else {
@@ -882,11 +882,11 @@ public class JobManager extends ResourceManager<Job> {
                 } else {
                     // The log file hasn't yet been registered
                     if (!Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.ABORTED)
-                            .contains(job.getInternal().getStatus().getName())) {
+                            .contains(job.getInternal().getStatus().getId())) {
                         logFile = Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log");
                     } else {
                         throw new CatalogException("Cannot see stdout log file of job with status '"
-                                + job.getInternal().getStatus().getName() + "'.");
+                                + job.getInternal().getStatus().getId() + "'.");
                     }
                 }
             }
@@ -1417,7 +1417,7 @@ public class JobManager extends ResourceManager<Job> {
                     study.getUid(),
                     new Query(baseQuery)
                             .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING),
+                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.RUNNING),
                     new QueryOptions(queryOptions)
                             .append(QueryOptions.LIMIT, jobsLimit)
                             .append(QueryOptions.SORT, "execution.start"),
@@ -1442,7 +1442,7 @@ public class JobManager extends ResourceManager<Job> {
                     study.getUid(),
                     new Query(baseQuery)
                             .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED),
+                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED),
                     new QueryOptions(queryOptions)
                             .append(QueryOptions.LIMIT, jobsLimit)
                             .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
@@ -1464,7 +1464,7 @@ public class JobManager extends ResourceManager<Job> {
                     study.getUid(),
                     new Query(baseQuery)
                             .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING),
+                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.PENDING),
                     new QueryOptions(queryOptions)
                             .append(QueryOptions.LIMIT, jobsLimit)
                             .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
@@ -1486,7 +1486,7 @@ public class JobManager extends ResourceManager<Job> {
                     study.getUid(),
                     new Query(baseQuery)
                             .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.DONE + ","
+                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.DONE + ","
                                     + Enums.ExecutionStatus.ERROR + ","
                                     + Enums.ExecutionStatus.ABORTED),
                     new QueryOptions(queryOptions)
@@ -1514,11 +1514,11 @@ public class JobManager extends ResourceManager<Job> {
         for (Study study : studies) {
             OpenCGAResult result = jobDBAdaptor.groupBy(new Query(baseQuery)
                             .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid()),
-                    Collections.singletonList(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key()),
+                    Collections.singletonList(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key()),
                     new QueryOptions(QueryOptions.COUNT, true),
                     userId);
             for (Object o : result.getResults()) {
-                String status = ((Map) ((Map) o).get("_id")).get(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key()).toString();
+                String status = ((Map) ((Map) o).get("_id")).get(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key()).toString();
                 int count = ((Number) ((Map) o).get("count")).intValue();
                 switch (status) {
                     case Enums.ExecutionStatus.RUNNING:

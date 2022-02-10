@@ -39,7 +39,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -408,8 +408,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             panelParameters.put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            panelParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
+        if (parameters.containsKey(QueryParams.STATUS_ID.key())) {
+            panelParameters.put(QueryParams.STATUS_ID.key(), parameters.get(QueryParams.STATUS_ID.key()));
             panelParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
@@ -491,7 +491,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             Document tmpPanel = panelDBIterator.next();
 
             // Set status to DELETED
-            nestedPut(QueryParams.STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpPanel);
+            nestedPut(QueryParams.STATUS.key(), getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"), tmpPanel);
 
             int panelVersion = tmpPanel.getInteger(QueryParams.VERSION.key());
 
@@ -775,11 +775,11 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                         addAutoOrQuery(QueryParams.CATEGORIES_NAME.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case STATUS:
-                    case STATUS_NAME:
+                    case STATUS_ID:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
-                                Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
-                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), query, QueryParams.STATUS_NAME.type(), andBsonList);
+                                InternalStatus.getPositiveStatus(InternalStatus.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(QueryParams.STATUS_ID.key(), queryParam.key(), query, QueryParams.STATUS_ID.type(), andBsonList);
                         break;
                     case ID:
                     case UUID:

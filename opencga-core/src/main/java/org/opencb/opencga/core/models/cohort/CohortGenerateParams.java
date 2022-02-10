@@ -1,8 +1,8 @@
 package org.opencb.opencga.core.models.cohort;
 
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.StatusParams;
 
 import java.util.List;
 import java.util.Map;
@@ -15,14 +15,14 @@ public class CohortGenerateParams {
     private String creationDate;
     private String modificationDate;
     private List<AnnotationSet> annotationSets;
-    private CustomStatusParams status;
+    private StatusParams status;
     private Map<String, Object> attributes;
 
     public CohortGenerateParams() {
     }
 
     public CohortGenerateParams(String id, Enums.CohortType type, String description, String creationDate, String modificationDate,
-                                List<AnnotationSet> annotationSets, CustomStatusParams status, Map<String, Object> attributes) {
+                                List<AnnotationSet> annotationSets, StatusParams status, Map<String, Object> attributes) {
         this.id = id;
         this.type = type;
         this.description = description;
@@ -35,7 +35,7 @@ public class CohortGenerateParams {
 
     public Cohort toCohort() {
         return new Cohort(id, type, creationDate, modificationDate, description, null, 0, annotationSets, 0,
-                status != null ? status.toCustomStatus() : null, null, attributes);
+                status != null ? status.toStatus() : null, null, attributes);
     }
 
     @Override
@@ -107,11 +107,11 @@ public class CohortGenerateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public CohortGenerateParams setStatus(CustomStatusParams status) {
+    public CohortGenerateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

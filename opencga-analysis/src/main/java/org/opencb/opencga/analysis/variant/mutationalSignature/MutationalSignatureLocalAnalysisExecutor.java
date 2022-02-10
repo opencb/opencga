@@ -20,6 +20,7 @@ import htsjdk.samtools.reference.BlockCompressedIndexedFastaSequenceFile;
 import htsjdk.samtools.reference.FastaSequenceIndex;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.GZIIndex;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
@@ -242,13 +243,18 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 while (iterator.hasNext()) {
                     Variant variant = iterator.next();
 
-                    // Accessing to the context sequence and write it into the context index file
-                    ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), variant.getStart() - 1,
-                            variant.getEnd() + 1);
-                    String sequence = new String(refSeq.getBases());
+                    try {
+                        // Accessing to the context sequence and write it into the context index file
+                        ReferenceSequence refSeq = indexed.getSubsequenceAt(variant.getChromosome(), variant.getStart() - 1,
+                                variant.getEnd() + 1);
+                        String sequence = new String(refSeq.getBases());
 
-                    // Write context index
-                    pw.println(variant.toString() + "\t" + sequence);
+                        // Write context index
+                        pw.println(variant.toString() + "\t" + sequence);
+                    } catch (Exception e) {
+                        logger.warn("When creating genome context file for mutational signature analysis, ignoring variant "
+                                + variant.toStringSimple() + ". " + e.getMessage());
+                    }
                 }
             }
 
@@ -258,23 +264,24 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     }
 
     private void updateCountMap(Variant variant, String sequence, Map<String, Map<String, Double>> countMap) {
-        String k, seq;
+        try {
+            String k, seq;
 
-        String key = variant.getReference() + ">" + variant.getAlternate();
+            String key = variant.getReference() + ">" + variant.getAlternate();
 
-        if (countMap.containsKey(key)) {
-            k = key;
-            seq = sequence;
-        } else {
-            k = MutationalSignatureAnalysisExecutor.complement(key);
-            seq = MutationalSignatureAnalysisExecutor.reverseComplement(sequence);
-        }
-        if (countMap.get(k).containsKey(seq)) {
-            countMap.get(k).put(seq, countMap.get(k).get(seq) + 1);
-        } else {
-            logger.error("Something wrong happened counting mutational signature substitutions: variant = "
-                    + variant.toString() + ", key = " + key + ", k = " + k + ", sequence = " + sequence + ", seq = "
-                    + seq);
+            if (countMap.containsKey(key)) {
+                k = key;
+                seq = sequence;
+            } else {
+                k = MutationalSignatureAnalysisExecutor.complement(key);
+                seq = MutationalSignatureAnalysisExecutor.reverseComplement(sequence);
+            }
+            if (countMap.get(k).containsKey(seq)) {
+                countMap.get(k).put(seq, countMap.get(k).get(seq) + 1);
+            }
+        } catch (Exception e) {
+            logger.warn("When counting mutational signature substitutions, ignoring variant " + variant.toStringSimple()
+                    + " with sequence " + sequence + ". " + e.getMessage());
         }
     }
 
