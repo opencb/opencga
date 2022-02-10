@@ -21,6 +21,10 @@ apiConfig:
   shortcuts:
     - name: user
       shortcut: u
+    - name: uri
+      shortcut: input
+    - name: uri
+      shortcut: i
     - name: study
       shortcut: s
     - name: exclude

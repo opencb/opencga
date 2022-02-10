@@ -17,12 +17,14 @@
 package org.opencb.opencga.core.models.file;
 
 import org.opencb.opencga.core.models.common.StatusParams;
+import org.opencb.opencga.core.tools.annotations.CliParam;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class FileLinkParams {
+    @CliParam(required = true)
     private String uri;
     private String path;
     private String description;
@@ -85,6 +87,11 @@ public class FileLinkParams {
 //        return relatedFileList;
 //    }
 
+    public FileLinkParams setRelatedFiles(List<SmallRelatedFileParams> relatedFiles) {
+        this.relatedFiles = relatedFiles;
+        return this;
+    }
+
     public String getUri() {
         return uri;
     }
@@ -127,11 +134,6 @@ public class FileLinkParams {
 
     public FileLinkParams setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
-        return this;
-    }
-
-    public FileLinkParams setRelatedFiles(List<SmallRelatedFileParams> relatedFiles) {
-        this.relatedFiles = relatedFiles;
         return this;
     }
 
