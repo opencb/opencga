@@ -32,8 +32,8 @@ import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -55,8 +55,8 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.iterators.VariantHBaseResultSetIterator;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.iterators.VariantHBaseScanIterator;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.VariantAnnotationPhoenixDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.annotation.phoenix.VariantAnnotationUpsertExecutor;
@@ -95,7 +95,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     protected static Logger logger = LoggerFactory.getLogger(VariantHadoopDBAdaptor.class);
     private final String variantTable;
     private final PhoenixHelper phoenixHelper;
-    private final HBaseCredentials credentials;
     private final AtomicReference<VariantStorageMetadataManager> studyConfigurationManager = new AtomicReference<>(null);
     private final Configuration configuration;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
@@ -108,10 +107,16 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private boolean clientSideSkip;
     private HBaseManager hBaseManager;
 
-    public VariantHadoopDBAdaptor(HBaseManager hBaseManager, HBaseCredentials credentials, StorageConfiguration configuration,
+    public VariantHadoopDBAdaptor(HBaseManager hBaseManager, StorageConfiguration configuration,
                                   Configuration conf, HBaseVariantTableNameGenerator tableNameGenerator)
             throws IOException {
-        this.credentials = credentials;
+        this(hBaseManager, conf, tableNameGenerator,
+                configuration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getOptions());
+    }
+
+    public VariantHadoopDBAdaptor(HBaseManager hBaseManager,
+                                  Configuration conf, HBaseVariantTableNameGenerator tableNameGenerator, ObjectMap options)
+            throws IOException {
         this.configuration = conf;
         this.tableNameGenerator = tableNameGenerator;
         if (hBaseManager == null) {
@@ -121,8 +126,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             this.hBaseManager = new HBaseManager(hBaseManager);
         }
         this.genomeHelper = new GenomeHelper(this.configuration);
-        this.variantTable = credentials.getTable();
-        ObjectMap options = configuration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getOptions();
+        this.variantTable = tableNameGenerator.getVariantTableName();
+
         HBaseVariantStorageMetadataDBAdaptorFactory factory = new HBaseVariantStorageMetadataDBAdaptorFactory(
                 hBaseManager, tableNameGenerator.getMetaTableName(), conf);
         this.studyConfigurationManager.set(new VariantStorageMetadataManager(factory));
@@ -163,10 +168,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     public HBaseManager getHBaseManager() {
         return hBaseManager;
-    }
-
-    public HBaseCredentials getCredentials() {
-        return credentials;
     }
 
     public Configuration getConfiguration() {
@@ -225,7 +226,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     public void close() throws IOException {
         this.hBaseManager.close();
         try {
-           close(this.phoenixCon.getAndSet(null));
+            close(this.phoenixCon.getAndSet(null));
         } catch (SQLException e) {
             throw new IOException(e);
         }
@@ -433,7 +434,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                     List<String> planSteps = new LinkedList<>();
                     resultSet.unwrap(PhoenixResultSet.class).getUnderlyingIterator().explain(planSteps);
                     for (String planStep : planSteps) {
-                        logger.info(" | " +  planStep);
+                        logger.info(" | " + planStep);
                     }
                 }
 
@@ -584,7 +585,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     @Deprecated
     public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp,
-                                   QueryOptions queryOptions) {
+                                  QueryOptions queryOptions) {
         throw new UnsupportedOperationException("Unimplemented method");
     }
 
@@ -594,7 +595,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     @Deprecated
     public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata,
-                                   long timestamp, QueryOptions options) {
+                                  long timestamp, QueryOptions options) {
         throw new UnsupportedOperationException("Unimplemented method");
     }
 
@@ -610,7 +611,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     @Deprecated
     public DataResult updateAnnotations(List<VariantAnnotation> variantAnnotations,
-                                         long timestamp, QueryOptions queryOptions) {
+                                        long timestamp, QueryOptions queryOptions) {
 
         long start = System.currentTimeMillis();
 
@@ -630,12 +631,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         } catch (SQLException | ClassNotFoundException | IOException e) {
             throw new RuntimeException(e);
         }
-        return new DataResult((int) (System.currentTimeMillis() - start), Collections.emptyList(), 0, variantAnnotations.size(), 0, 0);
+        return new DataResult((int) (System.currentTimeMillis() - start), Collections.emptyList(), 0, variantAnnotations.size(), 0, 0, 0);
     }
 
     @Override
     public DataResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp,
-                                               QueryOptions options) {
+                                              QueryOptions options) {
         throw new UnsupportedOperationException();
     }
 

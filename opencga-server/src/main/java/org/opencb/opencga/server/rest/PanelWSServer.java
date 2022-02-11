@@ -57,10 +57,17 @@ public class PanelWSServer extends OpenCGAWSServer {
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a panel", response = Panel.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response createPanel(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.PANEL_SOURCE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SOURCE) String source,
             @ApiParam(value = ParamConstants.PANEL_SOURCE_ID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SOURCE_ID) String id,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(name = "body", value = "Panel parameters") PanelCreateParams params) {
         try {
             if (StringUtils.isNotEmpty(source) && (params == null || StringUtils.isEmpty(params.getId()))) {
@@ -111,11 +118,17 @@ public class PanelWSServer extends OpenCGAWSServer {
     @Path("/{panels}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update panel attributes", response = Panel.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response updatePanel(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of panel ids") @PathParam("panels") String panels,
-            @ApiParam(value = "Create a new version of panel", defaultValue = "false")
-            @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @ApiParam(value = "Create a new version of panel", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(name = "body", value = "Panel parameters") PanelUpdateParams panelParams) {
         try {
             return createOkResponse(panelManager.update(studyStr, getIdList(panels), panelParams, true, queryOptions, token));
@@ -190,7 +203,7 @@ public class PanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/distinct")
-    @ApiOperation(value = "Panel distinct method")
+    @ApiOperation(value = "Panel distinct method", response = Object.class)
     public Response distinct(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.PANEL_ID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_ID_PARAM) String id,

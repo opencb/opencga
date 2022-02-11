@@ -45,7 +45,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -63,6 +63,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -202,15 +203,14 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (StringUtils.isEmpty(file.getUuid())) {
             file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         }
-        if (StringUtils.isEmpty(file.getCreationDate())) {
-            file.setCreationDate(TimeUtils.getTime());
-        }
 
         Document fileDocument = fileConverter.convertToStorageType(file, samples, variableSetList);
 
         fileDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
-        fileDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(file.getCreationDate()));
-        fileDocument.put(PRIVATE_MODIFICATION_DATE, fileDocument.get(PRIVATE_CREATION_DATE));
+        fileDocument.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(file.getCreationDate()) ? TimeUtils.toDate(file.getCreationDate()) : TimeUtils.getDate());
+        fileDocument.put(PRIVATE_MODIFICATION_DATE,
+                StringUtils.isNotEmpty(file.getModificationDate()) ? TimeUtils.toDate(file.getModificationDate()) : TimeUtils.getDate());
 
         fileCollection.insert(clientSession, fileDocument, null);
 
@@ -522,11 +522,24 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {
-                QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.CREATION_DATE.key(), QueryParams.PATH.key(),
-                QueryParams.CHECKSUM.key(), QueryParams.JOB_ID.key(),
+                QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.PATH.key(), QueryParams.CHECKSUM.key(),
+                QueryParams.JOB_ID.key(),
         };
         // Fixme: Add "name", "path" and "ownerId" at some point. At the moment, it would lead to inconsistencies.
         filterStringParams(parameters, document.getSet(), acceptedParams);
+
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
 
         if (parameters.containsKey(QueryParams.PATH.key())) {
             checkOnlyOneFileMatches(clientSession, query);
@@ -577,8 +590,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             throw new CatalogDBException("File update: It was impossible updating the files. " + e.getMessage());
         }
 
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
-            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_ID.key(), parameters.get(QueryParams.INTERNAL_STATUS_ID.key()));
             document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
@@ -601,10 +614,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 default:
                     throw new IllegalArgumentException("Unknown operation " + operation);
             }
-        }
-        if (parameters.containsKey(QueryParams.INTERNAL_INDEX_TRANSFORMED_FILE.key())) {
-            document.getSet().put(QueryParams.INTERNAL_INDEX_TRANSFORMED_FILE.key(),
-                    getMongoDBDocument(parameters.get(QueryParams.INTERNAL_INDEX_TRANSFORMED_FILE.key()), "TransformedFile"));
         }
 
         String[] acceptedLongParams = {QueryParams.SIZE.key()};
@@ -668,20 +677,24 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] acceptedObjectParams = {QueryParams.INTERNAL_INDEX.key(), QueryParams.SOFTWARE.key(), QueryParams.EXPERIMENT.key(),
-                QueryParams.STATUS.key(), QueryParams.INTERNAL_MISSING_SAMPLES.key(), QueryParams.QUALITY_CONTROL.key()};
+        String[] acceptedObjectParams = {QueryParams.INTERNAL_VARIANT_INDEX.key(), QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
+                QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key(), QueryParams.INTERNAL_ALIGNMENT_INDEX.key(), QueryParams.SOFTWARE.key(),
+                QueryParams.EXPERIMENT.key(), QueryParams.STATUS.key(), QueryParams.INTERNAL_MISSING_SAMPLES.key(),
+                QueryParams.QUALITY_CONTROL.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
-            // Update modificationDate param
             String time = TimeUtils.getTime();
-            Date date = TimeUtils.toDate(time);
-
-            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
-            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
         }
 
         return document;
@@ -1079,7 +1092,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, user);
 
         Document studyDocument = getStudyDocument(null, studyUid);
-        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
@@ -1102,7 +1115,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
 
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
@@ -1279,22 +1292,25 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case STATUS:
-                    case STATUS_NAME:
-                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), myQuery, QueryParams.STATUS_NAME.type(),
+                    case STATUS_ID:
+                        addAutoOrQuery(QueryParams.STATUS_ID.key(), queryParam.key(), myQuery, QueryParams.STATUS_ID.type(),
                                 andBsonList);
                         break;
                     case INTERNAL_STATUS:
-                    case INTERNAL_STATUS_NAME:
+                    case INTERNAL_STATUS_ID:
+                    case INTERNAL_VARIANT_ANNOTATION_INDEX_STATUS_ID:
+                    case INTERNAL_VARIANT_SECONDARY_INDEX_STATUS_ID:
+                    case INTERNAL_ALIGNMENT_INDEX_STATUS_ID:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),
-                                Status.getPositiveStatus(FileStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
-                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), myQuery,
-                                QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
+                                InternalStatus.getPositiveStatus(FileStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), myQuery,
+                                QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
-                    case INTERNAL_INDEX_STATUS_NAME:
+                    case INTERNAL_VARIANT_INDEX_STATUS_ID:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),
-                                Status.getPositiveStatus(FileIndex.IndexStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
+                                InternalStatus.getPositiveStatus(VariantIndexStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
                     case SAMPLE_IDS:

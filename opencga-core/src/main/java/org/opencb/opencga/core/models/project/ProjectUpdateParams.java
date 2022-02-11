@@ -21,15 +21,20 @@ import java.util.Map;
 public class ProjectUpdateParams {
     private String name;
     private String description;
+    private String creationDate;
+    private String modificationDate;
     private ProjectOrganism organism;
     private Map<String, Object> attributes;
 
     public ProjectUpdateParams() {
     }
 
-    public ProjectUpdateParams(String name, String description, ProjectOrganism organism, Map<String, Object> attributes) {
+    public ProjectUpdateParams(String name, String description, String creationDate, String modificationDate, ProjectOrganism organism,
+                               Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.organism = organism;
         this.attributes = attributes;
     }
@@ -39,6 +44,8 @@ public class ProjectUpdateParams {
         final StringBuilder sb = new StringBuilder("ProjectUpdateParams{");
         sb.append("name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", organism=").append(organism);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -60,6 +67,24 @@ public class ProjectUpdateParams {
 
     public ProjectUpdateParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public ProjectUpdateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public ProjectUpdateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

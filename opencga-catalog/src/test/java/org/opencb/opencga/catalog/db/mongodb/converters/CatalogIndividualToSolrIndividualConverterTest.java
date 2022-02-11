@@ -17,6 +17,8 @@
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.junit.Test;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.catalog.stats.solr.IndividualSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogIndividualToSolrIndividualConverter;
@@ -24,6 +26,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualInternal;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
+import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 
@@ -46,8 +49,10 @@ public class CatalogIndividualToSolrIndividualConverterTest {
     public void IndividualToSolrTest() {
         Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
-        Individual individual = new Individual("Id", "individual", IndividualProperty.Sex.MALE, "Spanish",
-                new IndividualPopulation("valencian", "", ""), 2, AnnotationHelper.createAnnotation(), null);
+        Individual individual = new Individual("Id", "individual", new Individual(), new Individual(), new Location(),
+                SexOntologyTermAnnotation.initMale(), null, new OntologyTermAnnotation().setId("Spanish"),
+                new IndividualPopulation("valencian", "", ""), null, "", Collections.emptyList(), false, 2,
+                AnnotationHelper.createAnnotation(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null);
 
         individual.setUid(300)
                 .setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).setVersion(4).setInternal(IndividualInternal.init())
@@ -57,9 +62,9 @@ public class CatalogIndividualToSolrIndividualConverterTest {
         IndividualSolrModel individualSolrModel = new CatalogIndividualToSolrIndividualConverter(study).convertToStorageType(individual);
 
         assertEquals(individualSolrModel.getUid(), individual.getUid());
-        assertEquals(individualSolrModel.getSex(), individual.getSex().name());
+        assertEquals(individualSolrModel.getSex(), individual.getSex().getSex().name());
         assertEquals(individualSolrModel.getKaryotypicSex(), individual.getKaryotypicSex().name());
-        assertEquals(individualSolrModel.getEthnicity(), individual.getEthnicity());
+        assertEquals(individualSolrModel.getEthnicity(), individual.getEthnicity().getId());
         assertEquals(individualSolrModel.getPopulation(), individual.getPopulation().getName());
         assertEquals(individualSolrModel.getRelease(), individual.getRelease());
 
@@ -73,7 +78,7 @@ public class CatalogIndividualToSolrIndividualConverterTest {
         assertEquals(localDate.getDayOfWeek().toString(), individualSolrModel.getCreationDayOfWeek());
 
         assertEquals(individualSolrModel.getVersion(), individual.getVersion());
-        assertEquals(individualSolrModel.getStatus(), individual.getInternal().getStatus().getName());
+        assertEquals(individualSolrModel.getStatus(), individual.getInternal().getStatus().getId());
         assertEquals(individualSolrModel.getLifeStatus(), individual.getLifeStatus().name());
         assertEquals(individualSolrModel.getPhenotypes().size(), 0);
         assertEquals(individualSolrModel.isParentalConsanguinity(), individual.isParentalConsanguinity());

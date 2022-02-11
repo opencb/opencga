@@ -45,7 +45,7 @@ public class CatalogFileToSolrFileConverterTest {
         Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
                 .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         File file = new File("name", File.Type.FILE, File.Format.BAM, File.Bioformat.MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
-                "test/base", null, "convertorTest", FileInternal.initialize(), 1111L, 2);
+                "test/base", null, "convertorTest", FileInternal.init(), 1111L, 2);
         file.setUid(111)
                 .setSampleIds(Arrays.asList("1", "2"))
                 .setSoftware(new Software().setName("Software"));
@@ -69,7 +69,7 @@ public class CatalogFileToSolrFileConverterTest {
         assertEquals(localDate.getDayOfMonth(), fileSolrModel.getCreationDay());
         assertEquals(localDate.getDayOfWeek().toString(), fileSolrModel.getCreationDayOfWeek());
 
-        assert (fileSolrModel.getStatus().equals(file.getInternal().getStatus().getName()));
+        assert (fileSolrModel.getStatus().equals(file.getInternal().getStatus().getId()));
         assert (fileSolrModel.isExternal() == file.isExternal());
         assert (fileSolrModel.getSize() == file.getSize());
         assert (fileSolrModel.getSoftwareName().equals(file.getSoftware().getName()));

@@ -23,9 +23,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.TimeUtils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -157,6 +159,27 @@ public class ParamUtils {
         }
     }
 
+    public static void checkDateFormat(String creationDate, String param) throws CatalogParameterException {
+        if (StringUtils.isEmpty(creationDate)) {
+            throw new CatalogParameterException("'" + param + "' is null or empty");
+        } else {
+            // Validate creationDate can be parsed and has the proper format
+            Date date = TimeUtils.toDate(creationDate);
+            if (date == null || creationDate.length() != 14) {
+                throw new CatalogParameterException("Unexpected '" + param + "' format. Expected format is 'yyyyMMddHHmmss'");
+            }
+        }
+    }
+
+    public static String checkDateOrGetCurrentDate(String date, String param) throws CatalogParameterException {
+        if (StringUtils.isEmpty(date)) {
+            return TimeUtils.getTime();
+        } else {
+            checkDateFormat(date, param);
+            return date;
+        }
+    }
+
     public static long getAsLong(Object value) throws CatalogException {
         try {
             return (Long) value;
@@ -205,6 +228,20 @@ public class ParamUtils {
 
         public static AddRemoveAction from(Map<String, ?> map, String key, AddRemoveAction defaultValue) {
             return getEnumFromMap(map, key, defaultValue, AddRemoveAction.class);
+        }
+    }
+
+    public enum AddRemoveForceRemoveAction {
+        ADD,
+        REMOVE,
+        FORCE_REMOVE;
+
+        public static AddRemoveForceRemoveAction from(Map<String, ?> map, String key) {
+            return from(map, key, null);
+        }
+
+        public static AddRemoveForceRemoveAction from(Map<String, ?> map, String key, AddRemoveForceRemoveAction defaultValue) {
+            return getEnumFromMap(map, key, defaultValue, AddRemoveForceRemoveAction.class);
         }
     }
 

@@ -104,7 +104,9 @@ public enum VariantStorageOptions implements ConfigurationOption {
 
     // Do not store genotypes from the current file.
     // Not stored anymore in StudyMetadata
+    @Deprecated
     EXCLUDE_GENOTYPES("exclude.genotypes", false),
+    INCLUDE_GENOTYPE("include.genotype", YesNoAuto.AUTO),
 
     /////////////
     // These params are stored in {@link org.opencb.opencga.storage.core.metadata.models.StudyMetadata#getAttributes}.

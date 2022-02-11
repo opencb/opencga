@@ -45,8 +45,8 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocum
  */
 public class MongoDBAdaptor extends AbstractDBAdaptor {
 
-    static final String PRIVATE_UID = "uid";
-    static final String PRIVATE_UUID = "uuid";
+    public static final String PRIVATE_UID = "uid";
+    public static final String PRIVATE_UUID = "uuid";
     static final String PRIVATE_ID = "id";
     static final String PRIVATE_FQN = "fqn";
     static final String PRIVATE_PROJECT = "_project";
@@ -55,7 +55,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     static final String PRIVATE_OWNER_ID = "_ownerId";
     public static final String PRIVATE_STUDY_UID = "studyUid";
-    private static final String VERSION = "version";
+    public static final String VERSION = "version";
 
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
     static final String FILTER_ROUTE_COHORTS = "projects.studies.cohorts.";
@@ -64,12 +64,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String FILTER_ROUTE_FILES = "projects.studies.files.";
     static final String FILTER_ROUTE_JOBS = "projects.studies.jobs.";
 
-    static final String LAST_OF_VERSION = "_lastOfVersion";
+    public static final String LAST_OF_VERSION = "_lastOfVersion";
     static final String RELEASE_FROM_VERSION = "_releaseFromVersion";
     static final String LAST_OF_RELEASE = "_lastOfRelease";
     static final String PRIVATE_CREATION_DATE = "_creationDate";
     static final String PRIVATE_MODIFICATION_DATE = "_modificationDate";
     static final String PERMISSION_RULES_APPLIED = "_permissionRulesApplied";
+    static final String INTERNAL_LAST_MODIFIED = "internal.lastModified";
 
     static final String INTERNAL_DELIMITER = "__";
 
@@ -165,12 +166,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     /**
      * It will add a filter to andBsonList based on the query object. The operator will always be an EQUAL.
+     *
      * @param mongoDbField The field used in the mongoDB.
-     * @param queryParam The key by which the parameter is stored in the query. Normally, it will be the same as in the data model,
-     *                   although it might be some exceptions.
-     * @param query The object containing the key:values of the query.
-     * @param paramType The type of the object to be looked up. See {@link QueryParam}.
-     * @param andBsonList The list where created filter will be added to.
+     * @param queryParam   The key by which the parameter is stored in the query. Normally, it will be the same as in the data model,
+     *                     although it might be some exceptions.
+     * @param query        The object containing the key:values of the query.
+     * @param paramType    The type of the object to be looked up. See {@link QueryParam}.
+     * @param andBsonList  The list where created filter will be added to.
      */
     protected void addOrQuery(String mongoDbField, String queryParam, Query query, QueryParam.Type paramType, List<Bson> andBsonList) {
         addQueryFilter(mongoDbField, queryParam, query, paramType, MongoDBQueryUtils.ComparisonOperator.IN,
@@ -180,12 +182,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     /**
      * It will check for the proper comparator based on the query value and create the correct query filter.
      * It could be a regular expression, >, < ... or a simple equals.
+     *
      * @param mongoDbField The field used in the mongoDB.
-     * @param queryParam The key by which the parameter is stored in the query. Normally, it will be the same as in the data model,
-     *                   although it might be some exceptions.
-     * @param query The object containing the key:values of the query.
-     * @param paramType The type of the object to be looked up. See {@link QueryParam}.
-     * @param andBsonList The list where created filter will be added to.
+     * @param queryParam   The key by which the parameter is stored in the query. Normally, it will be the same as in the data model,
+     *                     although it might be some exceptions.
+     * @param query        The object containing the key:values of the query.
+     * @param paramType    The type of the object to be looked up. See {@link QueryParam}.
+     * @param andBsonList  The list where created filter will be added to.
      */
     protected void addAutoOrQuery(String mongoDbField, String queryParam, Query query, QueryParam.Type paramType, List<Bson> andBsonList) {
         if (query != null && query.getString(queryParam) != null) {
@@ -233,7 +236,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     }
 
     protected OpenCGAResult rank(MongoDBCollection collection, Bson query, List<String> groupByField, String idField, int numResults,
-                               boolean asc) {
+                                 boolean asc) {
 
         if (groupByField == null || groupByField.isEmpty()) {
             return new OpenCGAResult();
@@ -282,7 +285,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     }
 
     protected OpenCGAResult groupBy(MongoDBCollection collection, Bson query, List<String> groupByField, String idField,
-                                  QueryOptions options) {
+                                    QueryOptions options) {
         if (groupByField == null || groupByField.isEmpty()) {
             return new OpenCGAResult();
         }
@@ -317,7 +320,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         DataResult<Document> aggregate = collection.aggregate(Arrays.asList(match, project, group), options);
         for (String s : groupByField) {
             if (s.contains(".")) {
-                aggregate.getResults().stream().map(d -> d.get("_id", Document.class)).forEach(d-> {
+                aggregate.getResults().stream().map(d -> d.get("_id", Document.class)).forEach(d -> {
                     Object o = d.remove(s.replace(".", GenericDocumentComplexConverter.TO_REPLACE_DOTS));
                     d.put(s, o);
                 });
@@ -330,7 +333,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
      * Filter QueryOptions object to ensure the keys provided are always included.
      *
      * @param options QueryOptions object.
-     * @param keys Keys that always need to be included in the response.
+     * @param keys    Keys that always need to be included in the response.
      * @return A new QueryOptions object containing the mandatory fields.
      */
     protected QueryOptions filterQueryOptions(QueryOptions options, List<String> keys) {
@@ -361,7 +364,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
      * Only for groupBy methods.
      *
      * @param includeGroupByFields List containing the fields to be included in the projection.
-     * @param groupByFields List containing the fields by which the group by will be done.
+     * @param groupByFields        List containing the fields by which the group by will be done.
      */
     private Document createDateProjection(List<String> includeGroupByFields, List<String> groupByFields) {
         Document dateProjection = new Document();
@@ -422,14 +425,14 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     /**
      * Generate complex query where [{id - version}, {id2 - version2}] pairs will be queried.
      *
-     * @param query Query object.
+     * @param query         Query object.
      * @param bsonQueryList Final bson query object.
-     * @throws CatalogDBException If the size of the array of ids does not match the size of the array of version.
      * @return a boolean indicating whether the complex query was generated or not.
+     * @throws CatalogDBException If the size of the array of ids does not match the size of the array of version.
      */
     boolean generateUidVersionQuery(Query query, List<Bson> bsonQueryList) throws CatalogDBException {
         if (!query.containsKey(VERSION) || query.getAsIntegerList(VERSION).size() == 1) {
-               return false;
+            return false;
         }
         if (!query.containsKey(PRIVATE_UID) && !query.containsKey(PRIVATE_ID) && !query.containsKey(PRIVATE_UUID)) {
             return false;
@@ -491,11 +494,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
      * Example: Let's say a user is querying the user collection adding include: projects.studies.fqn
      * If we need to perform a different query in the study collection, we will want to obtain a new QueryOptions object containing:
      * include: fqn
-     *
+     * <p>
      * For that scenario, the `key` value would be "projects.studies"
      *
      * @param options Original QueryOptions object.
-     * @param key Nested key by which to extract the new options.
+     * @param key     Nested key by which to extract the new options.
      * @return new QueryOptions object.
      */
     protected QueryOptions extractNestedOptions(QueryOptions options, String key) {
@@ -535,7 +538,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
      * Removes any other entity projections made. This method should be called by any entity containing inner entities:
      * Family -> Individual; Individual -> Sample; File -> Sample; Cohort -> Sample
      *
-     * @param options current query options object.
+     * @param options       current query options object.
      * @param projectionKey Projection key to be removed from the query options.
      * @return new QueryOptions after removing the inner projectionKey projections.
      */
@@ -583,7 +586,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     /**
      * Change the projection key given by the user by the real one used internally.
      *
-     * @param options current query options object.
+     * @param options           current query options object.
      * @param userProjectionKey Projection key provided by the user.
      * @param realProjectionKey Real projection key we need to have..
      * @return new QueryOptions after changing the projection key.
@@ -619,15 +622,15 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     /**
      * Generate Mongo operation to perform a nested array replacement.
      *
-     * @param entryList Object list containing the elements to be replaced.
-     * @param document UpdateDocument to be filled in with the corresponding mongo operation.
+     * @param entryList  Object list containing the elements to be replaced.
+     * @param document   UpdateDocument to be filled in with the corresponding mongo operation.
      * @param idFunction function to retrieve the identifier of each entry element to be replaced.
-     * @param queryKey mongo key by which we will perform the replacement operation.
-     * @param <T> Type of object.
+     * @param queryKey   mongo key by which we will perform the replacement operation.
+     * @param <T>        Type of object.
      * @throws CatalogDBException if there is any issue converting the object to the Document class.
      */
     protected <T> void filterReplaceParams(List<T> entryList, MongoDBAdaptor.UpdateDocument document, Function<T, String> idFunction,
-                                       String queryKey) throws CatalogDBException {
+                                           String queryKey) throws CatalogDBException {
         if (entryList == null) {
             return;
         }
@@ -704,10 +707,10 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     /**
      * Revert to a previous version.
      *
-     * @param clientSession ClientSession for transactional operations.
-     * @param dbCollection Database collection-
+     * @param clientSession            ClientSession for transactional operations.
+     * @param dbCollection             Database collection-
      * @param versionToRestoreDocument Full document of the version to be restored.
-     * @param latestVersionDocument Full document of the latest available version of the entry.
+     * @param latestVersionDocument    Full document of the latest available version of the entry.
      * @return the new latest document that will be written in the database.
      * @throws CatalogDBException in case of any issue.
      */
@@ -805,12 +808,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
     }
 
-    public class UpdateDocument {
+    public static class UpdateDocument {
         private Document set;
         private Document addToSet;
         private Document push;
         private Document pull;
         private Document pullAll;
+        private List<String> unset;
         private List<NestedArrayUpdateDocument> nestedUpdateList;
 
         private ObjectMap attributes;
@@ -821,6 +825,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             this.push = new Document();
             this.pull = new Document();
             this.pullAll = new Document();
+            this.unset = new LinkedList<>();
             this.nestedUpdateList = new LinkedList<>();
             this.attributes = new ObjectMap();
         }
@@ -859,6 +864,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             }
             if (!pullAll.isEmpty()) {
                 update.put("$pullAll", pullAll);
+            }
+            if (!unset.isEmpty()) {
+                Document unsetDocument = new Document();
+                for (String field : unset) {
+                    unsetDocument.put(field, "");
+                }
+                update.put("$unset", unsetDocument);
             }
 
             return update;
@@ -906,6 +918,15 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
         public UpdateDocument setPullAll(Document pullAll) {
             this.pullAll = pullAll;
+            return this;
+        }
+
+        public List<String> getUnset() {
+            return unset;
+        }
+
+        public UpdateDocument setUnset(List<String> unset) {
+            this.unset = unset;
             return this;
         }
 

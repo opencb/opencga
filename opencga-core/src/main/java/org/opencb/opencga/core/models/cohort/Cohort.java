@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.core.models.cohort;
 
+import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 
@@ -79,7 +79,7 @@ public class Cohort extends Annotable {
      *
      * @apiNote
      */
-    private CustomStatus status;
+    private Status status;
 
     /**
      * An object describing the internal information of the Sample. This is managed by OpenCGA.
@@ -98,22 +98,25 @@ public class Cohort extends Annotable {
     public Cohort() {
     }
 
-    public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples, int release,
-                  Map<String, Object> attributes) {
-        this(id, type, creationDate, description, samples, 0, Collections.emptyList(), release, new CustomStatus(), null, attributes);
+    public Cohort(String id, Enums.CohortType type, String creationDate, String modificationDate, String description, List<Sample> samples,
+                  int release, Map<String, Object> attributes) {
+        this(id, type, creationDate, modificationDate, description, samples, 0, Collections.emptyList(), release, new Status(), null,
+                attributes);
     }
 
-    public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples,
+    public Cohort(String id, Enums.CohortType type, String creationDate, String modificationDate, String description, List<Sample> samples,
                   List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
-        this(id, type, creationDate, description, samples, 0, annotationSetList, release, new CustomStatus(), null, attributes);
+        this(id, type, creationDate, modificationDate, description, samples, 0, annotationSetList, release, new Status(), null,
+                attributes);
     }
 
-    public Cohort(String id, Enums.CohortType type, String creationDate, String description, List<Sample> samples,
-                  int numSamples, List<AnnotationSet> annotationSets, int release, CustomStatus status, CohortInternal internal,
+    public Cohort(String id, Enums.CohortType type, String creationDate, String modificationDate, String description, List<Sample> samples,
+                  int numSamples, List<AnnotationSet> annotationSets, int release, Status status, CohortInternal internal,
                   Map<String, Object> attributes) {
         this.id = id;
         this.type = type;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.description = description;
         this.samples = samples;
         this.numSamples = numSamples;
@@ -276,11 +279,11 @@ public class Cohort extends Annotable {
         return this;
     }
 
-    public CustomStatus getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public Cohort setStatus(CustomStatus status) {
+    public Cohort setStatus(Status status) {
         this.status = status;
         return this;
     }

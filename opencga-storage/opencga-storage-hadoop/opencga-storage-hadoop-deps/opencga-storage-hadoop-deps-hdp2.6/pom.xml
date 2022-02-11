@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage-hadoop-deps</artifactId>
-        <version>2.1.1</version>
+        <version>2.2.0-rc1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -34,7 +34,7 @@
     <properties>
         <opencga-storage-hadoop-deps.artifactId>${artifactId}</opencga-storage-hadoop-deps.artifactId>
 <!--        <hdp.dependencies.version>2.6.5.3033-1</hdp.dependencies.version>-->
-        <hdp.dependencies.version>2.6.5.298-1</hdp.dependencies.version>
+        <hdp.dependencies.version>2.6.5.298-4</hdp.dependencies.version>
 
         <!--        <guava.version>24.1.1-jre</guava.version>-->
         <hadoop.version>2.7.3.${hdp.dependencies.version}</hadoop.version>

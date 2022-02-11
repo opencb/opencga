@@ -44,13 +44,14 @@ public interface InterpretationDBAdaptor extends CoreDBAdaptor<Interpretation> {
         CLINICAL_ANALYSIS_ID("clinicalAnalysisId", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         INTERNAL_STATUS("internal.status", TEXT, ""),
-        INTERNAL_STATUS_NAME("internal.status.name", TEXT, ""),
+        INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
         INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
         PANELS_UID("panels.uid", LONG, ""),
         ANALYST("analyst", TEXT, ""),
         ANALYST_ID("analyst.id", TEXT, ""),
-        METHODS("methods", TEXT_ARRAY, ""),
-        METHODS_NAME("methods.name", TEXT_ARRAY, ""),
+        METHOD("method", TEXT_ARRAY, ""),
+        METHOD_NAME("method.name", TEXT_ARRAY, ""),
+        STATS("stats", TEXT_ARRAY, ""),
         PRIMARY_FINDINGS("primaryFindings", TEXT_ARRAY, ""),
         PRIMARY_FINDINGS_ID("primaryFindings.id", TEXT_ARRAY, ""),
         SECONDARY_FINDINGS("secondaryFindings", TEXT_ARRAY, ""),
@@ -147,10 +148,6 @@ public interface InterpretationDBAdaptor extends CoreDBAdaptor<Interpretation> {
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Interpretation> revert(long id, int previousVersion, List<ClinicalAudit> clinicalAuditList)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-    OpenCGAResult<Interpretation> merge(long interpretationUid, Interpretation interpretation, List<ClinicalAudit> clinicalAuditList,
-                                        List<String> clinicalVariantList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Interpretation> get(long interpretationUid, QueryOptions options)

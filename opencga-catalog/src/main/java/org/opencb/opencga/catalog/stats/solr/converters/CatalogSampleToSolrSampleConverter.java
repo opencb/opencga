@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.stats.solr.converters;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
@@ -82,9 +83,7 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
         sampleSolrModel.setCreationMonth(localDate.getMonth().toString());
         sampleSolrModel.setCreationDay(localDate.getDayOfMonth());
         sampleSolrModel.setCreationDayOfWeek(localDate.getDayOfWeek().toString());
-        sampleSolrModel.setStatus(sample.getInternal().getStatus().getName());
-
-        sampleSolrModel.setStatus(sample.getInternal().getStatus().getName());
+        sampleSolrModel.setStatus(sample.getInternal().getStatus().getId());
         sampleSolrModel.setSomatic(sample.isSomatic());
 
         if (sample.getPhenotypes() != null) {
@@ -99,13 +98,15 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
         }
 
         if (sample.getCollection() != null) {
-            sampleSolrModel.setTissue(StringUtils.defaultIfEmpty(sample.getCollection().getTissue(), ""));
-            sampleSolrModel.setOrgan(StringUtils.defaultIfEmpty(sample.getCollection().getOrgan(), ""));
+//            sampleSolrModel.setTissue(StringUtils.defaultIfEmpty(sample.getCollection().getTissue(), ""));
+//            sampleSolrModel.setOrgan(StringUtils.defaultIfEmpty(sample.getCollection().getOrgan(), ""));
             sampleSolrModel.setMethod(StringUtils.defaultIfEmpty(sample.getCollection().getMethod(), ""));
         }
 
         if (sample.getProcessing() != null) {
-            sampleSolrModel.setProduct(StringUtils.defaultIfEmpty(sample.getProcessing().getProduct(), ""));
+            sampleSolrModel.setProduct(CollectionUtils.isNotEmpty(sample.getProcessing().getProduct())
+                    ? sample.getProcessing().getProduct().get(0).getId()
+                    : "");
             sampleSolrModel.setPreparationMethod(StringUtils.defaultIfEmpty(sample.getProcessing().getPreparationMethod(), ""));
             sampleSolrModel.setExtractionMethod(StringUtils.defaultIfEmpty(sample.getProcessing().getExtractionMethod(), ""));
             sampleSolrModel.setLabSampleId(StringUtils.defaultIfEmpty(sample.getProcessing().getLabSampleId(), ""));

@@ -78,7 +78,7 @@ public class AnnotationUtils {
         if (variable.getType() == null) {
             throw new CatalogException("VariableType is null");
         }
-        if (ListUtils.isNotEmpty(variable.getVariableSet()) && variable.getType() != Variable.VariableType.OBJECT) {
+        if (ListUtils.isNotEmpty(variable.getVariables()) && variable.getType() != Variable.VariableType.OBJECT) {
             throw new CatalogException("Only variables with type \"OBJECT\" can define an internal variableSet");
         }
 
@@ -122,8 +122,8 @@ public class AnnotationUtils {
             case STRING:
                 break;
             case OBJECT:
-                if (variable.getVariableSet() != null) {
-                    for (Variable v : variable.getVariableSet()) {
+                if (variable.getVariables() != null) {
+                    for (Variable v : variable.getVariables()) {
                         checkVariable(v);
                     }
                 }
@@ -132,7 +132,7 @@ public class AnnotationUtils {
             case MAP_INTEGER:
             case MAP_DOUBLE:
             case MAP_STRING:
-                if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
+                if (variable.getVariables() != null && !variable.getVariables().isEmpty()) {
                     throw new CatalogException("Variable " + variable.getId() + " of type " + variable.getType().name() + " cannot "
                             + "have an internal array of VariableSets");
                 }
@@ -170,7 +170,7 @@ public class AnnotationUtils {
             for (Variable variable : variableSet) {
                 if (variable.getId().equals(split[0])) {
                     String subVariableId = StringUtils.split(variableId, ".", 2)[1];
-                    return checkVariableIdInVariableSet(subVariableId, variable.getVariableSet());
+                    return checkVariableIdInVariableSet(subVariableId, variable.getVariables());
                 }
             }
         }
@@ -356,8 +356,8 @@ public class AnnotationUtils {
 
         if (listValues.isEmpty()) {
             // Check if variable has any children with required params
-            if (variable.getVariableSet() != null) {
-                for (Variable tmpVariable : variable.getVariableSet()) {
+            if (variable.getVariables() != null) {
+                for (Variable tmpVariable : variable.getVariables()) {
                     if (tmpVariable.isRequired()) {
                         throw new CatalogException("Missing required variable " + tmpVariable.getId());
                     }
@@ -430,10 +430,10 @@ public class AnnotationUtils {
             case OBJECT: {
                 //Check variableSet
                 for (Object object : listValues) {
-                    if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
+                    if (variable.getVariables() != null && !variable.getVariables().isEmpty()) {
                         Map objectMap = (Map) object;
                         checkAnnotationSet(new VariableSet(variable.getId(), variable.getId(), false, false, false,
-                                        variable.getDescription(), variable.getVariableSet(), null, 1, null),
+                                        variable.getDescription(), variable.getVariables(), null, 1, null),
                                 new AnnotationSet("", variable.getId(), objectMap, null, 1, null), null, true);
                     }
                 }
@@ -964,9 +964,9 @@ public class AnnotationUtils {
             Variable variable = variableDepthMap.getVariable();
 
             if (variable.getType() == Variable.VariableType.OBJECT) {
-                if (variable.getVariableSet() != null) {
+                if (variable.getVariables() != null) {
                     // We add the new nested variables to the queue
-                    for (Variable nestedVariable : variable.getVariableSet()) {
+                    for (Variable nestedVariable : variable.getVariables()) {
                         List<String> keys = new ArrayList<>(variableDepthMap.getKeys());
                         keys.add(variable.getId());
                         if (variable.isMultiValue()) {

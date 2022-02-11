@@ -63,6 +63,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -506,6 +507,23 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         }
 
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
+        if (YesNoAuto.parse(getOptions(), INCLUDE_GENOTYPE.key()) == YesNoAuto.AUTO) {
+            YesNoAuto includeGenotype = YesNoAuto.YES;
+            if (!fileMetadata.getSampleIds().isEmpty()) {
+                // Do not even check if the file doesn't have samples
+                if (fileMetadata.getStats().getGenotypeCount().size() == 1) {
+                    String gt = fileMetadata.getStats().getGenotypeCount().keySet().iterator().next();
+                    if (GenotypeClass.MISS.test(gt) || GenotypeClass.HOM_REF.test(gt)) {
+                        logger.info("Automatically exclude genotypes. All genotypes are '{}'", gt);
+                        includeGenotype = YesNoAuto.NO;
+                    } else if (GenotypeClass.NA.test(gt)) {
+                        logger.info("Automatically exclude genotypes. No genotypes found.");
+                        includeGenotype = YesNoAuto.NO;
+                    }
+                }
+            }
+            getOptions().put(INCLUDE_GENOTYPE.key(), includeGenotype);
+        }
 
         preLoadRegisterAndValidateFile(studyId, fileMetadata);
 

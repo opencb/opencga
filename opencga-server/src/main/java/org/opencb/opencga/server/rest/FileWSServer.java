@@ -72,27 +72,18 @@ public class FileWSServer extends OpenCGAWSServer {
             notes = "Creates a file with some content in it or a folder <br>"
                     + "<ul>"
                     + "<il><b>path</b>: Mandatory parameter. Whole path containing the file or folder name to be created</il><br>"
-                    + "<il><b>content</b>: Content of the file. Only applicable if <b>directory</b> parameter set to false</il><br>"
-                    + "<il><b>description</b>: Description of the file or folder to store as metadata.</il><br>"
-                    + "<il><b>parents</b>: Create the parent directories if they do not exist.</il><br>"
-                    + "<il><b>directory</b>: Boolean indicating whether to create a file or a directory</il><br>"
+                    + "<il><b>type</b>: Mandatory parameter. Type of file being created: FILE or DIRECTORY</il><br>"
+                    + "<il><b>content</b>: Only applicable if type is FILE. Content of the file in UTF-8 format. If file format is IMAGE, "
+                    + "a base64 content is expected.</il><br>"
+                    + "<il><b>format</b>: File format.</il><br>"
                     + "<ul>"
     )
-    public Response createFilePOST(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-                                   @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                   @ApiParam(name = "body", value = "File parameters", required = true) FileCreateParams params) {
+    public Response createFilePOST(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.FILE_PARENTS_DESCRIPTION) @QueryParam(ParamConstants.FILE_PARENTS_PARAM) boolean parents,
+            @ApiParam(name = "body", value = "File parameters", required = true) FileCreateParams params) {
         try {
-            ObjectUtils.defaultIfNull(params, new FileCreateParams());
-            DataResult<File> file;
-            if (params.isDirectory()) {
-                // Create directory
-                file = fileManager.createFolder(studyStr, params.getPath(), params.isParents(),
-                        params.getDescription(), queryOptions, token);
-            } else {
-                // Create a file
-                file = fileManager.createFile(studyStr, params.getPath(), params.getDescription(), params.isParents(), params.getContent(),
-                        token);
-            }
+            DataResult<File> file = fileManager.create(studyStr, params, parents, token);
             return createOkResponse(file);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -322,7 +313,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FILE_EXTERNAL_DESCRIPTION) @QueryParam("external") Boolean external,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
-            @ApiParam(value = ParamConstants.INTERNAL_INDEX_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_INDEX_STATUS_PARAM) String internalIndexStatus,
+            @ApiParam(value = ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_PARAM) String internalVariantIndexStatus,
             @ApiParam(value = ParamConstants.FILE_SOFTWARE_NAME_DESCRIPTION) @QueryParam(ParamConstants.FILE_SOFTWARE_NAME_PARAM) String softwareName,
             @ApiParam(value = ParamConstants.FILE_DIRECTORY_DESCRIPTION) @QueryParam("directory") String directory,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
@@ -346,7 +337,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/distinct")
-    @ApiOperation(value = "File distinct method")
+    @ApiOperation(value = "File distinct method", response = Object.class)
     public Response distinct(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.FILES_ID_DESCRIPTION) @QueryParam("id") String id,
@@ -360,7 +351,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.FILE_EXTERNAL_DESCRIPTION) @QueryParam("external") Boolean external,
             @ApiParam(value = ParamConstants.STATUS_DESCRIPTION) @QueryParam(ParamConstants.STATUS_PARAM) String status,
             @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
-            @ApiParam(value = ParamConstants.INTERNAL_INDEX_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_INDEX_STATUS_PARAM) String internalIndexStatus,
+            @ApiParam(value = ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_VARIANT_INDEX_STATUS_PARAM) String internalIndexStatus,
             @ApiParam(value = ParamConstants.FILE_SOFTWARE_NAME_DESCRIPTION) @QueryParam(ParamConstants.FILE_SOFTWARE_NAME_PARAM) String softwareName,
             @ApiParam(value = ParamConstants.FILE_DIRECTORY_DESCRIPTION) @QueryParam("directory") String directory,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
@@ -524,6 +515,12 @@ public class FileWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{files}/update")
     @ApiOperation(value = "Update some file attributes", response = File.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response updatePOST(
             @ApiParam(value = "Comma separated list of file ids, names or paths. Paths must be separated by : instead of /")
             @PathParam(value = "files") String fileIdStr,
@@ -532,6 +529,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.BasicUpdateAction relatedFilesAction,
             @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.BasicUpdateAction tagsAction,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(name = "body", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
             if (samplesAction == null) {
@@ -557,7 +555,7 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @JsonIgnoreProperties({"status"})
+    //    @JsonIgnoreProperties({"status"})
 //    public static class FileUpdateParams extends org.opencb.opencga.core.models.file.FileUpdateParams {
 //    }
     @POST
@@ -595,7 +593,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_ID) @PathParam("annotationSet") String annotationSetId,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @QueryParam("action") ParamUtils.CompleteUpdateAction action,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION) Map<String, Object> updateParams) {
         try {
             if (action == null) {
@@ -687,7 +685,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{files}/unlink")
     @ApiOperation(value = "Unlink linked files and folders", response = Job.class)
     public Response unlink(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)  @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of file ids, names or paths.") @PathParam("files") String files) {
         try {
             getIdList(files);

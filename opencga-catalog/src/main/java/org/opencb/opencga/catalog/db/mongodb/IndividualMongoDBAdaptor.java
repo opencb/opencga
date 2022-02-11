@@ -19,13 +19,13 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
@@ -47,8 +47,8 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.common.RgaIndex;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
@@ -64,6 +64,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -166,9 +167,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         if (StringUtils.isEmpty(individual.getUuid())) {
             individual.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INDIVIDUAL));
         }
-        if (StringUtils.isEmpty(individual.getCreationDate())) {
-            individual.setCreationDate(TimeUtils.getTime());
-        }
 
         Document individualDocument = individualConverter.convertToStorageType(individual, variableSetList);
 
@@ -176,8 +174,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         individualDocument.put(RELEASE_FROM_VERSION, Arrays.asList(individual.getRelease()));
         individualDocument.put(LAST_OF_VERSION, true);
         individualDocument.put(LAST_OF_RELEASE, true);
-        individualDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(individual.getCreationDate()));
-        individualDocument.put(PRIVATE_MODIFICATION_DATE, individualDocument.get(PRIVATE_CREATION_DATE));
+        individualDocument.put(PRIVATE_CREATION_DATE, StringUtils.isNotEmpty(individual.getCreationDate())
+                ? TimeUtils.toDate(individual.getCreationDate())
+                : TimeUtils.getDate());
+        individualDocument.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(individual.getModificationDate())
+                ? TimeUtils.toDate(individual.getModificationDate()) : TimeUtils.getDate());
         individualDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting individual '{}' ({})...", individual.getId(), individual.getUid());
@@ -206,6 +207,35 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 .append(SampleDBAdaptor.QueryParams.UID.key(), sampleUid), null);
 
         sampleDBAdaptor.getCollection().update(clientSession, query, update, null);
+    }
+
+    void updateFamilyReferences(ClientSession clientSession, long studyUid, List<String> individualIds, String familyId,
+                                ParamUtils.BasicUpdateAction action)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+
+        Bson bsonUpdate;
+        switch (action) {
+            case ADD:
+                bsonUpdate = Updates.addToSet(QueryParams.FAMILY_IDS.key(), familyId);
+                break;
+            case REMOVE:
+                bsonUpdate = Updates.pull(QueryParams.FAMILY_IDS.key(), familyId);
+                break;
+            case SET:
+            default:
+                throw new IllegalArgumentException("Unexpected action '" + action + "'");
+        }
+
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.ID.key(), individualIds);
+        Bson bsonQuery = parseQuery(query);
+
+        DataResult update = individualCollection.update(clientSession, bsonQuery, bsonUpdate,
+                new QueryOptions(MongoDBCollection.MULTI, true));
+        if (update.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not update family references in individuals");
+        }
     }
 
     @Override
@@ -368,7 +398,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             createNewVersion(clientSession, individual.getStudyUid(), individual.getUid());
         } else {
-            checkInUseInLockedClinicalAnalysis(clientSession, individual);
+            boolean internalUpdateOnly = parameters.keySet().stream().allMatch(key -> key.startsWith("internal."));
+            // Don't need to check if locked when updating only internal fields
+            if (!internalUpdateOnly) {
+                checkInUseInLockedClinicalAnalysis(clientSession, individual);
+            }
         }
 
         DataResult result = updateAnnotationSets(clientSession, individual.getUid(), parameters, variableSetList, queryOptions, true);
@@ -483,9 +517,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
      * Calculates the new list of disorders and phenotypes considering Individual individual belongs to Family family and that individual
      * has a new list of disorders and phenotypes stored.
      *
-     * @param family Current Family as stored in DB.
-     * @param disorders List of disorders of member of the family individualUid .
-     * @param phenotypes List of phenotypes of member of the family individualUid.
+     * @param family        Current Family as stored in DB.
+     * @param disorders     List of disorders of member of the family individualUid .
+     * @param phenotypes    List of phenotypes of member of the family individualUid.
      * @param individualUid Individual uid.
      * @return A new ObjectMap tp update the list of disorders and phenotypes in the Family.
      */
@@ -530,7 +564,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
      * Update Individual references from any Clinical Analysis where it was used.
      *
      * @param clientSession Client session.
-     * @param individual Individual object containing the version stored in the Clinical Analysis (before the version increment).
+     * @param individual    Individual object containing the version stored in the Clinical Analysis (before the version increment).
      */
     private void updateClinicalAnalysisIndividualReferences(ClientSession clientSession, Individual individual)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -568,7 +602,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
      * Update Individual references from any Family where it was used.
      *
      * @param clientSession Client session.
-     * @param individual Individual object containing the previous version (before the version increment).
+     * @param individual    Individual object containing the previous version (before the version increment).
      */
     private void updateFamilyIndividualReferences(ClientSession clientSession, Individual individual)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -585,13 +619,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         while (iterator.hasNext()) {
             Family family = iterator.next();
 
-            List<Individual> members = new ArrayList<>(family.getMembers().size());
+            List<Map<String, Object>> members = new ArrayList<>(family.getMembers().size());
             for (Individual member : family.getMembers()) {
                 if (member.getUid() == individual.getUid()) {
                     member.setVersion(individual.getVersion() + 1);
                 }
-                members.add(member);
+                members.add(getMongoDBDocument(member, "Individual"));
             }
+
 
             ObjectMap params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), members);
 
@@ -612,7 +647,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
      * Checks whether the individual that is going to be updated is in use in any locked Clinical Analysis.
      *
      * @param clientSession Client session.
-     * @param individual Individual to be updated.
+     * @param individual    Individual to be updated.
      * @throws CatalogDBException CatalogDBException if the individual is in use in any Clinical Analysis.
      */
     private void checkInUseInLockedClinicalAnalysis(ClientSession clientSession, Individual individual)
@@ -693,13 +728,23 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
-                QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_DESCRIPTION.key(),
-                QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(), QueryParams.DATE_OF_BIRTH.key(), };
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(),
+                QueryParams.POPULATION_DESCRIPTION.key(), QueryParams.KARYOTYPIC_SEX.key(), QueryParams.LIFE_STATUS.key(),
+                QueryParams.DATE_OF_BIRTH.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.SEX.key()), IndividualProperty.Sex.class);
-        filterEnumParams(parameters, document.getSet(), acceptedEnums);
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
 
         String[] acceptedIntParams = {QueryParams.FATHER_UID.key(), QueryParams.MOTHER_UID.key()};
         filterLongParams(parameters, document.getSet(), acceptedIntParams);
@@ -707,14 +752,15 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] acceptedObjectParams = {QueryParams.LOCATION.key(), QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key()};
+        String[] acceptedObjectParams = {QueryParams.LOCATION.key(), QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key(),
+                QueryParams.ETHNICITY.key(), QueryParams.SEX.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
         }
 
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
-            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_ID.key(), parameters.get(QueryParams.INTERNAL_STATUS_ID.key()));
             document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
@@ -807,11 +853,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
-            // Update modificationDate param
             String time = TimeUtils.getTime();
-            Date date = TimeUtils.toDate(time);
-            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
-            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
         }
 
         return document;
@@ -1016,7 +1065,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             Document tmpIndividual = individualDBIterator.next();
 
             // Set status to DELETED
-            nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpIndividual);
+            nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"),
+                    tmpIndividual);
 
             int individualVersion = tmpIndividual.getInteger(QueryParams.VERSION.key());
 
@@ -1156,7 +1206,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
@@ -1178,7 +1228,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
@@ -1353,24 +1403,26 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STATUS:
-                    case STATUS_NAME:
-                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), query, QueryParams.STATUS_NAME.type(), andBsonList);
+                    case STATUS_ID:
+                        addAutoOrQuery(QueryParams.STATUS_ID.key(), queryParam.key(), query, QueryParams.STATUS_ID.type(), andBsonList);
                         break;
                     case INTERNAL_STATUS:
-                    case INTERNAL_STATUS_NAME:
+                    case INTERNAL_STATUS_ID:
                         // Convert the status to a positive status
-                        query.put(queryParam.key(), Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
-                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), query,
-                                QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
+                        query.put(queryParam.key(), InternalStatus.getPositiveStatus(InternalStatus.STATUS_LIST,
+                                query.getString(queryParam.key())));
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), query,
+                                QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
                     case ID:
                     case UUID:
                     case NAME:
                     case FATHER_UID:
                     case MOTHER_UID:
+                    case FAMILY_IDS:
                     case DATE_OF_BIRTH:
-                    case SEX:
-                    case ETHNICITY:
+                    case SEX_ID:
+                    case ETHNICITY_ID:
                     case POPULATION_NAME:
                     case POPULATION_SUBPOPULATION:
                     case KARYOTYPIC_SEX:

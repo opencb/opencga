@@ -79,7 +79,6 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
                     .setConfigFile(configFile)
                     .execute();
 
-
             // Update quality control for the catalog sample
             if (StringUtils.isNotEmpty(genomePlotParams.getSample())) {
                 OpenCGAResult<Sample> sampleResult = getCatalogManager().getSampleManager().get(getStudy(), genomePlotParams.getSample(),
@@ -99,12 +98,12 @@ public class GenomePlotAnalysis extends OpenCgaToolScopeStudy {
                             break;
                         }
                     }
-                    if (genomePlot !=  null) {
+                    if (genomePlot != null) {
                         SampleQualityControl qc = sampleResult.first().getQualityControl();
                         if (qc == null) {
                             qc = new SampleQualityControl();
                         }
-                        qc.getVariant().getGenomePlots().add(genomePlot);
+                        qc.getVariant().setGenomePlot(genomePlot);
 
                         catalogManager.getSampleManager().update(getStudy(), sample.getId(), new SampleUpdateParams().setQualityControl(qc),
                                 QueryOptions.empty(), getToken());

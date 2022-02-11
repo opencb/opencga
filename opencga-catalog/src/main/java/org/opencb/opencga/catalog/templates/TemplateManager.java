@@ -153,7 +153,7 @@ public class TemplateManager {
 
     private Study getStudy(String projectId, String studyId) throws CatalogException {
         OpenCGAResult<Study> studyOpenCGAResult =
-                    catalogManager.getStudyManager().get(projectId + ":" + studyId, QueryOptions.empty(), token);
+                catalogManager.getStudyManager().get(projectId + ":" + studyId, QueryOptions.empty(), token);
         return studyOpenCGAResult.first();
     }
 
@@ -178,8 +178,9 @@ public class TemplateManager {
         fqn = origStudy.getFqn();
         if (overwrite) {
             // Updating values
-            StudyUpdateParams studyUpdateParams = new StudyUpdateParams(tmplStudy.getName(), tmplStudy.getAlias(),
-                    tmplStudy.getDescription(), tmplStudy.getNotification(), tmplStudy.getAttributes(), tmplStudy.getStatus());
+            StudyUpdateParams studyUpdateParams = new StudyUpdateParams(tmplStudy.getName(), tmplStudy.getAlias(), tmplStudy.getType(),
+                    tmplStudy.getSources(), tmplStudy.getDescription(), tmplStudy.getCreationDate(), tmplStudy.getModificationDate(),
+                    tmplStudy.getNotification(), tmplStudy.getStatus(), tmplStudy.getAdditionalInfo(), tmplStudy.getAttributes());
 
             logger.info("Study '{}' already exists. Updating the values.", tmplStudy.getId());
             try {
@@ -194,8 +195,8 @@ public class TemplateManager {
         if (CollectionUtils.isNotEmpty(tmplStudy.getGroups())) {
             Set<String> existingGroups = origStudy != null
                     ? origStudy.getGroups().stream()
-                        .flatMap(g -> Arrays.asList(g.getId(), g.getId().substring(1)).stream())
-                        .collect(Collectors.toSet())
+                    .flatMap(g -> Arrays.asList(g.getId(), g.getId().substring(1)).stream())
+                    .collect(Collectors.toSet())
                     : new HashSet<>();
             for (GroupCreateParams group : tmplStudy.getGroups()) {
                 if (existingGroups.contains(group.getId())) {
@@ -246,7 +247,7 @@ public class TemplateManager {
         boolean hasParents = false;
         // Process/Create individuals without parents
         try (TemplateEntryIterator<IndividualUpdateParams> iterator =
-                new TemplateEntryIterator<>(path, "individuals", IndividualUpdateParams.class)) {
+                     new TemplateEntryIterator<>(path, "individuals", IndividualUpdateParams.class)) {
             int count = 0;
             while (iterator.hasNext()) {
                 IndividualUpdateParams individual = iterator.next();
@@ -630,6 +631,9 @@ public class TemplateManager {
             while (iterator.hasNext()) {
                 TemplateFile file = iterator.next();
 
+                if (StringUtils.isEmpty(file.getPath())) {
+                    throw new CatalogException("Missing mandatory parameter 'path'");
+                }
                 Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), file.getPath());
                 boolean exists = catalogManager.getFileManager().count(studyFqn, query, token).getNumMatches() > 0;
 
@@ -639,6 +643,10 @@ public class TemplateManager {
 
                 boolean incomplete = false;
                 if (!exists) {
+                    if (StringUtils.isEmpty(file.getUri())) {
+                        throw new CatalogException("Missing mandatory parameter 'uri'. Could not link file.");
+                    }
+
                     if (count == 0) {
                         logger.info("Creating File for study '{}'", studyFqn);
                     }
@@ -646,8 +654,8 @@ public class TemplateManager {
                     // Create File
                     logger.info("Create File '{}'", file.getPath());
                     catalogManager.getFileManager().link(studyFqn,
-                            new FileLinkParams(file.getUri(), file.getPath(), file.getDescription(), file.getRelatedFiles(),
-                                    file.getStatus(), null), true, token);
+                            new FileLinkParams(file.getUri(), file.getPath(), file.getDescription(), file.getCreationDate(),
+                                    file.getModificationDate(), file.getRelatedFiles(), file.getStatus(), null), true, token);
                     incomplete = true;
                 }
 
@@ -939,7 +947,7 @@ public class TemplateManager {
 
     private String checkJob(RestResponse<Job> jobRestResponse) throws CatalogException {
         Job job = jobRestResponse.firstResult();
-        String status = job.getInternal().getStatus().getName();
+        String status = job.getInternal().getStatus().getId();
         if (status.equals(Enums.ExecutionStatus.ABORTED) || status.equals(Enums.ExecutionStatus.ERROR)) {
             throw new CatalogException("Error submitting job " + job.getTool().getId() + " " + job.getId());
         }

@@ -53,8 +53,8 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.common.RgaIndex;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
@@ -68,6 +68,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -78,12 +79,11 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper
  */
 public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> implements SampleDBAdaptor {
 
+    private static final String PRIVATE_INDIVIDUAL_UID = "_individualUid";
     private final MongoDBCollection sampleCollection;
     private final MongoDBCollection deletedSampleCollection;
     private SampleConverter sampleConverter;
     private IndividualMongoDBAdaptor individualDBAdaptor;
-
-    private static final String PRIVATE_INDIVIDUAL_UID = "_individualUid";
 
     public SampleMongoDBAdaptor(MongoDBCollection sampleCollection, MongoDBCollection deletedSampleCollection, Configuration configuration,
                                 MongoDBAdaptorFactory dbAdaptorFactory) {
@@ -91,8 +91,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.sampleCollection = sampleCollection;
         this.deletedSampleCollection = deletedSampleCollection;
-        this.sampleConverter = new SampleConverter();
-        this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
+        sampleConverter = new SampleConverter();
+        individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
     }
 
     @Override
@@ -159,9 +159,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         if (StringUtils.isEmpty(sample.getUuid())) {
             sample.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE));
         }
-        if (StringUtils.isEmpty(sample.getCreationDate())) {
-            sample.setCreationDate(TimeUtils.getTime());
-        }
         if (sample.getFileIds() == null) {
             sample.setFileIds(Collections.emptyList());
         }
@@ -172,8 +169,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         sampleObject.put(RELEASE_FROM_VERSION, Arrays.asList(sample.getRelease()));
         sampleObject.put(LAST_OF_VERSION, true);
         sampleObject.put(LAST_OF_RELEASE, true);
-        sampleObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(sample.getCreationDate()));
-        sampleObject.put(PRIVATE_MODIFICATION_DATE, sampleObject.get(PRIVATE_CREATION_DATE));
+        sampleObject.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(sample.getCreationDate()) ? TimeUtils.toDate(sample.getCreationDate()) : TimeUtils.getDate());
+        sampleObject.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(sample.getModificationDate())
+                ? TimeUtils.toDate(sample.getModificationDate()) : TimeUtils.getDate());
         sampleObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         sampleObject.put(PRIVATE_INDIVIDUAL_UID, individualUid);
 
@@ -200,7 +199,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             return endWrite(tmpStartTime, 1, 1, 0, 0, null);
         }, e -> logger.error("Could not create sample {}: {}", sample.getId(), e.getMessage()));
     }
-
 
     @Override
     public OpenCGAResult<Sample> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException {
@@ -316,7 +314,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             createNewVersion(clientSession, studyUid, sampleUid);
         } else {
-            checkInUseInLockedClinicalAnalysis(clientSession, sampleDocument);
+            boolean internalUpdateOnly = parameters.keySet().stream().allMatch(key -> key.startsWith("internal."));
+            // Don't need to check if locked when updating only internal fields
+            if (!internalUpdateOnly) {
+                checkInUseInLockedClinicalAnalysis(clientSession, sampleDocument);
+            }
         }
 
         // Perform the update
@@ -376,11 +378,40 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return endWrite(tmpStartTime, 1, 1, events);
     }
 
+    void updateCohortReferences(ClientSession clientSession, long studyUid, List<Long> sampleUids, String cohortId,
+                                ParamUtils.BasicUpdateAction action)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+
+        Bson bsonUpdate;
+        switch (action) {
+            case ADD:
+                bsonUpdate = Updates.addToSet(SampleDBAdaptor.QueryParams.COHORT_IDS.key(), cohortId);
+                break;
+            case REMOVE:
+                bsonUpdate = Updates.pull(SampleDBAdaptor.QueryParams.COHORT_IDS.key(), cohortId);
+                break;
+            case SET:
+            default:
+                throw new IllegalArgumentException("Unexpected action '" + action + "'");
+        }
+
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.UID.key(), sampleUids);
+        Bson bsonQuery = parseQuery(query);
+
+        DataResult update = sampleCollection.update(clientSession, bsonQuery, bsonUpdate,
+                new QueryOptions(MongoDBCollection.MULTI, true));
+        if (update.getNumMatches() == 0) {
+            throw new CatalogDBException("Could not update cohort references in samples");
+        }
+    }
+
     /**
      * Update Sample references from any Individual where it was used.
      *
      * @param clientSession Client session.
-     * @param sample Sample object containing the previous version (before the version increment).
+     * @param sample        Sample object containing the previous version (before the version increment).
      */
     private void updateIndividualSampleReferences(ClientSession clientSession, Document sample)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -449,7 +480,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
      * Checks whether the sample that is going to be updated is in use in any locked Clinical Analysis.
      *
      * @param clientSession Client session.
-     * @param sample Sample to be updated.
+     * @param sample        Sample to be updated.
      * @throws CatalogDBException CatalogDBException if the sample is in use in any Clinical Analysis.
      */
     private void checkInUseInLockedClinicalAnalysis(ClientSession clientSession, Document sample)
@@ -505,7 +536,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             throw new CatalogDBException("Sample '" + sampleId + "' is being used in the following clinical analyses: '"
                     + String.join("', '", clinicalAnalysisIds) + "'.");
         }
-
     }
 
     private void updateSampleFromIndividualCollection(ClientSession clientSession, Sample sample, long individualUid,
@@ -545,6 +575,19 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         UpdateDocument document = new UpdateDocument();
 
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
         final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
         filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
@@ -554,8 +597,11 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        final String[] acceptedObjectParams = {QueryParams.COLLECTION.key(), QueryParams.PROCESSING.key(), QueryParams.STATUS.key(),
-                QueryParams.QUALITY_CONTORL.key()};
+        final String[] acceptedObjectParams = {QueryParams.SOURCE.key(), QueryParams.COLLECTION.key(), QueryParams.PROCESSING.key(),
+                QueryParams.STATUS.key(),
+                QueryParams.QUALITY_CONTROL.key(), QueryParams.INTERNAL_VARIANT_INDEX.key(),
+                QueryParams.INTERNAL_VARIANT_GENOTYPE_INDEX.key(), QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
+                QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -592,8 +638,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
-            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_ID.key(), parameters.get(QueryParams.INTERNAL_STATUS_ID.key()));
             document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
@@ -649,11 +695,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
-            // Update modificationDate param
             String time = TimeUtils.getTime();
-            Date date = TimeUtils.toDate(time);
-            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
-            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
         }
 
         return document;
@@ -775,7 +824,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return new OpenCGAResult<>(sampleCollection.count(clientSession, bson));
     }
 
-
     @Override
     public OpenCGAResult<Long> count(Query query, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -891,7 +939,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 Document tmpSample = sampleDBIterator.next();
 
                 // Set status to DELETED
-                nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpSample);
+                nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"),
+                        tmpSample);
 
                 int sampleVersion = tmpSample.getInteger(QueryParams.VERSION.key());
 
@@ -934,8 +983,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         Document updateDocument = document.toFinalUpdateDocument();
 
         Query query = new Query()
-            .append(QueryParams.STUDY_UID.key(), studyUid)
-            .append(QueryParams.FILE_IDS.key(), fileId);
+                .append(QueryParams.STUDY_UID.key(), studyUid)
+                .append(QueryParams.FILE_IDS.key(), fileId);
         Bson bsonQuery = parseQuery(query);
 
         logger.debug("Removing file from sample '{}' field. Query: {}, Update: {}", QueryParams.FILE_IDS.key(),
@@ -1044,7 +1093,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, user);
         Document studyDocument = getStudyDocument(null, studyUid);
-        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
         return new SampleCatalogMongoDBIterator<>(mongoCursor, null, sampleConverter, iteratorFilter, individualDBAdaptor, studyUid, user,
@@ -1065,7 +1114,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
+        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
         return new SampleCatalogMongoDBIterator<>(mongoCursor, clientSession, null, iteratorFilter, individualDBAdaptor, studyUid, user,
@@ -1264,7 +1313,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
-            QueryParams queryParam =  QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
+            QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
             if (queryParam == null) {
                 if (Constants.ALL_VERSIONS.equals(entry.getKey()) || Constants.PRIVATE_ANNOTATION_PARAM_TYPES.equals(entry.getKey())) {
@@ -1300,27 +1349,29 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STATUS:
-                    case STATUS_NAME:
-                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), query, QueryParams.STATUS_NAME.type(), andBsonList);
+                    case STATUS_ID:
+                        addAutoOrQuery(QueryParams.STATUS_ID.key(), queryParam.key(), query, QueryParams.STATUS_ID.type(), andBsonList);
                         break;
                     case INTERNAL_STATUS:
-                    case INTERNAL_STATUS_NAME:
+                    case INTERNAL_STATUS_ID:
                         // Convert the status to a positive status
-                        query.put(queryParam.key(), Status.getPositiveStatus(Status.STATUS_LIST, query.getString(queryParam.key())));
-                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), query,
-                                QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
+                        query.put(queryParam.key(), InternalStatus.getPositiveStatus(InternalStatus.STATUS_LIST,
+                                query.getString(queryParam.key())));
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), query,
+                                QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
                     case ID:
                     case UUID:
-                    case PROCESSING_PRODUCT:
+                    case PROCESSING_PRODUCT_ID:
                     case PROCESSING_PREPARATION_METHOD:
                     case PROCESSING_EXTRACTION_METHOD:
                     case PROCESSING_LAB_SAMPLE_ID:
-                    case COLLECTION_TISSUE:
-                    case COLLECTION_ORGAN:
+                    case COLLECTION_FROM_ID:
                     case COLLECTION_METHOD:
+                    case COLLECTION_TYPE:
                     case RELEASE:
                     case FILE_IDS:
+                    case COHORT_IDS:
                     case VERSION:
                     case INDIVIDUAL_ID:
                     case INTERNAL_RGA_STATUS:
@@ -1368,5 +1419,4 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     public MongoDBCollection getSampleCollection() {
         return sampleCollection;
     }
-
 }

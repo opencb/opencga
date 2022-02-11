@@ -11,7 +11,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         patch = 1,
-        rank = 21)
+        date = 20210928)
 public class AddMissingIndexes extends MigrationTool {
 
     @Override

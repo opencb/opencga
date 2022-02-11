@@ -16,10 +16,8 @@
 
 package org.opencb.opencga.core.models.file;
 
-import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.StatusParams;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,28 +26,32 @@ public class FileLinkParams {
     private String uri;
     private String path;
     private String description;
+    private String creationDate;
+    private String modificationDate;
     private List<SmallRelatedFileParams> relatedFiles;
-    private CustomStatusParams status;
+    private StatusParams status;
     private FileLinkInternalParams internal;
 
     public FileLinkParams() {
     }
 
-    public FileLinkParams(String uri, String path, String description, List<SmallRelatedFileParams> relatedFiles,
-                          CustomStatusParams status, FileLinkInternalParams internal) {
+    public FileLinkParams(String uri, String path, String description, String creationDate, String modificationDate,
+                          List<SmallRelatedFileParams> relatedFiles, StatusParams status, FileLinkInternalParams internal) {
         this.uri = uri;
         this.path = path;
         this.description = description;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.relatedFiles = relatedFiles;
         this.status = status;
         this.internal = internal;
     }
 
     public static FileLinkParams of(File file) {
-        return new FileLinkParams(file.getUri().toString(), file.getPath(), file.getDescription(),
-                file.getRelatedFiles() != null
-                        ? file.getRelatedFiles().stream().map(SmallRelatedFileParams::of).collect(Collectors.toList())
-                        : Collections.emptyList(), CustomStatusParams.of(file.getStatus()),
+        return new FileLinkParams(file.getUri().toString(), file.getPath(), file.getDescription(), file.getCreationDate(),
+                file.getModificationDate(), file.getRelatedFiles() != null
+                ? file.getRelatedFiles().stream().map(SmallRelatedFileParams::of).collect(Collectors.toList())
+                : Collections.emptyList(), StatusParams.of(file.getStatus()),
                 new FileLinkInternalParams(file.getInternal().getSampleMap()));
     }
 
@@ -59,6 +61,8 @@ public class FileLinkParams {
         sb.append("uri='").append(uri).append('\'');
         sb.append(", path='").append(path).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
@@ -108,16 +112,34 @@ public class FileLinkParams {
         return this;
     }
 
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public FileLinkParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public FileLinkParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
+        return this;
+    }
+
     public FileLinkParams setRelatedFiles(List<SmallRelatedFileParams> relatedFiles) {
         this.relatedFiles = relatedFiles;
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public FileLinkParams setStatus(CustomStatusParams status) {
+    public FileLinkParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

@@ -180,7 +180,7 @@ public class VariantStatsOperationManager extends OperationManager {
         for (String cohortId : cohortIds) {
             Cohort cohort = catalogManager.getCohortManager()
                     .get(studyFqn, cohortId, CatalogStorageMetadataSynchronizer.COHORT_QUERY_OPTIONS, sessionId).first();
-            switch (cohort.getInternal().getStatus().getName()) {
+            switch (cohort.getInternal().getStatus().getId()) {
                 case CohortStatus.NONE:
                 case CohortStatus.INVALID:
                     break;
@@ -201,7 +201,7 @@ public class VariantStatsOperationManager extends OperationManager {
                     }
                     break;
                 default:
-                    throw new IllegalStateException("Unknown status " + cohort.getInternal().getStatus().getName());
+                    throw new IllegalStateException("Unknown status " + cohort.getInternal().getStatus().getId());
             }
             cohortMap.put(cohort.getId(), cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
         }
@@ -240,7 +240,8 @@ public class VariantStatsOperationManager extends OperationManager {
         for (String cohortName : cohortNames) {
             if (!catalogCohorts.contains(cohortName)) {
                 DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams(cohortName,
-                        Enums.CohortType.COLLECTION, "", Collections.emptyList(), null, null, null), null, null, null, sessionId);
+                        Enums.CohortType.COLLECTION, "", null, null, Collections.emptyList(), null, null, null), null, null, null,
+                        sessionId);
                 logger.info("Creating cohort {}", cohortName);
                 cohorts.add(cohort.first().getId());
             } else {
@@ -273,14 +274,14 @@ public class VariantStatsOperationManager extends OperationManager {
     public static StorageEngineException unableToCalculateCohortReady(Cohort cohort) {
         return new StorageEngineException("Unable to calculate stats for cohort "
                 + "{ uid: " + cohort.getUid() + " id: \"" + cohort.getId() + "\" }"
-                + " with status \"" + cohort.getInternal().getStatus().getName() + "\". "
+                + " with status \"" + cohort.getInternal().getStatus().getId() + "\". "
                 + "Resume or overwrite stats for continue calculation");
     }
 
     public static StorageEngineException unableToCalculateCohortCalculating(Cohort cohort) {
         return new StorageEngineException("Unable to calculate stats for cohort "
                 + "{ uid: " + cohort.getUid() + " id: \"" + cohort.getId() + "\" }"
-                + " with status \"" + cohort.getInternal().getStatus().getName() + "\". "
+                + " with status \"" + cohort.getInternal().getStatus().getId() + "\". "
                 + "Resume for continue calculation.");
     }
 }

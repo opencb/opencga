@@ -24,12 +24,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserFilter;
 import org.opencb.opencga.core.models.user.UserInternal;
 import org.opencb.opencga.core.models.user.UserStatus;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -67,14 +67,14 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertFalse(userResult.getResults().isEmpty());
         assertNotNull(userResult.first());
 
-        assertEquals(Status.READY, userResult.first().getInternal().getStatus().getName());
+        assertEquals(InternalStatus.READY, userResult.first().getInternal().getStatus().getId());
 
         DataResult deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), new QueryOptions());
         assertEquals(1, deleteUser.getNumUpdated());
 
-        query.append(UserDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), UserStatus.DELETED);
+        query.append(UserDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), UserStatus.DELETED);
         DataResult<User> queryResult = catalogUserDBAdaptor.get(query, QueryOptions.empty());
-        assertEquals(Status.DELETED, queryResult.first().getInternal().getStatus().getName());
+        assertEquals(InternalStatus.DELETED, queryResult.first().getInternal().getStatus().getId());
 
 
         /*
@@ -95,8 +95,8 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         user = catalogUserDBAdaptor.get(user3.getId(), new QueryOptions("exclude", Arrays.asList("projects")));
         assertEquals(null, user.first().getProjects());
 
-        thrown.expect(CatalogDBException.class);
-        catalogUserDBAdaptor.get("NonExistingUser", null);
+        OpenCGAResult<User> nonExistingUser = catalogUserDBAdaptor.get("NonExistingUser", null);
+        assertEquals(0, nonExistingUser.getNumResults());
     }
 
     @Test
@@ -190,7 +190,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void setConfigTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         ObjectMap objectMap = new ObjectMap()
-                .append("key1", Arrays.asList(1,2,3,4,5))
+                .append("key1", Arrays.asList(1, 2, 3, 4, 5))
                 .append("key2", new ObjectMap("key21", 21).append("key22", 22));
 
         DataResult writeResult = catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
@@ -217,7 +217,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void deleteConfigTest() throws CatalogDBException, IOException {
         ObjectMap objectMap = new ObjectMap()
-                .append("key1", Arrays.asList(1,2,3,4,5))
+                .append("key1", Arrays.asList(1, 2, 3, 4, 5))
                 .append("key2", new ObjectMap("key21", 21).append("key22", 22));
 
         catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);

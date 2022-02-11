@@ -531,7 +531,7 @@ public class DocumentToVariantAnnotationConverter
         }
 
         return new ConsequenceType(ensemblGeneId, geneName, ensemblGeneId, ensemblTranscriptId, ensemblTranscriptId, strand, biotype, null,
-                exonOverlapList, transcriptAnnotationFlags, transcriptAnnotationFlags, cDnaPosition, cdsPosition, codon,
+                exonOverlapList, transcriptAnnotationFlags, cDnaPosition, cdsPosition, codon,
                 proteinVariantAnnotation, soTerms);
     }
 
@@ -630,7 +630,7 @@ public class DocumentToVariantAnnotationConverter
                     }
                     ct.put(CT_EXON_OVERLAP_FIELD, exonOverlapDocuments);
                 }
-                putNotNull(ct, CT_TRANSCRIPT_ANNOT_FLAGS, consequenceType.getTranscriptAnnotationFlags());
+                putNotNull(ct, CT_TRANSCRIPT_ANNOT_FLAGS, consequenceType.getTranscriptFlags());
                 putNotNull(ct, CT_C_DNA_POSITION_FIELD, consequenceType.getCdnaPosition());
                 putNotNull(ct, CT_CDS_POSITION_FIELD, consequenceType.getCdsPosition());
 

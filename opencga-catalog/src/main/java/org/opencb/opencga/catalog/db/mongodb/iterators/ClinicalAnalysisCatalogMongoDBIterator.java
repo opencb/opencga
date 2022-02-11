@@ -40,10 +40,12 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
     private long studyUid;
     private String user;
 
+    private FileDBAdaptor fileDBAdaptor;
     private FamilyDBAdaptor familyDBAdaptor;
     private IndividualDBAdaptor individualDBAdaptor;
     private InterpretationDBAdaptor interpretationDBAdaptor;
     private PanelDBAdaptor panelDBAdaptor;
+    private QueryOptions fileQueryOptions;
     private QueryOptions familyQueryOptions;
     private QueryOptions individualQueryOptions;
     private QueryOptions interpretationQueryOptions;
@@ -76,14 +78,17 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
 
         this.options = options;
 
+        this.fileDBAdaptor = dbAdaptorFactory.getCatalogFileDBAdaptor();
         this.familyDBAdaptor = dbAdaptorFactory.getCatalogFamilyDBAdaptor();
         this.individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
         this.interpretationDBAdaptor = dbAdaptorFactory.getInterpretationDBAdaptor();
         this.panelDBAdaptor = dbAdaptorFactory.getCatalogPanelDBAdaptor();
-        this.interpretationQueryOptions = createInnerQueryOptions(INTERPRETATION.key(), false);
-        this.familyQueryOptions = createInnerQueryOptions(FAMILY.key(), false);
-        this.individualQueryOptions = createInnerQueryOptions(PROBAND.key(), false);
-        this.panelQueryOptions = createInnerQueryOptions(PANELS.key(), false);
+
+        this.interpretationQueryOptions = createInnerQueryOptionsForVersionedEntity(options, INTERPRETATION.key(), false);
+        this.fileQueryOptions = createInnerQueryOptionsForVersionedEntity(options, FILES.key(), true);
+        this.familyQueryOptions = createInnerQueryOptionsForVersionedEntity(options, FAMILY.key(), false);
+        this.individualQueryOptions = createInnerQueryOptionsForVersionedEntity(options, PROBAND.key(), false);
+        this.panelQueryOptions = createInnerQueryOptionsForVersionedEntity(options, PANELS.key(), true);
 
         this.clinicalAnalysisListBuffer = new LinkedList<>();
         this.logger = LoggerFactory.getLogger(ClinicalAnalysisCatalogMongoDBIterator.class);
@@ -116,6 +121,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
     }
 
     private void fetchNextBatch() {
+        Set<Long> fileSet = new HashSet<>();
         Set<String> interpretationSet = new HashSet<>();
         Set<String> familySet = new HashSet<>();
         Set<String> individualSet = new HashSet<>();
@@ -136,6 +142,16 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             if (!options.getBoolean(NATIVE_QUERY)) {
                 extractFamilyInfo((Document) clinicalDocument.get(FAMILY.key()), familySet);
                 extractIndividualInfo((Document) clinicalDocument.get(PROBAND.key()), individualSet);
+
+                // Extract the files
+                List<Document> files = clinicalDocument.getList(FILES.key(), Document.class);
+                if (CollectionUtils.isNotEmpty(files)) {
+                    for (Document file : files) {
+                        if (file != null && file.get(UID, Number.class).longValue() > 0) {
+                            fileSet.add(file.get(UID, Number.class).longValue());
+                        }
+                    }
+                }
 
                 // Extract the panels
                 List<Document> panels = clinicalDocument.getList(PANELS.key(), Document.class);
@@ -163,6 +179,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         }
 
         Map<String, Document> interpretationMap = fetchInterpretations(interpretationSet);
+        Map<Long, Document> fileMap = fetchFiles(fileSet);
         Map<String, Document> familyMap = fetchFamilies(familySet);
         Map<String, Document> individualMap = fetchIndividuals(individualSet);
         Map<String, Document> panelMap = fetchPanels(panelSet);
@@ -171,6 +188,7 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             // Fill data in clinical analyses
             clinicalAnalysisListBuffer.forEach(clinicalAnalysis -> {
                 fillInterpretationData(clinicalAnalysis, interpretationMap);
+                fillFiles(clinicalAnalysis, fileMap);
                 fillPanels(clinicalAnalysis, panelMap);
                 clinicalAnalysis.put(FAMILY.key(), fillFamilyData((Document) clinicalAnalysis.get(FAMILY.key()), familyMap));
                 clinicalAnalysis.put(PROBAND.key(), fillIndividualData((Document) clinicalAnalysis.get(PROBAND.key()), individualMap));
@@ -291,6 +309,53 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             }
             clinicalAnalysis.put(PANELS.key(), targetPanels);
         }
+    }
+
+    private void fillFiles(Document clinicalAnalysis, Map<Long, Document> fileMap) {
+        if (fileMap.isEmpty()) {
+            return;
+        }
+
+        List<Document> sourceFiles = clinicalAnalysis.getList(FILES.key(), Document.class);
+        if (sourceFiles != null) {
+            List<Document> targetFiles = new ArrayList<>(sourceFiles.size());
+            for (Document file : sourceFiles) {
+                long fileUid = file.get(UID, Number.class).longValue();
+                if (fileMap.containsKey(fileUid)) {
+                    targetFiles.add(fileMap.get(fileUid));
+                }
+            }
+            clinicalAnalysis.put(FILES.key(), targetFiles);
+        }
+    }
+
+    private Map<Long, Document> fetchFiles(Set<Long> fileSet) {
+        Map<Long, Document> fileMap = new HashMap<>();
+
+        if (fileSet.isEmpty()) {
+            return fileMap;
+        }
+
+        // Build query object
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.UID.key(), new ArrayList<>(fileSet));
+
+        List<Document> fileList;
+        try {
+            if (user != null) {
+                query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+                fileList = fileDBAdaptor.nativeGet(studyUid, query, fileQueryOptions, user).getResults();
+            } else {
+                fileList = fileDBAdaptor.nativeGet(query, fileQueryOptions).getResults();
+            }
+        } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
+            logger.warn("Could not obtain the files associated to the clinical analyses: {}", e.getMessage(), e);
+            return fileMap;
+        }
+
+        // Map each file uid to the file entry
+        fileList.forEach(file -> fileMap.put(file.get(UID, Number.class).longValue(), file));
+        return fileMap;
     }
 
     private Map<String, Document> fetchFamilies(Set<String> familySet) {
@@ -485,53 +550,5 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
             individualSet.add(memberDocument.get(UID) + UID_VERSION_SEP + memberDocument.get(VERSION));
         }
     }
-
-    private QueryOptions createInnerQueryOptions(String fieldProjectionKey, boolean nativeQuery) {
-        QueryOptions queryOptions = new QueryOptions(NATIVE_QUERY, nativeQuery);
-
-        if (options.containsKey(QueryOptions.INCLUDE)) {
-            List<String> currentIncludeList = options.getAsStringList(QueryOptions.INCLUDE);
-            List<String> includeList = new ArrayList<>();
-            for (String include : currentIncludeList) {
-                if (include.startsWith(fieldProjectionKey + ".")) {
-                    includeList.add(include.replace(fieldProjectionKey + ".", ""));
-                }
-            }
-            if (!includeList.isEmpty()) {
-                // If we only have include uid, there is no need for an additional query so we will set current options to native query
-                boolean includeAdditionalFields = includeList.stream().anyMatch(
-                        field -> !field.equals(UID) && !field.equals(VERSION)
-                );
-                if (includeAdditionalFields) {
-                    includeList.add(UID);
-                    includeList.add(VERSION);
-                    queryOptions.put(QueryOptions.INCLUDE, includeList);
-                } else {
-                    // User wants to include fields already retrieved
-                    options.put(NATIVE_QUERY + "_" + fieldProjectionKey, true);
-                }
-            }
-        }
-        if (options.containsKey(QueryOptions.EXCLUDE)) {
-            List<String> currentExcludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-            List<String> excludeList = new ArrayList<>();
-            for (String exclude : currentExcludeList) {
-                if (exclude.startsWith(fieldProjectionKey + ".")) {
-                    String replace = exclude.replace(fieldProjectionKey + ".", "");
-                    if (!UID.equals(replace) && !VERSION.equals(replace)) {
-                        excludeList.add(replace);
-                    }
-                }
-            }
-            if (!excludeList.isEmpty()) {
-                queryOptions.put(QueryOptions.EXCLUDE, excludeList);
-            } else {
-                queryOptions.remove(QueryOptions.EXCLUDE);
-            }
-        }
-
-        return queryOptions;
-    }
-
 
 }

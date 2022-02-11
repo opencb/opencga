@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.inferredSex;
 
+import org.apache.commons.collections4.MapUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
@@ -32,7 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-@ToolExecutor(id="opencga-local", tool = InferredSexAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
+@ToolExecutor(id = "opencga-local", tool = InferredSexAnalysis.ID, framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
 public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecutor implements StorageToolExecutor {
 
@@ -49,17 +50,25 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
         }
 
         // Compute ratios: X-chrom / autosomic-chroms and Y-chrom / autosomic-chroms
-        double[] ratios = InferredSexComputation.computeRatios(getStudyId(), getIndividualId(), assembly, fileManager, alignmentStorageManager,
+        double[] ratios = InferredSexComputation.computeRatios(getStudyId(), getIndividualId(), assembly, fileManager,
+                alignmentStorageManager,
                 getToken());
 
-        // TODO infer sex from ratios
-        String inferredKaryotypicSex = "";
+        // TODO: infer sex from ratios but we need karyotypic sex tyhresholds
+        String inferredKaryotypicSex = "UNKNOWN";
+//        double xAuto = ratios[0];
+//        double yAuto = ratios[1];
+//        if (MapUtils.isEmpty(karyotypicSexThresholds)) {
+//            addWarning("Impossible to infer karyotypic sex beacause sex thresholds are empty");
+//        } else {
+//            inferredKaryotypicSex = InferredSexComputation.inferKaryotypicSex(xAuto, yAuto, karyotypicSexThresholds);
+//        }
 
         Map<String, Object> values = new HashMap<>();
         values.put("ratioX", ratios[0]);
         values.put("ratioY", ratios[1]);
 
-        // Set inferred sex report (individual fields will be set later)
-        setInferredSexReport(new InferredSexReport("CoverageRatio", inferredKaryotypicSex, values, Collections.emptyList()));
+        // Set inferred sex report (we assume sample and individual have the same ID)
+        setInferredSexReport(new InferredSexReport(getIndividualId(), "CoverageRatio", inferredKaryotypicSex, values, Collections.emptyList()));
     }
 }

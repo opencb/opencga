@@ -7,6 +7,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.commons.datastore.core.Query;
@@ -28,10 +29,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.IndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.core.filters.RangeIndexFieldFilter;
 import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
-import org.opencb.opencga.storage.hadoop.variant.index.query.RangeQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleFileIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.*;
 
 import java.util.*;
 import java.util.function.Function;
@@ -45,7 +43,7 @@ import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.EMPTY_MASK;
 import static org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.core.RangeIndexField.DELTA;
-import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.groupRegions;
+import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.buildLocusQueries;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser.validSampleIndexQuery;
 
 /**
@@ -1775,32 +1773,54 @@ public class SampleIndexQueryParserTest {
     }
 
     @Test
-    public void testGroupRegions() {
-        List<List<Region>> groups = groupRegions(Arrays.asList(
+    public void testBuildLocusQueries() {
+        Collection<LocusQuery> queries = buildLocusQueries(Arrays.asList(
                 new Region("8", 144_700_000, 144_995_738),
                 new Region("6", 33_200_000, 34_800_000),
                 new Region("8", 144_671_680, 144_690_000),
                 new Region("6", 31_200_000, 31_800_000),
-                new Region("8", 145_100_000, 146_100_000)));
+                new Region("8", 145_100_000, 146_100_000)), Collections.emptyList());
         assertEquals(Arrays.asList(
-                Arrays.asList(new Region("6", 31_200_000, 31_800_000)),
-                Arrays.asList(new Region("6", 33_200_000, 34_800_000)),
-                Arrays.asList(new Region("8", 144_671_680, 144_690_000),
+                new LocusQuery(new Region("6", 31_000_000, 32_000_000), Collections.singletonList(new Region("6", 31_200_000, 31_800_000)), Collections.emptyList()),
+                new LocusQuery(new Region("6", 33_000_000, 35_000_000), Collections.singletonList(new Region("6", 33_200_000, 34_800_000)), Collections.emptyList()),
+                new LocusQuery(new Region("8", 144_000_000, 147_000_000), Arrays.asList(new Region("8", 144_671_680, 144_690_000),
                         new Region("8", 144_700_000, 144_995_738),
-                        new Region("8", 145_100_000, 146_100_000))
-        ), groups);
+                        new Region("8", 145_100_000, 146_100_000)), Collections.emptyList())
+        ), queries);
 
-        groups = groupRegions(Arrays.asList(
+        queries = buildLocusQueries(Arrays.asList(
                 new Region("6", 33_200_000, 34_800_000),
                 new Region("6", 31_200_000, 33_800_000),
                 new Region("8", 144_671_680, 144_690_000),
                 new Region("8", 144_700_000, 144_995_738),
-                new Region("8", 145_100_000, 146_100_000)));
+                new Region("8", 145_100_000, 146_100_000)), Collections.emptyList());
         assertEquals(Arrays.asList(
-                Arrays.asList(new Region("6", 31_200_000, 34_800_000)),
-                Arrays.asList(new Region("8", 144_671_680, 144_690_000),
+                new LocusQuery(new Region("6", 31_000_000, 35_000_000), Collections.singletonList(new Region("6", 31_200_000, 34_800_000)), Collections.emptyList()),
+                new LocusQuery(new Region("8", 144_000_000, 147_000_000), Arrays.asList(new Region("8", 144_671_680, 144_690_000),
                         new Region("8", 144_700_000, 144_995_738),
-                        new Region("8", 145_100_000, 146_100_000))
-        ), groups);
+                        new Region("8", 145_100_000, 146_100_000)), Collections.emptyList())
+        ), queries);
+
+        queries = buildLocusQueries(
+                Arrays.asList(
+                        new Region("6", 33_200_000, 34_800_000),
+                        new Region("6", 31_200_000, 33_800_000),
+                        new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738),
+                        new Region("8", 145_100_000, 146_100_000)),
+                Arrays.asList(
+                        new Variant("6:35001000:A:T"),
+                        new Variant("7:35001000:A:T"),
+                        new Variant("7:35002000:A:T")
+                ));
+        assertEquals(Arrays.asList(
+                new LocusQuery(new Region("6", 31_000_000, 36_000_000),
+                        Collections.singletonList(new Region("6", 31_200_000, 34_800_000)), Arrays.asList(new Variant("6:35001000:A:T"))),
+                new LocusQuery(new Region("7", 35_000_000, 36_000_000),
+                        Collections.emptyList(), Arrays.asList(new Variant("7:35001000:A:T"), new Variant("7:35002000:A:T"))),
+                new LocusQuery(new Region("8", 144_000_000, 147_000_000), Arrays.asList(new Region("8", 144_671_680, 144_690_000),
+                        new Region("8", 144_700_000, 144_995_738),
+                        new Region("8", 145_100_000, 146_100_000)), Collections.emptyList())
+        ), queries);
     }
 }

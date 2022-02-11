@@ -248,13 +248,18 @@ public class JobManager extends ResourceManager<Job> {
                 .append("options", options)
                 .append("token", token);
         try {
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
             ParamUtils.checkObj(job, "Job");
             ParamUtils.checkIdentifier(job.getId(), "job id");
             job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
             job.setCommandLine(ParamUtils.defaultString(job.getCommandLine(), ""));
-            job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
+            job.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(job.getCreationDate(),
+                    JobDBAdaptor.QueryParams.CREATION_DATE.key()));
+            job.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(job.getModificationDate(),
+                    JobDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
             job.setInternal(ParamUtils.defaultObject(job.getInternal(), new JobInternal()));
             job.getInternal().setStatus(ParamUtils.defaultObject(job.getInternal().getStatus(),
                     new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE)));
@@ -272,7 +277,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setStudy(new JobStudyParam(study.getFqn()));
 
             if (!Arrays.asList(Enums.ExecutionStatus.ABORTED, Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.UNREGISTERED,
-                    Enums.ExecutionStatus.ERROR).contains(job.getInternal().getStatus().getName())) {
+                    Enums.ExecutionStatus.ERROR).contains(job.getInternal().getStatus().getId())) {
                 throw new CatalogException("Cannot create a job in a status different from one of the final ones.");
             }
 
@@ -304,12 +309,16 @@ public class JobManager extends ResourceManager<Job> {
             }
 
             job.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.JOB));
-            jobDBAdaptor.insert(study.getUid(), job, options);
-            OpenCGAResult<Job> queryResult = getJob(study.getUid(), job.getUuid(), options);
+            OpenCGAResult<Job> insert = jobDBAdaptor.insert(study.getUid(), job, options);
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created job
+                OpenCGAResult<Job> queryResult = getJob(study.getUid(), job.getUuid(), options);
+                insert.setResults(queryResult.getResults());
+            }
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return queryResult;
+            return insert;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -326,15 +335,14 @@ public class JobManager extends ResourceManager<Job> {
         }
         job.setPriority(ParamUtils.defaultObject(job.getPriority(), Enums.Priority.MEDIUM));
         job.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.JOB));
-        job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
+        job.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(job.getCreationDate(), JobDBAdaptor.QueryParams.CREATION_DATE.key()));
+        job.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(job.getModificationDate(),
+                JobDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
 
         // Set default internal
-        job.setInternal(ParamUtils.defaultObject(job.getInternal(), new JobInternal()));
-        job.getInternal().setStatus(ParamUtils.defaultObject(job.getInternal().getStatus(), new Enums.ExecutionStatus()));
-        job.getInternal().setWebhook(ParamUtils.defaultObject(job.getInternal().getWebhook(),
-                new JobInternalWebhook(study.getNotification().getWebhook(), new HashMap<>())));
-        job.getInternal().setEvents(ParamUtils.defaultObject(job.getInternal().getEvents(), new LinkedList<>()));
+        job.setInternal(JobInternal.init());
+        job.getInternal().setWebhook(new JobInternalWebhook(study.getNotification().getWebhook(), new HashMap<>()));
 
         if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
             boolean uuidProvided = job.getDependsOn().stream().map(Job::getId).anyMatch(UuidUtils::isOpenCgaUuid);
@@ -412,11 +420,11 @@ public class JobManager extends ResourceManager<Job> {
                                     String jobId, String jobDescription, List<String> jobDependsOn, List<String> jobTags, String token)
             throws CatalogException {
         Job job = get(studyStr, jobRetry.getJob(), new QueryOptions(), token).first();
-        if (job.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.ERROR)
-                || job.getInternal().getStatus().getName().equals(Enums.ExecutionStatus.ABORTED)) {
+        if (job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ERROR)
+                || job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ABORTED)) {
             return submit(studyStr, job.getTool().getId(), priority, job.getParams(), jobId, jobDescription, jobDependsOn, jobTags, token);
         } else {
-            throw new CatalogException("Unable to retry job with status " + job.getInternal().getStatus().getName());
+            throw new CatalogException("Unable to retry job with status " + job.getInternal().getStatus().getId());
         }
     }
 
@@ -465,8 +473,17 @@ public class JobManager extends ResourceManager<Job> {
         job.setDescription(jobDescription);
         job.setTool(new ToolInfo().setId(toolId));
         job.setTags(jobTags);
+        job.setStudy(new JobStudyParam(study.getFqn()));
+        job.setUserId(userId);
+        job.setParams(params);
+        job.setPriority(priority);
+        job.setDependsOn(jobDependsOn != null
+                ? jobDependsOn.stream().map(j -> new Job().setId(j)).collect(Collectors.toList())
+                : Collections.emptyList());
 
         try {
+            autoCompleteNewJob(study, job, token);
+
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTE_JOBS);
 
             // Check params
@@ -476,16 +493,6 @@ public class JobManager extends ResourceManager<Job> {
                     throw new CatalogException("Found '" + entry.getKey() + "' param with null value");
                 }
             }
-
-            job.setStudy(new JobStudyParam(study.getFqn()));
-            job.setUserId(userId);
-            job.setParams(params);
-            job.setPriority(priority);
-            job.setDependsOn(jobDependsOn != null
-                    ? jobDependsOn.stream().map(j -> new Job().setId(j)).collect(Collectors.toList())
-                    : Collections.emptyList());
-
-            autoCompleteNewJob(study, job, token);
 
             jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
             OpenCGAResult<Job> jobResult = jobDBAdaptor.get(job.getUid(), new QueryOptions());
@@ -498,12 +505,7 @@ public class JobManager extends ResourceManager<Job> {
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
-            if (job.getInternal() != null) {
-                job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
-            } else {
-                job.setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED),
-                        new JobInternalWebhook(null, new HashMap<>()), Collections.emptyList()));
-            }
+            job.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
             job.getInternal().getStatus().setDescription(e.toString());
             jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
 
@@ -537,8 +539,8 @@ public class JobManager extends ResourceManager<Job> {
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);
         changeQueryId(query, ParamConstants.JOB_TOOL_ID_PARAM, JobDBAdaptor.QueryParams.TOOL_ID.key());
-        changeQueryId(query, ParamConstants.JOB_INTERNAL_STATUS_PARAM, JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
-        changeQueryId(query, ParamConstants.JOB_STATUS_PARAM, JobDBAdaptor.QueryParams.STATUS_NAME.key());
+        changeQueryId(query, ParamConstants.JOB_INTERNAL_STATUS_PARAM, JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key());
+        changeQueryId(query, ParamConstants.JOB_STATUS_PARAM, JobDBAdaptor.QueryParams.STATUS_ID.key());
 
         if (query.containsKey(ParamConstants.JOB_INPUT_FILES_PARAM)) {
             List<File> inputFiles = catalogManager.getFileManager().internalGet(study.getUid(),
@@ -731,6 +733,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot delete job {}: {}", jobId, e.getMessage(), e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, jobId, jobUuid,
@@ -804,6 +807,7 @@ public class JobManager extends ResourceManager<Job> {
 
                 Event event = new Event(Event.Type.ERROR, job.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
@@ -816,13 +820,13 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     private void checkJobCanBeDeleted(Job job) throws CatalogException {
-        switch (job.getInternal().getStatus().getName()) {
+        switch (job.getInternal().getStatus().getId()) {
             case Enums.ExecutionStatus.DELETED:
                 throw new CatalogException("Job already deleted.");
             case Enums.ExecutionStatus.PENDING:
             case Enums.ExecutionStatus.RUNNING:
             case Enums.ExecutionStatus.QUEUED:
-                throw new CatalogException("The status of the job is " + job.getInternal().getStatus().getName()
+                throw new CatalogException("The status of the job is " + job.getInternal().getStatus().getId()
                         + ". Please, stop the job before deleting it.");
             default:
                 break;
@@ -865,11 +869,11 @@ public class JobManager extends ResourceManager<Job> {
                 } else {
                     // The log file hasn't yet been registered
                     if (!Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.ABORTED)
-                            .contains(job.getInternal().getStatus().getName())) {
+                            .contains(job.getInternal().getStatus().getId())) {
                         logFile = Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".err");
                     } else {
                         throw new CatalogException("Cannot see stderr log file of job with status '"
-                                + job.getInternal().getStatus().getName() + "'.");
+                                + job.getInternal().getStatus().getId() + "'.");
                     }
                 }
             } else {
@@ -878,11 +882,11 @@ public class JobManager extends ResourceManager<Job> {
                 } else {
                     // The log file hasn't yet been registered
                     if (!Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.ABORTED)
-                            .contains(job.getInternal().getStatus().getName())) {
+                            .contains(job.getInternal().getStatus().getId())) {
                         logFile = Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log");
                     } else {
                         throw new CatalogException("Cannot see stdout log file of job with status '"
-                                + job.getInternal().getStatus().getName() + "'.");
+                                + job.getInternal().getStatus().getId() + "'.");
                     }
                 }
             }
@@ -966,6 +970,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, job.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update job {}: {}", job.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
@@ -1041,6 +1046,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update job {}: {}", jobId, e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
@@ -1094,6 +1100,7 @@ public class JobManager extends ResourceManager<Job> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Could not update job {}: {}", jobId, e.getMessage(), e);
             auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
@@ -1163,7 +1170,14 @@ public class JobManager extends ResourceManager<Job> {
 //            updateParams.setErrorLog(getFile(study.getUid(), updateParams.getErrorLog().getPath(), userId));
 //        }
 
-        return jobDBAdaptor.update(job.getUid(), updateMap, options);
+        OpenCGAResult<Job> update = jobDBAdaptor.update(job.getUid(), updateMap, options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated job
+            OpenCGAResult<Job> result = jobDBAdaptor.get(study.getUid(), new Query(JobDBAdaptor.QueryParams.UID.key(), job.getUid()),
+                    options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     private File getFile(long studyUid, String path, String userId) throws CatalogException {
@@ -1231,6 +1245,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, job.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update job {}: {}", job.getId(), e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
@@ -1282,6 +1297,7 @@ public class JobManager extends ResourceManager<Job> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Cannot update job {}: {}", jobId, e.getMessage());
             auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
@@ -1342,6 +1358,7 @@ public class JobManager extends ResourceManager<Job> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update job {}: {}", jobId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
@@ -1400,7 +1417,7 @@ public class JobManager extends ResourceManager<Job> {
                     study.getUid(),
                     new Query(baseQuery)
                             .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING),
+                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.RUNNING),
                     new QueryOptions(queryOptions)
                             .append(QueryOptions.LIMIT, jobsLimit)
                             .append(QueryOptions.SORT, "execution.start"),
@@ -1425,7 +1442,7 @@ public class JobManager extends ResourceManager<Job> {
                     study.getUid(),
                     new Query(baseQuery)
                             .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED),
+                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.QUEUED),
                     new QueryOptions(queryOptions)
                             .append(QueryOptions.LIMIT, jobsLimit)
                             .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
@@ -1447,7 +1464,7 @@ public class JobManager extends ResourceManager<Job> {
                     study.getUid(),
                     new Query(baseQuery)
                             .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING),
+                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.PENDING),
                     new QueryOptions(queryOptions)
                             .append(QueryOptions.LIMIT, jobsLimit)
                             .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key()),
@@ -1469,7 +1486,7 @@ public class JobManager extends ResourceManager<Job> {
                     study.getUid(),
                     new Query(baseQuery)
                             .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.DONE + ","
+                            .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), Enums.ExecutionStatus.DONE + ","
                                     + Enums.ExecutionStatus.ERROR + ","
                                     + Enums.ExecutionStatus.ABORTED),
                     new QueryOptions(queryOptions)
@@ -1497,11 +1514,11 @@ public class JobManager extends ResourceManager<Job> {
         for (Study study : studies) {
             OpenCGAResult result = jobDBAdaptor.groupBy(new Query(baseQuery)
                             .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid()),
-                    Collections.singletonList(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key()),
+                    Collections.singletonList(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key()),
                     new QueryOptions(QueryOptions.COUNT, true),
                     userId);
             for (Object o : result.getResults()) {
-                String status = ((Map) ((Map) o).get("_id")).get(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key()).toString();
+                String status = ((Map) ((Map) o).get("_id")).get(JobDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key()).toString();
                 int count = ((Number) ((Map) o).get("count")).intValue();
                 switch (status) {
                     case Enums.ExecutionStatus.RUNNING:

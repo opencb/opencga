@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
@@ -37,13 +38,11 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.*;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
@@ -58,7 +57,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -192,9 +190,9 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 }
                 List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), sampleIds,
                         SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
-                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(), sampleList, 0,
-                        cohortParams.getAnnotationSets(), 1,
-                        cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
+                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
+                        cohortParams.getModificationDate(), cohortParams.getDescription(), sampleList, 0, cohortParams.getAnnotationSets(),
+                        1, cohortParams.getStatus() != null ? cohortParams.getStatus().toStatus() : new Status(), null,
                         cohortParams.getAttributes()));
 
             } else if (StringUtils.isNotEmpty(variableSetId)) {
@@ -231,15 +229,17 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                             new Query(Constants.ANNOTATION, variableSetId + ":" + variableId + "=" + value),
                             SampleManager.INCLUDE_SAMPLE_IDS, token);
 
-                    cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(),
-                            sampleResults.getResults(), 0, cohortParams.getAnnotationSets(), 1,
-                            cohortParams.getStatus() != null ? cohortParams.getStatus().toCustomStatus() : new CustomStatus(), null,
+                    cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
+                            cohortParams.getModificationDate(), cohortParams.getDescription(), sampleResults.getResults(), 0,
+                            cohortParams.getAnnotationSets(), 1,
+                            cohortParams.getStatus() != null ? cohortParams.getStatus().toStatus() : new Status(), null,
                             cohortParams.getAttributes()));
                 }
             } else {
                 //Create empty cohort
-                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), "", cohortParams.getDescription(),
-                        Collections.emptyList(), cohortParams.getAnnotationSets(), -1, null));
+                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
+                        cohortParams.getModificationDate(), cohortParams.getDescription(), Collections.emptyList(),
+                        cohortParams.getAnnotationSets(), -1, null));
             }
         } catch (CatalogException e) {
             auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, "", "", study.getId(),
@@ -248,37 +248,41 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
 
         auditManager.initAuditBatch(operationId);
-        List<Event> eventList = new LinkedList<>();
+        OpenCGAResult<Cohort> insertResult = OpenCGAResult.empty(Cohort.class);
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         for (Cohort cohort : cohorts) {
             try {
                 validateNewCohort(study, cohort);
-                cohortDBAdaptor.insert(study.getUid(), cohort, study.getVariableSets(), options);
+                OpenCGAResult tmpResult = cohortDBAdaptor.insert(study.getUid(), cohort, study.getVariableSets(), options);
+                insertResult.append(tmpResult);
                 auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, cohort.getId(), e.getMessage());
-                eventList.add(event);
+                insertResult.getEvents().add(event);
 
                 logger.error("Could not create cohort {}: {}", cohort.getId(), e.getMessage(), e);
                 auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+
         auditManager.finishAuditBatch(operationId);
         stopWatch.stop();
 
-        Query query = new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                .append(CohortDBAdaptor.QueryParams.UID.key(), cohorts.stream()
-                        .map(Cohort::getUid)
-                        .filter(uid -> uid > 0)
-                        .collect(Collectors.toList()));
-        OpenCGAResult<Cohort> result = cohortDBAdaptor.get(study.getUid(), query, options, userId);
-        result.setTime((int) stopWatch.getTime(TimeUnit.MILLISECONDS));
-        result.setEvents(eventList);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch created cohort(s)
+            Query query = new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                    .append(CohortDBAdaptor.QueryParams.UID.key(), cohorts.stream()
+                            .map(Cohort::getUid)
+                            .filter(uid -> uid > 0)
+                            .collect(Collectors.toList()));
+            OpenCGAResult<Cohort> result = cohortDBAdaptor.get(study.getUid(), query, options, userId);
+            insertResult.setResults(result.getResults());
+        }
 
-        return result;
+        return insertResult;
     }
 
     public OpenCGAResult<Cohort> generate(String studyStr, Query sampleQuery, Cohort cohort, QueryOptions options, String token)
@@ -355,8 +359,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
         validateNewCohort(study, cohort);
 
-        cohortDBAdaptor.insert(study.getUid(), cohort, study.getVariableSets(), options);
-        return getCohort(study.getUid(), cohort.getUuid(), options);
+        OpenCGAResult<Cohort> insert = cohortDBAdaptor.insert(study.getUid(), cohort, study.getVariableSets(), options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch created cohort
+            OpenCGAResult<Cohort> result = getCohort(study.getUid(), cohort.getUuid(), options);
+            insert.setResults(result.getResults());
+        }
+        return insert;
     }
 
     void validateNewCohort(Study study, Cohort cohort) throws CatalogException {
@@ -364,16 +373,17 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         ParamUtils.checkParameter(cohort.getId(), "id");
         ParamUtils.checkObj(cohort.getSamples(), "Sample list");
         cohort.setType(ParamUtils.defaultObject(cohort.getType(), Enums.CohortType.COLLECTION));
-        cohort.setCreationDate(TimeUtils.getTime());
-        cohort.setModificationDate(TimeUtils.getTime());
+        cohort.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(cohort.getCreationDate(),
+                CohortDBAdaptor.QueryParams.CREATION_DATE.key()));
+        cohort.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(cohort.getModificationDate(),
+                CohortDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         cohort.setDescription(ParamUtils.defaultString(cohort.getDescription(), ""));
         cohort.setAnnotationSets(ParamUtils.defaultObject(cohort.getAnnotationSets(), Collections::emptyList));
         cohort.setAttributes(ParamUtils.defaultObject(cohort.getAttributes(), HashMap::new));
         cohort.setRelease(studyManager.getCurrentRelease(study));
-        cohort.setInternal(ParamUtils.defaultObject(cohort.getInternal(), CohortInternal::new));
-        cohort.getInternal().setStatus(ParamUtils.defaultObject(cohort.getInternal().getStatus(), CohortStatus::new));
+        cohort.setInternal(CohortInternal.init());
         cohort.setSamples(ParamUtils.defaultObject(cohort.getSamples(), Collections::emptyList));
-        cohort.setStatus(ParamUtils.defaultObject(cohort.getStatus(), CustomStatus::new));
+        cohort.setStatus(ParamUtils.defaultObject(cohort.getStatus(), Status::new));
         cohort.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.COHORT));
 
         validateNewAnnotationSets(study.getVariableSets(), cohort.getAnnotationSets());
@@ -515,7 +525,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);
-        changeQueryId(query, ParamConstants.COHORT_INTERNAL_STATUS_PARAM, CohortDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
+        changeQueryId(query, ParamConstants.COHORT_INTERNAL_STATUS_PARAM, CohortDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key());
 
         if (query.containsKey(ParamConstants.COHORT_SAMPLES_PARAM)) {
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.UID.key());
@@ -631,6 +641,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot delete cohort {}: {}", cohortId, e.getMessage());
                 auditManager.auditDelete(operationId, userId, Enums.Resource.COHORT, cohortId, cohortUuid, study.getId(),
@@ -701,6 +712,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, cohort.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot delete cohort {}: {}", cohort.getId(), e.getMessage());
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
@@ -822,6 +834,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, cohortId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Could not update cohort {}: {}", cohortId, e.getMessage(), e);
             auditManager.auditUpdate(operationId, userId, Enums.Resource.COHORT, cohortId, cohortUuid, study.getId(),
@@ -900,6 +913,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, cohortId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update cohort {}: {}", cohortId, e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.COHORT, cohortId, cohortUuid, study.getId(),
@@ -978,6 +992,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, cohort.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update cohort {}: {}", cohort.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.COHORT, cohort.getId(), cohort.getUuid(),
@@ -992,6 +1007,13 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
     private OpenCGAResult<Cohort> update(Study study, Cohort cohort, CohortUpdateParams updateParams, boolean allowModifyCohortAll,
                                          QueryOptions options, String userId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        if (StringUtils.isNotEmpty(updateParams.getCreationDate())) {
+            ParamUtils.checkDateFormat(updateParams.getCreationDate(), CohortDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (StringUtils.isNotEmpty(updateParams.getModificationDate())) {
+            ParamUtils.checkDateFormat(updateParams.getModificationDate(), CohortDBAdaptor.QueryParams.MODIFICATION_DATE.key());
+        }
 
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {
@@ -1033,12 +1055,12 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         if (updateParams != null && (ListUtils.isNotEmpty(updateParams.getSamples())
                 || StringUtils.isNotEmpty(updateParams.getId()))) {
-            switch (cohort.getInternal().getStatus().getName()) {
+            switch (cohort.getInternal().getStatus().getId()) {
                 case CohortStatus.CALCULATING:
                     throw new CatalogException("Unable to modify a cohort while it's in status \"" + CohortStatus.CALCULATING
                             + "\"");
                 case CohortStatus.READY:
-                    parameters.putIfAbsent(CohortDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), CohortStatus.INVALID);
+                    parameters.putIfAbsent(CohortDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), CohortStatus.INVALID);
                     break;
                 case CohortStatus.NONE:
                 case CohortStatus.INVALID:
@@ -1073,7 +1095,14 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
 
         checkUpdateAnnotations(study, cohort, parameters, options, VariableSet.AnnotableDataModels.COHORT, cohortDBAdaptor, userId);
-        return cohortDBAdaptor.update(cohort.getUid(), parameters, study.getVariableSets(), options);
+        OpenCGAResult<Cohort> update = cohortDBAdaptor.update(cohort.getUid(), parameters, study.getVariableSets(), options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated cohort
+            OpenCGAResult<Cohort> result = cohortDBAdaptor.get(study.getUid(),
+                    new Query(CohortDBAdaptor.QueryParams.UID.key(), cohort.getUid()), options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     @Override
@@ -1125,7 +1154,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             }
 
             ObjectMap parameters = new ObjectMap();
-            parameters.putIfNotNull(CohortDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), status);
+            parameters.putIfNotNull(CohortDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), status);
             parameters.putIfNotNull(CohortDBAdaptor.QueryParams.INTERNAL_STATUS_DESCRIPTION.key(), message);
 
             cohortDBAdaptor.update(cohort.getUid(), parameters, new QueryOptions());

@@ -10,5 +10,3 @@ This section provides instructions on how data is managed \(loaded, updated, rem
 
 ![](../../.gitbook/assets/cleanshot-2021-08-03-at-12.14.26-2x.png)
 
-
-

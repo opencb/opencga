@@ -21,6 +21,7 @@ import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -40,6 +41,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -48,7 +50,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
 import org.opencb.opencga.core.models.family.FamilyStatus;
@@ -62,7 +64,9 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.getQueryForAuthorisedEntries;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -116,10 +120,21 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
     }
 
-    Family insert(ClientSession clientSession, long studyId, Family family, List<VariableSet> variableSetList)
+    Family insert(ClientSession clientSession, long studyUid, Family family, List<VariableSet> variableSetList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        if (StringUtils.isEmpty(family.getId())) {
+            throw new CatalogDBException("Missing family id");
+        }
+
+        Query tmpQuery = new Query()
+                .append(QueryParams.ID.key(), family.getId())
+                .append(QueryParams.STUDY_UID.key(), studyUid);
+        if (!get(clientSession, tmpQuery, new QueryOptions()).getResults().isEmpty()) {
+            throw CatalogDBException.alreadyExists("Family", "id", family.getId());
+        }
+
         // First we check if we need to create any individuals
-        if (family.getMembers() != null && !family.getMembers().isEmpty()) {
+        if (CollectionUtils.isNotEmpty(family.getMembers())) {
             // In order to keep parent relations, we need to create parents before their children.
 
             // We initialise a map containing all the individuals
@@ -144,32 +159,24 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
             // We start creating missing individuals
             for (Individual individual : individualsToCreate) {
-                createMissingIndividual(clientSession, studyId, individual, individualMap, variableSetList);
+                createMissingIndividual(clientSession, studyUid, individual, individualMap, variableSetList);
             }
 
             family.setMembers(new ArrayList<>(individualMap.values()));
-        }
 
-        if (StringUtils.isEmpty(family.getId())) {
-            throw new CatalogDBException("Missing family id");
-        }
-        Query tmpQuery = new Query()
-                .append(QueryParams.ID.key(), family.getId())
-                .append(QueryParams.STUDY_UID.key(), studyId);
-        if (!get(clientSession, tmpQuery, new QueryOptions()).getResults().isEmpty()) {
-            throw CatalogDBException.alreadyExists("Family", "id", family.getId());
+            // Add family reference to the members
+            List<String> individualIds = individualMap.values().stream().map(Individual::getId).collect(Collectors.toList());
+            dbAdaptorFactory.getCatalogIndividualDBAdaptor().updateFamilyReferences(clientSession, studyUid, individualIds, family.getId(),
+                    ParamUtils.BasicUpdateAction.ADD);
         }
 
         long familyUid = getNewUid();
 
         family.setUid(familyUid);
-        family.setStudyUid(studyId);
+        family.setStudyUid(studyUid);
         family.setVersion(1);
         if (StringUtils.isEmpty(family.getUuid())) {
             family.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FAMILY));
-        }
-        if (StringUtils.isEmpty(family.getCreationDate())) {
-            family.setCreationDate(TimeUtils.getTime());
         }
 
         Document familyDocument = familyConverter.convertToStorageType(family, variableSetList);
@@ -178,8 +185,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         familyDocument.put(RELEASE_FROM_VERSION, Arrays.asList(family.getRelease()));
         familyDocument.put(LAST_OF_VERSION, true);
         familyDocument.put(LAST_OF_RELEASE, true);
-        familyDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(family.getCreationDate()));
-        familyDocument.put(PRIVATE_MODIFICATION_DATE, familyDocument.get(PRIVATE_CREATION_DATE));
+        familyDocument.put(PRIVATE_CREATION_DATE,
+                StringUtils.isNotEmpty(family.getCreationDate()) ? TimeUtils.toDate(family.getCreationDate()) : TimeUtils.getDate());
+        familyDocument.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(family.getModificationDate())
+                ? TimeUtils.toDate(family.getModificationDate()) : TimeUtils.getDate());
         familyDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting family '{}' ({})...", family.getId(), family.getUid());
@@ -270,7 +279,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     public OpenCGAResult update(long familyUid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key(),
+                        QueryParams.MEMBERS.key() + "." + IndividualDBAdaptor.QueryParams.ID.key()));
         OpenCGAResult<Family> familyDataResult = get(familyUid, options);
 
         if (familyDataResult.getNumResults() == 0) {
@@ -304,7 +314,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key()));
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key(),
+                        QueryParams.MEMBERS.key() + "." + IndividualDBAdaptor.QueryParams.ID.key()));
         DBIterator<Family> iterator = iterator(query, options);
 
         OpenCGAResult<Cohort> result = OpenCGAResult.empty();
@@ -334,11 +345,19 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             createNewVersion(clientSession, family.getStudyUid(), family.getUid());
         } else {
-            checkInUseInLockedClinicalAnalysis(clientSession, family);
+            boolean internalUpdateOnly = parameters.keySet().stream().allMatch(key -> key.startsWith("internal."));
+            // Don't need to check if locked when updating only internal fields
+            if (!internalUpdateOnly) {
+                checkInUseInLockedClinicalAnalysis(clientSession, family);
+            }
         }
 
         DataResult result = updateAnnotationSets(clientSession, family.getUid(), parameters, variableSetList, queryOptions, true);
         Document familyUpdate = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery).toFinalUpdateDocument();
+
+        if (CollectionUtils.isNotEmpty(parameters.getAsList(QueryParams.MEMBERS.key()))) {
+            updateFamilyReferenceInIndividuals(clientSession, family, parameters.getAsList(QueryParams.MEMBERS.key(), Map.class));
+        }
 
         if (familyUpdate.isEmpty() && result.getNumUpdated() == 0) {
             if (!parameters.isEmpty()) {
@@ -372,11 +391,42 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         return endWrite(tmpStartTime, 1, 1, events);
     }
 
+    private void updateFamilyReferenceInIndividuals(ClientSession clientSession, Family family, List<Map> individuals)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        List<String> newIndividualIds = new ArrayList<>();
+        List<String> individualIdsToRemove = new ArrayList<>();
+
+        Set<String> finalMemberSet = individuals.stream().map(i -> String.valueOf(i.get(IndividualDBAdaptor.QueryParams.ID.key())))
+                .collect(Collectors.toSet());
+        Set<String> currentIndividualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toSet());
+
+        for (Map<String, Object> individual : individuals) {
+            String individualId = String.valueOf(individual.get(IndividualDBAdaptor.QueryParams.ID.key()));
+            if (!currentIndividualIds.contains(individualId)) {
+                newIndividualIds.add(individualId);
+            }
+        }
+        if (!newIndividualIds.isEmpty()) {
+            dbAdaptorFactory.getCatalogIndividualDBAdaptor().updateFamilyReferences(clientSession, family.getStudyUid(), newIndividualIds,
+                    family.getId(), ParamUtils.BasicUpdateAction.ADD);
+        }
+
+        for (Individual member : family.getMembers()) {
+            if (!finalMemberSet.contains(member.getId())) {
+                individualIdsToRemove.add(member.getId());
+            }
+        }
+        if (!individualIdsToRemove.isEmpty()) {
+            dbAdaptorFactory.getCatalogIndividualDBAdaptor().updateFamilyReferences(clientSession, family.getStudyUid(),
+                    individualIdsToRemove, family.getId(), ParamUtils.BasicUpdateAction.REMOVE);
+        }
+    }
+
     /**
      * Update Family references from any Clinical Analysis where it was used.
      *
      * @param clientSession Client session.
-     * @param family Family object containing the version stored in the Clinical Analysis (before the version increment).
+     * @param family        Family object containing the version stored in the Clinical Analysis (before the version increment).
      */
     private void updateClinicalAnalysisFamilyReferences(ClientSession clientSession, Family family)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -414,7 +464,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
      * Checks whether the family that is going to be updated is in use in any locked Clinical Analysis.
      *
      * @param clientSession Client session.
-     * @param family Family to be updated.
+     * @param family        Family to be updated.
      * @throws CatalogDBException CatalogDBException if the family is in use in any Clinical Analysis.
      */
     private void checkInUseInLockedClinicalAnalysis(ClientSession clientSession, Family family)
@@ -528,6 +578,19 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
@@ -570,19 +633,22 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
-            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_ID.key(), parameters.get(QueryParams.INTERNAL_STATUS_ID.key()));
             document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         familyConverter.validateDocumentToUpdate(document.getSet());
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
-            // Update modificationDate param
             String time = TimeUtils.getTime();
-            Date date = TimeUtils.toDate(time);
-            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
-            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
         }
 
         return document;
@@ -662,7 +728,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             Document tmpFamily = familyDbIterator.next();
 
             // Set status to DELETED
-            nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), tmpFamily);
+            nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"),
+                    tmpFamily);
 
             int sampleVersion = tmpFamily.getInteger(QueryParams.VERSION.key());
 
@@ -1035,16 +1102,16 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case STATUS:
-                    case STATUS_NAME:
-                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), query, QueryParams.STATUS_NAME.type(), andBsonList);
+                    case STATUS_ID:
+                        addAutoOrQuery(QueryParams.STATUS_ID.key(), queryParam.key(), query, QueryParams.STATUS_ID.type(), andBsonList);
                         break;
                     case INTERNAL_STATUS:
-                    case INTERNAL_STATUS_NAME:
+                    case INTERNAL_STATUS_ID:
                         // Convert the status to a positive status
                         query.put(queryParam.key(),
-                                Status.getPositiveStatus(FamilyStatus.STATUS_LIST, query.getString(queryParam.key())));
-                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_NAME.key(), queryParam.key(), query,
-                                QueryParams.INTERNAL_STATUS_NAME.type(), andBsonList);
+                                InternalStatus.getPositiveStatus(FamilyStatus.STATUS_LIST, query.getString(queryParam.key())));
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), query,
+                                QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
                     case MEMBER_UID:
                     case UUID:

@@ -3,7 +3,6 @@ package org.opencb.opencga.core.models.analysis.knockout;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
 
 import java.util.Collections;
 import java.util.List;
@@ -16,7 +15,7 @@ public class KnockoutByIndividualSummary {
     private String motherSampleId;
     private String fatherId;
     private String fatherSampleId;
-    private IndividualProperty.Sex sex;
+    private String sex;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
 
@@ -35,7 +34,7 @@ public class KnockoutByIndividualSummary {
     }
 
     public KnockoutByIndividualSummary(String id, String sampleId, String motherId, String motherSampleId, String fatherId,
-                                       String fatherSampleId, IndividualProperty.Sex sex, List<Phenotype> phenotypes,
+                                       String fatherSampleId, String sex, List<Phenotype> phenotypes,
                                        List<Disorder> disorders, List<String> genes, VariantKnockoutStats variantStats) {
         this.id = id;
         this.sampleId = sampleId;
@@ -130,11 +129,11 @@ public class KnockoutByIndividualSummary {
         return this;
     }
 
-    public IndividualProperty.Sex getSex() {
+    public String getSex() {
         return sex;
     }
 
-    public KnockoutByIndividualSummary setSex(IndividualProperty.Sex sex) {
+    public KnockoutByIndividualSummary setSex(String sex) {
         this.sex = sex;
         return this;
     }

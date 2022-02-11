@@ -32,13 +32,13 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.project.*;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -67,6 +67,7 @@ public class ProjectManager extends AbstractManager {
             ProjectDBAdaptor.QueryParams.ID.key(),
             ProjectDBAdaptor.QueryParams.NAME.key(),
             ProjectDBAdaptor.QueryParams.DESCRIPTION.key(),
+            ProjectDBAdaptor.QueryParams.CREATION_DATE.key(),
             ProjectDBAdaptor.QueryParams.ORGANIZATION.key(),
             ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
             ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
@@ -210,60 +211,70 @@ public class ProjectManager extends AbstractManager {
         return result;
     }
 
+    @Deprecated
     public OpenCGAResult<Project> create(String id, String name, String description, String scientificName, String commonName,
                                          String assembly, QueryOptions options, String sessionId) throws CatalogException {
-        //Only the user can create a project
-        String userId = this.catalogManager.getUserManager().getUserId(sessionId);
-        if (userId.isEmpty()) {
-            throw new CatalogException("The session id introduced does not correspond to any registered user.");
-        }
+        ProjectCreateParams projectCreateParams = new ProjectCreateParams(id, name, description, null, null,
+                new ProjectOrganism(scientificName, commonName, assembly), null);
+        return create(projectCreateParams, options, sessionId);
+    }
 
-        // Check that the account type is not guest
-        OpenCGAResult<User> user = userDBAdaptor.get(userId, new QueryOptions());
-        if (user.getNumResults() == 0) {
-            throw new CatalogException("Internal error happened. Could not find user " + userId);
+    public OpenCGAResult<Project> create(ProjectCreateParams projectCreateParams, QueryOptions options, String token)
+            throws CatalogException {
+        //Only the user can create a project
+        String userId = this.catalogManager.getUserManager().getUserId(token);
+        if (userId.isEmpty()) {
+            throw new CatalogException("The token introduced does not correspond to any registered user.");
         }
 
         ObjectMap auditParams = new ObjectMap()
-                .append("id", id)
-                .append("name", name)
-                .append("scientificName", scientificName)
-                .append("commonName", commonName)
-                .append("assembly", assembly)
+                .append("project", projectCreateParams)
                 .append("options", options)
-                .append("token", sessionId);
+                .append("token", token);
 
-        if (Account.AccountType.FULL != user.first().getAccount().getType()) {
-            if (user.first().getAccount().getType() == Account.AccountType.ADMINISTRATOR) {
-                // Check it is the first project
-                if (user.first().getProjects() != null && !user.first().getProjects().isEmpty()) {
-                    String errorMsg = "Cannot create more projects for ADMINISTRATOR user '" + user.first().getId() + "'.";
-                    auditManager.auditCreate(userId, Enums.Resource.PROJECT, id, "", "", "", auditParams,
-                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
-                    throw new CatalogException(errorMsg);
-                }
-            } else {
-
-                String errorMsg = "User " + userId + " is not authorized to create new projects. Only users with "
-                        + Account.AccountType.FULL + " accounts are allowed to do so.";
-                auditManager.auditCreate(userId, Enums.Resource.PROJECT, id, "", "", "", auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
-                throw new CatalogException(errorMsg);
-            }
-        }
-
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         OpenCGAResult<Project> queryResult;
         Project project;
         try {
-            project = new Project(id, name, description, new ProjectOrganism(scientificName, commonName,
-                    assembly), 1, new ProjectInternal(new Datastores(), new Status()));
+            ParamUtils.checkObj(projectCreateParams, "ProjectCreateParams");
+
+            // Check that the account type is not guest
+            OpenCGAResult<User> user = userDBAdaptor.get(userId, QueryOptions.empty());
+            if (user.getNumResults() == 0) {
+                throw new CatalogException("Internal error happened. Could not find user " + userId);
+            }
+
+            if (Account.AccountType.FULL != user.first().getAccount().getType()) {
+                if (user.first().getAccount().getType() == Account.AccountType.ADMINISTRATOR) {
+                    // Check it is the first project
+                    if (user.first().getProjects() != null && !user.first().getProjects().isEmpty()) {
+                        String errorMsg = "Cannot create more projects for ADMINISTRATOR user '" + user.first().getId() + "'.";
+                        auditManager.auditCreate(userId, Enums.Resource.PROJECT, projectCreateParams.getId(), "", "", "", auditParams,
+                                new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
+                        throw new CatalogException(errorMsg);
+                    }
+                } else {
+
+                    String errorMsg = "User " + userId + " is not authorized to create new projects. Only users with "
+                            + Account.AccountType.FULL + " accounts are allowed to do so.";
+                    auditManager.auditCreate(userId, Enums.Resource.PROJECT, projectCreateParams.getId(), "", "", "", auditParams,
+                            new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
+                    throw new CatalogException(errorMsg);
+                }
+            }
+
+            project = projectCreateParams.toProject();
             validateProjectForCreation(project, user.first());
 
-            projectDBAdaptor.insert(project, userId, options);
-            queryResult = getProject(userId, project.getUuid(), options);
-            project = queryResult.first();
+            queryResult = projectDBAdaptor.insert(project, userId, options);
+            OpenCGAResult<Project> result = getProject(userId, project.getUuid(), options);
+            project = result.first();
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created project
+                queryResult.setResults(result.getResults());
+            }
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, Enums.Resource.PROJECT, id, "", "", "", auditParams,
+            auditManager.auditCreate(userId, Enums.Resource.PROJECT, projectCreateParams.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -271,7 +282,7 @@ public class ProjectManager extends AbstractManager {
         try {
             catalogIOManager.createProject(userId, Long.toString(project.getUid()));
         } catch (CatalogIOException e) {
-            auditManager.auditCreate(userId, Enums.Resource.PROJECT, id, "", "", "", auditParams,
+            auditManager.auditCreate(userId, Enums.Resource.PROJECT, project.getId(), "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             try {
                 projectDBAdaptor.delete(project);
@@ -291,9 +302,14 @@ public class ProjectManager extends AbstractManager {
         ParamUtils.checkParameter(project.getId(), ProjectDBAdaptor.QueryParams.ID.key());
         project.setName(ParamUtils.defaultString(project.getName(), project.getId()));
         project.setDescription(ParamUtils.defaultString(project.getDescription(), ""));
-        project.setCreationDate(TimeUtils.getTime());
+        project.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(project.getCreationDate(),
+                ProjectDBAdaptor.QueryParams.CREATION_DATE.key()));
+        project.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(project.getModificationDate(),
+                ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         project.setModificationDate(TimeUtils.getTime());
         project.setCurrentRelease(1);
+        project.setInternal(ProjectInternal.init());
+        project.setAttributes(ParamUtils.defaultObject(project.getAttributes(), HashMap::new));
 
         if (user.getAccount().getType() != Account.AccountType.ADMINISTRATOR
                 && (project.getOrganism() == null || StringUtils.isEmpty(project.getOrganism().getAssembly())
@@ -312,8 +328,8 @@ public class ProjectManager extends AbstractManager {
      * Reads a project from Catalog given a project id or alias.
      *
      * @param projectId Project id or alias.
-     * @param options    Read options
-     * @param token  sessionId
+     * @param options   Read options
+     * @param token     sessionId
      * @return The specified object
      * @throws CatalogException CatalogException
      */
@@ -364,9 +380,9 @@ public class ProjectManager extends AbstractManager {
     /**
      * Fetch all the project objects matching the query.
      *
-     * @param query     Query to catalog.
-     * @param options   Query options, like "include", "exclude", "limit" and "skip"
-     * @param token sessionId
+     * @param query   Query to catalog.
+     * @param options Query options, like "include", "exclude", "limit" and "skip"
+     * @param token   sessionId
      * @return All matching elements.
      * @throws CatalogException CatalogException
      */
@@ -406,10 +422,10 @@ public class ProjectManager extends AbstractManager {
     /**
      * Update metada from projects.
      *
-     * @param projectId Project id or alias.
+     * @param projectId  Project id or alias.
      * @param parameters Parameters to change.
      * @param options    options
-     * @param token  sessionId
+     * @param token      sessionId
      * @return The modified entry.
      * @throws CatalogException CatalogException
      */
@@ -421,11 +437,11 @@ public class ProjectManager extends AbstractManager {
     /**
      * Update metada from projects.
      *
-     * @param projectId Project id or alias.
-     * @param parameters Parameters to change.
-     * @param options    options
-     * @param allowProtectedUpdates  Allow protected updates
-     * @param token  sessionId
+     * @param projectId             Project id or alias.
+     * @param parameters            Parameters to change.
+     * @param options               options
+     * @param allowProtectedUpdates Allow protected updates
+     * @param token                 sessionId
      * @return The modified entry.
      * @throws CatalogException CatalogException
      */
@@ -452,6 +468,8 @@ public class ProjectManager extends AbstractManager {
         try {
             ParamUtils.checkObj(parameters, "Parameters");
             ParamUtils.checkParameter(token, "token");
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+
             long projectUid = project.getUid();
             authorizationManager.checkCanEditProject(projectUid, userId);
 
@@ -463,6 +481,17 @@ public class ProjectManager extends AbstractManager {
                 } else {
                     throw new CatalogDBException("Parameter '" + s + "' can't be changed");
                 }
+            }
+
+            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.CREATION_DATE.key())) {
+                // Validate creationDate format
+                String creationDate = parameters.getString(ProjectDBAdaptor.QueryParams.CREATION_DATE.key());
+                ParamUtils.checkDateFormat(creationDate, ProjectDBAdaptor.QueryParams.CREATION_DATE.key());
+            }
+            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key())) {
+                // Validate modificationDate format
+                String modificationDate = parameters.getString(ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key());
+                ParamUtils.checkDateFormat(modificationDate, ProjectDBAdaptor.QueryParams.MODIFICATION_DATE.key());
             }
 
             // Update organism information only if any of the fields was not properly defined
@@ -496,15 +525,18 @@ public class ProjectManager extends AbstractManager {
                 ParamUtils.checkIdentifier(parameters.getString(ProjectDBAdaptor.QueryParams.ID.key()), "id");
             }
 
-            OpenCGAResult result = projectDBAdaptor.update(projectUid, parameters, QueryOptions.empty());
+            OpenCGAResult<Project> update = projectDBAdaptor.update(projectUid, parameters, QueryOptions.empty());
             auditManager.auditUpdate(userId, Enums.Resource.PROJECT, project.getId(), project.getUuid(), "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            OpenCGAResult<Project> queryResult = projectDBAdaptor.get(projectUid,
-                    new QueryOptions(QueryOptions.INCLUDE, parameters.keySet()));
-            queryResult.setTime(queryResult.getTime() + result.getTime());
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated project
+                OpenCGAResult<Project> result = projectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.UID.key(), projectUid), options,
+                        userId);
+                update.setResults(result.getResults());
+            }
 
-            return queryResult;
+            return update;
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, Enums.Resource.PROJECT, project.getId(), project.getUuid(), "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

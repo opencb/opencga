@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis.variant;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.hadoop.conf.Configuration;
 import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -28,7 +29,7 @@ import org.junit.runners.Parameterized;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -62,6 +63,8 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualInternal;
+import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleReferenceParam;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
@@ -103,7 +106,7 @@ public class VariantAnalysisTest {
     public static final String DB_NAME = "opencga_test_" + USER + "_" + PROJECT;
     private ToolRunner toolRunner;
 
-    @Parameterized.Parameters(name="{0}")
+    @Parameterized.Parameters(name = "{0}")
     public static Object[][] parameters() {
         return new Object[][]{
                 {MongoDBVariantStorageEngine.STORAGE_ENGINE_ID},
@@ -171,10 +174,10 @@ public class VariantAnalysisTest {
             }
 
             catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c1")
-                    .setSamples(file.getSampleIds().subList(0, 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
+                            .setSamples(file.getSampleIds().subList(0, 2).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                     null, null, null, token);
             catalogManager.getCohortManager().create(STUDY, new CohortCreateParams().setId("c2")
-                    .setSamples(file.getSampleIds().subList(2, 4).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
+                            .setSamples(file.getSampleIds().subList(2, 4).stream().map(s -> new SampleReferenceParam().setId(s)).collect(Collectors.toList())),
                     null, null, null, token);
 
             Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
@@ -187,16 +190,20 @@ public class VariantAnalysisTest {
             String daughter = "NA19600";
             // Father
             individuals.add(catalogManager.getIndividualManager()
-                    .create(STUDY, new Individual(father, father, IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()), Collections.singletonList(father), null, token).first());
+                    .create(STUDY, new Individual(father, father, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
+                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(father), null, token).first());
             // Mother
             individuals.add(catalogManager.getIndividualManager()
-                    .create(STUDY, new Individual(mother, mother, IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()), Collections.singletonList(mother), null, token).first());
+                    .create(STUDY, new Individual(mother, mother, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
+                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()), Collections.singletonList(mother), null, token).first());
             // Son
             individuals.add(catalogManager.getIndividualManager()
-                    .create(STUDY, new Individual(son, son, IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), Collections.singletonList(son), null, token).first());
+                    .create(STUDY, new Individual(son, son, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initMale(), null, null, null, null, "",
+                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), Collections.singletonList(son), null, token).first());
             // Daughter
             individuals.add(catalogManager.getIndividualManager()
-                    .create(STUDY, new Individual(daughter, daughter, IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(daughter), null, token).first());
+                    .create(STUDY, new Individual(daughter, daughter, new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initFemale(), null, null, null, null, "",
+                            Collections.emptyList(), false, 0, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(daughter), null, token).first());
             catalogManager.getFamilyManager().create(
                     STUDY,
                     new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
@@ -204,14 +211,16 @@ public class VariantAnalysisTest {
                     token);
 
 
+            opencga.getStorageConfiguration().getVariant().setDefaultEngine(storageEngine);
+            VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(storageEngine, DB_NAME);
             if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
-                VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID, DB_NAME);
                 VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase_print_variants")).toUri());
             }
         }
+        // Reset engines
+        opencga.getStorageEngineFactory().close();
         catalogManager = opencga.getCatalogManager();
         variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
-
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
     }
 
@@ -296,7 +305,7 @@ public class VariantAnalysisTest {
 
         MutableInt count = new MutableInt();
         java.io.File file = getOutputFile(outDir);
-        FileUtils.lineIterator(file).forEachRemaining(line->{
+        FileUtils.lineIterator(file).forEachRemaining(line -> {
             if (!line.startsWith("#")) {
                 count.increment();
             }
@@ -473,7 +482,7 @@ public class VariantAnalysisTest {
         System.out.println("variantCount = " + variantCount);
 
         CohortUpdateParams updateParams = new CohortUpdateParams()
-                .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSet.getId(), "",  Collections.singletonMap("variantCount", 1))));
+                .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSet.getId(), "", Collections.singletonMap("variantCount", 1))));
         QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS, ParamUtils.CompleteUpdateAction.REPLACE));
 
         catalogManager.getCohortManager()

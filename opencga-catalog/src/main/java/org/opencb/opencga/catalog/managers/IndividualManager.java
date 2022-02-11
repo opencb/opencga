@@ -19,6 +19,9 @@ package org.opencb.opencga.catalog.managers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.common.Status;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
@@ -41,9 +44,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.*;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -83,7 +84,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             IndividualDBAdaptor.QueryParams.ID.key(), IndividualDBAdaptor.QueryParams.UID.key(), IndividualDBAdaptor.QueryParams.UUID.key(),
             IndividualDBAdaptor.QueryParams.VERSION.key(), IndividualDBAdaptor.QueryParams.FATHER.key(),
             IndividualDBAdaptor.QueryParams.MOTHER.key(), IndividualDBAdaptor.QueryParams.DISORDERS.key(),
-            IndividualDBAdaptor.QueryParams.PHENOTYPES.key(), IndividualDBAdaptor.QueryParams.STUDY_UID.key()));
+            IndividualDBAdaptor.QueryParams.PHENOTYPES.key(), IndividualDBAdaptor.QueryParams.SEX.key(),
+            IndividualDBAdaptor.QueryParams.STUDY_UID.key()));
 
     private static final Map<IndividualProperty.KaryotypicSex, IndividualProperty.Sex> KARYOTYPIC_SEX_SEX_MAP;
 
@@ -217,26 +219,34 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         ParamUtils.checkIdentifier(individual.getId(), "id");
         individual.setName(StringUtils.isEmpty(individual.getName()) ? individual.getId() : individual.getName());
         individual.setLocation(ParamUtils.defaultObject(individual.getLocation(), Location::new));
-        individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), ""));
+        individual.setEthnicity(ParamUtils.defaultObject(individual.getEthnicity(), OntologyTermAnnotation::new));
         individual.setPopulation(ParamUtils.defaultObject(individual.getPopulation(), IndividualPopulation::new));
         individual.setLifeStatus(ParamUtils.defaultObject(individual.getLifeStatus(), IndividualProperty.LifeStatus.UNKNOWN));
         individual.setKaryotypicSex(ParamUtils.defaultObject(individual.getKaryotypicSex(), IndividualProperty.KaryotypicSex.UNKNOWN));
-        individual.setSex(ParamUtils.defaultObject(individual.getSex(), IndividualProperty.Sex.UNKNOWN));
+        individual.setSex(ParamUtils.defaultObject(individual.getSex(), SexOntologyTermAnnotation::initUnknown));
         individual.setPhenotypes(ParamUtils.defaultObject(individual.getPhenotypes(), Collections.emptyList()));
         individual.setDisorders(ParamUtils.defaultObject(individual.getDisorders(), Collections.emptyList()));
         individual.setAnnotationSets(ParamUtils.defaultObject(individual.getAnnotationSets(), Collections.emptyList()));
         individual.setAttributes(ParamUtils.defaultObject(individual.getAttributes(), Collections.emptyMap()));
         individual.setSamples(ParamUtils.defaultObject(individual.getSamples(), new ArrayList<>()));
-        individual.setStatus(ParamUtils.defaultObject(individual.getStatus(), CustomStatus::new));
+        individual.setStatus(ParamUtils.defaultObject(individual.getStatus(), Status::new));
         individual.setQualityControl(ParamUtils.defaultObject(individual.getQualityControl(), IndividualQualityControl::new));
 
-        individual.setInternal(ParamUtils.defaultObject(individual.getInternal(), IndividualInternal::init));
-        individual.getInternal().setStatus(new Status());
-        individual.setCreationDate(TimeUtils.getTime());
+        individual.setInternal(IndividualInternal.init());
+        individual.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(individual.getCreationDate(),
+                IndividualDBAdaptor.QueryParams.CREATION_DATE.key()));
+        individual.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(individual.getModificationDate(),
+                IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
         individual.setModificationDate(TimeUtils.getTime());
         individual.setRelease(studyManager.getCurrentRelease(study));
         individual.setVersion(1);
         individual.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INDIVIDUAL));
+
+        if (CollectionUtils.isNotEmpty(individual.getFamilyIds())) {
+            throw new CatalogException("'familyIds' list is not empty");
+        } else {
+            individual.setFamilyIds(Collections.emptyList());
+        }
 
         // Check the id is not in use
         Query query = new Query()
@@ -319,12 +329,16 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             validateNewIndividual(study, individual, sampleIds, userId, true);
 
             // Create the individual
-            individualDBAdaptor.insert(study.getUid(), individual, study.getVariableSets(), options);
-            OpenCGAResult<Individual> queryResult = getIndividual(study.getUid(), individual.getUuid(), options);
+            OpenCGAResult<Individual> insert = individualDBAdaptor.insert(study.getUid(), individual, study.getVariableSets(), options);
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created individual
+                OpenCGAResult<Individual> queryResult = getIndividual(study.getUid(), individual.getUuid(), options);
+                insert.setResults(queryResult.getResults());
+            }
             auditManager.auditCreate(userId, Enums.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return queryResult;
+            return insert;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.INDIVIDUAL, individual.getId(), "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -718,9 +732,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         // Looking for children
         Query query = new Query();
-        if (proband.getSex() == IndividualProperty.Sex.MALE) {
+        if (proband.getSex().getSex() == IndividualProperty.Sex.MALE) {
             query.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), proband.getUid());
-        } else if (proband.getSex() == IndividualProperty.Sex.FEMALE) {
+        } else if (proband.getSex().getSex() == IndividualProperty.Sex.FEMALE) {
             query.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), proband.getUid());
         }
         if (!query.isEmpty()) {
@@ -774,9 +788,9 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
     }
 
     private Family.FamiliarRelationship getChildSex(Individual individual) {
-        if (individual.getSex() == IndividualProperty.Sex.MALE) {
+        if (individual.getSex().getSex() == IndividualProperty.Sex.MALE) {
             return Family.FamiliarRelationship.SON;
-        } else if (individual.getSex() == IndividualProperty.Sex.FEMALE) {
+        } else if (individual.getSex().getSex() == IndividualProperty.Sex.FEMALE) {
             return Family.FamiliarRelationship.DAUGHTER;
         } else {
             return Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX;
@@ -791,7 +805,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             Set<String> includeSet = new HashSet<>(options.getAsStringList(QueryOptions.INCLUDE));
             includeSet.add(IndividualDBAdaptor.QueryParams.ID.key());
             includeSet.add(IndividualDBAdaptor.QueryParams.UUID.key());
-            includeSet.add(IndividualDBAdaptor.QueryParams.SEX.key());
+            includeSet.add(IndividualDBAdaptor.QueryParams.SEX_ID.key());
             includeSet.add(IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key());
             includeSet.add(IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.UID.key());
             includeSet.add(IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key());
@@ -802,7 +816,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             Set<String> excludeSet = new HashSet<>(options.getAsStringList(QueryOptions.EXCLUDE));
             excludeSet.remove(IndividualDBAdaptor.QueryParams.ID.key());
             excludeSet.remove(IndividualDBAdaptor.QueryParams.UUID.key());
-            excludeSet.remove(IndividualDBAdaptor.QueryParams.SEX.key());
+            excludeSet.remove(IndividualDBAdaptor.QueryParams.SEX_ID.key());
             excludeSet.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
             excludeSet.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
 
@@ -897,6 +911,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
                 Event event = new Event(Event.Type.ERROR, individualId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.INDIVIDUAL, individualId, individualUuid,
@@ -970,6 +985,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
                 Event event = new Event(Event.Type.ERROR, individual.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(),
@@ -1141,6 +1157,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, individual.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update individual {}: {}", individual.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.INDIVIDUAL, individual.getId(), individual.getUuid(),
@@ -1195,6 +1212,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, individualId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Cannot update individual {}: {}", individualId, e.getMessage());
             auditManager.auditUpdate(operationId, userId, Enums.Resource.INDIVIDUAL, individualId, individualUuid, study.getId(),
@@ -1269,6 +1287,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot update individual {}: {}", individualId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.INDIVIDUAL, individualId, individualUuid, study.getId(),
@@ -1292,6 +1311,15 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.CREATION_DATE.key()))) {
+            ParamUtils.checkDateFormat(parameters.getString(IndividualDBAdaptor.QueryParams.CREATION_DATE.key()),
+                    IndividualDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key()))) {
+            ParamUtils.checkDateFormat(parameters.getString(IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
+                    IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key());
+        }
 
         if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
             ParamUtils.checkUpdateParametersMap(parameters);
@@ -1396,7 +1424,14 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        return individualDBAdaptor.update(individual.getUid(), parameters, study.getVariableSets(), options);
+        OpenCGAResult<Individual> update = individualDBAdaptor.update(individual.getUid(), parameters, study.getVariableSets(), options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated individual
+            OpenCGAResult<Individual> result = individualDBAdaptor.get(study.getUid(),
+                    new Query(IndividualDBAdaptor.QueryParams.UID.key(), individual.getUid()), options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     @Override
@@ -1702,11 +1737,13 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     private void fixQuery(Study study, Query query, String userId) throws CatalogException {
         super.fixQueryObject(query);
+        changeQueryId(query, ParamConstants.INDIVIDUAL_SEX_PARAM, IndividualDBAdaptor.QueryParams.SEX_ID.key());
+        changeQueryId(query, ParamConstants.INDIVIDUAL_ETHNICITY_PARAM, IndividualDBAdaptor.QueryParams.ETHNICITY_ID.key());
         changeQueryId(query, ParamConstants.INDIVIDUAL_POPULATION_NAME_PARAM, IndividualDBAdaptor.QueryParams.POPULATION_NAME.key());
         changeQueryId(query, ParamConstants.INDIVIDUAL_POPULATION_SUBPOPULATION_PARAM,
                 IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key());
-        changeQueryId(query, ParamConstants.INTERNAL_STATUS_PARAM, IndividualDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
-        changeQueryId(query, ParamConstants.STATUS_PARAM, IndividualDBAdaptor.QueryParams.STATUS_NAME.key());
+        changeQueryId(query, ParamConstants.INTERNAL_STATUS_PARAM, IndividualDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key());
+        changeQueryId(query, ParamConstants.STATUS_PARAM, IndividualDBAdaptor.QueryParams.STATUS_ID.key());
 
         if (query.containsKey(IndividualDBAdaptor.QueryParams.FATHER.key())) {
             if (StringUtils.isNotEmpty(query.getString(IndividualDBAdaptor.QueryParams.FATHER.key()))) {

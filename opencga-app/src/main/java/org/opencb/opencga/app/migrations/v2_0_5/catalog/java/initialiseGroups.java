@@ -11,7 +11,7 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 
-@Migration(id="initialise_groups", description = "Initialise userIds list from groups #1791", version = "2.0.5", rank = 1)
+@Migration(id = "initialise_groups", description = "Initialise userIds list from groups #1791", version = "2.0.5", date = 20210621)
 public class initialiseGroups extends MigrationTool {
 
     @Override

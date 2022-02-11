@@ -19,13 +19,14 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.catalog.stats.solr.SampleSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
 import org.opencb.opencga.catalog.stats.solr.converters.SolrConverterUtil;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -61,11 +62,12 @@ public class CatalogSampleToSolrSampleConverterTest {
         study.setAttributes(attributes);
 
         Individual individual = new Individual();
-        individual.setUuid("uuid").setEthnicity("spanish").setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).
-                setPopulation(new IndividualPopulation("valencian", "", ""));
+        individual.setUuid("uuid").setEthnicity(new OntologyTermAnnotation().setId("spanish"))
+                .setKaryotypicSex(IndividualProperty.KaryotypicSex.XX)
+                .setPopulation(new IndividualPopulation("valencian", "", ""));
 
         Sample sample = new Sample();
-        new Status("READY");
+        new InternalStatus("READY");
         sample.setUid(500).setRelease(3).setVersion(2).setInternal(SampleInternal.init())
                 .setSomatic(true).setCreationDate(TimeUtils.getTime())
                 .setAnnotationSets(AnnotationHelper.createAnnotation());
@@ -84,7 +86,7 @@ public class CatalogSampleToSolrSampleConverterTest {
         assertEquals(sampleSolrModel.getUid(), sample.getUid());
         assertEquals(sampleSolrModel.getRelease(), sample.getRelease());
         assertEquals(sampleSolrModel.getVersion(), sample.getVersion());
-        assertEquals(sampleSolrModel.getStatus(), sample.getInternal().getStatus().getName());
+        assertEquals(sampleSolrModel.getStatus(), sample.getInternal().getStatus().getId());
         assertEquals(sampleSolrModel.isSomatic(), sample.isSomatic());
         assertEquals(sampleSolrModel.getPhenotypes().size(), 0);
 

@@ -21,6 +21,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -47,9 +48,7 @@ import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
@@ -60,8 +59,6 @@ import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.*;
-import org.opencb.opencga.core.models.study.configuration.ClinicalAnalysisStudyConfiguration;
-import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
@@ -271,7 +268,7 @@ public class StudyManager extends AbstractManager {
 
     @Deprecated
     public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, String description,
-                                       StudyNotification notification, StudyInternal internal, CustomStatus status,
+                                       StudyNotification notification, StudyInternal internal, Status status,
                                        Map<String, Object> attributes, QueryOptions options, String token) throws CatalogException {
         Study study = new Study()
                 .setId(id)
@@ -299,6 +296,8 @@ public class StudyManager extends AbstractManager {
                 .append("token", token);
 
         try {
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
+
             /* Check project permissions */
             if (!project.getFqn().startsWith(userId + "@")) {
                 throw new CatalogException("Permission denied: Only the owner of the project can create studies.");
@@ -310,15 +309,19 @@ public class StudyManager extends AbstractManager {
             study.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.STUDY));
             study.setName(ParamUtils.defaultString(study.getName(), study.getId()));
             study.setAlias(ParamUtils.defaultString(study.getAlias(), study.getId()));
+            study.setType(ParamUtils.defaultObject(study.getType(), StudyType::init));
+            study.setSources(ParamUtils.defaultObject(study.getSources(), Collections::emptyList));
             study.setDescription(ParamUtils.defaultString(study.getDescription(), ""));
-            study.setInternal(ParamUtils.defaultObject(study.getInternal(), StudyInternal::new));
-            study.getInternal().setStatus(ParamUtils.defaultObject(study.getInternal().getStatus(), Status::new));
-            study.getInternal().setConfiguration(new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration(), null));
-            study.setStatus(ParamUtils.defaultObject(study.getStatus(), CustomStatus::new));
-            study.setCreationDate(TimeUtils.getTime());
+            study.setInternal(StudyInternal.init());
+            study.setStatus(ParamUtils.defaultObject(study.getStatus(), Status::new));
+            study.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(study.getCreationDate(),
+                    StudyDBAdaptor.QueryParams.CREATION_DATE.key()));
+            study.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(study.getModificationDate(),
+                    StudyDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
             study.setRelease(project.getCurrentRelease());
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
             study.setPermissionRules(ParamUtils.defaultObject(study.getPermissionRules(), HashMap::new));
+            study.setAdditionalInfo(ParamUtils.defaultObject(study.getAdditionalInfo(), Collections::emptyList));
             study.setAttributes(ParamUtils.defaultObject(study.getAttributes(), HashMap::new));
 
             study.setClinicalAnalyses(ParamUtils.defaultObject(study.getClinicalAnalyses(), ArrayList::new));
@@ -331,9 +334,9 @@ public class StudyManager extends AbstractManager {
 
             LinkedList<File> files = new LinkedList<>();
             File rootFile = new File(".", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "", null, "study root folder",
-                    FileInternal.initialize(), 0, project.getCurrentRelease());
+                    FileInternal.init(), 0, project.getCurrentRelease());
             File jobsFile = new File("JOBS", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "JOBS/",
-                    catalogIOManager.getJobsUri(), "Default jobs folder", FileInternal.initialize(), 0, project.getCurrentRelease());
+                    catalogIOManager.getJobsUri(), "Default jobs folder", FileInternal.init(), 0, project.getCurrentRelease());
             files.add(rootFile);
             files.add(jobsFile);
 
@@ -374,7 +377,9 @@ public class StudyManager extends AbstractManager {
             auditManager.auditCreate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            result.setResults(Arrays.asList(study));
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                result.setResults(Arrays.asList(study));
+            }
             return result;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.STUDY, study.getId(), "", study.getId(), "", auditParams,
@@ -626,12 +631,20 @@ public class StudyManager extends AbstractManager {
         }
 
         try {
+            options = ParamUtils.defaultObject(options, QueryOptions::new);
             ParamUtils.checkObj(parameters, "Parameters");
 
             authorizationManager.checkCanEditStudy(study.getUid(), userId);
 
             if (StringUtils.isNotEmpty(parameters.getAlias())) {
                 ParamUtils.checkIdentifier(parameters.getAlias(), "alias");
+            }
+
+            if (StringUtils.isNotEmpty(parameters.getCreationDate())) {
+                ParamUtils.checkDateFormat(parameters.getCreationDate(), StudyDBAdaptor.QueryParams.CREATION_DATE.key());
+            }
+            if (StringUtils.isNotEmpty(parameters.getModificationDate())) {
+                ParamUtils.checkDateFormat(parameters.getModificationDate(), StudyDBAdaptor.QueryParams.MODIFICATION_DATE.key());
             }
 
             ObjectMap update;
@@ -641,14 +654,17 @@ public class StudyManager extends AbstractManager {
                 throw new CatalogException("Jackson casting error: " + e.getMessage(), e);
             }
 
-            OpenCGAResult result = studyDBAdaptor.update(study.getUid(), update, options);
+            OpenCGAResult<Study> updateResult = studyDBAdaptor.update(study.getUid(), update, options);
             auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            OpenCGAResult<Study> queryResult = studyDBAdaptor.get(study.getUid(), options);
-            queryResult.setTime(queryResult.getTime() + result.getTime());
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated study
+                OpenCGAResult<Study> result = studyDBAdaptor.get(study.getUid(), options);
+                updateResult.setResults(result.getResults());
+            }
 
-            return queryResult;
+            return updateResult;
         } catch (CatalogException e) {
             auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -680,7 +696,7 @@ public class StudyManager extends AbstractManager {
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(result.getTime(), result.getEvents(), 1, Collections.singletonList(permissionRule), 1,
-                    result.getNumInserted(), result.getNumUpdated(), result.getNumDeleted(), new ObjectMap());
+                    result.getNumInserted(), result.getNumUpdated(), result.getNumDeleted(), result.getNumErrors(), new ObjectMap());
         } catch (CatalogException e) {
             auditManager.audit(userId, Enums.Action.ADD_STUDY_PERMISSION_RULE, Enums.Resource.STUDY, study.getId(),
                     study.getUuid(), study.getId(), study.getUuid(), auditParams,
@@ -809,7 +825,7 @@ public class StudyManager extends AbstractManager {
         Long nFiles = fileDBAdaptor.count(
                         new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                                 .append(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.FILE)
-                                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), "!=" + FileStatus.TRASHED + ";!="
+                                .append(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), "!=" + FileStatus.TRASHED + ";!="
                                         + FileStatus.DELETED))
                 .getNumMatches();
         studySummary.setFiles(nFiles);
@@ -996,7 +1012,7 @@ public class StudyManager extends AbstractManager {
 
             OpenCGAResult<CustomGroup> finalResult = new OpenCGAResult<>(result.getTime(), result.getEvents(), result.getNumResults(),
                     customGroupList, result.getNumMatches(), result.getNumInserted(), result.getNumUpdated(), result.getNumDeleted(),
-                    result.getAttributes(), result.getFederationNode());
+                    result.getNumErrors(), result.getAttributes(), result.getFederationNode());
 
             auditManager.audit(userId, Enums.Action.FETCH_STUDY_GROUPS, Enums.Resource.STUDY, study.getId(), study.getUuid(),
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1096,6 +1112,45 @@ public class StudyManager extends AbstractManager {
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
+    }
+
+    public OpenCGAResult<?> updateSummaryIndex(String studyStr, RecessiveGeneSummaryIndex summaryIndex,
+                                               String token) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        Study study = resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyStr)
+                .append("recessiveGeneSummaryIndex", summaryIndex)
+                .append("token", token);
+        try {
+            authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+
+            ParamUtils.checkObj(summaryIndex, "RecessiveGeneSummaryIndex");
+            summaryIndex.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(summaryIndex.getModificationDate(), "creationDate"));
+
+            ObjectMap update;
+            try {
+                update = new ObjectMap(StudyDBAdaptor.QueryParams.INTERNAL_INDEX_RECESSIVE_GENE.key(),
+                        new ObjectMap(getUpdateObjectMapper().writeValueAsString(summaryIndex)));
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Jackson casting error: " + e.getMessage(), e);
+            }
+
+            OpenCGAResult<Study> result = studyDBAdaptor.update(study.getUid(), update, QueryOptions.empty());
+
+            auditManager.audit(userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.STUDY, study.getId(),
+                    study.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return result;
+        } catch (CatalogException e) {
+            auditManager.audit(userId, Enums.Action.UPDATE_INTERNAL, Enums.Resource.STUDY, study.getId(),
+                    study.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
     }
 
 //    public OpenCGAResult<Group> syncGroupWith(String studyStr, String groupId, Group.Sync syncedFrom, String sessionId)
@@ -1319,7 +1374,8 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.getVariableSets(query, options, userId);
     }
 
-    public OpenCGAResult<VariableSet> deleteVariableSet(String studyId, String variableSetId, String token) throws CatalogException {
+    public OpenCGAResult<VariableSet> deleteVariableSet(String studyId, String variableSetId, boolean force, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId, StudyManager.INCLUDE_VARIABLE_SET);
         VariableSet variableSet = extractVariableSet(study, variableSetId, userId);
@@ -1327,10 +1383,11 @@ public class StudyManager extends AbstractManager {
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyId)
                 .append("variableSetId", variableSetId)
+                .append("force", force)
                 .append("token", token);
         try {
             authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
-            OpenCGAResult writeResult = studyDBAdaptor.deleteVariableSet(variableSet.getUid(), QueryOptions.empty(), userId);
+            OpenCGAResult writeResult = studyDBAdaptor.deleteVariableSet(study.getUid(), variableSet, force);
             auditManager.audit(userId, Enums.Action.DELETE_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(), "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -1529,9 +1586,13 @@ public class StudyManager extends AbstractManager {
                     case AuthorizationManager.ROLE_VIEW_ONLY:
                         studyPermissions = AuthorizationManager.getViewOnlyAcls();
                         break;
+                    case AuthorizationManager.ROLE_LOCKED:
+                        studyPermissions = AuthorizationManager.getLockedAcls();
+                        break;
                     default:
                         throw new CatalogException("Admissible template ids are: " + AuthorizationManager.ROLE_ADMIN + ", "
-                                + AuthorizationManager.ROLE_ANALYST + ", " + AuthorizationManager.ROLE_VIEW_ONLY);
+                                + AuthorizationManager.ROLE_ANALYST + ", " + AuthorizationManager.ROLE_VIEW_ONLY + ", "
+                                + AuthorizationManager.ROLE_LOCKED);
                 }
 
                 if (studyPermissions != null) {

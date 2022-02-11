@@ -49,7 +49,8 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
-import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -244,9 +245,23 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.DUE_DATE.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
+        if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.CREATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.CREATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_CREATION_DATE, date);
+        }
+        if (StringUtils.isNotEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            String time = parameters.getString(QueryParams.MODIFICATION_DATE.key());
+            Date date = TimeUtils.toDate(time);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+        }
+
         String[] acceptedObjectParams = {QueryParams.FAMILY.key(), QueryParams.DISORDER.key(), QUALITY_CONTROL.key(),
                 QueryParams.PROBAND.key(), QueryParams.ALERTS.key(), QueryParams.INTERNAL_STATUS.key(), QueryParams.PRIORITY.key(),
-                QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key()};
+                QueryParams.ANALYST.key(), QueryParams.CONSENT.key(), QueryParams.STATUS.key(), QueryParams.INTERPRETATION.key(),
+                REPORT.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (parameters.containsKey(INTERPRETATION.key()) && parameters.get(INTERPRETATION.key()) == null) {
@@ -289,12 +304,15 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         switch (operation) {
             case SET:
                 filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
+                clinicalConverter.validateFilesToUpdate(document.getSet());
                 break;
             case REMOVE:
-                filterObjectParams(parameters, document.getPullAll(), objectAcceptedParams);
+                fixFilesForRemoval(parameters);
+                filterObjectParams(parameters, document.getPull(), objectAcceptedParams);
                 break;
             case ADD:
                 filterObjectParams(parameters, document.getAddToSet(), objectAcceptedParams);
+                clinicalConverter.validateFilesToUpdate(document.getAddToSet());
                 break;
             default:
                 throw new IllegalStateException("Unknown operation " + basicOperation);
@@ -371,11 +389,14 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
-            // Update modificationDate param
             String time = TimeUtils.getTime();
-            Date date = TimeUtils.toDate(time);
-            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
-            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+                // Update modificationDate param
+                Date date = TimeUtils.toDate(time);
+                document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+                document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
+            }
+            document.getSet().put(INTERNAL_LAST_MODIFIED, time);
         }
 
         return document;
@@ -422,6 +443,20 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             }
         }
         parameters.put(PANELS.key(), panelParamList);
+    }
+
+    static void fixFilesForRemoval(ObjectMap parameters) {
+        if (parameters.get(FILES.key()) == null) {
+            return;
+        }
+
+        List<Document> fileParamList = new LinkedList<>();
+        for (Object file : parameters.getAsList(FILES.key())) {
+            if (file instanceof File) {
+                fileParamList.add(new Document("uid", ((File) file).getUid()));
+            }
+        }
+        parameters.put(FILES.key(), fileParamList);
     }
 
     @Override
@@ -541,7 +576,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         deletedClinicalCollection.remove(clientSession, bsonQuery, new QueryOptions(MongoDBCollection.MULTI, true));
 
         // Set status to DELETED
-        nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), result.first());
+        nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"),
+                result.first());
 
         // Add audit
         List<Document> auditList = result.first().getList(AUDIT.key(), Document.class);
@@ -789,9 +825,6 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         if (StringUtils.isEmpty(clinicalAnalysis.getUuid())) {
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
         }
-        if (StringUtils.isEmpty(clinicalAnalysis.getCreationDate())) {
-            clinicalAnalysis.setCreationDate(TimeUtils.getTime());
-        }
 
         Document clinicalDocument = clinicalConverter.convertToStorageType(clinicalAnalysis);
         if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
@@ -799,7 +832,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         } else {
             clinicalDocument.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }
-        clinicalDocument.put(PRIVATE_MODIFICATION_DATE, clinicalDocument.get(PRIVATE_CREATION_DATE));
+        clinicalDocument.put(PRIVATE_MODIFICATION_DATE, StringUtils.isNotEmpty(clinicalAnalysis.getModificationDate())
+                ? TimeUtils.toDate(clinicalAnalysis.getModificationDate()) : TimeUtils.getDate());
         clinicalDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting ClinicalAnalysis '{}' ({})...", clinicalAnalysis.getId(), clinicalAnalysis.getUid());
@@ -933,11 +967,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                         addAutoOrQuery(STATUS_ID.key(), queryParam.key(), queryCopy, STATUS_ID.type(), andBsonList);
                         break;
                     case INTERNAL_STATUS:
-                    case INTERNAL_STATUS_NAME:
+                    case INTERNAL_STATUS_ID:
                         // Convert the status to a positive status
-                        queryCopy.put(queryParam.key(),
-                                Status.getPositiveStatus(ClinicalAnalysisStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
-                        addAutoOrQuery(INTERNAL_STATUS_NAME.key(), queryParam.key(), queryCopy, INTERNAL_STATUS_NAME.type(), andBsonList);
+                        queryCopy.put(queryParam.key(), InternalStatus.getPositiveStatus(ClinicalAnalysisStatus.STATUS_LIST,
+                                queryCopy.getString(queryParam.key())));
+                        addAutoOrQuery(INTERNAL_STATUS_ID.key(), queryParam.key(), queryCopy, INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
                     // Other parameter that can be queried.
                     case ID:

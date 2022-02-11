@@ -20,6 +20,7 @@ import org.opencb.biodata.models.clinical.ClinicalAnalyst;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.models.panel.Panel;
 
@@ -43,19 +44,19 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
     }
 
     public Interpretation(String id, String description, String clinicalAnalysisId, ClinicalAnalyst analyst,
-                          List<InterpretationMethod> methods, String creationDate, String modificationDate,
+                          InterpretationMethod method, String creationDate, String modificationDate,
                           List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings, List<Panel> panels,
-                          List<ClinicalComment> comments, Map<String, Object> attributes) {
-        super(id, "", description, clinicalAnalysisId, analyst, methods, primaryFindings, secondaryFindings, comments, null,
+                          List<ClinicalComment> comments, Status status, Map<String, Object> attributes) {
+        super(id, "", description, clinicalAnalysisId, analyst, method, primaryFindings, secondaryFindings, comments, null, status,
                 creationDate, modificationDate, 0, attributes);
         this.panels = panels;
     }
 
     public Interpretation(org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation) {
         this(interpretation.getId(), interpretation.getDescription(), interpretation.getClinicalAnalysisId(), interpretation.getAnalyst(),
-                interpretation.getMethods(), interpretation.getCreationDate(), interpretation.getModificationDate(),
+                interpretation.getMethod(), interpretation.getCreationDate(), interpretation.getModificationDate(),
                 interpretation.getPrimaryFindings(), interpretation.getSecondaryFindings(), Collections.emptyList(),
-                interpretation.getComments(), interpretation.getAttributes());
+                interpretation.getComments(), interpretation.getStatus(), interpretation.getAttributes());
     }
 
     @Override
@@ -144,8 +145,8 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
     }
 
     @Override
-    public Interpretation setMethods(List<InterpretationMethod> methods) {
-        super.setMethods(methods);
+    public Interpretation setMethod(InterpretationMethod method) {
+        super.setMethod(method);
         return this;
     }
 

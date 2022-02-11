@@ -258,7 +258,9 @@ public enum GenotypeClass implements Predicate<String> {
             }
         }
         return false;
-    });
+    }),
+
+    NA(Genotype.NA::equals);
 
     /**
      * Indicate that the genotype information is unknown.

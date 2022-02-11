@@ -2,7 +2,7 @@
 {{- $fullName := .Values.iva.name -}}
 {{- $svcPort := .Values.iva.service.port -}}
 {{- $paths := .Values.iva.ingress.paths -}}
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Values.iva.name }}
@@ -30,9 +30,12 @@ spec:
         paths:
           {{- range $paths }}
           - path: {{ . }}
+            pathType: Exact
             backend:
-              serviceName: {{ $fullName }}
-              servicePort: {{ $svcPort }}
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: {{ $svcPort }}
           {{- end }}
   {{- end }}
 {{- end }}

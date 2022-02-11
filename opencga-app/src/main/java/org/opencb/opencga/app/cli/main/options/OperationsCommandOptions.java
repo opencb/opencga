@@ -7,6 +7,7 @@ import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GenericJulieRunCommandOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
@@ -35,6 +36,7 @@ public class OperationsCommandOptions {
     public static final String VARIANT_CONFIGURE = "variant-configure";
     public static final String VARIANT_INDEX = "variant-index";
     public static final String VARIANT_DELETE = "variant-delete";
+    public static final String VARIANT_STUDY_DELETE = "variant-study-delete";
     public static final String VARIANT_SAMPLE_DELETE = "variant-sample-delete";
     public static final String VARIANT_INDEX_LAUNCHER = "variant-index-launcher";
 
@@ -61,6 +63,7 @@ public class OperationsCommandOptions {
     public final VariantConfigureCommandOptions variantConfigure;
     public final VariantIndexCommandOptions variantIndex;
     public final VariantFileDeleteCommandOptions variantFileDelete;
+    public final VariantStudyDeleteCommandOptions variantStudyDelete;
     public final VariantSampleDeleteCommandOptions variantSampleDelete;
     public final VariantIndexLauncherCommandOptions variantIndexLauncher;
 
@@ -107,6 +110,7 @@ public class OperationsCommandOptions {
         variantConfigure = new VariantConfigureCommandOptions();
         variantIndex = new VariantIndexCommandOptions();
         variantFileDelete = new VariantFileDeleteCommandOptions();
+        variantStudyDelete = new VariantStudyDeleteCommandOptions();
         variantSampleDelete = new VariantSampleDeleteCommandOptions();
         variantIndexLauncher = new VariantIndexLauncherCommandOptions();
         variantStatsIndex = new VariantStatsIndexCommandOptions();
@@ -196,6 +200,22 @@ public class OperationsCommandOptions {
 
         @ParametersDelegate
         public GenericVariantDeleteOptions genericVariantDeleteOptions = new GenericVariantDeleteOptions();
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+    }
+
+    @Parameters(commandNames = {VARIANT_STUDY_DELETE}, commandDescription = VariantFileDeleteOperationTool.DESCRIPTION)
+    public class VariantStudyDeleteCommandOptions {
+
+        @Parameter(names = {"-s", "--study"}, description = ParamConstants.STUDY_DESCRIPTION, required = true, arity = 1)
+        public String study;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
+        public boolean resume;
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;

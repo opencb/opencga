@@ -11,7 +11,10 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -378,7 +381,7 @@ public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
     }
 
     private void getDeclaredFields(Class<?> clazz, String field, Map<String, Type> map) {
-        Field[] declaredFields = clazz.getDeclaredFields();
+        List<Field> declaredFields = getAllUnderlyingDeclaredFields(clazz);
         for (Field declaredField : declaredFields) {
             // Ignore avro data models
             if (declaredField.getType().getName().equals("org.apache.avro.Schema")) {
@@ -412,6 +415,17 @@ public class TemplateEntryIterator<T> implements Iterator<T>, AutoCloseable {
                 map.put(key, new Type(type));
             }
         }
+    }
+
+    // Scans fields in all super classes
+    private List<Field> getAllUnderlyingDeclaredFields(Class<?> clazz) {
+        if (clazz == null) {
+            return Collections.emptyList();
+        }
+        List<Field> fields = new LinkedList<>();
+        fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
+        fields.addAll(getAllUnderlyingDeclaredFields(clazz.getSuperclass()));
+        return fields;
     }
 
     private String getMapKey(String prefix, String field) {

@@ -326,6 +326,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         operationsSubCommands.addCommand(VARIANT_CONFIGURE, operationsCommandOptions.variantConfigure);
         operationsSubCommands.addCommand(VARIANT_INDEX, operationsCommandOptions.variantIndex);
         operationsSubCommands.addCommand(VARIANT_DELETE, operationsCommandOptions.variantFileDelete);
+        operationsSubCommands.addCommand(VARIANT_STUDY_DELETE, operationsCommandOptions.variantStudyDelete);
         operationsSubCommands.addCommand(VARIANT_SAMPLE_DELETE, operationsCommandOptions.variantSampleDelete);
         operationsSubCommands.addCommand(VARIANT_INDEX_LAUNCHER, operationsCommandOptions.variantIndexLauncher);
         operationsSubCommands.addCommand(VARIANT_STATS_INDEX, operationsCommandOptions.variantStatsIndex);

@@ -19,13 +19,14 @@ package org.opencb.opencga.core.models.individual;
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.common.Status;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty.KaryotypicSex;
 import org.opencb.biodata.models.pedigree.IndividualProperty.LifeStatus;
-import org.opencb.biodata.models.pedigree.IndividualProperty.Sex;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.util.*;
@@ -53,13 +54,14 @@ public class Individual extends Annotable {
 
     private Individual father;
     private Individual mother;
+    private List<String> familyIds;
     private Location location;
 
     private IndividualQualityControl qualityControl;
 
-    private Sex sex;
+    private SexOntologyTermAnnotation sex;
     private KaryotypicSex karyotypicSex;
-    private String ethnicity;
+    private OntologyTermAnnotation ethnicity;
     private IndividualPopulation population;
     private String dateOfBirth;
 
@@ -116,7 +118,7 @@ public class Individual extends Annotable {
 
     private boolean parentalConsanguinity;
 
-    private CustomStatus status;
+    private Status status;
 
     private IndividualInternal internal;
 
@@ -130,61 +132,27 @@ public class Individual extends Annotable {
     public Individual() {
     }
 
-    public Individual(String id, String name, Sex sex, String ethnicity, IndividualPopulation population, int release,
-                      List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, new Individual(), new Individual(), new Location(), sex, null, ethnicity, population, "", release,
-                1, TimeUtils.getTime(), LifeStatus.UNKNOWN, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
-                false, annotationSets, new CustomStatus(), null, attributes);
-    }
-
-    public Individual(String id, String name, Individual father, Individual mother, Location location, Sex sex,
-                      KaryotypicSex karyotypicSex, String ethnicity, IndividualPopulation population, LifeStatus lifeStatus,
+    public Individual(String id, String name, Individual father, Individual mother, Location location, SexOntologyTermAnnotation sex,
+                      KaryotypicSex karyotypicSex, OntologyTermAnnotation ethnicity, IndividualPopulation population, LifeStatus lifeStatus,
                       String dateOfBirth, List<Sample> samples, boolean parentalConsanguinity, int release,
-                      List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, List<Disorder> disorders) {
-        this(id, name, father, mother, location, sex, karyotypicSex, ethnicity, population, dateOfBirth, release, 1,
-                TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples, parentalConsanguinity,
-                annotationSets, new CustomStatus(), null, Collections.emptyMap());
+                      List<AnnotationSet> annotationSets, List<Phenotype> phenotypeList, List<Disorder> disorders,
+                      IndividualInternal internal, Map<String, Object> attributes) {
+        this(id, name, father, mother, Collections.emptyList(), location, null, sex, karyotypicSex, ethnicity, population, dateOfBirth,
+                release, 1, TimeUtils.getTime(), TimeUtils.getTime(), lifeStatus, phenotypeList, disorders, samples,
+                parentalConsanguinity, annotationSets, new Status(), internal, attributes);
     }
 
-    public Individual(String id, String name, Individual father, Individual mother, Location location, Sex sex,
-                      KaryotypicSex karyotypicSex, String ethnicity, IndividualPopulation population, String dateOfBirth, int release,
-                      int version, String creationDate, LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders,
-                      List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets, CustomStatus status,
-                      IndividualInternal internal, Map<String, Object> attributes) {
+    public Individual(String id, String name, Individual father, Individual mother, List<String> familyIds, Location location,
+                      IndividualQualityControl qualityControl, SexOntologyTermAnnotation sex, KaryotypicSex karyotypicSex,
+                      OntologyTermAnnotation ethnicity, IndividualPopulation population, String dateOfBirth, int release, int version,
+                      String creationDate, String modificationDate, LifeStatus lifeStatus, List<Phenotype> phenotypes,
+                      List<Disorder> disorders, List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets,
+                      Status status, IndividualInternal internal, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.father = ObjectUtils.defaultIfNull(father, new Individual());
         this.mother = ObjectUtils.defaultIfNull(mother, new Individual());
-        this.location = location;
-        this.sex = sex;
-        this.karyotypicSex = karyotypicSex;
-        this.ethnicity = ethnicity;
-        this.population = ObjectUtils.defaultIfNull(population, new IndividualPopulation());
-        this.dateOfBirth = dateOfBirth;
-        this.release = release;
-        this.version = version;
-        this.creationDate = ObjectUtils.defaultIfNull(creationDate, TimeUtils.getTime());
-        this.lifeStatus = lifeStatus;
-        this.phenotypes = ObjectUtils.defaultIfNull(phenotypes, new ArrayList<>());
-        this.disorders = ObjectUtils.defaultIfNull(disorders, new ArrayList<>());
-        this.samples = ObjectUtils.defaultIfNull(samples, new ArrayList<>());
-        this.parentalConsanguinity = parentalConsanguinity;
-        this.annotationSets = annotationSets;
-        this.status = status;
-        this.internal = internal;
-        this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
-    }
-
-    public Individual(String id, String name, Individual father, Individual mother, Location location,
-                      IndividualQualityControl qualityControl, Sex sex, KaryotypicSex karyotypicSex, String ethnicity,
-                      IndividualPopulation population, String dateOfBirth, int release, int version, String creationDate,
-                      LifeStatus lifeStatus, List<Phenotype> phenotypes, List<Disorder> disorders,
-                      List<Sample> samples, boolean parentalConsanguinity, List<AnnotationSet> annotationSets, CustomStatus status,
-                      IndividualInternal internal, Map<String, Object> attributes) {
-        this.id = id;
-        this.name = name;
-        this.father = ObjectUtils.defaultIfNull(father, new Individual());
-        this.mother = ObjectUtils.defaultIfNull(mother, new Individual());
+        this.familyIds = familyIds;
         this.location = location;
         this.qualityControl = qualityControl;
         this.sex = sex;
@@ -195,6 +163,7 @@ public class Individual extends Annotable {
         this.release = release;
         this.version = version;
         this.creationDate = ObjectUtils.defaultIfNull(creationDate, TimeUtils.getTime());
+        this.modificationDate = modificationDate;
         this.lifeStatus = lifeStatus;
         this.phenotypes = ObjectUtils.defaultIfNull(phenotypes, new ArrayList<>());
         this.disorders = ObjectUtils.defaultIfNull(disorders, new ArrayList<>());
@@ -210,10 +179,11 @@ public class Individual extends Annotable {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Individual{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", name='").append(name).append('\'');
         sb.append(", father=").append(father);
         sb.append(", mother=").append(mother);
+        sb.append(", familyIds=").append(familyIds);
         sb.append(", location=").append(location);
         sb.append(", qualityControl=").append(qualityControl);
         sb.append(", sex=").append(sex);
@@ -230,6 +200,7 @@ public class Individual extends Annotable {
         sb.append(", disorders=").append(disorders);
         sb.append(", samples=").append(samples);
         sb.append(", parentalConsanguinity=").append(parentalConsanguinity);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", status=").append(status);
         sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
@@ -336,6 +307,15 @@ public class Individual extends Annotable {
         return this;
     }
 
+    public List<String> getFamilyIds() {
+        return familyIds;
+    }
+
+    public Individual setFamilyIds(List<String> familyIds) {
+        this.familyIds = familyIds;
+        return this;
+    }
+
     public Location getLocation() {
         return location;
     }
@@ -354,11 +334,11 @@ public class Individual extends Annotable {
         return this;
     }
 
-    public Sex getSex() {
+    public SexOntologyTermAnnotation getSex() {
         return sex;
     }
 
-    public Individual setSex(Sex sex) {
+    public Individual setSex(SexOntologyTermAnnotation sex) {
         this.sex = sex;
         return this;
     }
@@ -372,11 +352,11 @@ public class Individual extends Annotable {
         return this;
     }
 
-    public String getEthnicity() {
+    public OntologyTermAnnotation getEthnicity() {
         return ethnicity;
     }
 
-    public Individual setEthnicity(String ethnicity) {
+    public Individual setEthnicity(OntologyTermAnnotation ethnicity) {
         this.ethnicity = ethnicity;
         return this;
     }
@@ -489,11 +469,11 @@ public class Individual extends Annotable {
         return this;
     }
 
-    public CustomStatus getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public Individual setStatus(CustomStatus status) {
+    public Individual setStatus(Status status) {
         this.status = status;
         return this;
     }

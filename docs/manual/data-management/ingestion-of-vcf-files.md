@@ -4,11 +4,7 @@ description: >-
   files into an OpenCGA Variant Store.
 ---
 
-# Load VCF Files to a Study
-
-{% hint style="info" %}
- This document assumes you are using OpenCGA version 2.1 or later.
-{% endhint %}
+# Loading of VCF files
 
 ## **Introduction**
 
@@ -34,7 +30,7 @@ This document assumes that:
 
 * The source VCF files are accessible \(e.g. via shared filesystem\) on the target OpenCGA server. 
 * The operator has access to a workstation with network access to the web services on the OpenCGA server.
-* Compatible OpenCGA client software is installed on the workstation. Find [here](ingestion-of-vcf-files.md) the instructions on how to install the client software.
+* Compatible OpenCGA client software is installed on the workstation. Find [here](../using-opencga/command-line/README.md) the instructions on how to install the client software.
 * The destination Study has been created on the OpenCGA server. Find [here](projects-and-studies.md) instructions for creating Projects and Studies. 
 * The operator has login credentials on the OpenCGA server with appropriate permissions; i.e. write access to the destination Study. 
 
@@ -126,7 +122,7 @@ $ ./opencga.sh jobs top ---study <study>
 **Special scenarios**
 
 {% hint style="danger" %}
-**Note**: Be aware that the misuse of the parameters described below  may lead to data corruption. Please, ask for support at support@zettagenomics.com or create a ticket in the [Zetta Service Desk](https://zettagenomics.atlassian.net/servicedesk/customer/portal/1) if you are not sure about what option adjust to your dataset.
+**Note**: Be aware that the misuse of the parameters described below may lead to data corruption. Please, ask for support at support@zettagenomics.com or create a ticket in the [Zetta Service Desk](https://zettagenomics.atlassian.net/servicedesk/customer/portal/1) if you are not sure about what option adjust to your dataset.
 {% endhint %}
 
 * **Samples data split by chromosome or region**

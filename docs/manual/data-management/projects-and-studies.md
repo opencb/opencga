@@ -1,4 +1,4 @@
-# Create Projects and Studies
+# Working with Projects and Studies
 
 ## Introduction
 
@@ -17,11 +17,11 @@ The project/study organisation is key in order to optimise the usability of the 
 
 The owner is the user who creates the project/study where the new data will be loaded. The users with permission to perform data ingestion into a concrete study in OpenCGA are the owner user, and other users with admin privileges for the specific study \(provided by the owner\).
 
-After deciding structure, the new projects and studies may need to be created. This step must be performed by the owner of the new created elements. 
+After deciding structure, the new projects and studies may need to be created. This step must be performed by the owner of the new created elements.
 
 ## **Creating new projects**
 
-The first step is [login](../login.md) into OpenCGA with a `FULL` account \(See  [Data Management]()\). Then, a Project can be created using the next command:
+The first step is [login](../login.md) into OpenCGA with a `FULL` account \(See [Data Management](sharing-and-permissions/README.md)\). Then, a Project can be created using the next command:
 
 ```text
 $ ./opencga.sh projects create --id <short-project-id> 
@@ -30,7 +30,7 @@ $ ./opencga.sh projects create --id <short-project-id>
                                 --organism-assembly <GRCh37|GRCh38>
 ```
 
-Optionally, you can add other parameters like `--description` . You can get the full list of parameters by adding  to the command.
+Optionally, you can add other parameters like `--description` . You can get the full list of parameters by adding to the command.
 
 ## **Creating new studies**
 

@@ -17,12 +17,12 @@ import java.util.List;
 
 import static com.mongodb.client.model.Filters.eq;
 
-@Migration(id="add_panels_to_interpretations",
+@Migration(id = "add_panels_to_interpretations",
         description = "Add panels to Interpretations #1802", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
         patch = 1,
-        rank = 22)
+        date = 20210713)
 public class AddPanelsToInterpretations extends MigrationTool {
 
     @Override

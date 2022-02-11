@@ -25,9 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.study.*;
-import org.opencb.opencga.core.models.study.configuration.StudyConfiguration;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -64,8 +62,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void createStudySameAliasDifferentProject() throws CatalogException {
-        catalogStudyDBAdaptor.insert(user1.getProjects().get(0), new Study("Phase 1", "ph1", "", new StudyInternal(new Status(),
-                new StudyConfiguration()), null, 1), null);
+        catalogStudyDBAdaptor.insert(user1.getProjects().get(0), new Study("Phase 1", "ph1", "", null, StudyInternal.init(), null, 1), null);
         Study ph1 = getStudy(user1.getProjects().get(0).getUid(), "ph1");
         assertTrue("It is impossible creating an study with an existing alias on a different project.", ph1.getUid() > 0);
     }
@@ -148,6 +145,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     /**
      * Creates a new variable once and attempts to create the same one again.
+     *
      * @throws CatalogDBException
      */
     @Test
@@ -173,6 +171,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     /**
      * Tries to add a new variable to a non existent variableSet.
+     *
      * @throws CatalogDBException
      */
     @Test
@@ -198,10 +197,10 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
         catalogStudyDBAdaptor.createGroup(5L, new Group("name2", Arrays.asList("user1", "user2", "user3")));
         catalogStudyDBAdaptor.createGroup(5L, new Group("name3", Arrays.asList("user1", "user3")));
 
-        DataResult<Group> group = catalogStudyDBAdaptor.getGroup(5L, null,  Arrays.asList("user1", "user3"));
+        DataResult<Group> group = catalogStudyDBAdaptor.getGroup(5L, null, Arrays.asList("user1", "user3"));
         assertEquals(3, group.getNumResults());
         catalogStudyDBAdaptor.removeUsersFromAllGroups(5L, Arrays.asList("user1", "user3"));
-        group = catalogStudyDBAdaptor.getGroup(5L, null,  Arrays.asList("user1", "user3"));
+        group = catalogStudyDBAdaptor.getGroup(5L, null, Arrays.asList("user1", "user3"));
         assertEquals(0, group.getNumResults());
     }
 

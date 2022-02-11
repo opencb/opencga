@@ -26,6 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Transcript;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.rga.RgaManager;
@@ -40,11 +41,11 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
+import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
-import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
 import java.io.BufferedWriter;
@@ -54,7 +55,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-@Tool(id= KnockoutAnalysis.ID, description = KnockoutAnalysis.DESCRIPTION, resource = Enums.Resource.VARIANT)
+@Tool(id = KnockoutAnalysis.ID, description = KnockoutAnalysis.DESCRIPTION, resource = Enums.Resource.VARIANT)
 public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
     public static final String ID = "knockout";
     public static final String DESCRIPTION = "Obtains the list of knocked out genes for each sample.";
@@ -259,9 +260,9 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
             try (BufferedWriter bufferedWriter = org.opencb.commons.utils.FileUtils.newBufferedWriter(getIndividualsOutputFile());
                  SequenceWriter writer = JacksonUtils.getDefaultObjectMapper()
 //                    .writerWithDefaultPrettyPrinter()
-                    .writer(new MinimalPrettyPrinter("\n"))
-                    .forType(KnockoutByIndividual.class)
-                    .writeValues(bufferedWriter)) {
+                         .writer(new MinimalPrettyPrinter("\n"))
+                         .forType(KnockoutByIndividual.class)
+                         .writeValues(bufferedWriter)) {
                 int samples = 0;
                 int samplesWithoutIndividual = 0;
                 for (File file : FileUtils.listFiles(getScratchDir().toFile(), new RegexFileFilter("knockout.sample..*.json.gz"), null)) {
@@ -272,7 +273,7 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                             .search(getStudy(), new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), knockoutByIndividual.getSampleId()),
                                     new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                                             IndividualDBAdaptor.QueryParams.ID.key(),
-                                            IndividualDBAdaptor.QueryParams.SEX.key(),
+                                            IndividualDBAdaptor.QueryParams.SEX_ID.key(),
                                             IndividualDBAdaptor.QueryParams.FATHER.key(),
                                             IndividualDBAdaptor.QueryParams.MOTHER.key(),
                                             IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
@@ -310,7 +311,8 @@ public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
                                 }
                             }
                         }
-                        knockoutByIndividual.setSex(individual.getSex());
+                        knockoutByIndividual.setSex(individual.getSex() != null
+                                ? individual.getSex().getId() : IndividualProperty.Sex.UNKNOWN.name());
                         knockoutByIndividual.setDisorders(individual.getDisorders());
                         knockoutByIndividual.setPhenotypes(individual.getPhenotypes());
                     }

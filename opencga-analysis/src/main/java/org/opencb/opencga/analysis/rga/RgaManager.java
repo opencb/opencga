@@ -31,8 +31,10 @@ import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.study.RecessiveGeneSummaryIndex;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -295,6 +297,9 @@ public class RgaManager implements AutoCloseable {
             }
         }
 
+        // Update RGA Index status from Study
+        catalogManager.getStudyManager().updateSummaryIndex(studyStr,
+                new RecessiveGeneSummaryIndex(RecessiveGeneSummaryIndex.Status.INDEXED, TimeUtils.getTime()), token);
     }
 
     private AuxiliarRgaDataModel getAuxiliarRgaDataModel(String mainCollection, String variantId) throws RgaException, IOException {
@@ -1289,8 +1294,8 @@ public class RgaManager implements AutoCloseable {
                         ids.add(codedVariant.getId());
                     }
                 } else if (count) {
-                    if (ids.size() + skippedIds.size() < 2000) {
-                        // Add up to 100 different ids to calculate an approximate count
+                    if (ids.size() + skippedIds.size() < 10000) {
+                        // Add up to 10000 different ids to calculate an approximate count
                         if (!ids.contains(codedVariant.getId())) {
                             skippedIds.add(codedVariant.getId());
                         }

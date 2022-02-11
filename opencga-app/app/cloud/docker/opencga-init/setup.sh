@@ -25,6 +25,9 @@ else
 
     echo "Initialising configs"
     # Override Yaml configs
+    # Fail on any error
+    set -e
+
     python3 /opt/opencga/init/override_yaml.py --save
 
     # Copies the config files from our local directory into a
@@ -34,6 +37,9 @@ else
 
     echo "Copying final analysis folder"
     cp -r -v /opt/opencga/analysis/* /opt/volume/analysis
+
+    # Stop failing on any error
+    set +e
 fi
 
 

@@ -158,13 +158,14 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         FileCommandOptions.CreateCommandOptions commandOptions = filesCommandOptions.createCommandOptions;
 
         FileCreateParams createParams = new FileCreateParams()
-                .setDirectory(StringUtils.isEmpty(commandOptions.content))
-                .setParents(commandOptions.parents)
+                .setType(StringUtils.isEmpty(commandOptions.content) ? File.Type.DIRECTORY : File.Type.FILE)
                 .setContent(commandOptions.content)
                 .setDescription(commandOptions.description)
                 .setPath(commandOptions.folder);
 
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
+        ObjectMap params = new ObjectMap()
+                .append(ParamConstants.FILE_PARENTS_PARAM, commandOptions.parents)
+                .append(FileDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
 
         return openCGAClient.getFileClient().create(createParams, params);
     }
@@ -223,7 +224,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull(FileDBAdaptor.QueryParams.BIOFORMAT.key(), StringUtils.join(commandOptions.bioformat, ","));
         params.putIfNotNull(FileDBAdaptor.QueryParams.FORMAT.key(), StringUtils.join(commandOptions.format, ","));
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(), commandOptions.status);
-        params.putIfNotEmpty(FileDBAdaptor.QueryParams.INTERNAL_INDEX_STATUS_NAME.key(), commandOptions.internalIndexStatus);
+        params.putIfNotEmpty(FileDBAdaptor.QueryParams.INTERNAL_VARIANT_INDEX_STATUS_ID.key(), commandOptions.internalIndexStatus);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.DIRECTORY.key(), commandOptions.folder);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.creationDate);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(), commandOptions.modificationDate);

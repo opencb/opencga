@@ -21,7 +21,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.StatusParams;
 
 import java.util.List;
 import java.util.Map;
@@ -32,6 +32,8 @@ public class FileUpdateParams {
 
     private String name;
     private String description;
+    private String creationDate;
+    private String modificationDate;
 
     private List<String> sampleIds;
 
@@ -47,7 +49,7 @@ public class FileUpdateParams {
 
     private Long size;
 
-    private CustomStatusParams status;
+    private StatusParams status;
     private List<AnnotationSet> annotationSets;
     private FileQualityControl qualityControl;
     private Map<String, Object> stats;
@@ -56,13 +58,15 @@ public class FileUpdateParams {
     public FileUpdateParams() {
     }
 
-    public FileUpdateParams(String name, String description, List<String> sampleIds, String checksum, File.Format format,
-                            File.Bioformat bioformat, Software software, FileExperiment experiment, List<String> tags,
-                            SmallFileInternal internal, Long size, List<SmallRelatedFileParams> relatedFiles, CustomStatusParams status,
-                            List<AnnotationSet> annotationSets, FileQualityControl qualityControl, Map<String, Object> stats,
-                            Map<String, Object> attributes) {
+    public FileUpdateParams(String name, String description, String creationDate, String modificationDate, List<String> sampleIds,
+                            String checksum, File.Format format, File.Bioformat bioformat, Software software, FileExperiment experiment,
+                            List<String> tags, SmallFileInternal internal, Long size, List<SmallRelatedFileParams> relatedFiles,
+                            StatusParams status, List<AnnotationSet> annotationSets, FileQualityControl qualityControl,
+                            Map<String, Object> stats, Map<String, Object> attributes) {
         this.name = name;
         this.description = description;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.sampleIds = sampleIds;
         this.checksum = checksum;
         this.format = format;
@@ -101,6 +105,8 @@ public class FileUpdateParams {
         final StringBuilder sb = new StringBuilder("FileUpdateParams{");
         sb.append("name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", sampleIds=").append(sampleIds);
         sb.append(", checksum='").append(checksum).append('\'');
         sb.append(", format=").append(format);
@@ -135,6 +141,24 @@ public class FileUpdateParams {
 
     public FileUpdateParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public FileUpdateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public FileUpdateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 
@@ -228,11 +252,11 @@ public class FileUpdateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public FileUpdateParams setStatus(CustomStatusParams status) {
+    public FileUpdateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

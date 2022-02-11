@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.project.Project;
@@ -62,6 +63,8 @@ public class AbstractSolrManagerTest extends GenericTest {
     protected Study study;
     protected String studyFqn;
 
+    protected static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
     @Before
     public void setUp() throws IOException, CatalogException {
         catalogManager = solrExternalResource.getCatalogManager();
@@ -92,9 +95,9 @@ public class AbstractSolrManagerTest extends GenericTest {
         sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
 
         Project project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", new QueryOptions(), sessionIdOwner).first();
+                null, "GRCh38", INCLUDE_RESULT, sessionIdOwner).first();
         studyFqn = catalogManager.getStudyManager().create(project.getFqn(), "phase1", null, "Phase 1", "Done", null,
-                null, null, null, null, sessionIdOwner).first().getFqn();
+                null, null, null, INCLUDE_RESULT, sessionIdOwner).first().getFqn();
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("admin1")), sessionIdOwner);
@@ -107,11 +110,11 @@ public class AbstractSolrManagerTest extends GenericTest {
         study = catalogManager.getStudyManager().get("phase1", new QueryOptions(DBAdaptor.INCLUDE_ACLS, true), sessionIdOwner).first();
 
         // Samples
-        Sample sample1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample1"), QueryOptions.empty(),
+        Sample sample1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample1"), INCLUDE_RESULT,
                 sessionIdAdmin).first();
-        Sample sample2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample2"), QueryOptions.empty(),
+        Sample sample2 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample2"), INCLUDE_RESULT,
                 sessionIdAdmin).first();
-        Sample sample3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample3"), QueryOptions.empty(),
+        Sample sample3 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("sample3"), INCLUDE_RESULT,
                 sessionIdAdmin).first();
 
         catalogManager.getSampleManager().updateAcl(studyFqn, Collections.singletonList("sample1"), "@study_deny,user3",

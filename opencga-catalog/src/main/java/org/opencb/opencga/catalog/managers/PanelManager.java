@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -44,7 +45,6 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelAclEntry;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
@@ -194,11 +194,16 @@ public class PanelManager extends ResourceManager<Panel> {
 
             options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-            panelDBAdaptor.insert(study.getUid(), panel, options);
+            OpenCGAResult<Panel> insert = panelDBAdaptor.insert(study.getUid(), panel, options);
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch created panel
+                OpenCGAResult<Panel> result = getPanel(study.getUid(), panel.getUuid(), options);
+                insert.setResults(result.getResults());
+            }
             auditManager.auditCreate(userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return getPanel(study.getUid(), panel.getUuid(), options);
+            return insert;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.DISEASE_PANEL, panel.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -384,6 +389,7 @@ public class PanelManager extends ResourceManager<Panel> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, panel.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update panel {}: {}", panel.getId(), e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(),
@@ -437,6 +443,7 @@ public class PanelManager extends ResourceManager<Panel> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, panelId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Could not update panel {}: {}", panelId, e.getMessage(), e);
             auditManager.auditUpdate(operationId, userId, Enums.Resource.DISEASE_PANEL, panelId, panelUuid, study.getId(),
@@ -511,6 +518,7 @@ public class PanelManager extends ResourceManager<Panel> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, panelId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update panel {}: {}", panelId, e.getMessage(), e);
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.DISEASE_PANEL, panelId, panelUuid, study.getId(),
@@ -552,7 +560,14 @@ public class PanelManager extends ResourceManager<Panel> {
             options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
-        return panelDBAdaptor.update(panel.getUid(), parameters, options);
+        OpenCGAResult<Panel> update = panelDBAdaptor.update(panel.getUid(), parameters, options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated panel
+            OpenCGAResult<Panel> result = panelDBAdaptor.get(study.getUid(),
+                    new Query(PanelDBAdaptor.QueryParams.UID.key(), panel.getUid()), options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     @Override
@@ -731,6 +746,7 @@ public class PanelManager extends ResourceManager<Panel> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Cannot delete panel {}: {}", panelId, e.getMessage());
                 auditManager.auditDelete(operationId, userId, Enums.Resource.DISEASE_PANEL, panelId, panelUuid, study.getId(),
@@ -806,6 +822,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
                 Event event = new Event(Event.Type.ERROR, panel.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationId, userId, Enums.Resource.DISEASE_PANEL, panel.getId(), panel.getUuid(), study.getId(),
@@ -1020,7 +1037,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
     protected void fixQueryObject(Query query) {
         super.fixQueryObject(query);
-        changeQueryId(query, ParamConstants.PANEL_STATUS_PARAM, PanelDBAdaptor.QueryParams.STATUS_NAME.key());
+        changeQueryId(query, ParamConstants.PANEL_STATUS_PARAM, PanelDBAdaptor.QueryParams.STATUS_ID.key());
     }
 
     void fillDefaultStats(Panel panel) {

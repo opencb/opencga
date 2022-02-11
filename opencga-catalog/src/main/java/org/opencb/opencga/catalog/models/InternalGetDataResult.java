@@ -43,7 +43,7 @@ public class InternalGetDataResult<T> extends OpenCGAResult<T> {
     public InternalGetDataResult(DataResult<T> dataResult) {
         super(dataResult.getTime(), dataResult.getEvents(), dataResult.getNumResults(), dataResult.getResults(),
                 dataResult.getNumMatches(), dataResult.getNumInserted(), dataResult.getNumUpdated(), dataResult.getNumDeleted(),
-                dataResult.getAttributes());
+                dataResult.getNumErrors(), dataResult.getAttributes());
         this.groups = new ArrayList<>();
     }
 

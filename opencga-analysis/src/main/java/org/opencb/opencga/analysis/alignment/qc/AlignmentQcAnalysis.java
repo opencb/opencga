@@ -62,7 +62,7 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
 
         try {
             File catalogFile = AnalysisUtils.getCatalogFile(analysisParams.getBamFile(), study, catalogManager.getFileManager(), token);
-            AlignmentQualityControl alignmentQc = null;
+            AlignmentFileQualityControl alignmentQc = null;
             if (catalogFile.getQualityControl() != null) {
                 alignmentQc = catalogFile.getQualityControl().getAlignment();
             }
@@ -117,7 +117,6 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
             }
         }
     }
-
 
     @Override
     protected void run() throws ToolException {
@@ -199,8 +198,8 @@ public class AlignmentQcAnalysis extends OpenCgaToolScopeStudy {
             Thread.sleep(3000);
             OpenCGAResult<Job> result = catalogManager.getJobManager().search(study, query, QueryOptions.empty(), token);
             job = result.first();
-            status = job.getInternal().getStatus().getName();
-        } while  (status.equals(Enums.ExecutionStatus.PENDING) || status.equals(Enums.ExecutionStatus.RUNNING)
+            status = job.getInternal().getStatus().getId();
+        } while (status.equals(Enums.ExecutionStatus.PENDING) || status.equals(Enums.ExecutionStatus.RUNNING)
                 || status.equals(Enums.ExecutionStatus.QUEUED) || status.equals(Enums.ExecutionStatus.READY)
                 || status.equals(Enums.ExecutionStatus.REGISTERING));
 

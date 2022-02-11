@@ -31,11 +31,11 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class InterpretationUpdateParams {
 
-    private String id;
     private String description;
     private ClinicalAnalystParam analyst;
-    private List<InterpretationMethod> methods;
+    private InterpretationMethod method;
     private String creationDate;
+    private String modificationDate;
     private List<ClinicalVariant> primaryFindings;
     private List<ClinicalVariant> secondaryFindings;
     private List<PanelReferenceParam> panels;
@@ -46,22 +46,15 @@ public class InterpretationUpdateParams {
     public InterpretationUpdateParams() {
     }
 
-    public InterpretationUpdateParams(String description, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
-                                      String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
-                                      List<PanelReferenceParam> panels, List<ClinicalCommentParam> comments, Map<String, Object> attributes,
-                                      StatusParam status) {
-        this(null, description, analyst, methods, creationDate, primaryFindings, secondaryFindings, panels, comments, attributes, status);
-    }
-
-    public InterpretationUpdateParams(String id, String description, ClinicalAnalystParam analyst, List<InterpretationMethod> methods,
-                                      String creationDate, List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings,
-                                      List<PanelReferenceParam> panels, List<ClinicalCommentParam> comments, Map<String, Object> attributes,
-                                      StatusParam status) {
-        this.id = id;
+    public InterpretationUpdateParams(String description, ClinicalAnalystParam analyst, InterpretationMethod method,
+                                      String creationDate, String modificationDate, List<ClinicalVariant> primaryFindings,
+                                      List<ClinicalVariant> secondaryFindings, List<PanelReferenceParam> panels,
+                                      List<ClinicalCommentParam> comments, Map<String, Object> attributes, StatusParam status) {
         this.description = description;
         this.analyst = analyst;
-        this.methods = methods;
+        this.method = method;
         this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.primaryFindings = primaryFindings;
         this.secondaryFindings = secondaryFindings;
         this.panels = panels;
@@ -78,11 +71,11 @@ public class InterpretationUpdateParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("InterpretationUpdateParams{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", description='").append(description).append('\'');
+        sb.append("description='").append(description).append('\'');
         sb.append(", analyst=").append(analyst);
-        sb.append(", methods=").append(methods);
+        sb.append(", method=").append(method);
         sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", primaryFindings=").append(primaryFindings);
         sb.append(", secondaryFindings=").append(secondaryFindings);
         sb.append(", panels=").append(panels);
@@ -91,15 +84,6 @@ public class InterpretationUpdateParams {
         sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public InterpretationUpdateParams setId(String id) {
-        this.id = id;
-        return this;
     }
 
     public String getDescription() {
@@ -120,12 +104,12 @@ public class InterpretationUpdateParams {
         return this;
     }
 
-    public List<InterpretationMethod> getMethods() {
-        return methods;
+    public InterpretationMethod getMethod() {
+        return method;
     }
 
-    public InterpretationUpdateParams setMethods(List<InterpretationMethod> methods) {
-        this.methods = methods;
+    public InterpretationUpdateParams setMethod(InterpretationMethod method) {
+        this.method = method;
         return this;
     }
 
@@ -135,6 +119,15 @@ public class InterpretationUpdateParams {
 
     public InterpretationUpdateParams setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public InterpretationUpdateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
         return this;
     }
 

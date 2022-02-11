@@ -63,11 +63,18 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @POST
     @Path("/create")
     @ApiOperation(value = "Create individual", response = Individual.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response createIndividualPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
             @ApiParam(value = "Comma separated list of sample ids to be associated to the created individual") @QueryParam("samples")
                     String samples,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(value = "JSON containing individual information", required = true) IndividualCreateParams params) {
         return run(() -> individualManager.create(studyStr, params.toIndividual(), getIdListOrEmpty(samples), queryOptions, token));
     }
@@ -146,6 +153,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.INDIVIDUAL_FATHER_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_FATHER_PARAM) String father,
             @ApiParam(value = ParamConstants.INDIVIDUAL_MOTHER_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_MOTHER_PARAM) String mother,
             @ApiParam(value = ParamConstants.INDIVIDUAL_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_SAMPLES_PARAM) String samples,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_FAMILY_IDS_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_FAMILY_IDS_PARAM) String familyIds,
             @ApiParam(value = ParamConstants.INDIVIDUAL_SEX_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_SEX_PARAM) String sex,
             @ApiParam(value = ParamConstants.INDIVIDUAL_DATE_OF_BIRTH_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_DATE_OF_BIRTH_PARAM) String dateOfBirth,
             @ApiParam(value = ParamConstants.INDIVIDUAL_ETHNICITY_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_ETHNICITY_PARAM) String ethnicity,
@@ -174,12 +182,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/distinct")
-    @ApiOperation(value = "Individual distinct method")
+    @ApiOperation(value = "Individual distinct method", response = Object.class)
     public Response distinct(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.INDIVIDUALS_ID_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_ID_PARAM) String id,
             @ApiParam(value = ParamConstants.INDIVIDUAL_UUID_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_UUID_PARAM) String uuid,
             @ApiParam(value = ParamConstants.INDIVIDUAL_NAME_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.INDIVIDUAL_FAMILY_IDS_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_FAMILY_IDS_PARAM) String familyIds,
             @ApiParam(value = ParamConstants.INDIVIDUAL_FATHER_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_FATHER_PARAM) String father,
             @ApiParam(value = ParamConstants.INDIVIDUAL_MOTHER_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_MOTHER_PARAM) String mother,
             @ApiParam(value = ParamConstants.INDIVIDUAL_SAMPLES_DESCRIPTION) @QueryParam(ParamConstants.INDIVIDUAL_SAMPLES_PARAM) String samples,
@@ -271,20 +280,27 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/{individuals}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some individual attributes", response = Individual.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
+                    dataType = "string", paramType = "query")
+    })
     public Response updateByPost(
             @ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individuals") String individualStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-                @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.SAMPLES_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam(ParamConstants.SAMPLES_ACTION_PARAM) ParamUtils.BasicUpdateAction samplesAction,
+            @QueryParam(ParamConstants.SAMPLES_ACTION_PARAM) ParamUtils.BasicUpdateAction samplesAction,
             @ApiParam(value = ParamConstants.INDIVIDUAL_PHENOTYPES_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam(ParamConstants.INDIVIDUAL_PHENOTYPES_ACTION_PARAM) ParamUtils.BasicUpdateAction phenotypesAction,
+            @QueryParam(ParamConstants.INDIVIDUAL_PHENOTYPES_ACTION_PARAM) ParamUtils.BasicUpdateAction phenotypesAction,
             @ApiParam(value = ParamConstants.INDIVIDUAL_DISORDERS_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam(ParamConstants.INDIVIDUAL_DISORDERS_ACTION_PARAM) ParamUtils.BasicUpdateAction disordersAction,
+            @QueryParam(ParamConstants.INDIVIDUAL_DISORDERS_ACTION_PARAM) ParamUtils.BasicUpdateAction disordersAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-                @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
+            @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false")
-                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(value = ParamConstants.BODY_PARAM) IndividualUpdateParams updateParams) {
         try {
             if (annotationSetsAction == null) {
@@ -327,7 +343,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Path where the TSV file is located in OpenCGA or where it should be located.", required = true)
             @QueryParam("path") String path,
             @ApiParam(value = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).")
-                @DefaultValue("false") @QueryParam("parents") boolean parents,
+            @DefaultValue("false") @QueryParam("parents") boolean parents,
             @ApiParam(value = "Annotation set id. If not provided, variableSetId will be used.") @QueryParam("annotationSetId") String annotationSetId,
             @ApiParam(value = ParamConstants.TSV_ANNOTATION_DESCRIPTION) TsvAnnotationParams params) {
         try {
@@ -351,7 +367,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_ID) @PathParam("annotationSet") String annotationSetId,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE,RESET,REPLACE", defaultValue = "ADD")
-                @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @QueryParam("action") ParamUtils.CompleteUpdateAction action,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION) Map<String, Object> updateParams) {
         try {
@@ -375,7 +391,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     })
     public Response delete(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-                @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of individual ids") @PathParam("individuals") String individuals) {
         try {
             return createOkResponse(individualManager.delete(studyStr, getIdList(individuals), queryOptions, true, token));

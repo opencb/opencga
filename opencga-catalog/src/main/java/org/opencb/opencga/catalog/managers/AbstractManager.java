@@ -109,14 +109,15 @@ public abstract class AbstractManager {
      * This method is called internally by the managers to change the keys used by users to query the data for the ones the corresponding
      * DBAdaptors will understand.
      *
-     * @param query Query object.
+     * @param query      Query object.
      * @param currentKey Public field offered to users to query.
      * @param newKey     Internal field that needs to be replaced with.
      */
     protected void changeQueryId(Query query, String currentKey, String newKey) {
         if (query != null && query.containsKey(currentKey)) {
-            query.put(newKey, query.get(currentKey));
+            Object value = query.get(currentKey);
             query.remove(currentKey);
+            query.put(newKey, value);
         }
     }
 
@@ -124,10 +125,10 @@ public abstract class AbstractManager {
      * Prior to the conversion to a numerical featureId, there is a need to know in which user/project/study look for the string.
      * This method calculates those parameters to know how to obtain the numerical id.
      *
-     * @param userId User id of the user asking for the id. If no user is found in featureStr, we will assume that it is asking for its
-     *               projects/studies...
+     * @param userId     User id of the user asking for the id. If no user is found in featureStr, we will assume that it is asking for its
+     *                   projects/studies...
      * @param featureStr Feature id in string format. Could be one of [user@aliasProject:aliasStudy:XXXXX
-     *                | user@aliasStudy:XXXXX | aliasStudy:XXXXX | XXXXX].
+     *                   | user@aliasStudy:XXXXX | aliasStudy:XXXXX | XXXXX].
      * @return an objectMap with the following possible keys: "user", "project", "study", "featureName"
      */
     protected ObjectMap parseFeatureId(String userId, String featureStr) {
@@ -170,12 +171,12 @@ public abstract class AbstractManager {
      * For entities with version where all versions have been requested, call to InternalGetDataResult.getVersionedResults() to get
      * a list of lists of T.
      *
-     * @param entries Original list used to perform the query.
-     * @param getId   Generic function that will fetch the id that will be used to compare with the list of entries.
-     * @param queryResult OpenCGAResult object.
-     * @param silent  Boolean indicating whether we will fail in case of an inconsistency or not.
+     * @param entries         Original list used to perform the query.
+     * @param getId           Generic function that will fetch the id that will be used to compare with the list of entries.
+     * @param queryResult     OpenCGAResult object.
+     * @param silent          Boolean indicating whether we will fail in case of an inconsistency or not.
      * @param keepAllVersions Boolean indicating whether to keep all versions of fail in case of id duplicities.
-     * @param <T>     Generic entry (Sample, File, Cohort...)
+     * @param <T>             Generic entry (Sample, File, Cohort...)
      * @return the OpenCGAResult with the proper order of results.
      * @throws CatalogException In case of inconsistencies found.
      */
@@ -220,7 +221,7 @@ public abstract class AbstractManager {
      * This method will make sure that 'field' is included in case there is a INCLUDE or never excluded in case there is a EXCLUDE list.
      *
      * @param options QueryOptions object.
-     * @param field field that needs to remain.
+     * @param field   field that needs to remain.
      * @return a new QueryOptions with the necessary modifications.
      */
     QueryOptions keepFieldInQueryOptions(QueryOptions options, String field) {
@@ -231,7 +232,7 @@ public abstract class AbstractManager {
      * This method will make sure that 'field' is included in case there is a INCLUDE or never excluded in case there is a EXCLUDE list.
      *
      * @param options QueryOptions object.
-     * @param fields fields that need to remain.
+     * @param fields  fields that need to remain.
      * @return a new QueryOptions with the necessary modifications.
      */
     QueryOptions keepFieldsInQueryOptions(QueryOptions options, List<String> fields) {
@@ -266,8 +267,8 @@ public abstract class AbstractManager {
      * @param <T>             Generic entry (Sample, File, Cohort...)
      * @return a list containing the entries that are in {@code originalEntries} that are not in {@code finalEntries}.
      */
-    <T extends IPrivateStudyUid> List<String>  getMissingFields(List<String> originalEntries, List<T> finalEntries,
-                                                                Function<T, String> getId) {
+    <T extends IPrivateStudyUid> List<String> getMissingFields(List<String> originalEntries, List<T> finalEntries,
+                                                               Function<T, String> getId) {
         Set<String> entrySet = new HashSet<>();
         for (T finalEntry : finalEntries) {
             entrySet.add(getId.apply(finalEntry));
@@ -283,20 +284,21 @@ public abstract class AbstractManager {
         return differences;
     }
 
-        /**
-         * Checks if the list of members are all valid.
-         *
-         * The "members" can be:
-         *  - '*' referring to all the users.
-         *  - 'anonymous' referring to the anonymous user.
-         *  - '@{groupId}' referring to a {@link Group}.
-         *  - '{userId}' referring to a specific user.
-         * @param studyId studyId
-         * @param members List of members
-         * @throws CatalogDBException CatalogDBException
-         * @throws CatalogParameterException if there is any formatting error.
-         * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
-         */
+    /**
+     * Checks if the list of members are all valid.
+     * <p>
+     * The "members" can be:
+     * - '*' referring to all the users.
+     * - 'anonymous' referring to the anonymous user.
+     * - '@{groupId}' referring to a {@link Group}.
+     * - '{userId}' referring to a specific user.
+     *
+     * @param studyId studyId
+     * @param members List of members
+     * @throws CatalogDBException            CatalogDBException
+     * @throws CatalogParameterException     if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
+     */
     protected void checkMembers(long studyId, List<String> members)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         for (String member : members) {
@@ -306,15 +308,16 @@ public abstract class AbstractManager {
 
     /**
      * Checks if the member is valid.
-     *
+     * <p>
      * The "member" can be:
-     *  - '*' referring to all the users.
-     *  - '@{groupId}' referring to a {@link Group}.
-     *  - '{userId}' referring to a specific user.
+     * - '*' referring to all the users.
+     * - '@{groupId}' referring to a {@link Group}.
+     * - '{userId}' referring to a specific user.
+     *
      * @param studyId studyId
-     * @param member member
-     * @throws CatalogDBException CatalogDBException
-     * @throws CatalogParameterException if there is any formatting error.
+     * @param member  member
+     * @throws CatalogDBException            CatalogDBException
+     * @throws CatalogParameterException     if there is any formatting error.
      * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
     protected void checkMember(long studyId, String member)

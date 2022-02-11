@@ -67,14 +67,18 @@ public class CellBaseUtils {
     }
 
     public List<Region> getGeneRegion(List<String> geneStrs, boolean skipMissing) {
+        return new ArrayList<>(getGeneRegionMap(geneStrs, skipMissing).values());
+    }
+
+    public Map<String, Region> getGeneRegionMap(List<String> geneStrs, boolean skipMissing) {
         geneStrs = new LinkedList<>(geneStrs);
-        List<Region> regions = new ArrayList<>(geneStrs.size());
+        Map<String, Region> regions = new HashMap<>(geneStrs.size());
         Iterator<String> iterator = geneStrs.iterator();
         while (iterator.hasNext()) {
             String gene = iterator.next();
             Region region = cache.get(gene);
             if (region != null) {
-                regions.add(region);
+                regions.put(gene, region);
                 iterator.remove();
             }
         }
@@ -88,9 +92,11 @@ public class CellBaseUtils {
             logger.info("Query genes from CellBase " + cellBaseClient.getSpecies() + ":" + assembly + " " + geneStrs + "  -> "
                     + (System.currentTimeMillis() - ts) / 1000.0 + "s ");
             List<String> missingGenes = null;
+            iterator = geneStrs.iterator();
             for (CellBaseDataResult<Gene> result : response.getResponses()) {
                 Gene gene = null;
-                String geneStr = result.getId();
+//                String geneStr = result.getId(); // result.id might come empty! Do not use it
+                String geneStr = iterator.next();
                 // It may happen that CellBase returns more than 1 result for the same gene name.
                 // Pick the gene where the given geneStr matches with the name,id,transcript.id,transcript.name or transcript.proteinId
                 if (result.getResults().size() > 1) {
@@ -128,13 +134,13 @@ public class CellBaseUtils {
                     if (missingGenes == null) {
                         missingGenes = new ArrayList<>();
                     }
-                    missingGenes.add(result.getId());
+                    missingGenes.add(geneStr);
                     continue;
                 }
                 int start = Math.max(1, gene.getStart() - GENE_EXTRA_REGION);
                 int end = gene.getEnd() + GENE_EXTRA_REGION;
                 Region region = new Region(gene.getChromosome(), start, end);
-                regions.add(region);
+                regions.put(geneStr, region);
                 cache.put(gene.getName(), region);
                 cache.put(gene.getId(), region);
                 cache.put(geneStr, region);

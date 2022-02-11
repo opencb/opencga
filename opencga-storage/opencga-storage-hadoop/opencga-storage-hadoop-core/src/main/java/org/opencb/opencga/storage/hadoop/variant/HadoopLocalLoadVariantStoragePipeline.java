@@ -545,11 +545,11 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         boolean includeReferenceVariantsData = getOptions().getBoolean(
                 VARIANT_TABLE_LOAD_REFERENCE.key(),
                 VARIANT_TABLE_LOAD_REFERENCE.defaultValue());
-        boolean excludeGenotypes = getOptions().getBoolean(
-                EXCLUDE_GENOTYPES.key(),
-                EXCLUDE_GENOTYPES.defaultValue());
+        YesNoAuto includeGenotype = YesNoAuto.parse(getOptions(), INCLUDE_GENOTYPE.key());
+        boolean excludeGenotypes = includeGenotype == YesNoAuto.NO;
+
         return new VariantHadoopDBWriter(
-                dbAdaptor.getCredentials().getTable(),
+                dbAdaptor.getVariantTable(),
                 getStudyId(),
                 getFileId(),
                 getMetadataManager(),

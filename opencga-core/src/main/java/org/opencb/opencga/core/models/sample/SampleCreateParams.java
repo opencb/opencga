@@ -18,7 +18,8 @@ package org.opencb.opencga.core.models.sample;
 
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.StatusParams;
+import org.opencb.opencga.core.models.common.ExternalSource;
 
 import java.util.List;
 import java.util.Map;
@@ -27,13 +28,16 @@ public class SampleCreateParams {
 
     private String id;
     private String description;
+    private String creationDate;
+    private String modificationDate;
     private String individualId;
+    private ExternalSource source;
     private SampleProcessing processing;
     private SampleCollection collection;
     private Boolean somatic;
     private List<Phenotype> phenotypes;
 
-    private CustomStatusParams status;
+    private StatusParams status;
 
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
@@ -41,12 +45,16 @@ public class SampleCreateParams {
     public SampleCreateParams() {
     }
 
-    public SampleCreateParams(String id, String description, String individualId, SampleProcessing processing, SampleCollection collection,
-                              Boolean somatic, List<Phenotype> phenotypes, CustomStatusParams status, List<AnnotationSet> annotationSets,
+    public SampleCreateParams(String id, String description, String creationDate, String modificationDate, String individualId,
+                              ExternalSource source, SampleProcessing processing, SampleCollection collection, Boolean somatic,
+                              List<Phenotype> phenotypes, StatusParams status, List<AnnotationSet> annotationSets,
                               Map<String, Object> attributes) {
         this.id = id;
         this.description = description;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.individualId = individualId;
+        this.source = source;
         this.processing = processing;
         this.collection = collection;
         this.somatic = somatic;
@@ -57,9 +65,9 @@ public class SampleCreateParams {
     }
 
     public static SampleCreateParams of(Sample sample) {
-        return new SampleCreateParams(sample.getId(), sample.getDescription(), sample.getIndividualId(), sample.getProcessing(),
-                sample.getCollection(), sample.isSomatic(), sample.getPhenotypes(), CustomStatusParams.of(sample.getStatus()),
-                sample.getAnnotationSets(), sample.getAttributes());
+        return new SampleCreateParams(sample.getId(), sample.getDescription(), sample.getCreationDate(), sample.getModificationDate(),
+                sample.getIndividualId(), sample.getSource(), sample.getProcessing(), sample.getCollection(), sample.isSomatic(),
+                sample.getPhenotypes(), StatusParams.of(sample.getStatus()), sample.getAnnotationSets(), sample.getAttributes());
     }
 
     @Override
@@ -67,11 +75,15 @@ public class SampleCreateParams {
         final StringBuilder sb = new StringBuilder("SampleCreateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", individualId='").append(individualId).append('\'');
+        sb.append(", source=").append(source);
         sb.append(", processing=").append(processing);
         sb.append(", collection=").append(collection);
         sb.append(", somatic=").append(somatic);
         sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", status=").append(status);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -79,9 +91,9 @@ public class SampleCreateParams {
     }
 
     public Sample toSample() {
-        return new Sample(getId(), getIndividualId(), getProcessing(), getCollection(), 1, 1, getDescription(),
-                getSomatic() != null ? getSomatic() : false, getPhenotypes(), getAnnotationSets(),
-                getStatus() != null ? getStatus().toCustomStatus() : null, null, getAttributes());
+        return new Sample(getId(), creationDate, modificationDate, getIndividualId(), source, getProcessing(), getCollection(), 1, 1,
+                getDescription(), getSomatic() != null ? getSomatic() : false, getPhenotypes(), getAnnotationSets(),
+                getStatus() != null ? getStatus().toStatus() : null, null, getAttributes());
     }
 
     public String getId() {
@@ -102,12 +114,39 @@ public class SampleCreateParams {
         return this;
     }
 
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public SampleCreateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public SampleCreateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
+        return this;
+    }
+
     public String getIndividualId() {
         return individualId;
     }
 
     public SampleCreateParams setIndividualId(String individualId) {
         this.individualId = individualId;
+        return this;
+    }
+
+    public ExternalSource getSource() {
+        return source;
+    }
+
+    public SampleCreateParams setSource(ExternalSource source) {
+        this.source = source;
         return this;
     }
 
@@ -147,11 +186,11 @@ public class SampleCreateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public SampleCreateParams setStatus(CustomStatusParams status) {
+    public SampleCreateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

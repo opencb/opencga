@@ -78,11 +78,6 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
  */
 public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
-    private UserManager userManager;
-    private StudyManager studyManager;
-
-    protected static Logger logger = LoggerFactory.getLogger(ClinicalAnalysisManager.class);
-
     public static final QueryOptions INCLUDE_CLINICAL_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), ClinicalAnalysisDBAdaptor.QueryParams.UID.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key(), ClinicalAnalysisDBAdaptor.QueryParams.UUID.key(),
@@ -105,6 +100,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key(), ClinicalAnalysisDBAdaptor.QueryParams.FLAGS.key(),
             ClinicalAnalysisDBAdaptor.QueryParams.TYPE.key()));
+    protected static Logger logger = LoggerFactory.getLogger(ClinicalAnalysisManager.class);
+    private UserManager userManager;
+    private StudyManager studyManager;
 
     ClinicalAnalysisManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                             DBAdaptorFactory catalogDBAdaptorFactory, Configuration configuration) {
@@ -218,18 +216,19 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
     @Override
     public OpenCGAResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis, QueryOptions options, String token)
             throws CatalogException {
-        return create(studyStr, clinicalAnalysis, false, options, token);
+        return create(studyStr, clinicalAnalysis, null, options, token);
     }
 
-    public OpenCGAResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis, boolean createDefaultInterpretation,
-                                                  QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<ClinicalAnalysis> create(String studyStr, ClinicalAnalysis clinicalAnalysis,
+                                                  Boolean skipCreateDefaultInterpretation, QueryOptions options, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId, StudyManager.INCLUDE_CONFIGURATION);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("clinicalAnalysis", clinicalAnalysis)
-                .append("createDefaultInterpretation", createDefaultInterpretation)
+                .append("skipCreateDefaultInterpretation", skipCreateDefaultInterpretation)
                 .append("options", options)
                 .append("token", token);
         try {
@@ -247,17 +246,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             ParamUtils.checkObj(clinicalAnalysis.getType(), "type");
             ParamUtils.checkObj(clinicalAnalysis.getProband(), "proband");
 
-            if (clinicalAnalysis.getInterpretation() != null && StringUtils.isNotEmpty(clinicalAnalysis.getInterpretation().getId())
-                    && createDefaultInterpretation) {
-                throw new CatalogException("createDefaultInterpretation flag passed together with interpretation '"
-                        + clinicalAnalysis.getInterpretation().getId() + "'. Please, choose between initialising a default interpretation "
-                        + "or passing an interpretation id");
-            }
-
             clinicalAnalysis.setStatus(ParamUtils.defaultObject(clinicalAnalysis.getStatus(), Status::new));
-            clinicalAnalysis.setInternal(ParamUtils.defaultObject(clinicalAnalysis.getInternal(), ClinicalAnalysisInternal::new));
-            clinicalAnalysis.getInternal().setStatus(ParamUtils.defaultObject(clinicalAnalysis.getInternal().getStatus(),
-                    ClinicalAnalysisStatus::new));
+            clinicalAnalysis.setInternal(ClinicalAnalysisInternal.init());
             clinicalAnalysis.setDisorder(ParamUtils.defaultObject(clinicalAnalysis.getDisorder(),
                     new Disorder("", "", "", Collections.emptyMap(), "", Collections.emptyList())));
             clinicalAnalysis.setDueDate(ParamUtils.defaultObject(clinicalAnalysis.getDueDate(),
@@ -268,8 +258,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     ClinicalAnalysisQualityControl::new));
             clinicalAnalysis.setPanels(ParamUtils.defaultObject(clinicalAnalysis.getPanels(), Collections.emptyList()));
 
-            clinicalAnalysis.getQualityControl().setUser(userId);
-            clinicalAnalysis.getQualityControl().setDate(TimeUtils.getDate());
+            if (clinicalAnalysis.getQualityControl().getComments() != null) {
+                for (ClinicalComment comment : clinicalAnalysis.getQualityControl().getComments()) {
+                    comment.setDate(TimeUtils.getTime());
+                    comment.setAuthor(userId);
+                }
+            }
 
             if (!clinicalAnalysis.getComments().isEmpty()) {
                 // Fill author and date
@@ -506,15 +500,16 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                     }
                 }
             }
-
             if (clinicalAnalysis.getFiles() != null && !clinicalAnalysis.getFiles().isEmpty()) {
                 validateFiles(study, clinicalAnalysis, userId);
             } else {
                 obtainFiles(study, clinicalAnalysis, userId);
             }
 
-            clinicalAnalysis.setCreationDate(TimeUtils.getTime());
-            clinicalAnalysis.setModificationDate(TimeUtils.getTime());
+            clinicalAnalysis.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(clinicalAnalysis.getCreationDate(),
+                    ClinicalAnalysisDBAdaptor.QueryParams.CREATION_DATE.key()));
+            clinicalAnalysis.setModificationDate(ParamUtils.checkDateOrGetCurrentDate(clinicalAnalysis.getModificationDate(),
+                    ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE.key()));
             clinicalAnalysis.setDescription(ParamUtils.defaultString(clinicalAnalysis.getDescription(), ""));
             clinicalAnalysis.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             clinicalAnalysis.setAttributes(ParamUtils.defaultObject(clinicalAnalysis.getAttributes(), Collections.emptyMap()));
@@ -528,35 +523,40 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             validateCustomPriorityParameters(clinicalAnalysis, clinicalConfiguration);
             validateCustomFlagParameters(clinicalAnalysis, clinicalConfiguration);
             validateCustomConsentParameters(clinicalAnalysis, clinicalConfiguration);
-            validateCustomStatusParameters(clinicalAnalysis, clinicalConfiguration);
+            validateStatusParameter(clinicalAnalysis, clinicalConfiguration);
 
             sortMembersFromFamily(clinicalAnalysis);
 
+            List<ClinicalAudit> clinicalAuditList = new ArrayList<>();
+
             clinicalAnalysis.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.CLINICAL));
-            if (createDefaultInterpretation) {
+            if (clinicalAnalysis.getInterpretation() == null
+                    && (skipCreateDefaultInterpretation == null || !skipCreateDefaultInterpretation)) {
                 clinicalAnalysis.setInterpretation(ParamUtils.defaultObject(clinicalAnalysis.getInterpretation(), Interpretation::new));
-                clinicalAnalysis.getInterpretation().setId(ParamUtils.defaultString(clinicalAnalysis.getInterpretation().getId(),
-                        clinicalAnalysis.getId() + ".1"));
             }
 
             if (clinicalAnalysis.getInterpretation() != null) {
                 catalogManager.getInterpretationManager().validateNewInterpretation(study, clinicalAnalysis.getInterpretation(),
                         clinicalAnalysis, userId);
+                clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_INTERPRETATION,
+                        "Create interpretation '" + clinicalAnalysis.getInterpretation().getId() + "'", TimeUtils.getTime()));
             }
 
-            ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_CLINICAL_ANALYSIS,
-                    "Create ClinicalAnalysis '" + clinicalAnalysis.getId() + "'", TimeUtils.getTime());
-            OpenCGAResult result = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, Collections.singletonList(clinicalAudit),
-                    options);
+            clinicalAuditList.add(new ClinicalAudit(userId, ClinicalAudit.Action.CREATE_CLINICAL_ANALYSIS,
+                    "Create ClinicalAnalysis '" + clinicalAnalysis.getId() + "'", TimeUtils.getTime()));
+            OpenCGAResult<ClinicalAnalysis> insert = clinicalDBAdaptor.insert(study.getUid(), clinicalAnalysis, clinicalAuditList, options);
 
             auditManager.auditCreate(userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(), clinicalAnalysis.getUuid(),
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            OpenCGAResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(study.getUid(), clinicalAnalysis.getId(),
-                    QueryOptions.empty());
-            queryResult.setTime(queryResult.getTime() + result.getTime());
+            if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+                // Fetch updated clinical analysis
+                OpenCGAResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(study.getUid(), clinicalAnalysis.getId(),
+                        QueryOptions.empty());
+                insert.setResults(queryResult.getResults());
+            }
 
-            return queryResult;
+            return insert;
         } catch (CatalogException e) {
             auditManager.auditCreate(userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(), "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -564,7 +564,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
     }
 
-    private void validateCustomStatusParameters(ClinicalAnalysis clinicalAnalysis, ClinicalAnalysisStudyConfiguration clinicalConfiguration)
+    private void validateStatusParameter(ClinicalAnalysis clinicalAnalysis, ClinicalAnalysisStudyConfiguration clinicalConfiguration)
             throws CatalogException {
         // Status
         if (clinicalConfiguration.getStatus() == null
@@ -625,7 +625,6 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 consentList.add(new ClinicalConsentParam(consent.getId(), consent.getName(), consent.getDescription(),
                         ClinicalConsentParam.Value.UNKNOWN));
             }
-
         } else {
             // Adding all consents to UNKNOWN
             for (ClinicalConsent consent : consentMap.values()) {
@@ -750,8 +749,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), new ArrayList<>(sampleSet))
-                .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.ALIGNMENT, File.Bioformat.VARIANT,
-                        File.Bioformat.COVERAGE));
+                .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.ALIGNMENT, File.Bioformat.VARIANT));
         OpenCGAResult<File> fileResults = fileDBAdaptor.get(study.getUid(), query, new QueryOptions(), userId);
 
         Map<String, List<File>> fileMap = new HashMap<>();
@@ -1006,6 +1004,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, clinicalAnalysis.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update clinical analysis {}: {}", clinicalAnalysis.getId(), e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),
@@ -1061,6 +1060,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         } catch (CatalogException e) {
             Event event = new Event(Event.Type.ERROR, clinicalId, e.getMessage());
             result.getEvents().add(event);
+            result.setNumErrors(result.getNumErrors() + 1);
 
             logger.error("Could not update clinical analysis {}: {}", clinicalId, e.getMessage());
             auditManager.auditUpdate(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, clinicalUuid,
@@ -1136,6 +1136,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, id, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error("Could not update clinical analysis {}: {}", clinicalAnalysisId, e.getMessage());
                 auditManager.auditUpdate(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysisId, clinicalAnalysisUuid,
@@ -1159,6 +1160,14 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
+
+        if (StringUtils.isNotEmpty(clinicalAnalysis.getCreationDate())) {
+            ParamUtils.checkDateFormat(clinicalAnalysis.getCreationDate(), ClinicalAnalysisDBAdaptor.QueryParams.CREATION_DATE.key());
+        }
+        if (StringUtils.isNotEmpty(clinicalAnalysis.getModificationDate())) {
+            ParamUtils.checkDateFormat(clinicalAnalysis.getModificationDate(),
+                    ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE.key());
+        }
 
         ObjectMap parameters;
         if (updateParams != null) {
@@ -1234,8 +1243,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         }
         if (parameters.get(ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL.key()) != null) {
             ClinicalAnalysisQualityControl qualityControl = updateParams.getQualityControl().toClinicalQualityControl();
-            qualityControl.setUser(userId);
-            qualityControl.setDate(TimeUtils.getDate());
+            if (qualityControl.getComments() != null) {
+                for (ClinicalComment comment : qualityControl.getComments()) {
+                    comment.setDate(TimeUtils.getTime());
+                    comment.setAuthor(userId);
+                }
+            }
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL.key(), qualityControl);
         }
 
@@ -1246,28 +1259,59 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             validateFiles(study, clinicalAnalysis, userId);
         }
 
-        if (CollectionUtils.isNotEmpty(updateParams.getPanels()) || updateParams.getPanelLock() != null) {
-            // Check the Clinical Analysis have no interpretations
-            Query query = new Query()
-                    .append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                    .append(InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(), clinicalAnalysis.getId());
-            OpenCGAResult<Long> count = interpretationDBAdaptor.count(query);
-            if (count.getNumMatches() > 0) {
-                throw new CatalogException("Cannot update ClinicalAnalysis '" + clinicalAnalysis.getId()
-                        + "'. Updating 'panels' or 'panelLocked' fields is forbidden when the Clinical Analysis contains Interpretations");
+        if (CollectionUtils.isNotEmpty(updateParams.getPanels()) && updateParams.getPanelLock() != null && updateParams.getPanelLock()
+                && (clinicalAnalysis.getInterpretation() != null
+                || CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations()))) {
+            throw new CatalogException("Updating the list of panels and setting 'panelLock' to true at the same time is not allowed "
+                    + " when the ClinicalAnalysis has Interpretations.");
+        }
+
+        if (CollectionUtils.isNotEmpty(updateParams.getPanels())) {
+            if (clinicalAnalysis.isPanelLock()) {
+                throw new CatalogException("Cannot update panels from ClinicalAnalysis '" + clinicalAnalysis.getId() + "'. "
+                        + "'panelLocked' field from ClinicalAnalysis is set to true.");
             }
 
-            if (CollectionUtils.isNotEmpty(updateParams.getPanels())) {
-                // Validate and get panels
-                List<String> panelIds = updateParams.getPanels().stream().map(PanelReferenceParam::getId).collect(Collectors.toList());
-                query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
-                OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
-                        panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
-                if (panelResult.getNumResults() < panelIds.size()) {
-                    throw new CatalogException("Some panels were not found or user doesn't have permissions to see them");
-                }
+            // Validate and get panels
+            List<String> panelIds = updateParams.getPanels().stream().map(PanelReferenceParam::getId).collect(Collectors.toList());
+            Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelIds);
+            OpenCGAResult<org.opencb.opencga.core.models.panel.Panel> panelResult =
+                    panelDBAdaptor.get(study.getUid(), query, PanelManager.INCLUDE_PANEL_IDS, userId);
+            if (panelResult.getNumResults() < panelIds.size()) {
+                throw new CatalogException("Some panels were not found or user doesn't have permissions to see them.");
+            }
 
-                parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelResult.getResults());
+            parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), panelResult.getResults());
+        }
+
+        if (updateParams.getPanelLock() != null && updateParams.getPanelLock() && !clinicalAnalysis.isPanelLock()) {
+            // if user wants to set panelLock to true
+            // We need to check if the CA has interpretations. If so, the interpretations should contain exactly the same panels in order
+            // to set panelLock to true. Otherwise, that action is not allowed.
+            Set<String> panelIds = clinicalAnalysis.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
+            CatalogException exception = new CatalogException("The panels of the ClinicalAnalysis are different from the ones of at "
+                    + "least one Interpretation. 'panelLock' can only be set to true if the Interpretations use exactly the same panels");
+            if (clinicalAnalysis.getInterpretation() != null) {
+                if (clinicalAnalysis.getInterpretation().getPanels().size() != panelIds.size()) {
+                    throw exception;
+                }
+                for (Panel panel : clinicalAnalysis.getInterpretation().getPanels()) {
+                    if (!panelIds.contains(panel.getId())) {
+                        throw exception;
+                    }
+                }
+            }
+            if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+                for (Interpretation interpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                    if (interpretation.getPanels().size() != panelIds.size()) {
+                        throw exception;
+                    }
+                    for (Panel panel : interpretation.getPanels()) {
+                        if (!panelIds.contains(panel.getId())) {
+                            throw exception;
+                        }
+                    }
+                }
             }
         }
 
@@ -1342,14 +1386,22 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.CONSENT.key(), clinicalAnalysis.getConsent());
         }
         if (parameters.containsKey(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key())) {
-            clinicalAnalysis.setStatus(updateParams.getStatus().toCustomStatus());
-            validateCustomStatusParameters(clinicalAnalysis, clinicalConfiguration);
+            clinicalAnalysis.setStatus(updateParams.getStatus().toStatus());
+            validateStatusParameter(clinicalAnalysis, clinicalConfiguration);
             parameters.put(ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key(), clinicalAnalysis.getStatus());
         }
 
         ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.UPDATE_CLINICAL_ANALYSIS,
                 "Update ClinicalAnalysis '" + clinicalAnalysis.getId() + "'", TimeUtils.getTime());
-        return clinicalDBAdaptor.update(clinicalAnalysis.getUid(), parameters, Collections.singletonList(clinicalAudit), options);
+        OpenCGAResult<ClinicalAnalysis> update = clinicalDBAdaptor.update(clinicalAnalysis.getUid(), parameters,
+                Collections.singletonList(clinicalAudit), options);
+        if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {
+            // Fetch updated clinical analysis
+            OpenCGAResult<ClinicalAnalysis> result = clinicalDBAdaptor.get(study.getUid(),
+                    new Query(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), clinicalAnalysis.getUid()), options, userId);
+            update.setResults(result.getResults());
+        }
+        return update;
     }
 
     /**
@@ -1469,7 +1521,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                 ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL_SUMMARY.key());
         changeQueryId(query, ParamConstants.CLINICAL_STATUS_PARAM, ClinicalAnalysisDBAdaptor.QueryParams.STATUS_ID.key());
         changeQueryId(query, ParamConstants.CLINICAL_INTERNAL_STATUS_PARAM,
-                ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key());
+                ClinicalAnalysisDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key());
 
         if (query.containsKey(ParamConstants.CLINICAL_PANELS_PARAM)) {
             List<String> panelList = query.getAsStringList(ParamConstants.CLINICAL_PANELS_PARAM);
@@ -1684,7 +1736,12 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             String clinicalId = id;
             String clinicalUuid = "";
             try {
-                OpenCGAResult<ClinicalAnalysis> internalResult = internalGet(study.getUid(), id, INCLUDE_CLINICAL_INTERPRETATION_IDS,
+                OpenCGAResult<ClinicalAnalysis> internalResult = internalGet(study.getUid(), id,
+                        keepFieldsInQueryOptions(INCLUDE_CLINICAL_INTERPRETATION_IDS, Arrays.asList(
+                                ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key() + "."
+                                        + InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(),
+                                ClinicalAnalysisDBAdaptor.QueryParams.SECONDARY_INTERPRETATIONS.key() + "."
+                                        + InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key())),
                         userId);
                 if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("Clinical Analysis '" + id + "' not found");
@@ -1716,6 +1773,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
                 Event event = new Event(Event.Type.ERROR, clinicalId, e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalId, clinicalUuid,
@@ -1731,8 +1789,16 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         if (options.getBoolean(Constants.FORCE)) {
             return;
         }
-        if (clinicalAnalysis.getInterpretation() != null || CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
-            throw new CatalogException("Deleting a Clinical Analysis containing interpretations is forbidden.");
+        if (clinicalAnalysis.getInterpretation() != null
+                && CollectionUtils.isNotEmpty(clinicalAnalysis.getInterpretation().getPrimaryFindings())) {
+            throw new CatalogException("Deleting a Clinical Analysis containing interpretations with findings is forbidden.");
+        }
+        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+            for (Interpretation interpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                if (interpretation != null && CollectionUtils.isNotEmpty(interpretation.getPrimaryFindings())) {
+                    throw new CatalogException("Deleting a Clinical Analysis containing interpretations with findings is forbidden.");
+                }
+            }
         }
         if (clinicalAnalysis.isLocked()) {
             throw new CatalogException("Deleting a locked Clinical Analysis is forbidden.");
@@ -1808,6 +1874,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
                 Event event = new Event(Event.Type.ERROR, clinicalAnalysis.getId(), e.getMessage());
                 result.getEvents().add(event);
+                result.setNumErrors(result.getNumErrors() + 1);
 
                 logger.error(errorMsg);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.CLINICAL_ANALYSIS, clinicalAnalysis.getId(),

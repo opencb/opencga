@@ -19,10 +19,12 @@ package org.opencb.opencga.core.models.family;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.common.Status;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.CustomStatus;
-import org.opencb.opencga.core.models.common.CustomStatusParams;
+import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
 import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
@@ -37,12 +39,14 @@ public class IndividualCreateParams {
     private String id;
     private String name;
 
+    private String creationDate;
+    private String modificationDate;
     private IndividualReferenceParam father;
     private IndividualReferenceParam mother;
     private Location location;
 
-    private IndividualProperty.Sex sex;
-    private String ethnicity;
+    private SexOntologyTermAnnotation sex;
+    private OntologyTermAnnotation ethnicity;
     private Boolean parentalConsanguinity;
     private IndividualPopulation population;
     private String dateOfBirth;
@@ -51,19 +55,22 @@ public class IndividualCreateParams {
     private List<AnnotationSet> annotationSets;
     private List<Phenotype> phenotypes;
     private List<Disorder> disorders;
-    private CustomStatusParams status;
+    private StatusParams status;
     private Map<String, Object> attributes;
 
     public IndividualCreateParams() {
     }
 
-    public IndividualCreateParams(String id, String name, IndividualReferenceParam father, IndividualReferenceParam mother,
-                                  Location location, IndividualProperty.Sex sex, String ethnicity, Boolean parentalConsanguinity,
-                                  IndividualPopulation population, String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
+    public IndividualCreateParams(String id, String name, String creationDate, String modificationDate, IndividualReferenceParam father,
+                                  IndividualReferenceParam mother, Location location, SexOntologyTermAnnotation sex,
+                                  OntologyTermAnnotation ethnicity, Boolean parentalConsanguinity, IndividualPopulation population,
+                                  String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
                                   IndividualProperty.LifeStatus lifeStatus, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
-                                  List<Disorder> disorders, CustomStatusParams status, Map<String, Object> attributes) {
+                                  List<Disorder> disorders, StatusParams status, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.father = father;
         this.mother = mother;
         this.location = location;
@@ -82,7 +89,8 @@ public class IndividualCreateParams {
     }
 
     public static IndividualCreateParams of(Individual individual) {
-        return new IndividualCreateParams(individual.getId(), individual.getName(),
+        return new IndividualCreateParams(individual.getId(), individual.getName(), individual.getCreationDate(),
+                individual.getModificationDate(),
                 individual.getFather() != null
                         ? new IndividualReferenceParam(individual.getFather().getId(), individual.getFather().getUuid())
                         : null,
@@ -93,7 +101,7 @@ public class IndividualCreateParams {
                 individual.getSex(), individual.getEthnicity(), individual.isParentalConsanguinity(), individual.getPopulation(),
                 individual.getDateOfBirth(), individual.getKaryotypicSex(), individual.getLifeStatus(),
                 individual.getAnnotationSets(), individual.getPhenotypes(), individual.getDisorders(),
-                CustomStatusParams.of(individual.getStatus()), individual.getAttributes());
+                StatusParams.of(individual.getStatus()), individual.getAttributes());
     }
 
     @Override
@@ -101,8 +109,10 @@ public class IndividualCreateParams {
         final StringBuilder sb = new StringBuilder("IndividualCreateParams{");
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
-        sb.append(", father='").append(father).append('\'');
-        sb.append(", mother='").append(mother).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", father=").append(father);
+        sb.append(", mother=").append(mother);
         sb.append(", location=").append(location);
         sb.append(", sex=").append(sex);
         sb.append(", ethnicity='").append(ethnicity).append('\'');
@@ -129,10 +139,10 @@ public class IndividualCreateParams {
         Individual mother = this.mother != null
                 ? new Individual().setId(this.mother.getId()).setUuid(this.mother.getUuid())
                 : null;
-        return new Individual(individualId, individualName, father, mother, location, sex, karyotypicSex, ethnicity, population,
-                dateOfBirth, 1, 1, "", lifeStatus, phenotypes, disorders, Collections.emptyList(),
-                parentalConsanguinity != null ? parentalConsanguinity : false, annotationSets,
-                status != null ? status.toCustomStatus() : new CustomStatus(), null, attributes);
+        return new Individual(individualId, individualName, father, mother, Collections.emptyList(), location, null, sex,
+                karyotypicSex, ethnicity, population, dateOfBirth, 1, 1, creationDate, modificationDate, lifeStatus, phenotypes, disorders,
+                Collections.emptyList(), parentalConsanguinity != null ? parentalConsanguinity : false,
+                annotationSets, status != null ? status.toStatus() : new Status(), null, attributes);
     }
 
     public String getId() {
@@ -171,6 +181,24 @@ public class IndividualCreateParams {
         return this;
     }
 
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public IndividualCreateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public IndividualCreateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
+        return this;
+    }
+
     public Location getLocation() {
         return location;
     }
@@ -180,20 +208,20 @@ public class IndividualCreateParams {
         return this;
     }
 
-    public IndividualProperty.Sex getSex() {
+    public SexOntologyTermAnnotation getSex() {
         return sex;
     }
 
-    public IndividualCreateParams setSex(IndividualProperty.Sex sex) {
+    public IndividualCreateParams setSex(SexOntologyTermAnnotation sex) {
         this.sex = sex;
         return this;
     }
 
-    public String getEthnicity() {
+    public OntologyTermAnnotation getEthnicity() {
         return ethnicity;
     }
 
-    public IndividualCreateParams setEthnicity(String ethnicity) {
+    public IndividualCreateParams setEthnicity(OntologyTermAnnotation ethnicity) {
         this.ethnicity = ethnicity;
         return this;
     }
@@ -270,11 +298,11 @@ public class IndividualCreateParams {
         return this;
     }
 
-    public CustomStatusParams getStatus() {
+    public StatusParams getStatus() {
         return status;
     }
 
-    public IndividualCreateParams setStatus(CustomStatusParams status) {
+    public IndividualCreateParams setStatus(StatusParams status) {
         this.status = status;
         return this;
     }

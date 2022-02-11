@@ -2,9 +2,9 @@
 
 ## Overview
 
-OpenCGA _Catalog_ provides an **authenticated** **environment** to manage data. It counts with a powerful mechanism of custom-built and secure permission system defined by a mechanism of **Access Control Lists \(ACLs\).** 
+OpenCGA _Catalog_ provides an **authenticated** **environment** to manage data. It counts with a powerful mechanism of custom-built and secure permission system defined by a mechanism of **Access Control Lists \(ACLs\).**
 
-The system enables to define a list of permissions at any entity level. The permissions are granted to members, being a member either a isolate user or a defined group of users. 
+The system enables to define a list of permissions at any entity level. The permissions are granted to members, being a member either a isolate user or a defined group of users.
 
 ## Users <a id="DataManagement-Users"></a>
 
@@ -23,9 +23,9 @@ You can create _group_ of users, this will simplify data permission management. 
 * If one user leaves the department, we would just need to remove that user from the corresponding group. That user will automatically lose the permissions the group has\*.
 * If one user starts in the department, we would just need to add that user to the corresponding group. That user will automatically gain the permissions the group has.
 
- \* Unless the user had some or all the permissions granted to the group defined in a different group he/she might still belong to or assigned directly to the user.
+  \* Unless the user had some or all the permissions granted to the group defined in a different group he/she might still belong to or assigned directly to the user.
 
-All _studies_ have always two administrative groups that cannot be deleted or renamed, these are _admins_ and _members_. 
+All _studies_ have always two administrative groups that cannot be deleted or renamed, these are _admins_ and _members_.
 
 ## Projects <a id="DataManagement-Projects"></a>
 
@@ -90,6 +90,4 @@ OpenCGA Catalog allows running different tools. This tools can be any of the one
 {% hint style="info" %}
 OpenCGA supports SGE \(Sun Grid Engine\) that accepts, schedules, dispatches, and manages the remote and distributed execution of large numbers of standalone or parallel jobs.
 {% endhint %}
-
-
 

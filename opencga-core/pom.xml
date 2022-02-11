@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.1.1</version>
+        <version>2.2.0-rc1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -204,7 +204,7 @@
                             <sourcepath>${project.basedir}/src/main/java</sourcepath>
                             <additionalOptions>
                                 <additionalOption>-outputdir</additionalOption>
-                                <additionalOption>${project.basedir}/../docs/manual/data-models</additionalOption>
+                                <additionalOption>${project.basedir}/../docs/data-models</additionalOption>
                                 <additionalOption>-sourceClassesDir</additionalOption>
                                 <additionalOption>${project.basedir}/src/main/java</additionalOption>
                                 <additionalOption>-classes2Markdown</additionalOption>

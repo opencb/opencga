@@ -12,6 +12,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -56,7 +57,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     public static final String SAMPLES = "samples";
-//    public static final String STATS_PARTIAL_RESULTS = "stats.partial-results";
+    //    public static final String STATS_PARTIAL_RESULTS = "stats.partial-results";
     //    public static final boolean STATS_PARTIAL_RESULTS_DEFAULT = true;
     private static final String TRIOS = "trios";
     private static final String WRITE_TO_DISK = "write";
@@ -154,12 +155,12 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
                 continue;
             }
             String[] members = trio.split(",");
-            Member member = new Member(members[0], Member.Sex.UNKNOWN);
+            Member member = new Member(members[0], SexOntologyTermAnnotation.initUnknown());
             if (!members[1].equals("0")) {
-                member.setFather(new Member(members[1], Member.Sex.MALE));
+                member.setFather(new Member(members[1], SexOntologyTermAnnotation.initMale()));
             }
             if (!members[2].equals("0")) {
-                member.setMother(new Member(members[2], Member.Sex.FEMALE));
+                member.setMother(new Member(members[2], SexOntologyTermAnnotation.initFemale()));
             }
             pedigree.getMembers().add(member);
         }
@@ -510,7 +511,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
         protected void cleanup(Context context) throws IOException, InterruptedException {
             super.cleanup(context);
 
-            for (SampleVariantStatsWritable writable: calculator.getWritables()) {
+            for (SampleVariantStatsWritable writable : calculator.getWritables()) {
                 context.write(new IntWritable(writable.sampleId), writable);
             }
 

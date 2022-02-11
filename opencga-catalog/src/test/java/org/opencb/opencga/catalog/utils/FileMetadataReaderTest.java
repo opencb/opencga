@@ -24,7 +24,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileCreateParams;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
@@ -64,6 +66,8 @@ public class FileMetadataReaderTest {
     private URI bamFileUri;
     private final List<String> expectedSampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
 
+    protected static final QueryOptions INCLUDE_RESULT = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
     @Before
     public void setUp() throws IOException, CatalogException, URISyntaxException {
         catalogManager = catalogManagerExternalResource.getCatalogManager();
@@ -71,8 +75,8 @@ public class FileMetadataReaderTest {
         catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
         project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
-                null, "GRCh38", new QueryOptions(), sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, null, sessionIdUser).first();
+                null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
+        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();
         folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/vcf/").toString(), true,
                 null, QueryOptions.empty(), sessionIdUser).first();
 
@@ -88,8 +92,12 @@ public class FileMetadataReaderTest {
 
     @Test
     public void testGetBasicMetadata() throws CatalogException, IOException {
-        File file = catalogManager.getFileManager().create(study.getFqn(), new File().setPath(folder.getPath() + "test.txt"), false,
-                RandomStringUtils.randomAlphanumeric(1000), null, sessionIdUser).first();
+        File file = catalogManager.getFileManager().create(study.getFqn(),
+                new FileCreateParams()
+                        .setContent(RandomStringUtils.randomAlphanumeric(1000))
+                        .setType(File.Type.FILE)
+                        .setPath(folder.getPath() + "test.txt"),
+                false, sessionIdUser).first();
 
         assertEquals(1000, file.getSize());
 
@@ -97,7 +105,8 @@ public class FileMetadataReaderTest {
 
         try {
             Thread.sleep(1000); //Sleep 1 second to see changes on the "modificationDate"
-        } catch (InterruptedException ignored) {}
+        } catch (InterruptedException ignored) {
+        }
 
         OutputStream outputStream = new FileOutputStream(Paths.get(fileUri).toFile(), true);
         byte[] bytes2 = RandomStringUtils.randomAlphanumeric(100).getBytes();
@@ -122,7 +131,7 @@ public class FileMetadataReaderTest {
 
         FileMetadataReader.get(catalogManager).addMetadataInformation(study.getFqn(), file);
 
-        assertEquals(FileStatus.READY, file.getInternal().getStatus().getName());
+        assertEquals(FileStatus.READY, file.getInternal().getStatus().getId());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
@@ -173,14 +182,14 @@ public class FileMetadataReaderTest {
             file = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + VCF_FILE_NAME), false, false, false, sessionIdUser).first();
         }
-        assertEquals(FileStatus.READY, file.getInternal().getStatus().getName());
+        assertEquals(FileStatus.READY, file.getInternal().getStatus().getId());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get(VARIANT_FILE_METADATA));
         assertEquals(4, file.getSampleIds().size());
 
         //Add a sampleId
-        String sampleId = catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId("Bad_Sample"), null, sessionIdUser)
+        String sampleId = catalogManager.getSampleManager().create(study.getFqn(), new Sample().setId("Bad_Sample"), INCLUDE_RESULT, sessionIdUser)
                 .first().getId();
         catalogManager.getFileManager().update(study.getFqn(), file.getPath(),
                 new FileUpdateParams().setSampleIds(Collections.singletonList(sampleId)), new QueryOptions(), sessionIdUser);
@@ -202,7 +211,7 @@ public class FileMetadataReaderTest {
 
         FileMetadataReader.get(catalogManager).addMetadataInformation(study.getFqn(), file);
 
-        assertEquals(FileStatus.READY, file.getInternal().getStatus().getName());
+        assertEquals(FileStatus.READY, file.getInternal().getStatus().getId());
 //        assertEquals(File.Format.GZIP, file.getFormat());
         assertEquals(File.Bioformat.ALIGNMENT, file.getBioformat());
         assertNotNull(file.getAttributes().get("alignmentHeader"));

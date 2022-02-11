@@ -20,7 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalVariant;
 import org.opencb.biodata.models.clinical.interpretation.InterpretationMethod;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.StatusParam;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 
@@ -32,85 +32,84 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class InterpretationCreateParams {
 
-    private String id;
     private String description;
     private String clinicalAnalysisId;
+    private String creationDate;
+    private String modificationDate;
     private ClinicalAnalystParam analyst;
-    private List<InterpretationMethod> methods;
+    private InterpretationMethod method;
     private List<ClinicalVariant> primaryFindings;
     private List<ClinicalVariant> secondaryFindings;
     private List<PanelReferenceParam> panels;
     private List<ClinicalCommentParam> comments;
+    private StatusParam status;
     private Map<String, Object> attributes;
 
     public InterpretationCreateParams() {
     }
 
-    public InterpretationCreateParams(String id, String description, String clinicalAnalysisId, ClinicalAnalystParam analyst,
-                                      List<InterpretationMethod> methods, List<ClinicalVariant> primaryFindings,
+    public InterpretationCreateParams(String description, String clinicalAnalysisId, String creationDate, String modificationDate,
+                                      ClinicalAnalystParam analyst, InterpretationMethod method, List<ClinicalVariant> primaryFindings,
                                       List<ClinicalVariant> secondaryFindings, List<PanelReferenceParam> panels,
-                                      List<ClinicalCommentParam> comments, Map<String, Object> attributes) {
-        this.id = id;
+                                      List<ClinicalCommentParam> comments, StatusParam status, Map<String, Object> attributes) {
         this.description = description;
         this.clinicalAnalysisId = clinicalAnalysisId;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.analyst = analyst;
-        this.methods = methods;
+        this.method = method;
         this.primaryFindings = primaryFindings;
         this.secondaryFindings = secondaryFindings;
         this.panels = panels;
         this.comments = comments;
+        this.status = status;
         this.attributes = attributes;
     }
 
     public static InterpretationCreateParams of(Interpretation interpretation) {
-        return new InterpretationCreateParams(interpretation.getId(), interpretation.getDescription(),
-                interpretation.getClinicalAnalysisId(), ClinicalAnalystParam.of(interpretation.getAnalyst()), interpretation.getMethods(),
-                interpretation.getPrimaryFindings(), interpretation.getSecondaryFindings(),
+        return new InterpretationCreateParams(interpretation.getDescription(),
+                interpretation.getClinicalAnalysisId(), interpretation.getCreationDate(), interpretation.getModificationDate(),
+                ClinicalAnalystParam.of(interpretation.getAnalyst()), interpretation.getMethod(), interpretation.getPrimaryFindings(),
+                interpretation.getSecondaryFindings(),
                 interpretation.getPanels() != null
                         ? interpretation.getPanels().stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())
                         : null,
                 interpretation.getComments() != null
                         ? interpretation.getComments().stream().map(ClinicalCommentParam::of).collect(Collectors.toList())
                         : null,
+                StatusParam.of(interpretation.getStatus()),
                 interpretation.getAttributes());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("InterpretationCreateParams{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", description='").append(description).append('\'');
+        sb.append("description='").append(description).append('\'');
         sb.append(", clinicalAnalysisId='").append(clinicalAnalysisId).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", analyst=").append(analyst);
-        sb.append(", methods=").append(methods);
+        sb.append(", method=").append(method);
         sb.append(", primaryFindings=").append(primaryFindings);
         sb.append(", secondaryFindings=").append(secondaryFindings);
         sb.append(", panels=").append(panels);
         sb.append(", comments=").append(comments);
+        sb.append(", status=").append(status);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
 
     public Interpretation toClinicalInterpretation() {
-        return new Interpretation(id, description, clinicalAnalysisId, analyst.toClinicalAnalyst(), methods, TimeUtils.getTime(),
-                TimeUtils.getTime(), primaryFindings, secondaryFindings,
+        return new Interpretation(null, description, clinicalAnalysisId, analyst != null ? analyst.toClinicalAnalyst() : null, method,
+                creationDate, modificationDate, primaryFindings, secondaryFindings,
                 panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
-                attributes);
+                status != null ? status.toStatus() : null, attributes);
     }
 
     public ObjectMap toInterpretationObjectMap() throws JsonProcessingException {
         return new ObjectMap(getUpdateObjectMapper().writeValueAsString(this.toClinicalInterpretation()));
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public InterpretationCreateParams setId(String id) {
-        this.id = id;
-        return this;
     }
 
     public String getDescription() {
@@ -131,6 +130,24 @@ public class InterpretationCreateParams {
         return this;
     }
 
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public InterpretationCreateParams setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public InterpretationCreateParams setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
+        return this;
+    }
+
     public ClinicalAnalystParam getAnalyst() {
         return analyst;
     }
@@ -140,12 +157,12 @@ public class InterpretationCreateParams {
         return this;
     }
 
-    public List<InterpretationMethod> getMethods() {
-        return methods;
+    public InterpretationMethod getMethod() {
+        return method;
     }
 
-    public InterpretationCreateParams setMethods(List<InterpretationMethod> methods) {
-        this.methods = methods;
+    public InterpretationCreateParams setMethod(InterpretationMethod method) {
+        this.method = method;
         return this;
     }
 
@@ -182,6 +199,15 @@ public class InterpretationCreateParams {
 
     public InterpretationCreateParams setComments(List<ClinicalCommentParam> comments) {
         this.comments = comments;
+        return this;
+    }
+
+    public StatusParam getStatus() {
+        return status;
+    }
+
+    public InterpretationCreateParams setStatus(StatusParam status) {
+        this.status = status;
         return this;
     }
 
