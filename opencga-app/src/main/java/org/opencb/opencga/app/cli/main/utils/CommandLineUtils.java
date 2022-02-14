@@ -159,4 +159,17 @@ public class CommandLineUtils {
         }
         return args[0];
     }
+
+    public static void printArgs(String[] args) {
+
+        PrintUtils.println(argsToString(args));
+    }
+
+    public static String argsToString(String[] args) {
+        String sArgs = ArrayUtils.toString(args);
+        sArgs = sArgs.replaceAll("\\{", "");
+        sArgs = sArgs.replaceAll("}", "");
+        sArgs = sArgs.replaceAll(",", " ");
+        return sArgs;
+    }
 }

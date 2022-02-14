@@ -39,7 +39,7 @@ public class OpencgaMain {
     public static Level logLevel = Level.OFF;
 
     public static void main(String[] args) {
-        
+
         if (args.length == 0) {
             CliOptionsParser parser = new OpencgaCliOptionsParser();
             parser.printUsage();
@@ -105,7 +105,6 @@ public class OpencgaMain {
 
 
     private static void executeCli(String[] args) throws CatalogAuthenticationException {
-        // TODO maybe we should process specific args here?
         args = parseCliParams(args);
         if (!ArrayUtils.isEmpty(args)) {
             CommandProcessor processor = new CommandProcessor();
@@ -145,18 +144,18 @@ public class OpencgaMain {
     }
 
     public static String[] parseCliParams(String[] args) throws CatalogAuthenticationException {
-        CommandLineUtils.printLog("Executing " + String.join(" ", args));
+        CommandLineUtils.printLog("Executing " + CommandLineUtils.argsToString(args));
         if (CommandLineUtils.isNotHelpCommand(args)) {
             if (ArrayUtils.contains(args, "--user-password")) {
                 normalizePasswordArgs(args, "--user-password");
             }
         }
-        CommandLineUtils.printLog("CLI PARSED PARAMS ::: " + String.join(", ", args));
+        CommandLineUtils.printLog("CLI PARSED PARAMS ::: " + CommandLineUtils.argsToString(args));
         String shortcut = CommandLineUtils.getShortcut(args);
         args = CommandLineUtils.processShortCuts(args);
 
         if (args != null) {
-            CommandLineUtils.printLog("CLI SHORTCUT RESULT ::: " + String.join(", ", args));
+            CommandLineUtils.printLog("PROCESS SHORTCUTS RESULT ::: " + CommandLineUtils.argsToString(args));
         } else {
             CommandLineUtils.printLog("IS SHORTCUT " + shortcut);
         }

@@ -7,6 +7,7 @@ import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.app.cli.main.OpencgaMain;
 
 import java.util.*;
 
@@ -58,7 +59,11 @@ public class ParentCliOptionsParser extends CliOptionsParser {
             System.err.println();
             PrintUtils.println(org.opencb.opencga.app.cli.main.utils.CommandLineUtils.getHelpVersionString());
             System.err.println();
-            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "       opencga.sh [-h|--help] [--shell] [--host] [--version] <command> [options]"));
+            if (OpencgaMain.isShellMode()) {
+                PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "       " + getPrefix() + " <command> [options] [-h|--help] [--version]"));
+            } else {
+                PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "       " + getPrefix() + "[-h|--help] [--shell] [--host] [--version] <command> [options]"));
+            }
             System.err.println();
             printMainUsage();
             System.err.println();
@@ -66,20 +71,27 @@ public class ParentCliOptionsParser extends CliOptionsParser {
             String parsedSubCommand = getSubCommand();
             if (parsedSubCommand.isEmpty()) {
                 System.err.println();
-                PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "   opencga.sh " + parsedCommand + " <subcommand> [options]"));
+                PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "   " + getPrefix() + parsedCommand + " <subcommand> [options]"));
                 System.err.println();
                 PrintUtils.println(PrintUtils.format("Subcommands:", PrintUtils.Color.GREEN));
                 printCommands(jCommander.getCommands().get(parsedCommand));
                 System.err.println();
             } else {
                 System.err.println();
-                PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "   opencga.sh " + parsedCommand + " " + parsedSubCommand + " [options]"));
+                PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "   " + getPrefix() + parsedCommand + " " + parsedSubCommand + " [options]"));
                 System.err.println();
                 PrintUtils.println(PrintUtils.format("Options:", PrintUtils.Color.GREEN));
                 CommandLineUtils.printCommandUsage(jCommander.getCommands().get(parsedCommand).getCommands().get(parsedSubCommand));
                 System.err.println();
             }
         }
+    }
+
+    private String getPrefix() {
+        if (OpencgaMain.isShellMode()) {
+            return "";
+        }
+        return "opencga.sh ";
     }
 
     @Override
@@ -128,13 +140,16 @@ public class ParentCliOptionsParser extends CliOptionsParser {
 
     private Map<String, String> getOpencgaCommands() {
         Map<String, String> h = new HashMap<>();
-        h.put("shell", "Interactive mode opencga shell");
-        h.put("use study <name>", "(Only in interactive mode) Sets the study to be used in the following commands");
-        h.put("list studies", "Print available studies for user");
-        h.put("login [user]", "Authenticates new user in the system");
-        h.put("logout", "Logouts the current user from the system");
-        h.put("exit", "Closes the opencga shell");
-        h.put("host", "Set the host server to query data");
+        h.put("login [user]", "Authenticates new user in OpenCGA");
+        h.put("logout", "Logouts the current user from OpenCGA");
+        if (!OpencgaMain.isShellMode()) {
+            h.put("host", "Set the host server to query data");
+            h.put("shell", "Interactive mode opencga shell");
+        } else {
+            h.put("use study <name>", "Sets the study to be used in the following commands");
+            h.put("list studies", "Print available studies for user");
+            h.put("exit", "Closes the opencga shell");
+        }
         return h;
     }
 }

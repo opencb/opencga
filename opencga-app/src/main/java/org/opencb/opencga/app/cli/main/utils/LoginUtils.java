@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli.main.utils;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.app.cli.main.OpencgaMain;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -38,6 +39,7 @@ public class LoginUtils {
             CommandLineUtils.debug(ArrayUtils.toString(args));
         } else {
             println(PrintUtils.format("Invalid user name: ", Color.RED) + PrintUtils.format(user, Color.DEFAULT));
+            printUsage(args);
         }
 
         return args;
@@ -46,17 +48,18 @@ public class LoginUtils {
 
     public static String[] parseLoginCommand(String[] args) {
         //adds in position 0 command "users"
-        args = ArrayUtils.addAll(new String[]{"users"}, args);
 
-        CommandLineUtils.debug("LOGIN COMMAND: " + ArrayUtils.toString(args));
-        /*if (args.length == 5 && "login".equals(args[1]) && "<<<".equals(args[3])) {
-            String user = args[2];
-            String pass = args[4];
-            args = new String[]{"users", "login"};
-            args = ArrayUtils.addAll(args, "-u", user);
-            args = ArrayUtils.addAll(args, "--password", pass);
-            return args;
-        }*/
+        CommandLineUtils.debug("LOGIN COMMAND: " + CommandLineUtils.argsToString(args));
+        if ("login".equals(args[0]) && (ArrayUtils.contains(args, "-u") || ArrayUtils.contains(args, "-u"))) {
+            printUsage(args);
+            return null;
+        }
+        if ("login".equals(args[0]) && (args[1].startsWith("-")) && (!"--host".equals(args[1]))) {
+            printUsage(args);
+            return null;
+        }
+
+        args = ArrayUtils.addAll(new String[]{"users"}, args);
 
         //case opencga.sh login OR [opencga][demo@project:study]<demo/>login
         if (args.length == 2 && "login".equals(args[1])) {
@@ -77,6 +80,27 @@ public class LoginUtils {
         }
 
         return args;
+    }
+
+    private static void printUsage(String[] args) {
+
+        PrintUtils.println("");
+        if (!isHelp(args)) {
+            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Invalid Command: ", CommandLineUtils.argsToString(args)));
+        }
+        if (OpencgaMain.isShellMode()) {
+            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "       login [user] [--host host]"));
+        } else {
+            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "       opencga.sh login [user] [--host host]"));
+        }
+        PrintUtils.println("");
+    }
+
+    private static boolean isHelp(String[] args) {
+        return ArrayUtils.contains(args, "--help")
+                || ArrayUtils.contains(args, "-h")
+                || ArrayUtils.contains(args, "?")
+                || ArrayUtils.contains(args, "help");
     }
 
 
