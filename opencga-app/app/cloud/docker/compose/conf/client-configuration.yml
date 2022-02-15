@@ -1,0 +1,25 @@
+---
+logLevel: "INFO"
+
+# Number of seconds that session remains open without any activity [10 min]
+cliSessionDuration: 600
+
+## REST client configuration options
+rest:
+  host: "http://localhost:8080/opencga-2.3.0-SNAPSHOT"
+  tokenAutoRefresh: true
+  tlsAllowInvalidCertificates: false
+  timeout: 90000
+  query:
+    batchSize: 200
+    limit: 2000
+
+
+## gRPC configuration options
+grpc:
+  host: "http://localhost:9091"
+
+
+## Configure the default behaviour when query variants
+variant:
+  unknownGenotype: "0/0"
