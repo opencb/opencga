@@ -38,6 +38,11 @@ mongodb:
     nodeSelector:
       agentpool: mongodb
 
+    # Service account and role assignments do not need to be created if the MongoDB Community Operator is installed in the same namespace
+    serviceAccount:
+      create: true
+      name: mongodb-database
+
 solr:
   external:
     hosts: "FILL_ME"

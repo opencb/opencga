@@ -259,14 +259,17 @@ function deployCertManager() {
 }
 
 function deployMongodbOperator() {
-  NAME="mongodb-operator${NAME_SUFFIX}"
+  NAME="mongodb-community-operator${NAME_SUFFIX}"
   DATE=$(date "+%Y%m%d%H%M%S")
-  chmod +x ./charts/mongodb-operator/fetch-mongodb-operator-files.sh
-  ./charts/mongodb-operator/fetch-mongodb-operator-files.sh
+  helm repo add mongodb https://mongodb.github.io/helm-charts
+  helm repo update
+  MONGODB_OPERATOR_VERSION="${MONGODB_OPERATOR_VERSION:-v0.7.2}"
 
-  helm upgrade "${NAME}" charts/mongodb-operator \
-    --values "${HELM_VALUES_FILE}" \
+  helm upgrade "${NAME}" mongodb/community-operator \
+    -f charts/mongodb-operator/values.yaml \
+    --set "namespace=${K8S_NAMESPACE}" \
     --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
+
   if [ $DRY_RUN == "false" ]; then
     helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest-${DATE}.yaml"
   fi
