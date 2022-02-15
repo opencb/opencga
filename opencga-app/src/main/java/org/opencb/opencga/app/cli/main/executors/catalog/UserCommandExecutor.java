@@ -209,7 +209,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
 
         UserCommandOptions.UpdateCommandOptions options = usersCommandOptions.updateCommandOptions;
         UserUpdateParams params = new UserUpdateParams(options.name, options.email, options.organization, null);
-        return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, params);
+        return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, params, new ObjectMap());
     }
 
     private RestResponse<User> changePassword () throws ClientException, IOException {

@@ -80,7 +80,7 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
                 .setDescription(createCommandOptions.description)
                 .setOrganism(new ProjectOrganism(createCommandOptions.scientificName, createCommandOptions.commonName,
                         createCommandOptions.assembly));
-        return openCGAClient.getProjectClient().create(createParams);
+        return openCGAClient.getProjectClient().create(createParams, new ObjectMap());
     }
 
     private RestResponse<Project> info() throws ClientException {
@@ -127,7 +127,7 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
                 .setName(commandOptions.name)
                 .setDescription(commandOptions.description)
                 .setOrganism(organism);
-        return openCGAClient.getProjectClient().update(commandOptions.project, params);
+        return openCGAClient.getProjectClient().update(commandOptions.project, params, new ObjectMap());
     }
 
     private RestResponse<Study> studies() throws ClientException {
