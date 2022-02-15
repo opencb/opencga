@@ -1,0 +1,54 @@
+version: "3.3"
+
+services:
+  mongodb:
+    image: mongo:4.2.18
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: opencga
+      MONGO_INITDB_ROOT_PASSWORD: opencga
+
+  solr:
+    image: solr:8.8.2
+    ports:
+      - "8983:8983"
+#    environment:
+#      MYSQL_PASSWORD: wordpress
+
+#  init:
+#    image: opencga-base:2.3.0-SNAPSHOT
+#    depends_on:
+#      - mongodb
+#      - solr
+#    volumes:
+#      - configuration.yml:/opt/opencga/conf/configuration.yml
+#    command: ["/opt/opencga/bin/opencga-admin.sh", "catalog", "install", "..."]
+#    environment:
+#      SOLR_HOSTS: db
+
+  rest:
+    image: opencb/opencga-base:2.1.0-SNAPSHOT
+    depends_on:
+      - mongodb
+      - solr
+    volumes:
+      - wordpress_data:/var/www/html
+    ports:
+      - "9090:9090"
+    command: ["/opt/opencga/bin/opencga-admin.sh", "server", "rest", "--start", "--port", "9090"]
+#    environment:
+#      WORDPRESS_DB_HOST: db
+
+#  master:
+#    image: opencga-base:2.3.0-SNAPSHOT
+#    depends_on:
+#      - rest
+#    volumes:
+#      - wordpress_data:/var/www/html
+#    environment:
+#      WORDPRESS_DB_HOST: db
+
+volumes:
+  db_data: {}
+  wordpress_data: {}
