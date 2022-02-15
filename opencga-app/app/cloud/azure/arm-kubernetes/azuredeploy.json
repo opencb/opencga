@@ -298,7 +298,9 @@
                     "nodeSize": "Standard_D2s_v3",
                     "diskSizeGB": 256,
                     "maxJobsPoolAgents": 1,
-                    "aksJobsAgentVMSize": "Standard_D8s_v3"
+                    "aksJobsAgentVMSize": "Standard_D8s_v3",
+                    "aksMongodbAgentVMSize": "Standard_D8s_v3",
+                    "aksSolrAgentVMSize": "Standard_D8s_v3"
                 },
                 "solr": {
                     "ha": false,
@@ -340,7 +342,9 @@
                     "nodeSize": "Standard_D4s_v3",
                     "diskSizeGB": 512,
                     "maxJobsPoolAgents": 5,
-                    "aksJobsAgentVMSize": "Standard_D16s_v3"
+                    "aksJobsAgentVMSize": "Standard_D16s_v3",
+                    "aksMongodbAgentVMSize": "Standard_D16s_v3",
+                    "aksSolrAgentVMSize": "Standard_D16s_v3"
                 },
                 "solr": {
                     "ha": true,
@@ -382,7 +386,9 @@
                     "nodeSize": "Standard_D4s_v3",
                     "diskSizeGB": 1028,
                     "maxJobsPoolAgents": 50,
-                    "aksJobsAgentVMSize": "Standard_D16s_v3"
+                    "aksJobsAgentVMSize": "Standard_D16s_v3",
+                    "aksMongodbAgentVMSize": "Standard_D16s_v3",
+                    "aksSolrAgentVMSize": "Standard_D16s_v3"
                 },
                 "solr": {
                     "ha": true,
@@ -691,6 +697,12 @@
                     },
                     "aksJobsAgentVMSize": {
                         "value": "[variables('selectedSize').aks.aksJobsAgentVMSize]"
+                    },
+                    "aksMongodbAgentVMSize": {
+                        "value": "[variables('selectedSize').aks.aksMongodbAgentVMSize]"
+                    },
+                    "aksSolrAgentVMSize": {
+                        "value": "[variables('selectedSize').aks.aksSolrAgentVMSize]"
                     },
                     "jobsAgentPoolOrVirtualNode": {
                         "value": "[parameters('jobsAgentPoolOrVirtualNode')]"
