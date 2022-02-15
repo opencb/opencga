@@ -232,6 +232,32 @@ function deploySolrOperator() {
     --install --wait --timeout 10m ${HELM_OPTS}
 }
 
+function deployCertManager() {
+  NAME="cert-manager${NAME_SUFFIX}"
+  DATE=$(date "+%Y%m%d%H%M%S")
+
+    # Add the Jetstack Helm repository
+  helm repo add jetstack https://charts.jetstack.io
+
+  # Update your local Helm chart repository cache
+  helm repo update
+
+  CERT_MANAGER_VERSION="${CERT_MANAGER_VERSION:-1.6.1}"
+
+  # Install the cert-manager Helm chart
+  helm upgrade "${NAME}" jetstack/cert-manager \
+    --version ${CERT_MANAGER_VERSION} \
+    --set installCRDs=true \
+    --set nodeSelector."kubernetes\.io/os"=linux \
+    --set webhook.nodeSelector."kubernetes\.io/os"=linux \
+    --set cainjector.nodeSelector."kubernetes\.io/os"=linux \
+    --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
+
+  if [ $DRY_RUN == "false" ]; then
+    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest-${DATE}.yaml"
+  fi
+}
+
 function deployMongodbOperator() {
   NAME="mongodb-operator${NAME_SUFFIX}"
   DATE=$(date "+%Y%m%d%H%M%S")
@@ -295,6 +321,11 @@ echo "# Deploy kubernetes"
 echo "# Configuring context $K8S_CONTEXT"
 configureContext
 
+
+if [[ "$WHAT" == "CERTMANAGER" || "$WHAT" == "ALL" ]]; then
+  deployCertManager
+fi
+
 if [[ "$WHAT" == "NGINX" || "$WHAT" == "ALL" ]]; then
   deployNginx
 fi
@@ -303,7 +334,8 @@ if [[ "$WHAT" == "SOLROPERATOR" || "$WHAT" == "ALL" ]]; then
   deploySolrOperator
 fi
 
-if [[ "$WHAT" == "ZKOPERATOR" || "$WHAT" == "ALL" ]]; then
+# Don't deploy zookeeper operator by default
+if [[ "$WHAT" == "ZKOPERATOR" ]]; then
   deployZkOperator
 fi
 
