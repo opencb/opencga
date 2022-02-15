@@ -192,7 +192,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
             updateParams.setStatus(new StatusParams(c.status, c.status, ""));
         }
 
-        return openCGAClient.getStudyClient().update(getSingleValidStudy(c.study), updateParams);
+        return openCGAClient.getStudyClient().update(getSingleValidStudy(c.study), updateParams, new ObjectMap());
     }
 
     /************************************************  Summary and help Commands  ***********************************************/
