@@ -178,6 +178,13 @@
                 "description": "HDInsight storage account name. The name must be unique across all existing storage account names in Azure. It must be 3 to 24 characters long, and can contain only lowercase letters and numbers."
             }
         },
+        "HDInsightStorageAccountBlobName": {
+            "type": "string",
+            "defaultValue": "opencga",
+            "metadata": {
+                "description": "HDInsight storage account blob name."
+            }
+        },
         "HDInsightClusterLoginPassword": {
             "type": "securestring",
             "metadata": {
@@ -189,6 +196,13 @@
             "defaultValue": null,
             "metadata": {
                 "description": "Used to login to HDInsight cluster nodes via SSH. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "HDInsightSshPublicKey": {
+            "type": "securestring",
+            "defaultValue": "[parameters('sshAdminKeyData')]",
+            "metadata": {
+                "description": "Used to login to HDInsight cluster nodes via SSH key."
             }
         },
         "jobsAgentPoolOrVirtualNode": {
@@ -582,6 +596,9 @@
                     },
                     "storageAccountName": {
                         "value": "[parameters('HDInsightStorageAccountName')]"
+                    },
+                    "storageAccountBlobName": {
+                        "value": "[parameters('HDInsightStorageAccountBlobName')]"
                     },
                     "clusterLoginUserName": {
                         "value": "[parameters('adminUsername')]"
