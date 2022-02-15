@@ -22,7 +22,12 @@ iva:
 
   configuration:
     # Overwrite configuration from image.
-    overwrite: false
+    overwrite: true
+    cookie: # undefined
+    snipped: |
+#      // start snippet
+#      opencga.version = "v3"
+#      // end snippet
 
   replicaCount: 2
 

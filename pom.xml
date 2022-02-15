@@ -48,7 +48,7 @@
         <cellbase.version>5.0.0-SNAPSHOT</cellbase.version>
         <biodata.version>2.2.0-SNAPSHOT</biodata.version>
         <java-common-libs.version>4.2.0-SNAPSHOT</java-common-libs.version>
-        <iva.version>2.2.0-rc</iva.version>
+        <iva.version>2.2.0-dev</iva.version>
         <oskar.version>0.2.0</oskar.version>
 
         <jackson.version>2.10.5</jackson.version>
