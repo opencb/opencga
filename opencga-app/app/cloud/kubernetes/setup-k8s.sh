@@ -246,11 +246,9 @@ function deployCertManager() {
 
   # Install the cert-manager Helm chart
   helm upgrade "${NAME}" jetstack/cert-manager \
-    --version ${CERT_MANAGER_VERSION} \
-    --set installCRDs=true \
-    --set nodeSelector."kubernetes\.io/os"=linux \
-    --set webhook.nodeSelector."kubernetes\.io/os"=linux \
-    --set cainjector.nodeSelector."kubernetes\.io/os"=linux \
+    -f charts/cert-manager/values.yaml \
+    --version "${CERT_MANAGER_VERSION}" \
+    --values "${HELM_VALUES_FILE}" \
     --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
 
   if [ $DRY_RUN == "false" ]; then
@@ -268,6 +266,7 @@ function deployMongodbOperator() {
   helm upgrade "${NAME}" mongodb/community-operator \
     -f charts/mongodb-operator/values.yaml \
     --set "namespace=${K8S_NAMESPACE}" \
+    --values "${HELM_VALUES_FILE}" \
     --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
 
   if [ $DRY_RUN == "false" ]; then
