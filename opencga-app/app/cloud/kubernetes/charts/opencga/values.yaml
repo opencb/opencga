@@ -203,6 +203,7 @@ rest:
       kubernetes.io/ingress.class: nginx
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       nginx.ingress.kubernetes.io/proxy-body-size: 1024m
+      nginx.ingress.kubernetes.io/rewrite-target: /opencga/$2
 #      cert-manager.io/issuer: letsencrypt-prod
 #      cert-manager.io/cluster-issuer: letsencrypt-prod
     hosts:
@@ -210,8 +211,7 @@ rest:
       - ""              # Accept access by IP .Testing purposes only.
     # Accepts /opencga and /opencga/....
     paths:
-    - /opencga
-    - /opencga/
+    - "/opencga($|/)(.*)"
     tls: []
     #  - secretName: chart-example-tls
     #    hosts:
