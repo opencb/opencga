@@ -7,7 +7,8 @@ mongodb:
   password: "FILL_ME"
   ssl: true
   authenticationDatabase : "admin"
-  authenticationMechanism : "SCRAM-SHA-1"
+  authenticationMechanism : "SCRAM-SHA-1" # Must use "SCRAM-SHA-256" for instances deployed with mongodb community operator
+  replicaSet : ""
 
   # MongoDB can either be deployed in the same Kubernetes instance, or be provided externally.
 
