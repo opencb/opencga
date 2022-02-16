@@ -74,7 +74,7 @@ solr:
       agentpool: solr
 
     zookeeper:
-      replicas: 2
+      replicas: 3
       volume:
         size: "5Gi"
       resources:
