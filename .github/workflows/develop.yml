@@ -75,3 +75,30 @@ jobs:
     secrets:
       DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
       DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+  ## Amazon AWS - build and deploy Amazon AWS libs and docker images
+  build-aws:
+    uses: opencb/java-common-libs/.github/workflows/build-java-app-workflow.yml@develop
+    needs: test
+    with:
+      maven_opts: -P storage-hadoop,emr6.1 -Dopencga.war.name=opencga
+
+  deploy-maven-aws:
+    uses: opencb/java-common-libs/.github/workflows/deploy-maven-repository-workflow.yml@develop
+    needs: build-aws
+    with:
+      maven_opts: -P storage-hadoop,emr6.1 -Dopencga.war.name=opencga
+    secrets:
+      MAVEN_NEXUS_USER: ${{ secrets.MAVEN_NEXUS_USER }}
+      MAVEN_NEXUS_PASSWORD: ${{ secrets.MAVEN_NEXUS_PASSWORD }}
+      MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+      MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+
+  deploy-docker-aws:
+    uses: opencb/java-common-libs/.github/workflows/deploy-docker-hub-workflow.yml@develop
+    needs: build-aws
+    with:
+      cli: python3 ./build/cloud/docker/docker-build.py push --images base,init
+    secrets:
+      DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+      DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
