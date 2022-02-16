@@ -8,9 +8,9 @@ services:
 #    expose:
 #      - "27017"
     entrypoint: [ "/usr/bin/mongod", "--replSet", "rs0", "--bind_ip_all" ]
-    # environment:
-    #   MONGO_INITDB_ROOT_USERNAME: opencga
-    #   MONGO_INITDB_ROOT_PASSWORD: opencga
+#    environment:
+#       MONGO_INITDB_ROOT_USERNAME: opencga
+#       MONGO_INITDB_ROOT_PASSWORD: opencga
 
   solr:
     image: solr:8.8.2
@@ -18,19 +18,18 @@ services:
   #      MYSQL_PASSWORD: wordpress
 
   init:
-    image: opencb/opencga-base:2.1.0-SNAPSHOT
+    image: opencb/opencga-base:2.3.0-SNAPSHOT
     depends_on:
       - mongodb
       - solr
     volumes:
       - ./init.sh:/opt/opencga/bin/init.sh
       - ./conf/:/opt/opencga/conf/
-      - /usr/bin/mongo:/usr/bin/mongo
       - ./mongodb-replica-set-init.js:/opt/mongodb/mongodb-replica-set-init.js
     command: [ "/opt/opencga/bin/init.sh" ]
 
   rest:
-    image: opencb/opencga-base:2.1.0-SNAPSHOT
+    image: opencb/opencga-base:2.3.0-SNAPSHOT
     depends_on:
       - init
     ports:
