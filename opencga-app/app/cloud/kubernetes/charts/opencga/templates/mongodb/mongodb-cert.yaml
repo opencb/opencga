@@ -9,7 +9,7 @@ metadata:
 spec:
   secretName: {{ .Values.mongodb.deploy.certificateKeySecretRef }}
   issuerRef:
-    name: tls-ca-issuer
+    name: {{ .Values.tls.privateIssuer.caName }}
     kind: Issuer
   duration: 8760h   # 365 days
   renewBefore: 720h # 30 days
