@@ -17,4 +17,5 @@ RUN apt-get update -y && DEBIAN_FRONTEND="noninteractive" TZ="Europe/London" apt
     bwa \
     r-base && \
     R -e "install.packages(c('nnls', 'ggplot2', 'jsonlite', 'optparse', 'BiocManager', 'RCircos'))" && \
-    rm -rf /var/lib/apt/lists/* /tmp/*
+    rm -rf /var/lib/apt/lists/* /tmp/* && \
+    strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
