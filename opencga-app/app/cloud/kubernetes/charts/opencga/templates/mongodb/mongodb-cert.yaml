@@ -1,0 +1,20 @@
+{{- if and .Values.mongodb.deploy.enabled  .Values.mongodb.ssl  .Values.tls.privateIssuer.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Values.mongodb.deploy.certificateKeySecretRef }}-cert
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{ include "opencga.labels" . | nindent 4 }}
+spec:
+  secretName: {{ .Values.mongodb.deploy.certificateKeySecretRef }}
+  issuerRef:
+    name: tls-ca-issuer
+    kind: Issuer
+  duration: 8760h   # 365 days
+  renewBefore: 720h # 30 days
+  commonName: "*.{{ .Values.mongodb.deploy.name }}-svc.{{ .Release.Namespace }}.svc.cluster.local"
+  dnsNames:
+    - "*.{{ .Values.mongodb.deploy.name }}-svc.{{ .Release.Namespace }}.svc.cluster.local"
+    - "{{ .Values.mongodb.deploy.name }}-svc.{{ .Release.Namespace }}.svc.cluster.local"
+{{- end }}

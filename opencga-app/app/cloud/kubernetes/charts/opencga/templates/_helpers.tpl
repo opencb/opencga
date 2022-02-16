@@ -138,6 +138,8 @@ pvc-{{ include "opencga.fullname" . }}-analysisconf
 {{- define "mongodb.replicaSet" -}}
 {{- if .Values.mongodb.deploy.enabled -}}
     {{- .Values.mongodb.deploy.name }}
+{{- else -}}
+    {{- .Values.mongodb.replicaSet }}
 {{- end -}}
 {{- end -}}
 
@@ -149,7 +151,7 @@ pvc-{{ include "opencga.fullname" . }}-analysisconf
         {{- if ne $i 0 -}}
           ,
         {{- end -}}
-        {{- cat $name "-" $i "." $name "-svc." $namespace ":27017" | replace " " "" -}}
+        {{- cat $name "-" $i "." $name "-svc." $namespace ".svc.cluster.local:27017" | replace " " "" -}}
     {{- end -}}
 {{- else -}}
     {{- .Values.mongodb.external.hosts }}

@@ -746,7 +746,7 @@ public final class VariantQueryUtils {
     @Deprecated
     public static Pair<QueryOperation, Map<String, String>> parseSampleDataOLD(Query query) {
         ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> parsedQuery = parseSampleData(query);
-        HashMap<String, String> map = new HashMap<>();
+        Map<String, String> map = new LinkedHashMap<>();
         for (KeyValues<String, KeyOpValue<String, String>> sampleFilter : parsedQuery) {
             map.put(sampleFilter.getKey(), sampleFilter.toValues().toQuery());
         }

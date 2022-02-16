@@ -2327,6 +2327,41 @@ public class SampleManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void updateIndividualFromSample() throws CatalogException {
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual1"), new QueryOptions(), token);
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual2"), new QueryOptions(), token);
+
+        catalogManager.getSampleManager().update(studyFqn, "s_1", new SampleUpdateParams().setIndividualId("Individual1"),
+                QueryOptions.empty(), token);
+        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "Individual1"), QueryOptions.empty(), token);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("s_1", sampleDataResult.first().getId());
+
+        catalogManager.getSampleManager().update(studyFqn, "s_1", new SampleUpdateParams().setIndividualId("Individual2"),
+                QueryOptions.empty(), token);
+        sampleDataResult = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "Individual1"), QueryOptions.empty(), token);
+        assertEquals(0, sampleDataResult.getNumResults());
+
+        sampleDataResult = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "Individual2"), QueryOptions.empty(), token);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("s_1", sampleDataResult.first().getId());
+
+        catalogManager.getIndividualManager().delete(studyFqn, Arrays.asList("Individual1", "Individual2"), QueryOptions.empty(), token);
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual1"), new QueryOptions(), token);
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual2"), new QueryOptions(), token);
+
+        catalogManager.getSampleManager().update(studyFqn, "s_1", new SampleUpdateParams().setIndividualId("Individual2"),
+                QueryOptions.empty(), token);
+        sampleDataResult = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "Individual2"), QueryOptions.empty(), token);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("s_1", sampleDataResult.first().getId());
+    }
+
+    @Test
     public void getSharedProject() throws CatalogException, IOException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L,
                 Account.AccountType.GUEST, null);

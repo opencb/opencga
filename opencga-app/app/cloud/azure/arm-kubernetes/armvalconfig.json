@@ -34,7 +34,7 @@
                 "message": ".*",
                 "resource": {
                     "type": "Microsoft.Resources/deployments",
-                    "apiVersion": "2018-05-01",
+                    "apiVersion": "2019-05-01",
                     "name": ".*"
                 },
                 "reason": "Global deployment schema invalid"

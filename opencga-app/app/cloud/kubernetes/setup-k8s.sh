@@ -223,7 +223,7 @@ function deploySolrOperator() {
   #helm repo add solr-operator https://bloomberg.github.io/solr-operator/charts
   helm repo add apache-solr https://solr.apache.org/charts
 
-  SOLR_OPERATOR_VERSION="${SOLR_OPERATOR_VERSION:-v0.4.0}"
+  SOLR_OPERATOR_VERSION="${SOLR_OPERATOR_VERSION:-v0.5.0}"
 
   helm upgrade ${NAME} apache-solr/solr-operator \
     --kube-context "${K8S_CONTEXT}" --namespace "${K8S_NAMESPACE}" --version "${SOLR_OPERATOR_VERSION}" \
@@ -232,15 +232,43 @@ function deploySolrOperator() {
     --install --wait --timeout 10m ${HELM_OPTS}
 }
 
-function deployMongodbOperator() {
-  NAME="mongodb-operator${NAME_SUFFIX}"
+function deployCertManager() {
+  NAME="cert-manager${NAME_SUFFIX}"
   DATE=$(date "+%Y%m%d%H%M%S")
-  chmod +x ./charts/mongodb-operator/fetch-mongodb-operator-files.sh
-  ./charts/mongodb-operator/fetch-mongodb-operator-files.sh
 
-  helm upgrade "${NAME}" charts/mongodb-operator \
+    # Add the Jetstack Helm repository
+  helm repo add jetstack https://charts.jetstack.io
+
+  # Update your local Helm chart repository cache
+  helm repo update
+
+  CERT_MANAGER_VERSION="${CERT_MANAGER_VERSION:-1.6.1}"
+
+  # Install the cert-manager Helm chart
+  helm upgrade "${NAME}" jetstack/cert-manager \
+    -f charts/cert-manager/values.yaml \
+    --version "${CERT_MANAGER_VERSION}" \
     --values "${HELM_VALUES_FILE}" \
     --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
+
+  if [ $DRY_RUN == "false" ]; then
+    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest-${DATE}.yaml"
+  fi
+}
+
+function deployMongodbOperator() {
+  NAME="mongodb-community-operator${NAME_SUFFIX}"
+  DATE=$(date "+%Y%m%d%H%M%S")
+  helm repo add mongodb https://mongodb.github.io/helm-charts
+  helm repo update
+  MONGODB_OPERATOR_VERSION="${MONGODB_OPERATOR_VERSION:-v0.7.2}"
+
+  helm upgrade "${NAME}" mongodb/community-operator \
+    -f charts/mongodb-operator/values.yaml \
+    --set "namespace=${K8S_NAMESPACE}" \
+    --values "${HELM_VALUES_FILE}" \
+    --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
+
   if [ $DRY_RUN == "false" ]; then
     helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest-${DATE}.yaml"
   fi
@@ -295,6 +323,11 @@ echo "# Deploy kubernetes"
 echo "# Configuring context $K8S_CONTEXT"
 configureContext
 
+
+if [[ "$WHAT" == "CERTMANAGER" || "$WHAT" == "ALL" ]]; then
+  deployCertManager
+fi
+
 if [[ "$WHAT" == "NGINX" || "$WHAT" == "ALL" ]]; then
   deployNginx
 fi
@@ -303,7 +336,8 @@ if [[ "$WHAT" == "SOLROPERATOR" || "$WHAT" == "ALL" ]]; then
   deploySolrOperator
 fi
 
-if [[ "$WHAT" == "ZKOPERATOR" || "$WHAT" == "ALL" ]]; then
+# Don't deploy zookeeper operator by default
+if [[ "$WHAT" == "ZKOPERATOR" ]]; then
   deployZkOperator
 fi
 

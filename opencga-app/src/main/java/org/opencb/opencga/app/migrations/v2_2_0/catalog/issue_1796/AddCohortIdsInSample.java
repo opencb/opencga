@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v2_2_0.catalog.javascript;
+package org.opencb.opencga.app.migrations.v2_2_0.catalog.issue_1796;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -16,7 +16,7 @@ import java.util.List;
 import static com.mongodb.client.model.Filters.eq;
 
 @Migration(id = "add_cohortIds_in_sample", description = "Add new list of cohortIds in Sample #1796", version = "2.2.0",
-        language = Migration.MigrationLanguage.JAVASCRIPT, date = 20210706)
+        language = Migration.MigrationLanguage.JAVA, date = 20210706)
 public class AddCohortIdsInSample extends MigrationTool {
 
     @Override

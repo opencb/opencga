@@ -3,6 +3,8 @@ apiVersion: mongodbcommunity.mongodb.com/v1
 kind: MongoDBCommunity
 metadata:
   name: {{ .Values.mongodb.deploy.name }}
+  labels:
+  {{ include "opencga.labels" . | nindent 4 }}
 spec:
   members: {{ int .Values.mongodb.deploy.replicas }}
   type: ReplicaSet
@@ -11,12 +13,14 @@ spec:
     authentication:
       ignoreUnknownUsers: true # users can be added to the deployment through other sources. (not through the CRD) and will not be removed by the agent.
       modes: ["SCRAM"]
-#    tls:
-#      enabled: true
-#      certificateKeySecretRef:
-#        name: tls-secret-name
-#      caConfigMapRef:
-#        name: tls-ca-configmap-name
+    tls:
+      enabled: {{ and .Values.tls.privateIssuer.enabled .Values.mongodb.ssl }}
+      {{- if and .Values.tls.privateIssuer.enabled .Values.mongodb.ssl }}
+      certificateKeySecretRef:
+        name: {{ .Values.mongodb.deploy.certificateKeySecretRef }}
+      caCertificateSecretRef:
+        name: {{ .Values.tls.privateIssuer.caCertificateSecretRef }}
+      {{- end }}
   statefulSet:
     spec:
       template:

@@ -1,0 +1,45 @@
+---
+{{- if and .Values.mongodb.deploy.enabled  .Values.mongodb.deploy.serviceAccount.create -}}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.mongodb.deploy.serviceAccount.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{ include "opencga.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Values.mongodb.deploy.serviceAccount.name }}
+  namespace: {{ .Release.Namespace }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - patch
+      - delete
+      - get
+
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ .Values.mongodb.deploy.serviceAccount.name }}
+  namespace: {{ .Release.Namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Values.mongodb.deploy.serviceAccount.name }}
+roleRef:
+  kind: Role
+  name: {{ .Values.mongodb.deploy.serviceAccount.name }}
+  apiGroup: rbac.authorization.k8s.io
+{{- end -}}

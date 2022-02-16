@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v2_2_0.catalog.javascript;
+package org.opencb.opencga.app.migrations.v2_2_0.catalog.issue_1795;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -16,7 +16,7 @@ import java.util.List;
 import static com.mongodb.client.model.Filters.eq;
 
 @Migration(id = "add_familyIds_in_individual", description = "Add new list of familyIds in Individual #1795", version = "2.2.0",
-        language = Migration.MigrationLanguage.JAVASCRIPT, date = 20210630)
+        language = Migration.MigrationLanguage.JAVA, date = 20210630)
 public class AddFamilyIdsInIndividual extends MigrationTool {
 
     @Override

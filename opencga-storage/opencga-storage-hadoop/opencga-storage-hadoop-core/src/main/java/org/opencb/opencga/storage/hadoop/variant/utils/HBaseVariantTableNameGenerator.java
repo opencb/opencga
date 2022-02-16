@@ -213,6 +213,10 @@ public class HBaseVariantTableNameGenerator {
         return buildTableName(namespace, dbName, SAMPLE_SUFIX + studyId + (version > 1 ? ("_v" + version) : ""));
     }
 
+    public static boolean isSampleIndexTableName(String tableName) {
+        return tableName.contains(SAMPLE_SUFIX);
+    }
+
     public static String getVariantTableName(String dbName, ObjectMap options) {
         return getVariantTableName(options.getString(HadoopVariantStorageOptions.HBASE_NAMESPACE.key(), ""), dbName);
     }
