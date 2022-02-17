@@ -15,8 +15,8 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
@@ -70,12 +70,12 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-client</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.opencb.opencga</groupId>-->
-<!--            <artifactId>opencga-test</artifactId>-->
-<!--            <version>${opencga.version}</version>-->
-<!--            <type>pom</type>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.opencb.opencga</groupId>-->
+        <!--            <artifactId>opencga-test</artifactId>-->
+        <!--            <version>${opencga.version}</version>-->
+        <!--            <type>pom</type>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
@@ -274,14 +274,22 @@
                                     <arg value="${build.dir}/analysis"/>
                                 </exec>
 
-                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and ${build.dir}/completion</echo>
+                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and
+                                    ${build.dir}/completion
+                                </echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga.sh"/>
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-admin.sh"/>
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-internal.sh"/>
                                     <arg value="${build.dir}/bin"/>
                                 </exec>
-
+                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and
+                                    ${build.dir}/completion
+                                </echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/app/cloud/docker/compose/cli/Dockerfile"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh"/>
                                     <arg value="${build.dir}/bin/utils"/>
@@ -338,11 +346,11 @@
                                 </exec>
 
                                 <echo>Copying Acceptance testing files</echo>
-<!--                                <exec executable="mvn">-->
-<!--                                    <arg value="-f"/>-->
-<!--                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>-->
-<!--                                    <arg value="install"/>-->
-<!--                                </exec>-->
+                                <!--                                <exec executable="mvn">-->
+                                <!--                                    <arg value="-f"/>-->
+                                <!--                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>-->
+                                <!--                                    <arg value="install"/>-->
+                                <!--                                </exec>-->
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-test/target/appassembler/bin"/>

@@ -11,15 +11,16 @@ services:
     image: solr:8.8.2
     volumes:
       - /data/solr:/var/solr/data
+
   init:
     image: opencb/opencga-base:2.3.0-SNAPSHOT
     depends_on:
       - mongodb
       - solr
     volumes:
-      - ./init.sh:/opt/opencga/bin/init.sh
-      - ./conf/:/opt/opencga/conf/
-      - ./mongodb-replica-set-init.js:/opt/mongodb/mongodb-replica-set-init.js
+      - ../init.sh:/opt/opencga/bin/init.sh
+      - ../conf/:/opt/opencga/conf/
+      - ../mongodb-replica-set-init.js:/opt/mongodb/mongodb-replica-set-init.js
     command: [ "/opt/opencga/bin/init.sh" ]
 
   rest:
@@ -29,9 +30,15 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./rest.sh:/opt/opencga/bin/rest.sh
-      - ./conf/:/opt/opencga/conf/
+      - ../rest.sh:/opt/opencga/bin/rest.sh
+      - ../conf/:/opt/opencga/conf/
     command: [ "/opt/opencga/bin/rest.sh" ]
 
-  hbase:
-    image: dajobe/hbase
+  cli:
+    image: opencga-cli
+    build: ${BUILD_PATH}
+    depends_on:
+      - rest
+    volumes:
+      - ../conf:/opt/opencga/build/conf
+
