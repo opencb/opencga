@@ -4,13 +4,17 @@ services:
   mongodb:
     image: mongo:4.2.18
     volumes:
-      - /data/mongodb:/data/db
-    entrypoint: [ "/usr/bin/mongod", "--replSet", "rs0", "--bind_ip_all" ]
+      - ~/opencga-docker-data/mongodb:/data/mongodb
+    entrypoint: [ "/usr/bin/mongod", "--replSet", "rs0", "--bind_ip_all", "--dbpath", "/data/mongodb" ]
 
   solr:
     image: solr:8.8.2
     volumes:
-      - /data/solr:/var/solr/data
+      - ~/opencga-docker-data/solr:/var/solr/data
+    environment:
+      - SOLR_USER=imedina
+      - SOLR_UID=1000
+
   init:
     image: opencb/opencga-base:2.3.0-SNAPSHOT
     depends_on:
@@ -33,5 +37,5 @@ services:
       - ./conf/:/opt/opencga/conf/
     command: [ "/opt/opencga/bin/rest.sh" ]
 
-  hbase:
-    image: dajobe/hbase
+#  hbase:
+#    image: dajobe/hbase
