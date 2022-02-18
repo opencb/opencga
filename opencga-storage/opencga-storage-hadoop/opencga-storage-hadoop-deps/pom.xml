@@ -88,7 +88,7 @@
         <commons-logging.version>1.2</commons-logging.version>
         <commons-csv.version>1.0</commons-csv.version>
         <commons-codec.version>1.7</commons-codec.version>
-        <collections.version>3.2.1</collections.version>
+        <collections.version>3.2.2</collections.version>
         <sqlline.version>1.1.9</sqlline.version>
         <jline.version>2.11</jline.version>
         <antlr.version>3.5</antlr.version>
