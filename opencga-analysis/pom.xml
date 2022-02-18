@@ -45,11 +45,27 @@
                     <groupId>org.seqdoop</groupId>
                 </exclusion>
                 <exclusion>
+                    <artifactId>spark-avro_2.11</artifactId>
+                    <groupId>com.databricks</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>spark-mllib_2.11</artifactId>
+                    <groupId>org.apache.spark</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>parquet-hadoop</artifactId>
+                    <groupId>org.apache.parquet</groupId>
+                </exclusion>
+                <exclusion>
                     <artifactId>hbase-client</artifactId>
                     <groupId>org.apache.hbase</groupId>
                 </exclusion>
                 <exclusion>
                     <artifactId>hadoop-client</artifactId>
+                    <groupId>org.apache.hadoop</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>hadoop-common</artifactId>
                     <groupId>org.apache.hadoop</groupId>
                 </exclusion>
                 <exclusion>
