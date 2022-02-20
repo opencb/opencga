@@ -11,9 +11,9 @@ services:
     image: solr:8.8.2
     volumes:
       - ~/opencga-docker-data/solr:/var/solr/data
-    environment:
-      - SOLR_USER=imedina
-      - SOLR_UID=1000
+      # environment:
+      #  - SOLR_USER=${SOLR_USER}
+      #  - SOLR_UID=${SOLR_UID}
 
   init:
     image: opencb/opencga-base:2.3.0-SNAPSHOT
