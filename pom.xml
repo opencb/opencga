@@ -52,6 +52,7 @@
         <log4j2.version>2.17.1</log4j2.version>
         <junit.version>4.12</junit.version>
         <solr.version>6.4.1</solr.version>
+        <collections.version>3.2.2</collections.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <opencga.war.name>opencga</opencga.war.name>
