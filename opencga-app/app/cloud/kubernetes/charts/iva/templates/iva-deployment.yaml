@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: {{ .Values.iva.name }}
   labels:
+    {{- include "iva.labels" . | nindent 4 }}
     app: {{  .Values.iva.name  }}
 spec:
   replicas: {{ .Values.iva.replicaCount }}

@@ -4,7 +4,7 @@ kind: MongoDBCommunity
 metadata:
   name: {{ .Values.mongodb.deploy.name }}
   labels:
-  {{ include "opencga.labels" . | nindent 4 }}
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   members: {{ int .Values.mongodb.deploy.replicas }}
   type: ReplicaSet

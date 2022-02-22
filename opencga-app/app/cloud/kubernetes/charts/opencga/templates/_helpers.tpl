@@ -33,6 +33,7 @@ Create chart name and version as used by the chart label.
 
 {{/*
 Common labels
+See https://helm.sh/docs/chart_best_practices/labels/#standard-labels
 */}}
 {{- define "opencga.labels" -}}
 helm.sh/chart: {{ include "opencga.chart" . }}

@@ -8,6 +8,7 @@ metadata:
   name: {{ .Values.rest.name }}
   labels:
     app: {{ $fullName }}
+    {{- include "opencga.labels" . | nindent 4 }}
   {{- with .Values.rest.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}

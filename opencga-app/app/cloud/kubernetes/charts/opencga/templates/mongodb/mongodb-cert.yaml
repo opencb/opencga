@@ -5,7 +5,7 @@ metadata:
   name: {{ .Values.mongodb.deploy.certificateKeySecretRef }}-cert
   namespace: {{ .Release.Namespace }}
   labels:
-    {{ include "opencga.labels" . | nindent 4 }}
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   secretName: {{ .Values.mongodb.deploy.certificateKeySecretRef }}
   issuerRef:
