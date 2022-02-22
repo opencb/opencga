@@ -4,6 +4,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.UpdateOneModel;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
@@ -24,7 +25,7 @@ import static com.mongodb.client.model.Filters.eq;
         description = "Sample source, treatments, processing and collection changes #1854", version = "2.2.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        date = 20211201)
+        date = 20211201, patch = 2)
 public class SampleProcessingAndCollectionChanges extends MigrationTool {
 
     @Override
@@ -89,6 +90,32 @@ public class SampleProcessingAndCollectionChanges extends MigrationTool {
         collection.createIndex(new Document().append("processing.product.id", 1).append("studyUid", 1), new IndexOptions().background(true));
         collection.createIndex(new Document().append("collection.from.id", 1).append("studyUid", 1), new IndexOptions().background(true));
         collection.createIndex(new Document().append("collection.type", 1).append("studyUid", 1), new IndexOptions().background(true));
+
+        // Patch 2 - Remove array from processing.product
+        migrateCollection(MongoDBAdaptorFactory.SAMPLE_COLLECTION,
+                new Document("processing.product", new Document("$exists", true)),
+                Projections.include("_id", "processing"),
+                (doc, bulk) -> {
+                    Document processing = doc.get("processing", Document.class);
+                    if (processing != null) {
+                        List<Document> product = processing.getList("product", Document.class);
+                        if (CollectionUtils.isEmpty(product)) {
+                            processing.put("product", new Document());
+                        } else {
+                            processing.put("product", product.get(0));
+                        }
+                    } else {
+                        SampleProcessing sampleProcessing = SampleProcessing.init();
+                        processing = convertToDocument(sampleProcessing);
+                    }
+
+                    bulk.add(new UpdateOneModel<>(
+                                    eq("_id", doc.get("_id")),
+                                    new Document("$set", new Document("processing", processing))
+                            )
+                    );
+                }
+        );
     }
 
     private void processOntologyTermAnnotationField(String field, String source, List<OntologyTermAnnotation> ontologyTermAnnotationList) {

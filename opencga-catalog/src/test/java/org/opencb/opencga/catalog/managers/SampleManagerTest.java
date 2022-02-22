@@ -695,13 +695,13 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn,
                 new Sample().setId("testSample").setDescription("description"), null, token);
 
-        SampleProcessing processing = new SampleProcessing(Collections.singletonList(new OntologyTermAnnotation().setId("product")),
+        SampleProcessing processing = new SampleProcessing(new OntologyTermAnnotation().setId("product"),
                 "preparationMethod", "extractionMethod", "labSampleId", "quantity", "date", Collections.emptyMap());
         catalogManager.getSampleManager().update(studyFqn, "testSample",
                 new SampleUpdateParams().setProcessing(processing), new QueryOptions(Constants.INCREMENT_VERSION, true), token);
 
         DataResult<Sample> testSample = catalogManager.getSampleManager().get(studyFqn, "testSample", new QueryOptions(), token);
-        assertEquals("product", testSample.first().getProcessing().getProduct().get(0).getId());
+        assertEquals("product", testSample.first().getProcessing().getProduct().getId());
         assertEquals("preparationMethod", testSample.first().getProcessing().getPreparationMethod());
         assertEquals("extractionMethod", testSample.first().getProcessing().getExtractionMethod());
         assertEquals("labSampleId", testSample.first().getProcessing().getLabSampleId());
