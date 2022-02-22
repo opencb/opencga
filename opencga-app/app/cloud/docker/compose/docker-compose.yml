@@ -37,5 +37,13 @@ services:
       - ./conf/:/opt/opencga/conf/
     command: [ "/opt/opencga/bin/rest.sh" ]
 
+  daemon:
+    image: opencb/opencga-base:2.3.0-SNAPSHOT
+    depends_on:
+      - rest
+    volumes:
+      - ./daemon.sh:/opt/opencga/bin/daemon.sh
+      - ./conf/:/opt/opencga/conf/
+    command: [ "/opt/opencga/bin/daemon.sh" ]
 #  hbase:
 #    image: dajobe/hbase

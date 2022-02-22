@@ -10,6 +10,6 @@ echo "==========================================================================
 # Deploy new catalog
 sleep 5
 echo "Installing OpenCGA"
-echo "adminOpencga2021." | ./opencga-admin.sh catalog install
+echo "adminOpencga2021." | ./bin/opencga-admin.sh catalog install
 
 echo "===================================== OK ====================================================="

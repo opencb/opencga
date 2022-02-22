@@ -1,7 +1,7 @@
 #!/bin/sh -x
 
 # Deploy new catalog
-sleep 15
+sleep 10
 echo "Starting REST"
-./opencga-admin.sh server rest --start --port 9090
+./bin/opencga-admin.sh server rest --start --port 9090
 
