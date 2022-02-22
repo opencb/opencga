@@ -372,7 +372,6 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            new GenomeHelper(context.getConfiguration());
             hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
             schema = new SampleIndexSchema(VariantMapReduceUtil.getSampleIndexConfiguration(context.getConfiguration()));
             fileIndexConverter = new VariantFileIndexConverter(schema);

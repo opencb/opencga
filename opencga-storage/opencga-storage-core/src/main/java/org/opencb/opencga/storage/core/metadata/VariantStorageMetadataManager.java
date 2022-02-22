@@ -233,6 +233,21 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         T update(T t) throws E;
     }
 
+    public interface UpdateConsumer<T, E extends Exception> {
+        void update(T t) throws E;
+        default UpdateFunction<T, E> toFunction() {
+            return t -> {
+                update(t);
+                return t;
+            };
+        }
+    }
+
+    public <E extends Exception> StudyMetadata updateStudyMetadata(Object study, UpdateConsumer<StudyMetadata, E> updater)
+            throws StorageEngineException, E {
+        return updateStudyMetadata(study, updater.toFunction());
+    }
+
     public <E extends Exception> StudyMetadata updateStudyMetadata(Object study, UpdateFunction<StudyMetadata, E> updater)
             throws StorageEngineException, E {
         int studyId = getStudyId(study);
@@ -392,7 +407,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public Integer getStudyId(Object studyObj, boolean skipNegated, Map<String, Integer> studies) {
         Integer studyId;
-        if (studyObj instanceof Integer) {
+        if (studyObj instanceof StudyMetadata) {
+            studyId = ((StudyMetadata) studyObj).getId();
+        } else if (studyObj instanceof StudyResourceMetadata) {
+            studyId = ((StudyResourceMetadata<?>) studyObj).getStudyId();
+        } else if (studyObj instanceof Integer) {
             studyId = ((Integer) studyObj);
         } else {
             String studyName = studyObj.toString();

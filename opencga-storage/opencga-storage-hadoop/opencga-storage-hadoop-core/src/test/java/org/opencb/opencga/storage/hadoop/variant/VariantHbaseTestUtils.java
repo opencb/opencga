@@ -101,7 +101,6 @@ public class VariantHbaseTestUtils {
     public static VariantHadoopDBAdaptor printVariantsFromArchiveTable(VariantHadoopDBAdaptor dbAdaptor,
                                                                        StudyMetadata studyMetadata, PrintStream out)
             throws Exception {
-        GenomeHelper helper = dbAdaptor.getGenomeHelper();
         String archiveTableName = dbAdaptor.getArchiveTableName(studyMetadata.getId());
         if (!dbAdaptor.getHBaseManager().tableExists(archiveTableName)) {
             return dbAdaptor;
@@ -144,7 +143,6 @@ public class VariantHbaseTestUtils {
             return;
         }
         System.out.println("Query from HBase : " + tableName);
-        GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         Path outputFile;
         if (dir.toFile().isDirectory()) {
             outputFile = dir.resolve("variant." + tableName + "." + TimeUtils.getTimeMillis() + ".txt");

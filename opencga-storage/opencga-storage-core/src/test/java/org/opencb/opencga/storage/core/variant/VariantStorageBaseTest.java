@@ -155,6 +155,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
                 stream = VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(resourceName);
             }
 
+            Assert.assertNotNull(resourceName, stream);
             Files.copy(stream, resourcePath, StandardCopyOption.REPLACE_EXISTING);
         }
         return resourcePath.toUri();

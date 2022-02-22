@@ -170,8 +170,8 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             throw new StorageHadoopException("Issue creating table " + getArchiveTable(), e);
         }
         try {
-            VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), dbAdaptor.getVariantTable(),
-                    dbAdaptor.getConnection());
+            VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getVariantTable(),
+                    dbAdaptor.getConnection(), dbAdaptor.getConfiguration());
         } catch (IOException e) {
             throw new StorageHadoopException("Issue creating table " + dbAdaptor.getVariantTable(), e);
         }

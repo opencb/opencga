@@ -70,7 +70,6 @@ import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.Variant
 public class VariantHBaseQueryParser {
     private static Logger logger = LoggerFactory.getLogger(VariantHBaseQueryParser.class);
 
-    private final GenomeHelper genomeHelper;
     private final VariantStorageMetadataManager metadataManager;
 
     private static final Set<VariantQueryParam> SUPPORTED_QUERY_PARAMS;
@@ -86,8 +85,7 @@ public class VariantHBaseQueryParser {
         //SUPPORTED_QUERY_PARAMS.add(SAMPLES); // May be supported
     }
 
-    public VariantHBaseQueryParser(GenomeHelper genomeHelper, VariantStorageMetadataManager metadataManager) {
-        this.genomeHelper = genomeHelper;
+    public VariantHBaseQueryParser(VariantStorageMetadataManager metadataManager) {
         this.metadataManager = metadataManager;
     }
 

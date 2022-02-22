@@ -21,6 +21,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.phoenix.parse.HintNode;
 import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.util.SchemaUtil;
@@ -41,11 +42,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.*;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjection;
 import org.opencb.opencga.storage.core.variant.query.projection.VariantQueryProjectionParser;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.*;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
@@ -83,7 +81,7 @@ public class VariantSqlQueryParser {
             "0|2", "2|0", "2|1", "1|2", "2|2",
             "0|3", "1|3", "2|3", "3|3",
             "3|0", "3|1", "3|2"));
-    private final GenomeHelper genomeHelper;
+    private final Configuration conf;
     private final String variantTable;
     private final Logger logger = LoggerFactory.getLogger(VariantSqlQueryParser.class);
     private final VariantStorageMetadataManager metadataManager;
@@ -103,13 +101,14 @@ public class VariantSqlQueryParser {
         SQL_OPERATOR.put("<<=", "<=");
     }
 
-    public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable, VariantStorageMetadataManager metadataManager) {
-        this(genomeHelper, variantTable, metadataManager, false);
+
+    public VariantSqlQueryParser(String variantTable, VariantStorageMetadataManager metadataManager, Configuration conf) {
+        this(variantTable, metadataManager, false, conf);
     }
 
-    public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable,
-                                 VariantStorageMetadataManager metadataManager, boolean clientSideSkip) {
-        this.genomeHelper = genomeHelper;
+    public VariantSqlQueryParser(String variantTable,
+                                 VariantStorageMetadataManager metadataManager, boolean clientSideSkip, Configuration conf) {
+        this.conf = conf;
         this.variantTable = variantTable;
         this.metadataManager = metadataManager;
         this.clientSideSkip = clientSideSkip;
@@ -305,7 +304,7 @@ public class VariantSqlQueryParser {
     }
 
     protected void appendFromStatement(StringBuilder sb, Set<Column> dynamicColumns) {
-        sb.append(" FROM ").append(getEscapedFullTableName(variantTable, genomeHelper.getConf()));
+        sb.append(" FROM ").append(getEscapedFullTableName(variantTable, conf));
 
         if (!dynamicColumns.isEmpty()) {
             sb.append(dynamicColumns.stream()

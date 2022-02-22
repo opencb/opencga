@@ -12,7 +12,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -69,7 +69,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
 
             List<String> family = Arrays.asList(father, mother, child);
 
-            variantStorageEngine.aggregateFamily(study, family, new ObjectMap());
+            variantStorageEngine.aggregateFamily(study, new VariantAggregateFamilyParams(family, false), new ObjectMap());
 
             variantStorageEngine.familyIndex(study, Collections.singletonList(family), new ObjectMap());
 

@@ -385,7 +385,9 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
 
         return openCGAClient.getVariantOperationClient().aggregateVariantFamily(
                 new VariantAggregateFamilyParams(
-                        cliOptions.genericAggregateFamilyOptions.samples, cliOptions.genericAggregateFamilyOptions.resume
+                        cliOptions.genericAggregateFamilyOptions.samples,
+                        cliOptions.genericAggregateFamilyOptions.gapsGenotype,
+                        cliOptions.genericAggregateFamilyOptions.resume
                 ), params);
     }
 

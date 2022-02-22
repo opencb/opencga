@@ -60,9 +60,7 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
+import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -430,19 +428,18 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return catalogUtils.getTriosFromFamily(study, family, variantStorageEngine.getMetadataManager(), skipIncompleteFamilies, token);
     }
 
-    public void aggregateFamily(String studyStr, List<String> samples, ObjectMap params, String token)
+    public void aggregateFamily(String studyStr, VariantAggregateFamilyParams params, String token)
             throws CatalogException, StorageEngineException {
-
-        secureOperation(VariantAggregateFamilyOperationTool.ID, studyStr, params, token, engine -> {
-            engine.aggregateFamily(getStudyFqn(studyStr, token), samples, params);
+        secureOperation(VariantAggregateFamilyOperationTool.ID, studyStr, params.toObjectMap(), token, engine -> {
+            engine.aggregateFamily(getStudyFqn(studyStr, token), params, new ObjectMap());
             return null;
         });
     }
 
-    public void aggregate(String studyStr, boolean overwrite, ObjectMap params, String token)
+    public void aggregate(String studyStr, VariantAggregateParams params, String token)
             throws CatalogException, StorageEngineException {
-        secureOperation(VariantAggregateOperationTool.ID, studyStr, params, token, engine -> {
-            engine.aggregate(getStudyFqn(studyStr, token), overwrite, params);
+        secureOperation(VariantAggregateOperationTool.ID, studyStr, params.toObjectMap(), token, engine -> {
+            engine.aggregate(getStudyFqn(studyStr, token), params, new ObjectMap());
             return null;
         });
     }

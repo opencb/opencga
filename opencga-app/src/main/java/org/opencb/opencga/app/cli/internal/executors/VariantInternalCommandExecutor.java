@@ -626,6 +626,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         ObjectMap params = new VariantAggregateFamilyParams(
                 cliOptions.genericAggregateFamilyOptions.samples,
+                cliOptions.genericAggregateFamilyOptions.gapsGenotype,
                 cliOptions.genericAggregateFamilyOptions.resume)
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);

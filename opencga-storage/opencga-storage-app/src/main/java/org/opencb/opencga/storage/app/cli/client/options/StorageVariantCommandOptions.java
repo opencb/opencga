@@ -751,6 +751,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--samples"}, description = "Samples within the same study to fill", required = true)
         public List<String> samples;
 
+        @Parameter(names = {"--gaps-genotype"}, description = "Genotype to be used in gaps. Either 0/0, ./. or ?/?.", required = false)
+        public String gapsGenotype;
+
         @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
         public boolean resume;
 

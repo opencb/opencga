@@ -216,7 +216,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             fileMetadata.setId(String.valueOf(fileId));
 //            fileMetadata.setStudyId(Integer.toString(studyId));
 
-            ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), studyId, fileMetadata);
+            ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getConfiguration(), studyId, fileMetadata);
             StopWatch stopWatch = StopWatch.createStarted();
             if (VariantReaderUtils.isProto(fileName)) {
                 ProgressLogger progressLogger = new ProgressLogger("Loaded slices:");
