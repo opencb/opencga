@@ -367,6 +367,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genericVariantIndexOptions.gvcf,
                 cliOptions.genericVariantIndexOptions.normalizationSkip,
                 cliOptions.genericVariantIndexOptions.referenceGenome,
+                cliOptions.genericVariantIndexOptions.failOnMalformedLines,
                 cliOptions.genericVariantIndexOptions.family,
                 cliOptions.genericVariantIndexOptions.somatic,
                 cliOptions.genericVariantIndexOptions.load,

@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.Variant;
@@ -53,6 +54,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
@@ -118,7 +120,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
     @Override
     protected ParallelTaskRunner transformProto(VariantFileMetadata fileMetadata, URI outputVariantsFile,
-                                                DataReader<String> stringReader, Supplier<Task<String, Variant>> task)
+                                                DataReader<String> stringReader, Supplier<Task<Pair<Integer, List<String>>, Variant>> task)
             throws StorageEngineException {
 
         int sliceBufferSize = options.getInt(ARCHIVE_SLICE_BUFFER_SIZE.key(), ARCHIVE_SLICE_BUFFER_SIZE.defaultValue());
@@ -130,7 +132,11 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             throw StorageEngineException.ioException(e);
         }
 
-        final DataReader<Variant> dataReader = stringReader.then(task.get());
+        AtomicInteger lineNumber = new AtomicInteger(0);
+        final DataReader<Variant> dataReader = stringReader.then(list -> {
+            int i = lineNumber.addAndGet(list.size());
+            return Collections.singletonList(Pair.of(i, list));
+        }).then(task.get());
 
         // Transformer
         ArchiveTableHelper helper = new ArchiveTableHelper(conf, getStudyId(), fileMetadata);

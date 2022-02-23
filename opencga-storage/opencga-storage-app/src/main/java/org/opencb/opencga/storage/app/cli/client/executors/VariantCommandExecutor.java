@@ -275,6 +275,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         params.put(VariantStorageOptions.LOAD_HOM_REF.key(), indexVariantsCommandOptions.loadHomRef);
         params.put(VariantStorageOptions.NORMALIZATION_SKIP.key(), indexVariantsCommandOptions.normalizationSkip);
         params.put(VariantStorageOptions.NORMALIZATION_REFERENCE_GENOME.key(), indexVariantsCommandOptions.referenceGenome);
+        params.putIfNotEmpty(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), indexVariantsCommandOptions.failOnMalformedLines);
         params.put(VariantStorageOptions.POST_LOAD_CHECK.key(), indexVariantsCommandOptions.postLoadCheck);
         params.put(VariantStorageOptions.INDEX_SEARCH.key(), indexVariantsCommandOptions.indexSearch);
         params.put(VariantStorageOptions.SPECIES.key(), indexVariantsCommandOptions.species);

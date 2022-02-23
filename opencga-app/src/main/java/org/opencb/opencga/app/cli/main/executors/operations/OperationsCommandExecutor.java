@@ -148,6 +148,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                         cliOptions.genericVariantIndexOptions.gvcf,
                         cliOptions.genericVariantIndexOptions.normalizationSkip,
                         cliOptions.genericVariantIndexOptions.referenceGenome,
+                        cliOptions.genericVariantIndexOptions.failOnMalformedLines,
                         cliOptions.genericVariantIndexOptions.family,
                         cliOptions.genericVariantIndexOptions.somatic,
                         cliOptions.genericVariantIndexOptions.load,

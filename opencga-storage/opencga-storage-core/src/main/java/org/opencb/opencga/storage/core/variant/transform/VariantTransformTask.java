@@ -18,10 +18,10 @@ package org.opencb.opencga.storage.core.variant.transform;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.formats.variant.VariantFactory;
 import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
@@ -46,28 +46,27 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
 
 /**
  * Created on 25/02/16.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantTransformTask implements Task<String, Variant> {
+public class VariantTransformTask implements Task<Pair<Integer, List<String>>, Variant> {
 
     protected final VariantFactory factory;
     protected final VariantFileMetadata fileMetadata;
     protected boolean includeSrc = false;
 
     protected final Logger logger = LoggerFactory.getLogger(VariantTransformTask.class);
-    protected final VCFCodec vcfCodec;
+    protected final FullVcfCodec vcfCodec;
     protected final VariantContextToVariantConverter converter;
     protected final Task<Variant, Variant> normalizer;
     protected final VariantSetStatsCalculator variantStatsTask;
     protected final AtomicLong htsConvertTime = new AtomicLong(0);
     protected final AtomicLong biodataConvertTime = new AtomicLong(0);
     protected final AtomicLong normTime = new AtomicLong(0);
-    protected final List<BiConsumer<String, RuntimeException>> errorHandlers = new ArrayList<>();
+    protected final List<ErrorHandler> errorHandlers = new ArrayList<>();
     protected boolean failOnError = true;
     private VariantStudyMetadata metadata;
 
@@ -109,12 +108,17 @@ public class VariantTransformTask implements Task<String, Variant> {
     }
 
     @Override
-    public List<Variant> apply(List<String> batch) {
+    public List<Variant> apply(List<Pair<Integer, List<String>>> batches) {
+        return apply(batches.get(0).getRight(), batches.get(0).getLeft());
+    }
+
+    public List<Variant> apply(List<String> batch, int lineNumber) {
         List<Variant> transformedVariants = new ArrayList<>(batch.size());
         logger.debug("Transforming {} lines", batch.size());
         long curr;
         if (factory != null) {
             for (String line : batch) {
+                lineNumber++;
                 if (line.startsWith("#") || line.trim().isEmpty()) {
                     continue;
                 }
@@ -145,20 +149,22 @@ public class VariantTransformTask implements Task<String, Variant> {
                 } catch (NotAVariantException ignore) {
                     variants = Collections.emptyList();
                 } catch (RuntimeException e) {
-                    onError(e, line);
+                    onError(e, lineNumber, line);
                 }
             }
         } else {
             List<VariantContext> variantContexts = new ArrayList<>(batch.size());
             curr = System.currentTimeMillis();
             for (String line : batch) {
+                lineNumber++;
                 if (line.startsWith("#") || line.trim().isEmpty()) {
                     continue;
                 }
                 try {
+                    vcfCodec.setLineNumber(lineNumber);
                     variantContexts.add(vcfCodec.decode(line));
                 } catch (RuntimeException e) {
-                    onError(e, line);
+                    onError(e, lineNumber, line);
                 }
             }
             this.htsConvertTime.addAndGet(System.currentTimeMillis() - curr);
@@ -197,13 +203,13 @@ public class VariantTransformTask implements Task<String, Variant> {
         return normalizedVariants;
     }
 
-    private void onError(RuntimeException e, String line) {
-        logger.error("Error '{}' parsing line: '{}'", e.getMessage(), line);
-        for (BiConsumer<String, RuntimeException> handler : errorHandlers) {
-            handler.accept(line, e);
+    private void onError(RuntimeException e, int lineNo, String line) {
+        logger.error("Error parsing line #{} : {} '{}' parsing line: '{}'", lineNo, e.getClass().getSimpleName(), e.getMessage(), line);
+        for (ErrorHandler handler : errorHandlers) {
+            handler.accept(lineNo, line, e);
         }
         if (failOnError) {
-            logger.info("To ignore parsing errors add '" + VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key() + "=true'");
+            logger.info("To ignore parsing errors add '" + VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key() + "=no'");
             throw e;
         }
     }
@@ -248,7 +254,7 @@ public class VariantTransformTask implements Task<String, Variant> {
         return this;
     }
 
-    public VariantTransformTask addMalformedErrorHandler(BiConsumer<String, RuntimeException> handler) {
+    public VariantTransformTask addMalformedErrorHandler(ErrorHandler handler) {
         errorHandlers.add(handler);
         return this;
     }
@@ -256,6 +262,12 @@ public class VariantTransformTask implements Task<String, Variant> {
     public VariantTransformTask setFailOnError(boolean failOnError) {
         this.failOnError = failOnError;
         return this;
+    }
+
+    public interface ErrorHandler {
+
+        void accept(int lineNumber, String line, RuntimeException e);
+
     }
 
 }

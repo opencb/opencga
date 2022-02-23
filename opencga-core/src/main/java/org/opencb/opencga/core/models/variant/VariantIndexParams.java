@@ -18,6 +18,7 @@ package org.opencb.opencga.core.models.variant;
 
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.tools.ToolParams;
 
 public class VariantIndexParams extends ToolParams {
@@ -31,6 +32,7 @@ public class VariantIndexParams extends ToolParams {
                               boolean transform,
                               boolean gvcf,
                               boolean normalizationSkip, String referenceGenome,
+                              String failOnMalformedLines,
                               boolean family,
                               boolean somatic,
                               boolean load, String loadSplitData, boolean loadMultiFileData,
@@ -49,6 +51,7 @@ public class VariantIndexParams extends ToolParams {
         this.gvcf = gvcf;
         this.normalizationSkip = normalizationSkip;
         this.referenceGenome = referenceGenome;
+        this.failOnMalformedLines = failOnMalformedLines;
         this.family = family;
         this.somatic = somatic;
         this.load = load;
@@ -81,6 +84,8 @@ public class VariantIndexParams extends ToolParams {
 
     private boolean normalizationSkip;
     private String referenceGenome;
+
+    private String failOnMalformedLines;
 
     private boolean family;
     private boolean somatic;
@@ -169,6 +174,15 @@ public class VariantIndexParams extends ToolParams {
 
     public VariantIndexParams setReferenceGenome(String referenceGenome) {
         this.referenceGenome = referenceGenome;
+        return this;
+    }
+
+    public String getFailOnMalformedLines() {
+        return failOnMalformedLines;
+    }
+
+    public VariantIndexParams setFailOnMalformedLines(String failOnMalformedLines) {
+        this.failOnMalformedLines = failOnMalformedLines;
         return this;
     }
 

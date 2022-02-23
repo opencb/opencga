@@ -79,33 +79,31 @@ public class VariantIndexOperationTool extends OperationTool {
         params.put(VariantStorageOptions.MERGE_MODE.key(), indexParams.getMerge());
 
         params.put(VariantStorageOptions.STATS_CALCULATE.key(), indexParams.isCalculateStats());
-        params.put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), indexParams.getIncludeSampleData());
-        params.put(VariantStorageOptions.INCLUDE_GENOTYPE.key(), indexParams.getIncludeGenotypes());
+        params.putIfNotEmpty(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), indexParams.getIncludeSampleData());
+        params.putIfNotEmpty(VariantStorageOptions.INCLUDE_GENOTYPE.key(), indexParams.getIncludeGenotypes());
         params.put(VariantStorageOptions.STATS_AGGREGATION.key(), indexParams.getAggregated());
-        params.put(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), indexParams.getAggregationMappingFile());
+        params.putIfNotEmpty(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), indexParams.getAggregationMappingFile());
         params.put(VariantStorageOptions.GVCF.key(), indexParams.isGvcf());
 
 //        queryOptions.putIfNotNull(VariantFileIndexerStorageOperation.TRANSFORMED_FILES, indexParams.transformedPaths);
 
         params.put(VariantStorageOptions.ANNOTATE.key(), indexParams.isAnnotate());
-        if (indexParams.getAnnotator() != null) {
-            params.put(VariantStorageOptions.ANNOTATOR.key(),
-                    indexParams.getAnnotator());
-        }
+        params.putIfNotEmpty(VariantStorageOptions.ANNOTATOR.key(), indexParams.getAnnotator());
         params.put(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), indexParams.isOverwriteAnnotations());
         params.put(VariantStorageOptions.RESUME.key(), indexParams.isResume());
         params.put(VariantStorageOptions.NORMALIZATION_SKIP.key(), indexParams.getNormalizationSkip());
-        params.put(VariantStorageOptions.NORMALIZATION_REFERENCE_GENOME.key(), indexParams.getReferenceGenome());
+        params.putIfNotEmpty(VariantStorageOptions.NORMALIZATION_REFERENCE_GENOME.key(), indexParams.getReferenceGenome());
+        params.putIfNotEmpty(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), indexParams.getFailOnMalformedLines());
         params.put(VariantStorageOptions.FAMILY.key(), indexParams.isFamily());
         params.put(VariantStorageOptions.SOMATIC.key(), indexParams.isSomatic());
-        params.put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), indexParams.getLoadSplitData());
+        params.putIfNotEmpty(VariantStorageOptions.LOAD_SPLIT_DATA.key(), indexParams.getLoadSplitData());
         params.put(VariantStorageOptions.LOAD_MULTI_FILE_DATA.key(), indexParams.isLoadMultiFileData());
-        params.put(VariantStorageOptions.LOAD_SAMPLE_INDEX.key(), indexParams.getLoadSampleIndex());
-        params.put(VariantStorageOptions.LOAD_ARCHIVE.key(), indexParams.getLoadArchive());
-        params.put(VariantStorageOptions.LOAD_HOM_REF.key(), indexParams.getLoadHomRef());
-        params.put(VariantStorageOptions.POST_LOAD_CHECK.key(), indexParams.getPostLoadCheck());
+        params.putIfNotEmpty(VariantStorageOptions.LOAD_SAMPLE_INDEX.key(), indexParams.getLoadSampleIndex());
+        params.putIfNotEmpty(VariantStorageOptions.LOAD_ARCHIVE.key(), indexParams.getLoadArchive());
+        params.putIfNotEmpty(VariantStorageOptions.LOAD_HOM_REF.key(), indexParams.getLoadHomRef());
+        params.putIfNotEmpty(VariantStorageOptions.POST_LOAD_CHECK.key(), indexParams.getPostLoadCheck());
         params.put(VariantStorageOptions.INDEX_SEARCH.key(), indexParams.isIndexSearch());
-        params.put(VariantStorageOptions.DEDUPLICATION_POLICY.key(), indexParams.getDeduplicationPolicy());
+        params.putIfNotEmpty(VariantStorageOptions.DEDUPLICATION_POLICY.key(), indexParams.getDeduplicationPolicy());
         params.put(SKIP_INDEXED_FILES, indexParams.isSkipIndexedFiles());
     }
 
