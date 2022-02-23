@@ -21,6 +21,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.formats.variant.VariantFactory;
 import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
@@ -161,7 +162,7 @@ public class VariantTransformTask implements Task<Pair<Integer, List<String>>, V
                     continue;
                 }
                 try {
-                    vcfCodec.setLineNumber(lineNumber);
+                    vcfCodec.setLineNumber(lineNumber - 1); // VcfCodec will increase line
                     variantContexts.add(vcfCodec.decode(line));
                 } catch (RuntimeException e) {
                     onError(e, lineNumber, line);
