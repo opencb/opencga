@@ -28,6 +28,7 @@ services:
 
   rest:
     image: opencb/opencga-base:2.3.0-SNAPSHOT
+    container_name: opencga
     depends_on:
       - init
     ports:
