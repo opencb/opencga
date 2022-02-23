@@ -668,6 +668,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return getFileId(studyId, fileObj, false);
     }
 
+    public int getFileIdOrFail(int studyId, Object fileObj) {
+        Integer fileId = getFileId(studyId, fileObj, false);
+        if (fileId == null) {
+            throw VariantQueryException.fileNotFound(fileId, getStudyName(studyId));
+        }
+        return fileId;
+    }
+
     public Integer getFileId(int studyId, Object fileObj, boolean onlyIndexed) {
         return getFileId(studyId, fileObj, onlyIndexed, true);
     }
@@ -1009,6 +1017,14 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
     public Integer getCohortId(int studyId, Object cohortObj) {
         return getCohortId(studyId, cohortObj, true);
+    }
+
+    public int getCohortIdOrFail(int studyId, Object cohortObj) {
+        Integer cohortId = getCohortId(studyId, cohortObj, true);
+        if (cohortId == null) {
+            throw VariantQueryException.cohortNotFound(String.valueOf(cohortObj), studyId, this);
+        }
+        return cohortId;
     }
 
     private Integer getCohortId(int studyId, Object cohortObj, boolean validate) {
@@ -1426,11 +1442,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public List<Integer> registerSamples(int studyId, Collection<String> samples) throws StorageEngineException {
         List<Integer> sampleIds = new ArrayList<>(samples.size());
         for (String sample : samples) {
-            Integer sampleId = getSampleId(studyId, sample);
-            if (sampleId == null) {
-                sampleId = registerSample(studyId, null, sample);
-            }
-            sampleIds.add(sampleId);
+            sampleIds.add(registerSample(studyId, null, sample));
         }
         return sampleIds;
     }
@@ -1438,15 +1450,25 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     protected Integer registerSample(int studyId, Integer fileId, String sample) throws StorageEngineException {
         Integer sampleId = getSampleId(studyId, sample);
         SampleMetadata sampleMetadata;
-
         if (sampleId == null) {
+            sampleMetadata = null;
+        } else {
+            sampleMetadata = getSampleMetadata(studyId, sampleId);
+        }
+        // SampleId might be not null, but still be null the sample metadata
+
+        if (sampleMetadata == null) {
             // Create sample with lock
             try (Lock lock = lockStudy(studyId)) {
                 sampleId = getSampleId(studyId, sample);
                 if (sampleId == null) {
                     //If the sample was not in the original studyId, a new SampleId is assigned.
                     sampleId = newSampleId(studyId);
-
+                } else {
+                    sampleMetadata = getSampleMetadata(studyId, sampleId);
+                }
+                if (sampleMetadata == null) {
+                    // Create the sample metadata
                     sampleMetadata = new SampleMetadata(studyId, sampleId, sample);
                     if (fileId != null) {
                         sampleMetadata.getFiles().add(fileId);
@@ -1457,7 +1479,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             }
         }
 
-        sampleMetadata = getSampleMetadata(studyId, sampleId);
+
         if (fileId != null) {
             if (!sampleMetadata.getFiles().contains(fileId)) {
                 updateSampleMetadata(studyId, sampleId, s -> {
