@@ -40,6 +40,7 @@ import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.tools.annotations.ToolParams;
 import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
+import org.opencb.opencga.storage.core.utils.BatchUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.OutputStream;
@@ -63,7 +64,6 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
     private SampleVariantStatsAnalysisExecutor toolExecutor;
     private List<List<String>> batches;
     private int numBatches;
-    private int batchSize;
 
     @Override
     protected void check() throws Exception {
@@ -185,23 +185,17 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
         }
 
         toolExecutor = getToolExecutor(SampleVariantStatsAnalysisExecutor.class);
-        if (toolParams.getBatchSize() == null || toolParams.getBatchSize() > toolExecutor.getMaxBatchSize()) {
+        if (toolParams.getBatchSize() == null) {
+            toolParams.setBatchSize(toolExecutor.getDefaultBatchSize());
+        } else if (toolParams.getBatchSize() > toolExecutor.getMaxBatchSize()) {
             toolParams.setBatchSize(toolExecutor.getMaxBatchSize());
         }
-        numBatches = (int) (Math.ceil(checkedSamplesList.size() / ((float) toolParams.getBatchSize())));
-        batchSize = (int) (Math.ceil(checkedSamplesList.size() / (float) numBatches));
+        batches = BatchUtils.splitBatches(checkedSamplesList, toolParams.getBatchSize());
+        numBatches = batches.size();
         if (numBatches > 1) {
-            logger.info("Execute sample stats in {} batches of {} samples", numBatches, batchSize);
+            logger.info("Execute sample stats in {} batches of {} samples", numBatches, batches.get(0).size());
         }
 
-        if (numBatches > 1) {
-            batches = new ArrayList<>(numBatches);
-            for (int batch = 0; batch < numBatches; batch++) {
-                batches.add(checkedSamplesList.subList(batch * batchSize, Math.min(checkedSamplesList.size(), (batch + 1) * batchSize)));
-            }
-        } else {
-            batches = Collections.singletonList(checkedSamplesList);
-        }
     }
 
     @Override
