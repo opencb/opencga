@@ -198,6 +198,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantOperationClient().deleteVariantSample(
                 new VariantSampleDeleteParams(
                         cliOptions.sample,
+                        cliOptions.force,
                         cliOptions.resume),
                 getParams(cliOptions));
     }

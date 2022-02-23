@@ -1,7 +1,6 @@
 package org.opencb.opencga.app.cli.main.options;
 
 import com.beust.jcommander.*;
-import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
@@ -24,8 +23,6 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAggregateCommandOptions.AGGREGATE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND_DESCRIPTION;
 
 @Parameters(commandNames = {OperationsCommandOptions.OPERATIONS_COMMAND}, commandDescription = "Operations commands")
 public class OperationsCommandOptions {
@@ -231,8 +228,11 @@ public class OperationsCommandOptions {
                 required = true)
         public List<String> sample = null;
 
-        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed sample delete")
         public boolean resume;
+
+        @Parameter(names = {"--force"}, description = "Force sample delete, even if samples are already deleted")
+        public boolean force;
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;

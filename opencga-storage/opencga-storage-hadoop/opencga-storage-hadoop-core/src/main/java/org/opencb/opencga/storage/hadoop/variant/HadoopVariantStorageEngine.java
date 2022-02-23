@@ -114,8 +114,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MERGE_MODE;
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.RESUME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
@@ -591,8 +590,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             }
         }
         if (!samplesAlreadyDeletedOrMissing.isEmpty()) {
-            throw new StorageEngineException("Unable to delete samples from variant storage. Already deleted or never loaded."
-                    + " Samples = " + samplesAlreadyDeletedOrMissing);
+            if (getOptions().getBoolean(FORCE.key(), false)) {
+                logger.info("Force sample delete of {} samples already deleted or missing", samplesAlreadyDeletedOrMissing.size());
+            } else {
+                throw new StorageEngineException("Unable to delete samples from variant storage. Already deleted or never loaded."
+                        + " Samples = " + samplesAlreadyDeletedOrMissing);
+            }
         }
 
         // Check if any file is being completely deleted
