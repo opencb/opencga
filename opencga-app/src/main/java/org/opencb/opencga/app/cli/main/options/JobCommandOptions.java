@@ -16,15 +16,14 @@
 
 package org.opencb.opencga.app.cli.main.options;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-import com.beust.jcommander.ParametersDelegate;
+import com.beust.jcommander.*;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 import static org.opencb.opencga.core.models.common.Enums.ExecutionStatus.RUNNING;
@@ -143,6 +142,12 @@ public class JobCommandOptions {
 
         @Parameter(names = {"--tags"}, description = ParamConstants.JOB_TAGS_DESCRIPTION, arity = 1)
         public List<String> jobTags;
+
+        @Parameter(names = {"--force"}, description = "Force retry, even if the job didn't fail", arity = 1)
+        public boolean force;
+
+        @DynamicParameter(names = "-P", description = "Tool parameters overwrite. -P key=value")
+        public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get job information")

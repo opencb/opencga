@@ -21,7 +21,6 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.formats.variant.VariantFactory;
 import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
