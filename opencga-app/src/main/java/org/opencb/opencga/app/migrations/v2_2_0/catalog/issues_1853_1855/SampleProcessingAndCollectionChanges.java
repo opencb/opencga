@@ -84,9 +84,9 @@ public class SampleProcessingAndCollectionChanges extends MigrationTool {
         );
 
         MongoCollection<Document> collection = getMongoCollection(MongoDBAdaptorFactory.SAMPLE_COLLECTION);
-        collection.dropIndex(new Document().append("processing.product", 1).append("studyUid", 1));
-        collection.dropIndex(new Document().append("collection.tissue", 1).append("studyUid", 1));
-        collection.dropIndex(new Document().append("collection.organ", 1).append("studyUid", 1));
+        dropIndex(collection, new Document().append("processing.product", 1).append("studyUid", 1));
+        dropIndex(collection, new Document().append("collection.tissue", 1).append("studyUid", 1));
+        dropIndex(collection, new Document().append("collection.organ", 1).append("studyUid", 1));
         collection.createIndex(new Document().append("processing.product.id", 1).append("studyUid", 1), new IndexOptions().background(true));
         collection.createIndex(new Document().append("collection.from.id", 1).append("studyUid", 1), new IndexOptions().background(true));
         collection.createIndex(new Document().append("collection.type", 1).append("studyUid", 1), new IndexOptions().background(true));
