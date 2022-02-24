@@ -4,8 +4,8 @@ services:
   mongodb:
     image: mongo:4.2.18
     container_name: mongodb-opencga
-    ports:
-      - "27017:27017"
+    #    ports:
+    #      - "27017:27017"
     volumes:
       - ~/opencga-docker-data/mongodb:/data/mongodb
     entrypoint: [ "/usr/bin/mongod", "--replSet", "rs0", "--bind_ip_all", "--dbpath", "/data/mongodb" ]
@@ -13,8 +13,8 @@ services:
   solr:
     image: solr:8.8.2
     container_name: solr-opencga
-    ports:
-      - "8983:8983"
+    #    ports:
+    #      - "8983:8983"
     volumes:
       - ~/opencga-docker-data/solr:/var/solr/data
 
@@ -24,9 +24,9 @@ services:
       - mongodb
       - solr
     volumes:
-      - ./init.sh:/opt/opencga/bin/init.sh
+      - ./init/init.sh:/opt/opencga/bin/init.sh
       - ./conf/:/opt/opencga/conf/
-      - ./mongodb-replica-set-init.js:/opt/mongodb/mongodb-replica-set-init.js
+      - ./init/mongodb-replica-set-init.js:/opt/mongodb/mongodb-replica-set-init.js
     command: [ "/opt/opencga/bin/init.sh" ]
 
   rest:
@@ -37,7 +37,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./rest.sh:/opt/opencga/bin/rest.sh
+      - ./init/rest.sh:/opt/opencga/bin/rest.sh
       - ./conf/:/opt/opencga/conf/
     command: [ "/opt/opencga/bin/rest.sh" ]
 
@@ -47,7 +47,7 @@ services:
     depends_on:
       - rest
     volumes:
-      - ./daemon.sh:/opt/opencga/bin/daemon.sh
+      - ./init/daemon.sh:/opt/opencga/bin/daemon.sh
       - ./conf/:/opt/opencga/conf/
       - ./data/:/opt/opencga/data/
     command: [ "/opt/opencga/bin/daemon.sh" ]
