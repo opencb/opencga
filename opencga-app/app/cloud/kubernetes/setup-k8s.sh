@@ -69,6 +69,9 @@ HELM_OPTS="${HELM_OPTS} --debug "
 OUTPUT_DIR="$(pwd)"
 #OPENCGA_CONF_DIR
 KEEP_TMP_FILES=false
+DATE=$(date "+%Y%m%d%H%M%S")
+#FILE_NAME_SUFFIX="-${DATE}"
+FILE_NAME_SUFFIX=
 
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -234,7 +237,6 @@ function deploySolrOperator() {
 
 function deployCertManager() {
   NAME="cert-manager${NAME_SUFFIX}"
-  DATE=$(date "+%Y%m%d%H%M%S")
 
     # Add the Jetstack Helm repository
   helm repo add jetstack https://charts.jetstack.io
@@ -252,13 +254,12 @@ function deployCertManager() {
     --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
 
   if [ $DRY_RUN == "false" ]; then
-    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest-${DATE}.yaml"
+    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest${FILE_NAME_SUFFIX}.yaml"
   fi
 }
 
 function deployMongodbOperator() {
   NAME="mongodb-community-operator${NAME_SUFFIX}"
-  DATE=$(date "+%Y%m%d%H%M%S")
   helm repo add mongodb https://mongodb.github.io/helm-charts
   helm repo update
   MONGODB_OPERATOR_VERSION="${MONGODB_OPERATOR_VERSION:-v0.7.2}"
@@ -270,12 +271,11 @@ function deployMongodbOperator() {
     --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
 
   if [ $DRY_RUN == "false" ]; then
-    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest-${DATE}.yaml"
+    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest${FILE_NAME_SUFFIX}.yaml"
   fi
 }
 
 function deployOpenCGA() {
-  DATE=$(date "+%Y%m%d%H%M%S")
   CONF_MD5=
   if [[ -n "$OPENCGA_CONF_DIR" ]]; then
     find "$OPENCGA_CONF_DIR" -iname "*.xml" -o -iname "*.yml" -o -iname "*.yaml" -o -iname "*.sh"
@@ -302,20 +302,19 @@ function deployOpenCGA() {
     --values "${HELM_VALUES_FILE}" \
     --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
   if [ $DRY_RUN == "false" ]; then
-    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest-${DATE}.yaml"
-    helm get notes "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-notes-${DATE}.md"
+    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest${FILE_NAME_SUFFIX}.yaml"
+    helm get notes "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-notes${FILE_NAME_SUFFIX}.md"
   fi
 }
 
 function deployIVA() {
   NAME="iva${NAME_SUFFIX}"
   echo "# Deploy IVA ${NAME}"
-  DATE=$(date "+%Y%m%d%H%M%S")
   helm upgrade ${NAME} charts/iva \
     --values "${HELM_VALUES_FILE}" \
     --install --wait --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" --timeout 10m ${HELM_OPTS}
   if [ $DRY_RUN == "false" ]; then
-    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest-${DATE}.yaml"
+    helm get manifest "${NAME}" --kube-context "${K8S_CONTEXT}" -n "${K8S_NAMESPACE}" >"${OUTPUT_DIR}/helm-${NAME}-manifest${FILE_NAME_SUFFIX}.yaml"
   fi
 }
 
