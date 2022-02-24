@@ -7,6 +7,7 @@ import com.mongodb.client.model.UpdateOneModel;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.migration.Migration;
@@ -98,6 +99,10 @@ public class SampleProcessingAndCollectionChanges extends MigrationTool {
                 (doc, bulk) -> {
                     Document processing = doc.get("processing", Document.class);
                     if (processing != null) {
+                        if (processing.get("product") instanceof Document) {
+                            // Already migrated document
+                            return;
+                        }
                         List<Document> product = processing.getList("product", Document.class);
                         if (CollectionUtils.isEmpty(product)) {
                             processing.put("product", new Document());
