@@ -10,7 +10,6 @@ RUN echo 'http://dl-cdn.alpinelinux.org/alpine/v3.9/main' >> /etc/apk/repositori
 RUN apk --no-cache --update add openssh-client sshpass ca-certificates curl docker jq ncurses vim && \
     adduser -D -u 1001 opencga -h /home/opencga
 
-COPY ${BUILD_PATH} /opt/opencga
-RUN chown -R 1001 /opt/opencga/
+COPY --chown=opencga:opencga ${BUILD_PATH} /opt/opencga
 
 WORKDIR /opt/opencga/bin
