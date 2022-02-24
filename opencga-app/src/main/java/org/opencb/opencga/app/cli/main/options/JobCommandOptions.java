@@ -143,7 +143,7 @@ public class JobCommandOptions {
         @Parameter(names = {"--tags"}, description = ParamConstants.JOB_TAGS_DESCRIPTION, arity = 1)
         public List<String> jobTags;
 
-        @Parameter(names = {"--force"}, description = "Force retry, even if the job didn't fail", arity = 1)
+        @Parameter(names = {"--force"}, description = "Force retry, even if the job didn't fail", arity = 0)
         public boolean force;
 
         @DynamicParameter(names = "-P", description = "Tool parameters overwrite. -P key=value")

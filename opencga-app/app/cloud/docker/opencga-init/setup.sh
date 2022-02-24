@@ -66,3 +66,6 @@ if [ "$INSTALLED" == false ]; then
 else
     echo "DB '${DB_NAME}' already installed"
 fi
+
+echo "------------ OpenCGA Migrations summary ------------"
+echo "${INIT_OPENCGA_PASS}" | /opt/opencga/bin/opencga-admin.sh migration summary --log-level warn

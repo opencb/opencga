@@ -10,6 +10,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationManager;
 import org.opencb.opencga.catalog.migration.MigrationRun;
+import org.opencb.opencga.catalog.migration.MigrationSummary;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -17,10 +18,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created on 08/09/17.
@@ -42,6 +40,9 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         String subCommandString = migrationCommandOptions.getSubCommand();
         switch (subCommandString) {
+            case "status":
+                status();
+                break;
             case "search":
                 search();
                 break;
@@ -55,6 +56,19 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 logger.error("Subcommand '{}' not valid", subCommandString);
                 break;
         }
+    }
+
+    private void status() throws Exception {
+        MigrationCommandOptions.SummaryCommandOptions options = migrationCommandOptions.getSummaryCommandOptions();
+        setCatalogDatabaseCredentials(options, options.commonOptions);
+
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
+            catalogManager.getMigrationManager().updateMigrationRuns(token);
+            MigrationSummary migrationSummary = catalogManager.getMigrationManager().getMigrationSummary();
+            System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(migrationSummary));
+        }
+
     }
 
     private void search() throws Exception {
