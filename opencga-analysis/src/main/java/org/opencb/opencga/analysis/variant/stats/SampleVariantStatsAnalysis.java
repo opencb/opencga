@@ -22,6 +22,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
@@ -269,6 +270,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                             .filter(e -> e.getValue() != null)
                             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
 
+                    ProgressLogger progressLogger = new ProgressLogger("Index variant sample stats", batchSamples.size());
                     ObjectReader reader = JacksonUtils.getDefaultObjectMapper().readerFor(SampleVariantStats.class);
                     try (MappingIterator<SampleVariantStats> it = reader.readValues(tmpOutputFile.toFile())) {
                         while (it.hasNext()) {
@@ -322,6 +324,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaToolScopeStudy {
                             getCatalogManager().getSampleManager()
                                     .update(study, sampleVariantStats.getId(), updateParams, new QueryOptions(), getToken());
 
+                            progressLogger.increment(1);
                         }
                     }
                 });
