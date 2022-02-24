@@ -95,8 +95,14 @@ public class PendingVariantsDBCleaner extends AbstractHBaseDataWriter<byte[], De
     private void compactRegions(List<HRegionLocation> regions) {
         try (Admin admin = hBaseManager.getConnection().getAdmin()) {
             for (HRegionLocation region : regions) {
-                logger.info("Major compact region " + region.toString());
-                admin.majorCompactRegion(region.getRegionInfo().getRegionName());
+                try {
+                    logger.info("Major compact region " + region.toString());
+                    admin.majorCompactRegion(region.getRegionInfo().getRegionName());
+                } catch (Exception e) {
+                    // Do not propagate exceptions. This is an optional step that might fail in some scenarios,
+                    // like if the region changes (e.g. split)
+                    logger.warn("Error compacting region: " + e.getMessage());
+                }
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
