@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 echo "Login user demo ...."
 echo "demoOpencga2021." | /opt/opencga/bin/opencga.sh users login -u demo
 
@@ -24,5 +23,3 @@ echo "Creating demo@family:corpasome ...."
 
 TEMPLATE=$(/opt/opencga/bin/opencga.sh studies template-upload -i /opt/opencga/misc/demo/corpasome/ --study 'demo@family:corpasome')
 /opt/opencga/bin/opencga.sh studies template-run --id "$TEMPLATE" --study 'demo@family:corpasome' --overwrite
-
-#exit
