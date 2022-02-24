@@ -307,10 +307,10 @@ public class OpenCGAWSServer {
 
             MigrationSummary migrationSummary = catalogManager.getMigrationManager().getMigrationSummary();
             if (migrationSummary.getMigrationsToBeApplied() > 0) {
-                logger.info("|  * Pending migrations: '{}'", migrationSummary.getMigrationsToBeApplied());
+                logger.info("|  * Pending migrations: {}", migrationSummary.getMigrationsToBeApplied());
                 for (Map.Entry<MigrationRun.MigrationStatus, Long> entry : migrationSummary.getStatusCount().entrySet()) {
                     if (entry.getKey().toBeApplied() && entry.getValue() > 0) {
-                        logger.info("|  *     {}}: '{}'", entry.getKey(), entry.getValue());
+                        logger.info("|  *     {}: {}", entry.getKey(), entry.getValue());
                     }
                 }
             }

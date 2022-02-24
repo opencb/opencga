@@ -40,8 +40,8 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         String subCommandString = migrationCommandOptions.getSubCommand();
         switch (subCommandString) {
-            case "status":
-                status();
+            case "summary":
+                summary();
                 break;
             case "search":
                 search();
@@ -58,7 +58,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void status() throws Exception {
+    private void summary() throws Exception {
         MigrationCommandOptions.SummaryCommandOptions options = migrationCommandOptions.getSummaryCommandOptions();
         setCatalogDatabaseCredentials(options, options.commonOptions);
 
