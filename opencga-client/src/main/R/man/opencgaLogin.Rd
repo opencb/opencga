@@ -11,6 +11,7 @@ opencgaLogin(
   passwd = NULL,
   interactive = FALSE,
   autoRenew = FALSE,
+  verbose = FALSE,
   showToken = FALSE
 )
 }
