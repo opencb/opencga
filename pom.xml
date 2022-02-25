@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>2.2.0-SNAPSHOT</version>
+    <version>2.2.0-rc2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>OpenCGA</name>
@@ -43,12 +43,13 @@
     </modules>
 
     <properties>
-        <opencga.version>2.2.0-SNAPSHOT</opencga.version>
+        <opencga.version>2.2.0-rc2-SNAPSHOT</opencga.version>
         <pyopencga.version>${opencga.version}</pyopencga.version>
-        <cellbase.version>5.0.0-SNAPSHOT</cellbase.version>
-        <biodata.version>2.2.0-SNAPSHOT</biodata.version>
-        <java-common-libs.version>4.2.0-SNAPSHOT</java-common-libs.version>
-        <iva.version>2.2.0-rc</iva.version>
+        <iva.version>2.2.0-dev</iva.version>
+        <cellbase.version>5.0.1</cellbase.version>
+        <biodata.version>2.2.1-SNAPSHOT</biodata.version>
+        <java-common-libs.version>4.2.0</java-common-libs.version>
+        <iva.version>2.2.0-dev</iva.version>
         <oskar.version>0.2.0</oskar.version>
 
         <jackson.version>2.10.5</jackson.version>
@@ -532,7 +533,7 @@
                         org/opencb/opencga/analysis/**,
                         org/opencb/opencga/server/**,
                         org/opencb/opencga/storage/app/**,
-
+                        org/opencb/opencga/client/rest/clients/**,
                         org/opencb/opencga/storage/alignment/**,
                         org/opencb/opencga/storage/variant/**,
                         org/opencb/opencga/storage/datamanagers/**,
@@ -637,13 +638,15 @@
                 <OPENCGA.STORAGE.VARIANT.DB.USER></OPENCGA.STORAGE.VARIANT.DB.USER>
                 <OPENCGA.STORAGE.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.VARIANT.DB.PASSWORD>
                 <OPENCGA.STORAGE.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.SEARCH.HOST>
-                <OPENCGA.STORAGE.SEARCH.CONFIG_SET>opencga-variant-configset-${opencga.version}</OPENCGA.STORAGE.SEARCH.CONFIG_SET>
+                <OPENCGA.STORAGE.SEARCH.CONFIG_SET>opencga-variant-configset-${opencga.version}
+                </OPENCGA.STORAGE.SEARCH.CONFIG_SET>
                 <OPENCGA.STORAGE.SEARCH.TIMEOUT>30000</OPENCGA.STORAGE.SEARCH.TIMEOUT>
                 <OPENCGA.STORAGE.CLINICAL.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.CLINICAL.HOST>
                 <OPENCGA.STORAGE.CLINICAL.MANAGER>""</OPENCGA.STORAGE.CLINICAL.MANAGER>
                 <OPENCGA.STORAGE.CLINICAL.TIMEOUT>30000</OPENCGA.STORAGE.CLINICAL.TIMEOUT>
                 <OPENCGA.STORAGE.RGA.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.RGA.HOST>
-                <OPENCGA.STORAGE.RGA.CONFIG_SET>opencga-rga-configset-${opencga.version}</OPENCGA.STORAGE.RGA.CONFIG_SET>
+                <OPENCGA.STORAGE.RGA.CONFIG_SET>opencga-rga-configset-${opencga.version}
+                </OPENCGA.STORAGE.RGA.CONFIG_SET>
                 <OPENCGA.STORAGE.RGA.TIMEOUT>30000</OPENCGA.STORAGE.RGA.TIMEOUT>
 
                 <!-- Storage Alignments general -->
@@ -653,7 +656,8 @@
 
                 <!-- Storage-mongodb -->
                 <OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE></OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE>
-                <OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>20</OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>
+                <OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>20
+                </OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>
 
                 <!-- Storage-hadoop -->
                 <OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER></OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER>

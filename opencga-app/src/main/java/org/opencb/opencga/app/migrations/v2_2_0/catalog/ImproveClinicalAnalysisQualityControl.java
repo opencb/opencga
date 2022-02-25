@@ -38,11 +38,11 @@ public class ImproveClinicalAnalysisQualityControl extends MigrationTool {
                 (clinicalAnalysisDoc, bulk) -> {
                     if (clinicalAnalysisDoc != null) {
                         Document qc = clinicalAnalysisDoc.get(ClinicalAnalysisDBAdaptor.QueryParams.QUALITY_CONTROL.key(), Document.class);
-                        if (qc != null) {
+                        if (qc != null && qc.containsKey("summary")) {
                             String summary = qc.get("summary", String.class);
                             String text = qc.get("comment", String.class);
                             String user = qc.get("user", String.class);
-                            Date date = new Date(qc.get("date", Long.class));
+                            Date date = qc.containsKey("date") ? new Date(qc.get("date", Number.class).longValue()) : null;
 
 //                            if EXCELLENT, GOOD, NORMAL, BAD, UNKNOWN
                             String newSummary = null;

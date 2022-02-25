@@ -169,7 +169,7 @@ analysis:
         memory: "13G"
       k8s.nodeSelector:
         agentpool: jobs
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
         kubernetes.io/role: agent
       # FOR ACI:
       # k8s.requests:
@@ -180,13 +180,14 @@ analysis:
       #   memory: "12G"
       # k8s.nodeSelector:
       #   kubernetes.io/role: agent
-      #   beta.kubernetes.io/os: linux
+      #   kubernetes.io/os: linux
       #   type: virtual-kubelet
       # k8s.tolerations:
       # - key: virtual-kubelet.io/provider
       #   operator: Exists
       # - key: azure.com/aci
       #   effect: NoSchedule
+
       k8s.volumeMounts:
         - name: conf
           mountPath: /opt/opencga/conf

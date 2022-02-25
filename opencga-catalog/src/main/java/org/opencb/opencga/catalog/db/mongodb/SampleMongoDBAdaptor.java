@@ -668,7 +668,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             } else {
                 // The user wants to leave the sample orphan
                 document.getSet().put(QueryParams.INDIVIDUAL_ID.key(), "");
-                document.getSet().put(PRIVATE_INDIVIDUAL_UID, -1);
+                document.getSet().put(PRIVATE_INDIVIDUAL_UID, -1L);
             }
         }
 

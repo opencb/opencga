@@ -37,6 +37,8 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -112,8 +114,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MERGE_MODE;
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.RESUME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
@@ -354,15 +355,15 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         }
     }
 
-    @Override
-    public void aggregate(String study, boolean overwrite, ObjectMap options) throws StorageEngineException {
+    public void aggregate(String study, VariantAggregateParams params, ObjectMap options) throws StorageEngineException {
         logger.info("Aggregate: Study " + study);
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
 
+        options = params.toObjectMap(options);
         fillGapsOrMissing(study, studyMetadata, metadataManager.getIndexedFiles(studyMetadata.getId()), Collections.emptyList(),
-                false, overwrite, options);
+                false, params.isOverwrite(), options);
     }
 
     @Override
@@ -397,7 +398,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public void aggregateFamily(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options) throws StorageEngineException {
+        List<String> samples = params.getSamples();
         if (samples == null || samples.size() < 2) {
             throw new IllegalArgumentException("Aggregate family operation requires at least two samples.");
         } else if (samples.size() > FILL_GAPS_MAX_SAMPLES) {
@@ -420,8 +422,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         // Get files
         Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds);
 
+        options = params.toObjectMap(options);
+        if (StringUtils.isNotEmpty(params.getGapsGenotype())) {
+            options.put(FILL_GAPS_GAP_GENOTYPE.key(), params.getGapsGenotype());
+        }
         logger.info("FillGaps: Study " + study + ", samples " + samples);
-        fillGapsOrMissing(study, studyMetadata, fileIds, sampleIds, true, false, options);
+        fillGapsOrMissing(study, studyMetadata, fileIds, sampleIds, true, false, params.toObjectMap(options));
     }
 
     private void fillGapsOrMissing(String study, StudyMetadata studyMetadata, Set<Integer> fileIds, List<Integer> sampleIds,
@@ -584,8 +590,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             }
         }
         if (!samplesAlreadyDeletedOrMissing.isEmpty()) {
-            throw new StorageEngineException("Unable to delete samples from variant storage. Already deleted or never loaded."
-                    + " Samples = " + samplesAlreadyDeletedOrMissing);
+            if (getOptions().getBoolean(FORCE.key(), false)) {
+                logger.info("Force sample delete of {} samples already deleted or missing", samplesAlreadyDeletedOrMissing.size());
+            } else {
+                throw new StorageEngineException("Unable to delete samples from variant storage. Already deleted or never loaded."
+                        + " Samples = " + samplesAlreadyDeletedOrMissing);
+            }
         }
 
         // Check if any file is being completely deleted
@@ -897,7 +907,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                     try {
                         Configuration configuration = getHadoopConfiguration();
                         configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
-                        dbAdaptor.set(new VariantHadoopDBAdaptor(getHBaseManager(configuration), credentials,
+                        dbAdaptor.set(new VariantHadoopDBAdaptor(getHBaseManager(configuration),
                                 this.configuration, configuration, getTableNameGenerator()));
                     } catch (IOException e) {
                         throw new StorageEngineException("Error creating DB Adapter", e);

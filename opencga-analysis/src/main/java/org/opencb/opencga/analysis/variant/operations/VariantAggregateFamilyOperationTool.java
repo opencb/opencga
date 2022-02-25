@@ -16,9 +16,10 @@
 
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 
 import java.util.List;
 
@@ -29,13 +30,14 @@ public class VariantAggregateFamilyOperationTool extends OperationTool {
     public static final String ID = "variant-aggregate-family";
     public static final String DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values.";
     private String study;
-    private VariantAggregateFamilyParams variantAggregateFamilyParams;
+
+    @ToolParams
+    protected VariantAggregateFamilyParams variantAggregateFamilyParams;
 
 
     @Override
     protected void check() throws Exception {
         super.check();
-        variantAggregateFamilyParams = VariantAggregateFamilyParams.fromParams(VariantAggregateFamilyParams.class, params);
 
         List<String> samples = variantAggregateFamilyParams.getSamples();
         if (samples == null || samples.size() < 2) {
@@ -48,7 +50,7 @@ public class VariantAggregateFamilyOperationTool extends OperationTool {
     @Override
     protected void run() throws Exception {
         step(() -> {
-            variantStorageManager.aggregateFamily(study, variantAggregateFamilyParams.getSamples(), params, token);
+            variantStorageManager.aggregateFamily(study, variantAggregateFamilyParams, token);
         });
     }
 }

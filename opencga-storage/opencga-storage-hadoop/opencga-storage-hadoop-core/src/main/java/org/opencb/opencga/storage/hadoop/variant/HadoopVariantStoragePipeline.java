@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.Variant;
@@ -38,7 +39,6 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
-import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchemaManager;
@@ -54,6 +54,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
@@ -67,7 +68,6 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
 public abstract class HadoopVariantStoragePipeline extends VariantStoragePipeline {
     protected final VariantHadoopDBAdaptor dbAdaptor;
     protected final Configuration conf;
-    protected final HBaseCredentials variantsTableCredentials;
     protected MRExecutor mrExecutor = null;
 
     private final Logger logger = LoggerFactory.getLogger(HadoopVariantStoragePipeline.class);
@@ -81,7 +81,6 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         super(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioConnectorProvider, options);
         this.mrExecutor = mrExecutor;
         this.dbAdaptor = dbAdaptor;
-        this.variantsTableCredentials = dbAdaptor == null ? null : dbAdaptor.getCredentials();
         this.conf = new Configuration(conf);
 
     }
@@ -121,7 +120,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
     @Override
     protected ParallelTaskRunner transformProto(VariantFileMetadata fileMetadata, URI outputVariantsFile,
-                                                DataReader<String> stringReader, Supplier<Task<String, Variant>> task)
+                                                DataReader<String> stringReader, Supplier<Task<Pair<Integer, List<String>>, Variant>> task)
             throws StorageEngineException {
 
         int sliceBufferSize = options.getInt(ARCHIVE_SLICE_BUFFER_SIZE.key(), ARCHIVE_SLICE_BUFFER_SIZE.defaultValue());
@@ -133,7 +132,11 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             throw StorageEngineException.ioException(e);
         }
 
-        final DataReader<Variant> dataReader = stringReader.then(task.get());
+        AtomicInteger lineNumber = new AtomicInteger(0);
+        final DataReader<Variant> dataReader = stringReader.then(list -> {
+            int i = lineNumber.addAndGet(list.size());
+            return Collections.singletonList(Pair.of(i, list));
+        }).then(task.get());
 
         // Transformer
         ArchiveTableHelper helper = new ArchiveTableHelper(conf, getStudyId(), fileMetadata);
@@ -173,10 +176,10 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
             throw new StorageHadoopException("Issue creating table " + getArchiveTable(), e);
         }
         try {
-            VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), variantsTableCredentials.getTable(),
-                    dbAdaptor.getConnection());
+            VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getVariantTable(),
+                    dbAdaptor.getConnection(), dbAdaptor.getConfiguration());
         } catch (IOException e) {
-            throw new StorageHadoopException("Issue creating table " + variantsTableCredentials.getTable(), e);
+            throw new StorageHadoopException("Issue creating table " + dbAdaptor.getVariantTable(), e);
         }
 
         return input;

@@ -1,6 +1,5 @@
 package org.opencb.opencga.app.migrations.v2_2_0.catalog;
 
-import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.UpdateOneModel;
 import org.bson.Document;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
@@ -14,7 +13,10 @@ import org.opencb.opencga.core.models.file.FileInternalAlignment;
 import org.opencb.opencga.core.models.file.FileInternalVariant;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
-import static com.mongodb.client.model.Filters.eq;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Projections.include;
 
 @Migration(id = "new_file_internal_index_1850",
         description = "Add new FileInternalVariant and FileInternalAlignment index #1850", version = "2.2.0",
@@ -25,13 +27,27 @@ public class AddNewFileInternalIndex_1850 extends MigrationTool {
 
     @Override
     protected void run() throws Exception {
+        final AtomicInteger filesWithNewInternalField = new AtomicInteger();
+        final AtomicInteger filesWithoutNewInternalField = new AtomicInteger();
+
         migrateCollection(MongoDBAdaptorFactory.FILE_COLLECTION,
-                new Document("internal", new Document("$exists", true)),
-                Projections.include("_id", "internal", "bioformat"),
+                and(
+                        in("bioformat", File.Bioformat.VARIANT.toString(), File.Bioformat.ALIGNMENT.toString()),
+                        exists("internal")
+                ),
+                include("_id", "internal", "bioformat"),
                 (doc, bulk) -> {
                     File.Bioformat bioformat = File.Bioformat.valueOf(doc.getString("bioformat"));
                     Document internal = doc.get("internal", Document.class);
                     Document index = internal.get("index", Document.class);
+
+                    if (internal.containsKey("variant") || internal.containsKey("alignment")) {
+                        // Skip file. It already has the new internal field.
+                        filesWithNewInternalField.incrementAndGet();
+                        return;
+                    } else {
+                        filesWithoutNewInternalField.incrementAndGet();
+                    }
 
                     FileInternalVariant variant = FileInternalVariant.init();
                     FileInternalAlignment alignment = FileInternalAlignment.init();
@@ -45,9 +61,9 @@ public class AddNewFileInternalIndex_1850 extends MigrationTool {
                         Document status = index.get("status", Document.class);
                         if (status != null) {
                             InternalStatus internalStatus = null;
-                            if (bioformat.equals(File.Bioformat.VARIANT)) {
+                            if (bioformat == File.Bioformat.VARIANT) {
                                 internalStatus = variant.getIndex().getStatus();
-                            } else if (bioformat.equals(File.Bioformat.ALIGNMENT)) {
+                            } else if (bioformat == File.Bioformat.ALIGNMENT) {
                                 // Initialise new Alignment internal status
                                 internalStatus = new InternalStatus(InternalStatus.READY);
                                 alignment.getIndex().setStatus(internalStatus);
@@ -112,6 +128,10 @@ public class AddNewFileInternalIndex_1850 extends MigrationTool {
                             )
                     );
                 });
+        logger.info("Finish add new file internal index field.");
+        logger.info(" - Total files inspected : {}", filesWithNewInternalField.intValue() + filesWithoutNewInternalField.intValue());
+        logger.info(" - Files updated : {}", filesWithoutNewInternalField.intValue());
+        logger.info(" - Files already updated (skipped) : {}", filesWithNewInternalField.intValue());
     }
 
     private String getFileId(long fileUid) {

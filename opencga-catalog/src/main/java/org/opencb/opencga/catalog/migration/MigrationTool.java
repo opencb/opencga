@@ -209,6 +209,14 @@ public abstract class MigrationTool {
         }
     }
 
+    protected final void dropIndex(MongoCollection<Document> collection, Document index) {
+        try {
+            collection.dropIndex(index);
+        } catch (Exception e) {
+            logger.warn("Could not drop index: {}", e.getMessage());
+        }
+    }
+
     protected final void queryMongo(String inputCollectionStr, Bson query, Bson projection, QueryCollectionFunc queryCollectionFunc) {
         MongoCollection<Document> inputCollection = getMongoCollection(inputCollectionStr);
 

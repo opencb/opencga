@@ -112,7 +112,7 @@ public class FillGapsDriver extends AbstractVariantsTableDriver {
             // Sql
             Query query = buildQuery(getStudyId(), samples, getFiles());
             QueryOptions options = buildQueryOptions();
-            String sql = new VariantSqlQueryParser(getHelper(), getVariantsTable(), getMetadataManager())
+            String sql = new VariantSqlQueryParser(getVariantsTable(), getMetadataManager(), getHelper().getConf())
                     .parse(query, options);
 
             logger.info("Query : " + query.toJson());

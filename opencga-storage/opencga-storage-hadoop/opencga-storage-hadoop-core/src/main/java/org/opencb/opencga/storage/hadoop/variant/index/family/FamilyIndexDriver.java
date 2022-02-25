@@ -275,8 +275,6 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            new GenomeHelper(context.getConfiguration());
-
             int[] sampleIds = context.getConfiguration().getInts(TRIOS_LIST);
             Set<Integer> samplesWithUnknownParentGenotypes =
                     Arrays.stream(context.getConfiguration().getInts(SAMPLES_WITH_UNKNOWN_PARENT_GENOTYPES))

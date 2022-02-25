@@ -39,14 +39,12 @@ import static org.junit.Assert.assertTrue;
 public class GenomeHelperTest {
 
     public static final int CHUNK_SIZE = 200;
-    private GenomeHelper genomeHelper;
     private ArchiveRowKeyFactory keyFactory;
 
     @Before
     public void setUp() throws Exception {
         Configuration conf = new Configuration();
         GenomeHelper.setChunkSize(conf, CHUNK_SIZE);
-        genomeHelper = new GenomeHelper(conf);
 
         keyFactory = new ArchiveRowKeyFactory(CHUNK_SIZE, 100);
     }

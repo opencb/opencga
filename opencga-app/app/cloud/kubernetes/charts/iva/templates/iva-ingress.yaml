@@ -2,11 +2,12 @@
 {{- $fullName := .Values.iva.name -}}
 {{- $svcPort := .Values.iva.service.port -}}
 {{- $paths := .Values.iva.ingress.paths -}}
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Values.iva.name }}
   labels:
+    {{- include "iva.labels" . | nindent 4 }}
     app: {{ $fullName }}
   {{- with .Values.iva.ingress.annotations }}
   annotations:
@@ -30,9 +31,12 @@ spec:
         paths:
           {{- range $paths }}
           - path: {{ . }}
+            pathType: ImplementationSpecific
             backend:
-              serviceName: {{ $fullName }}
-              servicePort: {{ $svcPort }}
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: {{ $svcPort }}
           {{- end }}
   {{- end }}
 {{- end }}

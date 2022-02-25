@@ -41,7 +41,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantToVcfSliceMapper;
@@ -86,10 +85,9 @@ public class ArchiveDriver extends Configured implements Tool {
         String tableName = conf.get(CONFIG_ARCHIVE_TABLE_NAME);
         int studyId = conf.getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
         int fileId = conf.getInt(HadoopVariantStorageEngine.FILE_ID, -1);
-        GenomeHelper genomeHelper = new GenomeHelper(conf);
 
 /*  SERVER details  */
-        if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper.getConf(), tableName)) {
+        if (ArchiveTableHelper.createArchiveTableIfNeeded(conf, tableName)) {
             LOGGER.info("Create table '{}' in hbase!", tableName);
         } else {
             LOGGER.info("Table '{}' exists in hbase!", tableName);

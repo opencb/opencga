@@ -69,7 +69,7 @@ public class ExecutionResult {
 
     public ExecutionResult() {
         executor = new ExecutorInfo();
-        status = new Status();
+        status = Status.initStatus();
         events = new LinkedList<>();
         externalFiles = new LinkedList<>();
         steps = new LinkedList<>();

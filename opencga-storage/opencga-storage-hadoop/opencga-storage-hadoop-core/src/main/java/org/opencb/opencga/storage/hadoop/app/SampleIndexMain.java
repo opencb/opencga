@@ -4,6 +4,7 @@ import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.TableName;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -48,8 +49,16 @@ public class SampleIndexMain extends AbstractMain {
         final HBaseManager hBaseManager;
         SampleIndexDBAdaptor dbAdaptor = null;
         VariantStorageMetadataManager metadataManager = null;
+
+        ObjectMap argsMap = getArgsMap(args, 2);
+        if (argsMap.getBoolean("help", false)) {
+            command = "help";
+        }
         if (command.equals("help")) {
             hBaseManager = null;
+        } else if (command.equals("list-tables")) {
+            hBaseManager = new HBaseManager(configuration);
+            hBaseManager.getConnection();
         } else {
             hBaseManager = new HBaseManager(configuration);
             hBaseManager.getConnection();
@@ -64,14 +73,18 @@ public class SampleIndexMain extends AbstractMain {
             }
         }
 
-        ObjectMap argsMap = getArgsMap(args, 2);
-        if (argsMap.getBoolean("help", false)) {
-            command = "help";
-        }
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         SampleIndexQuery sampleIndexQuery;
         switch (command) {
+            case "list-tables": {
+                print(hBaseManager.listTables()
+                        .stream()
+                        .map(TableName::getNameAsString)
+                        .filter(HBaseVariantTableNameGenerator::isSampleIndexTableName)
+                );
+                break;
+            }
             case "count":
                 sampleIndexQuery = dbAdaptor.parseSampleIndexQuery(new Query(argsMap));
                 print(dbAdaptor.count(sampleIndexQuery));
@@ -96,6 +109,7 @@ public class SampleIndexMain extends AbstractMain {
             default:
                 System.out.println("Commands:");
                 System.out.println("  help");
+                System.out.println("  list-tables");
                 System.out.println("  count           <databaseName> [--study <study>] [--sample <sample>] [--region <region>] ...");
                 System.out.println("  query           <databaseName> [--study <study>] [--sample <sample>] [--region <region>] [--quiet] "
                         + "[query...]");

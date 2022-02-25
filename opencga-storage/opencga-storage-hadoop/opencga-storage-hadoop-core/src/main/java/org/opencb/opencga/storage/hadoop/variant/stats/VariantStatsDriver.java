@@ -186,7 +186,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
 
             logger.info("Query : " + query.toJson());
             // Some of the filters in query are not supported by VariantHBaseQueryParser
-            Scan scan = new VariantHBaseQueryParser(getHelper(), getMetadataManager()).parseQuery(query, queryOptions);
+            Scan scan = new VariantHBaseQueryParser(getMetadataManager()).parseQuery(query, queryOptions);
             if (excludeFiles) {
                 // Ensure we are not returning any file
                 NavigableSet<byte[]> columns = scan.getFamilyMap().get(GenomeHelper.COLUMN_FAMILY_BYTES);

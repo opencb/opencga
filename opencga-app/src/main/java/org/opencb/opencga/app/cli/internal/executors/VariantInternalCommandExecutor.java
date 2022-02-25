@@ -368,6 +368,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genericVariantIndexOptions.gvcf,
                 cliOptions.genericVariantIndexOptions.normalizationSkip,
                 cliOptions.genericVariantIndexOptions.referenceGenome,
+                cliOptions.genericVariantIndexOptions.failOnMalformedLines,
                 cliOptions.genericVariantIndexOptions.family,
                 cliOptions.genericVariantIndexOptions.somatic,
                 cliOptions.genericVariantIndexOptions.load,
@@ -628,6 +629,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
         ObjectMap params = new VariantAggregateFamilyParams(
                 cliOptions.genericAggregateFamilyOptions.samples,
+                cliOptions.genericAggregateFamilyOptions.gapsGenotype,
                 cliOptions.genericAggregateFamilyOptions.resume)
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);

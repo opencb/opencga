@@ -107,35 +107,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
 
 
     if [ "$load" == "true" ]; then
-        echo "Creating user for OpenCGA Catalog ....."
-        ./opencga-admin.sh users create -u demo --email demo@opencb.com --name "Demo User" --user-password demoOpencga2021. <<< adminOpencga2021.
-        echo "Login user demo ...."
-        ./opencga.sh users login -u demo --password demoOpencga2021.
-
-#        echo "Loading default template ...."
-#        ./opencga.sh users template --file /opt/opencga/misc/demo/main.yml --study corpasome
-
-        echo "Creating demo@family:corpasome ...."
-        ./opencga.sh projects create --id 'family' --name 'Family Studies GRCh37'  \
-            --organism-scientific-name 'homo sapiens' \
-            --organism-assembly 'GRCh37'
-        ./opencga.sh studies create --project 'demo@family' --name 'Corpas Family' --id 'corpasome' \
-            --description 'This study simulates two disorders and some phenotypes in the Corpas family for training purposes'
-        ./opencga.sh files create --study 'demo@family:corpasome' --path 'data'
-        ./opencga.sh files fetch --study 'demo@family:corpasome' --path 'data' --url 'http://resources.opencb.org/datasets/corpasome/data/quartet.variants.annotated.vcf.gz' \
-            --job-id 'download_quartet.variants.annotated.vcf.gz'
-        ./opencga.sh operations variant-index --file 'quartet.variants.annotated.vcf.gz' --family \
-             --job-id 'variant_index' --job-depends-on 'download_quartet.variants.annotated.vcf.gz'
-        ./opencga.sh operations variant-stats-index --study 'demo@family:corpasome' --cohort 'ALL' \
-             --job-id 'variant_stats' --job-depends-on 'variant_index'
-        ./opencga.sh operations variant-annotation-index --project 'demo@family' \
-             --job-id 'variant_annotation' --job-depends-on 'variant_index'
-        ./opencga.sh operations variant-secondary-index --project 'demo@family' \
-             --job-id 'variant_secondary_index' --job-depends-on 'variant_stats,variant_annotation'
-
-        TEMPLATE=$(./opencga.sh studies template-upload -i /opt/opencga/misc/demo/corpasome/ --study 'demo@family:corpasome')
-        ./opencga.sh studies template-run --id "$TEMPLATE" --study 'demo@family:corpasome' --overwrite
-
+      /opt/opencga/init/load-demo.sh demo
     fi
 else
     echo 'adminOpencga2021.' | /opt/opencga/bin/opencga-admin.sh server rest --start &

@@ -59,16 +59,20 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **study**<br>*[JobStudyParam](https://docs.opencga.opencb.org/data-models/job#jobstudyparam)* <br> | <p>Job study.</p> |
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
-### ToolInfo
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/job/ToolInfo.java).
+### ExecutionResult
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ExecutionResult.java).
 
 | Field | Description |
 | :---  | :--- |
 | **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **scope**<br>*Scope* <br> | <p>Tool info scope can have the values GLOBAL, PROJECT and STUDY.</p> |
-| **type**<br>*Type* <br> | <p>Tool info type can have the values OPERATION and ANALYSIS.</p> |
-| **resource**<br>*Resource* <br> | <p>Tool info resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.</p> |
+| **executor**<br>*[ExecutorInfo](https://docs.opencga.opencb.org/data-models/job#executorinfo)* <br> | <p>Object describes execution information.</p> |
+| **start**<br>*[Date](https://docs.opencga.opencb.org/data-models/job#date)* <br> | <p>Date the execution started.</p> |
+| **end**<br>*[Date](https://docs.opencga.opencb.org/data-models/job#date)* <br> | <p>Date the execution was completed.</p> |
+| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/job#status)* <br> | <p>Executor status can have the values PENDING, RUNNING, DONE and ERROR.</p> |
+| **externalFiles**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/job#uri"><em>URI</em></a>>* <br> | <p>List of uris to the external files.</p> |
+| **steps**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/job#toolstep"><em>ToolStep</em></a>>* <br> | <p>List of ToolStep.</p> |
+| **events**<br>*List<<em>Event</em>>* <br> | <p>List of Event.</p> |
+| **attributes**<br>*ObjectMap* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
 ### JobInternal
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternal.java).
@@ -90,35 +94,23 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
 | **others**<br>*List<<em>String</em>>* <br> | <p>List of strings.</p> |
 
-### ExecutionResult
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/tools/result/ExecutionResult.java).
+### ToolInfo
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/job/ToolInfo.java).
 
 | Field | Description |
 | :---  | :--- |
 | **id**<br>*String* <br> | <p>Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.</p> |
-| **executor**<br>*[ExecutorInfo](https://docs.opencga.opencb.org/data-models/job#executorinfo)* <br> | <p>Object describes execution information.</p> |
-| **start**<br>*[Date](https://docs.opencga.opencb.org/data-models/job#date)* <br> | <p>Date the execution started.</p> |
-| **end**<br>*[Date](https://docs.opencga.opencb.org/data-models/job#date)* <br> | <p>Date the execution was completed.</p> |
-| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/job#status)* <br> | <p>Executor status can have the values PENDING, RUNNING, DONE and ERROR.</p> |
-| **externalFiles**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/job#uri"><em>URI</em></a>>* <br> | <p>List of uris to the external files.</p> |
-| **steps**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/job#toolstep"><em>ToolStep</em></a>>* <br> | <p>List of ToolStep.</p> |
-| **events**<br>*List<<em>Event</em>>* <br> | <p>List of Event.</p> |
-| **attributes**<br>*ObjectMap* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
-
-### Date
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/util/Date.java).
-
-
-### JobInternalWebhook
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternalWebhook.java).
-
-| Field | Description |
-| :---  | :--- |
-| **webhook**<br>*[URL](https://docs.opencga.opencb.org/data-models/job#url)* <br> | <p>Webhook URL.</p> |
-| **status**<br>*Map<String,Status>* <br> | <p>Webhook status map can have the values SUCCESS or ERROR.</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **scope**<br>*Scope* <br> | <p>Tool info scope can have the values GLOBAL, PROJECT and STUDY.</p> |
+| **type**<br>*Type* <br> | <p>Tool info type can have the values OPERATION and ANALYSIS.</p> |
+| **resource**<br>*Resource* <br> | <p>Tool info resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.</p> |
 
 ### Status
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
+
+
+### ExecutionStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/ExecutionStatus.java).
 
 
 ### ExecutorInfo
@@ -132,8 +124,20 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **source**<br>*Source* <br> | <p>Executor info source can have the values FILE, PARQUET_FILE, MONGODB,  HBASE, STORAGE.</p> |
 | **framework**<br>*Framework* <br> | <p>Executor info framework can have the values LOCAL, MAP_REDUCE, SPARK.</p> |
 
-### ExecutionStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/common/Enums/ExecutionStatus.java).
+### Date
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/util/Date.java).
+
+
+### JobInternalWebhook
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/job/JobInternalWebhook.java).
+
+| Field | Description |
+| :---  | :--- |
+| **webhook**<br>*[URL](https://docs.opencga.opencb.org/data-models/job#url)* <br> | <p>Webhook URL.</p> |
+| **status**<br>*Map<String,Status>* <br> | <p>Webhook status map can have the values SUCCESS or ERROR.</p> |
+
+### URI
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/net/URI.java).
 
 
 ### ToolStep
@@ -146,10 +150,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **end**<br>*[Date](https://docs.opencga.opencb.org/data-models/job#date)* <br> | <p>Date the execution was completed.</p> |
 | **status**<br>*Type* <br> | <p>Executor status can have the values PENDING, RUNNING, DONE and ERROR.</p> |
 | **attributes**<br>*ObjectMap* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
-
-### URI
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/net/URI.java).
-
 
 ### URL
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/net/URL.java).

@@ -63,52 +63,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **release**<br>*int* <br> | <p>An integer describing the current data release.</p> |
 | **version**<br>*int* <br> | <p>Autoincremental version assigned to the registered entry. By default, updates does not create new versions. To enable versioning, users must set the `incVersion` flag from the /update web service when updating the document.</p> |
 
-### Location
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/Location.java).
-
-| Field | Description |
-| :---  | :--- |
-| **address**<br>*String* <br> | <p>Location address.</p> |
-| **postalCode**<br>*String* <br> | <p>Location postal code.</p> |
-| **city**<br>*String* <br> | <p>Location city.</p> |
-| **state**<br>*String* <br> | <p>Location state.</p> |
-| **country**<br>*String* <br> | <p>Location country.</p> |
-
-### Disorder
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Disorder.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Id to identify the object</p> |
-| **name**<br>*String* <br> | <p>Object name</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **source**<br>*String* <br> | <p>Ontology source</p> |
-| **url**<br>*String* <br> | <p>Ontology url</p> |
-| **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
-
 ### OntologyTermAnnotation
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/core/OntologyTermAnnotation.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Id to identify the object</p> |
-| **name**<br>*String* <br> | <p>Object name</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **source**<br>*String* <br> | <p>Ontology source</p> |
-| **url**<br>*String* <br> | <p>Ontology url</p> |
-| **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
-
-### IndividualPopulation
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualPopulation.java).
-
-| Field | Description |
-| :---  | :--- |
-| **name**<br>*String* <br> | <p>Name of the individual population.</p> |
-| **subpopulation**<br>*String* <br> | <p>Subpopulation of the individual population.</p> |
-| **description**<br>*String* <br> | <p>Description of the individual population.</p> |
-
-### SexOntologyTermAnnotation
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/core/SexOntologyTermAnnotation.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -137,14 +93,37 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
 
 
-### IndividualInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualInternal.java).
+### IndividualPopulation
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualPopulation.java).
 
 | Field | Description |
 | :---  | :--- |
-| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/individual#status)* <br> | <p>Status of the internal object.</p> |
-| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
-| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
+| **name**<br>*String* <br> | <p>Name of the individual population.</p> |
+| **subpopulation**<br>*String* <br> | <p>Subpopulation of the individual population.</p> |
+| **description**<br>*String* <br> | <p>Description of the individual population.</p> |
+
+### Location
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/Location.java).
+
+| Field | Description |
+| :---  | :--- |
+| **address**<br>*String* <br> | <p>Location address.</p> |
+| **postalCode**<br>*String* <br> | <p>Location postal code.</p> |
+| **city**<br>*String* <br> | <p>Location city.</p> |
+| **state**<br>*String* <br> | <p>Location state.</p> |
+| **country**<br>*String* <br> | <p>Location country.</p> |
+
+### SexOntologyTermAnnotation
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/core/SexOntologyTermAnnotation.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Id to identify the object</p> |
+| **name**<br>*String* <br> | <p>Object name</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **source**<br>*String* <br> | <p>Ontology source</p> |
+| **url**<br>*String* <br> | <p>Ontology url</p> |
+| **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 
 ### IndividualQualityControl
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualQualityControl.java).
@@ -157,8 +136,33 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **files**<br>*List<<em>String</em>>* <br> | <p>File IDs related to the quality control.</p> |
 | **author**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/individual#clinicalcomment"><em>ClinicalComment</em></a>>* <br> | <p>Comments related to the quality control.</p> |
 
-### InferredSexReport
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/InferredSexReport.java).
+### IndividualInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/individual/IndividualInternal.java).
+
+| Field | Description |
+| :---  | :--- |
+| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/individual#status)* <br> | <p>Status of the internal object.</p> |
+| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
+| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
+
+### Disorder
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Disorder.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Id to identify the object</p> |
+| **name**<br>*String* <br> | <p>Object name</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **source**<br>*String* <br> | <p>Ontology source</p> |
+| **url**<br>*String* <br> | <p>Ontology url</p> |
+| **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
+
+### SampleRelatednessReport
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/SampleRelatednessReport.java).
+
+
+### MendelianErrorReport
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/MendelianErrorReport.java).
 
 
 ### ClinicalComment
@@ -171,10 +175,6 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **tags**<br>*List<<em>String</em>>* <br> | <p>List of tags for the clinical comment</p> |
 | **date**<br>*String* <br> | <p>Date of the clinical comment</p> |
 
-### MendelianErrorReport
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/MendelianErrorReport.java).
-
-
-### SampleRelatednessReport
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/SampleRelatednessReport.java).
+### InferredSexReport
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/InferredSexReport.java).
 

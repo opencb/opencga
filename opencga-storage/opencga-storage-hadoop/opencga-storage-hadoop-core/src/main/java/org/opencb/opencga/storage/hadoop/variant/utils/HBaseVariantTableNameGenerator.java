@@ -101,16 +101,36 @@ public class HBaseVariantTableNameGenerator {
         }
     }
 
+    public static String getDBNameFromPendingAnnotationTableName(String pendingAnnotationTableName) {
+        checkValidPendingAnnotationTableName(pendingAnnotationTableName);
+        return pendingAnnotationTableName
+                .substring(0, pendingAnnotationTableName.length() - PENDING_ANNOTATION_SUFIX.length());
+    }
+
     public static void checkValidPendingAnnotationTableName(String pendingAnnotationTableName) {
-        if (!validSuffix(pendingAnnotationTableName, PENDING_ANNOTATION_SUFIX)) {
+        if (!isValidPendingAnnotationTableName(pendingAnnotationTableName)) {
             throw new IllegalArgumentException("Invalid pending annotation table name : " + pendingAnnotationTableName);
         }
     }
 
+    public static boolean isValidPendingAnnotationTableName(String pendingAnnotationTableName) {
+        return validSuffix(pendingAnnotationTableName, PENDING_ANNOTATION_SUFIX);
+    }
+
+    public static String getDBNameFromPendingSecondaryIndexTableName(String pendingSecondaryIndexTableName) {
+        checkValidPendingSecondaryIndexTableName(pendingSecondaryIndexTableName);
+        return pendingSecondaryIndexTableName
+                .substring(0, pendingSecondaryIndexTableName.length() - PENDING_SECONDARY_INDEX_SUFIX.length());
+    }
+
     public static void checkValidPendingSecondaryIndexTableName(String pendingSecondaryIndexTableName) {
-        if (!validSuffix(pendingSecondaryIndexTableName, PENDING_SECONDARY_INDEX_SUFIX)) {
+        if (!isValidPendingSecondaryIndexTableName(pendingSecondaryIndexTableName)) {
             throw new IllegalArgumentException("Invalid pending secondary index table name : " + pendingSecondaryIndexTableName);
         }
+    }
+
+    public static boolean isValidPendingSecondaryIndexTableName(String pendingSecondaryIndexTableName) {
+        return validSuffix(pendingSecondaryIndexTableName, PENDING_SECONDARY_INDEX_SUFIX);
     }
 
     public static String getDBNameFromMetaTableName(String metaTableName) {
@@ -191,6 +211,10 @@ public class HBaseVariantTableNameGenerator {
 
     public static String getSampleIndexTableName(String namespace, String dbName, int studyId, int version) {
         return buildTableName(namespace, dbName, SAMPLE_SUFIX + studyId + (version > 1 ? ("_v" + version) : ""));
+    }
+
+    public static boolean isSampleIndexTableName(String tableName) {
+        return tableName.contains(SAMPLE_SUFIX);
     }
 
     public static String getVariantTableName(String dbName, ObjectMap options) {

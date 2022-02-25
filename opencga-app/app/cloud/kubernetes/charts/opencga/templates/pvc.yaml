@@ -2,6 +2,8 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: {{ include "pvcConf" . | quote }}
+  labels:
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   accessModes:
     - ReadWriteMany
@@ -15,6 +17,8 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: {{ include "pvcAnalysisconf" . | quote }}
+  labels:
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   accessModes:
     - ReadWriteMany
@@ -28,6 +32,8 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: {{ include "pvcSessions" . | quote }}
+  labels:
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   accessModes:
     - ReadWriteMany
@@ -41,6 +47,8 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: {{ include "pvcVariants" . | quote }}
+  labels:
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   accessModes:
     - ReadWriteMany

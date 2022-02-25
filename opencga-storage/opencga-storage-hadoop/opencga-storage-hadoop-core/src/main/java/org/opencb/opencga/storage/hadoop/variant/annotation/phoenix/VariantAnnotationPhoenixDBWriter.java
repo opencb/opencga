@@ -47,8 +47,6 @@ public class VariantAnnotationPhoenixDBWriter extends VariantAnnotationDBWriter 
     private final VariantAnnotationUpsertExecutor upsertExecutor;
     private final VariantAnnotationToPhoenixConverter converter;
     private final boolean closeConnection;
-    private String variantTable;
-    private GenomeHelper genomeHelper;
     protected static Logger logger = LoggerFactory.getLogger(VariantAnnotationPhoenixDBWriter.class);
     private final VariantPhoenixSchemaManager schemaManager;
 
@@ -62,11 +60,9 @@ public class VariantAnnotationPhoenixDBWriter extends VariantAnnotationDBWriter 
         super(dbAdaptor, options, progressLogger);
         this.connection = jdbcConnection;
 
-        this.genomeHelper = dbAdaptor.getGenomeHelper();
         this.closeConnection = closeConnection;
         int currentAnnotationId = dbAdaptor.getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getId();
         this.converter = new VariantAnnotationToPhoenixConverter(GenomeHelper.COLUMN_FAMILY_BYTES, currentAnnotationId);
-        this.variantTable = variantTable;
         List<PhoenixHelper.Column> columns = new ArrayList<>();
         Collections.addAll(columns, VariantPhoenixSchema.VariantColumn.values());
         columns.addAll(VariantPhoenixSchema.getHumanPopulationFrequenciesColumns());

@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.app;
 
 import com.google.common.collect.Iterators;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
@@ -128,11 +127,11 @@ public class VariantMetadataMain extends AbstractMain {
                 println("Commands:");
                 println("  help");
                 println("  tables          [help|list]");
-                println("  study-metadata  [help|list|read|write] <metadata_table> ...");
-                println("  file-metadata   [help|list|read|write] <metadata_table> ...");
-                println("  sample-metadata [help|list|read|write] <metadata_table> ...");
-                println("  cohort-metadata [help|list|read|write] <metadata_table> ...");
-                println("  task-metadata   [help|list|read|write] <metadata_table> ...");
+                println("  study-metadata  [help|list|id|read|write] <metadata_table> ...");
+                println("  file-metadata   [help|list|id|read|write] <metadata_table> ...");
+                println("  sample-metadata [help|list|id|read|write] <metadata_table> ...");
+                println("  cohort-metadata [help|list|id|read|write] <metadata_table> ...");
+                println("  task-metadata   [help|list|id|read|write] <metadata_table> ...");
                 break;
         }
         if (mm != null) {
@@ -151,7 +150,12 @@ public class VariantMetadataMain extends AbstractMain {
         }
 
         @Override
-        protected FileMetadata read(int studyId, Object id) {
+        protected int id(int studyId, Object object) {
+            return mm.getFileIdOrFail(studyId, object);
+        }
+
+        @Override
+        protected FileMetadata read(int studyId, int id) {
             return mm.getFileMetadata(studyId, id);
         }
 
@@ -172,7 +176,12 @@ public class VariantMetadataMain extends AbstractMain {
         }
 
         @Override
-        protected CohortMetadata read(int studyId, Object id) {
+        protected int id(int studyId, Object id) {
+            return mm.getCohortIdOrFail(studyId, id);
+        }
+
+        @Override
+        protected CohortMetadata read(int studyId, int id) {
             return mm.getCohortMetadata(studyId, id);
         }
 
@@ -193,8 +202,13 @@ public class VariantMetadataMain extends AbstractMain {
         }
 
         @Override
-        protected SampleMetadata read(int studyId, Object id) {
-            return mm.getSampleMetadata(studyId, mm.getSampleIdOrFail(studyId, id));
+        protected int id(int studyId, Object object) {
+            return mm.getSampleIdOrFail(studyId, object);
+        }
+
+        @Override
+        protected SampleMetadata read(int studyId, int id) {
+            return mm.getSampleMetadata(studyId, id);
         }
 
         @Override
@@ -214,8 +228,13 @@ public class VariantMetadataMain extends AbstractMain {
         }
 
         @Override
-        protected TaskMetadata read(int studyId, Object id) {
-            return mm.getTask(studyId, Integer.parseInt(id.toString()));
+        protected int id(int studyId, Object object) {
+            return Integer.parseInt(object.toString());
+        }
+
+        @Override
+        protected TaskMetadata read(int studyId, int id) {
+            return mm.getTask(studyId, id);
         }
 
         @Override
@@ -256,29 +275,42 @@ public class VariantMetadataMain extends AbstractMain {
         }
 
         protected abstract Iterator<T> list(int studyId);
-        protected abstract T read(int studyId, Object id);
+        protected abstract int id(int studyId, Object object);
+        protected abstract T read(int studyId, int id);
         protected abstract void write(int studyId, T object) throws StorageEngineException;
+//        protected abstract void delete(int studyId, int id) throws StorageEngineException;
 
         protected final void exec(String[] args, String command, String subCommand) throws Exception {
             int studyId;
             switch (subCommand) {
                 case "list":
+                case "query":
                 case "search":
                     studyId = mm.getStudyId(getArg(args, 3));
                     Predicate<T> filter = getFilter(args);
                     print(Iterators.filter(list(studyId), filter::test));
                     break;
+                case "id": {
+                    studyId = mm.getStudyId(getArg(args, 3));
+                    print(id(studyId, getArg(args, 4)));
+                    break;
+                }
                 case "read":
                 case "info": {
                     studyId = mm.getStudyId(getArg(args, 3));
-                    String arg = getArg(args, 4);
-                    print(read(studyId, StringUtils.isNumeric(arg) ? Integer.valueOf(arg) : arg));
+                    print(read(studyId, id(studyId, getArg(args, 4))));
                     break;
                 }
                 case "write":
                     studyId = mm.getStudyId(getArg(args, 3));
                     write(studyId, readFile(getArg(args, 4), clazz));
                     break;
+//                case "delete": {
+//                    studyId = mm.getStudyId(getArg(args, 3));
+//                    int id = id(studyId, getArg(args, 4));
+//                    delete(studyId, id);
+//                }
+//                    break;
 //            case "update": {
 //                studyId = mm.getStudyId(getArg(args, 3));
 //                String arg = getArg(args, 4);
@@ -290,9 +322,11 @@ public class VariantMetadataMain extends AbstractMain {
                 case "help":
                 default:
                     println("Commands:");
-                    println("  " + command + " search <metadata_table> <study> [id=<ID_1>,<ID_2>,...] [name=<NAME_REGEX_PATTERN>]");
-                    println("  " + command + " info <metadata_table> <study> <" + command + "-id>");
+                    println("  " + command + " list <metadata_table> <study> [id=<ID_1>,<ID_2>,...] [name=<NAME_REGEX_PATTERN>]");
+                    println("  " + command + " id <metadata_table> <study> <" + command + ">");
+                    println("  " + command + " read <metadata_table> <study> <" + command + ">");
                     println("  " + command + " write <metadata_table> <study> <" + command + ".json>");
+//                    println("  " + command + " delete <metadata_table> <study> <" + command + ">");
 
             }
         }

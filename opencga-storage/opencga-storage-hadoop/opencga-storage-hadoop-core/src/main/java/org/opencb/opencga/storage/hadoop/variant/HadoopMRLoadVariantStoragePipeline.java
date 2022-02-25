@@ -103,7 +103,7 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
         Class execClass = ArchiveDriver.class;
         String executable = hadoopRoute + " jar " + jar + " " + execClass.getName();
         String args = ArchiveDriver.buildCommandLineArgs(input, vcfMeta,
-                variantsTableCredentials.toString(), getArchiveTable(), studyId,
+                dbAdaptor.getVariantTable(), getArchiveTable(), studyId,
                 fileId, options);
 
         long startTime = System.currentTimeMillis();
