@@ -82,12 +82,11 @@ public class FamilyIndexLoader {
                         || motherDefined && !motherId.equals(sampleMetadata.getMother())) {
                     metadataManager.updateSampleMetadata(studyId, sampleMetadata.getId(), s -> {
                         if (fatherDefined) {
-                            sampleMetadata.setFather(fatherId);
+                            s.setFather(fatherId);
                         }
                         if (motherDefined) {
-                            sampleMetadata.setMother(motherId);
+                            s.setMother(motherId);
                         }
-                        return sampleMetadata;
                     });
                 }
             }
@@ -124,7 +123,7 @@ public class FamilyIndexLoader {
             options.put(FamilyIndexDriver.TRIOS_COHORT, cohortMetadata.getName());
             options.put(FamilyIndexDriver.TRIOS_COHORT_DELETE, true);
         }
-        options.put(FamilyIndexDriver.OUTPUT, sampleIndexDBAdaptor.getSampleIndexTableName(studyId));
+        options.put(FamilyIndexDriver.OUTPUT, sampleIndexDBAdaptor.getSampleIndexTableNameLatest(studyId));
 
         mrExecutor.run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
                 tableNameGenerator.getArchiveTableName(studyId),

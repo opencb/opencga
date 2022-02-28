@@ -879,7 +879,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                         s.setMendelianErrorStatus(TaskMetadata.Status.NONE);
                         s.setFiles(Collections.emptyList());
                         s.setCohorts(Collections.emptySet());
-                        return s;
                     });
                 }
 

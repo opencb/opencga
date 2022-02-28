@@ -415,11 +415,18 @@ public class VariantHbaseTestUtils {
 
     public static void printSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
         for (Integer studyId : dbAdaptor.getMetadataManager().getStudies(null).values()) {
-            int version = dbAdaptor.getMetadataManager().getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
-            String sampleGtTableName = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId, version);
-            if (dbAdaptor.getHBaseManager().tableExists(sampleGtTableName)) {
-                printSampleIndexTable(dbAdaptor, outDir, studyId, sampleGtTableName);
-                printSampleIndexTable2(dbAdaptor, outDir, studyId, sampleGtTableName);
+            StudyMetadata studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyId);
+            List<StudyMetadata.SampleIndexConfigurationVersioned> confs = studyMetadata.getSampleIndexConfigurations();
+            if (confs == null) {
+                confs = Collections.singletonList(studyMetadata.getSampleIndexConfigurationLatest());
+            }
+            for (StudyMetadata.SampleIndexConfigurationVersioned c : confs) {
+                int version = c.getVersion();
+                String sampleGtTableName = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId, version);
+                if (dbAdaptor.getHBaseManager().tableExists(sampleGtTableName)) {
+                    printSampleIndexTable(dbAdaptor, outDir, studyId, sampleGtTableName);
+                    printSampleIndexTable2(dbAdaptor, outDir, studyId, sampleGtTableName);
+                }
             }
         }
     }
@@ -434,7 +441,7 @@ public class VariantHbaseTestUtils {
                 FileOutputStream fos = new FileOutputStream(fileName.toFile()); PrintStream out = new PrintStream(fos)
         ) {
             SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
-            SampleIndexSchema schema = sampleIndexDBAdaptor.getSchema(studyId);
+            SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(studyId);
             for (Integer sampleId : dbAdaptor.getMetadataManager().getIndexedSamples(studyId)) {
                 String sampleName = dbAdaptor.getMetadataManager().getSampleName(studyId, sampleId);
                 RawSingleSampleIndexVariantDBIterator it = sampleIndexDBAdaptor.rawIterator(dbAdaptor.getMetadataManager().getStudyName(studyId), sampleName);
@@ -462,7 +469,7 @@ public class VariantHbaseTestUtils {
         try (
                 FileOutputStream fos = new FileOutputStream(fileName.toFile()); PrintStream out = new PrintStream(fos)
         ) {
-            SampleIndexSchema schema = new SampleIndexSchema(dbAdaptor.getMetadataManager().getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getConfiguration());
+            SampleIndexSchema schema = new SampleIndexSchemaFactory(dbAdaptor.getMetadataManager()).getSchemaLatest(studyId);
             dbAdaptor.getHBaseManager().act(sampleGtTableName, table -> {
 
                 table.getScanner(new Scan()).iterator().forEachRemaining(result -> {

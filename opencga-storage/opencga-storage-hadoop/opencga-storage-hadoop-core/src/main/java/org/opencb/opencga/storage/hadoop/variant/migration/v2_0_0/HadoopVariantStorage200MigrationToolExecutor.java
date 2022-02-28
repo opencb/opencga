@@ -15,7 +15,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantStorageToolExecutor;
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsManager;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,16 +75,15 @@ public class HadoopVariantStorage200MigrationToolExecutor extends VariantStorage
                         Integer studyId = entry.getValue();
                         metadataManager.sampleMetadataIterator(studyId).forEachRemaining(sampleMetadata -> {
                             if (sampleMetadata.isIndexed()
-                                    && (SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata, 1).equals(Status.READY)
-                                    || SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, 1).equals(Status.READY))) {
+                                    && (sampleMetadata.getSampleIndexStatus(1).equals(Status.READY)
+                                    || sampleMetadata.getSampleIndexAnnotationStatus(1).equals(Status.READY))) {
                                 samplesToModify.add(sampleMetadata.getId());
                             }
                         });
                         for (Integer sampleId : samplesToModify) {
                             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                                SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, Status.NONE, 0);
-                                SampleIndexDBAdaptor.setSampleIndexAnnotationStatus(sampleMetadata, Status.NONE, 0);
-                                return sampleMetadata;
+                                sampleMetadata.setSampleIndexStatus(Status.NONE, 0);
+                                sampleMetadata.setSampleIndexAnnotationStatus(Status.NONE, 0);
                             });
                         }
                     }

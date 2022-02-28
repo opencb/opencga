@@ -91,7 +91,6 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
                 if (mother != null && mother > 0) {
                     sampleMetadata.setMother(mother);
                 }
-                return sampleMetadata;
             });
         }
         return new DataResult<List<String>>().setResults(trios);

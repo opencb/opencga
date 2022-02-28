@@ -73,6 +73,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     public static ExternalResource externalResource = new HadoopExternalResource();
 
     private VariantHadoopDBAdaptor dbAdaptor;
+    private SampleIndexDBAdaptor sampleIndexDBAdaptor;
     private static boolean loaded = false;
     public static final String STUDY_NAME_3 = "study_3";
     private static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2, STUDY_NAME_3);
@@ -98,6 +99,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     @Before
     public void before() throws Exception {
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
+        sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
         if (!loaded) {
             load();
             loaded = true;
@@ -148,6 +150,12 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         this.variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
         engine.familyIndex(STUDY_NAME_3, triosPlatinum, new ObjectMap());
 
+        SampleIndexConfiguration configuration = engine.getMetadataManager().getStudyMetadata(STUDY_NAME).getSampleIndexConfigurationLatest().getConfiguration();
+        // Don't modify the configuration.
+        engine.getMetadataManager().addSampleIndexConfiguration(STUDY_NAME, configuration);
+        engine.sampleIndex(STUDY_NAME, Collections.singletonList("NA19660"), new ObjectMap());
+        engine.sampleIndexAnnotate(STUDY_NAME, Collections.singletonList("NA19660"), new ObjectMap());
+
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
     }
 
@@ -159,7 +167,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         Iterator<SampleMetadata> it = variantStorageEngine.getMetadataManager().sampleMetadataIterator(studyId);
         while (it.hasNext()) {
             SampleMetadata sample = it.next();
-            Iterator<SampleIndexEntry> indexIt = variantStorageEngine.getSampleIndexDBAdaptor().rawIterator(studyId, sample.getId());
+            Iterator<SampleIndexEntry> indexIt = sampleIndexDBAdaptor.rawIterator(studyId, sample.getId());
             while (indexIt.hasNext()) {
                 SampleIndexEntry record = indexIt.next();
 
@@ -197,7 +205,10 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     public void regenerateSampleIndex() throws Exception {
         for (String study : studies) {
             int studyId = dbAdaptor.getMetadataManager().getStudyId(study);
-            int version = dbAdaptor.getMetadataManager().getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
+            // Get the version with ALL samples indexed
+            // This is a special case for STUDY, that has a sample index version with missing samples
+            int version = sampleIndexDBAdaptor.getSchemaFactory()
+                    .getSchema(studyId, dbAdaptor.getMetadataManager().getIndexedSamplesMap(studyId).keySet()).getVersion();
             String orig = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId, version);
             String copy = orig + "_copy";
 
@@ -532,7 +543,6 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         // Query SampleIndex
         System.out.println("#Query SampleIndex");
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
         Query sampleIndexVariantQuery = variantStorageEngine.preProcessQuery(query, new QueryOptions());
         SampleIndexQuery indexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(sampleIndexVariantQuery);
 //        int onlyIndex = (int) ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor()
@@ -682,7 +692,6 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     Query query = new Query(baseQuery)
                             .append(VariantQueryParam.STUDY.key(), study)
                             .append(GENOTYPE.key(), sampleName + ":1|0,0|1,1|1");
-                    SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
                     long actualCount = sampleIndexDBAdaptor.count(sampleIndexDBAdaptor.parseSampleIndexQuery(new Query(query)));
 
                     System.out.println("---");
@@ -709,7 +718,6 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testAggregationCorrectnessFilterTranscript() throws Exception {
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
         SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, sampleIndexDBAdaptor);
 
         String ct = "missense_variant";
@@ -751,8 +759,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testAggregationCorrectnessCt() throws Exception {
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
-        SampleIndexSchema schema = sampleIndexDBAdaptor.getSchema(STUDY_NAME_3);
+        SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(STUDY_NAME_3);
 
         CategoricalMultiValuedIndexField<String> field = schema.getCtIndex().getField();
         IndexFieldConfiguration ctConf = field.getConfiguration();
@@ -783,7 +790,6 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     }
 
     private void testAggregationCorrectness(String ct) throws Exception {
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
         SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, sampleIndexDBAdaptor);
 
         Query query = new Query(STUDY.key(), STUDY_NAME_3)
@@ -814,7 +820,6 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @Test
     public void testAggregation() throws Exception {
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor();
         SampleIndexVariantAggregationExecutor executor = new SampleIndexVariantAggregationExecutor(metadataManager, sampleIndexDBAdaptor);
 
         testAggregation(executor, "qual", STUDY_NAME_3, "NA12877");

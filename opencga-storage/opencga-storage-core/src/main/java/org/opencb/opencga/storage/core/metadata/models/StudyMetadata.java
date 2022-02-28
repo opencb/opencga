@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 public class StudyMetadata {
 
     public static final String UNKNOWN_HEADER_ATTRIBUTE = ".";
+    public static final int DEFAULT_SAMPLE_INDEX_VERSION = 1;
     private int id;
     private String name;
     private Aggregation aggregation;
@@ -136,7 +137,8 @@ public class StudyMetadata {
 
     public SampleIndexConfigurationVersioned getSampleIndexConfigurationLatest() {
         if (sampleIndexConfigurations == null || sampleIndexConfigurations.isEmpty()) {
-            return new SampleIndexConfigurationVersioned(SampleIndexConfiguration.defaultConfiguration(), 1, Date.from(Instant.now()));
+            return new SampleIndexConfigurationVersioned(SampleIndexConfiguration.defaultConfiguration(),
+                    DEFAULT_SAMPLE_INDEX_VERSION, Date.from(Instant.now()));
         } else {
             SampleIndexConfigurationVersioned conf = sampleIndexConfigurations.get(0);
             for (SampleIndexConfigurationVersioned thisConf : sampleIndexConfigurations) {
@@ -150,6 +152,23 @@ public class StudyMetadata {
 
     public List<SampleIndexConfigurationVersioned> getSampleIndexConfigurations() {
         return sampleIndexConfigurations;
+    }
+
+    public SampleIndexConfiguration getSampleIndexConfiguration(int version) {
+        if (sampleIndexConfigurations == null || sampleIndexConfigurations.isEmpty()) {
+            if (version == DEFAULT_SAMPLE_INDEX_VERSION) {
+                return SampleIndexConfiguration.defaultConfiguration();
+            } else {
+                return null;
+            }
+        } else {
+            for (SampleIndexConfigurationVersioned v : sampleIndexConfigurations) {
+                if (v.getVersion() == version) {
+                    return v.getConfiguration();
+                }
+            }
+            return null;
+        }
     }
 
     public StudyMetadata setSampleIndexConfigurations(List<SampleIndexConfigurationVersioned> sampleIndexConfigurations) {
@@ -224,6 +243,7 @@ public class StudyMetadata {
         private SampleIndexConfiguration configuration;
         private int version;
         private Date date;
+//        private boolean staging;
 //        private int numSamples;
 
 
@@ -234,6 +254,7 @@ public class StudyMetadata {
             this.configuration = configuration;
             this.version = version;
             this.date = date;
+//            this.staging = false;
         }
 
         public SampleIndexConfiguration getConfiguration() {
@@ -262,6 +283,15 @@ public class StudyMetadata {
             this.date = date;
             return this;
         }
+
+//        public boolean isStaging() {
+//            return staging;
+//        }
+//
+//        public SampleIndexConfigurationVersioned setStaging(boolean staging) {
+//            this.staging = staging;
+//            return this;
+//        }
 
 //        public int getNumSamples() {
 //            return numSamples;

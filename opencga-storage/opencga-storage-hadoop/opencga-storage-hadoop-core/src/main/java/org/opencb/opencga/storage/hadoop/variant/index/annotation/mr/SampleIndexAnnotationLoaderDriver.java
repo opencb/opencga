@@ -157,7 +157,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
                 .getSampleIndexConfigurationLatest();
         SampleIndexConfiguration configuration = versioned.getConfiguration();
         sampleIndexVersion = versioned.getVersion();
-        VariantMapReduceUtil.setSampleIndexConfiguration(job, configuration);
+        VariantMapReduceUtil.setSampleIndexConfiguration(job, configuration, sampleIndexVersion);
 
         return job;
     }

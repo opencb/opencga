@@ -18,8 +18,6 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -331,18 +329,10 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         }
 
         StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(getStudyId());
-        VariantMapReduceUtil.setSampleIndexConfiguration(job, studyMetadata.getSampleIndexConfigurationLatest().getConfiguration());
+        StudyMetadata.SampleIndexConfigurationVersioned latest = studyMetadata.getSampleIndexConfigurationLatest();
+        VariantMapReduceUtil.setSampleIndexConfiguration(job, latest.getConfiguration(), latest.getVersion());
 
         return job;
-    }
-
-    @Override
-    protected void preExecution() throws IOException, StorageEngineException {
-        super.preExecution();
-
-        ObjectMap options = new ObjectMap();
-        options.putAll(getParams());
-        SampleIndexSchema.createTableIfNeeded(outputTable, getHBaseManager(), options);
     }
 
     public static void main(String[] args) throws Exception {
@@ -373,7 +363,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
-            schema = new SampleIndexSchema(VariantMapReduceUtil.getSampleIndexConfiguration(context.getConfiguration()));
+            schema = VariantMapReduceUtil.getSampleIndexSchema(context.getConfiguration());
             fileIndexConverter = new VariantFileIndexConverter(schema);
 
             int[] sampleIds = context.getConfiguration().getInts(SAMPLES);

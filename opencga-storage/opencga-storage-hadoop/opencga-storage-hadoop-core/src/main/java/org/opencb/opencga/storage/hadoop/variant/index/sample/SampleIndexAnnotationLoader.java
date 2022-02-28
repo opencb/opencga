@@ -80,14 +80,14 @@ public class SampleIndexAnnotationLoader {
 
     public void updateSampleAnnotation(int studyId, List<Integer> samples, ObjectMap options, boolean overwrite)
             throws StorageEngineException {
-        int sampleIndexVersion = metadataManager.getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
+        int sampleIndexVersion = sampleDBAdaptor.getSchemaLatest(studyId).getVersion();
         List<Integer> finalSamplesList = new ArrayList<>(samples.size());
         List<String> nonAnnotated = new LinkedList<>();
         List<String> alreadyAnnotated = new LinkedList<>();
         for (Integer sampleId : samples) {
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
             if (sampleMetadata.isAnnotated()) {
-                if (SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, sampleIndexVersion).equals(Status.READY)
+                if (sampleMetadata.getSampleIndexAnnotationStatus(sampleIndexVersion).equals(Status.READY)
                         && !overwrite) {
                     // SamplesIndex already annotated
                     alreadyAnnotated.add(sampleMetadata.getName());
@@ -115,6 +115,9 @@ public class SampleIndexAnnotationLoader {
             logger.info("Skip sample index annotation. Nothing to do!");
             return;
         }
+
+        sampleDBAdaptor.createTableIfNeeded(studyId, sampleIndexVersion, options);
+
         if (finalSamplesList.size() < 20) {
             logger.info("Run sample index annotation on samples " + finalSamplesList);
         } else {
@@ -144,7 +147,7 @@ public class SampleIndexAnnotationLoader {
 
     private void updateSampleAnnotationBatchMapreduce(int studyId, List<Integer> samples, ObjectMap options)
             throws StorageEngineException {
-        options.put(SampleIndexAnnotationLoaderDriver.OUTPUT, sampleDBAdaptor.getSampleIndexTableName(studyId));
+        options.put(SampleIndexAnnotationLoaderDriver.OUTPUT, sampleDBAdaptor.getSampleIndexTableNameLatest(studyId));
         mrExecutor.run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
                 tableNameGenerator.getArchiveTableName(studyId),
                 tableNameGenerator.getVariantTableName(), studyId, samples, options),
@@ -243,10 +246,10 @@ public class SampleIndexAnnotationLoader {
     public void updateSampleAnnotationMultiSampleIterator(int studyId, List<Integer> samples,
                                                           Function<Region, List<Pair<Variant, AnnotationIndexEntry>>> annotationIndexReader)
             throws IOException, StorageEngineException {
-        int version = sampleDBAdaptor.getSampleIndexConfiguration(studyId).getVersion();
-        String sampleIndexTableName = sampleDBAdaptor.getSampleIndexTableName(studyId);
+        int version = sampleDBAdaptor.getSampleIndexConfigurationLatest(studyId).getVersion();
+        String sampleIndexTableName = sampleDBAdaptor.getSampleIndexTableName(studyId, version);
         Map<Integer, Iterator<Map<String, List<Variant>>>> sampleIterators = new HashMap<>(samples.size());
-        SampleIndexSchema schema = sampleDBAdaptor.getSchema(studyId);
+        SampleIndexSchema schema = sampleDBAdaptor.getSchemaLatest(studyId);
 
         for (Integer sample : samples) {
             sampleIterators.put(sample, sampleDBAdaptor.iteratorByGt(studyId, sample));
@@ -352,7 +355,7 @@ public class SampleIndexAnnotationLoader {
             throws StorageEngineException {
         for (Integer sampleId : samples) {
             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                return SampleIndexDBAdaptor.setSampleIndexAnnotationStatus(sampleMetadata, Status.READY, version);
+                sampleMetadata.setSampleIndexAnnotationStatus(Status.READY, version);
             });
         }
     }

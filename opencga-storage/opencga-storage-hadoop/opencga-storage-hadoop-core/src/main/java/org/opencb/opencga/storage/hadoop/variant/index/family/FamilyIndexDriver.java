@@ -255,7 +255,6 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                     if (mother > 0) {
                         sampleMetadata.setMother(mother);
                     }
-                    return sampleMetadata;
                 });
             }
         }

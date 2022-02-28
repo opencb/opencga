@@ -3,12 +3,10 @@ package org.opencb.opencga.storage.core.metadata.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created on 10/01/19.
@@ -33,8 +31,10 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
 
     private static final String SAMPLE_INDEX_STATUS = "sampleIndexGenotypes";
     private static final String SAMPLE_INDEX_VERSION = "sampleIndexGenotypesVersion";
+    private static final String SAMPLE_INDEX_VERSION_ARCHIVE = "sampleIndexGenotypesVersionArchive";
     private static final String SAMPLE_INDEX_ANNOTATION_STATUS = "sampleIndexAnnotation";
     private static final String SAMPLE_INDEX_ANNOTATION_VERSION = "sampleIndexAnnotationVersion";
+    private static final String SAMPLE_INDEX_ANNOTATION_VERSION_ARCHIVE = "sampleIndexAnnotationVersionArchive";
 
     @Deprecated // Deprecated to avoid confusion with actual "SAMPLE_INDEX_STATUS"
     private static final String SAMPLE_INDEX_ANNOTATION_STATUS_OLD = "sampleIndex";
@@ -165,14 +165,20 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     }
 
     @JsonIgnore
-    public TaskMetadata.Status getSampleIndexAnnotationStatus(int latestSampleIndexVersion) {
+    private TaskMetadata.Status getSampleIndexAnnotationStatus() {
         TaskMetadata.Status status = this.getStatus(SAMPLE_INDEX_ANNOTATION_STATUS, null);
         if (status == null) {
             // The status name was renamed. In case of missing value (null), check for the deprecated value.
             status = this.getStatus(SAMPLE_INDEX_ANNOTATION_STATUS_OLD);
         }
+        return status;
+    }
+
+    @JsonIgnore
+    public TaskMetadata.Status getSampleIndexAnnotationStatus(int latestSampleIndexVersion) {
+        TaskMetadata.Status status = getSampleIndexAnnotationStatus();
         if (status == TaskMetadata.Status.READY) {
-            int actualSampleIndexVersion = this.getAttributes().getInt(SAMPLE_INDEX_ANNOTATION_VERSION, 1);
+            int actualSampleIndexVersion = getSampleIndexAnnotationVersion();
             if (actualSampleIndexVersion != latestSampleIndexVersion) {
 //                logger.debug("Sample index annotation version outdated. Actual : " + actualSampleIndexVersion
 //                        + " , expected : " + latestSampleIndexVersion);
@@ -183,23 +189,72 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     }
 
     @JsonIgnore
+    public List<Integer> getSampleIndexAnnotationVersions() {
+        ObjectMap attributes = this.getAttributes();
+
+        List<Integer> archivedVersions = new LinkedList<>(attributes.getAsIntegerList(SAMPLE_INDEX_ANNOTATION_VERSION_ARCHIVE));
+        Integer current = getSampleIndexAnnotationVersion();
+        if (current != null) {
+            archivedVersions.add(getSampleIndexAnnotationVersion());
+        }
+        return archivedVersions;
+    }
+
+    @JsonIgnore
+    public Integer getSampleIndexAnnotationVersion() {
+        int current = this.getAttributes().getInt(SAMPLE_INDEX_ANNOTATION_VERSION, -1);
+        if (current == -1) {
+            TaskMetadata.Status status = getSampleIndexAnnotationStatus();
+            if (status == TaskMetadata.Status.READY) {
+                // If status READY, and missing version, assume default version
+                return StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION;
+            } else {
+                return null;
+            }
+        } else {
+            return current;
+        }
+    }
+
+    @JsonIgnore
     public SampleMetadata setSampleIndexAnnotationStatus(TaskMetadata.Status status, int version) {
+        ObjectMap attributes = this.getAttributes();
+        if (status == TaskMetadata.Status.READY) {
+            Integer oldVersion = getSampleIndexAnnotationVersion();
+            if (oldVersion != null && oldVersion != version) {
+                Set<Integer> archivedVersions = new LinkedHashSet<>(attributes.getAsIntegerList(SAMPLE_INDEX_ANNOTATION_VERSION_ARCHIVE));
+                archivedVersions.add(oldVersion);
+                attributes.put(SAMPLE_INDEX_ANNOTATION_VERSION_ARCHIVE, archivedVersions);
+            }
+        }
+
         // Remove deprecated value.
         this.getStatus().remove(SAMPLE_INDEX_ANNOTATION_STATUS_OLD);
         this.setStatus(SAMPLE_INDEX_ANNOTATION_STATUS, status);
-        this.getAttributes().put(SAMPLE_INDEX_ANNOTATION_VERSION, version);
+        attributes.put(SAMPLE_INDEX_ANNOTATION_VERSION, version);
         return this;
     }
 
     @JsonIgnore
-    public TaskMetadata.Status getSampleIndexStatus(int latestSampleIndexVersion) {
+    private TaskMetadata.Status getSampleIndexStatus() {
         TaskMetadata.Status status = this.getStatus(SAMPLE_INDEX_STATUS, null);
         if (status == null) {
             // This is a new status. In case of missing value (null), assume it's READY
             status = TaskMetadata.Status.READY;
         }
+        return status;
+    }
+
+    @JsonIgnore
+    public boolean hasSampleIndexStatus() {
+        return getStatus(SAMPLE_INDEX_STATUS, null) != null && getAttributes().containsKey(SAMPLE_INDEX_VERSION);
+    }
+
+    @JsonIgnore
+    public TaskMetadata.Status getSampleIndexStatus(int latestSampleIndexVersion) {
+        TaskMetadata.Status status = getSampleIndexStatus();
         if (status == TaskMetadata.Status.READY) {
-            int actualSampleIndexVersion = this.getAttributes().getInt(SAMPLE_INDEX_VERSION, 1);
+            int actualSampleIndexVersion = getSampleIndexVersion();
             if (actualSampleIndexVersion != latestSampleIndexVersion) {
 //                logger.debug("Sample index version outdated. Actual : " + actualSampleIndexVersion
 //                        + " , expected : " + latestSampleIndexVersion);
@@ -210,7 +265,43 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     }
 
     @JsonIgnore
+    public List<Integer> getSampleIndexVersions() {
+        ObjectMap attributes = this.getAttributes();
+
+        List<Integer> archivedVersions = new LinkedList<>(attributes.getAsIntegerList(SAMPLE_INDEX_VERSION_ARCHIVE));
+        Integer current = getSampleIndexVersion();
+        if (current != null) {
+            archivedVersions.add(current);
+        }
+        return archivedVersions;
+    }
+
+    @JsonIgnore
+    public Integer getSampleIndexVersion() {
+        int version = this.getAttributes().getInt(SAMPLE_INDEX_VERSION, -1);
+        if (version == -1) {
+            TaskMetadata.Status status = getSampleIndexStatus();
+            if (status == TaskMetadata.Status.READY) {
+                // If status READY, and missing version, assume default version
+                return StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION;
+            } else {
+                return null;
+            }
+        } else {
+            return version;
+        }
+    }
+
+    @JsonIgnore
     public SampleMetadata setSampleIndexStatus(TaskMetadata.Status status, int version) {
+        if (status == TaskMetadata.Status.READY) {
+            Integer oldVersion = getSampleIndexVersion();
+            if (oldVersion != null && oldVersion != version) {
+                List<Integer> archivedVersions = new ArrayList<>(this.getAttributes().getAsIntegerList(SAMPLE_INDEX_VERSION_ARCHIVE));
+                archivedVersions.add(oldVersion);
+                this.getAttributes().put(SAMPLE_INDEX_VERSION_ARCHIVE, archivedVersions);
+            }
+        }
         this.getAttributes().put(SAMPLE_INDEX_VERSION, version);
         return this.setStatus(SAMPLE_INDEX_STATUS, status);
     }

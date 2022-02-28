@@ -48,12 +48,17 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndex
  */
 public class SampleIndexQueryParser {
     private static Logger logger = LoggerFactory.getLogger(SampleIndexQueryParser.class);
-    private final SampleIndexSchema schema;
     private final VariantStorageMetadataManager metadataManager;
+    private final SampleIndexSchemaFactory schemaFactory;
 
-    public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager, SampleIndexSchema schema) {
-        this.schema = schema;
+    public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager) {
         this.metadataManager = metadataManager;
+        this.schemaFactory = new SampleIndexSchemaFactory(metadataManager);
+    }
+
+    public SampleIndexQueryParser(VariantStorageMetadataManager metadataManager, SampleIndexSchemaFactory schemaFactory) {
+        this.metadataManager = metadataManager;
+        this.schemaFactory = schemaFactory;
     }
 
     /**
@@ -348,6 +353,7 @@ public class SampleIndexQueryParser {
         } else {
             throw new IllegalStateException("Unable to query SamplesIndex");
         }
+        SampleIndexSchema schema = schemaFactory.getSchema(studyId, samplesMap.keySet(), true);
 
         boolean partialFilesIndex = false;
         if (!negatedGenotypesSamples.isEmpty() || !parentsInQuery.isEmpty()) {
@@ -380,7 +386,8 @@ public class SampleIndexQueryParser {
 
         }
         Map<String, Values<SampleFileIndexQuery>> fileIndexMap
-                = parseSampleSpecificQuery(query, studyId, queryOperation, samplesMap, multiFileSamples, partialGtIndex, partialFilesIndex);
+                = parseSampleSpecificQuery(schema, query, studyId, queryOperation, samplesMap, multiFileSamples,
+                partialGtIndex, partialFilesIndex);
 
         int sampleIndexVersion = defaultStudy.getSampleIndexConfigurationLatest().getVersion();
         boolean allSamplesAnnotated = true;
@@ -388,8 +395,7 @@ public class SampleIndexQueryParser {
             for (String sample : samplesMap.keySet()) {
                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
-                if (!SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, sampleIndexVersion)
-                        .equals(TaskMetadata.Status.READY)) {
+                if (sampleMetadata.getSampleIndexAnnotationStatus(sampleIndexVersion) != TaskMetadata.Status.READY) {
                     allSamplesAnnotated = false;
                     break;
                 }
@@ -398,8 +404,9 @@ public class SampleIndexQueryParser {
             allSamplesAnnotated = false;
         }
 
+
         boolean completeIndex = allSamplesAnnotated && !partialIndex;
-        SampleAnnotationIndexQuery annotationIndexQuery = parseAnnotationIndexQuery(query, completeIndex);
+        SampleAnnotationIndexQuery annotationIndexQuery = parseAnnotationIndexQuery(schema, query, completeIndex);
         Set<VariantType> variantTypes = null;
         if (isValidParam(query, TYPE)) {
             List<String> typesStr = query.getAsStringList(VariantQueryParam.TYPE.key());
@@ -609,10 +616,9 @@ public class SampleIndexQueryParser {
 
 
 
-    private Map<String, Values<SampleFileIndexQuery>> parseSampleSpecificQuery(Query query, int studyId, QueryOperation queryOperation,
-                                                                               Map<String, List<String>> samplesMap,
-                                                                               Set<String> multiFileSamples,
-                                                                               boolean partialGtIndex, boolean partialFilesIndex) {
+    private Map<String, Values<SampleFileIndexQuery>> parseSampleSpecificQuery(
+            SampleIndexSchema schema, Query query, int studyId, QueryOperation queryOperation,
+            Map<String, List<String>> samplesMap, Set<String> multiFileSamples, boolean partialGtIndex, boolean partialFilesIndex) {
         // 1. Split query -- getQueriesPerSample
         // 2. Parse Files Query
         //   2.1. Parse File query
@@ -624,8 +630,8 @@ public class SampleIndexQueryParser {
         Map<String, Query> queriesPerSample = getQueriesPerSample(studyId, query, queryOperation, samplesMap.keySet(), nonCoveredQuery);
         for (String sample : samplesMap.keySet()) {
             Query sampleQuery = queriesPerSample.get(sample);
-            Values<SampleFileIndexQuery> fileIndexQuery =
-                    parseFilesQuery(sampleQuery, studyId, sample, multiFileSamples.contains(sample), partialGtIndex, partialFilesIndex);
+            Values<SampleFileIndexQuery> fileIndexQuery = parseFilesQuery(
+                    schema, sampleQuery, studyId, sample, multiFileSamples.contains(sample), partialGtIndex, partialFilesIndex);
             fileIndexMap.put(sample, fileIndexQuery);
         }
 
@@ -792,9 +798,16 @@ public class SampleIndexQueryParser {
     }
 
 
-    protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, int studyId, String sample,
+    protected Values<SampleFileIndexQuery> parseFilesQuery(SampleIndexSchema schema, Query query, int studyId, String sample,
                                                            boolean multiFileSample, boolean partialGtIndex, boolean partialFilesIndex) {
-        return parseFilesQuery(query, sample, multiFileSample, partialGtIndex, partialFilesIndex, s -> getFilesFromSample(studyId, s));
+        return parseFilesQuery(
+                schema,
+                query,
+                sample,
+                multiFileSample,
+                partialGtIndex,
+                partialFilesIndex,
+                s -> getFilesFromSample(studyId, s));
     }
 
     private List<String> getFilesFromSample(int studyId, String s) {
@@ -807,7 +820,7 @@ public class SampleIndexQueryParser {
         return fileNames;
     }
 
-    protected Values<SampleFileIndexQuery> parseFilesQuery(Query query, String sample, boolean multiFileSample,
+    protected Values<SampleFileIndexQuery> parseFilesQuery(SampleIndexSchema schema, Query query, String sample, boolean multiFileSample,
                                                            boolean partialGtIndex, boolean partialFilesIndex,
                                                            Function<String, List<String>> filesFromSample) {
         ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> fileDataParsedQuery = parseFileData(query);
@@ -850,7 +863,8 @@ public class SampleIndexQueryParser {
                 } else {
                     subQuery.put(FILE_DATA.key(), fileDataQuery.toQuery());
                 }
-                fileIndexQueries.add(parseFileQuery(subQuery, sample, multiFileSample, partialGtIndex, partialFilesIndex, filesFromSample));
+                fileIndexQueries.add(parseFileQuery(schema, subQuery, sample, multiFileSample,
+                        partialGtIndex, partialFilesIndex, filesFromSample));
                 if (isValidParam(subQuery, FILE_DATA)) {
                     // This subquery did not remove the fileData, so it's not fully covered. Can't remove the fileData filter.
                     fileDataCovered = false;
@@ -888,11 +902,11 @@ public class SampleIndexQueryParser {
             return new Values<>(filesOperation, fileIndexQueries);
         } else {
             return new Values<>(null, Collections.singletonList(
-                    parseFileQuery(query, sample, multiFileSample, partialGtIndex, partialFilesIndex, filesFromSample)));
+                    parseFileQuery(schema, query, sample, multiFileSample, partialGtIndex, partialFilesIndex, filesFromSample)));
         }
     }
 
-    protected SampleFileIndexQuery parseFileQuery(Query query, String sample, boolean multiFileSample,
+    protected SampleFileIndexQuery parseFileQuery(SampleIndexSchema schema, Query query, String sample, boolean multiFileSample,
                                                   boolean partialGtIndex, boolean partialFilesIndex,
                                                   Function<String, List<String>> filesFromSample) {
 
@@ -1089,19 +1103,20 @@ public class SampleIndexQueryParser {
         return types.contains(VariantType.COPY_NUMBER_LOSS.name()) && !types.contains(VariantType.COPY_NUMBER.name());
     }
 
-    protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query) {
-        return parseAnnotationIndexQuery(query, false);
+    protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(SampleIndexSchema schema, Query query) {
+        return parseAnnotationIndexQuery(schema, query, false);
     }
 
     /**
      * Builds the SampleAnnotationIndexQuery given a VariantQuery.
      *
+     * @param schema Sample index schema for the set of samples in the query
      * @param query Input VariantQuery. If the index is complete, covered filters could be removed from here.
      * @param completeIndex Indicates if the annotation index is complete for the samples in the query.
      *                      Otherwise, the index can only be used as a hint, and should be completed with further filtering.
      * @return SampleAnnotationIndexQuery
      */
-    protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query, boolean completeIndex) {
+    protected SampleAnnotationIndexQuery parseAnnotationIndexQuery(SampleIndexSchema schema, Query query, boolean completeIndex) {
         byte annotationIndex = 0;
         IndexFieldFilter biotypeFilter = schema.getBiotypeIndex().getField().noOpFilter();
         IndexFieldFilter consequenceTypeFilter = schema.getCtIndex().getField().noOpFilter();

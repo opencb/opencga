@@ -16,6 +16,7 @@ import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -60,6 +61,7 @@ public class SampleIndexQueryParserTest {
     private double[] qualThresholds;
     private double[] dpThresholds;
     private SampleIndexConfiguration configuration;
+    private SampleIndexSchema schema;
 
     @Before
     public void setUp() throws Exception {
@@ -69,14 +71,14 @@ public class SampleIndexQueryParserTest {
                 .addPopulation(new SampleIndexConfiguration.Population("s3", "ALL"))
                 .addPopulation(new SampleIndexConfiguration.Population("s4", "ALL"));
 
-        SampleIndexSchema schema = new SampleIndexSchema(configuration);
+        schema = new SampleIndexSchema(configuration, StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION);
         fileIndex = schema.getFileIndex();
         qualThresholds = fileIndex.getCustomField(IndexFieldConfiguration.Source.FILE, StudyEntry.QUAL).getConfiguration().getThresholds();
         dpThresholds = fileIndex.getCustomField(IndexFieldConfiguration.Source.SAMPLE, VCFConstants.DEPTH_KEY).getConfiguration().getThresholds();
 
         DummyVariantStorageMetadataDBAdaptorFactory.clear();
         mm = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
-        sampleIndexQueryParser = new SampleIndexQueryParser(mm, schema);
+        sampleIndexQueryParser = new SampleIndexQueryParser(mm);
         studyId = mm.createStudy("study").getId();
         mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "F1", Arrays.asList("S1", "S2", "S3"))));
 
@@ -99,7 +101,6 @@ public class SampleIndexQueryParserTest {
         for (int i = 1; i <= 4; i++) {
             mm.updateSampleMetadata(studyId, mm.getSampleIdOrFail(studyId, "MULTI_S" + i), s -> {
                 s.setSplitData(VariantStorageEngine.SplitData.MULTI);
-                return s;
             });
         }
 
@@ -122,27 +123,27 @@ public class SampleIndexQueryParserTest {
     }
 
     private SampleFileIndexQuery parseFileQuery(Query query, String sample, Function<String, List<String>> filesFromSample, boolean multiFileSample) {
-        return sampleIndexQueryParser.parseFileQuery(query, sample, multiFileSample, false, false, filesFromSample);
+        return sampleIndexQueryParser.parseFileQuery(schema, query, sample, multiFileSample, false, false, filesFromSample);
     }
 
     private Values<SampleFileIndexQuery> parseFilesQuery(Query query, String sample, Function<String, List<String>> filesFromSample, boolean multiFileSample) {
-        return sampleIndexQueryParser.parseFilesQuery(query, sample, multiFileSample, false, false, filesFromSample);
+        return sampleIndexQueryParser.parseFilesQuery(schema, query, sample, multiFileSample, false, false, filesFromSample);
     }
 
     private byte parseAnnotationMask(Query query) {
-        return sampleIndexQueryParser.parseAnnotationIndexQuery(query).getAnnotationIndexMask();
+        return sampleIndexQueryParser.parseAnnotationIndexQuery(schema, query).getAnnotationIndexMask();
     }
 
     private byte parseAnnotationMask(Query query, boolean completeIndex) {
-        return sampleIndexQueryParser.parseAnnotationIndexQuery(query, completeIndex).getAnnotationIndexMask();
+        return sampleIndexQueryParser.parseAnnotationIndexQuery(schema, query, completeIndex).getAnnotationIndexMask();
     }
 
     private SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query) {
-        return sampleIndexQueryParser.parseAnnotationIndexQuery(query);
+        return sampleIndexQueryParser.parseAnnotationIndexQuery(schema, query);
     }
 
     private SampleAnnotationIndexQuery parseAnnotationIndexQuery(Query query, boolean completeIndex) {
-        return sampleIndexQueryParser.parseAnnotationIndexQuery(query, completeIndex);
+        return sampleIndexQueryParser.parseAnnotationIndexQuery(schema, query, completeIndex);
     }
 
     @Test
@@ -966,22 +967,22 @@ public class SampleIndexQueryParserTest {
         Values<SampleFileIndexQuery> fileQuery;
 
         query = new Query(FILE_DATA.key(), "F1:FILTER=PASS");
-        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, false, n -> Arrays.asList("F1", "F2"));
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(schema, query, "S1", true, false, false, n -> Arrays.asList("F1", "F2"));
         assertEquals(1, fileQuery.size());
         assertFalse(VariantQueryUtils.isValidParam(query, FILE_DATA));
 
         query = new Query(FILE_DATA.key(), "F1:FILTER=PASS");
-        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, false, n -> Arrays.asList("F1", "F2"));
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(schema, query, "S1", true, false, false, n -> Arrays.asList("F1", "F2"));
         assertEquals(1, fileQuery.size());
         assertFalse(VariantQueryUtils.isValidParam(query, FILE_DATA));
 
         query = new Query(FILE_DATA.key(), "F1:FILTER=PASS" + OR + "F2:FILTER=PASS");
-        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, false, n -> Arrays.asList("F1", "F2"));
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(schema, query, "S1", true, false, false, n -> Arrays.asList("F1", "F2"));
         assertEquals(2, fileQuery.size());
         assertFalse(VariantQueryUtils.isValidParam(query, FILE_DATA));
 
         query = new Query(FILE_DATA.key(), "F1:FILTER=PASS" + OR + "F3:FILTER=PASS");
-        fileQuery = sampleIndexQueryParser.parseFilesQuery(query, "S1", true, false, false, n -> Arrays.asList("F1", "F2"));
+        fileQuery = sampleIndexQueryParser.parseFilesQuery(schema, query, "S1", true, false, false, n -> Arrays.asList("F1", "F2"));
         assertEquals(1, fileQuery.size());
         assertTrue(VariantQueryUtils.isValidParam(query, FILE_DATA));
     }
