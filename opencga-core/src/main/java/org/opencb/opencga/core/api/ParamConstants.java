@@ -380,9 +380,11 @@ public class ParamConstants {
     public static final String COHORT_DESCRIPTION = "Cohort ID or UUID";
     public static final String COHORTS_DESCRIPTION = "Comma separated list of cohort IDs or UUIDs" + UP_TO_100;
     public static final String COHORT_IDS_DESCRIPTION = "Comma separated list of cohort IDs" + UP_TO_100;
+    public static final String COHORT_NAMES_DESCRIPTION = "Comma separated list of cohort names" + UP_TO_100;
     public static final String COHORT_UUIDS_DESCRIPTION = "Comma separated list of cohort IDs" + UP_TO_100;
 
     public static final String COHORT_ID_PARAM = "id";
+    public static final String COHORT_NAME_PARAM = "name";
     public static final String COHORT_UUID_PARAM = "uuid";
     public static final String COHORT_TYPE_PARAM = "type";
     public static final String COHORT_CREATION_DATE_PARAM = CREATION_DATE_PARAM;

@@ -132,6 +132,7 @@
 {"collection": "cohort", "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "cohort", "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "cohort", "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
+{"collection": "cohort", "fields": {"name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "cohort", "fields": {"type": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "cohort", "fields": {"samples.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "cohort", "fields": {"numSamples": 1, "studyUid": 1}, "options": {"background": true}}
