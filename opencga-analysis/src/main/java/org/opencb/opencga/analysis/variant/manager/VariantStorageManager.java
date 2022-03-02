@@ -497,7 +497,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
             sampleIndexConfiguration.validate();
             String studyFqn = getStudyFqn(studyStr, token);
-            engine.getMetadataManager().addSampleIndexConfiguration(studyFqn, sampleIndexConfiguration);
+            engine.getMetadataManager().addSampleIndexConfiguration(studyFqn, sampleIndexConfiguration, true);
 
             catalogManager.getStudyManager()
                     .setVariantEngineConfigurationSampleIndex(studyStr, sampleIndexConfiguration, token);

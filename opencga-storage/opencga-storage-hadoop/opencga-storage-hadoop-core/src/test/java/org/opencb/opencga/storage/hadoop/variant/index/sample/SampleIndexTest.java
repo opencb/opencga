@@ -28,6 +28,7 @@ import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -108,7 +109,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     public void load() throws Exception {
         clearDB(DB_NAME);
-
+        StudyMetadata.SampleIndexConfigurationVersioned versioned;
         HadoopVariantStorageEngine engine = getVariantStorageEngine();
 
         // Study 1 - single file
@@ -126,19 +127,26 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(VariantStorageOptions.LOAD_SPLIT_DATA.key(), VariantStorageEngine.SplitData.MULTI);
 
-        int version = metadataManager.addSampleIndexConfiguration(STUDY_NAME_2, SampleIndexConfiguration.defaultConfiguration()
-                .addFileIndexField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.SAMPLE, "DS", new double[]{0, 1, 2}))).getVersion();
-        System.out.println("version = " + version);
+        versioned = metadataManager.addSampleIndexConfiguration(STUDY_NAME_2, SampleIndexConfiguration.defaultConfiguration()
+                .addFileIndexField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.SAMPLE, "DS", new double[]{0, 1, 2})), true);
+        assertEquals(2, versioned.getVersion());
+        assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING, versioned.getStatus());
 
         runETL(engine, getResourceUri("by_chr/chr22_1-1.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
         runETL(engine, getResourceUri("by_chr/chr22_1-2.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
         runETL(engine, getResourceUri("by_chr/chr22_1-2-DUP.variant-test-file.vcf.gz"), outputUri, params, true, true, true);
         engine.familyIndex(STUDY_NAME_2, trios, new ObjectMap());
 
+        versioned = metadataManager.getStudyMetadata(STUDY_NAME_2).getSampleIndexConfiguration(versioned.getVersion());
+        assertEquals(2, versioned.getVersion());
+        // Not annotated
+        assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING, versioned.getStatus());
+
+
         // Study 3 - platinum
         metadataManager.addSampleIndexConfiguration(STUDY_NAME_3, SampleIndexConfiguration.defaultConfiguration()
                 .addFileIndexField(new IndexFieldConfiguration(IndexFieldConfiguration.Source.FILE, "culprit",
-                        IndexFieldConfiguration.Type.CATEGORICAL, "DP", "FS", "MQ", "QD").setNullable(true)));
+                        IndexFieldConfiguration.Type.CATEGORICAL, "DP", "FS", "MQ", "QD").setNullable(true)), true);
 
         params = new ObjectMap()
                 .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_3)
@@ -147,14 +155,51 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         runETL(engine, getPlatinumFile(0), outputUri, params, true, true, true);
         runETL(engine, getPlatinumFile(1), outputUri, params, true, true, true);
 
+        versioned = metadataManager.getStudyMetadata(STUDY_NAME_3).getSampleIndexConfiguration(versioned.getVersion());
+        assertEquals(2, versioned.getVersion());
+        // Not annotated
+        assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING, versioned.getStatus());
+
+
+        // ---------------- Annotate
         this.variantStorageEngine.annotate(new Query(), new QueryOptions(DefaultVariantAnnotationManager.OUT_DIR, outputUri));
         engine.familyIndex(STUDY_NAME_3, triosPlatinum, new ObjectMap());
 
+        // Study 1 - extra sample index configuration, not staging, only one sample in that configuration
+
         SampleIndexConfiguration configuration = engine.getMetadataManager().getStudyMetadata(STUDY_NAME).getSampleIndexConfigurationLatest().getConfiguration();
         // Don't modify the configuration.
-        engine.getMetadataManager().addSampleIndexConfiguration(STUDY_NAME, configuration);
+        versioned = engine.getMetadataManager().addSampleIndexConfiguration(STUDY_NAME, configuration, true);
+        assertEquals(2, versioned.getVersion());
+        assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING, versioned.getStatus());
+
         engine.sampleIndex(STUDY_NAME, Collections.singletonList("NA19660"), new ObjectMap());
         engine.sampleIndexAnnotate(STUDY_NAME, Collections.singletonList("NA19660"), new ObjectMap());
+
+        versioned = engine.getMetadataManager().getStudyMetadata(STUDY_NAME).getSampleIndexConfigurationLatest(false);
+        assertEquals(1, versioned.getVersion());
+        assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE, versioned.getStatus());
+
+        versioned = engine.getMetadataManager().getStudyMetadata(STUDY_NAME).getSampleIndexConfigurationLatest(true);
+        assertEquals(2, versioned.getVersion());
+        assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING, versioned.getStatus());
+
+        engine.getMetadataManager().updateStudyMetadata(STUDY_NAME, sm -> {
+            sm.getSampleIndexConfigurationLatest(true).setStatus(StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE);
+        });
+        versioned = engine.getMetadataManager().getStudyMetadata(STUDY_NAME).getSampleIndexConfigurationLatest(false);
+        assertEquals(2, versioned.getVersion());
+        assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE, versioned.getStatus());
+
+        // Study 2 - Latest should be active
+        versioned = metadataManager.getStudyMetadata(STUDY_NAME_2).getSampleIndexConfiguration(versioned.getVersion());
+        assertEquals(2, versioned.getVersion());
+        assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE, versioned.getStatus());
+
+        // Study 3 - Latest should be active
+        versioned = metadataManager.getStudyMetadata(STUDY_NAME_3).getSampleIndexConfiguration(versioned.getVersion());
+        assertEquals(2, versioned.getVersion());
+        assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE, versioned.getStatus());
 
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
     }

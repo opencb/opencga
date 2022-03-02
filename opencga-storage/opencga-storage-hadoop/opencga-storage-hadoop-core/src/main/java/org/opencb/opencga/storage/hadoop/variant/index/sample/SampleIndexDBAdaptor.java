@@ -13,8 +13,11 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.utils.iterators.IntersectMultiKeyIterator;
 import org.opencb.opencga.storage.core.utils.iterators.UnionMultiKeyIterator;
@@ -184,7 +187,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public String getSampleIndexTableNameLatest(int studyId) {
-        int version = schemaFactory.getSampleIndexConfigurationLatest(studyId).getVersion();
+        int version = schemaFactory.getSampleIndexConfigurationLatest(studyId, true).getVersion();
         return tableNameGenerator.getSampleIndexTableName(studyId, version);
     }
 
@@ -443,10 +446,6 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
     public SampleIndexSchema getSchemaLatest(Object study) {
         return schemaFactory.getSchemaLatest(toStudyId(study));
-    }
-
-    public StudyMetadata.SampleIndexConfigurationVersioned getSampleIndexConfigurationLatest(int studyId) {
-        return schemaFactory.getSampleIndexConfigurationLatest(studyId);
     }
 
     protected int toStudyId(Object study) {
@@ -788,5 +787,42 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             throw new UncheckedIOException(e);
         }
     }
+
+    public void updateSampleIndexSchemaStatus(int studyId, int version) throws StorageEngineException {
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
+        if (studyMetadata.getSampleIndexConfiguration(version).getStatus()
+                != StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING) {
+            // Update only if status is STAGING
+            return;
+        }
+        Iterator<SampleMetadata> it = metadataManager.sampleMetadataIterator(studyId);
+        boolean allSamplesWithThisVersion = true;
+        while (it.hasNext()) {
+            SampleMetadata sampleMetadata = it.next();
+            if (sampleMetadata.getIndexStatus() == TaskMetadata.Status.READY) {
+                // Only check indexed samples
+                if (sampleMetadata.getSampleIndexStatus(version) != TaskMetadata.Status.READY
+                        && sampleMetadata.getSampleIndexAnnotationStatus(version) != TaskMetadata.Status.READY) {
+                    allSamplesWithThisVersion = false;
+                    break;
+                }
+            }
+        }
+        if (allSamplesWithThisVersion) {
+            metadataManager.updateStudyMetadata(studyId, sm -> {
+                sm.getSampleIndexConfiguration(version)
+                        .setStatus(StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE);
+            });
+        } else {
+            logger.info("Not all samples had the sample index version {} on GENOTYPES and ANNOTATION", version);
+        }
+    }
+
+//    public void deprecateSampleIndexSchemas(int studyId) throws StorageEngineException {
+//
+//
+//
+//    }
+
 
 }

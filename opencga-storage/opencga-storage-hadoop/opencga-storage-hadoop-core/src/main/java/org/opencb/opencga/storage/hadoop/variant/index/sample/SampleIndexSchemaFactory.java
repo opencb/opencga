@@ -24,15 +24,18 @@ public class SampleIndexSchemaFactory {
     }
 
     public SampleIndexSchema getSchema(int studyId, int sampleId, boolean acceptPartialAnnotationIndex) {
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
         Collection<Integer> versions = getSampleIndexConfigurationVersions(studyId, sampleId, true);
+        removeStagingVersions(studyMetadata, versions);
         if (versions.isEmpty() && acceptPartialAnnotationIndex) {
             versions = getSampleIndexConfigurationVersions(studyId, sampleId, false);
         }
+        removeStagingVersions(studyMetadata, versions);
         if (versions.isEmpty()) {
             throw sampleIndexNotFound(Collections.singletonList(metadataManager.getSampleName(studyId, sampleId)));
         }
         int version = versions.stream().mapToInt(i -> i).max().getAsInt();
-        SampleIndexConfiguration sampleIndexConfiguration = getSampleIndexConfiguration(studyId, version);
+        SampleIndexConfiguration sampleIndexConfiguration = studyMetadata.getSampleIndexConfiguration(version).getConfiguration();
 
         if (sampleIndexConfiguration == null) {
             throw new VariantQueryException("Unable to use sample index version " + version + " required to query sample "
@@ -49,8 +52,9 @@ public class SampleIndexSchemaFactory {
         if (samples.isEmpty()) {
             throw new IllegalArgumentException("Missing samples");
         }
-        int version = getSampleIndexConfigurationVersion(studyId, samples, acceptPartialAnnotationIndex);
-        SampleIndexConfiguration sampleIndexConfiguration = getSampleIndexConfiguration(studyId, version);
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
+        int version = getSampleIndexConfigurationVersion(studyId, samples, acceptPartialAnnotationIndex, studyMetadata);
+        SampleIndexConfiguration sampleIndexConfiguration = studyMetadata.getSampleIndexConfiguration(version).getConfiguration();
 
         if (sampleIndexConfiguration == null) {
             throw new VariantQueryException("Unable to use sample index version " + version + " required to query samples " + samples);
@@ -86,20 +90,34 @@ public class SampleIndexSchemaFactory {
         }
     }
 
-    public int getSampleIndexConfigurationVersion(int studyId, Collection<?> samples) {
-        return getSampleIndexConfigurationVersion(studyId, samples, false);
+    public int getSampleIndexConfigurationVersion(int studyId, Collection<?> samples, boolean acceptPartialAnnotationIndex) {
+        return getSampleIndexConfigurationVersion(
+                studyId, samples, acceptPartialAnnotationIndex, metadataManager.getStudyMetadata(studyId));
     }
 
-    public int getSampleIndexConfigurationVersion(int studyId, Collection<?> samples, boolean acceptPartialAnnotationIndex) {
+    private int getSampleIndexConfigurationVersion(int studyId, Collection<?> samples, boolean acceptPartialAnnotationIndex,
+                                                   StudyMetadata studyMetadata) {
         Collection<Integer> validVersions = getSampleIndexConfigurationVersions(studyId, samples, true);
+        removeStagingVersions(studyMetadata, validVersions);
         if (validVersions.isEmpty() && acceptPartialAnnotationIndex) {
             validVersions = getSampleIndexConfigurationVersions(studyId, samples, false);
         }
-
+        removeStagingVersions(studyMetadata, validVersions);
         if (validVersions.isEmpty()) {
             throw sampleIndexNotFound(samples);
         }
         return validVersions.stream().mapToInt(i -> i).max().getAsInt();
+    }
+
+    private void removeStagingVersions(StudyMetadata studyMetadata, Collection<Integer> validVersions) {
+        if (studyMetadata.getSampleIndexConfigurations() == null || validVersions.isEmpty()) {
+            return;
+        }
+        for (StudyMetadata.SampleIndexConfigurationVersioned v : studyMetadata.getSampleIndexConfigurations()) {
+            if (v.getStatus() == StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING) {
+                validVersions.remove(v.getVersion());
+            }
+        }
     }
 
     private VariantQueryException sampleIndexNotFound(Collection<?> samples) {
@@ -110,18 +128,29 @@ public class SampleIndexSchemaFactory {
         }
     }
 
+    /**
+     * Get the latest schema available, including staging schemas.
+     * @param studyId studyId
+     * @return  Latest schema available
+     */
     public SampleIndexSchema getSchemaLatest(int studyId) {
-        StudyMetadata.SampleIndexConfigurationVersioned latest = getSampleIndexConfigurationLatest(studyId);
+        return getSchemaLatest(studyId, true);
+    }
+
+    /**
+     * Get the latest schema available.
+     * @param studyId studyId
+     * @param includeStagingSchemas Include schemas with status
+     *          {@link org.opencb.opencga.storage.core.metadata.models.StudyMetadata.SampleIndexConfigurationVersioned.Status#STAGING}.
+     * @return Latest schema available
+     */
+    public SampleIndexSchema getSchemaLatest(int studyId, boolean includeStagingSchemas) {
+        StudyMetadata.SampleIndexConfigurationVersioned latest = getSampleIndexConfigurationLatest(studyId, includeStagingSchemas);
         return new SampleIndexSchema(latest.getConfiguration(), latest.getVersion());
     }
 
-    public StudyMetadata.SampleIndexConfigurationVersioned getSampleIndexConfigurationLatest(int studyId) {
-        return metadataManager.getStudyMetadata(studyId).getSampleIndexConfigurationLatest();
+    public StudyMetadata.SampleIndexConfigurationVersioned getSampleIndexConfigurationLatest(int studyId, boolean includeStagingSchemas) {
+        return metadataManager.getStudyMetadata(studyId).getSampleIndexConfigurationLatest(includeStagingSchemas);
     }
-
-    public SampleIndexConfiguration getSampleIndexConfiguration(int studyId, int version) {
-        return metadataManager.getStudyMetadata(studyId).getSampleIndexConfiguration(version);
-    }
-
 
 }

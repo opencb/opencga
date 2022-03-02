@@ -208,23 +208,33 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public StudyMetadata.SampleIndexConfigurationVersioned addSampleIndexConfiguration(
-            String study, SampleIndexConfiguration configuration) throws StorageEngineException {
+            String study, SampleIndexConfiguration configuration, boolean staging) throws StorageEngineException {
         Integer idOrNull = getStudyIdOrNull(study);
+        int studyId;
         if (idOrNull == null) {
-            createStudy(study);
+            studyId = createStudy(study).getId();
+        } else {
+            studyId = idOrNull;
         }
-        return updateStudyMetadata(study, studyMetadata -> {
+        StudyMetadata.SampleIndexConfigurationVersioned.Status status = staging
+                ? StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING
+                : StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE;
+        return updateStudyMetadata(studyId, studyMetadata -> {
             List<StudyMetadata.SampleIndexConfigurationVersioned> configurations = studyMetadata.getSampleIndexConfigurations();
             if (configurations == null || configurations.isEmpty()) {
                 configurations = new ArrayList<>(2);
                 configurations.add(new StudyMetadata.SampleIndexConfigurationVersioned(
                         SampleIndexConfiguration.defaultConfiguration(),
                         StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION,
-                        Date.from(Instant.now())));
+                        Date.from(Instant.now()), StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE));
                 studyMetadata.setSampleIndexConfigurations(configurations);
             }
             int version = studyMetadata.getSampleIndexConfigurationLatest().getVersion() + 1;
-            configurations.add(new StudyMetadata.SampleIndexConfigurationVersioned(configuration, version, Date.from(Instant.now())));
+            configurations.add(new StudyMetadata.SampleIndexConfigurationVersioned(
+                    configuration,
+                    version,
+                    Date.from(Instant.now()),
+                    status));
         }).getSampleIndexConfigurationLatest();
     }
 

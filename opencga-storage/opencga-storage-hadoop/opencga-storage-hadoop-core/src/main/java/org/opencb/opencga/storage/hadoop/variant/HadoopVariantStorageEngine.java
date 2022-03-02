@@ -333,7 +333,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public void sampleIndexAnnotate(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        new SampleIndexAnnotationLoader(hBaseManager, getTableNameGenerator(), getMetadataManager(), getMRExecutor())
+        new SampleIndexAnnotationLoader(getSampleIndexDBAdaptor(), getMRExecutor())
                 .updateSampleAnnotation(study, samples, options);
     }
 

@@ -175,11 +175,10 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     }
 
     @JsonIgnore
-    public TaskMetadata.Status getSampleIndexAnnotationStatus(int latestSampleIndexVersion) {
+    public TaskMetadata.Status getSampleIndexAnnotationStatus(int sampleIndexVersion) {
         TaskMetadata.Status status = getSampleIndexAnnotationStatus();
         if (status == TaskMetadata.Status.READY) {
-            int actualSampleIndexVersion = getSampleIndexAnnotationVersion();
-            if (actualSampleIndexVersion != latestSampleIndexVersion) {
+            if (!getSampleIndexAnnotationVersions().contains(sampleIndexVersion)) {
 //                logger.debug("Sample index annotation version outdated. Actual : " + actualSampleIndexVersion
 //                        + " , expected : " + latestSampleIndexVersion);
                 status = TaskMetadata.Status.NONE;
@@ -251,13 +250,10 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     }
 
     @JsonIgnore
-    public TaskMetadata.Status getSampleIndexStatus(int latestSampleIndexVersion) {
+    public TaskMetadata.Status getSampleIndexStatus(int sampleIndexVersion) {
         TaskMetadata.Status status = getSampleIndexStatus();
         if (status == TaskMetadata.Status.READY) {
-            int actualSampleIndexVersion = getSampleIndexVersion();
-            if (actualSampleIndexVersion != latestSampleIndexVersion) {
-//                logger.debug("Sample index version outdated. Actual : " + actualSampleIndexVersion
-//                        + " , expected : " + latestSampleIndexVersion);
+            if (!getSampleIndexVersions().contains(sampleIndexVersion)) {
                 status = TaskMetadata.Status.NONE;
             }
         }

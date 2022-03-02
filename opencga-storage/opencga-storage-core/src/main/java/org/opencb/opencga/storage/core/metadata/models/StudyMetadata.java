@@ -31,7 +31,7 @@ public class StudyMetadata {
     private Long timeStamp;
     private VariantFileHeader variantHeader;
     private List<VariantScoreMetadata> variantScores;
-    private List<SampleIndexConfigurationVersioned> sampleIndexConfigurations;
+    private List<SampleIndexConfigurationVersioned> sampleIndexConfigurations = Collections.emptyList();
 
     private ObjectMap attributes;
 
@@ -136,14 +136,20 @@ public class StudyMetadata {
     }
 
     public SampleIndexConfigurationVersioned getSampleIndexConfigurationLatest() {
+        return getSampleIndexConfigurationLatest(true);
+    }
+
+    public SampleIndexConfigurationVersioned getSampleIndexConfigurationLatest(boolean includeStagingSchemas) {
         if (sampleIndexConfigurations == null || sampleIndexConfigurations.isEmpty()) {
             return new SampleIndexConfigurationVersioned(SampleIndexConfiguration.defaultConfiguration(),
-                    DEFAULT_SAMPLE_INDEX_VERSION, Date.from(Instant.now()));
+                    DEFAULT_SAMPLE_INDEX_VERSION, Date.from(Instant.now()), SampleIndexConfigurationVersioned.Status.ACTIVE);
         } else {
             SampleIndexConfigurationVersioned conf = sampleIndexConfigurations.get(0);
             for (SampleIndexConfigurationVersioned thisConf : sampleIndexConfigurations) {
-                if (thisConf.getVersion() > conf.getVersion()) {
-                    conf = thisConf;
+                if (includeStagingSchemas || thisConf.getStatus() != SampleIndexConfigurationVersioned.Status.STAGING) {
+                    if (thisConf.getVersion() > conf.getVersion()) {
+                        conf = thisConf;
+                    }
                 }
             }
             return conf;
@@ -154,17 +160,18 @@ public class StudyMetadata {
         return sampleIndexConfigurations;
     }
 
-    public SampleIndexConfiguration getSampleIndexConfiguration(int version) {
+    public SampleIndexConfigurationVersioned getSampleIndexConfiguration(int version) {
         if (sampleIndexConfigurations == null || sampleIndexConfigurations.isEmpty()) {
             if (version == DEFAULT_SAMPLE_INDEX_VERSION) {
-                return SampleIndexConfiguration.defaultConfiguration();
+                return new SampleIndexConfigurationVersioned(SampleIndexConfiguration.defaultConfiguration(),
+                        DEFAULT_SAMPLE_INDEX_VERSION, Date.from(Instant.now()), SampleIndexConfigurationVersioned.Status.ACTIVE);
             } else {
                 return null;
             }
         } else {
             for (SampleIndexConfigurationVersioned v : sampleIndexConfigurations) {
                 if (v.getVersion() == version) {
-                    return v.getConfiguration();
+                    return v;
                 }
             }
             return null;
@@ -243,18 +250,24 @@ public class StudyMetadata {
         private SampleIndexConfiguration configuration;
         private int version;
         private Date date;
-//        private boolean staging;
+        private Status status;
 //        private int numSamples;
 
+        public enum Status {
+            STAGING, // Index being built. Not ready. Not to be used.
+            ACTIVE, // Index ready to be used (if present)
+            DEPRECATED, // Index marked to be removed.
+            REMOVED // Index no longer exists.
+        }
 
         public SampleIndexConfigurationVersioned() {
         }
 
-        public SampleIndexConfigurationVersioned(SampleIndexConfiguration configuration, int version, Date date) {
+        public SampleIndexConfigurationVersioned(SampleIndexConfiguration configuration, int version, Date date, Status status) {
             this.configuration = configuration;
             this.version = version;
             this.date = date;
-//            this.staging = false;
+            this.status = status;
         }
 
         public SampleIndexConfiguration getConfiguration() {
@@ -284,16 +297,16 @@ public class StudyMetadata {
             return this;
         }
 
-//        public boolean isStaging() {
-//            return staging;
-//        }
-//
-//        public SampleIndexConfigurationVersioned setStaging(boolean staging) {
-//            this.staging = staging;
-//            return this;
-//        }
+        public Status getStatus() {
+            return status;
+        }
 
-//        public int getNumSamples() {
+        public SampleIndexConfigurationVersioned setStatus(Status status) {
+            this.status = status;
+            return this;
+        }
+
+        //        public int getNumSamples() {
 //            return numSamples;
 //        }
 //

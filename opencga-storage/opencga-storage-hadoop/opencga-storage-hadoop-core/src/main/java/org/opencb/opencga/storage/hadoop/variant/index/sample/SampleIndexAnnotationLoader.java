@@ -1,11 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.BufferedMutator;
-import org.apache.hadoop.hbase.client.Put;
-import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -13,18 +7,15 @@ import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexPutBuilder;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.function.Function;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import static org.opencb.opencga.core.api.ParamConstants.OVERWRITE;
 import static org.opencb.opencga.storage.core.metadata.models.TaskMetadata.Status;
@@ -35,22 +26,25 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  */
 public class SampleIndexAnnotationLoader {
 
-    private final HBaseManager hBaseManager;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
     private final MRExecutor mrExecutor;
     private final SampleIndexDBAdaptor sampleDBAdaptor;
-    private final byte[] family;
     private final VariantStorageMetadataManager metadataManager;
-    private Logger logger = LoggerFactory.getLogger(SampleIndexAnnotationLoader.class);
+    private final Logger logger = LoggerFactory.getLogger(SampleIndexAnnotationLoader.class);
 
     public SampleIndexAnnotationLoader(HBaseManager hBaseManager, HBaseVariantTableNameGenerator tableNameGenerator,
                                        VariantStorageMetadataManager metadataManager, MRExecutor mrExecutor) {
-        this.hBaseManager = hBaseManager;
         this.tableNameGenerator = tableNameGenerator;
         this.mrExecutor = mrExecutor;
         this.metadataManager = metadataManager;
         this.sampleDBAdaptor = new SampleIndexDBAdaptor(hBaseManager, tableNameGenerator, this.metadataManager);
-        family = GenomeHelper.COLUMN_FAMILY_BYTES;
+    }
+
+    public SampleIndexAnnotationLoader(SampleIndexDBAdaptor sampleDBAdaptor, MRExecutor mrExecutor) {
+        this.mrExecutor = mrExecutor;
+        this.sampleDBAdaptor = sampleDBAdaptor;
+        this.metadataManager = sampleDBAdaptor.getMetadataManager();
+        this.tableNameGenerator = sampleDBAdaptor.getTableNameGenerator();
     }
 
     public void updateSampleAnnotation(String study, List<String> samples, ObjectMap options)
@@ -138,220 +132,28 @@ public class SampleIndexAnnotationLoader {
             for (int i = 0; i < batches; i++) {
                 List<Integer> subSet = finalSamplesList.subList(i * batchSize, Math.min((i + 1) * batchSize, finalSamplesList.size()));
                 logger.info("Running MapReduce {}/{} over {} samples", i + 1, batches, subSet.size());
-                updateSampleAnnotationBatchMapreduce(studyId, subSet, options);
+                updateSampleAnnotationBatchMapreduce(studyId, subSet, sampleIndexVersion, options);
             }
         } else {
-            updateSampleAnnotationBatchMapreduce(studyId, finalSamplesList, options);
+            updateSampleAnnotationBatchMapreduce(studyId, finalSamplesList, sampleIndexVersion, options);
         }
+
+        postAnnotationLoad(studyId, sampleIndexVersion);
     }
 
-    private void updateSampleAnnotationBatchMapreduce(int studyId, List<Integer> samples, ObjectMap options)
+    private void updateSampleAnnotationBatchMapreduce(int studyId, List<Integer> samples, int sampleIndexVersion, ObjectMap options)
             throws StorageEngineException {
         options.put(SampleIndexAnnotationLoaderDriver.OUTPUT, sampleDBAdaptor.getSampleIndexTableNameLatest(studyId));
+        options.put(SampleIndexAnnotationLoaderDriver.SAMPLE_INDEX_VERSION, sampleIndexVersion);
         mrExecutor.run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
                 tableNameGenerator.getArchiveTableName(studyId),
                 tableNameGenerator.getVariantTableName(), studyId, samples, options),
                 "Annotate sample index for " + (samples.size() < 10 ? "samples " + samples : samples.size() + " samples"));
+
+        postAnnotationBatchLoad(studyId, samples, sampleIndexVersion);
     }
 
-
-//    private void updateSampleAnnotationBatchMultiThread(int studyId, List<Integer> samples) throws IOException, StorageEngineException {
-//        logger.info("Update sample index annotation of " + samples.size() + " samples");
-//
-//        String sampleIndexTableName = tableNameGenerator.getSampleIndexTableName(studyId);
-//
-//        ProgressLogger progressLogger = new ProgressLogger("Sample index annotation updated variants");
-//
-//        ParallelTaskRunner<Pair<Variant, AnnotationIndexEntry>, Put> ptr = new ParallelTaskRunner<>(
-//                new DataReader<Pair<Variant, AnnotationIndexEntry>>() {
-//
-//                    private Iterator<Pair<Variant, AnnotationIndexEntry>> iterator = annotationIndexDBAdaptor.iterator();
-//                    private int initialCapacity = 200000;
-//                    private Pair<Variant, AnnotationIndexEntry> nextPair = null;
-//
-//                    private String chromosome = "";
-//                    private int start = -1;
-//                    private int end = -1;
-//
-//                    @Override
-//                    public List<Pair<Variant, AnnotationIndexEntry>> read(int n) {
-//                        List<Pair<Variant, AnnotationIndexEntry>> annotationMasks = new ArrayList<>(initialCapacity);
-//
-//                        // Read next batch
-//                        if (nextPair == null && iterator.hasNext()) {
-//                            nextPair = iterator.next();
-//                        }
-//                        if (nextPair != null) {
-//                            annotationMasks.add(nextPair);
-//                            Variant firstVariant = nextPair.getKey();
-//                            chromosome = firstVariant.getChromosome();
-//                            start = firstVariant.getStart() - (firstVariant.getStart() % SampleIndexSchema.BATCH_SIZE);
-//                            end = start + SampleIndexSchema.BATCH_SIZE;
-//                            nextPair = null;
-//                        }
-//                        while (iterator.hasNext()) {
-//                            Pair<Variant, AnnotationIndexEntry> pair = iterator.next();
-//                            Variant variant = pair.getKey();
-//                            if (variant.getChromosome().equals(chromosome) && variant.getStart() > start && variant.getStart() < end) {
-//                                annotationMasks.add(pair);
-//                            } else {
-////                                logger.info("Variant " + variant
-////                                        + "(" + variant.getChromosome() + ":" + variant.getStart() + "-" + variant.getEnd() + ")"
-////                                        + " not in batch " + chromosome + ":" + start + "-" + end);
-//                                nextPair = pair;
-//                                break;
-//                            }
-//                        }
-//
-//                        return annotationMasks;
-//                    }
-//                },
-//                annotationMasks -> {
-//                    // Ensure is sorted as expected
-//                    annotationMasks.sort(Comparator.comparing(Pair::getKey,
-//                            SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR));
-//
-//                    Variant firstVariant = annotationMasks.get(0).getKey();
-//                    String chromosome = firstVariant.getChromosome();
-//                    int start = firstVariant.getStart() - (firstVariant.getStart() % SampleIndexSchema.BATCH_SIZE);
-//                    int end = start + SampleIndexSchema.BATCH_SIZE;
-//
-//                    progressLogger.increment(annotationMasks.size(), () -> "Up to batch " + chromosome + ":" + start + "-" + end);
-//                    List<Put> puts = new ArrayList<>(samples.size());
-//
-//                    for (Integer sampleId : samples) {
-//                        Map<String, List<Variant>> map = sampleDBAdaptor.queryByGt(studyId, sampleId, chromosome, start);
-//                        Put put = annotate(chromosome, start, sampleId, map, annotationMasks);
-//                        if (!put.isEmpty()) {
-//                            puts.add(put);
-//                        }
-////                else logger.warn("Empty put for sample " + sampleId + " -> "  + chromosome + ":" + start + ":" + end);
-//                    }
-//
-//                    return puts;
-//                },
-//                new HBaseDataWriter<>(hBaseManager, sampleIndexTableName),
-//                ParallelTaskRunner.Config.builder().setNumTasks(8).setCapacity(2).build()
-//        );
-//
-//        try {
-//            ptr.run();
-//        } catch (ExecutionException e) {
-//            throw new StorageEngineException("Error", e);
-//        }
-//
-//        postAnnotationLoad(studyId, samples);
-//    }
-
-    public void updateSampleAnnotationMultiSampleIterator(int studyId, List<Integer> samples,
-                                                          Function<Region, List<Pair<Variant, AnnotationIndexEntry>>> annotationIndexReader)
-            throws IOException, StorageEngineException {
-        int version = sampleDBAdaptor.getSampleIndexConfigurationLatest(studyId).getVersion();
-        String sampleIndexTableName = sampleDBAdaptor.getSampleIndexTableName(studyId, version);
-        Map<Integer, Iterator<Map<String, List<Variant>>>> sampleIterators = new HashMap<>(samples.size());
-        SampleIndexSchema schema = sampleDBAdaptor.getSchemaLatest(studyId);
-
-        for (Integer sample : samples) {
-            sampleIterators.put(sample, sampleDBAdaptor.iteratorByGt(studyId, sample));
-        }
-
-        BufferedMutator mutator = hBaseManager.getConnection().getBufferedMutator(TableName.valueOf(sampleIndexTableName));
-
-        String chromosome = "";
-        int start = -1;
-        int end = -1;
-        List<Pair<Variant, AnnotationIndexEntry>> annotationEntries = null;
-        do {
-            for (Map.Entry<Integer, Iterator<Map<String, List<Variant>>>> sampleIteratorPair : sampleIterators.entrySet()) {
-                Iterator<Map<String, List<Variant>>> sampleIterator = sampleIteratorPair.getValue();
-                Integer sampleId = sampleIteratorPair.getKey();
-                if (sampleIterator.hasNext()) {
-                    Map<String, List<Variant>> next = sampleIterator.next();
-
-                    Variant firstVariant = next.values().iterator().next().get(0);
-                    if (annotationEntries == null
-                            || !chromosome.equals(firstVariant.getChromosome())
-                            || firstVariant.getStart() < start
-                            || firstVariant.getStart() > end) {
-                        chromosome = firstVariant.getChromosome();
-                        start = firstVariant.getStart() - firstVariant.getStart() % SampleIndexSchema.BATCH_SIZE;
-                        end = start + SampleIndexSchema.BATCH_SIZE;
-                        // FIXME
-//                        annotationEntries = annotationIndexDBAdaptor.get(chromosome, start, end);
-                        annotationEntries = annotationIndexReader.apply(new Region(chromosome, start, end));
-                    }
-
-                    Put put = annotate(chromosome, start, sampleId, next, annotationEntries, schema);
-                    mutator.mutate(put);
-                }
-            }
-
-            // Remove exhausted iterators
-            sampleIterators.entrySet().removeIf(e -> !e.getValue().hasNext());
-        } while (!sampleIterators.isEmpty());
-
-        mutator.close();
-
-        postAnnotationLoad(studyId, samples, version);
-    }
-
-    private Put annotate(String chromosome, int start, Integer sampleId,
-                         Map<String, List<Variant>> sampleIndex, List<Pair<Variant, AnnotationIndexEntry>> annotationMasks,
-                         SampleIndexSchema schema) {
-        byte[] rk = SampleIndexSchema.toRowKey(sampleId, chromosome, start);
-        Put put = new Put(rk);
-
-        for (Map.Entry<String, List<Variant>> entry : sampleIndex.entrySet()) {
-            String gt = entry.getKey();
-            List<Variant> variantsToAnnotate = entry.getValue();
-            if (!SampleIndexSchema.isAnnotatedGenotype(gt)) {
-                continue;
-            }
-
-            ListIterator<Pair<Variant, AnnotationIndexEntry>> iterator = annotationMasks.listIterator();
-            AnnotationIndexPutBuilder builder = new AnnotationIndexPutBuilder(schema, variantsToAnnotate.size());
-            int missingVariants = 0;
-            // Assume both lists are ordered, and "variantsToAnnotate" is fully contained in "annotationMasks"
-            for (Variant variantToAnnotate : variantsToAnnotate) {
-                boolean restarted = false;
-                while (iterator.hasNext()) {
-                    Pair<Variant, AnnotationIndexEntry> annotationPair = iterator.next();
-                    if (annotationPair.getKey().sameGenomicVariant(variantToAnnotate)) {
-                        builder.add(annotationPair.getRight());
-                        break;
-                    } else if (annotationPair.getKey().getStart() > variantToAnnotate.getStart()) {
-                        if (!restarted) {
-                            logger.warn("Missing variant to annotate " + variantToAnnotate + " RESTART ITERATOR");
-                            while (iterator.hasPrevious()) {
-                                iterator.previous();
-                            }
-                            restarted = true;
-                        } else {
-                            logger.error("Missing variant to annotate " + variantToAnnotate);
-                            builder.add(AnnotationIndexEntry.empty(schema));
-                            missingVariants++;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (missingVariants > 0) {
-                // TODO: What if a variant is not annotated?
-                String msg = "Error annotating batch. " + missingVariants + " missing variants";
-                logger.error(msg);
-//                            throw new IllegalStateException(msg);
-            }
-
-            builder.buildAndReset(put, gt, family);
-        }
-        return put;
-    }
-
-    private void postAnnotationLoad(int studyId, List<Integer> samples, int version) throws StorageEngineException {
-        postAnnotationLoad(studyId, samples, metadataManager, version);
-    }
-
-    public static void postAnnotationLoad(int studyId, List<Integer> samples, VariantStorageMetadataManager metadataManager, int version)
+    public void postAnnotationBatchLoad(int studyId, List<Integer> samples, int version)
             throws StorageEngineException {
         for (Integer sampleId : samples) {
             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
@@ -360,5 +162,8 @@ public class SampleIndexAnnotationLoader {
         }
     }
 
-
+    public void postAnnotationLoad(int studyId, int version)
+            throws StorageEngineException {
+        sampleDBAdaptor.updateSampleIndexSchemaStatus(studyId, version);
+    }
 }

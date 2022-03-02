@@ -86,7 +86,8 @@ public class DefaultSampleIndexConfiguration extends StorageMigrationTool {
                     if (CollectionUtils.isEmpty(studyMetadata.getSampleIndexConfigurations())) {
                         studyMetadata.setSampleIndexConfigurations(new ArrayList<>());
                         studyMetadata.getSampleIndexConfigurations().add(
-                                new StudyMetadata.SampleIndexConfigurationVersioned(sampleIndexConfiguration, 1, Date.from(Instant.now())));
+                                new StudyMetadata.SampleIndexConfigurationVersioned(sampleIndexConfiguration, 1, Date.from(Instant.now()),
+                                        StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE));
                     } else {
                         int size = studyMetadata.getSampleIndexConfigurations().size();
                         studyMetadata.getSampleIndexConfigurations().get(size - 1).setConfiguration(sampleIndexConfiguration);

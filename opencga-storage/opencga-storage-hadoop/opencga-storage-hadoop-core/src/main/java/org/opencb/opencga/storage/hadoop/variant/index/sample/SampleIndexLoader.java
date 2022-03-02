@@ -118,6 +118,7 @@ public class SampleIndexLoader {
         options = new ObjectMap(options);
         options.put(SampleIndexDriver.SAMPLE_IDS, samples);
         options.put(SampleIndexDriver.OUTPUT, sampleIndexDBAdaptor.getSampleIndexTableName(studyId, schema.getVersion()));
+        options.put(SampleIndexDriver.SAMPLE_INDEX_VERSION, schema.getVersion());
 
         mrExecutor.run(SampleIndexDriver.class,
                 SampleIndexDriver.buildArgs(
