@@ -1,6 +1,7 @@
 package org.opencb.opencga.server.generator;
 
-import org.apache.log4j.Logger;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.config.ConfigurationManager;
 import org.opencb.opencga.server.generator.models.RestApi;
@@ -18,14 +19,20 @@ import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.server.rest.analysis.VariantWebService;
 import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
 import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ClientsGenerator {
 
-    private static final Logger logger = Logger.getLogger(ClientsGenerator.class);
+    private static final Logger logger = LoggerFactory.getLogger(ClientsGenerator.class);
     private static RestApi restApi;
     private static CommandLineConfiguration config;
 
@@ -51,12 +58,54 @@ public class ClientsGenerator {
 
         try {
             restApi = prepare(new RestApiParser().parse(classes));
-            config = ConfigurationManager.setUp(restApi);
+            config = ConfigurationManager.setUp();
             config.initialize();
 
+            libraries();
             cli();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
+        }
+    }
+
+    private static void libraries() throws IOException {
+        File outDir = new File("restApi.json");
+        String restApiFilePath = outDir.getAbsolutePath();
+        logger.info("Writing RestApi object temporarily in {}", restApiFilePath);
+
+        ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
+        mapper.writeValue(outDir, restApi);
+
+        generateLibrary("java", restApiFilePath, "opencga-client/src/main/java/org/opencb/opencga/client/rest/clients/");
+        generateLibrary("python", restApiFilePath, "opencga-client/src/main/python/pyopencga/rest_clients/");
+        generateLibrary("javascript", restApiFilePath, "opencga-client/src/main/javascript/");
+        generateLibrary("r", restApiFilePath, "opencga-client/src/main/R/R/");
+
+        logger.info("Deleting temporal RestApi object from {}", restApiFilePath);
+        Files.delete(outDir.toPath());
+    }
+
+    private static void generateLibrary(String language, String restFilePath, String outDir) {
+        String binary = "opencga-app/app/misc/clients/" + language + "_client_generator.py";
+
+        ProcessBuilder processBuilder = new ProcessBuilder("python3", binary, restFilePath, outDir);
+        processBuilder.redirectErrorStream(true);
+        Process p;
+        try {
+            p = processBuilder.start();
+            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String line;
+            while ((line = input.readLine()) != null) {
+                logger.info("{} library generator: {}", language, line);
+            }
+            p.waitFor();
+            input.close();
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Error executing cli: " + e.getMessage(), e);
+        }
+
+        if (p.exitValue() != 0) {
+            throw new RuntimeException("Error with " + language + " library generator");
         }
     }
 

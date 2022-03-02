@@ -1,128 +1,55 @@
 import os
 import re
-import requests
 import sys
-import yaml
 from abc import ABC, abstractmethod
 from datetime import datetime
+
+import json
 
 
 class RestClientGenerator(ABC):
 
-    def __init__(self, output_dir):
+    def __init__(self, rest_api_file, output_dir):
+        f = open(rest_api_file, 'r')
+        rest_api = json.load(f)
+        f.close()
 
-        self.server_url = None
-        self.options_output_dir = None
+        self.rest_api = rest_api
         self.output_dir = output_dir
-        self.executors_output_dir = None
+        self.version = rest_api['version'] + ' [' + rest_api['commit'] + ']'
         self.parameters = {}
         self.category = None
         self.subcategory = None
         self.action = None
         self.id1 = None
         self.id2 = None
-        self.json_response = None
-        self.shortcuts = {}
-        self.extended_classes = []
-        self.command_names = {}
+
         self.endpoints = {
             'users/{user}/filters/{filterId}/update': {'method_name': 'update_filter'},
             'ga4gh/reads/{study}/{file}': {'method_name': 'fetch_reads'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge': {
-                'method_name': 'merge_interpretation'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/update': {
-                'method_name': 'update_interpretation'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete': {
-                'method_name': 'delete_interpretation'}
+            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge': {'method_name': 'merge_interpretation'},
+            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/update': {'method_name': 'update_interpretation'},
+            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete': {'method_name': 'delete_interpretation'}
         }
-        self.extended_methods = []
-        self.analysis_commands = []
-        self.operations_commands = []
-        self.categories = {}
-        self.exclude_commands = {}
-        self.exclude_command_params = {}
-        self.read_yaml()
-        self.json_resource = \
-        requests.get(self.server_url + '/webservices/rest/v2/meta/api').json()['responses'][0]['results'][0]
-
-        '''
-        TODO Remove in json when variable is not private 
-        '''
-        self.excluded_parameters = [
-            'DESCRIPTION', 'CELLBASE_VERSION', 'FILE', 'CELLBASE_HOST', 'DEFAULT_FILE_POSITION_SIZE_BITS', 'RESUME',
-            'INPUT_COLUMNS',
-            'COHORT2', 'COHORT1', 'SCORE_NAME', 'STATS_SKIP_VALUE', 'FLAGSTATS_SKIP_VALUE', 'FASTQC_METRICS_SKIP_VALUE',
-            'HS_METRICS_SKIP_VALUE'
-        ]
-
-    def read_yaml(self):
-        yaml_file = open("opencga-app/app/misc/clients/wsclient/config.yaml", 'r')
-        yaml_content = yaml.load(yaml_file, Loader=yaml.FullLoader)
-        options = yaml_content["options"]
-        if "ignore_types" in options.keys():
-            self.ignore_types = options["ignore_types"]
-        if "parser_package" in options.keys():
-            self.parser_package = options["parser_package"]
-        if "server_url" in options.keys():
-            self.server_url = options["server_url"]
-        self.version = requests.get(
-            self.server_url + '/webservices/rest/v2/meta/about'
-        ).json()['responses'][0]['results'][0]['Version'].split('-')[0]
-
-        if "cli_output_dir" in options.keys():
-            self.output_dir = options["cli_output_dir"]
-        if "options_output_dir" in options.keys():
-            self.options_output_dir = options["options_output_dir"]
-        if "executors_output_dir" in options.keys():
-            self.executors_output_dir = options["executors_output_dir"]
-        if "executors_package" in options.keys():
-            self.executors_package = options["executors_package"]
-        if "options_package" in options.keys():
-            self.options_package = options["options_package"]
-        if "api" in yaml_content.keys():
-            for categories in yaml_content["api"].items():
-                category, data = categories
-                if "command_name" in data.keys():
-                    self.command_names[category] = data["command_name"]
-                else:
-                    self.command_names[category] = category.lower()
-                if "shortcuts" in data.keys():
-                    self.shortcuts = data["shortcuts"]
-                if "extended" in data.keys() and data["extended"] == True:
-                    self.extended_classes.append(data["key"])
-                if not data["ignore"]:
-                    self.categories[category] = data["key"]
-                if "analysis" in data.keys() and data["analysis"]:
-                    if "command_name" in data.keys():
-                        self.analysis_commands.append('"' + data["command_name"].lower() + '"')
-                    else:
-                        self.analysis_commands.append('"' + category.lower() + '"')
-
-                if "operations" in data.keys() and data["operations"]:
-                    if "command_name" in data.keys():
-                        self.operations_commands.append('"' + data["command_name"].lower() + '"')
-                    else:
-                        self.operations_commands.append('"' + category.lower() + '"')
-
-                if "commands" in data.keys():
-                    command_exclusions = []
-                    subcommand_exclusions = []
-                    for commands in data["commands"].items():
-                        command, command_data = commands
-                        if "extended" in command_data.keys() and command_data["extended"]:
-                            self.extended_methods.append(command)
-                        if "ignore" in command_data.keys() and command_data["ignore"]:
-                            command_exclusions.append(command)
-                        if "subcommands" in command_data.keys():
-                            for subcommands in command_data["subcommands"].items():
-                                subcommand, subcommand_data = subcommands
-                                if subcommand_data["ignore"]:
-                                    subcommand_exclusions.append(subcommand)
-                            if len(subcommand_exclusions) > 0:
-                                self.exclude_command_params[category + "#" + command] = subcommand_exclusions
-                    if len(command_exclusions) > 0:
-                        self.exclude_commands[category] = command_exclusions
-        print(self.categories)
+        self.categories = {
+            'Users': 'User',
+            'Projects': 'Project',
+            'Studies': 'Study',
+            'Files': 'File',
+            'Jobs': 'Job',
+            'Samples': 'Sample',
+            'Individuals': 'Individual',
+            'Families': 'Family',
+            'Cohorts': 'Cohort',
+            'Disease Panels': 'DiseasePanel',
+            'Analysis - Alignment': 'Alignment',
+            'Analysis - Variant': 'Variant',
+            'Analysis - Clinical': 'Clinical',
+            'Operations - Variant Storage': 'VariantOperation',
+            'Meta': 'Meta',
+            'GA4GH': 'GA4GH',
+            'Admin': 'Admin'
+        }
 
     @staticmethod
     def get_autogenerated_message():
@@ -131,20 +58,11 @@ class RestClientGenerator(ABC):
             'WARNING: AUTOGENERATED CODE',
             '',
             'This code was generated by a tool.',
-            # 'Autogenerated on: ' + date_,
+            'Autogenerated on: ' + date_,
             '',
             'Manual changes to this file may cause unexpected behavior in your application.',
             'Manual changes to this file will be overwritten if the code is regenerated.'
         ]
-
-    def get_as_variable_name(self, attribute):
-        return attribute[0].lower() + attribute[1:]
-
-    def check_not_ignored_command(self, param, method_name):
-        res = True
-        if param in self.exclude_commands.keys() and method_name in self.exclude_commands[param]:
-            res = False
-        return res
 
     @staticmethod
     def get_category_name(category):
@@ -210,8 +128,12 @@ class RestClientGenerator(ABC):
         return params
 
     def get_parameter_description(self, parameter):
-        return self.parameters[parameter]['description'] if self.parameters[parameter]['description'].endswith(".") \
-            else self.parameters[parameter]['description'] + "."
+        if parameter not in self.parameters or 'description' not in self.parameters[parameter]:
+            return ''
+        if self.parameters[parameter]['description'].endswith("."):
+            return self.parameters[parameter]['description']
+        else:
+            return self.parameters[parameter]['description'] + "."
 
     def get_parameter_allowed_values(self, parameter):
         return self.parameters[parameter]['allowedValues']
@@ -301,37 +223,30 @@ class RestClientGenerator(ABC):
         pass
 
     def create_rest_clients(self):
+        for category in self.rest_api['categories']:
+            text = []
+            text.append(self.get_class_definition(category))
 
-        cats = list(self.categories.keys())
-        for category in self.json_resource:
-            if category["name"] in cats:
-                text = []
-                text.append(self.get_class_definition(category))
+            for endpoint in category['endpoints']:
+                # We update the dictionary of parameters of the endpoint
+                self.parameters = {}
+                for parameter in endpoint['parameters']:
+                    self.parameters[parameter['name'] if parameter['name'] != 'body' else 'data'] = parameter
 
-                for endpoint in category['endpoints']:
-                    # We update the dictionary of parameters of the endpoint
-                    self.parameters = {}
-                    # if self.get_endpoint_path(endpoint) != 'files/upload':
-                    for parameter in endpoint['parameters']:
-                        self.parameters[parameter['name'] if parameter['name'] != 'body' else 'data'] = parameter
+                # We extract the resources of the endpoint
+                self.parse_resources(category, endpoint)
 
-                    # We extract the resources of the endpoint
-                    self.parse_resources(category, endpoint)
+                text.append(self.get_method_definition(category, endpoint))
 
-                    text.append(self.get_method_definition(category, endpoint))
+            text.append(self.get_class_end())
+            # Now, we put in the first position the imports.
+            text.insert(0, self.get_imports())
 
-                text.append(self.get_class_end())
-                # Now, we put in the first position the imports.
-                text.insert(0, self.get_imports())
-
-                # Choose the file name to be created
-                file_name = self.get_file_name(category)
-                self.LOG('Creating ' + os.path.join(self.output_dir, file_name) + '...')
-                with open(os.path.join(self.output_dir, file_name), 'w') as fhand:
-                    fhand.write('\n'.join(text))
-
-    def LOG(self, log):
-        sys.stderr.write(str(log) + '\n')
+            # Choose the file name to be created
+            file_name = self.get_file_name(category)
+            sys.stderr.write('Creating ' + os.path.join(self.output_dir, file_name) + '...\n')
+            with open(os.path.join(self.output_dir, file_name), 'w') as fhand:
+                fhand.write('\n'.join(text))
 
     def parse_resources(self, category, endpoint):
         if endpoint['path'] == '/{apiVersion}/ga4gh/reads/{study}/{file}':
@@ -342,13 +257,9 @@ class RestClientGenerator(ABC):
             self.action = ''
         else:
             subpath = endpoint['path'].replace('/{apiVersion}/', '')
-            resources = re.findall(
-                '([a-zA-Z0-9\/]+)(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9]+)?(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9\/]+)',
-                subpath)
+            resources = re.findall('([a-zA-Z0-9\/]+)(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9]+)?(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9\/]+)', subpath)
             if resources:
-                [self.category, self.id1, self.subcategory, self.id2, self.action] = resources if type(
-                    resources[0]) != tuple else list(
-                    resources[0])
+                [self.category, self.id1, self.subcategory, self.id2, self.action] = resources if type(resources[0]) != tuple else list(resources[0])
 
             if self.id1.startswith("/"):
                 self.id1 = self.id1[2:-1]

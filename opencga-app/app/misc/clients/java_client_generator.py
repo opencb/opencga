@@ -1,30 +1,23 @@
 #!/usr/bin/env python3
 
 import argparse
-import os
 import re
-
 import sys
-
-currentdir = os.path.dirname(os.path.realpath(__file__))
-parentdir = os.path.dirname(currentdir)
-print(parentdir)
-sys.path.insert(0, parentdir)
-
-import rest_client_generator
+from datetime import date
+from rest_client_generator import RestClientGenerator
 
 
-class JavaClientGenerator(rest_client_generator.RestClientGenerator):
+class JavaClientGenerator(RestClientGenerator):
 
-    def __init__(self, output_dir):
-        super().__init__(output_dir)
+    def __init__(self, server_url, output_dir):
+        super().__init__(server_url, output_dir)
 
         self.java_types = set()
         self.type_imports = {
             'ObjectMap': 'org.opencb.commons.datastore.core.ObjectMap;'
         }
         self.ignore_types = [
-            'Integer', 'String', 'boolean', 'int', 'Boolean', 'Object'
+            'Integer', 'String', 'boolean', 'int', 'Boolean'
         ]
         self.param_types = {
             'string': 'String',
@@ -38,7 +31,7 @@ class JavaClientGenerator(rest_client_generator.RestClientGenerator):
     def get_imports(self):
         headers = []
         headers.append('/*')
-        headers.append('* Copyright 2015-2020 OpenCB')
+        headers.append('* Copyright 2015-' + str(date.today().year) + ' OpenCB')
         headers.append('*')
         headers.append('* Licensed under the Apache License, Version 2.0 (the "License");')
         headers.append('* you may not use this file except in compliance with the License.')
@@ -96,8 +89,7 @@ class JavaClientGenerator(rest_client_generator.RestClientGenerator):
         text.append(' */')
         text.append('public class {}Client extends AbstractParentClient {{'.format(self.categories[self.get_category_name(category)]))
         text.append('')
-        text.append('{}public {}Client(String token, ClientConfiguration configuration) {{'.format(' ' * 4, self.categories[
-                    self.get_category_name(category)]))
+        text.append('{}public {}Client(String token, ClientConfiguration configuration) {{'.format(' ' * 4, self.categories[self.get_category_name(category)]))
         text.append('{}super(token, configuration);'.format(' ' * 8))
         text.append('{}}}'.format(' ' * 4))
         return '\n'.join(text)
@@ -124,7 +116,7 @@ class JavaClientGenerator(rest_client_generator.RestClientGenerator):
             if parameter == 'params':
                 for parameter in self.get_optional_parameters(endpoint):
                     append_comment_text(text, '{}* {} {}: {}'.format(' ' * 5, ' ' * 5, parameter,
-                                                                     self.get_parameter_description(parameter)), 5, 12)
+                                                                        self.get_parameter_description(parameter)), 5, 12)
 
         append_comment_text(text, '{}* @return a RestResponse object.'.format(' ' * 5), 5)
         append_comment_text(text, '{}* @throws ClientException ClientException if there is any server error.'.format(' ' * 5), 5)
@@ -147,13 +139,13 @@ class JavaClientGenerator(rest_client_generator.RestClientGenerator):
             append_text(text, '{}params.put("body", data);'.format(' ' * 8), 8)
 
         append_text(text, '{}return execute("{}", {}, {}, {}, {}, params, {}, {}.class);'.format((' ' * 8),
-                                                                                                 self.get_endpoint_category(),
-                                                                                                 self.get_endpoint_id1() if self.get_endpoint_id1() else 'null',
-                                                                                                 '"' + self.get_endpoint_subcategory() + '"' if self.get_endpoint_subcategory() else 'null',
-                                                                                                 self.get_endpoint_id2() if self.get_endpoint_id2() else 'null',
-                                                                                                 '"' + self.get_endpoint_action() + '"' if self.get_endpoint_action() else 'null',
-                                                                                                 self.get_endpoint_method(endpoint),
-                                                                                                 response_type), 8)
+            self.get_endpoint_category(),
+            self.get_endpoint_id1() if self.get_endpoint_id1() else 'null',
+            '"' + self.get_endpoint_subcategory() + '"' if self.get_endpoint_subcategory() else 'null',
+            self.get_endpoint_id2() if self.get_endpoint_id2() else 'null',
+            '"' + self.get_endpoint_action() + '"' if self.get_endpoint_action() else 'null',
+            self.get_endpoint_method(endpoint),
+            response_type), 8)
 
         text.append('{}}}'.format(' ' * 4))
         return '\n'.join(text)
@@ -281,6 +273,7 @@ def _setup_argparse():
     desc = 'This script creates automatically all RestClients files'
     parser = argparse.ArgumentParser(description=desc)
 
+    parser.add_argument('server_url', help='server URL')
     parser.add_argument('output_dir', help='output directory')
     args = parser.parse_args()
     return args
@@ -290,7 +283,7 @@ def main():
     # Getting arg parameters
     args = _setup_argparse()
 
-    client_generator = JavaClientGenerator(args.output_dir)
+    client_generator = JavaClientGenerator(args.server_url, args.output_dir)
     client_generator.create_rest_clients()
 
 
