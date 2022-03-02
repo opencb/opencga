@@ -71,11 +71,15 @@ public enum VariantField {
     ANNOTATION_GENE_EXPRESSION(ANNOTATION, "annotation.geneExpression"),
     ANNOTATION_GENE_TRAIT_ASSOCIATION(ANNOTATION, "annotation.geneTraitAssociation"),
     ANNOTATION_GENE_DRUG_INTERACTION(ANNOTATION, "annotation.geneDrugInteraction"),
-    ANNOTATION_VARIANT_TRAIT_ASSOCIATION(ANNOTATION, "annotation.variantTraitAssociation"),
+//    ANNOTATION_VARIANT_TRAIT_ASSOCIATION(ANNOTATION, "annotation.variantTraitAssociation"),
     ANNOTATION_TRAIT_ASSOCIATION(ANNOTATION, "annotation.traitAssociation"),
     ANNOTATION_FUNCTIONAL_SCORE(ANNOTATION, "annotation.functionalScore"),
     ANNOTATION_REPEAT(ANNOTATION, "annotation.repeat"),
     ANNOTATION_DRUGS(ANNOTATION, "annotation.drugs"),
+    ANNOTATION_CANCER_HOTSPOTS(ANNOTATION, "annotation.cancerHotspots"),
+    ANNOTATION_geneCancerAssociations(ANNOTATION, "annotation.geneCancerAssociations"),
+    ANNOTATION_geneConstraints(ANNOTATION, "annotation.geneConstraints"),
+    ANNOTATION_geneMirnaTargets(ANNOTATION, "annotation.geneMirnaTargets"),
     ANNOTATION_ADDITIONAL_ATTRIBUTES(ANNOTATION, "annotation.additionalAttributes");
 
     private static final Set<VariantField> ALL_FIELDS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(values())));
