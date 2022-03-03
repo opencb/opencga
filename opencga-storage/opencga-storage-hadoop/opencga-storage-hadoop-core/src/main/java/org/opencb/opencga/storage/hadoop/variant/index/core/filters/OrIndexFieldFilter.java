@@ -34,4 +34,13 @@ public class OrIndexFieldFilter extends IndexFieldFilter {
     public boolean isExactFilter() {
         return exactFilter;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("OrIndexFieldFilter{");
+        sb.append("exact:").append(exactFilter).append(", ");
+        sb.append("filters:").append(filters);
+        sb.append('}');
+        return sb.toString();
+    }
 }
