@@ -185,7 +185,15 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 String token = catalogManager.getUserManager().loginAsAdmin(commandOptions.commonOptions.adminPassword).getToken();
                 catalogManager.deleteCatalogDB(token);
             } else {
-                throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " already exists");
+                // Check admin password ...
+                try {
+                    catalogManager.getUserManager().loginAsAdmin(commandOptions.commonOptions.adminPassword);
+                    logger.info("A database called " + catalogManager.getCatalogDatabase() + " already exists");
+                    return;
+                } catch (CatalogException e) {
+                    throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " with a different admin"
+                            + " password already exists. If you are aware of that installation, please delete it first.");
+                }
             }
         }
 
