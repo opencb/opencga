@@ -137,26 +137,33 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void create() throws CatalogException, IOException {
-        setCatalogDatabaseCredentials(usersCommandOptions.createUserCommandOptions.databaseHost,
-                usersCommandOptions.createUserCommandOptions.prefix, usersCommandOptions.createUserCommandOptions.databaseUser,
-                usersCommandOptions.createUserCommandOptions.databasePassword,
-                usersCommandOptions.createUserCommandOptions.commonOptions.adminPassword);
+    private void create() throws CatalogException {
+        AdminCliOptionsParser.CreateUserCommandOptions commandOptions = usersCommandOptions.createUserCommandOptions;
+
+        setCatalogDatabaseCredentials(commandOptions.databaseHost, commandOptions.prefix, commandOptions.databaseUser,
+                commandOptions.databasePassword, commandOptions.commonOptions.adminPassword);
 
         long userQuota = 0;
-        if (usersCommandOptions.createUserCommandOptions.userQuota != null) {
-            userQuota = usersCommandOptions.createUserCommandOptions.userQuota;
+        if (commandOptions.userQuota != null) {
+            userQuota = commandOptions.userQuota;
         }
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             String token = catalogManager.getUserManager()
-                    .loginAsAdmin(usersCommandOptions.createUserCommandOptions.commonOptions.adminPassword).getToken();
+                    .loginAsAdmin(commandOptions.commonOptions.adminPassword).getToken();
 
-            User user = catalogManager.getUserManager().create(usersCommandOptions.createUserCommandOptions.userId,
-                    usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
-                    usersCommandOptions.createUserCommandOptions.userPassword,
-                    usersCommandOptions.createUserCommandOptions.userOrganization, userQuota,
-                    usersCommandOptions.createUserCommandOptions.type, token).first();
+            User user;
+            try {
+                user = catalogManager.getUserManager().create(commandOptions.userId, commandOptions.userName, commandOptions.userEmail,
+                        commandOptions.userPassword, commandOptions.userOrganization, userQuota, commandOptions.type, token).first();
+            } catch (CatalogException e) {
+                if (e.getMessage().contains("already exists")) {
+                    logger.warn(e.getMessage());
+                    return;
+                } else {
+                    throw e;
+                }
+            }
 
             System.out.println("The user has been successfully created: " + user.toString() + "\n");
         }

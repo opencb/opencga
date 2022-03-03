@@ -188,7 +188,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 // Check admin password ...
                 try {
                     catalogManager.getUserManager().loginAsAdmin(commandOptions.commonOptions.adminPassword);
-                    logger.info("A database called " + catalogManager.getCatalogDatabase() + " already exists");
+                    logger.warn("A database called " + catalogManager.getCatalogDatabase() + " already exists");
                     return;
                 } catch (CatalogException e) {
                     throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " with a different admin"
