@@ -313,14 +313,18 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public Collection<String> stats(String study, List<String> cohorts, String region, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
 
-        return secureOperation(VariantStatsAnalysis.ID, study, params, token, engine -> {
+        return secureOperation(VariantStatsIndexOperationTool.ID, study, params, token, engine -> {
             return new VariantStatsOperationManager(this, engine)
                     .stats(getStudyFqn(study, token), cohorts, region, params, token);
         });
     }
 
-    public void deleteStats(List<String> cohorts, String studyId, String token) {
-        throw new UnsupportedOperationException();
+    public Collection<String> deleteStats(String study, List<String> cohorts, ObjectMap params, String token)
+            throws StorageEngineException, CatalogException {
+        return secureOperation(VariantStatsDeleteOperationTool.ID, study, params, token, engine -> {
+            return new VariantStatsOperationManager(this, engine)
+                    .delete(getStudyFqn(study, token), cohorts, params, token);
+        });
     }
 
     public List<VariantScoreMetadata> listVariantScores(String study, String token) throws CatalogException, StorageEngineException {

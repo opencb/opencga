@@ -520,6 +520,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
+    public void deleteStats(String study, Collection<String> cohorts, ObjectMap params) throws StorageEngineException {
+        throw new UnsupportedOperationException("Unsupported deleteStats");
+    }
+
     /**
      * Build the sample index. For advanced users only.
      * SampleIndex is built while loading data, so this operation should be executed only to rebuild the index,

@@ -38,6 +38,7 @@ public class OperationsCommandOptions {
     public static final String VARIANT_INDEX_LAUNCHER = "variant-index-launcher";
 
     public static final String VARIANT_STATS_INDEX = "variant-stats-index";
+    public static final String VARIANT_STATS_DELETE = "variant-stats-delete";
 
     public static final String VARIANT_SECONDARY_INDEX = "variant-secondary-index";
     public static final String VARIANT_SECONDARY_INDEX_DELETE = "variant-secondary-index-delete";
@@ -65,6 +66,7 @@ public class OperationsCommandOptions {
     public final VariantIndexLauncherCommandOptions variantIndexLauncher;
 
     public final VariantStatsIndexCommandOptions variantStatsIndex;
+    public final VariantStatsDeleteCommandOptions variantStatsDelete;
 
     public final VariantSecondaryIndexCommandOptions variantSecondaryIndex;
     public final VariantSecondaryIndexDeleteCommandOptions variantSecondaryIndexDelete;
@@ -111,6 +113,7 @@ public class OperationsCommandOptions {
         variantSampleDelete = new VariantSampleDeleteCommandOptions();
         variantIndexLauncher = new VariantIndexLauncherCommandOptions();
         variantStatsIndex = new VariantStatsIndexCommandOptions();
+        variantStatsDelete = new VariantStatsDeleteCommandOptions();
         variantSecondaryIndex = new VariantSecondaryIndexCommandOptions();
         variantSecondaryIndexDelete = new VariantSecondaryIndexDeleteCommandOptions();
         variantAnnotation = new VariantAnnotationIndexCommandOptions();
@@ -293,6 +296,22 @@ public class OperationsCommandOptions {
         @Parameter(names = {"--resume"}, description = "Resume a previously failed stats calculation", arity = 0)
         public boolean resume;
 
+    }
+
+    @Parameters(commandNames = {VARIANT_STATS_DELETE}, commandDescription = VariantStatsDeleteOperationTool.DESCRIPTION)
+    public class VariantStatsDeleteCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+
+        @Parameter(names = {"--cohort"}, description = "Cohort Ids for the cohorts to be calculated.")
+        public List<String> cohort;
+
+        @Parameter(names = {"--force"}, description = "Force variant stats delete", arity = 0)
+        public boolean force;
     }
 
     @Parameters(commandNames = {VARIANT_SECONDARY_INDEX}, commandDescription = "Creates a secondary index using a search engine")

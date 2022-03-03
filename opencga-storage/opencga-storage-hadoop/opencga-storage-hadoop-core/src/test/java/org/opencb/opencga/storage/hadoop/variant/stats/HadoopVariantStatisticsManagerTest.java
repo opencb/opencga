@@ -42,10 +42,7 @@ import org.opencb.opencga.storage.hadoop.variant.analysis.julie.JulieToolDriver;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -59,6 +56,38 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
     public void before() throws Exception {
         super.before();
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+    }
+
+    @Override
+    public void calculateStatsMultiCohortsTest() throws Exception {
+        super.calculateStatsMultiCohortsTest();
+
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+        //delete all stats
+        List<String> cohorts = new ArrayList<>();
+        metadataManager.getCalculatedCohorts(studyMetadata.getId()).forEach(c -> cohorts.add(c.getName()));
+        variantStorageEngine.deleteStats(studyMetadata.getName(), cohorts, new ObjectMap());
+
+        checkCohorts(dbAdaptor, studyMetadata);
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+
+        super.calculateStatsMultiCohortsTest();
+    }
+
+    @Override
+    public void calculateStatsSeparatedCohortsTest() throws Exception {
+        super.calculateStatsSeparatedCohortsTest();
+
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+        //delete all stats
+        List<String> cohorts = new ArrayList<>();
+        metadataManager.getCalculatedCohorts(studyMetadata.getId()).forEach(c -> cohorts.add(c.getName()));
+        variantStorageEngine.deleteStats(studyMetadata.getName(), cohorts, new ObjectMap());
+
+        checkCohorts(dbAdaptor, studyMetadata);
+        VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
+
+        super.calculateStatsSeparatedCohortsTest();
     }
 
     @After

@@ -37,6 +37,12 @@ public class Cohort extends Annotable {
     private String id;
 
     /**
+     * Cohort name parameter.
+     *
+     */
+    private String name;
+
+    /**
      * Global unique ID at the whole OpenCGA installation. This is automatically created during the Cohort creation and cannot be changed.
      *
      * @apiNote Internal, Unique, Immutable
@@ -98,22 +104,23 @@ public class Cohort extends Annotable {
     public Cohort() {
     }
 
-    public Cohort(String id, Enums.CohortType type, String creationDate, String modificationDate, String description, List<Sample> samples,
-                  int release, Map<String, Object> attributes) {
-        this(id, type, creationDate, modificationDate, description, samples, 0, Collections.emptyList(), release, new Status(), null,
-                attributes);
+    public Cohort(String id, String name, Enums.CohortType type, String creationDate, String modificationDate, String description,
+                  List<Sample> samples, int release, Map<String, Object> attributes) {
+        this(id, name, type, creationDate, modificationDate, description, samples, 0, Collections.emptyList(), release, new Status(),
+                null, attributes);
     }
 
-    public Cohort(String id, Enums.CohortType type, String creationDate, String modificationDate, String description, List<Sample> samples,
-                  List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
-        this(id, type, creationDate, modificationDate, description, samples, 0, annotationSetList, release, new Status(), null,
-                attributes);
+    public Cohort(String id, String name, Enums.CohortType type, String creationDate, String modificationDate, String description,
+                  List<Sample> samples, List<AnnotationSet> annotationSetList, int release, Map<String, Object> attributes) {
+        this(id, name, type, creationDate, modificationDate, description, samples, 0, annotationSetList, release, new Status(),
+                null, attributes);
     }
 
-    public Cohort(String id, Enums.CohortType type, String creationDate, String modificationDate, String description, List<Sample> samples,
-                  int numSamples, List<AnnotationSet> annotationSets, int release, Status status, CohortInternal internal,
-                  Map<String, Object> attributes) {
+    public Cohort(String id, String name, Enums.CohortType type, String creationDate, String modificationDate, String description,
+                  List<Sample> samples, int numSamples, List<AnnotationSet> annotationSets, int release, Status status,
+                  CohortInternal internal, Map<String, Object> attributes) {
         this.id = id;
+        this.name = name;
         this.type = type;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
@@ -131,6 +138,7 @@ public class Cohort extends Annotable {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Cohort{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -204,6 +212,15 @@ public class Cohort extends Annotable {
     @Override
     public Cohort setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Cohort setName(String name) {
+        this.name = name;
         return this;
     }
 

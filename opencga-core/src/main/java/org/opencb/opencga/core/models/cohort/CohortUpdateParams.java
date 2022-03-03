@@ -34,6 +34,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 public class CohortUpdateParams {
 
     private String id;
+    private String name;
     private Enums.CohortType type;
     private String description;
     private String creationDate;
@@ -46,10 +47,11 @@ public class CohortUpdateParams {
     public CohortUpdateParams() {
     }
 
-    public CohortUpdateParams(String id, Enums.CohortType type, String description, String creationDate, String modificationDate,
-                              List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets, Map<String, Object> attributes,
-                              StatusParams status) {
+    public CohortUpdateParams(String id, String name, Enums.CohortType type, String description, String creationDate,
+                              String modificationDate, List<SampleReferenceParam> samples, List<AnnotationSet> annotationSets,
+                              Map<String, Object> attributes, StatusParams status) {
         this.id = id;
+        this.name = name;
         this.type = type;
         this.description = description;
         this.creationDate = creationDate;
@@ -77,17 +79,18 @@ public class CohortUpdateParams {
     }
 
     public Cohort toCohort() {
-        return new Cohort(id, type, creationDate, modificationDate, description,
+        return new Cohort(id, name, type, creationDate, modificationDate,
+                description,
                 samples != null ?
                         samples.stream().map(s -> new Sample().setId(s.getId()).setUuid(s.getUuid())).collect(Collectors.toList())
-                        : null,
-                samples != null ? samples.size() : 0, annotationSets, 1, status.toStatus(), new CohortInternal(), attributes);
+                        : null, samples != null ? samples.size() : 0, annotationSets, 1, status.toStatus(), new CohortInternal(), attributes);
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CohortUpdateParams{");
         sb.append("id='").append(id).append('\'');
+        sb.append(", name=").append(name);
         sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -106,6 +109,15 @@ public class CohortUpdateParams {
 
     public CohortUpdateParams setId(String id) {
         this.id = id;
+        return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public CohortUpdateParams setName(String name) {
+        this.name = name;
         return this;
     }
 

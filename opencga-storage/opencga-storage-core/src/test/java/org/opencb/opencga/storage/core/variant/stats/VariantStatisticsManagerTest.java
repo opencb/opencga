@@ -27,8 +27,8 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.VariantNormalizer;
 import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -37,7 +37,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
 import java.io.IOException;
@@ -107,7 +107,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         cohorts.put("cohort2", cohort2);
 
         //Calculate stats
-        stats(options, studyMetadata, cohorts, outputUri.resolve("cohort1.cohort2.stats"));
+        stats(options, studyMetadata.getName(), cohorts, outputUri.resolve("cohort1.cohort2.stats"));
 
         checkCohorts(dbAdaptor, studyMetadata);
     }
@@ -134,7 +134,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         cohorts.put("cohort1", cohort1);
 
         //Calculate stats for cohort1
-        studyMetadata = stats(options, studyMetadata, cohorts, outputUri.resolve("cohort1.stats"));
+        stats(options, studyMetadata.getName(), cohorts, outputUri.resolve("cohort1.stats"));
 
         CohortMetadata cohort1Metadata = metadataManager.getCohortMetadata(studyMetadata.getId(), "cohort1");
 //        assertThat(studyMetadata.getCalculatedStats(), hasItem(cohort1Id));
@@ -151,7 +151,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         cohorts.put("cohort2", cohort2);
 
         //Calculate stats for cohort2
-        studyMetadata = stats(options, studyMetadata, cohorts, outputUri.resolve("cohort2.stats"));
+        stats(options, studyMetadata.getName(), cohorts, outputUri.resolve("cohort2.stats"));
 
         cohort1Metadata = metadataManager.getCohortMetadata(studyMetadata.getId(), "cohort1");
         CohortMetadata cohort2Metadata = metadataManager.getCohortMetadata(studyMetadata.getId(), "cohort1");
@@ -163,15 +163,14 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         //Try to recalculate stats for cohort2. Will fail
         studyMetadata = metadataManager.getStudyMetadata(studyName);
         thrown.expect(StorageEngineException.class);
-        stats(options, studyMetadata, cohorts, outputUri.resolve("cohort2.stats"));
+        stats(options, studyMetadata.getName(), cohorts, outputUri.resolve("cohort2.stats"));
 
     }
 
-    public StudyMetadata stats(QueryOptions options, StudyMetadata studyMetadata, Map<String, Set<String>> cohorts,
-                                    URI output) throws IOException, StorageEngineException {
+    public void stats(QueryOptions options, String study, Map<String, Set<String>> cohorts,
+                      URI output) throws IOException, StorageEngineException {
         options.put(DefaultVariantStatisticsManager.OUTPUT, output.toString());
-        variantStorageEngine.calculateStats(studyMetadata.getName(), cohorts, options);
-        return metadataManager.getStudyMetadata(studyMetadata.getId());
+        variantStorageEngine.calculateStats(study, cohorts, options);
     }
 
     public static StudyMetadata stats(VariantStatisticsManager vsm, QueryOptions options, StudyMetadata studyMetadata,
@@ -194,12 +193,12 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         return dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
     }
 
-    static void checkCohorts(VariantDBAdaptor dbAdaptor, StudyMetadata studyMetadata) {
+    protected static void checkCohorts(VariantDBAdaptor dbAdaptor, StudyMetadata studyMetadata) {
         Map<String, CohortMetadata> cohorts = new HashMap<>();
         dbAdaptor.getMetadataManager().cohortIterator(studyMetadata.getId()).forEachRemaining(cohort -> {
             cohorts.put(cohort.getName(), cohort);
         });
-        for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "0/0"), null);
+        for (VariantDBIterator iterator = dbAdaptor.iterator(new VariantQuery().unknownGenotype("0/0").includeSampleAll(), null);
              iterator.hasNext(); ) {
             Variant variant = iterator.next();
             for (StudyEntry studyEntry : variant.getStudies()) {

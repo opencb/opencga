@@ -165,6 +165,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response searchCohorts(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.COHORT_IDS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.COHORT_NAMES_DESCRIPTION) @QueryParam(ParamConstants.COHORT_NAME_PARAM) String name,
             @ApiParam(value = ParamConstants.COHORT_UUIDS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_UUID_PARAM) String uuid,
             @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TYPE_PARAM) Enums.CohortType type,
             @ApiParam(value = ParamConstants.COHORT_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_CREATION_DATE_PARAM) String creationDate,
@@ -191,6 +192,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response distinct(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.COHORT_IDS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_ID_PARAM) String id,
+            @ApiParam(value = ParamConstants.COHORT_NAMES_DESCRIPTION) @QueryParam(ParamConstants.COHORT_NAME_PARAM) String name,
             @ApiParam(value = ParamConstants.COHORT_UUIDS_DESCRIPTION) @QueryParam(ParamConstants.COHORT_UUID_PARAM) String uuid,
             @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_TYPE_PARAM) Enums.CohortType type,
             @ApiParam(value = ParamConstants.COHORT_CREATION_DATE_DESCRIPTION) @QueryParam(ParamConstants.COHORT_CREATION_DATE_PARAM) String creationDate,

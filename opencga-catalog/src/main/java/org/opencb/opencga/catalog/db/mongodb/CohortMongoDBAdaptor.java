@@ -442,7 +442,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
+        String[] acceptedParams = {NAME.key(), QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
@@ -918,6 +918,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                         break;
                     case UUID:
                     case ID:
+                    case NAME:
                     case TYPE:
                     case RELEASE:
                     case NUM_SAMPLES:

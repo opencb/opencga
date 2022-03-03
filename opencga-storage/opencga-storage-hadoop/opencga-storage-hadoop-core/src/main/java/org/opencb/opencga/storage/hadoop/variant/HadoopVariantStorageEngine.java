@@ -91,7 +91,10 @@ import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexMendelianError
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexLoader;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDeleteHBaseColumnTask;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexLoader;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
@@ -319,6 +322,67 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     protected VariantExporter newVariantExporter(VariantMetadataFactory metadataFactory) throws StorageEngineException {
         return new HadoopVariantExporter(this, metadataFactory, getMRExecutor(), ioConnectorProvider);
+    }
+
+    @Override
+    public void deleteStats(String study, Collection<String> cohorts, ObjectMap params) throws StorageEngineException {
+        ObjectMap options = getMergedOptions(params);
+        // Remove unneeded values that might leak into options.
+        options.remove("sample");
+        options.remove("file");
+        boolean force = options.getBoolean(FORCE.key());
+
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        final int studyId = metadataManager.getStudyId(study);
+        List<Integer> cohortIds = new ArrayList<>(cohorts.size());
+        List<String> cohortsInWrongStatus = new ArrayList<>(cohorts.size());
+        for (String cohort : cohorts) {
+            int cohortId = metadataManager.getCohortIdOrFail(studyId, cohort);
+            cohortIds.add(cohortId);
+            TaskMetadata.Status status = metadataManager.getCohortMetadata(studyId, cohortId).getStatsStatus();
+            if (status != TaskMetadata.Status.READY) {
+                if (force) {
+                    logger.warn("Delete variant stats from cohort '{}' in status '{}'", cohort, status);
+                } else {
+                    cohortsInWrongStatus.add(cohort);
+                }
+            }
+        }
+        if (!cohortsInWrongStatus.isEmpty()) {
+            throw new StorageEngineException("Unable to delete variant stats from cohorts " + cohortsInWrongStatus);
+        }
+
+        options.put(DeleteHBaseColumnDriver.TWO_PHASES_PARAM, true);
+        options.put(DeleteHBaseColumnDriver.DELETE_HBASE_COLUMN_TASK_CLASS, VariantsTableDeleteColumnTask.class.getName());
+
+        try {
+            logger.info("------------------------------------------------------");
+            logger.info("Deleting variant stats from {} cohorts", cohortIds.size());
+            logger.info("------------------------------------------------------");
+
+            StopWatch stopWatch = new StopWatch().start();
+            List<String> columns = new ArrayList<>(VariantPhoenixSchema.COHORT_STATS_COLUMNS_PER_COHORT * cohortIds.size());
+            for (Integer cohortId : cohortIds) {
+                VariantPhoenixSchema.getStatsColumns(studyId, cohortId)
+                        .stream()
+                        .map(PhoenixHelper.Column::fullColumn)
+                        .forEach(columns::add);
+            }
+
+            String[] deleteFromVariantsArgs = DeleteHBaseColumnDriver.buildArgs(getVariantTableName(), columns, options);
+            getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromVariantsArgs, "Delete variant stats from variants table");
+
+            logger.info("Total time: {}", TimeUtils.durationToString(stopWatch.now(TimeUnit.MILLISECONDS)));
+
+            for (Integer cohortId : cohortIds) {
+                metadataManager.updateCohortMetadata(studyId, cohortId, c -> {
+                    c.setStatsStatus(TaskMetadata.Status.NONE);
+                    return c;
+                });
+            }
+        } catch (Exception e) {
+            throw new StorageEngineException("Error removing variant stats", e);
+        }
     }
 
     @Override

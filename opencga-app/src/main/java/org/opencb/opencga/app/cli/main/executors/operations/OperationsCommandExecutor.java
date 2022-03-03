@@ -66,6 +66,9 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
             case VARIANT_STATS_INDEX:
                 queryResponse = variantStatsIndex();
                 break;
+            case VARIANT_STATS_DELETE:
+                queryResponse = variantStatsDelete();
+                break;
             case VARIANT_SECONDARY_INDEX:
                 queryResponse = variantSecondaryIndex();
                 break;
@@ -231,6 +234,17 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                         cliOptions.resume,
                         cliOptions.aggregated,
                         cliOptions.aggregationMappingFile), params);
+    }
+
+    private RestResponse<Job> variantStatsDelete() throws ClientException {
+        OperationsCommandOptions.VariantStatsDeleteCommandOptions cliOptions = operationsCommandOptions.variantStatsDelete;
+
+        ObjectMap params = getParams(cliOptions);
+
+        return openCGAClient.getVariantOperationClient().deleteVariantStats(
+                new VariantStatsDeleteParams(
+                        cliOptions.cohort,
+                        cliOptions.force), params);
     }
 
     private RestResponse<Job> variantSecondaryIndex() throws ClientException {
