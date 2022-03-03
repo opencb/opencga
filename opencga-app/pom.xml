@@ -331,6 +331,11 @@
                                     <arg value="${project.basedir}/../opencga-client/src/main/R"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-client/src/main/javascript"/>
+                                    <arg value="${build.dir}/clients"/>
+                                </exec>
 
                                 <echo>Copying configuration files</echo>
                                 <exec executable="cp">
@@ -413,6 +418,7 @@
                                     <arg value="${build.dir}/libs"/>
                                     <arg value="${build.dir}/clients/python"/>
                                     <arg value="${build.dir}/clients/R"/>
+                                    <arg value="${build.dir}/clients/javascript"/>
                                     <arg value="${build.dir}/LICENSE"/>
                                     <arg value="${build.dir}/README.md"/>
                                     <arg value="${build.dir}/${opencga.client.dir}"/>
