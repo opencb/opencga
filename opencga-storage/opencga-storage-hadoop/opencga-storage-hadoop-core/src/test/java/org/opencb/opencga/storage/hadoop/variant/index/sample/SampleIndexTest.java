@@ -261,6 +261,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
                     Compression.Algorithm.NONE);
 
             ObjectMap options = new ObjectMap()
+                    .append(SampleIndexDriver.SAMPLE_INDEX_VERSION, version)
                     .append(SampleIndexDriver.OUTPUT, copy)
                     .append(SampleIndexDriver.SAMPLES, "all");
             new TestMRExecutor().run(SampleIndexDriver.class, SampleIndexDriver.buildArgs(

@@ -122,7 +122,7 @@ public class SampleIndexSchemaFactory {
 
     private VariantQueryException sampleIndexNotFound(Collection<?> samples) {
         if (samples.size() == 1) {
-            throw new VariantQueryException("Not found valid sample index for sample " + samples.iterator().next());
+            throw new VariantQueryException("Not found valid sample index for sample '" + samples.iterator().next() + "'");
         } else {
             throw new VariantQueryException("Not found valid sample index for samples " + samples);
         }

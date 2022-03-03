@@ -497,7 +497,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             for (Integer sampleId : metadataManager.getSampleIdsFromFileId(getStudyId(), getFileId())) {
                 // Worth to check first to avoid too many updates in scenarios like 1000G
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), sampleId);
-                if (sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != Status.READY || !sampleMetadata.hasSampleIndexStatus()) {
+                if (sampleMetadata.getSampleIndexStatus(sampleIndexVersion) != Status.READY) {
                     metadataManager.updateSampleMetadata(getStudyId(), sampleId,
                             s -> s.setSampleIndexStatus(Status.READY, sampleIndexVersion));
                 }

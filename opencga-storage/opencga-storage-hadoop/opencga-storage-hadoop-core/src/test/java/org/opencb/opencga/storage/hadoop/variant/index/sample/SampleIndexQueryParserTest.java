@@ -16,6 +16,7 @@ import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.variant.VariantAnnotationConstants;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -109,6 +110,15 @@ public class SampleIndexQueryParserTest {
             studyMetadata.getAttributes().put(VariantStorageOptions.LOADED_GENOTYPES.key(), "./.,0/0,0/1,1/1");
             return studyMetadata;
         });
+
+        Iterator<SampleMetadata> it = mm.sampleMetadataIterator(studyId);
+        while (it.hasNext()) {
+            SampleMetadata sm = it.next();
+            mm.updateSampleMetadata(studyId, sm.getId(), sampleMetadata -> {
+                sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.READY, 1)
+                        .setSampleIndexAnnotationStatus(TaskMetadata.Status.READY, 1);
+            });
+        }
     }
 
     private SampleIndexQuery parse(final Query query) {
