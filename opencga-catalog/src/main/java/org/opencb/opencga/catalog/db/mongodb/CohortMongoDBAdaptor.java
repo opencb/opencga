@@ -458,6 +458,9 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     OpenCGAResult<Cohort> privateDelete(ClientSession clientSession, Document cohortDocument) throws CatalogDBException {
         long tmpStartTime = startQuery();
 
+        // Remove private _id from the document to avoid issues with mongo in case a document already exists
+        cohortDocument.remove("_id");
+
         String cohortId = cohortDocument.getString(QueryParams.ID.key());
         long cohortUid = cohortDocument.getLong(PRIVATE_UID);
         long studyUid = cohortDocument.getLong(PRIVATE_STUDY_UID);
