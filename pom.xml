@@ -39,7 +39,7 @@
         <module>opencga-client</module>
         <module>opencga-server</module>
         <module>opencga-clinical</module>
-        <!--        <module>opencga-test</module>-->
+        <module>opencga-test</module>
     </modules>
 
     <properties>
