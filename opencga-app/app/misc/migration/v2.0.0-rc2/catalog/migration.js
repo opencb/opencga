@@ -184,13 +184,15 @@ migrateCollection("clinical", {}, {proband: 1, family: 1}, function(bulk, doc) {
 // #1629 - Fix fileIds reference
 var sampleFileMap = {};
 db.file.find({samples:{$ne:[]}}, {id:1, samples:1}).forEach(function(doc) {
-    doc.samples.forEach(function(sample) {
-        var sampleUid = Number(sample['uid']);
-        if (!(sampleUid in sampleFileMap)) {
-            sampleFileMap[sampleUid] = [];
-        }
-        sampleFileMap[sampleUid].push(doc.id);
-    });
+    if (isNotEmptyArray(doc.samples)) {
+        doc.samples.forEach(function (sample) {
+            var sampleUid = Number(sample['uid']);
+            if (!(sampleUid in sampleFileMap)) {
+                sampleFileMap[sampleUid] = [];
+            }
+            sampleFileMap[sampleUid].push(doc.id);
+        });
+    }
 });
 
 migrateCollection("sample", {}, {}, function(bulk, doc) {
