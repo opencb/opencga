@@ -132,7 +132,11 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         }
 
         System.err.println();
-        PrintUtils.println(PrintUtils.format("Opencga commands:", PrintUtils.Color.GREEN));
+        if (!OpencgaMain.isShellMode()) {
+            PrintUtils.println(PrintUtils.format("Opencga options:", PrintUtils.Color.GREEN));
+        } else {
+            PrintUtils.println(PrintUtils.format("Opencga commands:", PrintUtils.Color.GREEN));
+        }
         for (Map.Entry entry : opencgaCommands.entrySet()) {
             PrintUtils.printCommandHelpFormattedString(entry.getKey().toString(), entry.getValue().toString());
         }
@@ -143,8 +147,8 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         h.put("login [user]", "Authenticates new user in OpenCGA");
         h.put("logout", "Logouts the current user from OpenCGA");
         if (!OpencgaMain.isShellMode()) {
-            h.put("host", "Set the host server to query data");
-            h.put("shell", "Interactive mode opencga shell");
+            h.put("--host", "Set the host server to query data");
+            h.put("--shell", "Interactive mode opencga shell");
         } else {
             h.put("use study <name>", "Sets the study to be used in the following commands");
             h.put("list studies", "Print available studies for user");

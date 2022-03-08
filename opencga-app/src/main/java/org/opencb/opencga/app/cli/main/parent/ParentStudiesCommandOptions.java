@@ -24,19 +24,19 @@ public class ParentStudiesCommandOptions {
 
     public JCommander jCommander;
     public CommonCommandOptions commonCommandOptions;
-    public TemplateUploadCommandOptions templateUploadCommandOptions;
-    public TemplateRunCommandOptions templateRunCommandOptions;
+    public TemplatesUploadCommandOptions templatesUploadCommandOptions;
+    public RunTemplatesCommandOptions templateRunCommandOptions;
 
     public ParentStudiesCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
-        this.templateUploadCommandOptions = new TemplateUploadCommandOptions();
-        this.templateRunCommandOptions = new TemplateRunCommandOptions();
+        this.templatesUploadCommandOptions = new TemplatesUploadCommandOptions();
+        this.templateRunCommandOptions = new RunTemplatesCommandOptions();
     }
 
-    @Parameters(commandNames = {"template-upload"}, commandDescription = "Upload template")
-    public class TemplateUploadCommandOptions {
+    @Parameters(commandNames = {"templates-upload"}, commandDescription = "Upload template")
+    public class TemplatesUploadCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
@@ -48,8 +48,8 @@ public class ParentStudiesCommandOptions {
         public String inputFile;
     }
 
-    @Parameters(commandNames = {"template-run"}, commandDescription = "Execute template")
-    public class TemplateRunCommandOptions {
+    @Parameters(commandNames = {"templates-run"}, commandDescription = "Execute template")
+    public class RunTemplatesCommandOptions {
 
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;

@@ -62,9 +62,12 @@ apiConfig:
     - name: studies
       executorExtended: True
       optionExtended: True
+      commands:
+        - name: run-templates
+          executorExtended: True
+          optionExtended: True
       addedMethods:
-        - template-upload
-        - template-run
+        - templates-upload
       ignore: False
       key: Study
     - name: files

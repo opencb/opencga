@@ -4,7 +4,9 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import org.opencb.commons.utils.PrintUtils;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Created on 08/09/17.
@@ -56,8 +58,11 @@ public abstract class CliOptionsParser {
         // Set padding between 14 and 40
         pad = Math.max(14, pad);
         pad = Math.min(40, pad);
-        for (Map.Entry<String, JCommander> entry : commander.getCommands().entrySet()) {
-            PrintUtils.printCommandHelpFormattedString(entry.getKey(), commander.getCommandDescription(entry.getKey()));
+
+        List<String> cmds = new ArrayList(commander.getCommands().keySet());
+        Collections.sort(cmds);
+        for (String key : cmds) {
+            PrintUtils.printCommandHelpFormattedString(key, commander.getCommandDescription(key));
         }
     }
 

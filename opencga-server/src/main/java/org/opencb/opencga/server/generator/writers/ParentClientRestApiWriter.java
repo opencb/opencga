@@ -79,7 +79,7 @@ public abstract class ParentClientRestApiWriter {
                 commandName = phrase[1] + "-" + phrase[2] + "-" + phrase[0];
             }
         }
-        return commandName;
+        return commandName.toLowerCase();
     }
 
     public String getCategoryCommandName(RestCategory restCategory, CategoryConfig categoryConfig) {
@@ -197,7 +197,8 @@ public abstract class ParentClientRestApiWriter {
         } else if (items.length == 5) {
             if (items[0].contains("}") && items[2].contains("}") && (!items[1].contains("}")) && (!items[3].contains("}"))
                     && (!items[4].contains("}"))) {
-                methodName = items[4] + "_" + items[3];
+                //methodName = items[4] + "_" + items[3];
+                methodName = items[4] + "_" + items[1] + "_" + items[3];
             }
         }
 

@@ -49,9 +49,9 @@ public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecuto
         this.studiesCommandOptions = studiesCommandOptions;
     }
 
-    protected RestResponse<Job> templateRun() throws Exception {
+    protected RestResponse<Job> runTemplates() throws Exception {
         logger.debug("Run template");
-        StudiesCommandOptions.TemplateRunCommandOptions c = studiesCommandOptions.templateRunCommandOptions;
+        StudiesCommandOptions.RunTemplatesCommandOptions c = studiesCommandOptions.templateRunCommandOptions;
 
         c.study = getSingleValidStudy(c.study);
         TemplateParams templateParams = new TemplateParams(c.id, c.overwrite, c.resume);
@@ -60,9 +60,9 @@ public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecuto
         return openCGAClient.getStudyClient().runTemplates(c.study, templateParams, params);
     }
 
-    protected RestResponse<String> templateUpload() throws Exception {
+    protected RestResponse<String> templatesUpload() throws Exception {
         logger.debug("Upload template file");
-        StudiesCommandOptions.TemplateUploadCommandOptions c = studiesCommandOptions.templateUploadCommandOptions;
+        StudiesCommandOptions.TemplatesUploadCommandOptions c = studiesCommandOptions.templatesUploadCommandOptions;
 
         ObjectMap params = new ObjectMap();
 

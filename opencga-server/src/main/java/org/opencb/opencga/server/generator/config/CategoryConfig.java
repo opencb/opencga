@@ -191,13 +191,23 @@ public class CategoryConfig {
     }
 
     public boolean isExecutorExtendedCommand(String commandName) {
+        if (commandName.contains("template")) {
+            System.out.println("isExecutorExtendedCommand" + commandName);
+        }
+
+        boolean res = false;
         if (commands != null) {
             for (Command cmd : commands) {
                 if (cmd.getName().equals(commandName)) {
-                    return cmd.isExecutorExtended();
+                    res = cmd.isExecutorExtended();
                 }
             }
         }
-        return false;
+
+
+        if (commandName.contains("template")) {
+            System.out.println("isExecutorExtendedCommand::: " + commandName + " extended " + res);
+        }
+        return res;
     }
 }
