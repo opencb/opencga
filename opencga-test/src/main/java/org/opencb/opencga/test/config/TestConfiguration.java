@@ -19,7 +19,6 @@ package org.opencb.opencga.test.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.utils.PrintUtils;
-import org.opencb.opencga.test.cli.options.RunCommandOptions;
 
 import java.io.File;
 import java.io.IOException;
@@ -59,9 +58,9 @@ public class TestConfiguration {
 
     private static void overrideConfigurationParams() {
 
-        PrintUtils.println(RunCommandOptions.output);
-        PrintUtils.println(String.valueOf(RunCommandOptions.simulate));
-
+       /* PrintUtils.println(RunCommandOptions.output);
+          PrintUtils.println(String.valueOf(RunCommandOptions.simulate));
+        */
     }
 
     private static void validateConfiguration(Configuration configuration) {
