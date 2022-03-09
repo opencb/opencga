@@ -98,7 +98,7 @@ public class JacksonUtils {
         objectMapper.addMixIn(Individual.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Family.class, PrivateUidMixin.class);
         objectMapper.addMixIn(File.class, PrivateUidMixin.class);
-        objectMapper.addMixIn(org.opencb.opencga.core.models.panel.Panel.class, PanelMixin.class);
+        objectMapper.addMixIn(org.opencb.opencga.core.models.panel.Panel.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Project.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Study.class, PrivateUidMixin.class);
         objectMapper.addMixIn(Sample.class, PrivateUidMixin.class);
