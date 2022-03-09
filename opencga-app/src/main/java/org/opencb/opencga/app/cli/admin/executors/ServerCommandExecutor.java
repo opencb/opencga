@@ -97,7 +97,7 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
 
         if (serverCommandOptions.grpcServerCommandOptions.stop) {
             ManagedChannel channel = ManagedChannelBuilder.forTarget("localhost:" + configuration.getServer().getGrpc().getPort())
-                    .usePlaintext(true)
+                    .usePlaintext()
                     .build();
             AdminServiceGrpc.AdminServiceBlockingStub stub = AdminServiceGrpc.newBlockingStub(channel);
             ServiceTypesModel.MapResponse stopResponse = stub.stop(null);

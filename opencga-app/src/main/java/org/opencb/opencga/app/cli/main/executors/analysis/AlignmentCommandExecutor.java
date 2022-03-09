@@ -198,7 +198,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         // We create the gRPC channel to the specified server host and port
         ManagedChannel channel = ManagedChannelBuilder.forAddress(grpcServerHost, grpcServerPort)
-                .usePlaintext(true)
+                .usePlaintext()
                 .build();
 
         // We use a blocking stub to execute the query to gRPC

@@ -19,7 +19,7 @@ package org.opencb.opencga.app.cli.main.executors.analysis;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.internal.ManagedChannelImpl;
+//import io.grpc.internal.ManagedChannelImpl;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.biodata.models.variant.Variant;
@@ -141,7 +141,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
 
         // Let's hide some STDOUT verbose messages from ManagedChannelImpl class
-        Logger.getLogger(ManagedChannelImpl.class.getName()).setLevel(java.util.logging.Level.WARNING);
+        //Logger.getLogger(ManagedChannelImpl.class.getName()).setLevel(java.util.logging.Level.WARNING);
 
 
         ObjectMap params = new ObjectMap(query);
@@ -267,7 +267,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
             // We create the gRPC channel to the specified server host and port
             channel = ManagedChannelBuilder.forTarget(grpcServerHost)
-                    .usePlaintext(true)
+                    .usePlaintext()
                     .build();
         }
         return channel;
