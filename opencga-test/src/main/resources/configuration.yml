@@ -1,0 +1,47 @@
+execution:
+  id: "k8s Jobs"
+  queue: "queue1"
+  azureCredentials: ""
+  options:
+    - "option1"
+envs:
+  - id: corpasome-grch37
+    description: generate vcf for corpasome-grch37
+    dataset:
+      path: "/home/juanfe/training/dataset"
+    reference:
+      path: "/home/juanfe/training/bwaindex37/Homo_sapiens.GRCh37.75.dna.chromosome.21.fa"
+      index: "/home/juanfe/training/bwaindex37"
+    aligner:
+      name: "BWA 1.12"
+      image: "opencb/opencga-ext-tools:2.3.0"
+      command: "bwa mem ${PARAMS} ${FASTQ} > ${OUTPUT}"
+      params:
+        - "-t 4"
+    callers:
+      - name: GATK v4.2.15
+        image: "broadinstitute/gatk:4.2.15"
+        command: "gatk.sh ${PARAMS}"
+        params:
+          - "INPUT=${BAM}"
+          - "OUTPUT=${OUTPUT}"
+  - id: corpasome-grch38
+    description: generate vcf for corpasome-grch38
+    dataset:
+      path: "/home/juanfe/training/dataset"
+    reference:
+      path: "/home/juanfe/training/bwaindex37/Homo_sapiens.GRCh37.75.dna.chromosome.21.fa"
+      index: "/home/juanfe/training/bwaindex37"
+    aligner:
+      name: "BWA 1.12"
+      image: "opencb/opencga-ext-tools:2.3.0"
+      command: "bwa mem ${PARAMS} ${FASTQ} > ${OUTPUT}"
+      params:
+        - "-t 4"
+    callers:
+      - name: GATK v4.2.15
+        image: "broadinstitute/gatk:4.2.15"
+        command: "gatk.sh ${PARAMS}"
+        params:
+          - "INPUT=${BAM}"
+          - "OUTPUT=${OUTPUT}"

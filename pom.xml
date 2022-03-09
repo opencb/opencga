@@ -531,6 +531,7 @@
                         org/opencb/opencga/app/**,
                         org/opencb/opencga/analysis/**,
                         org/opencb/opencga/server/**,
+                        org/opencb/opencga/test/**,
                         org/opencb/opencga/storage/app/**,
 
                         org/opencb/opencga/storage/alignment/**,
@@ -637,13 +638,15 @@
                 <OPENCGA.STORAGE.VARIANT.DB.USER></OPENCGA.STORAGE.VARIANT.DB.USER>
                 <OPENCGA.STORAGE.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.VARIANT.DB.PASSWORD>
                 <OPENCGA.STORAGE.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.SEARCH.HOST>
-                <OPENCGA.STORAGE.SEARCH.CONFIG_SET>opencga-variant-configset-${opencga.version}</OPENCGA.STORAGE.SEARCH.CONFIG_SET>
+                <OPENCGA.STORAGE.SEARCH.CONFIG_SET>opencga-variant-configset-${opencga.version}
+                </OPENCGA.STORAGE.SEARCH.CONFIG_SET>
                 <OPENCGA.STORAGE.SEARCH.TIMEOUT>30000</OPENCGA.STORAGE.SEARCH.TIMEOUT>
                 <OPENCGA.STORAGE.CLINICAL.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.CLINICAL.HOST>
                 <OPENCGA.STORAGE.CLINICAL.MANAGER>""</OPENCGA.STORAGE.CLINICAL.MANAGER>
                 <OPENCGA.STORAGE.CLINICAL.TIMEOUT>30000</OPENCGA.STORAGE.CLINICAL.TIMEOUT>
                 <OPENCGA.STORAGE.RGA.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.RGA.HOST>
-                <OPENCGA.STORAGE.RGA.CONFIG_SET>opencga-rga-configset-${opencga.version}</OPENCGA.STORAGE.RGA.CONFIG_SET>
+                <OPENCGA.STORAGE.RGA.CONFIG_SET>opencga-rga-configset-${opencga.version}
+                </OPENCGA.STORAGE.RGA.CONFIG_SET>
                 <OPENCGA.STORAGE.RGA.TIMEOUT>30000</OPENCGA.STORAGE.RGA.TIMEOUT>
 
                 <!-- Storage Alignments general -->
@@ -653,7 +656,8 @@
 
                 <!-- Storage-mongodb -->
                 <OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE></OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE>
-                <OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>20</OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>
+                <OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>20
+                </OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>
 
                 <!-- Storage-hadoop -->
                 <OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER></OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER>

@@ -1,0 +1,45 @@
+package org.opencb.opencga.test.config;
+
+import java.util.List;
+
+public class Configuration {
+
+    private Execution execution;
+    private List<Env> envs;
+
+    public Configuration() {
+
+    }
+
+    public Configuration(Execution execution, List<Env> envs) {
+        this.execution = execution;
+        this.envs = envs;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuffer sb = new StringBuffer("Configuration{\n");
+        sb.append("execution=").append(execution).append("\n");
+        sb.append("envs=").append(envs).append("\n");
+        sb.append("}\n");
+        return sb.toString();
+    }
+
+    public Execution getExecution() {
+        return execution;
+    }
+
+    public Configuration setExecution(Execution execution) {
+        this.execution = execution;
+        return this;
+    }
+
+    public List<Env> getEnvs() {
+        return envs;
+    }
+
+    public Configuration setEnvs(List<Env> envs) {
+        this.envs = envs;
+        return this;
+    }
+}
