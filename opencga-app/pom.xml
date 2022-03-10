@@ -70,6 +70,11 @@
             <version>${opencga.version}</version>
             <!--<type>war</type>-->
         </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-all</artifactId>
+            <version>${google.grpc}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
