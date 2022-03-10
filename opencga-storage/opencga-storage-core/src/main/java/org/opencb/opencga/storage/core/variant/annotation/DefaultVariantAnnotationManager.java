@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -129,8 +130,16 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
         preAnnotate(query, doCreate, doLoad, params);
 
         if (doCreate && doLoad) {
+            ProjectMetadata.VariantAnnotatorProgram newAnnotator;
+            List<ObjectMap> newSourceVersion;
+            try {
+                newAnnotator = variantAnnotator.getVariantAnnotatorProgram();
+                newSourceVersion = variantAnnotator.getVariantAnnotatorSourceVersion();
+            } catch (IOException e) {
+                throw new VariantAnnotatorException("Error reading annotation metadata", e);
+            }
             dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
-                checkCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
+                checkCurrentAnnotation(projectMetadata, overwrite, newAnnotator, newSourceVersion);
                 return projectMetadata;
             });
         }
