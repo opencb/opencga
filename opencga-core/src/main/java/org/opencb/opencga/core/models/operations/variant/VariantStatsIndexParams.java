@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models.variant;
+package org.opencb.opencga.core.models.operations.variant;
 
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.core.tools.ToolParams;
@@ -22,7 +22,7 @@ import org.opencb.opencga.core.tools.ToolParams;
 import java.util.List;
 
 public class VariantStatsIndexParams extends ToolParams {
-    public static final String DESCRIPTION = "Variant stats params";
+    public static final String DESCRIPTION = "Variant stats index params";
 
     private List<String> cohort;
     private String region;

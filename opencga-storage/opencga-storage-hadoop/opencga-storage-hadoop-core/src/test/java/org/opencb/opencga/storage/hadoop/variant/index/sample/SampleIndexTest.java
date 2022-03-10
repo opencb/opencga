@@ -495,6 +495,8 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         testQueryAnnotationIndex(new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), "pathogenic,likely_benign"));
         testQueryAnnotationIndex(new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign"));
         testQueryAnnotationIndex(new Query(ANNOT_CLINICAL.key(), "clinvar"));
+        testQueryAnnotationIndex(new Query(ANNOT_CLINICAL.key(), "clinvar,cosmic"));
+        testQueryAnnotationIndex(new Query(ANNOT_CLINICAL.key(), "clinvar;cosmic"));
     }
 
     public void testQueryAnnotationIndex(Query annotationQuery) throws Exception {

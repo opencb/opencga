@@ -3,15 +3,22 @@
 #' 
 #' @description This is an S4 class which defines the OpencgaR object
 #' @details This S4 class holds the default configuration required by OpencgaR 
-#' methods to stablish the connection with the web services.
-#' @slot host a character specifying the host url. Example: 
+#' methods to establish the connection with the web services.
+#' @slot host a character specifying the host URL. Example: 
 #' "http://bioinfo.hpc.cam.ac.uk/opencga-prod/"
 #' @slot version a character specifying the API version. Example: "v2"
 #' @slot user a character string with you OpenCGA username
-#' @slot token string containin your token
-#' @slot refreshToken string containin your renew token
-#' @slot swagger list with the swagger information of the OpenCGA intance in the
-#' spcified host
+#' @slot token string containing your token
+#' @slot refreshToken string containing your token
+#' @slot autoRenew Boolean specifying if the token should be renewed 
+#' automatically if the session is going to expire in less than 5 minutes
+#' @slot verbose Boolean specifying if logs should be displayed. Logs include: 
+#' URL (with or without token - see param showToken), query status and number 
+#' of documents retrieved
+#' @slot showToken Boolean specifying if the token should be displayed in the 
+#' verbose mode
+#' @slot swagger list with the swagger information of the OpenCGA instance in the
+#' specified host
 #' @seealso  \url{https://github.com/opencb/opencga/wiki} 
 #' and the RESTful API documentation 
 #' \url{http://bioinfo.hpc.cam.ac.uk/opencga-prod/webservices/}
@@ -23,6 +30,7 @@ opencgaR <- setClass("OpencgaR", slots = c(host="character",
                                            refreshToken="character",
                                            sessionFile="character",
                                            autoRenew="logical",
+                                           verbose="logical",
                                            showToken="logical",
                                            swagger="list"))
 
@@ -53,10 +61,10 @@ setMethod("show", signature = "OpencgaR", definition = function(object){
 #' federated response will contain a list of results ( _OpenCGAResult_ ) 
 #' containing the data that has been queried. 
 #' @slot apiVersion a character specifying the API version. Example: "v2"
-#' @slot time integer especifying the time in milliseconds (ms) that took to 
+#' @slot time integer specifying the time in milliseconds (ms) that took to 
 #' retrieve the information. If the query requires multiple calls, time is added.
 #' @slot events list containing any warnings or errors
-#' @slot params list containg the specified parameters
+#' @slot params list containing the specified parameters
 #' @slot responses list containing the results from the query. There is one list 
 #' per OpenCGA federated servers that could be connected. The first response of 
 #' the list will always contain the response of the OpenCGA federation being 

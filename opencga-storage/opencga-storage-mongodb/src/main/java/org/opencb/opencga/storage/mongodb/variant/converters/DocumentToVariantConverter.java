@@ -146,7 +146,7 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         map.put(VariantField.ANNOTATION_GENE_EXPRESSION, emptyList());
         map.put(VariantField.ANNOTATION_GENE_TRAIT_ASSOCIATION, singletonList(ANNOTATION_FIELD + '.' + GENE_TRAIT_FIELD));
         map.put(VariantField.ANNOTATION_GENE_DRUG_INTERACTION, singletonList(ANNOTATION_FIELD + '.' + DRUG_FIELD));
-        map.put(VariantField.ANNOTATION_VARIANT_TRAIT_ASSOCIATION, singletonList(ANNOTATION_FIELD + '.' + CLINICAL_DATA_FIELD));
+//        map.put(VariantField.ANNOTATION_VARIANT_TRAIT_ASSOCIATION, singletonList(ANNOTATION_FIELD + '.' + CLINICAL_DATA_FIELD));
         map.put(VariantField.ANNOTATION_TRAIT_ASSOCIATION, singletonList(ANNOTATION_FIELD + '.' + CLINICAL_DATA_FIELD));
         map.put(VariantField.ANNOTATION_FUNCTIONAL_SCORE, Arrays.asList(
                 ANNOTATION_FIELD + '.' + FUNCTIONAL_CADD_RAW_FIELD,
