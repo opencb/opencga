@@ -9,13 +9,14 @@ envs:
     description: generate vcf for corpasome-grch37
     dataset:
       path: "/home/juanfe/training/dataset"
+      paired: true
     reference:
       path: "/home/juanfe/training/bwaindex37/Homo_sapiens.GRCh37.75.dna.chromosome.21.fa"
       index: "/home/juanfe/training/bwaindex37"
     aligner:
       name: "BWA 1.12"
       image: "opencb/opencga-ext-tools:2.3.0"
-      command: "bwa mem ${PARAMS} ${FASTQ} > ${OUTPUT}"
+      command: "bwa mem ${PARAMS} ${INDEX}/Homo_sapiens.GRCh37.75.dna.chromosome.21.fa ${FASTQ1} ${FASTQ2} > ${OUTPUT}"
       params:
         - "-t 4"
     callers:
@@ -29,13 +30,14 @@ envs:
     description: generate vcf for corpasome-grch38
     dataset:
       path: "/home/juanfe/training/dataset"
+      paired: true
     reference:
-      path: "/home/juanfe/training/bwaindex37/Homo_sapiens.GRCh37.75.dna.chromosome.21.fa"
-      index: "/home/juanfe/training/bwaindex37"
+      path: "/home/juanfe/training/bwaindex38/Homo_sapiens.GRCh37.75.dna.chromosome.21.fa"
+      index: "/home/juanfe/training/bwaindex38"
     aligner:
       name: "BWA 1.12"
       image: "opencb/opencga-ext-tools:2.3.0"
-      command: "bwa mem ${PARAMS} ${FASTQ} > ${OUTPUT}"
+      command: "bwa mem ${PARAMS} ${INDEX}/Homo_sapiens.GRCh37.75.dna.chromosome.21.fa ${FASTQ1} ${FASTQ2}> ${OUTPUT}"
       params:
         - "-t 4"
     callers:
@@ -45,3 +47,5 @@ envs:
         params:
           - "INPUT=${BAM}"
           - "OUTPUT=${OUTPUT}"
+logger:
+  logLevel: "off"

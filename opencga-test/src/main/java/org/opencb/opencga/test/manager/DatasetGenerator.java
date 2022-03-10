@@ -16,67 +16,37 @@
 
 package org.opencb.opencga.test.manager;
 
-import org.opencb.commons.utils.FileUtils;
+import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.test.config.Configuration;
-import org.opencb.opencga.test.config.Env;
 
 import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Map;
 
 public class DatasetGenerator {
 
-    private List<String> environments;
+
     private Configuration configuration;
 
     public DatasetGenerator(Configuration configuration) {
-        this(configuration, null);
-    }
-
-    public DatasetGenerator(Configuration configuration, List<String> environments) {
         this.configuration = configuration;
-        this.environments = environments;
-
-        this.init();
     }
 
-    private void init() {
-        // TODO Juanfe: Create logger
-
-        // Init environments
-        if (environments == null || environments.size() == 0) {
-            environments = configuration.getEnvs().stream().map(Env::getId).collect(Collectors.toList());
-        }
-    }
-
-    /**
-     * Checks Configuration file is correct.
-     * @throws IOException
-     */
-    public void check() throws IOException {
-        for (Env env : configuration.getEnvs()) {
-            FileUtils.checkFile(Paths.get(env.getReference().getPath()));
-            FileUtils.checkFile(Paths.get(env.getDataset().getPath()));
-            // TODO Juanfe: add other checks
-        }
-    }
 
     /**
      * Process a list of given environments.
+     *
      * @return
      * @throws IOException
      */
     public Map<String, List<String>> generateCommandLines() throws IOException {
-        // Check configuration file is correct
-        this.check();
-
         DatasetCommandLineGenerator datasetCommandLineGenerator = new DatasetCommandLineGenerator(configuration);
-        return datasetCommandLineGenerator.generateCommandLines(environments);
+        return datasetCommandLineGenerator.generateCommandLines();
     }
 
     /**
      * Executes (creates) the VCF, ...
+     *
      * @throws IOException
      */
     public void execute() throws IOException {
@@ -87,11 +57,17 @@ public class DatasetGenerator {
 
     /**
      * Dry-run of all CLIs.
+     *
      * @throws IOException
      */
     public void simulate() throws IOException {
         Map<String, List<String>> commandLinesMap = this.generateCommandLines();
-        // TODO Juanfe: print all CLIs
+        for (String env : commandLinesMap.keySet()) {
+            PrintUtils.println(env, PrintUtils.Color.YELLOW);
+            for (String line : commandLinesMap.get(env)) {
+                PrintUtils.println("    " + line, PrintUtils.Color.GREEN);
+            }
+        }
     }
 
 }

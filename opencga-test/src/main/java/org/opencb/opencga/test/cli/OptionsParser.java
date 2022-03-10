@@ -5,8 +5,8 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterDescription;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.test.cli.executors.RunCommandExecutor;
-import org.opencb.opencga.test.cli.options.RunCommandOptions;
+import org.opencb.opencga.test.cli.executors.DatasetCommandExecutor;
+import org.opencb.opencga.test.cli.options.DatasetCommandOptions;
 
 import java.util.HashMap;
 import java.util.List;
@@ -21,42 +21,44 @@ public class OptionsParser {
     @Parameter(names = "--version", description = "Show current version information.")
     public static boolean version = false;
 
-
     private static JCommander jcommander;
 
-    public static void parseArgs(String[] args) {
+    static {
         OptionsParser parser = new OptionsParser();
-        jcommander = JCommander.newBuilder()
-                .addObject(parser)
-                .build();
+        jcommander = JCommander.newBuilder().addObject(parser).build();
         loadCommands();
+    }
+
+    public static void parseArgs(String[] args) {
+
         jcommander.parse(args);
+
         if (help) {
             printUsage();
         } else if (version) {
             printVersion();
         } else {
-            execute(jcommander.getParsedCommand());
+            if (jcommander.getParsedCommand() != null) {
+                execute(jcommander.getParsedCommand());
+            } else {
+                PrintUtils.printWarn("No valid command found.");
+            }
         }
-
-
     }
 
     private static void execute(String parsedCommand) {
 
         switch (parsedCommand) {
-            case "run":
-                new RunCommandExecutor().execute();
+            case "dataset":
+                new DatasetCommandExecutor().execute();
                 break;
             default:
                 break;
         }
-
-
     }
 
     private static void loadCommands() {
-        jcommander.addCommand(new RunCommandOptions());
+        jcommander.addCommand(new DatasetCommandOptions());
     }
 
     public static void printVersion() {

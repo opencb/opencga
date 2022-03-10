@@ -17,21 +17,18 @@
 package org.opencb.opencga.test.manager;
 
 import org.opencb.opencga.test.cli.OptionsParser;
+import org.opencb.opencga.test.utils.OpencgaLogger;
 
 public class TestGeneratorManager {
-
 
     public static void main(String[] args) {
         try {
             OptionsParser.parseArgs(args);
         } catch (Throwable t) {
-            t.printStackTrace();
+            OpencgaLogger.printLog(t.getMessage(), t);
             OptionsParser.printUsage();
             System.exit(-1);
-
         }
-
     }
-
 
 }

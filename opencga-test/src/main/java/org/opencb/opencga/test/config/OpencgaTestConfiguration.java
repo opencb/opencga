@@ -19,48 +19,52 @@ package org.opencb.opencga.test.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.test.cli.options.CommonCommandOptions;
+import org.opencb.opencga.test.cli.options.DatasetCommandOptions;
+import org.opencb.opencga.test.utils.OpencgaLogger;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.logging.Level;
 
-public class TestConfiguration {
+public class OpencgaTestConfiguration {
 
-    private static Configuration config;
     private String outputDir;
 
-    public static void load(InputStream configurationInputStream) throws IOException {
+    public static Configuration load(InputStream configurationInputStream) throws IOException {
 
-        System.out.println("Loading configuration.");
+        PrintUtils.println("Loading configuration.", PrintUtils.Color.YELLOW);
         if (configurationInputStream == null) {
             System.out.println("Configuration file not found");
             System.exit(-1);
         }
-        Configuration configuration;
+        Configuration configuration = null;
         ObjectMapper objectMapper;
         try {
             objectMapper = new ObjectMapper(new YAMLFactory());
             configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
         } catch (IOException e) {
-            throw new IOException("Configuration file could not be parsed: " + e.getMessage(), e);
+            OpencgaLogger.printLog("Configuration file could not be parsed: " + e.getMessage(), Level.SEVERE);
+            System.exit(-1);
         }
 
-        overrideConfigurationParams();
+        overrideConfigurationParams(configuration);
         validateConfiguration(configuration);
-        PrintUtils.println("Configuration loaded.");
+        OpencgaLogger.setLogLevel(configuration.getLogger().getLogLevel());
+        PrintUtils.println("Configuration loaded.", PrintUtils.Color.GREEN);
 
-        config = configuration;
+        return configuration;
     }
 
-    private static void overrideConfigurationParams() {
+    private static void overrideConfigurationParams(Configuration configuration) {
 
-       /* PrintUtils.println(RunCommandOptions.output);
-          PrintUtils.println(String.valueOf(RunCommandOptions.simulate));
-        */
+        if (!DatasetCommandOptions.commonCommandOptions.logLevel.equals(CommonCommandOptions.logLevel_DEFAULT_VALUE)) {
+            configuration.getLogger().setLogLevel(DatasetCommandOptions.commonCommandOptions.logLevel);
+        }
+
     }
 
     private static void validateConfiguration(Configuration configuration) {
@@ -83,11 +87,7 @@ public class TestConfiguration {
 
     private static void checkReference(Configuration configuration) {
         for (Env env : configuration.getEnvs()) {
-            if (checkDirectory(env.getReference().getIndex())) {
-                if (env.getAligner().getName().toLowerCase().contains("bwa")) {
-                    checkIndexFileNames(env.getReference());
-                }
-            } else {
+            if (!checkDirectory(env.getReference().getIndex())) {
                 System.err.println("The index must be present.");
                 System.exit(-1);
             }
@@ -95,31 +95,6 @@ public class TestConfiguration {
 
     }
 
-    private static void checkIndexFileNames(Reference reference) {
-        List<String> indexFiles = findAllFileNamesInFolder(new File(reference.getIndex()));
-        String indexPrefix = reference.getPath().substring(reference.getPath().lastIndexOf("/") + 1);
-        if (!indexFiles.contains(indexPrefix)) {
-            System.err.println("The file" + indexPrefix + " must be present in the index folder.");
-        } else if (!indexFiles.contains(indexPrefix + ".amb")
-                || !indexFiles.contains(indexPrefix + ".ann")
-                || !indexFiles.contains(indexPrefix + ".bwt")
-                || !indexFiles.contains(indexPrefix + ".pac")
-                || !indexFiles.contains(indexPrefix + ".sa")) {
-            System.err.println("The index folder is not complete. Please reindex.");
-        }
-    }
-
-
-    public static List<String> findAllFileNamesInFolder(File folder) {
-
-        List<String> res = new ArrayList<>();
-        for (File file : folder.listFiles()) {
-            if (!file.isDirectory()) {
-                res.add(file.getName());
-            }
-        }
-        return res;
-    }
 
     private static boolean checkDirectory(String dir) {
         if (!Files.exists(Paths.get(dir))) {

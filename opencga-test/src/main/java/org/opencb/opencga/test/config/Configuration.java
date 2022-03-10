@@ -6,14 +6,10 @@ public class Configuration {
 
     private Execution execution;
     private List<Env> envs;
+    private Logger logger;
 
     public Configuration() {
 
-    }
-
-    public Configuration(Execution execution, List<Env> envs) {
-        this.execution = execution;
-        this.envs = envs;
     }
 
     @Override
@@ -21,6 +17,7 @@ public class Configuration {
         final StringBuffer sb = new StringBuffer("Configuration{\n");
         sb.append("execution=").append(execution).append("\n");
         sb.append("envs=").append(envs).append("\n");
+        sb.append("logger=").append(logger).append("\n");
         sb.append("}\n");
         return sb.toString();
     }
@@ -40,6 +37,15 @@ public class Configuration {
 
     public Configuration setEnvs(List<Env> envs) {
         this.envs = envs;
+        return this;
+    }
+
+    public Logger getLogger() {
+        return logger;
+    }
+
+    public Configuration setLogger(Logger logger) {
+        this.logger = logger;
         return this;
     }
 }
