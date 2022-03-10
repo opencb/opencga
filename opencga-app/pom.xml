@@ -228,6 +228,11 @@
                                     <arg value="${build.dir}/conf"/>
                                     <arg value="${build.dir}/test"/>
                                 </exec>
+                                <exec executable="zip">
+                                    <arg value="-d"/>
+                                    <arg value="${project.basedir}/target/appassembler/libs/BigWig-1.0.jar"/>
+                                    <arg value="lib/log4j-1.2.15.jar"/>
+                                </exec>
 
                                 <echo>Copying to ${build.dir}</echo>
                                 <exec executable="cp">
