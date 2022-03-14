@@ -91,13 +91,20 @@ iva:
         enabled: true
 #        annotations:
 #          # No need to rewrite
-#          # nginx.ingress.kubernetes.io/rewrite-target: /api$1
-        # Accepts:
-        #  /XXX -> will be redirected to /XXX/ by the apache server
-        #  /XXX/.* -> will be used as is
         paths:
-          - /iva(/.*|$)
-          - /api(/.*|$)
+          - /iva/
+          - /api/
+      redirect:
+        # Directory redirect. Similar to apache server mod_dir
+        # Do not delegate on mod_dir, as it might hide complex path rewrites
+        #  /XXX -> Redirect to /XXX/ preserving any argument
+        enabled: true
+        annotations:
+          # See Embedded Variables: https://nginx.org/en/docs/http/ngx_http_core_module.html#variables
+          nginx.ingress.kubernetes.io/permanent-redirect: "$uri/?$args"
+        paths:
+          - /api$
+          - /iva$
 
   resources:
     limits:
