@@ -54,20 +54,13 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
         int approximateCountSamplingSize = options.getInt(
                 VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(),
                 VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue());
-        Query baseQuery = subQuery(query,
-                VariantQueryParam.STUDY,
-                VariantQueryParam.TYPE,
-                VariantQueryParam.INCLUDE_SAMPLE,
-                VariantQueryParam.INCLUDE_SAMPLE_ID,
-                VariantQueryParam.INCLUDE_GENOTYPE,
-                VariantQueryParam.INCLUDE_FILE
-        );
+        Query baseQuery = baseQuery(query);
         Predicate<Variant> variantLocalFilter = filterBuilder.buildFilter(query, options);
 
 
         if (getIterator) {
             VariantDBIterator iterator = delegatedQueryExecutor.iterator(query, options);
-            iterator = iterator.mapBuffered(l -> getBreakendPairs(0, new Query(baseQuery), variantLocalFilter, l), 100);
+            iterator = iterator.mapBuffered(l -> getBreakendPairs(0, baseQuery, variantLocalFilter, l), 100);
             Iterators.advance(iterator, skip);
             iterator = iterator.localSkip(skip);
             if (limit > 0) {
@@ -85,7 +78,7 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
             options.put(QueryOptions.LIMIT, tmpLimit);
             VariantQueryResult<Variant> queryResult = delegatedQueryExecutor.get(query, options);
             List<Variant> results = queryResult.getResults();
-            results = getBreakendPairs(0, new Query(baseQuery), variantLocalFilter, results);
+            results = getBreakendPairs(0, baseQuery, variantLocalFilter, results);
             if (queryResult.getNumMatches() < tmpLimit) {
                 // Exact count!!
                 queryResult.setApproximateCount(false);
@@ -115,22 +108,28 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
 
         int limit = options.getInt(QueryOptions.LIMIT);
         int skip = options.getInt(QueryOptions.SKIP);
-        Query baseQuery = subQuery(query,
-                VariantQueryParam.STUDY,
-                VariantQueryParam.TYPE,
-                VariantQueryParam.INCLUDE_SAMPLE,
-                VariantQueryParam.INCLUDE_FILE
-        );
+        Query baseQuery = baseQuery(query);
         Predicate<Variant> variantLocalFilter = filterBuilder.buildFilter(query, options);
 
         VariantDBIterator iterator = delegatedQueryExecutor.iterator(query, options);
-        iterator = iterator.mapBuffered(l -> getBreakendPairs(0, new Query(baseQuery), variantLocalFilter, l), batchSize);
+        iterator = iterator.mapBuffered(l -> getBreakendPairs(0, baseQuery, variantLocalFilter, l), batchSize);
         Iterators.advance(iterator, skip);
         iterator = iterator.localSkip(skip);
         if (limit > 0) {
             iterator = iterator.localLimit(limit);
         }
         return iterator;
+    }
+
+    private Query baseQuery(Query query) {
+        return subQuery(query,
+                VariantQueryParam.STUDY,
+                VariantQueryParam.TYPE,
+                VariantQueryParam.INCLUDE_SAMPLE,
+                VariantQueryParam.INCLUDE_SAMPLE_ID,
+                VariantQueryParam.INCLUDE_GENOTYPE,
+                VariantQueryParam.INCLUDE_FILE
+        );
     }
 
     private Query subQuery(Query query, QueryParam... queryParams) {
@@ -145,6 +144,8 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
         if (variants.isEmpty()) {
             return variants;
         }
+        // Copy query to avoid propagating modifications
+        baseQuery = new Query(baseQuery);
 //        System.out.println("variants = " + variants);
         List<Region> regions = new ArrayList<>(variants.size());
         for (Variant variant : variants) {
@@ -162,7 +163,9 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
             }
             StudyEntry mateStudyEntry = mateVariant.getStudies().get(0);
             SampleEntry sampleEntry = mateStudyEntry.getSample(samplePosition);
-            if (sampleEntry == null) {
+            if (sampleEntry == null || sampleEntry.getFileIndex() == null) {
+                // Discard missing samples, or samples without file
+                // This might happen because we are not filtering by sample when getting the candidate mate-variants.
                 continue;
             }
             String vcfId = mateStudyEntry.getFile(sampleEntry.getFileIndex()).getData().get(StudyEntry.VCF_ID);
