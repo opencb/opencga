@@ -18,11 +18,17 @@ package org.opencb.opencga.server.generator;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opencb.opencga.server.generator.models.RestApi;
+import org.opencb.opencga.server.generator.models.RestEndpoint;
 import org.opencb.opencga.server.rest.SampleWSServer;
+import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class RestApiParserTest {
 
@@ -36,7 +42,11 @@ public class RestApiParserTest {
 
     @Test
     public void parse() {
-        restApiParser.parse(SampleWSServer.class);
+        RestApi parse = restApiParser.parse(ClinicalWebService.class);
+        List<RestEndpoint> create = parse.getCategories().get(0).getEndpoints().stream()
+                .filter(endpoint -> endpoint.getPath().contains("create"))
+                .collect(Collectors.toList());
+        System.out.println("create = " + create);
     }
 
     @Test
