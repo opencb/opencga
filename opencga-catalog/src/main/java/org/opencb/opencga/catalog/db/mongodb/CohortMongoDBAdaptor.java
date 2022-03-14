@@ -582,7 +582,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         Bson query = new Document()
                 .append(QueryParams.ID.key(), cohortId)
                 .append(PRIVATE_STUDY_UID, studyUid);
-        deletedCohortCollection.update(clientSession, query, new Document("$set", cohortDocument),
+        deletedCohortCollection.update(clientSession, query, new Document("$set", replaceDotsInKeys(cohortDocument)),
                 new QueryOptions(MongoDBCollection.UPSERT, true));
 
         // Delete the document from the main COHORT collection

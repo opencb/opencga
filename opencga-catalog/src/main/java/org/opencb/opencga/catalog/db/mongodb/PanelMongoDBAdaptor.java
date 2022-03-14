@@ -516,7 +516,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             int panelVersion = tmpPanel.getInteger(QueryParams.VERSION.key());
 
             // Insert the document in the DELETE collection
-            deletedPanelCollection.insert(clientSession, tmpPanel, null);
+            deletedPanelCollection.insert(clientSession, replaceDotsInKeys(tmpPanel), null);
             logger.debug("Inserted panel uid '{}' version '{}' in DELETE collection", panelUid, panelVersion);
 
             // Remove the document from the main INDIVIDUAL collection

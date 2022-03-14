@@ -945,7 +945,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 int sampleVersion = tmpSample.getInteger(QueryParams.VERSION.key());
 
                 // Insert the document in the DELETE collection
-                deletedSampleCollection.insert(clientSession, tmpSample, null);
+                deletedSampleCollection.insert(clientSession, replaceDotsInKeys(tmpSample), null);
                 logger.debug("Inserted sample uid '{}' version '{}' in DELETE collection", sampleUid, sampleVersion);
 
                 // Remove the document from the main SAMPLE collection
