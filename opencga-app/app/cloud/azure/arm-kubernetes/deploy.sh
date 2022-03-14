@@ -219,7 +219,7 @@ az storage blob upload-batch \
   --destination $templateContainer \
   --connection-string "$connection" \
   --source "$artifactsBlobUpdate" \
-  --no-progress
+  --no-progress --overwrite
 
 echo "Files uploaded"
 
