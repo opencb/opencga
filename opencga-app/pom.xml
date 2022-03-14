@@ -228,7 +228,6 @@
                                     <arg value="${build.dir}/conf"/>
                                     <arg value="${build.dir}/test"/>
                                 </exec>
-
                                 <echo>Copying to ${build.dir}</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>
