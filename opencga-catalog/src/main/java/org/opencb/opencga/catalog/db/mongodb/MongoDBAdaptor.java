@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -82,6 +83,8 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     protected MongoDBAdaptorFactory dbAdaptorFactory;
     protected Configuration configuration;
 
+    protected final static QueryOptions EXCLUDE_MONGO_ID = new QueryOptions(QueryOptions.EXCLUDE, "_id");
+
     public MongoDBAdaptor(Configuration configuration, Logger logger) {
         super(logger);
         this.configuration = configuration;
@@ -132,6 +135,120 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         } finally {
             session.close();
         }
+    }
+
+    /**
+     * Check if user is performing a query over versioned data or deleted data to provide the collection containing it.
+     *
+     * @param query Query.
+     * @param collection Collection containing just the last "active" data.
+     * @param archiveCollection Collection containing the whole archive of data.
+     * @param deleteCollection Collection containing the whole archive of data.
+     * @return The collection containing the data the user is querying.
+     */
+    protected MongoDBCollection getQueryCollection(Query query, MongoDBCollection collection, MongoDBCollection archiveCollection,
+                                                   MongoDBCollection deleteCollection) {
+        if (query.containsKey(ParamConstants.DELETED_PARAM)) {
+            return deleteCollection;
+        }
+        if (query.containsKey(Constants.ALL_VERSIONS) || query.containsKey(VERSION) || query.containsKey(ParamConstants.SNAPSHOT_PARAM)) {
+            return archiveCollection;
+        }
+        return collection;
+    }
+
+    public interface VersionedModelExecution<T> {
+        T execute() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
+    }
+
+    protected <T> T updateVersionedModel(ClientSession session, Bson query, MongoDBCollection collection,
+                                         MongoDBCollection archiveCollection, VersionedModelExecution<T> body)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        // Increment version from main collection
+        Bson versionInc = Updates.inc(VERSION, 1);
+        collection.update(session, query, versionInc, QueryOptions.empty());
+
+        // Execute update
+        T executionResult = body.execute();
+
+        // Fetch document containing update
+        Document result = collection.find(session, query, QueryOptions.empty()).first();
+        result.remove("_id");
+
+        // And insert in archive collection
+        archiveCollection.insert(session, result, QueryOptions.empty());
+
+        return executionResult;
+    }
+
+    /**
+     * Revert to a previous version.
+     *
+     * @param clientSession            ClientSession for transactional operations.
+     * @param uid                      UID of the element to be recovered.
+     * @param version                  Version to be recovered.
+     * @param dbCollection             Database active collection.
+     * @param archiveCollection        Database archive collection.
+     * @return the new latest document that will be written in the database.
+     * @throws CatalogDBException in case of any issue.
+     */
+    protected Document revertToVersion(ClientSession clientSession, long uid, int version, MongoDBCollection dbCollection,
+                                               MongoDBCollection archiveCollection) throws CatalogDBException {
+        Bson query = Filters.and(
+                Filters.eq(PRIVATE_UID, uid),
+                Filters.eq(VERSION, version)
+        );
+        DataResult<Document> result = archiveCollection.find(clientSession, query, EXCLUDE_MONGO_ID);
+        if (result.getNumResults() == 0) {
+            throw new CatalogDBException("Could not find version '" + version + "'");
+        }
+        Document document = result.first();
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(RELEASE_FROM_VERSION, VERSION, LAST_OF_RELEASE));
+        // Find out latest version available
+        result = dbCollection.find(clientSession, Filters.eq(PRIVATE_UID, uid), options);
+        if (result.getNumResults() == 0) {
+            throw new CatalogDBException("Unexpected error. Could not find 'uid': " + uid);
+        }
+        int lastVersion = result.first().getInteger(VERSION);
+
+        // Delete previous version from active collection
+        dbCollection.remove(clientSession, Filters.eq(PRIVATE_UID, uid), QueryOptions.empty());
+
+        // Edit previous version from archive collection
+        query = Filters.and(
+                Filters.eq(PRIVATE_UID, uid),
+                Filters.eq(VERSION, lastVersion)
+        );
+        archiveCollection.update(clientSession, query, Updates.set(LAST_OF_RELEASE, false), QueryOptions.empty());
+
+        // Edit private fields from document to be restored
+        document.put(VERSION, lastVersion + 1);
+        document.put(RELEASE_FROM_VERSION, result.first().get(RELEASE_FROM_VERSION));
+        document.put(LAST_OF_RELEASE, result.first().get(LAST_OF_RELEASE));
+
+        // Add restored element to main and archive collection
+        dbCollection.insert(clientSession, document, QueryOptions.empty());
+        archiveCollection.insert(clientSession, document, QueryOptions.empty());
+
+        return document;
+    }
+
+    protected void deleteVersionedModel(ClientSession session, Bson query, MongoDBCollection collection,
+                                         MongoDBCollection archiveCollection, MongoDBCollection deletedCollection) {
+        // Remove any old documents from the "delete" collection matching the criteria
+        deletedCollection.remove(session, query, QueryOptions.empty());
+
+        // Remove document from main collection
+        collection.remove(session, query, QueryOptions.empty());
+
+        // Add versioned documents to "delete" collection
+        for (Document document : archiveCollection.find(session, query, QueryOptions.empty()).getResults()) {
+            deletedCollection.insert(session, document, QueryOptions.empty());
+        }
+
+        // Remove documents from versioned collection
+        archiveCollection.remove(session, query, QueryOptions.empty());
     }
 
     protected long getNewUid() {
@@ -652,6 +769,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return new OpenCGAResult(collection.update(query, update, new QueryOptions("multi", true)));
     }
 
+    @Deprecated
     protected void createNewVersion(ClientSession clientSession, MongoDBCollection dbCollection, Document document)
             throws CatalogDBException {
         Document updateOldVersion = new Document();
@@ -702,71 +820,6 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
         // Insert the new version document
         dbCollection.insert(clientSession, document, QueryOptions.empty());
-    }
-
-    /**
-     * Revert to a previous version.
-     *
-     * @param clientSession            ClientSession for transactional operations.
-     * @param dbCollection             Database collection-
-     * @param versionToRestoreDocument Full document of the version to be restored.
-     * @param latestVersionDocument    Full document of the latest available version of the entry.
-     * @return the new latest document that will be written in the database.
-     * @throws CatalogDBException in case of any issue.
-     */
-    protected Document revertToPreviousVersion(ClientSession clientSession, MongoDBCollection dbCollection,
-                                               Document versionToRestoreDocument, Document latestVersionDocument)
-            throws CatalogDBException {
-        Document updateOldVersion = new Document();
-
-        // Current release number
-        int release;
-        List<Integer> supportedReleases = (List<Integer>) latestVersionDocument.get(RELEASE_FROM_VERSION);
-        if (supportedReleases.size() > 1) {
-            release = supportedReleases.get(supportedReleases.size() - 1);
-
-            // If it contains several releases, it means this is the first update on the current release, so we just need to take the
-            // current release number out
-            supportedReleases.remove(supportedReleases.size() - 1);
-        } else {
-            release = supportedReleases.get(0);
-
-            // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
-            // last version of the release
-            updateOldVersion.put(LAST_OF_RELEASE, false);
-        }
-        updateOldVersion.put(RELEASE_FROM_VERSION, supportedReleases);
-        updateOldVersion.put(LAST_OF_VERSION, false);
-
-        // Perform the update on the previous version
-        Document queryDocument = new Document()
-                .append(PRIVATE_STUDY_UID, latestVersionDocument.getLong(PRIVATE_STUDY_UID))
-                .append(VERSION, latestVersionDocument.getInteger(VERSION))
-                .append(PRIVATE_UID, latestVersionDocument.getLong(PRIVATE_UID));
-
-        logger.debug("Updating previous version: query : {}, update: {}",
-                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                updateOldVersion.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
-        DataResult updateResult = dbCollection.update(clientSession, queryDocument, new Document("$set", updateOldVersion), null);
-
-        if (updateResult.getNumUpdated() == 0) {
-            throw new CatalogDBException("Internal error: Could not update previous version");
-        }
-
-        // We update the information for the new version of the document
-        versionToRestoreDocument.put(LAST_OF_RELEASE, true);
-        versionToRestoreDocument.put(LAST_OF_VERSION, true);
-        versionToRestoreDocument.put(RELEASE_FROM_VERSION, Arrays.asList(release));
-        versionToRestoreDocument.put(VERSION, latestVersionDocument.getInteger(VERSION) + 1);
-
-        logger.debug("Inserting new document version: document: {}",
-                versionToRestoreDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
-        // Insert the new version document
-        dbCollection.insert(clientSession, versionToRestoreDocument, QueryOptions.empty());
-
-        return versionToRestoreDocument;
     }
 
     protected Document getStudyDocument(ClientSession clientSession, long studyUid) throws CatalogDBException {

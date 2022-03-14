@@ -56,6 +56,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             CLINICAL_ANALYSIS_COLLECTION,
             INTERPRETATION_COLLECTION,
 
+            INTERPRETATION_ARCHIVE_COLLECTION,
+
             DELETED_USER_COLLECTION,
             DELETED_STUDY_COLLECTION,
             DELETED_FILE_COLLECTION,
@@ -84,6 +86,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String PANEL_COLLECTION = "panel";
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String INTERPRETATION_COLLECTION = "interpretation";
+
+    public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
 
     public static final String DELETED_USER_COLLECTION = "deleted_user";
     public static final String DELETED_STUDY_COLLECTION = "deleted_study";
@@ -319,6 +323,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         MongoDBCollection clinicalCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION);
         MongoDBCollection interpretationCollection = mongoDataStore.getCollection(INTERPRETATION_COLLECTION);
 
+        MongoDBCollection interpretationArchivedCollection = mongoDataStore.getCollection(INTERPRETATION_ARCHIVE_COLLECTION);
+
         MongoDBCollection deletedUserCollection = mongoDataStore.getCollection(DELETED_USER_COLLECTION);
         MongoDBCollection deletedStudyCollection = mongoDataStore.getCollection(DELETED_STUDY_COLLECTION);
         MongoDBCollection deletedFileCollection = mongoDataStore.getCollection(DELETED_FILE_COLLECTION);
@@ -349,6 +355,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(CLINICAL_ANALYSIS_COLLECTION, clinicalCollection);
         collections.put(INTERPRETATION_COLLECTION, interpretationCollection);
 
+        collections.put(INTERPRETATION_ARCHIVE_COLLECTION, interpretationArchivedCollection);
+
         collections.put(DELETED_USER_COLLECTION, deletedUserCollection);
         collections.put(DELETED_STUDY_COLLECTION, deletedStudyCollection);
         collections.put(DELETED_FILE_COLLECTION, deletedFileCollection);
@@ -374,8 +382,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, deletedPanelCollection, catalogConfiguration, this);
         familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, deletedFamilyCollection, catalogConfiguration, this);
         clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, catalogConfiguration, this);
-        interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, deletedInterpretationCollection,
-                catalogConfiguration, this);
+        interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, interpretationArchivedCollection,
+                deletedInterpretationCollection, catalogConfiguration, this);
         metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, catalogConfiguration, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection, catalogConfiguration);
         migrationDBAdaptor = new MigrationMongoDBAdaptor(migrationCollection, catalogConfiguration, this);

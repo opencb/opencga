@@ -1910,7 +1910,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 .append(InterpretationDBAdaptor.QueryParams.ID.key(), Arrays.asList(ca.getId() + ".1", ca.getId() + ".3"))
                 .append(InterpretationDBAdaptor.QueryParams.DELETED.key(), true);
         result = catalogManager.getInterpretationManager().search(STUDY, query, QueryOptions.empty(), sessionIdUser);
-        assertEquals(2, result.getNumResults());
+        assertEquals(3, result.getNumResults());
     }
 
     @Test
@@ -2069,7 +2069,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                         ca.getId() + ".3", ca.getId() + ".4")), QueryOptions.empty(), sessionIdUser).getNumResults());
 
         // Old interpretations were deleted
-        assertEquals(4, catalogManager.getInterpretationManager().search(STUDY, new Query()
+        assertEquals(5, catalogManager.getInterpretationManager().search(STUDY, new Query()
                         .append(InterpretationDBAdaptor.QueryParams.ID.key(), Arrays.asList(ca.getId() + ".1", ca.getId() + ".2",
                                 ca.getId() + ".3", ca.getId() + ".4"))
                         .append(InterpretationDBAdaptor.QueryParams.DELETED.key(), true), QueryOptions.empty(), sessionIdUser)
