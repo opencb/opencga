@@ -22,7 +22,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class RestApiParser {
 
@@ -223,16 +222,17 @@ public class RestApiParser {
                                                 }
                                             } else {
                                                 // The body param is an Enum
-                                                if (declaredField.getAnnotatedType().getType().getTypeName().contains("$")) {
+                                                if (declaredField.getType().isEnum()) {
                                                     String[] enumSplit = declaredField.getAnnotatedType().getType().getTypeName().split("$");
                                                     Class<?> enumClass = Class.forName(enumSplit[0]);
-                                                    Field[] fields = enumClass.getDeclaredFields();
-                                                    List<String> allowedValues = Arrays.stream(fields)
-                                                            .map(Field::getName)
-                                                            .filter(s -> !s.equals("$VALUES"))
-                                                            .collect(Collectors.toList());
+                                                    List<String> allowedValues = new ArrayList<>();
+                                                    final Object[] enumConstants = declaredField.getType().getEnumConstants();
+                                                    for (Object enumValue : enumConstants) {
+                                                        allowedValues.add(String.valueOf(enumValue));
+                                                    }
                                                     innerParam.setType("enum");
-                                                    innerParam.setAllowedValues(StringUtils.join(allowedValues, ","));
+                                                    innerParam.setAllowedValues(StringUtils.join(allowedValues, " "));
+                                                    innerParam.setDescription("Enum param allowed values: " + StringUtils.join(allowedValues, " "));
                                                 }
                                             }
                                         }
@@ -260,6 +260,17 @@ public class RestApiParser {
                     restParameters.add(restParameter);
                 }
             }
+       /*     if (httpMethod.equals("POST")) {
+                RestParameter restParameter = new RestParameter();
+                restParameter.setType("file");
+                restParameter.setTypeClass("java.lang.String;");
+                restParameter.setAllowedValues("");
+                restParameter.setRequired(false);
+                restParameter.setDefaultValue("");
+                restParameter.setDescription("Json file with all parameters");
+                restParameter.setName("jsonFile");
+                restParameters.add(restParameter);
+            }*/
 
             // 5. Save all REST Parameters found: ApiImplicitParams and ApiParam
             restEndpoint.setParameters(restParameters);

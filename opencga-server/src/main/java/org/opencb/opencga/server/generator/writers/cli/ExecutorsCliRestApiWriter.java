@@ -73,6 +73,10 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                                 imports.add(bodyParam.getTypeClass().replaceAll("\\$", "\\."));
                             }
                         }
+                        if (bodyParam.getType().equals("enum")) {
+                            //  sb.append("enum " + bodyParam.getTypeClass());
+                            imports.add(getEnumImport(bodyParam.getTypeClass().replaceAll("\\$", "\\.")));
+                        }
                     }
                 }
             }
@@ -101,6 +105,21 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append(" *    PATH: " + restCategory.getPath() + "\n");
         sb.append(" */\n");
         return sb.toString();
+    }
+
+    private String getEnumImport(String importClass) {
+        boolean enc = false;
+        String res = importClass;
+        for (int i = 0; i < importClass.length(); i++) {
+            String c = String.valueOf(importClass.charAt(i));
+            if (c.equals(c.toUpperCase())) {
+                enc = true;
+            }
+            if (enc && c.equals(".")) {
+                res = importClass.substring(0, i) + ";";
+            }
+        }
+        return res;
     }
 
     public boolean isValidImport(String string) {
@@ -249,7 +268,15 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             for (RestParameter restParameter : restEndpoint.getParameters()) {
                 if (restParameter.getData() != null && !restParameter.getData().isEmpty()) {
                     sb.append(generateBeans(restParameter.getData()));
+                    for (RestParameter bparameter : restParameter.getData()) {
+                        if (bparameter.getType().equals("enum")) {
+                            sb.append("        " + getEnumName(bparameter.getTypeClass()) + " " + normaliceNames(getAsCamelCase(bparameter.getName() + "Param")) + " = null;\n");
+                            sb.append(getSwitchEnum(bparameter, normaliceNames(getAsCamelCase(bparameter.getName() + "Param")), getEnumName(bparameter.getTypeClass())));
+
+                        }
+                    }
                 }
+
             }
 
             sb.append("\n        " + bodyParamsObject + " " + getAsVariableName(bodyParamsObject) + " = (" + bodyParamsObject + ") new " + bodyParamsObject + "()");
@@ -264,11 +291,23 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                                 sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
                                         "(commandOptions."
                                         + normaliceNames(getAsCamelCase(bodyParam.getName())) + ")");
-                            } else {
-                                if (bodyParam.isStringList()) {
+                            } else if (bodyParam.isStringList()) {
+                                sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
+                                        "(splitWithTrim(commandOptions."
+                                        + normaliceNames(getAsCamelCase(bodyParam.getName())) + "))");
+
+                            }
+                            if (bodyParam.getType().equals("enum")) {
+                                if (reverseCommandName(commandName).contains("create")) {
                                     sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
-                                            "(splitWithTrim(commandOptions."
-                                            + normaliceNames(getAsCamelCase(bodyParam.getName())) + "))");
+                                            "("
+                                            + normaliceNames(getAsCamelCase(bodyParam.getName() + "Param")) + ")");
+                                    System.out.println("EXECUTOR ENUM " + (bodyParam.getName()));
+                                    System.out.println("EXECUTOR ENUM getParentParamName " + (bodyParam.getParentParamName()));
+                                    System.out.println("EXECUTOR ENUM getTypeClass " + (bodyParam.getTypeClass()));
+                                    System.out.println("EXECUTOR ENUM getType" + (bodyParam.getType()));
+
+
                                 }
                             }
                         }
@@ -291,6 +330,28 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             sb.append(";\n");
         }
         return sb.toString();
+    }
+
+    private String getSwitchEnum(RestParameter parameter, String normaliceNames, String enumName) {
+        StringBuilder sb = new StringBuilder();
+        final String allowedValues = parameter.getAllowedValues();
+        String[] values = allowedValues.split(" ");
+
+        sb.append("        switch (commandOptions." + normaliceNames(getAsCamelCase(parameter.getName())) + ") {\n");
+        for (String s : values) {
+            sb.append("            case \"" + s + "\":\n");
+            sb.append("            " + normaliceNames + "=" + enumName + "." + s + ";\n");
+            sb.append("            break;\n");
+
+        }
+        sb.append("        }\n");
+
+        return sb.toString();
+    }
+
+    private String getEnumName(String typeClass) {
+        return typeClass.replace(";", "").substring(typeClass.lastIndexOf(".") + 1).replace("$", ".");
+
     }
 
     private String generateBeans(List<RestParameter> restParameters) {

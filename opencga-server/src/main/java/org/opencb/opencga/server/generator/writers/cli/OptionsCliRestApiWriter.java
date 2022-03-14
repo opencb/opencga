@@ -145,6 +145,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
 
     @Override
     protected String getClassMethods(String key) {
+
         RestCategory restCategory = availableCategories.get(key);
         CategoryConfig config = availableCategoryConfigs.get(key);
         StringBuilder sb = new StringBuilder();
@@ -163,7 +164,9 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                     sb.append("        public CommonCommandOptions commonOptions = commonCommandOptions;\n");
                     sb.append("    \n");
                     Set<String> variable_names = new HashSet<>();
+
                     for (RestParameter restParameter : restEndpoint.getParameters()) {
+
 
                         if (config.isAvailableSubCommand(restParameter.getName(), commandName)) {
                             if (!"body".equals(normaliceNames(restParameter.getName()))) {
@@ -180,6 +183,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                 if (restParameter.getData() != null)
                                     for (RestParameter bodyRestParameter : restParameter.getData()) {
 
+
                                         if (config.isAvailableSubCommand(bodyRestParameter.getName(), commandName) && bodyRestParameter.isAvailableType() && !variable_names.contains(normaliceNames(getAsCamelCase(restParameter.getName())))) {
 
                                             sb.append("        @Parameter(names = {" + getShortCuts(bodyRestParameter, config) + "}, " +
@@ -192,6 +196,17 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                                     + getVariableName(bodyRestParameter) + ";\n");
                                             sb.append("    \n");
                                             variable_names.add(normaliceNames(getAsCamelCase(bodyRestParameter.getName())));
+                                        } else if (bodyRestParameter.getType().equals("enum")) {
+
+                                            sb.append("        @Parameter(names = {" + getShortCuts(bodyRestParameter, config) + "}, " +
+                                                    "description"
+                                                    + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + "\", required = "
+                                                    + (bodyRestParameter.isRequired() || isMandatory(commandName,
+                                                    getVariableName(bodyRestParameter))) + ", arity = 1)\n");
+
+                                            sb.append("        public " + getValidValue(bodyRestParameter.getType()) + " "
+                                                    + getVariableName(bodyRestParameter) + ";\n");
+                                            sb.append("    \n");
                                         }
                                     }
                             }
