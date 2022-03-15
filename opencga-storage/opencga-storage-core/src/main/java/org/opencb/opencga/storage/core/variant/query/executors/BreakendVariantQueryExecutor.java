@@ -183,7 +183,7 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
             }
 
             // Check for duplicated pairs
-            if (validDiscardPair(filter, variant, mateVariant)) {
+            if (validPair(filter, variant, mateVariant)) {
                 variantPairs.add(variant);
                 variantPairs.add(mateVariant);
             }
@@ -191,11 +191,11 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
         return variantPairs;
     }
 
-    private boolean validDiscardPair(Predicate<Variant> filter, Variant variant, Variant mateVariant) {
+    private boolean validPair(Predicate<Variant> filter, Variant variant, Variant mateVariant) {
         if (VariantDBIterator.VARIANT_COMPARATOR.compare(variant, mateVariant) > 0) {
             // If the mate variant is "before" the main variant
             // This pair might be discarded if the mate matches the given query
-            return !filter.test(variant);
+            return !filter.test(mateVariant);
         }
         return true;
     }

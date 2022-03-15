@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.query.filters;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
@@ -107,7 +108,7 @@ public class VariantFilterBuilder {
 
         List<Region> geneRegions = Region.parseRegions(query.getString(VariantQueryUtils.ANNOT_GENE_REGIONS.key()));
         Predicate<Variant> geneRegionFilter;
-        if (geneRegions.isEmpty()) {
+        if (CollectionUtils.isEmpty(geneRegions)) {
             geneRegionFilter = null;
         } else {
             geneRegionFilter = variant -> geneRegions.stream().anyMatch(r -> r.contains(variant.getChromosome(), variant.getStart()));
