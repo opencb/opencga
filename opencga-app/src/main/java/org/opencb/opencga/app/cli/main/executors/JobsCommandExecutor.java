@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
 
@@ -117,10 +118,16 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         JobsCommandOptions.UpdateAclCommandOptions commandOptions = jobsCommandOptions.updateAclCommandOptions;
 
-        JobAclUpdateParams jobAclUpdateParams = (JobAclUpdateParams) new JobAclUpdateParams()
+        JobAclUpdateParams jobAclUpdateParams = new JobAclUpdateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), jobAclUpdateParams);
+        }  else {
+        ((JobAclUpdateParams)jobAclUpdateParams)
             .setJob(commandOptions.job)
             .setPermissions(commandOptions.permissions);
-        return openCGAClient.getJobClient().updateAcl(commandOptions.members, commandOptions.action, jobAclUpdateParams);
+
+        }        return openCGAClient.getJobClient().updateAcl(commandOptions.members, commandOptions.action, jobAclUpdateParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -176,7 +183,12 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(executionResult, "id", commandOptions.resultId);
         Enums.Priority priorityParam = Enums.Priority.valueOf(commandOptions.priority);
 
-        JobCreateParams jobCreateParams = (JobCreateParams) new JobCreateParams()
+        JobCreateParams jobCreateParams = new JobCreateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), jobCreateParams);
+        }  else {
+        ((JobCreateParams)jobCreateParams)
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
             .setTool(toolInfo)
@@ -186,7 +198,8 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             .setModificationDate(commandOptions.modificationDate)
             .setTags(splitWithTrim(commandOptions.tags))
             .setResult(executionResult);
-        return openCGAClient.getJobClient().create(jobCreateParams, queryParams);
+
+        }        return openCGAClient.getJobClient().create(jobCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -239,10 +252,16 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        JobRetryParams jobRetryParams = (JobRetryParams) new JobRetryParams()
+        JobRetryParams jobRetryParams = new JobRetryParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), jobRetryParams);
+        }  else {
+        ((JobRetryParams)jobRetryParams)
             .setJob(commandOptions.job)
             .setForce(commandOptions.force);
-        return openCGAClient.getJobClient().retry(jobRetryParams, queryParams);
+
+        }        return openCGAClient.getJobClient().retry(jobRetryParams, queryParams);
     }
 
     private RestResponse<Job> search() throws Exception {
@@ -365,11 +384,17 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        JobUpdateParams jobUpdateParams = (JobUpdateParams) new JobUpdateParams()
+        JobUpdateParams jobUpdateParams = new JobUpdateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), jobUpdateParams);
+        }  else {
+        ((JobUpdateParams)jobUpdateParams)
             .setDescription(commandOptions.description)
             .setTags(splitWithTrim(commandOptions.tags))
             .setVisited(commandOptions.visited);
-        return openCGAClient.getJobClient().update(commandOptions.jobs, jobUpdateParams, queryParams);
+
+        }        return openCGAClient.getJobClient().update(commandOptions.jobs, jobUpdateParams, queryParams);
     }
 
     private RestResponse<FileContent> headLog() throws Exception {

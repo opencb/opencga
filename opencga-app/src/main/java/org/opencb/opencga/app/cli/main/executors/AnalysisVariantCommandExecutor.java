@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.opencb.opencga.app.cli.main.options.AnalysisVariantCommandOptions;
 
@@ -304,11 +305,17 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        CircosAnalysisParams circosAnalysisParams = (CircosAnalysisParams) new CircosAnalysisParams()
+        CircosAnalysisParams circosAnalysisParams = new CircosAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), circosAnalysisParams);
+        }  else {
+        ((CircosAnalysisParams)circosAnalysisParams)
             .setTitle(commandOptions.title)
             .setDensity(commandOptions.density)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getVariantClient().runCircos(circosAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runCircos(circosAnalysisParams, queryParams);
     }
 
     private RestResponse<SampleVariantStats> deleteCohortStats() throws Exception {
@@ -359,13 +366,19 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        CohortVariantStatsAnalysisParams cohortVariantStatsAnalysisParams = (CohortVariantStatsAnalysisParams) new CohortVariantStatsAnalysisParams()
+        CohortVariantStatsAnalysisParams cohortVariantStatsAnalysisParams = new CohortVariantStatsAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), cohortVariantStatsAnalysisParams);
+        }  else {
+        ((CohortVariantStatsAnalysisParams)cohortVariantStatsAnalysisParams)
             .setCohort(commandOptions.cohort)
             .setSamples(splitWithTrim(commandOptions.samples))
             .setIndex(commandOptions.index)
             .setSampleAnnotation(commandOptions.sampleAnnotation)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getVariantClient().runCohortStats(cohortVariantStatsAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runCohortStats(cohortVariantStatsAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runExport() throws Exception {
@@ -388,7 +401,12 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        VariantExportParams variantExportParams = (VariantExportParams) new VariantExportParams()
+        VariantExportParams variantExportParams = new VariantExportParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantExportParams);
+        }  else {
+        ((VariantExportParams)variantExportParams)
             .setOutdir(commandOptions.outdir)
             .setOutputFileName(commandOptions.outputFileName)
             .setOutputFormat(commandOptions.outputFormat)
@@ -448,7 +466,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             .setUnknownGenotype(commandOptions.unknownGenotype)
             .setSampleMetadata(commandOptions.sampleMetadata)
             .setSort(commandOptions.sort);
-        return openCGAClient.getVariantClient().runExport(variantExportParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runExport(variantExportParams, queryParams);
     }
 
     private RestResponse<ObjectMap> genotypesFamily() throws Exception {
@@ -487,12 +506,18 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        FamilyQcAnalysisParams familyQcAnalysisParams = (FamilyQcAnalysisParams) new FamilyQcAnalysisParams()
+        FamilyQcAnalysisParams familyQcAnalysisParams = new FamilyQcAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), familyQcAnalysisParams);
+        }  else {
+        ((FamilyQcAnalysisParams)familyQcAnalysisParams)
             .setFamily(commandOptions.family)
             .setRelatednessMethod(commandOptions.relatednessMethod)
             .setRelatednessMaf(commandOptions.relatednessMaf)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getVariantClient().runFamilyQc(familyQcAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runFamilyQc(familyQcAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> deleteFile() throws Exception {
@@ -533,10 +558,16 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        GatkWrapperParams gatkWrapperParams = (GatkWrapperParams) new GatkWrapperParams()
+        GatkWrapperParams gatkWrapperParams = new GatkWrapperParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), gatkWrapperParams);
+        }  else {
+        ((GatkWrapperParams)gatkWrapperParams)
             .setCommand(commandOptions.command)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getVariantClient().runGatk(gatkWrapperParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runGatk(gatkWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runGenomePlot() throws Exception {
@@ -556,13 +587,19 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        GenomePlotAnalysisParams genomePlotAnalysisParams = (GenomePlotAnalysisParams) new GenomePlotAnalysisParams()
+        GenomePlotAnalysisParams genomePlotAnalysisParams = new GenomePlotAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), genomePlotAnalysisParams);
+        }  else {
+        ((GenomePlotAnalysisParams)genomePlotAnalysisParams)
             .setSample(commandOptions.sample)
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
             .setConfigFile(commandOptions.configFile)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getVariantClient().runGenomePlot(genomePlotAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runGenomePlot(genomePlotAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runGwas() throws Exception {
@@ -584,7 +621,12 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         GwasConfiguration.Method methodParam = GwasConfiguration.Method.valueOf(commandOptions.method);
         GwasConfiguration.FisherMode fisherModeParam = GwasConfiguration.FisherMode.valueOf(commandOptions.fisherMode);
 
-        GwasAnalysisParams gwasAnalysisParams = (GwasAnalysisParams) new GwasAnalysisParams()
+        GwasAnalysisParams gwasAnalysisParams = new GwasAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), gwasAnalysisParams);
+        }  else {
+        ((GwasAnalysisParams)gwasAnalysisParams)
             .setPhenotype(commandOptions.phenotype)
             .setIndex(commandOptions.index)
             .setIndexScoreId(commandOptions.indexScoreId)
@@ -595,7 +637,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             .setControlCohortSamplesAnnotation(commandOptions.controlCohortSamplesAnnotation)
             .setControlCohortSamples(splitWithTrim(commandOptions.controlCohortSamples))
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getVariantClient().runGwas(gwasAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runGwas(gwasAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runIndex() throws Exception {
@@ -615,7 +658,12 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        VariantIndexParams variantIndexParams = (VariantIndexParams) new VariantIndexParams()
+        VariantIndexParams variantIndexParams = new VariantIndexParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantIndexParams);
+        }  else {
+        ((VariantIndexParams)variantIndexParams)
             .setFile(commandOptions.file)
             .setResume(commandOptions.resume)
             .setOutdir(commandOptions.outdir)
@@ -644,7 +692,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             .setOverwriteAnnotations(commandOptions.overwriteAnnotations)
             .setIndexSearch(commandOptions.indexSearch)
             .setSkipIndexedFiles(commandOptions.skipIndexedFiles);
-        return openCGAClient.getVariantClient().runIndex(variantIndexParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runIndex(variantIndexParams, queryParams);
     }
 
     private RestResponse<Job> runIndividualQc() throws Exception {
@@ -664,12 +713,18 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        IndividualQcAnalysisParams individualQcAnalysisParams = (IndividualQcAnalysisParams) new IndividualQcAnalysisParams()
+        IndividualQcAnalysisParams individualQcAnalysisParams = new IndividualQcAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), individualQcAnalysisParams);
+        }  else {
+        ((IndividualQcAnalysisParams)individualQcAnalysisParams)
             .setIndividual(commandOptions.individual)
             .setSample(commandOptions.sample)
             .setInferredSexMethod(commandOptions.inferredSexMethod)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getVariantClient().runIndividualQc(individualQcAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runIndividualQc(individualQcAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runInferredSex() throws Exception {
@@ -689,11 +744,17 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        InferredSexAnalysisParams inferredSexAnalysisParams = (InferredSexAnalysisParams) new InferredSexAnalysisParams()
+        InferredSexAnalysisParams inferredSexAnalysisParams = new InferredSexAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), inferredSexAnalysisParams);
+        }  else {
+        ((InferredSexAnalysisParams)inferredSexAnalysisParams)
             .setIndividual(commandOptions.individual)
             .setSample(commandOptions.sample)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getVariantClient().runInferredSex(inferredSexAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runInferredSex(inferredSexAnalysisParams, queryParams);
     }
 
     private RestResponse<KnockoutByGene> queryKnockoutGene() throws Exception {
@@ -749,7 +810,12 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        KnockoutAnalysisParams knockoutAnalysisParams = (KnockoutAnalysisParams) new KnockoutAnalysisParams()
+        KnockoutAnalysisParams knockoutAnalysisParams = new KnockoutAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), knockoutAnalysisParams);
+        }  else {
+        ((KnockoutAnalysisParams)knockoutAnalysisParams)
             .setSample(splitWithTrim(commandOptions.sample))
             .setGene(splitWithTrim(commandOptions.gene))
             .setPanel(splitWithTrim(commandOptions.panel))
@@ -760,7 +826,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             .setSkipGenesFile(commandOptions.skipGenesFile)
             .setOutdir(commandOptions.outdir)
             .setIndex(commandOptions.index);
-        return openCGAClient.getVariantClient().runKnockout(knockoutAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runKnockout(knockoutAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runMendelianError() throws Exception {
@@ -780,12 +847,18 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        MendelianErrorAnalysisParams mendelianErrorAnalysisParams = (MendelianErrorAnalysisParams) new MendelianErrorAnalysisParams()
+        MendelianErrorAnalysisParams mendelianErrorAnalysisParams = new MendelianErrorAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), mendelianErrorAnalysisParams);
+        }  else {
+        ((MendelianErrorAnalysisParams)mendelianErrorAnalysisParams)
             .setFamily(commandOptions.family)
             .setIndividual(commandOptions.individual)
             .setSample(commandOptions.sample)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getVariantClient().runMendelianError(mendelianErrorAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runMendelianError(mendelianErrorAnalysisParams, queryParams);
     }
 
     private RestResponse<VariantMetadata> metadata() throws Exception {
@@ -858,14 +931,20 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        MutationalSignatureAnalysisParams mutationalSignatureAnalysisParams = (MutationalSignatureAnalysisParams) new MutationalSignatureAnalysisParams()
+        MutationalSignatureAnalysisParams mutationalSignatureAnalysisParams = new MutationalSignatureAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), mutationalSignatureAnalysisParams);
+        }  else {
+        ((MutationalSignatureAnalysisParams)mutationalSignatureAnalysisParams)
             .setSample(commandOptions.sample)
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
             .setRelease(commandOptions.release)
             .setFitting(commandOptions.fitting)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getVariantClient().runMutationalSignature(mutationalSignatureAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runMutationalSignature(mutationalSignatureAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runPlink() throws Exception {
@@ -885,9 +964,15 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        PlinkWrapperParams plinkWrapperParams = (PlinkWrapperParams) new PlinkWrapperParams()
+        PlinkWrapperParams plinkWrapperParams = new PlinkWrapperParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), plinkWrapperParams);
+        }  else {
+        ((PlinkWrapperParams)plinkWrapperParams)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getVariantClient().runPlink(plinkWrapperParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runPlink(plinkWrapperParams, queryParams);
     }
 
     private RestResponse<Variant> query() throws Exception {
@@ -998,13 +1083,19 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        RelatednessAnalysisParams relatednessAnalysisParams = (RelatednessAnalysisParams) new RelatednessAnalysisParams()
+        RelatednessAnalysisParams relatednessAnalysisParams = new RelatednessAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), relatednessAnalysisParams);
+        }  else {
+        ((RelatednessAnalysisParams)relatednessAnalysisParams)
             .setIndividuals(splitWithTrim(commandOptions.individuals))
             .setSamples(splitWithTrim(commandOptions.samples))
             .setMinorAlleleFreq(commandOptions.minorAlleleFreq)
             .setMethod(commandOptions.method)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getVariantClient().runRelatedness(relatednessAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runRelatedness(relatednessAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runRvtests() throws Exception {
@@ -1024,10 +1115,16 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        RvtestsWrapperParams rvtestsWrapperParams = (RvtestsWrapperParams) new RvtestsWrapperParams()
+        RvtestsWrapperParams rvtestsWrapperParams = new RvtestsWrapperParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), rvtestsWrapperParams);
+        }  else {
+        ((RvtestsWrapperParams)rvtestsWrapperParams)
             .setCommand(commandOptions.command)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getVariantClient().runRvtests(rvtestsWrapperParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runRvtests(rvtestsWrapperParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStatsSample() throws Exception {
@@ -1083,11 +1180,17 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SampleEligibilityAnalysisParams sampleEligibilityAnalysisParams = (SampleEligibilityAnalysisParams) new SampleEligibilityAnalysisParams()
+        SampleEligibilityAnalysisParams sampleEligibilityAnalysisParams = new SampleEligibilityAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleEligibilityAnalysisParams);
+        }  else {
+        ((SampleEligibilityAnalysisParams)sampleEligibilityAnalysisParams)
             .setQuery(commandOptions.query)
             .setIndex(commandOptions.index)
             .setCohortId(commandOptions.cohortId);
-        return openCGAClient.getVariantClient().runSampleEligibility(sampleEligibilityAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runSampleEligibility(sampleEligibilityAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runSampleQc() throws Exception {
@@ -1134,7 +1237,12 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(annotationVariantQueryParams, "clinicalSignificance", commandOptions.variantStatsQueryClinicalSignificance);
         invokeSetter(annotationVariantQueryParams, "clinicalConfirmedStatus", commandOptions.variantStatsQueryClinicalConfirmedStatus);
 
-        SampleQcAnalysisParams sampleQcAnalysisParams = (SampleQcAnalysisParams) new SampleQcAnalysisParams()
+        SampleQcAnalysisParams sampleQcAnalysisParams = new SampleQcAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleQcAnalysisParams);
+        }  else {
+        ((SampleQcAnalysisParams)sampleQcAnalysisParams)
             .setSample(commandOptions.sample)
             .setVariantStatsId(commandOptions.variantStatsId)
             .setVariantStatsDescription(commandOptions.variantStatsDescription)
@@ -1146,7 +1254,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             .setGenomePlotDescription(commandOptions.genomePlotDescription)
             .setGenomePlotConfigFile(commandOptions.genomePlotConfigFile)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getVariantClient().runSampleQc(sampleQcAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runSampleQc(sampleQcAnalysisParams, queryParams);
     }
 
     private RestResponse<Variant> querySample() throws Exception {
@@ -1185,7 +1294,12 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SampleVariantFilterParams sampleVariantFilterParams = (SampleVariantFilterParams) new SampleVariantFilterParams()
+        SampleVariantFilterParams sampleVariantFilterParams = new SampleVariantFilterParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleVariantFilterParams);
+        }  else {
+        ((SampleVariantFilterParams)sampleVariantFilterParams)
             .setGenotypes(splitWithTrim(commandOptions.genotypes))
             .setSample(splitWithTrim(commandOptions.sample))
             .setSamplesInAllVariants(commandOptions.samplesInAllVariants)
@@ -1215,7 +1329,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             .setClinical(commandOptions.clinical)
             .setClinicalSignificance(commandOptions.clinicalSignificance)
             .setClinicalConfirmedStatus(commandOptions.clinicalConfirmedStatus);
-        return openCGAClient.getVariantClient().runSample(sampleVariantFilterParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runSample(sampleVariantFilterParams, queryParams);
     }
 
     private RestResponse<SampleVariantStats> querySampleStats() throws Exception {
@@ -1264,7 +1379,12 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SampleVariantStatsAnalysisParams sampleVariantStatsAnalysisParams = (SampleVariantStatsAnalysisParams) new SampleVariantStatsAnalysisParams()
+        SampleVariantStatsAnalysisParams sampleVariantStatsAnalysisParams = new SampleVariantStatsAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleVariantStatsAnalysisParams);
+        }  else {
+        ((SampleVariantStatsAnalysisParams)sampleVariantStatsAnalysisParams)
             .setSample(splitWithTrim(commandOptions.sample))
             .setIndividual(splitWithTrim(commandOptions.individual))
             .setOutdir(commandOptions.outdir)
@@ -1273,7 +1393,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             .setIndexId(commandOptions.indexId)
             .setIndexDescription(commandOptions.indexDescription)
             .setBatchSize(commandOptions.batchSize);
-        return openCGAClient.getVariantClient().runSampleStats(sampleVariantStatsAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runSampleStats(sampleVariantStatsAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runStatsExport() throws Exception {
@@ -1294,13 +1415,19 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        VariantStatsExportParams variantStatsExportParams = (VariantStatsExportParams) new VariantStatsExportParams()
+        VariantStatsExportParams variantStatsExportParams = new VariantStatsExportParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantStatsExportParams);
+        }  else {
+        ((VariantStatsExportParams)variantStatsExportParams)
             .setCohorts(splitWithTrim(commandOptions.cohorts))
             .setOutput(commandOptions.output)
             .setRegion(commandOptions.region)
             .setGene(commandOptions.gene)
             .setOutputFormat(commandOptions.outputFormat);
-        return openCGAClient.getVariantClient().runStatsExport(variantStatsExportParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runStatsExport(variantStatsExportParams, queryParams);
     }
 
     private RestResponse<Job> runStats() throws Exception {
@@ -1320,7 +1447,12 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        VariantStatsAnalysisParams variantStatsAnalysisParams = (VariantStatsAnalysisParams) new VariantStatsAnalysisParams()
+        VariantStatsAnalysisParams variantStatsAnalysisParams = new VariantStatsAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantStatsAnalysisParams);
+        }  else {
+        ((VariantStatsAnalysisParams)variantStatsAnalysisParams)
             .setCohort(splitWithTrim(commandOptions.cohort))
             .setSamples(splitWithTrim(commandOptions.samples))
             .setRegion(commandOptions.region)
@@ -1328,6 +1460,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             .setOutdir(commandOptions.outdir)
             .setOutputFileName(commandOptions.outputFileName)
             .setAggregationMappingFile(commandOptions.aggregationMappingFile);
-        return openCGAClient.getVariantClient().runStats(variantStatsAnalysisParams, queryParams);
+
+        }        return openCGAClient.getVariantClient().runStats(variantStatsAnalysisParams, queryParams);
     }
 }

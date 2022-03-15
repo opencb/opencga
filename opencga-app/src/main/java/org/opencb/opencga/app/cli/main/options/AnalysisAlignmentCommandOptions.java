@@ -73,6 +73,9 @@ public class AnalysisAlignmentCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
+    
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
     
@@ -110,6 +113,9 @@ public class AnalysisAlignmentCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
+    
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
     
@@ -140,6 +146,9 @@ public class AnalysisAlignmentCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
     
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
@@ -262,6 +271,9 @@ public class AnalysisAlignmentCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
+    
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
     
@@ -289,6 +301,9 @@ public class AnalysisAlignmentCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
     
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
@@ -318,6 +333,9 @@ public class AnalysisAlignmentCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
+    
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
     
@@ -346,6 +364,9 @@ public class AnalysisAlignmentCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
+    
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
     
@@ -373,6 +394,9 @@ public class AnalysisAlignmentCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
     
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
@@ -480,6 +504,9 @@ public class AnalysisAlignmentCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
     
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 

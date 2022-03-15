@@ -50,7 +50,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("import org.opencb.commons.datastore.core.ObjectMap;\n\n");
         sb.append("import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;\n\n");
 
-        sb.append("import java.util.List;\n\n");
+        sb.append("import java.util.List;\n");
+        sb.append("import com.fasterxml.jackson.databind.ObjectMapper;\n\n");
 
         sb.append("import " + config.getOptions().getOptionsPackage() + "." + getAsClassName(restCategory.getName()) + "CommandOptions;\n\n");
         if (categoryConfig.isExecutorExtended()) {
@@ -280,57 +281,102 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
 
             }
 
-            sb.append("\n        " + bodyParamsObject + " " + getAsVariableName(bodyParamsObject) + " = (" + bodyParamsObject + ") new " + bodyParamsObject + "()");
-            Set<String> variables = new HashSet<>();
-            for (RestParameter restParameter : restEndpoint.getParameters()) {
-                if (restParameter.getData() != null && !restParameter.getData().isEmpty()) {
-                    for (RestParameter bodyParam : restParameter.getData()) {
-                        if (config.isAvailableSubCommand(bodyParam.getName(), commandName)) {
-                            if (!bodyParam.isComplex() && !bodyParam.isInnerParam()) {
-                                //sometimes the name of the parameter has the prefix "body" so as not to coincide with another parameter
-                                // with the same name, but the setter does not have this prefix, so it must be removed
-                                sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
-                                        "(commandOptions."
-                                        + normaliceNames(getAsCamelCase(bodyParam.getName())) + ")");
-                            } else if (bodyParam.isStringList()) {
-                                sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
-                                        "(splitWithTrim(commandOptions."
-                                        + normaliceNames(getAsCamelCase(bodyParam.getName())) + "))");
-
-                            }
-                            if (bodyParam.getType().equals("enum")) {
-                                if (reverseCommandName(commandName).contains("create")) {
+            sb.append("\n        " + bodyParamsObject + " " + getAsVariableName(bodyParamsObject) + " = new " + bodyParamsObject + "();");
+            sb.append("\n        if (commandOptions.jsonFile != null) {");
+            sb.append("\n            ObjectMapper objectMapper = new ObjectMapper();");
+            sb.append("\n            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), " + getAsVariableName(bodyParamsObject) + ");");
+            sb.append("\n        } ");
+            if (hasParameters(restEndpoint.getParameters(), commandName, config)) {
+                sb.append(" else {");
+                sb.append("\n        ((" + bodyParamsObject + ")" + getAsVariableName(bodyParamsObject) + ")");
+                Set<String> variables = new HashSet<>();
+                for (RestParameter restParameter : restEndpoint.getParameters()) {
+                    if (restParameter.getData() != null && !restParameter.getData().isEmpty()) {
+                        for (RestParameter bodyParam : restParameter.getData()) {
+                            if (config.isAvailableSubCommand(bodyParam.getName(), commandName)) {
+                                if (!bodyParam.isComplex() && !bodyParam.isInnerParam()) {
+                                    //sometimes the name of the parameter has the prefix "body" so as not to coincide with another parameter
+                                    // with the same name, but the setter does not have this prefix, so it must be removed
                                     sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
-                                            "("
-                                            + normaliceNames(getAsCamelCase(bodyParam.getName() + "Param")) + ")");
-                                    System.out.println("EXECUTOR ENUM " + (bodyParam.getName()));
-                                    System.out.println("EXECUTOR ENUM getParentParamName " + (bodyParam.getParentParamName()));
-                                    System.out.println("EXECUTOR ENUM getTypeClass " + (bodyParam.getTypeClass()));
-                                    System.out.println("EXECUTOR ENUM getType" + (bodyParam.getType()));
-
+                                            "(commandOptions."
+                                            + normaliceNames(getAsCamelCase(bodyParam.getName())) + ")");
+                                } else if (bodyParam.isStringList()) {
+                                    sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
+                                            "(splitWithTrim(commandOptions."
+                                            + normaliceNames(getAsCamelCase(bodyParam.getName())) + "))");
 
                                 }
+                                if (bodyParam.getType().equals("enum")) {
+                                    if (reverseCommandName(commandName).contains("create")) {
+                                        sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
+                                                "("
+                                                + normaliceNames(getAsCamelCase(bodyParam.getName() + "Param")) + ")");
+
+                                    }
+                                }
                             }
-                        }
-                        //If the parameter is InnerParam (It means it's a field of inner bean) need to add to the variables Set
-                        // for no duplicate set action of Bean (Parent)
-                        if (bodyParam.isInnerParam() && !bodyParam.isCollection()) {
-                            if (!variables.contains(bodyParam.getParentParamName())) {
-                                sb.append("\n            .set" + getAsClassName(bodyParam.getParentParamName()) + "("
-                                        + CommandLineUtils.getAsVariableName(CommandLineUtils.getClassName(bodyParam.getGenericType()))
-                                        + ")");
-                                variables.add(bodyParam.getParentParamName());
-                            }
+                            //If the parameter is InnerParam (It means it's a field of inner bean) need to add to the variables Set
+                            // for no duplicate set action of Bean (Parent)
+                            if (bodyParam.isInnerParam() && !bodyParam.isCollection()) {
+                                if (!variables.contains(bodyParam.getParentParamName())) {
+                                    sb.append("\n            .set" + getAsClassName(bodyParam.getParentParamName()) + "("
+                                            + CommandLineUtils.getAsVariableName(CommandLineUtils.getClassName(bodyParam.getGenericType()))
+                                            + ")");
+                                    variables.add(bodyParam.getParentParamName());
+                                }
 
 
+                            }
                         }
                     }
-                }
 
+                }
+                sb.append(";\n");
+                sb.append("\n        }");
             }
-            sb.append(";\n");
         }
+
+
         return sb.toString();
+    }
+
+    private boolean hasParameters(List<RestParameter> parameters, String commandName, CategoryConfig config) {
+
+        boolean res = false;
+        Set<String> variables = new HashSet<>();
+        for (RestParameter restParameter : parameters) {
+            if (restParameter.getData() != null && !restParameter.getData().isEmpty()) {
+                for (RestParameter bodyParam : restParameter.getData()) {
+                    if (config.isAvailableSubCommand(bodyParam.getName(), commandName)) {
+                        if (!bodyParam.isComplex() && !bodyParam.isInnerParam()) {
+                            //sometimes the name of the parameter has the prefix "body" so as not to coincide with another parameter
+                            // with the same name, but the setter does not have this prefix, so it must be removed
+                            return true;
+                        } else if (bodyParam.isStringList()) {
+                            return true;
+
+                        }
+                        if (bodyParam.getType().equals("enum")) {
+                            if (reverseCommandName(commandName).contains("create")) {
+                                return true;
+                            }
+                        }
+                    }
+                    //If the parameter is InnerParam (It means it's a field of inner bean) need to add to the variables Set
+                    // for no duplicate set action of Bean (Parent)
+                    if (bodyParam.isInnerParam() && !bodyParam.isCollection()) {
+                        if (!variables.contains(bodyParam.getParentParamName())) {
+                            variables.add(bodyParam.getParentParamName());
+                            return true;
+                        }
+
+
+                    }
+                }
+            }
+
+        }
+        return res;
     }
 
     private String getSwitchEnum(RestParameter parameter, String normaliceNames, String enumName) {

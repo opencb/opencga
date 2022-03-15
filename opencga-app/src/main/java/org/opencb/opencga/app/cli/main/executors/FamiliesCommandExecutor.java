@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.opencb.opencga.app.cli.main.options.FamiliesCommandOptions;
 
@@ -116,12 +117,18 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        FamilyAclUpdateParams familyAclUpdateParams = (FamilyAclUpdateParams) new FamilyAclUpdateParams()
+        FamilyAclUpdateParams familyAclUpdateParams = new FamilyAclUpdateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), familyAclUpdateParams);
+        }  else {
+        ((FamilyAclUpdateParams)familyAclUpdateParams)
             .setFamily(commandOptions.family)
             .setIndividual(commandOptions.individual)
             .setSample(commandOptions.sample)
             .setPermissions(commandOptions.permissions);
-        return openCGAClient.getFamilyClient().updateAcl(commandOptions.members, commandOptions.action, familyAclUpdateParams, queryParams);
+
+        }        return openCGAClient.getFamilyClient().updateAcl(commandOptions.members, commandOptions.action, familyAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -167,9 +174,15 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        TsvAnnotationParams tsvAnnotationParams = (TsvAnnotationParams) new TsvAnnotationParams()
+        TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), tsvAnnotationParams);
+        }  else {
+        ((TsvAnnotationParams)tsvAnnotationParams)
             .setContent(commandOptions.content);
-        return openCGAClient.getFamilyClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
+
+        }        return openCGAClient.getFamilyClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
     private RestResponse<Family> create() throws Exception {
@@ -194,7 +207,12 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(statusParams, "name", commandOptions.statusName);
         invokeSetter(statusParams, "description", commandOptions.statusDescription);
 
-        FamilyCreateParams familyCreateParams = (FamilyCreateParams) new FamilyCreateParams()
+        FamilyCreateParams familyCreateParams = new FamilyCreateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), familyCreateParams);
+        }  else {
+        ((FamilyCreateParams)familyCreateParams)
             .setId(commandOptions.id)
             .setName(commandOptions.name)
             .setDescription(commandOptions.description)
@@ -202,7 +220,8 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             .setModificationDate(commandOptions.modificationDate)
             .setExpectedSize(commandOptions.expectedSize)
             .setStatus(statusParams);
-        return openCGAClient.getFamilyClient().create(familyCreateParams, queryParams);
+
+        }        return openCGAClient.getFamilyClient().create(familyCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -350,7 +369,12 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(statusParams, "name", commandOptions.statusName);
         invokeSetter(statusParams, "description", commandOptions.statusDescription);
 
-        FamilyUpdateParams familyUpdateParams = (FamilyUpdateParams) new FamilyUpdateParams()
+        FamilyUpdateParams familyUpdateParams = new FamilyUpdateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), familyUpdateParams);
+        }  else {
+        ((FamilyUpdateParams)familyUpdateParams)
             .setId(commandOptions.id)
             .setName(commandOptions.name)
             .setDescription(commandOptions.description)
@@ -358,6 +382,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             .setModificationDate(commandOptions.modificationDate)
             .setExpectedSize(commandOptions.expectedSize)
             .setStatus(statusParams);
-        return openCGAClient.getFamilyClient().update(commandOptions.families, familyUpdateParams, queryParams);
+
+        }        return openCGAClient.getFamilyClient().update(commandOptions.families, familyUpdateParams, queryParams);
     }
 }

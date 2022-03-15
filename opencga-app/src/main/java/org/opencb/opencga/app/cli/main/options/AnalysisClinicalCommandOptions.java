@@ -105,6 +105,9 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
@@ -130,6 +133,9 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
@@ -139,6 +145,9 @@ public class AnalysisClinicalCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
@@ -460,6 +469,9 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
@@ -490,6 +502,9 @@ public class AnalysisClinicalCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -525,6 +540,9 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
+    
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
@@ -558,6 +576,9 @@ public class AnalysisClinicalCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -985,6 +1006,9 @@ public class AnalysisClinicalCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -1683,6 +1707,9 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
+    
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
     
@@ -1790,6 +1817,9 @@ public class AnalysisClinicalCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
+    
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
     
@@ -1860,6 +1890,9 @@ public class AnalysisClinicalCommandOptions {
     
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
+    
+        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        public String jsonFile;
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 

@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.opencb.opencga.app.cli.main.options.AnalysisAlignmentCommandOptions;
 
@@ -127,13 +128,19 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        BwaWrapperParams bwaWrapperParams = (BwaWrapperParams) new BwaWrapperParams()
+        BwaWrapperParams bwaWrapperParams = new BwaWrapperParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), bwaWrapperParams);
+        }  else {
+        ((BwaWrapperParams)bwaWrapperParams)
             .setCommand(commandOptions.command)
             .setFastaFile(commandOptions.fastaFile)
             .setFastq1File(commandOptions.fastq1File)
             .setFastq2File(commandOptions.fastq2File)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getAlignmentClient().runBwa(bwaWrapperParams, queryParams);
+
+        }        return openCGAClient.getAlignmentClient().runBwa(bwaWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runCoverageIndex() throws Exception {
@@ -153,11 +160,17 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        CoverageIndexParams coverageIndexParams = (CoverageIndexParams) new CoverageIndexParams()
+        CoverageIndexParams coverageIndexParams = new CoverageIndexParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), coverageIndexParams);
+        }  else {
+        ((CoverageIndexParams)coverageIndexParams)
             .setFile(commandOptions.file)
             .setWindowSize(commandOptions.windowSize)
             .setOverwrite(commandOptions.overwrite);
-        return openCGAClient.getAlignmentClient().runCoverageIndex(coverageIndexParams, queryParams);
+
+        }        return openCGAClient.getAlignmentClient().runCoverageIndex(coverageIndexParams, queryParams);
     }
 
     private RestResponse<Job> runQcGeneCoverageStats() throws Exception {
@@ -177,11 +190,17 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        AlignmentGeneCoverageStatsParams alignmentGeneCoverageStatsParams = (AlignmentGeneCoverageStatsParams) new AlignmentGeneCoverageStatsParams()
+        AlignmentGeneCoverageStatsParams alignmentGeneCoverageStatsParams = new AlignmentGeneCoverageStatsParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), alignmentGeneCoverageStatsParams);
+        }  else {
+        ((AlignmentGeneCoverageStatsParams)alignmentGeneCoverageStatsParams)
             .setBamFile(commandOptions.bamFile)
             .setGenes(splitWithTrim(commandOptions.genes))
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getAlignmentClient().runQcGeneCoverageStats(alignmentGeneCoverageStatsParams, queryParams);
+
+        }        return openCGAClient.getAlignmentClient().runQcGeneCoverageStats(alignmentGeneCoverageStatsParams, queryParams);
     }
 
     private RestResponse<RegionCoverage> queryCoverage() throws Exception {
@@ -261,10 +280,16 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        DeeptoolsWrapperParams deeptoolsWrapperParams = (DeeptoolsWrapperParams) new DeeptoolsWrapperParams()
+        DeeptoolsWrapperParams deeptoolsWrapperParams = new DeeptoolsWrapperParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), deeptoolsWrapperParams);
+        }  else {
+        ((DeeptoolsWrapperParams)deeptoolsWrapperParams)
             .setCommand(commandOptions.command)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getAlignmentClient().runDeeptools(deeptoolsWrapperParams, queryParams);
+
+        }        return openCGAClient.getAlignmentClient().runDeeptools(deeptoolsWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runFastqc() throws Exception {
@@ -284,10 +309,16 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        FastqcWrapperParams fastqcWrapperParams = (FastqcWrapperParams) new FastqcWrapperParams()
+        FastqcWrapperParams fastqcWrapperParams = new FastqcWrapperParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fastqcWrapperParams);
+        }  else {
+        ((FastqcWrapperParams)fastqcWrapperParams)
             .setInputFile(commandOptions.inputFile)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getAlignmentClient().runFastqc(fastqcWrapperParams, queryParams);
+
+        }        return openCGAClient.getAlignmentClient().runFastqc(fastqcWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runIndex() throws Exception {
@@ -307,10 +338,16 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        AlignmentIndexParams alignmentIndexParams = (AlignmentIndexParams) new AlignmentIndexParams()
+        AlignmentIndexParams alignmentIndexParams = new AlignmentIndexParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), alignmentIndexParams);
+        }  else {
+        ((AlignmentIndexParams)alignmentIndexParams)
             .setFile(commandOptions.file)
             .setOverwrite(commandOptions.overwrite);
-        return openCGAClient.getAlignmentClient().runIndex(alignmentIndexParams, queryParams);
+
+        }        return openCGAClient.getAlignmentClient().runIndex(alignmentIndexParams, queryParams);
     }
 
     private RestResponse<Job> runPicard() throws Exception {
@@ -330,10 +367,16 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        PicardWrapperParams picardWrapperParams = (PicardWrapperParams) new PicardWrapperParams()
+        PicardWrapperParams picardWrapperParams = new PicardWrapperParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), picardWrapperParams);
+        }  else {
+        ((PicardWrapperParams)picardWrapperParams)
             .setCommand(commandOptions.command)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getAlignmentClient().runPicard(picardWrapperParams, queryParams);
+
+        }        return openCGAClient.getAlignmentClient().runPicard(picardWrapperParams, queryParams);
     }
 
     private RestResponse<Job> runQc() throws Exception {
@@ -353,14 +396,20 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        AlignmentQcParams alignmentQcParams = (AlignmentQcParams) new AlignmentQcParams()
+        AlignmentQcParams alignmentQcParams = new AlignmentQcParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), alignmentQcParams);
+        }  else {
+        ((AlignmentQcParams)alignmentQcParams)
             .setBamFile(commandOptions.bamFile)
             .setBedFile(commandOptions.bedFile)
             .setDictFile(commandOptions.dictFile)
             .setSkip(commandOptions.skip)
             .setOverwrite(commandOptions.overwrite)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getAlignmentClient().runQc(alignmentQcParams, queryParams);
+
+        }        return openCGAClient.getAlignmentClient().runQc(alignmentQcParams, queryParams);
     }
 
     private RestResponse<ReadAlignment> query() throws Exception {
@@ -413,10 +462,16 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SamtoolsWrapperParams samtoolsWrapperParams = (SamtoolsWrapperParams) new SamtoolsWrapperParams()
+        SamtoolsWrapperParams samtoolsWrapperParams = new SamtoolsWrapperParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), samtoolsWrapperParams);
+        }  else {
+        ((SamtoolsWrapperParams)samtoolsWrapperParams)
             .setCommand(commandOptions.command)
             .setInputFile(commandOptions.inputFile)
             .setOutdir(commandOptions.outdir);
-        return openCGAClient.getAlignmentClient().runSamtools(samtoolsWrapperParams, queryParams);
+
+        }        return openCGAClient.getAlignmentClient().runSamtools(samtoolsWrapperParams, queryParams);
     }
 }

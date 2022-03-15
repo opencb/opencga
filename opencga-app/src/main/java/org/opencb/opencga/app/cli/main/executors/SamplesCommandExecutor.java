@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.opencb.opencga.app.cli.main.options.SamplesCommandOptions;
 
@@ -121,14 +122,20 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SampleAclUpdateParams sampleAclUpdateParams = (SampleAclUpdateParams) new SampleAclUpdateParams()
+        SampleAclUpdateParams sampleAclUpdateParams = new SampleAclUpdateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleAclUpdateParams);
+        }  else {
+        ((SampleAclUpdateParams)sampleAclUpdateParams)
             .setSample(commandOptions.sample)
             .setIndividual(commandOptions.individual)
             .setFamily(commandOptions.family)
             .setFile(commandOptions.file)
             .setCohort(commandOptions.cohort)
             .setPermissions(commandOptions.permissions);
-        return openCGAClient.getSampleClient().updateAcl(commandOptions.members, commandOptions.action, sampleAclUpdateParams, queryParams);
+
+        }        return openCGAClient.getSampleClient().updateAcl(commandOptions.members, commandOptions.action, sampleAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -175,9 +182,15 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        TsvAnnotationParams tsvAnnotationParams = (TsvAnnotationParams) new TsvAnnotationParams()
+        TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), tsvAnnotationParams);
+        }  else {
+        ((TsvAnnotationParams)tsvAnnotationParams)
             .setContent(commandOptions.content);
-        return openCGAClient.getSampleClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
+
+        }        return openCGAClient.getSampleClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
     private RestResponse<Sample> create() throws Exception {
@@ -221,7 +234,12 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(externalSource, "source", commandOptions.sourceSource);
         invokeSetter(externalSource, "url", commandOptions.sourceUrl);
 
-        SampleCreateParams sampleCreateParams = (SampleCreateParams) new SampleCreateParams()
+        SampleCreateParams sampleCreateParams = new SampleCreateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleCreateParams);
+        }  else {
+        ((SampleCreateParams)sampleCreateParams)
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
             .setCreationDate(commandOptions.creationDate)
@@ -232,7 +250,8 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             .setCollection(sampleCollection)
             .setSomatic(commandOptions.somatic)
             .setStatus(statusParams);
-        return openCGAClient.getSampleClient().create(sampleCreateParams, queryParams);
+
+        }        return openCGAClient.getSampleClient().create(sampleCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -460,7 +479,12 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(externalSource, "source", commandOptions.sourceSource);
         invokeSetter(externalSource, "url", commandOptions.sourceUrl);
 
-        SampleUpdateParams sampleUpdateParams = (SampleUpdateParams) new SampleUpdateParams()
+        SampleUpdateParams sampleUpdateParams = new SampleUpdateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleUpdateParams);
+        }  else {
+        ((SampleUpdateParams)sampleUpdateParams)
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
             .setCreationDate(commandOptions.creationDate)
@@ -471,6 +495,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             .setCollection(sampleCollection)
             .setSomatic(commandOptions.somatic)
             .setStatus(statusParams);
-        return openCGAClient.getSampleClient().update(commandOptions.samples, sampleUpdateParams, queryParams);
+
+        }        return openCGAClient.getSampleClient().update(commandOptions.samples, sampleUpdateParams, queryParams);
     }
 }

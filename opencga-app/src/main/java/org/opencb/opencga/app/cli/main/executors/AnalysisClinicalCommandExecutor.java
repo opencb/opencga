@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.opencb.opencga.app.cli.main.options.AnalysisClinicalCommandOptions;
 
@@ -201,10 +202,16 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        ClinicalAnalysisAclUpdateParams clinicalAnalysisAclUpdateParams = (ClinicalAnalysisAclUpdateParams) new ClinicalAnalysisAclUpdateParams()
+        ClinicalAnalysisAclUpdateParams clinicalAnalysisAclUpdateParams = new ClinicalAnalysisAclUpdateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), clinicalAnalysisAclUpdateParams);
+        }  else {
+        ((ClinicalAnalysisAclUpdateParams)clinicalAnalysisAclUpdateParams)
             .setClinicalAnalysis(commandOptions.clinicalAnalysis)
             .setPermissions(commandOptions.permissions);
-        return openCGAClient.getClinicalAnalysisClient().updateAcl(commandOptions.members, commandOptions.action, clinicalAnalysisAclUpdateParams, queryParams);
+
+        }        return openCGAClient.getClinicalAnalysisClient().updateAcl(commandOptions.members, commandOptions.action, clinicalAnalysisAclUpdateParams, queryParams);
     }
 
     private RestResponse<ObjectMap> updateClinicalConfiguration() throws Exception {
@@ -220,8 +227,11 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        ClinicalAnalysisStudyConfiguration clinicalAnalysisStudyConfiguration = (ClinicalAnalysisStudyConfiguration) new ClinicalAnalysisStudyConfiguration();
-        return openCGAClient.getClinicalAnalysisClient().updateClinicalConfiguration(clinicalAnalysisStudyConfiguration, queryParams);
+        ClinicalAnalysisStudyConfiguration clinicalAnalysisStudyConfiguration = new ClinicalAnalysisStudyConfiguration();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), clinicalAnalysisStudyConfiguration);
+        }         return openCGAClient.getClinicalAnalysisClient().updateClinicalConfiguration(clinicalAnalysisStudyConfiguration, queryParams);
     }
 
     private RestResponse<ClinicalAnalysis> create() throws Exception {
@@ -275,7 +285,12 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(familyParam, "id", commandOptions.familyId);
         ClinicalAnalysis.Type typeParam = ClinicalAnalysis.Type.valueOf(commandOptions.type);
 
-        ClinicalAnalysisCreateParams clinicalAnalysisCreateParams = (ClinicalAnalysisCreateParams) new ClinicalAnalysisCreateParams()
+        ClinicalAnalysisCreateParams clinicalAnalysisCreateParams = new ClinicalAnalysisCreateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), clinicalAnalysisCreateParams);
+        }  else {
+        ((ClinicalAnalysisCreateParams)clinicalAnalysisCreateParams)
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
             .setType(typeParam)
@@ -291,7 +306,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             .setDueDate(commandOptions.dueDate)
             .setPriority(priorityParam)
             .setStatus(statusParam);
-        return openCGAClient.getClinicalAnalysisClient().create(clinicalAnalysisCreateParams, queryParams);
+
+        }        return openCGAClient.getClinicalAnalysisClient().create(clinicalAnalysisCreateParams, queryParams);
     }
 
     private RestResponse<ObjectMap> distinct() throws Exception {
@@ -430,11 +446,17 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        CancerTieringInterpretationAnalysisParams cancerTieringInterpretationAnalysisParams = (CancerTieringInterpretationAnalysisParams) new CancerTieringInterpretationAnalysisParams()
+        CancerTieringInterpretationAnalysisParams cancerTieringInterpretationAnalysisParams = new CancerTieringInterpretationAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), cancerTieringInterpretationAnalysisParams);
+        }  else {
+        ((CancerTieringInterpretationAnalysisParams)cancerTieringInterpretationAnalysisParams)
             .setClinicalAnalysis(commandOptions.clinicalAnalysis)
             .setDiscardedVariants(splitWithTrim(commandOptions.discardedVariants))
             .setPrimary(commandOptions.primary);
-        return openCGAClient.getClinicalAnalysisClient().runInterpreterCancerTiering(cancerTieringInterpretationAnalysisParams, queryParams);
+
+        }        return openCGAClient.getClinicalAnalysisClient().runInterpreterCancerTiering(cancerTieringInterpretationAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runInterpreterTeam() throws Exception {
@@ -454,12 +476,18 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        TeamInterpretationAnalysisParams teamInterpretationAnalysisParams = (TeamInterpretationAnalysisParams) new TeamInterpretationAnalysisParams()
+        TeamInterpretationAnalysisParams teamInterpretationAnalysisParams = new TeamInterpretationAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), teamInterpretationAnalysisParams);
+        }  else {
+        ((TeamInterpretationAnalysisParams)teamInterpretationAnalysisParams)
             .setClinicalAnalysis(commandOptions.clinicalAnalysis)
             .setPanels(splitWithTrim(commandOptions.panels))
             .setFamilySegregation(commandOptions.familySegregation)
             .setPrimary(commandOptions.primary);
-        return openCGAClient.getClinicalAnalysisClient().runInterpreterTeam(teamInterpretationAnalysisParams, queryParams);
+
+        }        return openCGAClient.getClinicalAnalysisClient().runInterpreterTeam(teamInterpretationAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runInterpreterTiering() throws Exception {
@@ -480,11 +508,17 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         ClinicalProperty.Penetrance penetranceParam = ClinicalProperty.Penetrance.valueOf(commandOptions.penetrance);
 
-        TieringInterpretationAnalysisParams tieringInterpretationAnalysisParams = (TieringInterpretationAnalysisParams) new TieringInterpretationAnalysisParams()
+        TieringInterpretationAnalysisParams tieringInterpretationAnalysisParams = new TieringInterpretationAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), tieringInterpretationAnalysisParams);
+        }  else {
+        ((TieringInterpretationAnalysisParams)tieringInterpretationAnalysisParams)
             .setClinicalAnalysis(commandOptions.clinicalAnalysis)
             .setPanels(splitWithTrim(commandOptions.panels))
             .setPrimary(commandOptions.primary);
-        return openCGAClient.getClinicalAnalysisClient().runInterpreterTiering(tieringInterpretationAnalysisParams, queryParams);
+
+        }        return openCGAClient.getClinicalAnalysisClient().runInterpreterTiering(tieringInterpretationAnalysisParams, queryParams);
     }
 
     private RestResponse<Job> runInterpreterZetta() throws Exception {
@@ -504,7 +538,12 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        ZettaInterpretationAnalysisParams zettaInterpretationAnalysisParams = (ZettaInterpretationAnalysisParams) new ZettaInterpretationAnalysisParams()
+        ZettaInterpretationAnalysisParams zettaInterpretationAnalysisParams = new ZettaInterpretationAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), zettaInterpretationAnalysisParams);
+        }  else {
+        ((ZettaInterpretationAnalysisParams)zettaInterpretationAnalysisParams)
             .setClinicalAnalysis(commandOptions.clinicalAnalysis)
             .setId(splitWithTrim(commandOptions.id))
             .setRegion(commandOptions.region)
@@ -556,7 +595,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             .setPanelRoleInCancer(commandOptions.panelRoleInCancer)
             .setTrait(commandOptions.trait)
             .setPrimary(commandOptions.primary);
-        return openCGAClient.getClinicalAnalysisClient().runInterpreterZetta(zettaInterpretationAnalysisParams, queryParams);
+
+        }        return openCGAClient.getClinicalAnalysisClient().runInterpreterZetta(zettaInterpretationAnalysisParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStatsRga() throws Exception {
@@ -695,9 +735,15 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        RgaAnalysisParams rgaAnalysisParams = (RgaAnalysisParams) new RgaAnalysisParams()
+        RgaAnalysisParams rgaAnalysisParams = new RgaAnalysisParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), rgaAnalysisParams);
+        }  else {
+        ((RgaAnalysisParams)rgaAnalysisParams)
             .setFile(commandOptions.file);
-        return openCGAClient.getClinicalAnalysisClient().runRgaIndex(rgaAnalysisParams, queryParams);
+
+        }        return openCGAClient.getClinicalAnalysisClient().runRgaIndex(rgaAnalysisParams, queryParams);
     }
 
     private RestResponse<KnockoutByIndividual> queryRgaIndividual() throws Exception {
@@ -1070,7 +1116,12 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(familyParam, "id", commandOptions.familyId);
         ClinicalAnalysis.Type typeParam = ClinicalAnalysis.Type.valueOf(commandOptions.type);
 
-        ClinicalAnalysisUpdateParams clinicalAnalysisUpdateParams = (ClinicalAnalysisUpdateParams) new ClinicalAnalysisUpdateParams()
+        ClinicalAnalysisUpdateParams clinicalAnalysisUpdateParams = new ClinicalAnalysisUpdateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), clinicalAnalysisUpdateParams);
+        }  else {
+        ((ClinicalAnalysisUpdateParams)clinicalAnalysisUpdateParams)
             .setId(commandOptions.id)
             .setDescription(commandOptions.description)
             .setDisorder(disorderReferenceParam)
@@ -1085,7 +1136,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             .setDueDate(commandOptions.dueDate)
             .setPriority(priorityParam)
             .setStatus(statusParam);
-        return openCGAClient.getClinicalAnalysisClient().update(commandOptions.clinicalAnalyses, clinicalAnalysisUpdateParams, queryParams);
+
+        }        return openCGAClient.getClinicalAnalysisClient().update(commandOptions.clinicalAnalyses, clinicalAnalysisUpdateParams, queryParams);
     }
 
     private RestResponse<ClinicalAnalysis> info() throws Exception {
@@ -1134,7 +1186,12 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         ClinicalAnalystParam clinicalAnalystParam= new ClinicalAnalystParam();
         invokeSetter(clinicalAnalystParam, "id", commandOptions.analystId);
 
-        InterpretationCreateParams interpretationCreateParams = (InterpretationCreateParams) new InterpretationCreateParams()
+        InterpretationCreateParams interpretationCreateParams = new InterpretationCreateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), interpretationCreateParams);
+        }  else {
+        ((InterpretationCreateParams)interpretationCreateParams)
             .setDescription(commandOptions.description)
             .setClinicalAnalysisId(commandOptions.clinicalAnalysisId)
             .setCreationDate(commandOptions.creationDate)
@@ -1142,7 +1199,8 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             .setAnalyst(clinicalAnalystParam)
             .setMethod(interpretationMethod)
             .setStatus(statusParam);
-        return openCGAClient.getClinicalAnalysisClient().createInterpretation(commandOptions.clinicalAnalysis, interpretationCreateParams, queryParams);
+
+        }        return openCGAClient.getClinicalAnalysisClient().createInterpretation(commandOptions.clinicalAnalysis, interpretationCreateParams, queryParams);
     }
 
     private RestResponse<Interpretation> deleteInterpretation() throws Exception {
@@ -1189,13 +1247,19 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
         ClinicalAnalystParam clinicalAnalystParam= new ClinicalAnalystParam();
         invokeSetter(clinicalAnalystParam, "id", commandOptions.analystId);
 
-        InterpretationUpdateParams interpretationUpdateParams = (InterpretationUpdateParams) new InterpretationUpdateParams()
+        InterpretationUpdateParams interpretationUpdateParams = new InterpretationUpdateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), interpretationUpdateParams);
+        }  else {
+        ((InterpretationUpdateParams)interpretationUpdateParams)
             .setDescription(commandOptions.description)
             .setAnalyst(clinicalAnalystParam)
             .setMethod(interpretationMethod)
             .setCreationDate(commandOptions.creationDate)
             .setModificationDate(commandOptions.modificationDate)
             .setStatus(statusParam);
-        return openCGAClient.getClinicalAnalysisClient().updateInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretation, interpretationUpdateParams, queryParams);
+
+        }        return openCGAClient.getClinicalAnalysisClient().updateInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretation, interpretationUpdateParams, queryParams);
     }
 }

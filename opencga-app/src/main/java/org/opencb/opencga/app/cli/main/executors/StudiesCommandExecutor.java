@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.opencb.opencga.app.cli.main.options.StudiesCommandOptions;
 
@@ -154,11 +155,17 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
 
         StudiesCommandOptions.UpdateAclCommandOptions commandOptions = studiesCommandOptions.updateAclCommandOptions;
 
-        StudyAclUpdateParams studyAclUpdateParams = (StudyAclUpdateParams) new StudyAclUpdateParams()
+        StudyAclUpdateParams studyAclUpdateParams = new StudyAclUpdateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), studyAclUpdateParams);
+        }  else {
+        ((StudyAclUpdateParams)studyAclUpdateParams)
             .setStudy(commandOptions.study)
             .setTemplate(commandOptions.template)
             .setPermissions(commandOptions.permissions);
-        return openCGAClient.getStudyClient().updateAcl(commandOptions.members, commandOptions.action, studyAclUpdateParams);
+
+        }        return openCGAClient.getStudyClient().updateAcl(commandOptions.members, commandOptions.action, studyAclUpdateParams);
     }
 
     private RestResponse<Study> create() throws Exception {
@@ -183,7 +190,12 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         invokeSetter(statusParams, "name", commandOptions.statusName);
         invokeSetter(statusParams, "description", commandOptions.statusDescription);
 
-        StudyCreateParams studyCreateParams = (StudyCreateParams) new StudyCreateParams()
+        StudyCreateParams studyCreateParams = new StudyCreateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), studyCreateParams);
+        }  else {
+        ((StudyCreateParams)studyCreateParams)
             .setId(commandOptions.id)
             .setName(commandOptions.name)
             .setAlias(commandOptions.alias)
@@ -192,7 +204,8 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             .setCreationDate(commandOptions.creationDate)
             .setModificationDate(commandOptions.modificationDate)
             .setStatus(statusParams);
-        return openCGAClient.getStudyClient().create(studyCreateParams, queryParams);
+
+        }        return openCGAClient.getStudyClient().create(studyCreateParams, queryParams);
     }
 
     private RestResponse<Study> search() throws Exception {
@@ -312,10 +325,16 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        GroupCreateParams groupCreateParams = (GroupCreateParams) new GroupCreateParams()
+        GroupCreateParams groupCreateParams = new GroupCreateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), groupCreateParams);
+        }  else {
+        ((GroupCreateParams)groupCreateParams)
             .setId(commandOptions.id)
             .setUsers(splitWithTrim(commandOptions.users));
-        return openCGAClient.getStudyClient().updateGroups(commandOptions.study, groupCreateParams, queryParams);
+
+        }        return openCGAClient.getStudyClient().updateGroups(commandOptions.study, groupCreateParams, queryParams);
     }
 
     private RestResponse<Group> updateGroupsUsers() throws Exception {
@@ -328,9 +347,15 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        GroupUpdateParams groupUpdateParams = (GroupUpdateParams) new GroupUpdateParams()
+        GroupUpdateParams groupUpdateParams = new GroupUpdateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), groupUpdateParams);
+        }  else {
+        ((GroupUpdateParams)groupUpdateParams)
             .setUsers(splitWithTrim(commandOptions.users));
-        return openCGAClient.getStudyClient().updateGroupsUsers(commandOptions.study, commandOptions.group, groupUpdateParams, queryParams);
+
+        }        return openCGAClient.getStudyClient().updateGroupsUsers(commandOptions.study, commandOptions.group, groupUpdateParams, queryParams);
     }
 
     private RestResponse<PermissionRule> permissionRules() throws Exception {
@@ -351,11 +376,17 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        PermissionRule permissionRule = (PermissionRule) new PermissionRule()
+        PermissionRule permissionRule = new PermissionRule();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), permissionRule);
+        }  else {
+        ((PermissionRule)permissionRule)
             .setId(commandOptions.id)
             .setMembers(splitWithTrim(commandOptions.members))
             .setPermissions(splitWithTrim(commandOptions.permissions));
-        return openCGAClient.getStudyClient().updatePermissionRules(commandOptions.study, commandOptions.entity, permissionRule, queryParams);
+
+        }        return openCGAClient.getStudyClient().updatePermissionRules(commandOptions.study, commandOptions.entity, permissionRule, queryParams);
     }
 
     protected RestResponse<Job> runTemplates() throws Exception {
@@ -402,7 +433,12 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         invokeSetter(statusParams, "name", commandOptions.statusName);
         invokeSetter(statusParams, "description", commandOptions.statusDescription);
 
-        StudyUpdateParams studyUpdateParams = (StudyUpdateParams) new StudyUpdateParams()
+        StudyUpdateParams studyUpdateParams = new StudyUpdateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), studyUpdateParams);
+        }  else {
+        ((StudyUpdateParams)studyUpdateParams)
             .setName(commandOptions.name)
             .setAlias(commandOptions.alias)
             .setType(studyType)
@@ -410,7 +446,8 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             .setCreationDate(commandOptions.creationDate)
             .setModificationDate(commandOptions.modificationDate)
             .setStatus(statusParams);
-        return openCGAClient.getStudyClient().update(commandOptions.study, studyUpdateParams, queryParams);
+
+        }        return openCGAClient.getStudyClient().update(commandOptions.study, studyUpdateParams, queryParams);
     }
 
     private RestResponse<VariableSet> variableSets() throws Exception {
@@ -435,13 +472,19 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("action", commandOptions.action);
 
 
-        VariableSetCreateParams variableSetCreateParams = (VariableSetCreateParams) new VariableSetCreateParams()
+        VariableSetCreateParams variableSetCreateParams = new VariableSetCreateParams();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variableSetCreateParams);
+        }  else {
+        ((VariableSetCreateParams)variableSetCreateParams)
             .setId(commandOptions.id)
             .setName(commandOptions.name)
             .setUnique(commandOptions.unique)
             .setConfidential(commandOptions.confidential)
             .setDescription(commandOptions.description);
-        return openCGAClient.getStudyClient().updateVariableSets(commandOptions.study, variableSetCreateParams, queryParams);
+
+        }        return openCGAClient.getStudyClient().updateVariableSets(commandOptions.study, variableSetCreateParams, queryParams);
     }
 
     private RestResponse<VariableSet> updateVariableSetsVariables() throws Exception {
@@ -455,7 +498,12 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
 
         Variable.VariableType typeParam = Variable.VariableType.valueOf(commandOptions.type);
 
-        Variable variable = (Variable) new Variable()
+        Variable variable = new Variable();
+        if (commandOptions.jsonFile != null) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variable);
+        }  else {
+        ((Variable)variable)
             .setId(commandOptions.id)
             .setName(commandOptions.name)
             .setCategory(commandOptions.category)
@@ -467,6 +515,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             .setRank(commandOptions.rank)
             .setDependsOn(commandOptions.dependsOn)
             .setDescription(commandOptions.description);
-        return openCGAClient.getStudyClient().updateVariableSetsVariables(commandOptions.study, commandOptions.variableSet, variable, queryParams);
+
+        }        return openCGAClient.getStudyClient().updateVariableSetsVariables(commandOptions.study, commandOptions.variableSet, variable, queryParams);
     }
 }

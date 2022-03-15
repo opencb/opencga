@@ -163,11 +163,16 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                     sb.append("        @ParametersDelegate\n");
                     sb.append("        public CommonCommandOptions commonOptions = commonCommandOptions;\n");
                     sb.append("    \n");
+                    if (restEndpoint.getMethod().equals("POST")) {
+                        sb.append("        @Parameter(names = {\"--json-file\"}, description = \"File for body data. Passing this file will ignore the command line parameters for the body REST data.\", required = false, arity = 1)\n");
+                        sb.append("        public String jsonFile;\n");
+                        sb.append("    \n");
+                    }
+
+
                     Set<String> variable_names = new HashSet<>();
 
                     for (RestParameter restParameter : restEndpoint.getParameters()) {
-
-
                         if (config.isAvailableSubCommand(restParameter.getName(), commandName)) {
                             if (!"body".equals(normaliceNames(restParameter.getName()))) {
                                 if (restParameter.isAvailableType() && !variable_names.contains(normaliceNames(getAsCamelCase(restParameter.getName())))) {
@@ -182,10 +187,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                             } else {
                                 if (restParameter.getData() != null)
                                     for (RestParameter bodyRestParameter : restParameter.getData()) {
-
-
                                         if (config.isAvailableSubCommand(bodyRestParameter.getName(), commandName) && bodyRestParameter.isAvailableType() && !variable_names.contains(normaliceNames(getAsCamelCase(restParameter.getName())))) {
-
                                             sb.append("        @Parameter(names = {" + getShortCuts(bodyRestParameter, config) + "}, " +
                                                     "description"
                                                     + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + "\", required = "
