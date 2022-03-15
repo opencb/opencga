@@ -51,7 +51,10 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;\n\n");
 
         sb.append("import java.util.List;\n");
+        sb.append("import org.opencb.opencga.core.response.QueryType;\n");
         sb.append("import com.fasterxml.jackson.databind.ObjectMapper;\n\n");
+        sb.append("import org.opencb.commons.utils.PrintUtils;\n\n");
+
 
         sb.append("import " + config.getOptions().getOptionsPackage() + "." + getAsClassName(restCategory.getName()) + "CommandOptions;\n\n");
         if (categoryConfig.isExecutorExtended()) {
@@ -282,7 +285,12 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             }
 
             sb.append("\n        " + bodyParamsObject + " " + getAsVariableName(bodyParamsObject) + " = new " + bodyParamsObject + "();");
-            sb.append("\n        if (commandOptions.jsonFile != null) {");
+            sb.append("\n        if (commandOptions.jsonViewTemplate) {");
+            sb.append("\n            RestResponse<" + getValidResponseNames(restEndpoint.getResponse()) + "> res = new RestResponse<>();");
+            sb.append("\n            res.setType(QueryType.VOID);");
+            sb.append("\n            PrintUtils.println(getObjectAsJSON(" + getAsVariableName(bodyParamsObject) + "));");
+            sb.append("\n            return res;");
+            sb.append("\n        } else if (commandOptions.jsonFile != null) {");
             sb.append("\n            ObjectMapper objectMapper = new ObjectMapper();");
             sb.append("\n            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), " + getAsVariableName(bodyParamsObject) + ");");
             sb.append("\n        } ");
@@ -332,7 +340,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
 
                 }
                 sb.append(";\n");
-                sb.append("\n        }");
+                sb.append("\n        }\n");
             }
         }
 

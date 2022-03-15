@@ -73,8 +73,11 @@ public class AnalysisAlignmentCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
         public String jsonFile;
+    
+        @Parameter(names = {"--json-view-template"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonViewTemplate= false;
     
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
@@ -113,8 +116,11 @@ public class AnalysisAlignmentCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
         public String jsonFile;
+    
+        @Parameter(names = {"--json-view-template"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonViewTemplate= false;
     
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
@@ -147,8 +153,11 @@ public class AnalysisAlignmentCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
         public String jsonFile;
+    
+        @Parameter(names = {"--json-view-template"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonViewTemplate= false;
     
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
@@ -271,8 +280,11 @@ public class AnalysisAlignmentCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
         public String jsonFile;
+    
+        @Parameter(names = {"--json-view-template"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonViewTemplate= false;
     
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
@@ -302,8 +314,11 @@ public class AnalysisAlignmentCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
         public String jsonFile;
+    
+        @Parameter(names = {"--json-view-template"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonViewTemplate= false;
     
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
@@ -333,8 +348,11 @@ public class AnalysisAlignmentCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
         public String jsonFile;
+    
+        @Parameter(names = {"--json-view-template"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonViewTemplate= false;
     
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
@@ -364,8 +382,11 @@ public class AnalysisAlignmentCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
         public String jsonFile;
+    
+        @Parameter(names = {"--json-view-template"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonViewTemplate= false;
     
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
@@ -395,8 +416,11 @@ public class AnalysisAlignmentCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
         public String jsonFile;
+    
+        @Parameter(names = {"--json-view-template"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonViewTemplate= false;
     
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 
@@ -505,8 +529,11 @@ public class AnalysisAlignmentCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
         public String jsonFile;
+    
+        @Parameter(names = {"--json-view-template"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonViewTemplate= false;
     
         @Parameter(names = {"--study", "-s"}, description = "study", required = false, arity = 1)
         public String study; 

@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -204,5 +205,27 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     public OpencgaCommandExecutor setOpenCGAClient(OpenCGAClient openCGAClient) {
         this.openCGAClient = openCGAClient;
         return this;
+    }
+
+    public String getObjectAsJSON(Object o) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        retrieveDeepObject(o);
+        //Convert object to JSON string and pretty print
+        String jsonInString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(o);
+        return jsonInString;
+    }
+
+    private void retrieveDeepObject(Object o) {
+        try {
+            Field[] fields = o.getClass().getDeclaredFields();
+            for (Field field : fields) {
+                if (!field.getType().isPrimitive()) {
+                    Class<?> cl = Class.forName(field.getType().getCanonicalName());
+                    invokeSetter(o, field.getName(), cl.newInstance());
+                }
+            }
+        } catch (Exception e) {
+
+        }
     }
 }

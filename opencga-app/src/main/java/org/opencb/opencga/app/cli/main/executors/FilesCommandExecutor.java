@@ -9,7 +9,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import org.opencb.opencga.core.response.QueryType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.FilesCommandOptions;
 
@@ -174,7 +177,12 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
 
         FileAclUpdateParams fileAclUpdateParams = new FileAclUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<ObjectMap> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(fileAclUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileAclUpdateParams);
         }  else {
@@ -183,7 +191,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             .setSample(commandOptions.sample)
             .setPermissions(commandOptions.permissions);
 
-        }        return openCGAClient.getFileClient().updateAcl(commandOptions.members, commandOptions.action, fileAclUpdateParams, queryParams);
+        }
+        return openCGAClient.getFileClient().updateAcl(commandOptions.members, commandOptions.action, fileAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -236,14 +245,20 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
 
         TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), tsvAnnotationParams);
         }  else {
         ((TsvAnnotationParams)tsvAnnotationParams)
             .setContent(commandOptions.content);
 
-        }        return openCGAClient.getFileClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
+        }
+        return openCGAClient.getFileClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
     private RestResponse<File> create() throws Exception {
@@ -276,7 +291,12 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         File.Bioformat bioformatParam = File.Bioformat.valueOf(commandOptions.bioformat);
 
         FileCreateParams fileCreateParams = new FileCreateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<File> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(fileCreateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileCreateParams);
         }  else {
@@ -295,7 +315,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             .setModificationDate(commandOptions.modificationDate)
             .setStatus(statusParams);
 
-        }        return openCGAClient.getFileClient().create(fileCreateParams, queryParams);
+        }
+        return openCGAClient.getFileClient().create(fileCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -356,7 +377,12 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
 
         FileFetch fileFetch = new FileFetch();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(fileFetch));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileFetch);
         }  else {
@@ -364,7 +390,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             .setUrl(commandOptions.url)
             .setPath(commandOptions.path);
 
-        }        return openCGAClient.getFileClient().fetch(fileFetch, queryParams);
+        }
+        return openCGAClient.getFileClient().fetch(fileFetch, queryParams);
     }
 
     private RestResponse<File> link() throws Exception {
@@ -387,7 +414,12 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         invokeSetter(statusParams, "description", commandOptions.statusDescription);
 
         FileLinkParams fileLinkParams = new FileLinkParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<File> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(fileLinkParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileLinkParams);
         }  else {
@@ -399,7 +431,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             .setModificationDate(commandOptions.modificationDate)
             .setStatus(statusParams);
 
-        }        return openCGAClient.getFileClient().link(fileLinkParams, queryParams);
+        }
+        return openCGAClient.getFileClient().link(fileLinkParams, queryParams);
     }
 
     private RestResponse<Job> runLink() throws Exception {
@@ -420,7 +453,12 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
 
         FileLinkToolParams fileLinkToolParams = new FileLinkToolParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(fileLinkToolParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileLinkToolParams);
         }  else {
@@ -430,7 +468,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             .setDescription(commandOptions.description)
             .setParents(commandOptions.parents);
 
-        }        return openCGAClient.getFileClient().runLink(fileLinkToolParams, queryParams);
+        }
+        return openCGAClient.getFileClient().runLink(fileLinkToolParams, queryParams);
     }
 
     private RestResponse<Job> runPostlink() throws Exception {
@@ -451,7 +490,12 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
 
 
         PostLinkToolParams postLinkToolParams = new PostLinkToolParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(postLinkToolParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), postLinkToolParams);
         }  else {
@@ -459,7 +503,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             .setFiles(splitWithTrim(commandOptions.files))
             .setBatchSize(commandOptions.batchSize);
 
-        }        return openCGAClient.getFileClient().runPostlink(postLinkToolParams, queryParams);
+        }
+        return openCGAClient.getFileClient().runPostlink(postLinkToolParams, queryParams);
     }
 
     private RestResponse<File> search() throws Exception {
@@ -616,7 +661,12 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         File.Bioformat bioformatParam = File.Bioformat.valueOf(commandOptions.bioformat);
 
         FileUpdateParams fileUpdateParams = new FileUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<File> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(fileUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileUpdateParams);
         }  else {
@@ -633,7 +683,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             .setSize(commandOptions.size)
             .setStatus(statusParams);
 
-        }        return openCGAClient.getFileClient().update(commandOptions.files, fileUpdateParams, queryParams);
+        }
+        return openCGAClient.getFileClient().update(commandOptions.files, fileUpdateParams, queryParams);
     }
 
     private RestResponse<DataInputStream> download() throws Exception {

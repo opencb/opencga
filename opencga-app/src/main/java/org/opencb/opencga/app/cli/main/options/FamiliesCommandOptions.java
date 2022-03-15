@@ -67,8 +67,11 @@ public class FamiliesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
         public String jsonFile;
+    
+        @Parameter(names = {"--json-view-template"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonViewTemplate= false;
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -150,8 +153,11 @@ public class FamiliesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
         public String jsonFile;
+    
+        @Parameter(names = {"--json-view-template"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonViewTemplate= false;
     
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
@@ -178,8 +184,11 @@ public class FamiliesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
         public String jsonFile;
+    
+        @Parameter(names = {"--json-view-template"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonViewTemplate= false;
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 
@@ -433,8 +442,11 @@ public class FamiliesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
     
-        @Parameter(names = {"--json-file"}, description = "File for body data. Passing this file will ignore the command line parameters for the body REST data.", required = false, arity = 1)
+        @Parameter(names = {"--json-file"}, description = "File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.", required = false, arity = 1)
         public String jsonFile;
+    
+        @Parameter(names = {"--json-view-template"}, description = "Show example of file structure for body data.", help = true, arity = 0)
+        public Boolean jsonViewTemplate= false;
     
         @Parameter(names = {"--include", "-I"}, description = "Fields included in the response, whole JSON path must be provided", required = false, arity = 1)
         public String include; 

@@ -9,7 +9,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import org.opencb.opencga.core.response.QueryType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.IndividualsCommandOptions;
 
@@ -126,7 +129,12 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
 
         IndividualAclUpdateParams individualAclUpdateParams = new IndividualAclUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<ObjectMap> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(individualAclUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), individualAclUpdateParams);
         }  else {
@@ -135,7 +143,8 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             .setSample(commandOptions.sample)
             .setPermissions(commandOptions.permissions);
 
-        }        return openCGAClient.getIndividualClient().updateAcl(commandOptions.members, commandOptions.action, individualAclUpdateParams, queryParams);
+        }
+        return openCGAClient.getIndividualClient().updateAcl(commandOptions.members, commandOptions.action, individualAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -189,14 +198,20 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
 
         TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), tsvAnnotationParams);
         }  else {
         ((TsvAnnotationParams)tsvAnnotationParams)
             .setContent(commandOptions.content);
 
-        }        return openCGAClient.getIndividualClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
+        }
+        return openCGAClient.getIndividualClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
     private RestResponse<Individual> create() throws Exception {
@@ -249,7 +264,12 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         IndividualProperty.LifeStatus lifeStatusParam = IndividualProperty.LifeStatus.valueOf(commandOptions.lifeStatus);
 
         IndividualCreateParams individualCreateParams = new IndividualCreateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Individual> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(individualCreateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), individualCreateParams);
         }  else {
@@ -269,7 +289,8 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             .setLifeStatus(lifeStatusParam)
             .setStatus(statusParams);
 
-        }        return openCGAClient.getIndividualClient().create(individualCreateParams, queryParams);
+        }
+        return openCGAClient.getIndividualClient().create(individualCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -461,7 +482,12 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         IndividualProperty.LifeStatus lifeStatusParam = IndividualProperty.LifeStatus.valueOf(commandOptions.lifeStatus);
 
         IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Individual> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(individualUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), individualUpdateParams);
         }  else {
@@ -479,7 +505,8 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             .setDateOfBirth(commandOptions.dateOfBirth)
             .setStatus(statusParams);
 
-        }        return openCGAClient.getIndividualClient().update(commandOptions.individuals, individualUpdateParams, queryParams);
+        }
+        return openCGAClient.getIndividualClient().update(commandOptions.individuals, individualUpdateParams, queryParams);
     }
 
     private RestResponse<Individual> relatives() throws Exception {

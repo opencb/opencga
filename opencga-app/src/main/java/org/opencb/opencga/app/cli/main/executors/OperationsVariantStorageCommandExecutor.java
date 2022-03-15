@@ -9,7 +9,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import org.opencb.opencga.core.response.QueryType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.OperationsVariantStorageCommandOptions;
 
@@ -166,7 +169,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(cellBaseConfiguration));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), cellBaseConfiguration);
         }  else {
@@ -174,7 +182,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setUrl(commandOptions.url)
             .setVersion(commandOptions.version);
 
-        }        return openCGAClient.getVariantOperationClient().configureCellbase(cellBaseConfiguration, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().configureCellbase(cellBaseConfiguration, queryParams);
     }
 
     private RestResponse<Job> aggregateVariant() throws Exception {
@@ -195,7 +204,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantAggregateParams variantAggregateParams = new VariantAggregateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantAggregateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantAggregateParams);
         }  else {
@@ -203,7 +217,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setOverwrite(commandOptions.overwrite)
             .setResume(commandOptions.resume);
 
-        }        return openCGAClient.getVariantOperationClient().aggregateVariant(variantAggregateParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().aggregateVariant(variantAggregateParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantAnnotation() throws Exception {
@@ -242,7 +257,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantAnnotationIndexParams variantAnnotationIndexParams = new VariantAnnotationIndexParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantAnnotationIndexParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantAnnotationIndexParams);
         }  else {
@@ -256,7 +276,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setLoad(commandOptions.load)
             .setCustomName(commandOptions.customName);
 
-        }        return openCGAClient.getVariantOperationClient().indexVariantAnnotation(variantAnnotationIndexParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().indexVariantAnnotation(variantAnnotationIndexParams, queryParams);
     }
 
     private RestResponse<Job> saveVariantAnnotation() throws Exception {
@@ -274,14 +295,20 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantAnnotationSaveParams variantAnnotationSaveParams = new VariantAnnotationSaveParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantAnnotationSaveParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantAnnotationSaveParams);
         }  else {
         ((VariantAnnotationSaveParams)variantAnnotationSaveParams)
             .setAnnotationId(commandOptions.annotationId);
 
-        }        return openCGAClient.getVariantOperationClient().saveVariantAnnotation(variantAnnotationSaveParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().saveVariantAnnotation(variantAnnotationSaveParams, queryParams);
     }
 
     private RestResponse<ObjectMap> configureVariant() throws Exception {
@@ -299,7 +326,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         ObjectMap objectMap = new ObjectMap();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<ObjectMap> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(objectMap));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), objectMap);
         }         return openCGAClient.getVariantOperationClient().configureVariant(objectMap, queryParams);
@@ -323,7 +355,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantFileDeleteParams variantFileDeleteParams = new VariantFileDeleteParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantFileDeleteParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantFileDeleteParams);
         }  else {
@@ -331,7 +368,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setFile(splitWithTrim(commandOptions.file))
             .setResume(commandOptions.resume);
 
-        }        return openCGAClient.getVariantOperationClient().deleteVariant(variantFileDeleteParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().deleteVariant(variantFileDeleteParams, queryParams);
     }
 
     private RestResponse<Job> aggregateVariantFamily() throws Exception {
@@ -352,7 +390,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantAggregateFamilyParams variantAggregateFamilyParams = new VariantAggregateFamilyParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantAggregateFamilyParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantAggregateFamilyParams);
         }  else {
@@ -361,7 +404,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setGapsGenotype(commandOptions.gapsGenotype)
             .setResume(commandOptions.resume);
 
-        }        return openCGAClient.getVariantOperationClient().aggregateVariantFamily(variantAggregateFamilyParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().aggregateVariantFamily(variantAggregateFamilyParams, queryParams);
     }
 
     private RestResponse<Job> indexVariantFamily() throws Exception {
@@ -382,7 +426,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantFamilyIndexParams variantFamilyIndexParams = new VariantFamilyIndexParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantFamilyIndexParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantFamilyIndexParams);
         }  else {
@@ -391,7 +440,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setOverwrite(commandOptions.overwrite)
             .setSkipIncompleteFamilies(commandOptions.skipIncompleteFamilies);
 
-        }        return openCGAClient.getVariantOperationClient().indexVariantFamily(variantFamilyIndexParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().indexVariantFamily(variantFamilyIndexParams, queryParams);
     }
 
     private RestResponse<Job> indexVariant() throws Exception {
@@ -412,7 +462,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantIndexParams variantIndexParams = new VariantIndexParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantIndexParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantIndexParams);
         }  else {
@@ -446,7 +501,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setIndexSearch(commandOptions.indexSearch)
             .setSkipIndexedFiles(commandOptions.skipIndexedFiles);
 
-        }        return openCGAClient.getVariantOperationClient().indexVariant(variantIndexParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().indexVariant(variantIndexParams, queryParams);
     }
 
     private RestResponse<Job> launcherVariantIndex() throws Exception {
@@ -497,7 +553,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         invokeSetter(variantIndexParams, "skipIndexedFiles", commandOptions.indexParamsSkipIndexedFiles);
 
         VariantFileIndexJobLauncherParams variantFileIndexJobLauncherParams = new VariantFileIndexJobLauncherParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantFileIndexJobLauncherParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantFileIndexJobLauncherParams);
         }  else {
@@ -509,7 +570,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setMaxJobs(commandOptions.maxJobs)
             .setIndexParams(variantIndexParams);
 
-        }        return openCGAClient.getVariantOperationClient().launcherVariantIndex(variantFileIndexJobLauncherParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().launcherVariantIndex(variantFileIndexJobLauncherParams, queryParams);
     }
 
     private RestResponse<Job> runVariantJulie() throws Exception {
@@ -527,7 +589,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         JulieParams julieParams = new JulieParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(julieParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), julieParams);
         }  else {
@@ -536,7 +603,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setRegion(commandOptions.region)
             .setOverwrite(commandOptions.overwrite);
 
-        }        return openCGAClient.getVariantOperationClient().runVariantJulie(julieParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().runVariantJulie(julieParams, queryParams);
     }
 
     private RestResponse<Job> repairVariantMetadata() throws Exception {
@@ -553,7 +621,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantStorageMetadataRepairToolParams variantStorageMetadataRepairToolParams = new VariantStorageMetadataRepairToolParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantStorageMetadataRepairToolParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantStorageMetadataRepairToolParams);
         }  else {
@@ -561,7 +634,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setStudies(splitWithTrim(commandOptions.studies))
             .setSamplesBatchSize(commandOptions.samplesBatchSize);
 
-        }        return openCGAClient.getVariantOperationClient().repairVariantMetadata(variantStorageMetadataRepairToolParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().repairVariantMetadata(variantStorageMetadataRepairToolParams, queryParams);
     }
 
     private RestResponse<Job> synchronizeVariantMetadata() throws Exception {
@@ -582,7 +656,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantStorageMetadataSynchronizeParams variantStorageMetadataSynchronizeParams = new VariantStorageMetadataSynchronizeParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantStorageMetadataSynchronizeParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantStorageMetadataSynchronizeParams);
         }  else {
@@ -590,7 +669,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setStudy(commandOptions.bodyStudy)
             .setFiles(splitWithTrim(commandOptions.files));
 
-        }        return openCGAClient.getVariantOperationClient().synchronizeVariantMetadata(variantStorageMetadataSynchronizeParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().synchronizeVariantMetadata(variantStorageMetadataSynchronizeParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantSample() throws Exception {
@@ -611,7 +691,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantSampleDeleteParams variantSampleDeleteParams = new VariantSampleDeleteParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantSampleDeleteParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantSampleDeleteParams);
         }  else {
@@ -620,7 +705,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setForce(commandOptions.force)
             .setResume(commandOptions.resume);
 
-        }        return openCGAClient.getVariantOperationClient().deleteVariantSample(variantSampleDeleteParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().deleteVariantSample(variantSampleDeleteParams, queryParams);
     }
 
     private RestResponse<Job> indexVariantSample() throws Exception {
@@ -641,7 +727,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantSampleIndexParams variantSampleIndexParams = new VariantSampleIndexParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantSampleIndexParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantSampleIndexParams);
         }  else {
@@ -651,7 +742,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setAnnotate(commandOptions.annotate)
             .setOverwrite(commandOptions.overwrite);
 
-        }        return openCGAClient.getVariantOperationClient().indexVariantSample(variantSampleIndexParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().indexVariantSample(variantSampleIndexParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantScore() throws Exception {
@@ -694,7 +786,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantScoreIndexParams variantScoreIndexParams = new VariantScoreIndexParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantScoreIndexParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantScoreIndexParams);
         }  else {
@@ -706,7 +803,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setInputColumns(commandOptions.inputColumns)
             .setResume(commandOptions.resume);
 
-        }        return openCGAClient.getVariantOperationClient().indexVariantScore(variantScoreIndexParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().indexVariantScore(variantScoreIndexParams, queryParams);
     }
 
     private RestResponse<Job> secondaryIndexVariant() throws Exception {
@@ -728,7 +826,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantSecondaryIndexParams variantSecondaryIndexParams = new VariantSecondaryIndexParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantSecondaryIndexParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantSecondaryIndexParams);
         }  else {
@@ -737,7 +840,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setSample(splitWithTrim(commandOptions.sample))
             .setOverwrite(commandOptions.overwrite);
 
-        }        return openCGAClient.getVariantOperationClient().secondaryIndexVariant(variantSecondaryIndexParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().secondaryIndexVariant(variantSecondaryIndexParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantSecondaryIndex() throws Exception {
@@ -778,7 +882,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantStatsDeleteParams variantStatsDeleteParams = new VariantStatsDeleteParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantStatsDeleteParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantStatsDeleteParams);
         }  else {
@@ -786,7 +895,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setCohort(splitWithTrim(commandOptions.cohort))
             .setForce(commandOptions.force);
 
-        }        return openCGAClient.getVariantOperationClient().deleteVariantStats(variantStatsDeleteParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().deleteVariantStats(variantStatsDeleteParams, queryParams);
     }
 
     private RestResponse<Job> indexVariantStats() throws Exception {
@@ -807,7 +917,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantStatsIndexParams variantStatsIndexParams = new VariantStatsIndexParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantStatsIndexParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantStatsIndexParams);
         }  else {
@@ -818,7 +933,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             .setResume(commandOptions.resume)
             .setAggregationMappingFile(commandOptions.aggregationMappingFile);
 
-        }        return openCGAClient.getVariantOperationClient().indexVariantStats(variantStatsIndexParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().indexVariantStats(variantStatsIndexParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariantStudy() throws Exception {
@@ -839,13 +955,19 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
 
 
         VariantStudyDeleteParams variantStudyDeleteParams = new VariantStudyDeleteParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(variantStudyDeleteParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantStudyDeleteParams);
         }  else {
         ((VariantStudyDeleteParams)variantStudyDeleteParams)
             .setResume(commandOptions.resume);
 
-        }        return openCGAClient.getVariantOperationClient().deleteVariantStudy(variantStudyDeleteParams, queryParams);
+        }
+        return openCGAClient.getVariantOperationClient().deleteVariantStudy(variantStudyDeleteParams, queryParams);
     }
 }

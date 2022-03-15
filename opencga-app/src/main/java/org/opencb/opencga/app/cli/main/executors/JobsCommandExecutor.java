@@ -9,7 +9,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import org.opencb.opencga.core.response.QueryType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
 
@@ -119,7 +122,12 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         JobsCommandOptions.UpdateAclCommandOptions commandOptions = jobsCommandOptions.updateAclCommandOptions;
 
         JobAclUpdateParams jobAclUpdateParams = new JobAclUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<ObjectMap> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(jobAclUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), jobAclUpdateParams);
         }  else {
@@ -127,7 +135,8 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             .setJob(commandOptions.job)
             .setPermissions(commandOptions.permissions);
 
-        }        return openCGAClient.getJobClient().updateAcl(commandOptions.members, commandOptions.action, jobAclUpdateParams);
+        }
+        return openCGAClient.getJobClient().updateAcl(commandOptions.members, commandOptions.action, jobAclUpdateParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -184,7 +193,12 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         Enums.Priority priorityParam = Enums.Priority.valueOf(commandOptions.priority);
 
         JobCreateParams jobCreateParams = new JobCreateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(jobCreateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), jobCreateParams);
         }  else {
@@ -199,7 +213,8 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             .setTags(splitWithTrim(commandOptions.tags))
             .setResult(executionResult);
 
-        }        return openCGAClient.getJobClient().create(jobCreateParams, queryParams);
+        }
+        return openCGAClient.getJobClient().create(jobCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -253,7 +268,12 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
 
         JobRetryParams jobRetryParams = new JobRetryParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(jobRetryParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), jobRetryParams);
         }  else {
@@ -261,7 +281,8 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             .setJob(commandOptions.job)
             .setForce(commandOptions.force);
 
-        }        return openCGAClient.getJobClient().retry(jobRetryParams, queryParams);
+        }
+        return openCGAClient.getJobClient().retry(jobRetryParams, queryParams);
     }
 
     private RestResponse<Job> search() throws Exception {
@@ -385,7 +406,12 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
 
         JobUpdateParams jobUpdateParams = new JobUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(jobUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), jobUpdateParams);
         }  else {
@@ -394,7 +420,8 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             .setTags(splitWithTrim(commandOptions.tags))
             .setVisited(commandOptions.visited);
 
-        }        return openCGAClient.getJobClient().update(commandOptions.jobs, jobUpdateParams, queryParams);
+        }
+        return openCGAClient.getJobClient().update(commandOptions.jobs, jobUpdateParams, queryParams);
     }
 
     private RestResponse<FileContent> headLog() throws Exception {

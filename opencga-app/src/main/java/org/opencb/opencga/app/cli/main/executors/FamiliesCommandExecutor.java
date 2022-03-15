@@ -9,7 +9,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import org.opencb.opencga.core.response.QueryType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.FamiliesCommandOptions;
 
@@ -118,7 +121,12 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
 
         FamilyAclUpdateParams familyAclUpdateParams = new FamilyAclUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<ObjectMap> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(familyAclUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), familyAclUpdateParams);
         }  else {
@@ -128,7 +136,8 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             .setSample(commandOptions.sample)
             .setPermissions(commandOptions.permissions);
 
-        }        return openCGAClient.getFamilyClient().updateAcl(commandOptions.members, commandOptions.action, familyAclUpdateParams, queryParams);
+        }
+        return openCGAClient.getFamilyClient().updateAcl(commandOptions.members, commandOptions.action, familyAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -175,14 +184,20 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
 
 
         TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), tsvAnnotationParams);
         }  else {
         ((TsvAnnotationParams)tsvAnnotationParams)
             .setContent(commandOptions.content);
 
-        }        return openCGAClient.getFamilyClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
+        }
+        return openCGAClient.getFamilyClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
     private RestResponse<Family> create() throws Exception {
@@ -208,7 +223,12 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(statusParams, "description", commandOptions.statusDescription);
 
         FamilyCreateParams familyCreateParams = new FamilyCreateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Family> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(familyCreateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), familyCreateParams);
         }  else {
@@ -221,7 +241,8 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             .setExpectedSize(commandOptions.expectedSize)
             .setStatus(statusParams);
 
-        }        return openCGAClient.getFamilyClient().create(familyCreateParams, queryParams);
+        }
+        return openCGAClient.getFamilyClient().create(familyCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -370,7 +391,12 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(statusParams, "description", commandOptions.statusDescription);
 
         FamilyUpdateParams familyUpdateParams = new FamilyUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Family> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(familyUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), familyUpdateParams);
         }  else {
@@ -383,6 +409,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             .setExpectedSize(commandOptions.expectedSize)
             .setStatus(statusParams);
 
-        }        return openCGAClient.getFamilyClient().update(commandOptions.families, familyUpdateParams, queryParams);
+        }
+        return openCGAClient.getFamilyClient().update(commandOptions.families, familyUpdateParams, queryParams);
     }
 }

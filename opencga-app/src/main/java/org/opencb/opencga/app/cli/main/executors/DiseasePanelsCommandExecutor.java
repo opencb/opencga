@@ -9,7 +9,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import org.opencb.opencga.core.response.QueryType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.DiseasePanelsCommandOptions;
 
@@ -103,7 +106,12 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
 
         PanelAclUpdateParams panelAclUpdateParams = new PanelAclUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<ObjectMap> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(panelAclUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), panelAclUpdateParams);
         }  else {
@@ -111,7 +119,8 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             .setPanel(commandOptions.panel)
             .setPermissions(commandOptions.permissions);
 
-        }        return openCGAClient.getDiseasePanelClient().updateAcl(commandOptions.members, commandOptions.action, panelAclUpdateParams, queryParams);
+        }
+        return openCGAClient.getDiseasePanelClient().updateAcl(commandOptions.members, commandOptions.action, panelAclUpdateParams, queryParams);
     }
 
     private RestResponse<Panel> create() throws Exception {
@@ -133,7 +142,12 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
 
         PanelCreateParams panelCreateParams = new PanelCreateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Panel> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(panelCreateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), panelCreateParams);
         }  else {
@@ -144,7 +158,8 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             .setAuthor(commandOptions.author)
             .setTags(splitWithTrim(commandOptions.tags));
 
-        }        return openCGAClient.getDiseasePanelClient().create(panelCreateParams, queryParams);
+        }
+        return openCGAClient.getDiseasePanelClient().create(panelCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -283,7 +298,12 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
 
 
         PanelUpdateParams panelUpdateParams = new PanelUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Panel> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(panelUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), panelUpdateParams);
         }  else {
@@ -294,6 +314,7 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             .setAuthor(commandOptions.author)
             .setTags(splitWithTrim(commandOptions.tags));
 
-        }        return openCGAClient.getDiseasePanelClient().update(commandOptions.panels, panelUpdateParams, queryParams);
+        }
+        return openCGAClient.getDiseasePanelClient().update(commandOptions.panels, panelUpdateParams, queryParams);
     }
 }

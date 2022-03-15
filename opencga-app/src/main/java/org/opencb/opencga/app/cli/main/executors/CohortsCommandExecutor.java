@@ -9,7 +9,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import org.opencb.opencga.core.response.QueryType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.CohortsCommandOptions;
 
@@ -121,7 +124,12 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
 
         CohortAclUpdateParams cohortAclUpdateParams = new CohortAclUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<ObjectMap> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(cohortAclUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), cohortAclUpdateParams);
         }  else {
@@ -129,7 +137,8 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             .setCohort(commandOptions.cohort)
             .setPermissions(commandOptions.permissions);
 
-        }        return openCGAClient.getCohortClient().updateAcl(commandOptions.members, commandOptions.action, cohortAclUpdateParams, queryParams);
+        }
+        return openCGAClient.getCohortClient().updateAcl(commandOptions.members, commandOptions.action, cohortAclUpdateParams, queryParams);
     }
 
     private RestResponse<FacetField> aggregationStats() throws Exception {
@@ -174,14 +183,20 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
 
         TsvAnnotationParams tsvAnnotationParams = new TsvAnnotationParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Job> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), tsvAnnotationParams);
         }  else {
         ((TsvAnnotationParams)tsvAnnotationParams)
             .setContent(commandOptions.content);
 
-        }        return openCGAClient.getCohortClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
+        }
+        return openCGAClient.getCohortClient().loadAnnotationSets(commandOptions.variableSetId, commandOptions.path, tsvAnnotationParams, queryParams);
     }
 
     private RestResponse<Cohort> create() throws Exception {
@@ -209,7 +224,12 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         Enums.CohortType typeParam = Enums.CohortType.valueOf(commandOptions.type);
 
         CohortCreateParams cohortCreateParams = new CohortCreateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Cohort> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(cohortCreateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), cohortCreateParams);
         }  else {
@@ -222,7 +242,8 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             .setModificationDate(commandOptions.modificationDate)
             .setStatus(statusParams);
 
-        }        return openCGAClient.getCohortClient().create(cohortCreateParams, queryParams);
+        }
+        return openCGAClient.getCohortClient().create(cohortCreateParams, queryParams);
     }
 
     private RestResponse<Object> distinct() throws Exception {
@@ -290,7 +311,12 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         Enums.CohortType typeParam = Enums.CohortType.valueOf(commandOptions.type);
 
         CohortGenerateParams cohortGenerateParams = new CohortGenerateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Cohort> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(cohortGenerateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), cohortGenerateParams);
         }  else {
@@ -302,7 +328,8 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             .setModificationDate(commandOptions.bodyModificationDate)
             .setStatus(statusParams);
 
-        }        return openCGAClient.getCohortClient().generate(cohortGenerateParams, queryParams);
+        }
+        return openCGAClient.getCohortClient().generate(cohortGenerateParams, queryParams);
     }
 
     private RestResponse<Cohort> search() throws Exception {
@@ -414,7 +441,12 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         Enums.CohortType typeParam = Enums.CohortType.valueOf(commandOptions.type);
 
         CohortUpdateParams cohortUpdateParams = new CohortUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Cohort> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(cohortUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), cohortUpdateParams);
         }  else {
@@ -426,6 +458,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             .setModificationDate(commandOptions.modificationDate)
             .setStatus(statusParams);
 
-        }        return openCGAClient.getCohortClient().update(commandOptions.cohorts, cohortUpdateParams, queryParams);
+        }
+        return openCGAClient.getCohortClient().update(commandOptions.cohorts, cohortUpdateParams, queryParams);
     }
 }

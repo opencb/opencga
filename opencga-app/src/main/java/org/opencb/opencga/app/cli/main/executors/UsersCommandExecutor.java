@@ -9,7 +9,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import org.opencb.opencga.core.response.QueryType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
 
@@ -116,7 +119,12 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         UsersCommandOptions.CreateCommandOptions commandOptions = usersCommandOptions.createCommandOptions;
 
         UserCreateParams userCreateParams = new UserCreateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<User> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(userCreateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), userCreateParams);
         }  else {
@@ -127,7 +135,8 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             .setPassword(commandOptions.password)
             .setOrganization(commandOptions.organization);
 
-        }        return openCGAClient.getUserClient().create(userCreateParams);
+        }
+        return openCGAClient.getUserClient().create(userCreateParams);
     }
 
     protected RestResponse<AuthenticationResponse> login() throws Exception {
@@ -145,7 +154,12 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
         UsersCommandOptions.PasswordCommandOptions commandOptions = usersCommandOptions.passwordCommandOptions;
 
         PasswordChangeParams passwordChangeParams = new PasswordChangeParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<User> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(passwordChangeParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), passwordChangeParams);
         }  else {
@@ -155,7 +169,8 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             .setNewPassword(commandOptions.newPassword)
             .setReset(commandOptions.reset);
 
-        }        return openCGAClient.getUserClient().password(passwordChangeParams);
+        }
+        return openCGAClient.getUserClient().password(passwordChangeParams);
     }
 
     private RestResponse<User> info() throws Exception {
@@ -194,14 +209,20 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
 
 
         ConfigUpdateParams configUpdateParams = new ConfigUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<ObjectMap> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(configUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), configUpdateParams);
         }  else {
         ((ConfigUpdateParams)configUpdateParams)
             .setId(commandOptions.id);
 
-        }        return openCGAClient.getUserClient().updateConfigs(commandOptions.user, configUpdateParams, queryParams);
+        }
+        return openCGAClient.getUserClient().updateConfigs(commandOptions.user, configUpdateParams, queryParams);
     }
 
     private RestResponse<UserFilter> filters() throws Exception {
@@ -252,7 +273,12 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
 
 
         UserUpdateParams userUpdateParams = new UserUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<User> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(userUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), userUpdateParams);
         }  else {
@@ -261,6 +287,7 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             .setEmail(commandOptions.email)
             .setOrganization(commandOptions.organization);
 
-        }        return openCGAClient.getUserClient().update(commandOptions.user, userUpdateParams, queryParams);
+        }
+        return openCGAClient.getUserClient().update(commandOptions.user, userUpdateParams, queryParams);
     }
 }

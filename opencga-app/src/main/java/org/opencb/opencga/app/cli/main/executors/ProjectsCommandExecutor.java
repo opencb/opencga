@@ -9,7 +9,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
 import java.util.List;
+import org.opencb.opencga.core.response.QueryType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.ProjectsCommandOptions;
 
@@ -101,7 +104,12 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(projectOrganism, "assembly", commandOptions.organismAssembly);
 
         ProjectCreateParams projectCreateParams = new ProjectCreateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Project> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(projectCreateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), projectCreateParams);
         }  else {
@@ -113,7 +121,8 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             .setModificationDate(commandOptions.modificationDate)
             .setOrganism(projectOrganism);
 
-        }        return openCGAClient.getProjectClient().create(projectCreateParams, queryParams);
+        }
+        return openCGAClient.getProjectClient().create(projectCreateParams, queryParams);
     }
 
     private RestResponse<Project> search() throws Exception {
@@ -209,7 +218,12 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(projectOrganism, "assembly", commandOptions.organismAssembly);
 
         ProjectUpdateParams projectUpdateParams = new ProjectUpdateParams();
-        if (commandOptions.jsonFile != null) {
+        if (commandOptions.jsonViewTemplate) {
+            RestResponse<Project> res = new RestResponse<>();
+            res.setType(QueryType.VOID);
+            PrintUtils.println(getObjectAsJSON(projectUpdateParams));
+            return res;
+        } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), projectUpdateParams);
         }  else {
@@ -220,6 +234,7 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             .setModificationDate(commandOptions.modificationDate)
             .setOrganism(projectOrganism);
 
-        }        return openCGAClient.getProjectClient().update(commandOptions.project, projectUpdateParams, queryParams);
+        }
+        return openCGAClient.getProjectClient().update(commandOptions.project, projectUpdateParams, queryParams);
     }
 }

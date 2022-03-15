@@ -164,8 +164,11 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                     sb.append("        public CommonCommandOptions commonOptions = commonCommandOptions;\n");
                     sb.append("    \n");
                     if (restEndpoint.getMethod().equals("POST")) {
-                        sb.append("        @Parameter(names = {\"--json-file\"}, description = \"File for body data. Passing this file will ignore the command line parameters for the body REST data.\", required = false, arity = 1)\n");
+                        sb.append("        @Parameter(names = {\"--json-file\"}, description = \"File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.\", required = false, arity = 1)\n");
                         sb.append("        public String jsonFile;\n");
+                        sb.append("    \n");
+                        sb.append("        @Parameter(names = {\"--json-view-template\"}, description = \"Show example of file structure for body data.\", help = true, arity = 0)\n");
+                        sb.append("        public Boolean jsonViewTemplate= false;\n");
                         sb.append("    \n");
                     }
 
