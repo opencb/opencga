@@ -223,8 +223,6 @@ public class RestApiParser {
                                             } else {
                                                 // The body param is an Enum
                                                 if (declaredField.getType().isEnum()) {
-                                                    String[] enumSplit = declaredField.getAnnotatedType().getType().getTypeName().split("$");
-                                                    Class<?> enumClass = Class.forName(enumSplit[0]);
                                                     List<String> allowedValues = new ArrayList<>();
                                                     final Object[] enumConstants = declaredField.getType().getEnumConstants();
                                                     for (Object enumValue : enumConstants) {
@@ -232,7 +230,8 @@ public class RestApiParser {
                                                     }
                                                     innerParam.setType("enum");
                                                     innerParam.setAllowedValues(StringUtils.join(allowedValues, " "));
-                                                    innerParam.setDescription("Enum param allowed values: " + StringUtils.join(allowedValues, " "));
+                                                    innerParam.setDescription("Enum param allowed values: " +
+                                                            StringUtils.join(allowedValues, ", "));
                                                 }
                                             }
                                         }
@@ -260,17 +259,6 @@ public class RestApiParser {
                     restParameters.add(restParameter);
                 }
             }
-       /*     if (httpMethod.equals("POST")) {
-                RestParameter restParameter = new RestParameter();
-                restParameter.setType("file");
-                restParameter.setTypeClass("java.lang.String;");
-                restParameter.setAllowedValues("");
-                restParameter.setRequired(false);
-                restParameter.setDefaultValue("");
-                restParameter.setDescription("Json file with all parameters");
-                restParameter.setName("jsonFile");
-                restParameters.add(restParameter);
-            }*/
 
             // 5. Save all REST Parameters found: ApiImplicitParams and ApiParam
             restEndpoint.setParameters(restParameters);
