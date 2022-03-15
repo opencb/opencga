@@ -232,66 +232,8 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(ontologyTermAnnotation, "description", commandOptions.ethnicityDescription);
         invokeSetter(ontologyTermAnnotation, "source", commandOptions.ethnicitySource);
         invokeSetter(ontologyTermAnnotation, "url", commandOptions.ethnicityUrl);
-        IndividualProperty.KaryotypicSex karyotypicSexParam = null;
-        switch (commandOptions.karyotypicSex) {
-            case "UNKNOWN":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.UNKNOWN;
-            break;
-            case "XX":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XX;
-            break;
-            case "XY":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XY;
-            break;
-            case "XO":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XO;
-            break;
-            case "XXY":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XXY;
-            break;
-            case "XXX":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XXX;
-            break;
-            case "XXYY":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XXYY;
-            break;
-            case "XXXY":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XXXY;
-            break;
-            case "XXXX":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XXXX;
-            break;
-            case "XYY":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XYY;
-            break;
-            case "OTHER":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.OTHER;
-            break;
-        }
-        IndividualProperty.LifeStatus lifeStatusParam = null;
-        switch (commandOptions.lifeStatus) {
-            case "ALIVE":
-            lifeStatusParam=IndividualProperty.LifeStatus.ALIVE;
-            break;
-            case "ABORTED":
-            lifeStatusParam=IndividualProperty.LifeStatus.ABORTED;
-            break;
-            case "DECEASED":
-            lifeStatusParam=IndividualProperty.LifeStatus.DECEASED;
-            break;
-            case "UNBORN":
-            lifeStatusParam=IndividualProperty.LifeStatus.UNBORN;
-            break;
-            case "STILLBORN":
-            lifeStatusParam=IndividualProperty.LifeStatus.STILLBORN;
-            break;
-            case "MISCARRIAGE":
-            lifeStatusParam=IndividualProperty.LifeStatus.MISCARRIAGE;
-            break;
-            case "UNKNOWN":
-            lifeStatusParam=IndividualProperty.LifeStatus.UNKNOWN;
-            break;
-        }
+        IndividualProperty.KaryotypicSex karyotypicSexParam = IndividualProperty.KaryotypicSex.valueOf(commandOptions.karyotypicSex);
+        IndividualProperty.LifeStatus lifeStatusParam = IndividualProperty.LifeStatus.valueOf(commandOptions.lifeStatus);
 
         IndividualCreateParams individualCreateParams = (IndividualCreateParams) new IndividualCreateParams()
             .setId(commandOptions.id)
@@ -496,66 +438,8 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(ontologyTermAnnotation, "description", commandOptions.ethnicityDescription);
         invokeSetter(ontologyTermAnnotation, "source", commandOptions.ethnicitySource);
         invokeSetter(ontologyTermAnnotation, "url", commandOptions.ethnicityUrl);
-        IndividualProperty.KaryotypicSex karyotypicSexParam = null;
-        switch (commandOptions.karyotypicSex) {
-            case "UNKNOWN":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.UNKNOWN;
-            break;
-            case "XX":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XX;
-            break;
-            case "XY":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XY;
-            break;
-            case "XO":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XO;
-            break;
-            case "XXY":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XXY;
-            break;
-            case "XXX":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XXX;
-            break;
-            case "XXYY":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XXYY;
-            break;
-            case "XXXY":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XXXY;
-            break;
-            case "XXXX":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XXXX;
-            break;
-            case "XYY":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.XYY;
-            break;
-            case "OTHER":
-            karyotypicSexParam=IndividualProperty.KaryotypicSex.OTHER;
-            break;
-        }
-        IndividualProperty.LifeStatus lifeStatusParam = null;
-        switch (commandOptions.lifeStatus) {
-            case "ALIVE":
-            lifeStatusParam=IndividualProperty.LifeStatus.ALIVE;
-            break;
-            case "ABORTED":
-            lifeStatusParam=IndividualProperty.LifeStatus.ABORTED;
-            break;
-            case "DECEASED":
-            lifeStatusParam=IndividualProperty.LifeStatus.DECEASED;
-            break;
-            case "UNBORN":
-            lifeStatusParam=IndividualProperty.LifeStatus.UNBORN;
-            break;
-            case "STILLBORN":
-            lifeStatusParam=IndividualProperty.LifeStatus.STILLBORN;
-            break;
-            case "MISCARRIAGE":
-            lifeStatusParam=IndividualProperty.LifeStatus.MISCARRIAGE;
-            break;
-            case "UNKNOWN":
-            lifeStatusParam=IndividualProperty.LifeStatus.UNKNOWN;
-            break;
-        }
+        IndividualProperty.KaryotypicSex karyotypicSexParam = IndividualProperty.KaryotypicSex.valueOf(commandOptions.karyotypicSex);
+        IndividualProperty.LifeStatus lifeStatusParam = IndividualProperty.LifeStatus.valueOf(commandOptions.lifeStatus);
 
         IndividualUpdateParams individualUpdateParams = (IndividualUpdateParams) new IndividualUpdateParams()
             .setId(commandOptions.id)

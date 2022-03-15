@@ -174,24 +174,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         ExecutionResult executionResult= new ExecutionResult();
         invokeSetter(executionResult, "id", commandOptions.resultId);
-        Enums.Priority priorityParam = null;
-        switch (commandOptions.priority) {
-            case "URGENT":
-            priorityParam=Enums.Priority.URGENT;
-            break;
-            case "HIGH":
-            priorityParam=Enums.Priority.HIGH;
-            break;
-            case "MEDIUM":
-            priorityParam=Enums.Priority.MEDIUM;
-            break;
-            case "LOW":
-            priorityParam=Enums.Priority.LOW;
-            break;
-            case "UNKNOWN":
-            priorityParam=Enums.Priority.UNKNOWN;
-            break;
-        }
+        Enums.Priority priorityParam = Enums.Priority.valueOf(commandOptions.priority);
 
         JobCreateParams jobCreateParams = (JobCreateParams) new JobCreateParams()
             .setId(commandOptions.id)

@@ -193,39 +193,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(statusParams, "id", commandOptions.statusId);
         invokeSetter(statusParams, "name", commandOptions.statusName);
         invokeSetter(statusParams, "description", commandOptions.statusDescription);
-        Enums.CohortType typeParam = null;
-        switch (commandOptions.type) {
-            case "CASE_CONTROL":
-            typeParam=Enums.CohortType.CASE_CONTROL;
-            break;
-            case "CASE_SET":
-            typeParam=Enums.CohortType.CASE_SET;
-            break;
-            case "CONTROL_SET":
-            typeParam=Enums.CohortType.CONTROL_SET;
-            break;
-            case "PAIRED":
-            typeParam=Enums.CohortType.PAIRED;
-            break;
-            case "PAIRED_TUMOR":
-            typeParam=Enums.CohortType.PAIRED_TUMOR;
-            break;
-            case "AGGREGATE":
-            typeParam=Enums.CohortType.AGGREGATE;
-            break;
-            case "TIME_SERIES":
-            typeParam=Enums.CohortType.TIME_SERIES;
-            break;
-            case "FAMILY":
-            typeParam=Enums.CohortType.FAMILY;
-            break;
-            case "TRIO":
-            typeParam=Enums.CohortType.TRIO;
-            break;
-            case "COLLECTION":
-            typeParam=Enums.CohortType.COLLECTION;
-            break;
-        }
+        Enums.CohortType typeParam = Enums.CohortType.valueOf(commandOptions.type);
 
         CohortCreateParams cohortCreateParams = (CohortCreateParams) new CohortCreateParams()
             .setId(commandOptions.id)
@@ -300,39 +268,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(statusParams, "body_id", commandOptions.statusBodyId);
         invokeSetter(statusParams, "name", commandOptions.statusName);
         invokeSetter(statusParams, "description", commandOptions.statusDescription);
-        Enums.CohortType typeParam = null;
-        switch (commandOptions.type) {
-            case "CASE_CONTROL":
-            typeParam=Enums.CohortType.CASE_CONTROL;
-            break;
-            case "CASE_SET":
-            typeParam=Enums.CohortType.CASE_SET;
-            break;
-            case "CONTROL_SET":
-            typeParam=Enums.CohortType.CONTROL_SET;
-            break;
-            case "PAIRED":
-            typeParam=Enums.CohortType.PAIRED;
-            break;
-            case "PAIRED_TUMOR":
-            typeParam=Enums.CohortType.PAIRED_TUMOR;
-            break;
-            case "AGGREGATE":
-            typeParam=Enums.CohortType.AGGREGATE;
-            break;
-            case "TIME_SERIES":
-            typeParam=Enums.CohortType.TIME_SERIES;
-            break;
-            case "FAMILY":
-            typeParam=Enums.CohortType.FAMILY;
-            break;
-            case "TRIO":
-            typeParam=Enums.CohortType.TRIO;
-            break;
-            case "COLLECTION":
-            typeParam=Enums.CohortType.COLLECTION;
-            break;
-        }
+        Enums.CohortType typeParam = Enums.CohortType.valueOf(commandOptions.type);
 
         CohortGenerateParams cohortGenerateParams = (CohortGenerateParams) new CohortGenerateParams()
             .setId(commandOptions.bodyId)
@@ -450,39 +386,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         invokeSetter(statusParams, "id", commandOptions.statusId);
         invokeSetter(statusParams, "name", commandOptions.statusName);
         invokeSetter(statusParams, "description", commandOptions.statusDescription);
-        Enums.CohortType typeParam = null;
-        switch (commandOptions.type) {
-            case "CASE_CONTROL":
-            typeParam=Enums.CohortType.CASE_CONTROL;
-            break;
-            case "CASE_SET":
-            typeParam=Enums.CohortType.CASE_SET;
-            break;
-            case "CONTROL_SET":
-            typeParam=Enums.CohortType.CONTROL_SET;
-            break;
-            case "PAIRED":
-            typeParam=Enums.CohortType.PAIRED;
-            break;
-            case "PAIRED_TUMOR":
-            typeParam=Enums.CohortType.PAIRED_TUMOR;
-            break;
-            case "AGGREGATE":
-            typeParam=Enums.CohortType.AGGREGATE;
-            break;
-            case "TIME_SERIES":
-            typeParam=Enums.CohortType.TIME_SERIES;
-            break;
-            case "FAMILY":
-            typeParam=Enums.CohortType.FAMILY;
-            break;
-            case "TRIO":
-            typeParam=Enums.CohortType.TRIO;
-            break;
-            case "COLLECTION":
-            typeParam=Enums.CohortType.COLLECTION;
-            break;
-        }
+        Enums.CohortType typeParam = Enums.CohortType.valueOf(commandOptions.type);
 
         CohortUpdateParams cohortUpdateParams = (CohortUpdateParams) new CohortUpdateParams()
             .setId(commandOptions.id)

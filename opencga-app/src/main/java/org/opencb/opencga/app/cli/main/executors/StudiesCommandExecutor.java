@@ -453,42 +453,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("action", commandOptions.action);
 
-        Variable.VariableType typeParam = null;
-        switch (commandOptions.type) {
-            case "BOOLEAN":
-            typeParam=Variable.VariableType.BOOLEAN;
-            break;
-            case "CATEGORICAL":
-            typeParam=Variable.VariableType.CATEGORICAL;
-            break;
-            case "INTEGER":
-            typeParam=Variable.VariableType.INTEGER;
-            break;
-            case "DOUBLE":
-            typeParam=Variable.VariableType.DOUBLE;
-            break;
-            case "TEXT":
-            typeParam=Variable.VariableType.TEXT;
-            break;
-            case "STRING":
-            typeParam=Variable.VariableType.STRING;
-            break;
-            case "OBJECT":
-            typeParam=Variable.VariableType.OBJECT;
-            break;
-            case "MAP_BOOLEAN":
-            typeParam=Variable.VariableType.MAP_BOOLEAN;
-            break;
-            case "MAP_INTEGER":
-            typeParam=Variable.VariableType.MAP_INTEGER;
-            break;
-            case "MAP_DOUBLE":
-            typeParam=Variable.VariableType.MAP_DOUBLE;
-            break;
-            case "MAP_STRING":
-            typeParam=Variable.VariableType.MAP_STRING;
-            break;
-        }
+        Variable.VariableType typeParam = Variable.VariableType.valueOf(commandOptions.type);
 
         Variable variable = (Variable) new Variable()
             .setId(commandOptions.id)

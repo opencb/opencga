@@ -273,24 +273,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         FamilyParam familyParam= new FamilyParam();
         invokeSetter(familyParam, "id", commandOptions.familyId);
-        ClinicalAnalysis.Type typeParam = null;
-        switch (commandOptions.type) {
-            case "SINGLE":
-            typeParam=ClinicalAnalysis.Type.SINGLE;
-            break;
-            case "FAMILY":
-            typeParam=ClinicalAnalysis.Type.FAMILY;
-            break;
-            case "CANCER":
-            typeParam=ClinicalAnalysis.Type.CANCER;
-            break;
-            case "COHORT":
-            typeParam=ClinicalAnalysis.Type.COHORT;
-            break;
-            case "AUTOCOMPARATIVE":
-            typeParam=ClinicalAnalysis.Type.AUTOCOMPARATIVE;
-            break;
-        }
+        ClinicalAnalysis.Type typeParam = ClinicalAnalysis.Type.valueOf(commandOptions.type);
 
         ClinicalAnalysisCreateParams clinicalAnalysisCreateParams = (ClinicalAnalysisCreateParams) new ClinicalAnalysisCreateParams()
             .setId(commandOptions.id)
@@ -495,18 +478,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        ClinicalProperty.Penetrance penetranceParam = null;
-        switch (commandOptions.penetrance) {
-            case "COMPLETE":
-            penetranceParam=ClinicalProperty.Penetrance.COMPLETE;
-            break;
-            case "INCOMPLETE":
-            penetranceParam=ClinicalProperty.Penetrance.INCOMPLETE;
-            break;
-            case "UNKNOWN":
-            penetranceParam=ClinicalProperty.Penetrance.UNKNOWN;
-            break;
-        }
+        ClinicalProperty.Penetrance penetranceParam = ClinicalProperty.Penetrance.valueOf(commandOptions.penetrance);
 
         TieringInterpretationAnalysisParams tieringInterpretationAnalysisParams = (TieringInterpretationAnalysisParams) new TieringInterpretationAnalysisParams()
             .setClinicalAnalysis(commandOptions.clinicalAnalysis)
@@ -1096,24 +1068,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
         FamilyParam familyParam= new FamilyParam();
         invokeSetter(familyParam, "id", commandOptions.familyId);
-        ClinicalAnalysis.Type typeParam = null;
-        switch (commandOptions.type) {
-            case "SINGLE":
-            typeParam=ClinicalAnalysis.Type.SINGLE;
-            break;
-            case "FAMILY":
-            typeParam=ClinicalAnalysis.Type.FAMILY;
-            break;
-            case "CANCER":
-            typeParam=ClinicalAnalysis.Type.CANCER;
-            break;
-            case "COHORT":
-            typeParam=ClinicalAnalysis.Type.COHORT;
-            break;
-            case "AUTOCOMPARATIVE":
-            typeParam=ClinicalAnalysis.Type.AUTOCOMPARATIVE;
-            break;
-        }
+        ClinicalAnalysis.Type typeParam = ClinicalAnalysis.Type.valueOf(commandOptions.type);
 
         ClinicalAnalysisUpdateParams clinicalAnalysisUpdateParams = (ClinicalAnalysisUpdateParams) new ClinicalAnalysisUpdateParams()
             .setId(commandOptions.id)

@@ -581,27 +581,8 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
                 queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        GwasConfiguration.Method methodParam = null;
-        switch (commandOptions.method) {
-            case "FISHER_TEST":
-            methodParam=GwasConfiguration.Method.FISHER_TEST;
-            break;
-            case "CHI_SQUARE_TEST":
-            methodParam=GwasConfiguration.Method.CHI_SQUARE_TEST;
-            break;
-        }
-        GwasConfiguration.FisherMode fisherModeParam = null;
-        switch (commandOptions.fisherMode) {
-            case "LESS":
-            fisherModeParam=GwasConfiguration.FisherMode.LESS;
-            break;
-            case "GREATER":
-            fisherModeParam=GwasConfiguration.FisherMode.GREATER;
-            break;
-            case "TWO_SIDED":
-            fisherModeParam=GwasConfiguration.FisherMode.TWO_SIDED;
-            break;
-        }
+        GwasConfiguration.Method methodParam = GwasConfiguration.Method.valueOf(commandOptions.method);
+        GwasConfiguration.FisherMode fisherModeParam = GwasConfiguration.FisherMode.valueOf(commandOptions.fisherMode);
 
         GwasAnalysisParams gwasAnalysisParams = (GwasAnalysisParams) new GwasAnalysisParams()
             .setPhenotype(commandOptions.phenotype)

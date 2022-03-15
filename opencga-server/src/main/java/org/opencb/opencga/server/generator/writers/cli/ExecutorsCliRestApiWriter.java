@@ -270,8 +270,9 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                     sb.append(generateBeans(restParameter.getData()));
                     for (RestParameter bparameter : restParameter.getData()) {
                         if (bparameter.getType().equals("enum")) {
-                            sb.append("        " + getEnumName(bparameter.getTypeClass()) + " " + normaliceNames(getAsCamelCase(bparameter.getName() + "Param")) + " = null;\n");
-                            sb.append(getSwitchEnum(bparameter, normaliceNames(getAsCamelCase(bparameter.getName() + "Param")), getEnumName(bparameter.getTypeClass())));
+                            sb.append("        " + getEnumName(bparameter.getTypeClass()) + " " + normaliceNames(getAsCamelCase(bparameter.getName() + "Param")) + " = "
+                                    + getEnumName(bparameter.getTypeClass()) + ".valueOf(commandOptions." + normaliceNames(getAsCamelCase(bparameter.getName())) + ");\n");
+                            //   sb.append(getSwitchEnum(bparameter, normaliceNames(getAsCamelCase(bparameter.getName() + "Param")), getEnumName(bparameter.getTypeClass())));
 
                         }
                     }
