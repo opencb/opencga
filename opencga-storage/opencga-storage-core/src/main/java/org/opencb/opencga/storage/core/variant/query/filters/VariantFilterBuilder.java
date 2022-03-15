@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 
 public class VariantFilterBuilder {
 
@@ -51,34 +51,7 @@ public class VariantFilterBuilder {
             }
         }
         ParsedVariantQuery.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
-        Predicate<Variant> geneFilter = null;
-        if (!variantQueryXref.getGenes().isEmpty()) {
-            Set<String> genes = new HashSet<>(variantQueryXref.getGenes());
-
-            Set<String> bts;
-            if (VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_BIOTYPE)) {
-                bts = new HashSet<>(query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key()));
-            } else {
-                bts = null;
-            }
-            Set<String> cts;
-            if (VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_CONSEQUENCE_TYPE)) {
-                cts = new HashSet<>(VariantQueryUtils
-                        .parseConsequenceTypes(query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())));
-            } else {
-                cts = null;
-            }
-            geneFilter = variant -> {
-                if (variant.getAnnotation() != null && variant.getAnnotation().getConsequenceTypes() != null) {
-                    for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
-                        if (validGene(genes, ct) && (validCt(cts, ct)) && (validBt(bts, ct))) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            };
-        }
+        Predicate<Variant> geneFilter = getGeneFilter(query, variantQueryXref.getGenes());
         if (!variantQueryXref.getIds().isEmpty()) {
             Set<String> ids = new HashSet<>(variantQueryXref.getIds());
             regionFilters.add(variant -> ids.contains(variant.getAnnotation().getId()));
@@ -124,6 +97,58 @@ public class VariantFilterBuilder {
         Predicate<Variant> predicate = mergeFilters(regionFilters, VariantQueryUtils.QueryOperation.OR);
         if (predicate != null) {
             filters.add(predicate);
+        }
+    }
+
+    private Predicate<Variant> getGeneFilter(Query query, List<String> genes) {
+        if (genes.isEmpty()) {
+            return null;
+        }
+
+        List<Region> geneRegions = Region.parseRegions(query.getString(VariantQueryUtils.ANNOT_GENE_REGIONS.key()));
+        Predicate<Variant> geneRegionFilter;
+        if (geneRegions.isEmpty()) {
+            geneRegionFilter = null;
+        } else {
+            geneRegionFilter = variant -> geneRegions.stream().anyMatch(r -> r.contains(variant.getChromosome(), variant.getStart()));
+        }
+
+        Predicate<Variant> geneFilter;
+
+        Set<String> bts;
+        if (VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_BIOTYPE)) {
+            bts = new HashSet<>(query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key()));
+        } else {
+            bts = null;
+        }
+        Set<String> cts;
+        if (VariantQueryUtils.isValidParam(query, VariantQueryParam.ANNOT_CONSEQUENCE_TYPE)) {
+            cts = new HashSet<>(VariantQueryUtils
+                    .parseConsequenceTypes(query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())));
+        } else {
+            cts = null;
+        }
+        Set<String> genesSet = new HashSet<>(genes);
+        geneFilter = variant -> {
+            if (variant.getAnnotation() != null && variant.getAnnotation().getConsequenceTypes() != null) {
+                for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
+                    if (validGene(genesSet, ct) && (validCt(cts, ct)) && (validBt(bts, ct))) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+
+        if (geneRegionFilter == null) {
+            // No gene region filter. Use only gene filter.
+            return geneFilter;
+        } else if (cts == null && bts == null) {
+            // No CT not BT filter. Region filter is enough.
+            return geneRegionFilter;
+        } else {
+            // Use both geneRegion and gene filter.
+            return geneRegionFilter.and(geneFilter);
         }
     }
 
