@@ -16,7 +16,11 @@
 
 package org.opencb.opencga.core.models.cohort;
 
+
 import org.opencb.biodata.models.common.Status;
+import org.opencb.commons.annotations.DataClass;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
@@ -27,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@DataClass(id = "Cohort", since = "1.0",
+        description = "Cohort data model hosts information about any cohort.")
 public class Cohort extends Annotable {
 
     /**
@@ -34,6 +40,8 @@ public class Cohort extends Annotable {
      *
      * @apiNote Required, Immutable, Unique
      */
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
 
     /**
@@ -47,7 +55,12 @@ public class Cohort extends Annotable {
      *
      * @apiNote Internal, Unique, Immutable
      */
+    @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String uuid;
+
+    @DataField(id = "type", indexed = true,
+            description = FieldConstants.COHORT_TYPE)
     private Enums.CohortType type;
 
     /**
@@ -55,6 +68,8 @@ public class Cohort extends Annotable {
      *
      * @apiNote Internal
      */
+    @DataField(id = "creationDate", indexed = true,
+            description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
 
     /**
@@ -62,6 +77,8 @@ public class Cohort extends Annotable {
      *
      * @apiNote Internal
      */
+    @DataField(id = "modificationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
     /**
@@ -69,15 +86,21 @@ public class Cohort extends Annotable {
      *
      * @apiNote
      */
+    @DataField(id = "description", defaultValue = "No description available",
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+
+    @DataField(id = "samples", indexed = true,
+            description = FieldConstants.COHORT_SAMPLES)
     private List<Sample> samples;
+
+    @DataField(id = "numSamples", indexed = true,
+            description = FieldConstants.COHORT_NUM_SAMPLES)
     private int numSamples;
 
-    /**
-     * An integer describing the current data release.
-     *
-     * @apiNote Internal
-     */
+
+    @DataField(id = "release", indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
 
     /**
@@ -85,13 +108,20 @@ public class Cohort extends Annotable {
      *
      * @apiNote
      */
+
+    @DataField(id = "status", indexed = true,
+            description = FieldConstants.GENERIC_CUSTOM_STATUS)
     private Status status;
+
 
     /**
      * An object describing the internal information of the Sample. This is managed by OpenCGA.
      *
      * @apiNote Internal
      */
+
+    @DataField(id = "internal", indexed = true,
+            description = FieldConstants.GENERIC_INTERNAL)
     private CohortInternal internal;
 
     /**
@@ -99,6 +129,8 @@ public class Cohort extends Annotable {
      *
      * @apiNote
      */
+    @DataField(id = "attributes", indexed = true,
+            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public Cohort() {

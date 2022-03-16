@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
-import io.swagger.annotations.*;
+import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.cohort.CohortTsvAnnotationLoader;

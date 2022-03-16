@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.server.rest.operations;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import org.opencb.opencga.core.tools.annotations.Api;
+import org.opencb.opencga.core.tools.annotations.ApiOperation;
+import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
@@ -55,12 +55,14 @@ import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
 @Api(value = "Operations - Variant Storage", description = "Internal operations for the variant storage engine")
 public class VariantOperationWebService extends OpenCGAWSServer {
 
-    public VariantOperationWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public VariantOperationWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                                      @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public VariantOperationWebService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public VariantOperationWebService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                                      @Context HttpHeaders httpHeaders)
             throws VersionException {
         super(version, uriInfo, httpServletRequest, httpHeaders);
     }
@@ -78,7 +80,8 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/configure")
-    @ApiOperation(value = "Update Variant Storage Engine configuration. Can be updated at Project or Study level", response = ObjectMap.class)
+    @ApiOperation(value = "Update Variant Storage Engine configuration. Can be updated at Project or Study level", response =
+            ObjectMap.class)
     public Response variantConfigure(
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
@@ -259,7 +262,8 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         Map<String, Object> params = new HashMap<>();
         params.put(ParamConstants.PROJECT_PARAM, project);
         params.put("annotationId", annotationId);
-        return submitOperationToProject(VariantAnnotationDeleteOperationTool.ID, project, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitOperationToProject(VariantAnnotationDeleteOperationTool.ID, project, params, jobName, jobDescription, dependsOn,
+                jobTags);
     }
 
     @POST
@@ -272,7 +276,8 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = VariantAnnotationSaveParams.DESCRIPTION) VariantAnnotationSaveParams params) {
-        return submitOperationToProject(VariantAnnotationSaveOperationTool.ID, project, params, jobName, jobDescription, dependsOn, jobTags);
+        return submitOperationToProject(VariantAnnotationSaveOperationTool.ID, project, params, jobName, jobDescription, dependsOn,
+                jobTags);
     }
 
     @POST

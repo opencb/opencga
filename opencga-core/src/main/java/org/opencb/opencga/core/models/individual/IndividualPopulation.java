@@ -16,10 +16,17 @@
 
 package org.opencb.opencga.core.models.individual;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 public class IndividualPopulation {
 
+
+    @DataField(id = "name", indexed = true, description = FieldConstants.INDIVIDUAL_POPULATION_NAME)
     private String name;
+    @DataField(id = "subpopulation", indexed = true, description = FieldConstants.INDIVIDUAL_POPULATION_SUBPOPULATION)
     private String subpopulation;
+    @DataField(id = "description", indexed = true, description = FieldConstants.INDIVIDUAL_POPULATION_DESCRIPTION)
     private String description;
 
 

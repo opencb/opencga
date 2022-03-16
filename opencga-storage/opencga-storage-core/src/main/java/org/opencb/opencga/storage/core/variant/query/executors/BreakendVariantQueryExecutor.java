@@ -182,20 +182,31 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
                 throw new VariantQueryException("Unable to find mate of variant " + variant + " with MATEID=" + mateid);
             }
 
-            // Check for duplicated pairs
-            if (validDiscardPair(filter, variant, mateVariant)) {
-                variantPairs.add(variant);
-                variantPairs.add(mateVariant);
-            }
+            addPair(filter, variantPairs, variant, mateVariant);
         }
         return variantPairs;
     }
 
-    private boolean validDiscardPair(Predicate<Variant> filter, Variant variant, Variant mateVariant) {
+    private void addPair(Predicate<Variant> filter, List<Variant> variantPairs, Variant variant, Variant mateVariant) {
+        // Check for duplicated pairs
         if (VariantDBIterator.VARIANT_COMPARATOR.compare(variant, mateVariant) > 0) {
-            // If the mate variant is "before" the main variant
+            // The mate variant is "before" the main variant
             // This pair might be discarded if the mate matches the given query
-            return !filter.test(variant);
+            if (!filter.test(mateVariant)) {
+                // Otherwise, both variants are added to the list of variant pairs.
+                // But first the "mate" to respect order
+                variantPairs.add(mateVariant);
+                variantPairs.add(variant);
+            }
+        } else {
+            variantPairs.add(variant);
+            variantPairs.add(mateVariant);
+        }
+    }
+
+    private boolean validPair(Predicate<Variant> filter, Variant variant, Variant mateVariant) {
+        if (VariantDBIterator.VARIANT_COMPARATOR.compare(variant, mateVariant) > 0) {
+            return !filter.test(mateVariant);
         }
         return true;
     }

@@ -1,10 +1,20 @@
 package org.opencb.opencga.core.models.study.configuration;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 import java.util.List;
 
 public class ClinicalConsentAnnotation {
 
+
+    @DataField(id = "consents", indexed = true,
+            description = FieldConstants.CLINICAL_CONSENT_ANNOTATION_CONSENTS)
     private List<ClinicalConsentParam> consents;
+
+
+    @DataField(id = "date", indexed = true,
+            description = FieldConstants.CLINICAL_CONSENT_ANNOTATION_DATE)
     private String date;
 
     public ClinicalConsentAnnotation() {

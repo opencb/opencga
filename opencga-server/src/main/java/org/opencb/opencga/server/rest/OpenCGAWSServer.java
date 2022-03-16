@@ -20,7 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
-import io.swagger.annotations.ApiParam;
+import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
@@ -132,6 +132,10 @@ public class OpenCGAWSServer {
 
     protected static java.nio.file.Path opencgaHome;
 
+    public static Configuration getConfiguration() {
+        return configuration;
+    }
+
     protected static Configuration configuration;
     protected static CatalogManager catalogManager;
 
@@ -156,7 +160,6 @@ public class OpenCGAWSServer {
 
         jsonObjectWriter = jsonObjectMapper.writer();
     }
-
 
     public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
@@ -196,7 +199,8 @@ public class OpenCGAWSServer {
             throw new IllegalStateException(errorMessage);
         }
 //        if (catalogManager == null) {
-//            throw new IllegalStateException("OpenCGA was not properly initialized. Please, check if the configuration files are reachable "
+//            throw new IllegalStateException("OpenCGA was not properly initialized. Please, check if the configuration files are
+//            reachable "
 //                    + "or properly defined.");
 //        }
 
@@ -252,7 +256,6 @@ public class OpenCGAWSServer {
 //        }
 //        }
 
-
         // Check and execute the init methods
         java.nio.file.Path configDirPath = OpenCGAWSServer.opencgaHome.resolve("conf");
         if (Files.exists(configDirPath) && Files.isDirectory(configDirPath)) {
@@ -274,8 +277,7 @@ public class OpenCGAWSServer {
     }
 
     /**
-     * This method loads OpenCGA configuration files.
-     * This must be only executed once.
+     * This method loads OpenCGA configuration files. This must be only executed once.
      *
      * @param configDir directory containing the configuration files
      */
@@ -296,8 +298,7 @@ public class OpenCGAWSServer {
     }
 
     /**
-     * This method initialize CatalogManager and StorageManagerFactory.
-     * This must be only executed once.
+     * This method initialize CatalogManager and StorageManagerFactory. This must be only executed once.
      */
     private static void initOpenCGAObjects() {
         try {
@@ -392,6 +393,10 @@ public class OpenCGAWSServer {
                 throw new ParamException.PathParamException(new Throwable("Version not valid: '" + apiVersion + "'"), "apiVersion", "v2");
             }
         }
+        uriInfo.getPathParameters().forEach((key, value) -> {
+            logger.warn(key);
+            logger.warn(value.toString());
+        });
 
         // Check apiVersion parameter, must be: v1, v2, ... If 'latest' then is converted to appropriate apiVersion.
         if (apiVersion.equalsIgnoreCase("latest")) {
@@ -504,7 +509,6 @@ public class OpenCGAWSServer {
         }
     }
 
-
     protected void addParamIfNotNull(Map<String, Object> params, String key, Object value) {
         if (key != null && value != null) {
             params.put(key, value.toString());
@@ -534,7 +538,7 @@ public class OpenCGAWSServer {
         addErrorEvent(queryResponse, e);
 
         OpenCGAResult<ObjectMap> result = OpenCGAResult.empty();
-        setFederationServer(result, uriInfo);
+        setFederationServer(result, uriInfo.getBaseUri().toString());
         queryResponse.setResponses(Collections.singletonList(result));
 
         Response.StatusType errorStatus;
@@ -560,7 +564,7 @@ public class OpenCGAWSServer {
         dataResponse.setApiVersion(apiVersion);
         dataResponse.setParams(params);
         addErrorEvent(dataResponse, errorMessage);
-        setFederationServer(result, uriInfo);
+        setFederationServer(result, uriInfo.getBaseUri().toString());
         dataResponse.setResponses(Arrays.asList(result));
 
         Response response = Response.fromResponse(createJsonResponse(dataResponse)).status(Response.Status.INTERNAL_SERVER_ERROR).build();
@@ -644,7 +648,7 @@ public class OpenCGAWSServer {
             }
         }
         for (OpenCGAResult<?> openCGAResult : list) {
-            setFederationServer(openCGAResult, uriInfo);
+            setFederationServer(openCGAResult, uriInfo.getBaseUri().toString());
         }
         Response.Status status = getResponseStatus(list);
 
@@ -689,8 +693,8 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok(o1, o2).header("content-disposition", "attachment; filename =" + fileName));
     }
 
-    private static void setFederationServer(OpenCGAResult result, UriInfo uriInfo) {
-        result.setFederationNode(new FederationNode(uriInfo.getBaseUri().toString(), GitRepositoryState.get().getCommitId(),
+    public static void setFederationServer(OpenCGAResult result, String baseuri) {
+        result.setFederationNode(new FederationNode(baseuri, GitRepositoryState.get().getCommitId(),
                 GitRepositoryState.get().getBuildVersion()));
     }
 
@@ -702,7 +706,8 @@ public class OpenCGAWSServer {
         logResponse(statusInfo, queryResponse, startTime, requestDescription);
     }
 
-    static void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse, long startTime, String requestDescription) {
+    public static void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse, long startTime,
+                                   String requestDescription) {
         StringBuilder sb = new StringBuilder();
         try {
             boolean ok;
@@ -741,7 +746,7 @@ public class OpenCGAWSServer {
         }
     }
 
-    static Response createJsonResponse(RestResponse queryResponse) {
+    public static Response createJsonResponse(RestResponse queryResponse) {
         try {
             return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
@@ -912,5 +917,4 @@ public class OpenCGAWSServer {
     public Response createDeprecatedMovedResponse(String newEndpoint) {
         return createErrorResponse(new NotImplementedException("Deprecated " + uriInfo.getPath() + " . Use instead " + newEndpoint));
     }
-
 }

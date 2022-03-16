@@ -26,6 +26,7 @@ public class VariantExportParams extends VariantQueryParams {
     private String variantsFile;
     private String include;
     private String exclude;
+    private boolean compress;
     private Integer limit;
     private Integer skip;
     private boolean summary;
@@ -69,8 +70,19 @@ public class VariantExportParams extends VariantQueryParams {
         return this;
     }
 
-    public void setVariantsFile(String variantsFile) {
+    public boolean isCompress() {
+        return compress;
+    }
+
+    public VariantExportParams setCompress(boolean compress) {
+        this.compress = compress;
+        return this;
+    }
+
+    public VariantExportParams setVariantsFile(String variantsFile) {
+
         this.variantsFile = variantsFile;
+        return this;
     }
 
     public String getVariantsFile() {

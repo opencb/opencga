@@ -67,10 +67,6 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationZettaCommandOptions.ZETTA_RUN_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
@@ -94,10 +90,10 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     private ExpressionCommandOptions expressionCommandOptions;
     private FunctionalCommandOptions functionalCommandOptions;
     private org.opencb.opencga.app.cli.internal.options.VariantCommandOptions variantCommandOptions;
-//    private VariantCommandOptions variantCommandOptions;
+    //    private VariantCommandOptions variantCommandOptions;
     private ToolsCommandOptions toolsCommandOptions;
     private AlignmentCommandOptions alignmentCommandOptions;
-//    private InterpretationCommandOptions interpretationCommandOptions;
+    //    private InterpretationCommandOptions interpretationCommandOptions;
     private ClinicalCommandOptions clinicalCommandOptions;
     private FileCommandOptions fileCommandOptions;
     private SampleCommandOptions sampleCommandOptions;
@@ -106,7 +102,6 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     private IndividualCommandOptions individualCommandOptions;
     private JobCommandOptions jobCommandOptions;
     private StudyCommandOptions studyCommandOptions;
-
 
     public InternalCliOptionsParser() {
         jCommander.setProgramName("opencga-internal.sh");
@@ -214,10 +209,10 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         clinicalCommandOptions = new ClinicalCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("clinical", clinicalCommandOptions);
         JCommander clinicalSubCommands = jCommander.getCommands().get("clinical");
-        clinicalSubCommands.addCommand(TIERING_RUN_COMMAND, clinicalCommandOptions.tieringCommandOptions);
-        clinicalSubCommands.addCommand(TEAM_RUN_COMMAND, clinicalCommandOptions.teamCommandOptions);
-        clinicalSubCommands.addCommand(ZETTA_RUN_COMMAND, clinicalCommandOptions.zettaCommandOptions);
-        clinicalSubCommands.addCommand(CANCER_TIERING_RUN_COMMAND, clinicalCommandOptions.cancerTieringCommandOptions);
+        clinicalSubCommands.addCommand("run-interpreter-tiering", clinicalCommandOptions.tieringCommandOptions);
+        clinicalSubCommands.addCommand("run-interpreter-team", clinicalCommandOptions.teamCommandOptions);
+        clinicalSubCommands.addCommand("run-interpreter-zetta", clinicalCommandOptions.zettaCommandOptions);
+        clinicalSubCommands.addCommand("run-interpreter-cancer-tiering", clinicalCommandOptions.cancerTieringCommandOptions);
         clinicalSubCommands.addCommand(RGA_INDEX_RUN_COMMAND, clinicalCommandOptions.rgaSecondaryIndexCommandOptions);
         clinicalSubCommands.addCommand(RGA_AUX_INDEX_RUN_COMMAND, clinicalCommandOptions.rgaAuxiliarSecondaryIndexCommandOptions);
 
@@ -286,7 +281,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--job-id"}, hidden = true, description = "Deprecated, use --job", arity = 1)
         @Deprecated
         public void setJobId(String job) {
-            this.jobId = job;
+            jobId = job;
         }
     }
 
@@ -295,7 +290,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
      */
     public class CommandOptions {
 
-        @Parameter(names = {"-h", "--help"},  description = "This parameter prints this help", help = true)
+        @Parameter(names = {"-h", "--help"}, description = "This parameter prints this help", help = true)
         public boolean help;
 
         public JCommander getSubCommand() {
@@ -306,7 +301,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
             String parsedCommand = jCommander.getParsedCommand();
             if (jCommander.getCommands().containsKey(parsedCommand)) {
                 String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-                return subCommand != null ? subCommand: "";
+                return subCommand != null ? subCommand : "";
             } else {
                 return "";
             }
@@ -322,15 +317,14 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         DiffExpressionCommandOptions diffExpressionCommandOptions;
         ClusteringExpressionCommandOptions clusteringExpressionCommandOptions;
 
-        GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
-        JobOptions jobOptions = InternalCliOptionsParser.this.internalJobOptions;
+        GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        JobOptions jobOptions = internalJobOptions;
 
         public ExpressionCommandOptions() {
-            this.diffExpressionCommandOptions = new DiffExpressionCommandOptions();
-            this.clusteringExpressionCommandOptions = new ClusteringExpressionCommandOptions();
+            diffExpressionCommandOptions = new DiffExpressionCommandOptions();
+            clusteringExpressionCommandOptions = new ClusteringExpressionCommandOptions();
         }
     }
-
 
     /*
      * Functional CLI options
@@ -341,11 +335,11 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         FatigoFunctionalCommandOptions fatigoFunctionalCommandOptions;
         GenesetFunctionalCommandOptions genesetFunctionalCommandOptions;
 
-        GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
+        GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         public FunctionalCommandOptions() {
-            this.fatigoFunctionalCommandOptions = new FatigoFunctionalCommandOptions();
-            this.genesetFunctionalCommandOptions = new GenesetFunctionalCommandOptions();
+            fatigoFunctionalCommandOptions = new FatigoFunctionalCommandOptions();
+            genesetFunctionalCommandOptions = new GenesetFunctionalCommandOptions();
         }
     }
 
@@ -356,8 +350,6 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
     }
 
-
-
     /*
      * EXPRESSION SUB-COMMANDS
      */
@@ -365,7 +357,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     public class DiffExpressionCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
         public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
@@ -378,7 +370,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     public class ClusteringExpressionCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
         public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
@@ -394,28 +386,26 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     public class FatigoFunctionalCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
-        public InternalCliOptionsParser.JobOptions jobOptions = InternalCliOptionsParser.this.internalJobOptions;
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
         public String userId;
-
     }
 
     @Parameters(commandNames = {"gene-set"}, commandDescription = "Delete the user Catalog database entry and the workspace")
     public class GenesetFunctionalCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
-        public InternalCliOptionsParser.JobOptions jobOptions = InternalCliOptionsParser.this.internalJobOptions;
+        public InternalCliOptionsParser.JobOptions jobOptions = internalJobOptions;
 
         @Parameter(names = {"--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
         public String userId;
-
     }
 
     /*
@@ -454,7 +444,6 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
         @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
         public boolean count;
-
     }
 
     @Override

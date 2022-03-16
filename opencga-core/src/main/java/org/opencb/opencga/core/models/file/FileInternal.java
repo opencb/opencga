@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models.file;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
 
@@ -24,10 +26,24 @@ import java.util.Map;
 
 public class FileInternal extends Internal {
 
+    @DataField(id = "status", indexed = true,
+            description = FieldConstants.FILE_INTERNAL_STATUS_DESCRIPTION)
     private FileStatus status;
+
+    @DataField(id = "variant", indexed = true,
+            description = FieldConstants.FILE_INTERNAL_VARIANT_DESCRIPTION)
     private FileInternalVariant variant;
+
+    @DataField(id = "alignment", indexed = true,
+            description = FieldConstants.FILE_INTERNAL_ALIGNMENT_DESCRIPTION)
     private FileInternalAlignment alignment;
+
+    @DataField(id = "sampleMap", indexed = true,
+            description = FieldConstants.FILE_INTERNAL_SAMPLE_MAP_DESCRIPTION)
     private Map<String, String> sampleMap;
+
+    @DataField(id = "missingSamples", indexed = true,
+            description = FieldConstants.FILE_INTERNAL_MISSING_SAMPLE_DESCRIPTION)
     private MissingSamples missingSamples;
 
     public FileInternal() {

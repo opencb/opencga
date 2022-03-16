@@ -4,17 +4,19 @@ import sys
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-import requests
+import json
 
 
 class RestClientGenerator(ABC):
 
-    def __init__(self, server_url, output_dir):
-        self.server_url = server_url
+    def __init__(self, rest_api_file, output_dir):
+        f = open(rest_api_file, 'r')
+        rest_api = json.load(f)
+        f.close()
+
+        self.rest_api = rest_api
         self.output_dir = output_dir
-        self.version = requests.get(
-            server_url + '/webservices/rest/v2/meta/about'
-        ).json()['responses'][0]['results'][0]['Version'].split('-')[0]
+        self.version = rest_api['version'] + ' [' + rest_api['commit'] + ']'
         self.parameters = {}
         self.category = None
         self.subcategory = None
@@ -126,8 +128,12 @@ class RestClientGenerator(ABC):
         return params
 
     def get_parameter_description(self, parameter):
-        return self.parameters[parameter]['description'] if self.parameters[parameter]['description'].endswith(".") \
-            else self.parameters[parameter]['description'] + "."
+        if parameter not in self.parameters or 'description' not in self.parameters[parameter]:
+            return ''
+        if self.parameters[parameter]['description'].endswith("."):
+            return self.parameters[parameter]['description']
+        else:
+            return self.parameters[parameter]['description'] + "."
 
     def get_parameter_allowed_values(self, parameter):
         return self.parameters[parameter]['allowedValues']
@@ -191,7 +197,7 @@ class RestClientGenerator(ABC):
         elif len(items) == 5:
             # e.g. /{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update
             if self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3], items[4]]):
-                method_name = '_'.join([items[4], items[3]])
+                method_name = '_'.join([items[4], items[1], items[3]])
         if not method_name:
             raise NotImplementedError('Case not implemented for PATH: "{}"'.format(self.get_endpoint_path(endpoint)))
         return re.sub(r'(?<!^)(?=[A-Z])', '_', method_name).lower()
@@ -217,16 +223,15 @@ class RestClientGenerator(ABC):
         pass
 
     def create_rest_clients(self):
-        for category in requests.get(self.server_url + '/webservices/rest/v2/meta/api').json()['responses'][0]['results'][0]:
+        for category in self.rest_api['categories']:
             text = []
             text.append(self.get_class_definition(category))
 
             for endpoint in category['endpoints']:
                 # We update the dictionary of parameters of the endpoint
                 self.parameters = {}
-                if self.get_endpoint_path(endpoint) != 'files/upload':
-                    for parameter in endpoint['parameters']:
-                        self.parameters[parameter['name'] if parameter['name'] != 'body' else 'data'] = parameter
+                for parameter in endpoint['parameters']:
+                    self.parameters[parameter['name'] if parameter['name'] != 'body' else 'data'] = parameter
 
                 # We extract the resources of the endpoint
                 self.parse_resources(category, endpoint)

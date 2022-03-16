@@ -15,14 +15,14 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.2.0-rc2-SNAPSHOT</version>
+        <version>2.2.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -34,6 +34,7 @@
         <build.dir>${project.basedir}/../build</build.dir>
         <app.dir>${project.basedir}/app</app.dir>
         <sonar.skip>true</sonar.skip>
+        <dep.jline.version>3.12.1</dep.jline.version>
         <opencga.client.dir>opencga-client-${opencga.version}</opencga.client.dir>
     </properties>
 
@@ -70,12 +71,12 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-client</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.opencb.opencga</groupId>-->
-<!--            <artifactId>opencga-test</artifactId>-->
-<!--            <version>${opencga.version}</version>-->
-<!--            <type>pom</type>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.opencb.opencga</groupId>-->
+        <!--            <artifactId>opencga-test</artifactId>-->
+        <!--            <version>${opencga.version}</version>-->
+        <!--            <type>pom</type>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
@@ -131,10 +132,24 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
+        <!--JLINE Terminal dependencies-->
         <dependency>
-            <groupId>org.fusesource.jansi</groupId>
-            <artifactId>jansi</artifactId>
-            <version>1.18</version>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-reader</artifactId>
+            <version>${dep.jline.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-terminal</artifactId>
+            <version>${dep.jline.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-terminal-jna</artifactId>
+            <version>${dep.jline.version}</version>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
 
@@ -274,7 +289,9 @@
                                     <arg value="${build.dir}/analysis"/>
                                 </exec>
 
-                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and ${build.dir}/completion</echo>
+                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and
+                                    ${build.dir}/completion
+                                </echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga.sh"/>
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-admin.sh"/>
@@ -314,6 +331,11 @@
                                     <arg value="${project.basedir}/../opencga-client/src/main/R"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-client/src/main/javascript"/>
+                                    <arg value="${build.dir}/clients"/>
+                                </exec>
 
                                 <echo>Copying configuration files</echo>
                                 <exec executable="cp">
@@ -338,11 +360,11 @@
                                 </exec>
 
                                 <echo>Copying Acceptance testing files</echo>
-<!--                                <exec executable="mvn">-->
-<!--                                    <arg value="-f"/>-->
-<!--                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>-->
-<!--                                    <arg value="install"/>-->
-<!--                                </exec>-->
+                                <!--                                <exec executable="mvn">-->
+                                <!--                                    <arg value="-f"/>-->
+                                <!--                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>-->
+                                <!--                                    <arg value="install"/>-->
+                                <!--                                </exec>-->
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-test/target/appassembler/bin"/>
@@ -396,6 +418,7 @@
                                     <arg value="${build.dir}/libs"/>
                                     <arg value="${build.dir}/clients/python"/>
                                     <arg value="${build.dir}/clients/R"/>
+                                    <arg value="${build.dir}/clients/javascript"/>
                                     <arg value="${build.dir}/LICENSE"/>
                                     <arg value="${build.dir}/README.md"/>
                                     <arg value="${build.dir}/${opencga.client.dir}"/>

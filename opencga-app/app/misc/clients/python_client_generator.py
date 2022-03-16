@@ -21,7 +21,8 @@ class PythonClientGenerator(RestClientGenerator):
             'boolean': 'bool',
             'enum': 'str',
             'list': 'list',
-            'object': 'dict'
+            'object': 'dict',
+            'inputstream': 'inputstream'
         }
 
     @staticmethod
