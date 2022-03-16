@@ -781,7 +781,7 @@ public class OpenCGAWSServer {
     }
 
     protected List<String> getIdListOrEmpty(String id) throws WebServiceException {
-        return id == null ? Collections.emptyList() : getIdList(id, true);
+        return StringUtils.isEmpty(id) ? Collections.emptyList() : getIdList(id, true);
     }
 
     protected List<String> getIdList(String id) throws WebServiceException {
