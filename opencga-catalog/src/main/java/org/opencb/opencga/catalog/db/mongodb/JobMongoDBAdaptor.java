@@ -350,7 +350,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Bson query = new Document()
                 .append(QueryParams.ID.key(), jobId)
                 .append(PRIVATE_STUDY_UID, studyUid);
-        deletedJobCollection.update(clientSession, query, new Document("$set", jobDocument),
+        deletedJobCollection.update(clientSession, query, new Document("$set", replaceDotsInKeys(jobDocument)),
                 new QueryOptions(MongoDBCollection.UPSERT, true));
 
         // Delete the document from the main COHORT collection

@@ -80,22 +80,31 @@ iva:
     # Each site will produce a different ingress rule.
     # The values of each site will be merged with the top level "ingress" fields.
     sites:
-      iva:
+      root:
         enabled: true
         annotations:
-          nginx.ingress.kubernetes.io/rewrite-target: /iva$1
-        # Accepts / , /iva and /iva/....
+          nginx.ingress.kubernetes.io/rewrite-target: /iva/$1
+        # Accepts /.*
         paths:
-          - /iva(/.*|$)
           - /(.*)
-      api:
+      all:
         enabled: true
 #        annotations:
 #          # No need to rewrite
-#          # nginx.ingress.kubernetes.io/rewrite-target: /api$1
-        # Accepts /api and /api/....
         paths:
-          - /api(/.*|$)
+          - /iva/
+          - /api/
+      redirect:
+        # Directory redirect. Similar to apache server mod_dir
+        # Do not delegate on mod_dir, as it might hide complex path rewrites
+        #  /XXX -> Redirect to /XXX/ preserving any argument
+        enabled: true
+        annotations:
+          # See Embedded Variables: https://nginx.org/en/docs/http/ngx_http_core_module.html#variables
+          nginx.ingress.kubernetes.io/permanent-redirect: "$uri/?$args"
+        paths:
+          - /api$
+          - /iva$
 
   resources:
     limits:

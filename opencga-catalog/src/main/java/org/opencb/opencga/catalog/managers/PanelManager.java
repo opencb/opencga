@@ -171,27 +171,7 @@ public class PanelManager extends ResourceManager<Panel> {
             // 1. We check everything can be done
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_PANELS);
 
-            // Check all the panel fields
-            ParamUtils.checkIdentifier(panel.getId(), "id");
-            panel.setName(ParamUtils.defaultString(panel.getName(), panel.getId()));
-            panel.setRelease(studyManager.getCurrentRelease(study));
-            panel.setVersion(1);
-            panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
-            panel.setCreationDate(TimeUtils.getTime());
-            panel.setModificationDate(TimeUtils.getTime());
-            panel.setStatus(new Status());
-            panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
-            panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
-            panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
-            panel.setDisorders(ParamUtils.defaultObject(panel.getDisorders(), Collections.emptyList()));
-            panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
-            panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
-            panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
-            panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
-            panel.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PANEL));
-
-            fillDefaultStats(panel);
-
+            autoCompletePanel(study, panel);
             options = ParamUtils.defaultObject(options, QueryOptions::new);
 
             OpenCGAResult<Panel> insert = panelDBAdaptor.insert(study.getUid(), panel, options);
@@ -328,12 +308,24 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     private void autoCompletePanel(Study study, Panel panel) throws CatalogException {
-        ParamUtils.checkParameter(panel.getId(), "id");
-
-        panel.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PANEL));
-        panel.setCreationDate(TimeUtils.getTime());
+        // Check all the panel fields
+        ParamUtils.checkIdentifier(panel.getId(), "id");
+        panel.setName(ParamUtils.defaultString(panel.getName(), panel.getId()));
         panel.setRelease(studyManager.getCurrentRelease(study));
         panel.setVersion(1);
+        panel.setAuthor(ParamUtils.defaultString(panel.getAuthor(), ""));
+        panel.setCreationDate(TimeUtils.getTime());
+        panel.setModificationDate(TimeUtils.getTime());
+        panel.setStatus(new Status());
+        panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
+        panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
+        panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
+        panel.setDisorders(ParamUtils.defaultObject(panel.getDisorders(), Collections.emptyList()));
+        panel.setVariants(ParamUtils.defaultObject(panel.getVariants(), Collections.emptyList()));
+        panel.setRegions(ParamUtils.defaultObject(panel.getRegions(), Collections.emptyList()));
+        panel.setGenes(ParamUtils.defaultObject(panel.getGenes(), Collections.emptyList()));
+        panel.setAttributes(ParamUtils.defaultObject(panel.getAttributes(), Collections.emptyMap()));
+        panel.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PANEL));
     }
 
     public OpenCGAResult<Panel> update(String studyId, Query query, PanelUpdateParams updateParams, QueryOptions options, String token)
@@ -1038,17 +1030,6 @@ public class PanelManager extends ResourceManager<Panel> {
     protected void fixQueryObject(Query query) {
         super.fixQueryObject(query);
         changeQueryId(query, ParamConstants.PANEL_STATUS_PARAM, PanelDBAdaptor.QueryParams.STATUS_ID.key());
-    }
-
-    void fillDefaultStats(Panel panel) {
-        if (panel.getStats() == null || panel.getStats().isEmpty()) {
-            Map<String, Integer> stats = new HashMap<>();
-            stats.put("numberOfVariants", panel.getVariants().size());
-            stats.put("numberOfGenes", panel.getGenes().size());
-            stats.put("numberOfRegions", panel.getRegions().size());
-
-            panel.setStats(stats);
-        }
     }
 
 }

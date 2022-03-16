@@ -54,20 +54,13 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
         int approximateCountSamplingSize = options.getInt(
                 VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(),
                 VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.defaultValue());
-        Query baseQuery = subQuery(query,
-                VariantQueryParam.STUDY,
-                VariantQueryParam.TYPE,
-                VariantQueryParam.INCLUDE_SAMPLE,
-                VariantQueryParam.INCLUDE_SAMPLE_ID,
-                VariantQueryParam.INCLUDE_GENOTYPE,
-                VariantQueryParam.INCLUDE_FILE
-        );
+        Query baseQuery = baseQuery(query);
         Predicate<Variant> variantLocalFilter = filterBuilder.buildFilter(query, options);
 
 
         if (getIterator) {
             VariantDBIterator iterator = delegatedQueryExecutor.iterator(query, options);
-            iterator = iterator.mapBuffered(l -> getBreakendPairs(0, new Query(baseQuery), variantLocalFilter, l), 100);
+            iterator = iterator.mapBuffered(l -> getBreakendPairs(0, baseQuery, variantLocalFilter, l), 100);
             Iterators.advance(iterator, skip);
             iterator = iterator.localSkip(skip);
             if (limit > 0) {
@@ -85,7 +78,7 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
             options.put(QueryOptions.LIMIT, tmpLimit);
             VariantQueryResult<Variant> queryResult = delegatedQueryExecutor.get(query, options);
             List<Variant> results = queryResult.getResults();
-            results = getBreakendPairs(0, new Query(baseQuery), variantLocalFilter, results);
+            results = getBreakendPairs(0, baseQuery, variantLocalFilter, results);
             if (queryResult.getNumMatches() < tmpLimit) {
                 // Exact count!!
                 queryResult.setApproximateCount(false);
@@ -115,22 +108,28 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
 
         int limit = options.getInt(QueryOptions.LIMIT);
         int skip = options.getInt(QueryOptions.SKIP);
-        Query baseQuery = subQuery(query,
-                VariantQueryParam.STUDY,
-                VariantQueryParam.TYPE,
-                VariantQueryParam.INCLUDE_SAMPLE,
-                VariantQueryParam.INCLUDE_FILE
-        );
+        Query baseQuery = baseQuery(query);
         Predicate<Variant> variantLocalFilter = filterBuilder.buildFilter(query, options);
 
         VariantDBIterator iterator = delegatedQueryExecutor.iterator(query, options);
-        iterator = iterator.mapBuffered(l -> getBreakendPairs(0, new Query(baseQuery), variantLocalFilter, l), batchSize);
+        iterator = iterator.mapBuffered(l -> getBreakendPairs(0, baseQuery, variantLocalFilter, l), batchSize);
         Iterators.advance(iterator, skip);
         iterator = iterator.localSkip(skip);
         if (limit > 0) {
             iterator = iterator.localLimit(limit);
         }
         return iterator;
+    }
+
+    private Query baseQuery(Query query) {
+        return subQuery(query,
+                VariantQueryParam.STUDY,
+                VariantQueryParam.TYPE,
+                VariantQueryParam.INCLUDE_SAMPLE,
+                VariantQueryParam.INCLUDE_SAMPLE_ID,
+                VariantQueryParam.INCLUDE_GENOTYPE,
+                VariantQueryParam.INCLUDE_FILE
+        );
     }
 
     private Query subQuery(Query query, QueryParam... queryParams) {
@@ -145,6 +144,8 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
         if (variants.isEmpty()) {
             return variants;
         }
+        // Copy query to avoid propagating modifications
+        baseQuery = new Query(baseQuery);
 //        System.out.println("variants = " + variants);
         List<Region> regions = new ArrayList<>(variants.size());
         for (Variant variant : variants) {
@@ -162,7 +163,9 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
             }
             StudyEntry mateStudyEntry = mateVariant.getStudies().get(0);
             SampleEntry sampleEntry = mateStudyEntry.getSample(samplePosition);
-            if (sampleEntry == null) {
+            if (sampleEntry == null || sampleEntry.getFileIndex() == null) {
+                // Discard missing samples, or samples without file
+                // This might happen because we are not filtering by sample when getting the candidate mate-variants.
                 continue;
             }
             String vcfId = mateStudyEntry.getFile(sampleEntry.getFileIndex()).getData().get(StudyEntry.VCF_ID);
@@ -179,20 +182,31 @@ public class BreakendVariantQueryExecutor extends VariantQueryExecutor {
                 throw new VariantQueryException("Unable to find mate of variant " + variant + " with MATEID=" + mateid);
             }
 
-            // Check for duplicated pairs
-            if (validDiscardPair(filter, variant, mateVariant)) {
-                variantPairs.add(variant);
-                variantPairs.add(mateVariant);
-            }
+            addPair(filter, variantPairs, variant, mateVariant);
         }
         return variantPairs;
     }
 
-    private boolean validDiscardPair(Predicate<Variant> filter, Variant variant, Variant mateVariant) {
+    private void addPair(Predicate<Variant> filter, List<Variant> variantPairs, Variant variant, Variant mateVariant) {
+        // Check for duplicated pairs
         if (VariantDBIterator.VARIANT_COMPARATOR.compare(variant, mateVariant) > 0) {
-            // If the mate variant is "before" the main variant
+            // The mate variant is "before" the main variant
             // This pair might be discarded if the mate matches the given query
-            return !filter.test(variant);
+            if (!filter.test(mateVariant)) {
+                // Otherwise, both variants are added to the list of variant pairs.
+                // But first the "mate" to respect order
+                variantPairs.add(mateVariant);
+                variantPairs.add(variant);
+            }
+        } else {
+            variantPairs.add(variant);
+            variantPairs.add(mateVariant);
+        }
+    }
+
+    private boolean validPair(Predicate<Variant> filter, Variant variant, Variant mateVariant) {
+        if (VariantDBIterator.VARIANT_COMPARATOR.compare(variant, mateVariant) > 0) {
+            return !filter.test(mateVariant);
         }
         return true;
     }

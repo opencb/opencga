@@ -734,7 +734,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             int sampleVersion = tmpFamily.getInteger(QueryParams.VERSION.key());
 
             // Insert the document in the DELETE collection
-            deletedFamilyCollection.insert(clientSession, tmpFamily, null);
+            deletedFamilyCollection.insert(clientSession, replaceDotsInKeys(tmpFamily), null);
             logger.debug("Inserted family uid '{}' version '{}' in DELETE collection", familyUid, sampleVersion);
 
             // Remove the document from the main SAMPLE collection
