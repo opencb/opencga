@@ -108,6 +108,11 @@ public class PanelManagerTest extends GenericTest {
     @Test
     public void updateTest() throws CatalogException {
         panelManager.importFromSource(studyFqn, "cancer-gene-census", null, sessionIdUser);
+        Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
+
+        assertEquals((int) panel.getStats().get("numberOfRegions"), panel.getVariants().size());
+        assertEquals((int) panel.getStats().get("numberOfVariants"), panel.getVariants().size());
+        assertEquals((int) panel.getStats().get("numberOfGenes"), panel.getGenes().size());
 
         DiseasePanel.RegionPanel regionPanel = new DiseasePanel.RegionPanel();
         regionPanel.setCoordinates(Collections.singletonList(new DiseasePanel.Coordinate("", "chr1:1-1000", "")));
@@ -138,6 +143,10 @@ public class PanelManagerTest extends GenericTest {
         assertEquals("ontologyTerm", updatedPanel.getDisorders().get(0).getId());
         assertEquals(1, updatedPanel.getVariants().size());
         assertEquals("variant1", updatedPanel.getVariants().get(0).getId());
+
+        assertEquals((int) updatedPanel.getStats().get("numberOfRegions"), updatedPanel.getVariants().size());
+        assertEquals((int) updatedPanel.getStats().get("numberOfVariants"), updatedPanel.getVariants().size());
+        assertEquals((int) updatedPanel.getStats().get("numberOfGenes"), updatedPanel.getGenes().size());
     }
 
 }

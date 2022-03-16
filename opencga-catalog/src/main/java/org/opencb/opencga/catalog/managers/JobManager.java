@@ -420,9 +420,14 @@ public class JobManager extends ResourceManager<Job> {
                                     String jobId, String jobDescription, List<String> jobDependsOn, List<String> jobTags, String token)
             throws CatalogException {
         Job job = get(studyStr, jobRetry.getJob(), new QueryOptions(), token).first();
-        if (job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ERROR)
+        if (jobRetry.isForce()
+                || job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ERROR)
                 || job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ABORTED)) {
-            return submit(studyStr, job.getTool().getId(), priority, job.getParams(), jobId, jobDescription, jobDependsOn, jobTags, token);
+            Map<String, Object> params = new ObjectMap(job.getParams());
+            if (jobRetry.getParams() != null) {
+                params.putAll(jobRetry.getParams());
+            }
+            return submit(studyStr, job.getTool().getId(), priority, params, jobId, jobDescription, jobDependsOn, jobTags, token);
         } else {
             throw new CatalogException("Unable to retry job with status " + job.getInternal().getStatus().getId());
         }

@@ -166,6 +166,28 @@ public class MigrationManager {
         return migrations;
     }
 
+    public MigrationSummary getMigrationSummary() throws CatalogException {
+        List<Pair<Migration, MigrationRun>> runs = getMigrationRuns(null, null, null);
+
+        MigrationSummary migrationSummary = new MigrationSummary()
+                .setStatusCount(runs.stream().collect(Collectors.groupingBy(
+                        p -> p.getValue().getStatus(),
+                        () -> new EnumMap<>(MigrationRun.MigrationStatus.class),
+                        Collectors.counting())))
+                .setVersionCount(runs.stream().collect(Collectors.groupingBy(p -> p.getKey().version(), Collectors.counting())));
+
+        long toBeApplied = migrationSummary
+                .getStatusCount()
+                .entrySet()
+                .stream()
+                .filter(e -> e.getKey().toBeApplied())
+                .mapToLong(Map.Entry::getValue)
+                .sum();
+        migrationSummary.setMigrationsToBeApplied(toBeApplied);
+
+        return migrationSummary;
+    }
+
     public List<Pair<Migration, MigrationRun>> getMigrationRuns(String token) throws CatalogException {
         return getMigrationRuns(null, null, null, token);
     }
@@ -174,8 +196,15 @@ public class MigrationManager {
                                                                 List<String> status, String token) throws CatalogException {
         validateAdmin(token);
 
-        // 0. Always update migration runs
+        // 0. Update migration runs
         updateMigrationRuns(token);
+
+        return getMigrationRuns(version, domain, status);
+    }
+
+    private List<Pair<Migration, MigrationRun>> getMigrationRuns(String version, List<Migration.MigrationDomain> domain,
+                                                                 List<String> status)
+            throws CatalogException {
 
         // 1. Get migrations and filter
         List<Migration> migrations = getMigrations();

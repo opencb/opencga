@@ -695,13 +695,13 @@ public class SampleManagerTest extends AbstractManagerTest {
         catalogManager.getSampleManager().create(studyFqn,
                 new Sample().setId("testSample").setDescription("description"), null, token);
 
-        SampleProcessing processing = new SampleProcessing(Collections.singletonList(new OntologyTermAnnotation().setId("product")),
+        SampleProcessing processing = new SampleProcessing(new OntologyTermAnnotation().setId("product"),
                 "preparationMethod", "extractionMethod", "labSampleId", "quantity", "date", Collections.emptyMap());
         catalogManager.getSampleManager().update(studyFqn, "testSample",
                 new SampleUpdateParams().setProcessing(processing), new QueryOptions(Constants.INCREMENT_VERSION, true), token);
 
         DataResult<Sample> testSample = catalogManager.getSampleManager().get(studyFqn, "testSample", new QueryOptions(), token);
-        assertEquals("product", testSample.first().getProcessing().getProduct().get(0).getId());
+        assertEquals("product", testSample.first().getProcessing().getProduct().getId());
         assertEquals("preparationMethod", testSample.first().getProcessing().getPreparationMethod());
         assertEquals("extractionMethod", testSample.first().getProcessing().getExtractionMethod());
         assertEquals("labSampleId", testSample.first().getProcessing().getLabSampleId());
@@ -2324,6 +2324,41 @@ public class SampleManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("size of the array");
         catalogManager.getSampleManager().search(studyFqn, query, QueryOptions.empty(), token);
+    }
+
+    @Test
+    public void updateIndividualFromSample() throws CatalogException {
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual1"), new QueryOptions(), token);
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual2"), new QueryOptions(), token);
+
+        catalogManager.getSampleManager().update(studyFqn, "s_1", new SampleUpdateParams().setIndividualId("Individual1"),
+                QueryOptions.empty(), token);
+        DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "Individual1"), QueryOptions.empty(), token);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("s_1", sampleDataResult.first().getId());
+
+        catalogManager.getSampleManager().update(studyFqn, "s_1", new SampleUpdateParams().setIndividualId("Individual2"),
+                QueryOptions.empty(), token);
+        sampleDataResult = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "Individual1"), QueryOptions.empty(), token);
+        assertEquals(0, sampleDataResult.getNumResults());
+
+        sampleDataResult = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "Individual2"), QueryOptions.empty(), token);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("s_1", sampleDataResult.first().getId());
+
+        catalogManager.getIndividualManager().delete(studyFqn, Arrays.asList("Individual1", "Individual2"), QueryOptions.empty(), token);
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual1"), new QueryOptions(), token);
+        catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("Individual2"), new QueryOptions(), token);
+
+        catalogManager.getSampleManager().update(studyFqn, "s_1", new SampleUpdateParams().setIndividualId("Individual2"),
+                QueryOptions.empty(), token);
+        sampleDataResult = catalogManager.getSampleManager().search(studyFqn,
+                new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), "Individual2"), QueryOptions.empty(), token);
+        assertEquals(1, sampleDataResult.getNumResults());
+        assertEquals("s_1", sampleDataResult.first().getId());
     }
 
     @Test

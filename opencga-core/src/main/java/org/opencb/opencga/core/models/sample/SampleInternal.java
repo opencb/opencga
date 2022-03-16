@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.core.models.sample;
 
+import org.opencb.biodata.models.common.Status;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.InternalStatus;
@@ -29,6 +32,8 @@ import java.util.Objects;
  */
 public class SampleInternal extends Internal {
 
+    @DataField(id = "RgaIndex.rga", name = "rga", indexed = true,
+            description = FieldConstants.SAMPLE_INTERNAL_RGA_DESCRIPTION)
     private RgaIndex rga;
     private SampleInternalVariant variant;
 
@@ -59,11 +64,11 @@ public class SampleInternal extends Internal {
         return sb.toString();
     }
 
-    public InternalStatus getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public SampleInternal setStatus(InternalStatus status) {
+    public SampleInternal setStatus(Status status) {
         this.status = status;
         return this;
     }

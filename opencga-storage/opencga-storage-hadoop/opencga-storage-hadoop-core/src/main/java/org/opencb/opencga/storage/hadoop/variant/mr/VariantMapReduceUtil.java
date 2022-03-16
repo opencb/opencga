@@ -152,7 +152,6 @@ public class VariantMapReduceUtil {
     public static void initVariantMapperJob(Job job, Class<? extends VariantMapper> mapperClass, String variantTable,
                                                VariantStorageMetadataManager metadataManager, Query query, QueryOptions queryOptions,
                                                boolean skipSampleIndex) throws IOException {
-        GenomeHelper helper = new GenomeHelper(job.getConfiguration());
         query = new VariantQueryParser(null, metadataManager).preProcessQuery(query, queryOptions);
 
         setQuery(job, query);
@@ -174,7 +173,7 @@ public class VariantMapReduceUtil {
                 LOGGER.info("Use sample index to read from HBase");
             }
 
-            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(helper, metadataManager);
+            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(metadataManager);
             List<Scan> scans = parser.parseQueryMultiRegion(query, queryOptions);
             configureMapReduceScans(scans, job.getConfiguration());
 
@@ -186,7 +185,7 @@ public class VariantMapReduceUtil {
             }
         } else {
             LOGGER.info("Init MapReduce job reading from Phoenix");
-            String sql = new VariantSqlQueryParser(helper, variantTable, metadataManager)
+            String sql = new VariantSqlQueryParser(variantTable, metadataManager, job.getConfiguration())
                     .parse(query, queryOptions);
 
             initVariantMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
@@ -227,10 +226,9 @@ public class VariantMapReduceUtil {
     public static void initVariantMapperJobFromPhoenix(Job job, VariantHadoopDBAdaptor dbAdaptor, Query query, QueryOptions queryOptions,
                                                        Class<? extends VariantMapper> variantMapperClass)
             throws IOException {
-        GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         String variantTableName = dbAdaptor.getVariantTable();
         VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
-        VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(genomeHelper, variantTableName, scm, false);
+        VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(variantTableName, scm, false, dbAdaptor.getConfiguration());
 
         String sql = variantSqlQueryParser.parse(query, queryOptions);
 
@@ -265,7 +263,6 @@ public class VariantMapReduceUtil {
     public static void initVariantRowMapperJob(Job job, Class<? extends VariantRowMapper> mapperClass, String variantTable,
                                                VariantStorageMetadataManager metadataManager, Query query, QueryOptions queryOptions,
                                                boolean skipSampleIndex) throws IOException {
-        GenomeHelper helper = new GenomeHelper(job.getConfiguration());
         query = new VariantQueryParser(null, metadataManager).preProcessQuery(query, queryOptions);
 
         setQuery(job, query);
@@ -282,7 +279,7 @@ public class VariantMapReduceUtil {
                 LOGGER.info("Use sample index to read from HBase");
             }
 
-            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(helper, metadataManager);
+            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(metadataManager);
             List<Scan> scans = parser.parseQueryMultiRegion(query, queryOptions);
             configureMapReduceScans(scans, job.getConfiguration());
 
@@ -294,7 +291,7 @@ public class VariantMapReduceUtil {
             }
         } else {
             LOGGER.info("Init MapReduce job reading from Phoenix");
-            String sql = new VariantSqlQueryParser(helper, variantTable, metadataManager)
+            String sql = new VariantSqlQueryParser(variantTable, metadataManager, job.getConfiguration())
                     .parse(query, queryOptions);
 
             initVariantRowMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
@@ -352,10 +349,9 @@ public class VariantMapReduceUtil {
     public static void initVariantRowMapperJobFromPhoenix(Job job, VariantHadoopDBAdaptor dbAdaptor, Query query, QueryOptions queryOptions,
                                                        Class<? extends VariantRowMapper> variantMapperClass)
             throws IOException {
-        GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         String variantTableName = dbAdaptor.getVariantTable();
         VariantStorageMetadataManager mm = dbAdaptor.getMetadataManager();
-        VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(genomeHelper, variantTableName, mm, false);
+        VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(variantTableName, mm, false, dbAdaptor.getConfiguration());
 
         String sql = variantSqlQueryParser.parse(query, queryOptions);
 

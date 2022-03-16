@@ -15,14 +15,14 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.2.0-rc1</version>
+        <version>2.2.0-rc2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -69,10 +69,21 @@
             <version>${jackson.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.swagger</groupId>
-            <artifactId>swagger-jersey2-jaxrs</artifactId>
-            <version>1.5.22</version>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>2.12.5</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.9.9.3</version>
+        </dependency>
+        <!-- <dependency>
+             <groupId>io.swagger</groupId>
+             <artifactId>swagger-jersey2-jaxrs</artifactId>
+             <version>1.5.22</version>
+         </dependency>-->
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
@@ -113,6 +124,12 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.2</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -142,22 +159,22 @@
                       log4j-over-slf4j-<version>.jar
                     -->
                     <!--<packagingExcludes>-->
-                        <!--WEB-INF/lib/commons-logging-*.jar,-->
-                        <!--%regex[WEB-INF/lib/log4j-(?!over-slf4j).*.jar]-->
+                    <!--WEB-INF/lib/commons-logging-*.jar,-->
+                    <!--%regex[WEB-INF/lib/log4j-(?!over-slf4j).*.jar]-->
                     <!--</packagingExcludes>-->
                     <webResources>
-                       <resource>
-                           <directory>src/main/webapp/WEB-INF/</directory>
-                           <filtering>true</filtering>
-                           <targetPath>WEB-INF</targetPath>
-                       </resource>
-<!--                       <resource>-->
-<!--                           <directory>../opencga-core/src/main/resources/</directory>-->
-<!--                           <targetPath>WEB-INF/classes</targetPath>-->
-<!--                           <includes>-->
-<!--                               <include>log4j.properties</include>-->
-<!--                           </includes>-->
-<!--                       </resource>-->
+                        <resource>
+                            <directory>src/main/webapp/WEB-INF/</directory>
+                            <filtering>true</filtering>
+                            <targetPath>WEB-INF</targetPath>
+                        </resource>
+                        <!--                       <resource>-->
+                        <!--                           <directory>../opencga-core/src/main/resources/</directory>-->
+                        <!--                           <targetPath>WEB-INF/classes</targetPath>-->
+                        <!--                           <includes>-->
+                        <!--                               <include>log4j.properties</include>-->
+                        <!--                           </includes>-->
+                        <!--                       </resource>-->
                     </webResources>
                 </configuration>
             </plugin>
@@ -206,9 +223,11 @@
                       protobuf-java directly, you will be transitively depending on the
                       protobuf-java version that grpc depends on.
                     -->
-                    <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
+                    <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}
+                    </protocArtifact>
                     <pluginId>grpc-java</pluginId>
-                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}
+                    </pluginArtifact>
                     <!--<protoSourceRoot>src/main/resources/protobuf</protoSourceRoot>-->
                 </configuration>
                 <executions>
@@ -231,7 +250,9 @@
                     <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
                 </configuration>
             </plugin>
+
         </plugins>
+
     </build>
 
 
@@ -267,6 +288,35 @@
                 </dependency>
             </dependencies>
         </profile>
+
+        <profile>
+            <id>GenerateCLIProfile</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <executions>
+                            <execution>
+                                <id>CLIWriter</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <mainClass>org.opencb.opencga.server.generator.ClientsGenerator</mainClass>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
+
 
 </project>

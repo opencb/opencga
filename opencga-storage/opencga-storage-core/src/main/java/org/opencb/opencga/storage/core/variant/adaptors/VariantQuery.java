@@ -1,9 +1,12 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.core.api.ParamConstants;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class VariantQuery extends Query {
 
@@ -11,6 +14,22 @@ public class VariantQuery extends Query {
         put(VariantQueryParam.ID.key(), value);
         return this;
     }
+
+    public VariantQuery id(String... value) {
+        put(VariantQueryParam.ID.key(), Arrays.asList(value));
+        return this;
+    }
+
+    public VariantQuery id(Variant... value) {
+        put(VariantQueryParam.ID.key(), Arrays.asList(value));
+        return this;
+    }
+
+    public VariantQuery id(List<?> value) {
+        put(VariantQueryParam.ID.key(), value);
+        return this;
+    }
+
     public String id() {
         return getString(VariantQueryParam.ID.key());
     }
@@ -91,10 +110,25 @@ public class VariantQuery extends Query {
         return getString(VariantQueryParam.SAMPLE_DATA.key());
     }
 
+    public VariantQuery includeSample(List<String> value) {
+        put(VariantQueryParam.INCLUDE_SAMPLE.key(), value);
+        return this;
+    }
+
+    public VariantQuery includeSampleAll() {
+        put(VariantQueryParam.INCLUDE_SAMPLE.key(), ParamConstants.ALL);
+        return this;
+    }
+
+    public VariantQuery includeSample(String... value) {
+        return includeSample(Arrays.asList(value));
+    }
+
     public VariantQuery includeSample(String value) {
         put(VariantQueryParam.INCLUDE_SAMPLE.key(), value);
         return this;
     }
+
     public String includeSample() {
         return getString(VariantQueryParam.INCLUDE_SAMPLE.key());
     }

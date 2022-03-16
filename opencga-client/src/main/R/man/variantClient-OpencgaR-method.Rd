@@ -9,14 +9,6 @@
 \arguments{
 \item{annotationId}{Annotation identifier.}
 
-\item{plotCopyNumber}{Plot copy-number track.}
-
-\item{plotIndels}{Plot INDELs track.}
-
-\item{plotRearrangements}{Plot rearrangements track.}
-
-\item{density}{Density plot: LOW, MEDIUM or HIGH.}
-
 \item{clinicalAnalysis}{Clinical analysis id.}
 
 \item{modeOfInheritance}{Mode of inheritance.}
@@ -26,6 +18,8 @@
 \item{disorder}{Disorder id.}
 
 \item{resume}{Resume a previously failed indexation.}
+
+\item{job}{Job ID or UUID.}
 
 \item{fitting}{Compute the relative proportions of the different mutational signatures demonstrated by the tumour.}
 
@@ -51,9 +45,7 @@
 
 \item{qual}{Specify the QUAL for any of the files. If 'file' filter is provided, will match the file and the qual. e.g.: >123.4.}
 
-\item{fileData}{Filter by file data (i.e. INFO column from VCF file). [{file}:]{key}{op}{value}\link{,;}* . If no file is specified, will use all files from "file" filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many INFO fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10.}
-
-\item{sampleData}{Filter by any SampleData field from samples. [{sample}:]{key}{op}{value}\link{,;}* . If no sample is specified, will use all samples from "sample" or "genotype" filter. e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10.}
+\item{fileData}{Filter by file data (i.e. FILTER, QUAL and INFO columns from VCF file). [{file}:]{key}{op}{value}\link{,;}* . If no file is specified, will use all files from "file" filter. e.g. AN>200 or file_1.vcf:AN>200;file_2.vcf:AN<10 . Many fields can be combined. e.g. file_1.vcf:AN>200;DB=true;file_2.vcf:AN<10,FILTER=PASS,LowDP.}
 
 \item{sampleMetadata}{Return the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.}
 
@@ -83,9 +75,9 @@
 
 \item{includeStudy}{List of studies to include in the result. Accepts 'all' and 'none'.}
 
-\item{includeFile}{List of files to be returned. Accepts 'all' and 'none'.}
+\item{includeFile}{List of files to be returned. Accepts 'all' and 'none'. If undefined, automatically includes files used for filtering. If none, no file is included.}
 
-\item{includeSample}{List of samples to be included in the result. Accepts 'all' and 'none'.}
+\item{includeSample}{List of samples to be included in the result. Accepts 'all' and 'none'. If undefined, automatically includes samples used for filtering. If none, no sample is included.}
 
 \item{includeSampleData}{List of Sample Data keys (i.e. FORMAT column from VCF file) from Sample Data to include in the output. e.g: DP,AD. Accepts 'all' and 'none'.}
 
@@ -103,6 +95,12 @@
 
 \item{conservation}{Filter by conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1.}
 
+\item{populationFrequencyRef}{Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01.}
+
+\item{populationFrequencyMaf}{Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01.}
+
+\item{geneTraitId}{List of gene trait association id. e.g. "umls:C0007222" , "OMIM:269600".}
+
 \item{go}{List of GO (Gene Ontology) terms. e.g. "GO:0002020".}
 
 \item{expression}{List of tissues of interest. e.g. "lung".}
@@ -117,17 +115,19 @@
 
 \item{panel}{Filter by genes from the given disease panel.}
 
+\item{panelModeOfInheritance}{Filter genes from specific panels that match certain mode of inheritance. Accepted values : \link{ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous }.}
+
+\item{panelConfidence}{Filter genes from specific panels that match certain confidence. Accepted values : \link{ high, medium, low, rejected }.}
+
+\item{panelRoleInCancer}{Filter genes from specific panels that match certain role in cancer. Accepted values : \link{ both, oncogene, tumorSuppressorGene, fusion }.}
+
+\item{panelFeatureType}{Filter elements from specific panels by type. Accepted values : \link{ gene, region, str, variant }.}
+
+\item{panelIntersection}{Intersect panel genes and regions with given genes and regions from que input query. This will prevent returning variants from regions out of the panel.}
+
 \item{trait}{List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...}
 
 \item{savedFilter}{Use a saved filter at User level.}
-
-\item{region}{List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000.}
-
-\item{type}{List of types, accepted values are SNV, MNV, INDEL, SV, CNV, INSERTION, DELETION, e.g. SNV,INDEL.}
-
-\item{file}{Filter variants from the files specified. This will set includeFile parameter when not provided.}
-
-\item{filter}{Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. e.g.: PASS,LowGQX.}
 
 \item{sampleAnnotation}{Selects some samples using metadata information from Catalog. e.g. age>20;phenotype=hpo:123,hpo:456;name=smith.}
 
@@ -135,29 +135,13 @@
 
 \item{familyDisorder}{Specify the disorder to use for the family segregation.}
 
-\item{familySegregation}{Filter by segregation mode from a given family. Accepted values: \link{ monoallelic, monoallelicIncompletePenetrance, biallelic, biallelicIncompletePenetrance, XlinkedBiallelic, XlinkedMonoallelic, Ylinked, MendelianError, DeNovo, CompoundHeterozygous }.}
+\item{familySegregation}{Filter by segregation mode from a given family. Accepted values: \link{ autosomalDominant, autosomalRecessive, XLinkedDominant, XLinkedRecessive, YLinked, mitochondrial, deNovo, mendelianError, compoundHeterozygous }.}
 
 \item{familyMembers}{Sub set of the members of a given family.}
 
 \item{familyProband}{Specify the proband child to use for the family segregation.}
 
-\item{ct}{List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578.}
-
-\item{biotype}{List of biotypes, e.g. protein_coding.}
-
-\item{populationFrequencyAlt}{Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01.}
-
-\item{populationFrequencyRef}{Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01.}
-
-\item{populationFrequencyMaf}{Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01.}
-
-\item{transcriptFlag}{List of transcript annotation flags. e.g. CCDS, basic, cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno.}
-
-\item{geneTraitId}{List of gene trait association id. e.g. "umls:C0007222" , "OMIM:269600".}
-
-\item{clinicalSignificance}{Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic.}
-
-\item{fields}{List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type . Accepted values: chromosome, type, genotype, consequenceType, biotype, clinicalSignificance, dp, qual, filter.}
+\item{field}{List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: chromosome>>type . Accepted values: chromosome, type, genotype, consequenceType, biotype, clinicalSignificance, dp, qual, filter.}
 
 \item{limit}{Number of results to be returned.}
 
@@ -167,7 +151,33 @@
 
 \item{genotype}{Genotypes that the sample must have to be selected.}
 
-\item{sample}{Comma separated list sample IDs or UUIDs up to a maximum of 100.}
+\item{region}{List of regions, these can be just a single chromosome name or regions in the format chr:start-end, e.g.: 2,3:100000-200000.}
+
+\item{type}{List of types, accepted values are SNV, MNV, INDEL, SV, COPY_NUMBER, COPY_NUMBER_LOSS, COPY_NUMBER_GAIN, INSERTION, DELETION, DUPLICATION, TANDEM_DUPLICATION, BREAKEND, e.g. SNV,INDEL.}
+
+\item{file}{Filter variants from the files specified. This will set includeFile parameter when not provided.}
+
+\item{filter}{Specify the FILTER for any of the files. If 'file' filter is provided, will match the file and the filter. e.g.: PASS,LowGQX.}
+
+\item{sampleData}{Filter by any SampleData field from samples. [{sample}:]{key}{op}{value}\link{,;}* . If no sample is specified, will use all samples from "sample" or "genotype" filter. e.g. DP>200 or HG0097:DP>200,HG0098:DP<10 . Many FORMAT fields can be combined. e.g. HG0097:DP>200;GT=1/1,0/1,HG0098:DP<10.}
+
+\item{ct}{List of SO consequence types, e.g. missense_variant,stop_lost or SO:0001583,SO:0001578. Accepts aliases 'loss_of_function' and 'protein_altering'.}
+
+\item{biotype}{List of biotypes, e.g. protein_coding.}
+
+\item{transcriptFlag}{List of transcript flags. e.g. canonical, CCDS, basic, LRG, MANE Select, MANE Plus Clinical, EGLH_HaemOnc, TSO500.}
+
+\item{populationFrequencyAlt}{Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}. e.g. 1kG_phase3:ALL<0.01.}
+
+\item{clinical}{Clinical source: clinvar, cosmic.}
+
+\item{clinicalSignificance}{Clinical significance: benign, likely_benign, likely_pathogenic, pathogenic.}
+
+\item{clinicalConfirmedStatus}{Clinical confirmed status.}
+
+\item{filterTranscript}{Do filter transcripts when obtaining transcript counts.}
+
+\item{sample}{Sample ID.}
 
 \item{project}{Project \link{user@}project where project can be either the ID or the alias.}
 
@@ -187,36 +197,40 @@
 This function implements the OpenCGA calls for managing Analysis - Variant.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
-   aggregationStats \tab /{apiVersion}/analysis/variant/aggregationStats \tab savedFilter, region, type, project, study, file, filter, sample, genotype, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, annotationExists, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinicalSignificance, customAnnotation, trait, fields \cr
+   aggregationStats \tab /{apiVersion}/analysis/variant/aggregationStats \tab savedFilter, region, type, project, study, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, annotationExists, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, trait, field \cr
    metadataAnnotation \tab /{apiVersion}/analysis/variant/annotation/metadata \tab annotationId, project \cr
    queryAnnotation \tab /{apiVersion}/analysis/variant/annotation/query \tab id, region, include, exclude, limit, skip, annotationId \cr
-   circos \tab /{apiVersion}/analysis/variant/circos \tab study, sample, ct, biotype, filter, qual, region, gene, panel, plotCopyNumber, plotIndels, plotRearrangements, density \cr
+   runCircos \tab /{apiVersion}/analysis/variant/circos/run \tab study, body\link{*} \cr
    deleteCohortStats \tab /{apiVersion}/analysis/variant/cohort/stats/delete \tab study, cohort \cr
    infoCohortStats \tab /{apiVersion}/analysis/variant/cohort/stats/info \tab study, cohort\link{*} \cr
    runCohortStats \tab /{apiVersion}/analysis/variant/cohort/stats/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    runExport \tab /{apiVersion}/analysis/variant/export/run \tab include, exclude, project, study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    genotypesFamily \tab /{apiVersion}/analysis/variant/family/genotypes \tab study, family, clinicalAnalysis, modeOfInheritance\link{*}, penetrance, disorder \cr
+   runFamilyQc \tab /{apiVersion}/analysis/variant/family/qc/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    deleteFile \tab /{apiVersion}/analysis/variant/file/delete \tab jobId, jobDescription, jobDependsOn, jobTags, study, file, resume \cr
    runGatk \tab /{apiVersion}/analysis/variant/gatk/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   runGeneticChecks \tab /{apiVersion}/analysis/variant/geneticChecks/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
+   runGenomePlot \tab /{apiVersion}/analysis/variant/genomePlot/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    runGwas \tab /{apiVersion}/analysis/variant/gwas/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    runIndex \tab /{apiVersion}/analysis/variant/index/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
+   runIndividualQc \tab /{apiVersion}/analysis/variant/individual/qc/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    runInferredSex \tab /{apiVersion}/analysis/variant/inferredSex/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
+   queryKnockoutGene \tab /{apiVersion}/analysis/variant/knockout/gene/query \tab limit, skip, study, job \cr
+   queryKnockoutIndividual \tab /{apiVersion}/analysis/variant/knockout/individual/query \tab limit, skip, study, job \cr
    runKnockout \tab /{apiVersion}/analysis/variant/knockout/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    runMendelianError \tab /{apiVersion}/analysis/variant/mendelianError/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    metadata \tab /{apiVersion}/analysis/variant/metadata \tab project, study, file, sample, includeStudy, includeFile, includeSample, include, exclude \cr
-   queryMutationalSignature \tab /{apiVersion}/analysis/variant/mutationalSignature/query \tab study, sample, ct, biotype, filter, qual, region, gene, panel, fitting \cr
+   queryMutationalSignature \tab /{apiVersion}/analysis/variant/mutationalSignature/query \tab study, sample, ct, biotype, fileData, filter, qual, region, gene, panel, panelModeOfInheritance, panelConfidence, panelFeatureType, panelRoleInCancer, panelIntersection, fitting \cr
    runMutationalSignature \tab /{apiVersion}/analysis/variant/mutationalSignature/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    runPlink \tab /{apiVersion}/analysis/variant/plink/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   query \tab /{apiVersion}/analysis/variant/query \tab include, exclude, limit, skip, count, sort, summary, approximateCount, approximateCountSamplingSize, savedFilter, id, region, type, reference, alternate, project, study, file, filter, qual, fileData, sample, genotype, sampleData, sampleAnnotation, sampleMetadata, unknownGenotype, sampleLimit, sampleSkip, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, includeStudy, includeFile, includeSample, includeSampleData, includeGenotype, includeSampleId, annotationExists, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinicalSignificance, customAnnotation, panel, trait \cr
+   query \tab /{apiVersion}/analysis/variant/query \tab include, exclude, limit, skip, count, sort, summary, approximateCount, approximateCountSamplingSize, savedFilter, id, region, type, reference, alternate, project, study, file, filter, qual, fileData, sample, genotype, sampleData, sampleAnnotation, sampleMetadata, unknownGenotype, sampleLimit, sampleSkip, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, includeStudy, includeFile, includeSample, includeSampleData, includeGenotype, includeSampleId, annotationExists, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, trait \cr
    runRelatedness \tab /{apiVersion}/analysis/variant/relatedness/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    runRvtests \tab /{apiVersion}/analysis/variant/rvtests/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   aggregationStatsSample \tab /{apiVersion}/analysis/variant/sample/aggregationStats \tab savedFilter, region, type, project, study, file, filter, sample, genotype, sampleAnnotation, family, familyDisorder, familySegregation, familyMembers, familyProband, ct, biotype, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, clinicalSignificance, fields \cr
+   aggregationStatsSample \tab /{apiVersion}/analysis/variant/sample/aggregationStats \tab savedFilter, region, type, project, study, file, filter, sample, genotype, sampleAnnotation, family, familyDisorder, familySegregation, familyMembers, familyProband, ct, biotype, populationFrequencyAlt, clinical, clinicalSignificance, clinicalConfirmedStatus, field \cr
    runSampleEligibility \tab /{apiVersion}/analysis/variant/sample/eligibility/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
+   runSampleQc \tab /{apiVersion}/analysis/variant/sample/qc/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    querySample \tab /{apiVersion}/analysis/variant/sample/query \tab limit, skip, variant, study, genotype \cr
    runSample \tab /{apiVersion}/analysis/variant/sample/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
-   deleteSampleStats \tab /{apiVersion}/analysis/variant/sample/stats/delete \tab study, sample \cr
-   infoSampleStats \tab /{apiVersion}/analysis/variant/sample/stats/info \tab study, sample\link{*} \cr
+   querySampleStats \tab /{apiVersion}/analysis/variant/sample/stats/query \tab region, type, study, file, filter, sampleData, ct, biotype, transcriptFlag, populationFrequencyAlt, clinical, clinicalSignificance, clinicalConfirmedStatus, study, filterTranscript, sample\link{*} \cr
    runSampleStats \tab /{apiVersion}/analysis/variant/sample/stats/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    runStatsExport \tab /{apiVersion}/analysis/variant/stats/export/run \tab project, study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    runStats \tab /{apiVersion}/analysis/variant/stats/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
@@ -237,9 +251,9 @@ Read variant annotations metadata from any saved versions.
 Query variant annotations from any saved versions.
 }
 
-\section{Endpoint /{apiVersion}/analysis/variant/circos}{
+\section{Endpoint /{apiVersion}/analysis/variant/circos/run}{
 
-Generate a Circos plot for a given sample. Use context index.
+Generate a Circos plot for a given sample.
 }
 
 \section{Endpoint /{apiVersion}/analysis/variant/cohort/stats/delete}{
@@ -267,19 +281,24 @@ Filter and export variants from the variant storage to a file.
 Calculate the possible genotypes for the members of a family.
 }
 
+\section{Endpoint /{apiVersion}/analysis/variant/family/qc/run}{
+
+Run quality control (QC) for a given family. It computes the relatedness scores among the family members.
+}
+
 \section{Endpoint /{apiVersion}/analysis/variant/file/delete}{
 
-Remove variant files from the variant storage.
+\link{DEPRECATED} Use operation/variant/delete.
 }
 
 \section{Endpoint /{apiVersion}/analysis/variant/gatk/run}{
 
-GATK is a Genome Analysis Toolkit for variant discovery in high-throughput sequencing data.
+GATK is a Genome Analysis Toolkit for variant discovery in high-throughput sequencing data. Supported Gatk commands: HaplotypeCaller.
 }
 
-\section{Endpoint /{apiVersion}/analysis/variant/geneticChecks/run}{
+\section{Endpoint /{apiVersion}/analysis/variant/genomePlot/run}{
 
-Run genetic checks for sex, relatedness and mendelian errors (UDP).
+Generate a genome plot for a given sample.
 }
 
 \section{Endpoint /{apiVersion}/analysis/variant/gwas/run}{
@@ -289,12 +308,27 @@ Run a Genome Wide Association Study between two cohorts.
 
 \section{Endpoint /{apiVersion}/analysis/variant/index/run}{
 
-Index variant files into the variant storage.
+\link{DEPRECATED} Use operation/variant/index.
+}
+
+\section{Endpoint /{apiVersion}/analysis/variant/individual/qc/run}{
+
+Run quality control (QC) for a given individual. It includes inferred sex and  mendelian errors (UDP).
 }
 
 \section{Endpoint /{apiVersion}/analysis/variant/inferredSex/run}{
 
 Infer sex from chromosome mean coverages.
+}
+
+\section{Endpoint /{apiVersion}/analysis/variant/knockout/gene/query}{
+
+Fetch values from KnockoutAnalysis result, by genes.
+}
+
+\section{Endpoint /{apiVersion}/analysis/variant/knockout/individual/query}{
+
+Fetch values from KnockoutAnalysis result, by individuals.
 }
 
 \section{Endpoint /{apiVersion}/analysis/variant/knockout/run}{
@@ -339,7 +373,7 @@ Compute a score to quantify relatedness between samples.
 
 \section{Endpoint /{apiVersion}/analysis/variant/rvtests/run}{
 
-Rvtests is a flexible software package for genetic association studies.
+Rvtests is a flexible software package for genetic association studies. Supported RvTests commands: rvtest, vcf2kinship.
 }
 
 \section{Endpoint /{apiVersion}/analysis/variant/sample/aggregationStats}{
@@ -352,6 +386,11 @@ Calculate and fetch sample aggregation stats.
 Filter samples by a complex query involving metadata and variants data.
 }
 
+\section{Endpoint /{apiVersion}/analysis/variant/sample/qc/run}{
+
+Run quality control (QC) for a given sample. It includes variant stats, and if the sample is somatic, mutational signature and genome plot are calculated.
+}
+
 \section{Endpoint /{apiVersion}/analysis/variant/sample/query}{
 
 Get sample data of a given variant.
@@ -362,14 +401,9 @@ Get sample data of a given variant.
 Get samples given a set of variants.
 }
 
-\section{Endpoint /{apiVersion}/analysis/variant/sample/stats/delete}{
+\section{Endpoint /{apiVersion}/analysis/variant/sample/stats/query}{
 
-Delete sample variant stats from a sample.
-}
-
-\section{Endpoint /{apiVersion}/analysis/variant/sample/stats/info}{
-
-Read sample variant stats from list of samples.
+Obtain sample variant stats from a sample.
 }
 
 \section{Endpoint /{apiVersion}/analysis/variant/sample/stats/run}{
@@ -384,7 +418,7 @@ Export calculated variant stats and frequencies.
 
 \section{Endpoint /{apiVersion}/analysis/variant/stats/run}{
 
-Compute variant stats for any cohort and any set of variants. Optionally, index the result in the variant storage database.
+Compute variant stats for any cohort and any set of variants.
 }
 
 \seealso{

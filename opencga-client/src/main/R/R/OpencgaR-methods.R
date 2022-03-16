@@ -156,7 +156,7 @@ readConfFile <- function(conf){
 #' @export
 
 opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE, 
-                         autoRenew=FALSE, showToken=FALSE){
+                         autoRenew=FALSE, verbose=FALSE, showToken=FALSE){
     if (class(opencga) == "OpencgaR"){
         host <- slot(object = opencga, name = "host")
         version <- slot(object = opencga, name = "version")
@@ -173,41 +173,40 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
     baseurl <- paste0(host, version,"/users/login")
     
     # Interactive login
-    if(requireNamespace("miniUI", quietly = TRUE) & requireNamespace("shiny", quietly = TRUE)){
+    if(interactive==TRUE){
+      if(requireNamespace("miniUI", quietly = TRUE) & requireNamespace("shiny", quietly = TRUE)){
         user_login <- function() {
-            ui <- miniUI::miniPage(
-                miniUI::gadgetTitleBar("Please enter your username and password"),
-                miniUI::miniContentPanel(
-                    shiny::textInput("username", "Username"),
-                    shiny::passwordInput("password", "Password")))
-            
-            server <- function(input, output) {
-                shiny::observeEvent(input$done, {
-                    user <- input$username
-                    pass <- input$password
-                    res <- list(user=user, pass=pass)
-                    shiny::stopApp(res)
-                })
-                shiny::observeEvent(input$cancel, {
-                    shiny::stopApp(stop("No password.", call. = FALSE))
-                })
-            }
-            
-            shiny::runGadget(ui, server, viewer=shiny::dialogViewer("user_login"))
+          ui <- miniUI::miniPage(
+            miniUI::gadgetTitleBar("Please enter your username and password"),
+            miniUI::miniContentPanel(
+              shiny::textInput("username", "Username"),
+              shiny::passwordInput("password", "Password")))
+          
+          server <- function(input, output) {
+            shiny::observeEvent(input$done, {
+              user <- input$username
+              pass <- input$password
+              res <- list(user=user, pass=pass)
+              shiny::stopApp(res)
+            })
+            shiny::observeEvent(input$cancel, {
+              shiny::stopApp(stop("No password.", call. = FALSE))
+            })
+          }
+          
+          shiny::runGadget(ui, server, viewer=shiny::dialogViewer("user_login"))
         }
-    }else{
+        cred <- user_login()
+        userid <- cred$user
+        passwd <- cred$pass
+      }else{
         print("The 'miniUI' and 'shiny' packages are required to run the 
            interactive login, please install it and try again.
            To install 'miniUI': install.packages('miniUI')
            To install 'shiny': install.packages('shiny')")
+      }
     }
     # end interactive login
-    
-    if(interactive==TRUE){
-        cred <- user_login()
-        userid <- cred$user
-        passwd <- cred$pass
-    }
 
     # Send request
     query <- httr::POST(baseurl, body = list(user=userid, password=passwd), encode = "json")
@@ -223,6 +222,7 @@ opencgaLogin <- function(opencga, userid=NULL, passwd=NULL, interactive=FALSE,
     opencga@user <- userid
     opencga@token <- token
     opencga@refreshToken <- refreshToken
+    opencga@verbose <- verbose
     opencga@showToken <- showToken
     opencga@autoRenew <- autoRenew
     

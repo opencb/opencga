@@ -47,10 +47,6 @@ import java.nio.file.Paths;
 
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.RgaAuxiliarSecondaryIndexCommandOptions.RGA_AUX_INDEX_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.ClinicalCommandOptions.RgaSecondaryIndexCommandOptions.RGA_INDEX_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationCancerTieringCommandOptions.CANCER_TIERING_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTeamCommandOptions.TEAM_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationTieringCommandOptions.TIERING_RUN_COMMAND;
-import static org.opencb.opencga.app.cli.main.options.ClinicalCommandOptions.InterpretationZettaCommandOptions.ZETTA_RUN_COMMAND;
 
 /**
  * Created on 01/04/20
@@ -74,19 +70,19 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
         configure();
         switch (subCommandString) {
 
-            case TIERING_RUN_COMMAND:
+            case "run-interpreter-tiering":
                 tiering();
                 break;
 
-            case TEAM_RUN_COMMAND:
+            case "run-interpreter-team":
                 team();
                 break;
 
-            case ZETTA_RUN_COMMAND:
+            case "run-interpreter-zetta":
                 zetta();
                 break;
 
-            case CANCER_TIERING_RUN_COMMAND:
+            case "run-interpreter-cancer-tiering":
                 cancerTiering();
                 break;
 
@@ -101,7 +97,6 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
             default:
                 logger.error("Subcommand not valid");
                 break;
-
         }
     }
 
@@ -115,7 +110,8 @@ public class ClinicalCommandExecutor extends InternalCommandExecutor {
     }
 
     private void auxRgaIndex() throws ToolException {
-        ClinicalCommandOptions.RgaAuxiliarSecondaryIndexCommandOptions options = clinicalCommandOptions.rgaAuxiliarSecondaryIndexCommandOptions;
+        ClinicalCommandOptions.RgaAuxiliarSecondaryIndexCommandOptions options =
+                clinicalCommandOptions.rgaAuxiliarSecondaryIndexCommandOptions;
         Path outDir = Paths.get(options.outdir);
         ObjectMap params = new ObjectMap()
                 .appendAll(options.commonOptions.params)

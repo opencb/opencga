@@ -2,14 +2,20 @@
 logLevel: "INFO"
 
 # Number of seconds that session remains open without any activity [10 min]
-cliSessionDuration: 600
+#cliSessionDuration: 600
 
 ## REST client configuration options
 rest:
-  host: "${OPENCGA.CLIENT.REST.HOST}"
+  hosts:
+    - name: "opencga"
+      url: "${OPENCGA.CLIENT.REST.HOST}"
+    - name: "opencga-test"
+      url: "https://ws.opencb.org/opencga-test"
+    - name: "opencga-demo1"
+      url: "http://localhost:9191/opencga"
+  defaultHostIndex: 0
   tokenAutoRefresh: true
   tlsAllowInvalidCertificates: false
-  timeout: 90000
   query:
     batchSize: 200
     limit: 2000
@@ -18,8 +24,3 @@ rest:
 ## gRPC configuration options
 grpc:
   host: "${OPENCGA.CLIENT.GRPC.HOST}"
-
-
-## Configure the default behaviour when query variants
-variant:
-  unknownGenotype: "0/0"

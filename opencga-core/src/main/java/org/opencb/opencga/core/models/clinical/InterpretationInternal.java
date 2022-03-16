@@ -16,11 +16,15 @@
 
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
 
 public class InterpretationInternal extends Internal {
 
+    @DataField(id = "status", indexed = true,
+            description = FieldConstants.INTERPRETATION_INTERNAL_STATUS)
     private InterpretationStatus status;
 
     public InterpretationInternal() {

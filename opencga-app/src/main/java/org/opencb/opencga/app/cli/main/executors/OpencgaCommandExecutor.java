@@ -16,30 +16,30 @@
 
 package org.opencb.opencga.app.cli.main.executors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.app.cli.CliSession;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
+import org.opencb.opencga.app.cli.session.SessionManager;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
-import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 /**
  * Created on 27/05/16.
@@ -49,35 +49,51 @@ import java.util.Map;
 public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     protected OpenCGAClient openCGAClient;
-
     protected AbstractOutputWriter writer;
 
-    protected static final String ANSI_RESET = "\033[0m";
-    protected static final String ANSI_RED = "\033[31m";
+    private Logger privateLogger;
 
-    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
+    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
         this(options, false);
     }
 
-    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
+    @Deprecated
+    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration)
+            throws CatalogAuthenticationException {
         super(options, true);
 
         init(options, skipDuration);
     }
 
-    private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
+    public static List<String> splitWithTrim(String value) {
+        return splitWithTrim(value, ",");
+    }
 
+    public static List<String> splitWithTrim(String value, String separator) {
+        String[] splitFields = value.split(separator);
+        List<String> result = new ArrayList<>(splitFields.length);
+        for (String s : splitFields) {
+            result.add(s.trim());
+        }
+        return result;
+    }
+
+    private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
         try {
+            privateLogger = LoggerFactory.getLogger(OpencgaCommandExecutor.class);
+            privateLogger.debug("Executing OpencgaCommandExecutor 'init' method ...");
+
+            // Configure CLI output writer
             WriterConfiguration writerConfiguration = new WriterConfiguration();
             writerConfiguration.setMetadata(options.metadata);
             writerConfiguration.setHeader(!options.noHeader);
-
             switch (options.outputFormat.toLowerCase()) {
                 case "json_pretty":
                     writerConfiguration.setPretty(true);
                 case "json":
                     this.writer = new JsonOutputWriter(writerConfiguration);
                     break;
+                case "yml":
                 case "yaml":
                     this.writer = new YamlOutputWriter(writerConfiguration);
                     break;
@@ -90,175 +106,126 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                     break;
             }
 
-//            CliSession cliSession = loadCliSessionFile();
-            logger.debug("sessionFile = " + cliSession);
+            privateLogger.debug("Using sessionFile '{}'", this.sessionManager.getSessionPath().toString());
             if (StringUtils.isNotEmpty(options.token)) {
-                // Ignore session file. Overwrite with command line information (just sessionId)
-                cliSession = new CliSession(clientConfiguration.getRest().getHost(), null, options.token, null);
+                privateLogger.debug("A new token has been provided, updating session and client");
+
+                // Set internal fields
+                ObjectMap objectMap = parseTokenClaims(options.token);
+                userId = objectMap.getString("sub", "");
                 token = options.token;
-                userId = null;
 
+                // Update SessionManager and OpencgaClient with the new token
+                sessionManager.updateSessionToken(token, host);
                 openCGAClient = new OpenCGAClient(new AuthenticationResponse(options.token), clientConfiguration);
-            } else if (cliSession != null) {
-                // 'logout' field is only null or empty while no logout is executed
-                if (StringUtils.isNotEmpty(cliSession.getToken())) {
-                    // no timeout checks
+            } else {
+                privateLogger.debug("No token has been provided, reading session file");
+                if (!StringUtils.isEmpty(sessionManager.getSession().getToken())
+                        && !SessionManager.NO_TOKEN.equals(sessionManager.getSession().getToken())) {
+                    // FIXME it seems skipDuration is not longer used,
+                    //  this should be either implemented or removed
                     if (skipDuration) {
-                        openCGAClient = new OpenCGAClient(new AuthenticationResponse(cliSession.getToken(), cliSession.getRefreshToken()),
-                                clientConfiguration);
-                        openCGAClient.setUserId(cliSession.getUser());
-                        if (options.token == null) {
-                            options.token = cliSession.getToken();
-                        }
+                        privateLogger.debug("Skip duration set to {}, THIS MUST BE REMOVED", skipDuration);
+//                        openCGAClient = new OpenCGAClient(
+//                                new AuthenticationResponse(CliSessionManager.getInstance().getToken()
+//                                        , CliSessionManager.getInstance().getRefreshToken())
+//                                , clientConfiguration);
+//                        openCGAClient.setUserId(CliSessionManager.getInstance().getUser());
                     } else {
-                        // Get the expiration of the token stored in the session file
-                        String myClaims = StringUtils.split(cliSession.getToken(), ".")[1];
-                        String decodedClaimsString = new String(Base64.getDecoder().decode(myClaims), StandardCharsets.UTF_8);
-                        ObjectMap claimsMap = new ObjectMapper().readValue(decodedClaimsString, ObjectMap.class);
+                        privateLogger.debug("Skip duration set to {}", skipDuration);
 
+                        // Get token claims
+                        ObjectMap claimsMap = parseTokenClaims(sessionManager.getSession().getToken());
+
+                        // Check if session has expired
                         Date expirationDate = new Date(claimsMap.getLong("exp") * 1000L);
-
                         Date currentDate = new Date();
-
                         if (currentDate.before(expirationDate) || !claimsMap.containsKey("exp")) {
-                            logger.debug("Session ok!!");
-                            //                            this.sessionId = cliSession.getSessionId();
-                            openCGAClient = new OpenCGAClient(new AuthenticationResponse(cliSession.getToken(),
-                                    cliSession.getRefreshToken()), clientConfiguration);
-                            openCGAClient.setUserId(cliSession.getUser());
+                            privateLogger.debug("Session expiration time is ok, valid until: {}", expirationDate);
+                            openCGAClient = new OpenCGAClient(
+                                    new AuthenticationResponse(sessionManager.getSession().getToken(), sessionManager.getSession().getRefreshToken()),
+                                    clientConfiguration);
+                            openCGAClient.setUserId(sessionManager.getSession().getUser());
 
-                            // Update token
-                            if (clientConfiguration.getRest().isTokenAutoRefresh() && claimsMap.containsKey("exp")) {
-                                AuthenticationResponse refreshResponse = openCGAClient.refresh();
-                                cliSession.setToken(refreshResponse.getToken());
-                                cliSession.setRefreshToken(refreshResponse.getRefreshToken());
-                                updateCliSessionFile();
-                            }
-
-                            if (options.token == null) {
-                                options.token = cliSession.getToken();
-                            }
+                            // FIXME This looks weird, commenting it
+//                            if (options.token == null) {
+//                                options.token = sessionManager.getToken();
+//                            }
                         } else {
-                            String message = "ERROR: Your session has expired. Please, either login again or logout to work as "
-                                    + "anonymous.";
-                            System.err.println(ANSI_RED + message + ANSI_RESET);
-                            System.exit(1);
+                            privateLogger.debug("Session has expired '{}'. Logging out session", expirationDate);
+                            sessionManager.logoutSessionFile();
+                            openCGAClient = new OpenCGAClient(clientConfiguration);
                         }
                     }
                 } else {
-                    logger.debug("Session already closed");
+                    privateLogger.debug("No valid session found");
                     openCGAClient = new OpenCGAClient(clientConfiguration);
                 }
-            } else {
-                logger.debug("No Session file");
-                openCGAClient = new OpenCGAClient(clientConfiguration);
             }
-        } catch (ClientException | IOException e) {
-            e.printStackTrace();
-        }
-    }
 
-    protected ObjectMap loadFile(String filePath) throws CatalogException {
-        return loadFile(filePath, ObjectMap.class);
-    }
-
-    protected <T> T loadFile(String filePath, Class<T> clazz) throws CatalogException {
-        File file = Paths.get(filePath).toFile();
-        if (!file.exists() || file.isDirectory()) {
-            throw new CatalogException("File " + filePath + " not found");
-        }
-        FileInputStream fileInputStream;
-        try {
-            fileInputStream = FileUtils.openInputStream(file);
-        } catch (IOException e) {
-            throw new CatalogException("Could not open file " + filePath + ". " + e.getMessage(), e);
-        }
-        ObjectMapper objectMapper = JacksonUtils.getUpdateObjectMapper();
-        try {
-            return objectMapper.readValue(fileInputStream, clazz);
-        } catch (IOException e) {
-            throw new CatalogException("Could not parse file " + filePath + ". Is it a valid JSON file?. "
-                    + e.getMessage(), e);
-        }
-    }
-
-    protected String extractIdsFromListOrFile(String ids) throws CatalogException {
-        if (StringUtils.isEmpty(ids)) {
-            return null;
-        }
-
-        File file = new File(ids);
-        if (file.exists() && file.isFile()) {
-            // Read the file
-            try(BufferedReader br = new BufferedReader(new FileReader(ids))) {
-                StringBuilder sb = new StringBuilder();
-                String line = br.readLine();
-                boolean isNotFirstLine = false;
-
-                while (line != null) {
-                    if (StringUtils.isNotEmpty(line)) {
-                        if (isNotFirstLine) {
-                            sb.append(",");
-                        } else {
-                            isNotFirstLine = true;
-                        }
-                        sb.append(line);
-                    }
-                    line = br.readLine();
-                }
-                return sb.toString();
-            } catch (IOException e) {
-                throw new CatalogException("File could not be parsed. Does it contain a line per id?");
+            if (openCGAClient != null) {
+                openCGAClient.setThrowExceptionOnError(true);
             }
-        } else {
-            return ids;
+
+        } catch (IOException e) {
+            CommandLineUtils.printLog("OpencgaCommandExecutorError " + e.getMessage(), e);
         }
     }
 
-    public void createOutput(RestResponse queryResponse) {
-        if (queryResponse != null) {
+    protected void createOutput(RestResponse queryResponse) {
+        if (writer != null && queryResponse != null) {
             writer.print(queryResponse);
+        } else {
+            privateLogger.error("Null object found: writer set to '{}' and queryResponse set to '{}'", writer, queryResponse);
         }
     }
 
-    public ObjectMap getCommonParams(String study) {
-        return getCommonParams(null, study, new HashMap<>());
+    protected void invokeSetter(Object obj, String propertyName, Object variableValue) {
+        if (obj != null && variableValue != null) {
+            try {
+                String setMethodName = "set" + StringUtils.capitalize(propertyName);
+                Method setter = obj.getClass().getMethod(setMethodName, variableValue.getClass());
+                setter.invoke(obj, variableValue);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 
-    public ObjectMap getCommonParams(String study, Map<String, String> initialParams) {
-        return getCommonParams(null, study, initialParams);
+    protected ObjectMap parseTokenClaims(String token) throws JsonProcessingException {
+        String claims = StringUtils.split(token, ".")[1];
+        String decodedClaimsString = new String(Base64.getDecoder().decode(claims), StandardCharsets.UTF_8);
+        return new ObjectMapper().readValue(decodedClaimsString, ObjectMap.class);
     }
 
-    public ObjectMap getCommonParams(String project, String study, Map<String, String> initialParams) {
-        ObjectMap params = new ObjectMap(initialParams);
-        params.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);
-        params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
-        return params;
+    public OpenCGAClient getOpenCGAClient() {
+        return openCGAClient;
     }
 
-    public ObjectMap addJobParams(GeneralCliOptions.JobOptions jobOptions, ObjectMap params) {
-        params.putIfNotEmpty(ParamConstants.JOB_ID, jobOptions.jobId);
-        params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, jobOptions.jobDescription);
-        if (jobOptions.jobDependsOn != null) {
-            params.put(ParamConstants.JOB_DEPENDS_ON, String.join(",", jobOptions.jobDependsOn));
-        }
-        if (jobOptions.jobTags != null) {
-            params.put(ParamConstants.JOB_TAGS, String.join(",", jobOptions.jobTags));
-        }
-        return params;
+    public OpencgaCommandExecutor setOpenCGAClient(OpenCGAClient openCGAClient) {
+        this.openCGAClient = openCGAClient;
+        return this;
     }
 
-    public ObjectMap addNumericParams(GeneralCliOptions.NumericOptions numericOptions, ObjectMap params) {
-        if (numericOptions.limit > 0) {
-            params.put(QueryOptions.LIMIT, numericOptions.limit);
-        }
-        if (numericOptions.skip > 0) {
-            params.put(QueryOptions.SKIP, numericOptions.skip);
-        }
-        if (numericOptions.count) {
-            params.put(QueryOptions.COUNT, numericOptions.count);
-        }
-        return params;
+    public String getObjectAsJSON(Object o) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        retrieveDeepObject(o);
+        //Convert object to JSON string and pretty print
+        String jsonInString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(o);
+        return jsonInString;
     }
 
+    private void retrieveDeepObject(Object o) {
+        try {
+            Field[] fields = o.getClass().getDeclaredFields();
+            for (Field field : fields) {
+                if (!field.getType().isPrimitive()) {
+                    Class<?> cl = Class.forName(field.getType().getCanonicalName());
+                    invokeSetter(o, field.getName(), cl.newInstance());
+                }
+            }
+        } catch (Exception e) {
+
+        }
+    }
 }

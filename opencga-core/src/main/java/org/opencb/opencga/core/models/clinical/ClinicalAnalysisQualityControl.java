@@ -1,13 +1,23 @@
 package org.opencb.opencga.core.models.clinical;
 
 import org.opencb.biodata.models.clinical.ClinicalComment;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 
 import java.util.List;
 
 public class ClinicalAnalysisQualityControl {
 
+    @DataField(id = "summary", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_QUALITY_CONTROL_SUMMARY)
     private QualityControlSummary summary;
+
+    @DataField(id = "comments", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_QUALITY_CONTROL_COMMENTS)
     private List<ClinicalComment> comments;
+
+    @DataField(id = "comments", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_QUALITY_CONTROL_FILES)
     private List<String> files;
 
     public ClinicalAnalysisQualityControl() {

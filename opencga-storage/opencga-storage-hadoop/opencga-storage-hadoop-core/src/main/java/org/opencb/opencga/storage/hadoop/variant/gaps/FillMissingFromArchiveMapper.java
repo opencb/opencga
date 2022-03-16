@@ -6,14 +6,15 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.protobuf.ProtobufUtil;
 import org.apache.hadoop.hbase.protobuf.generated.ClientProtos;
 import org.apache.hadoop.io.BytesWritable;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.mr.AbstractHBaseVariantMapper;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 
 import java.io.IOException;
 import java.util.Map;
 
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.FILL_MISSING_GAP_GENOTYPE;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS;
 
 /**
@@ -27,15 +28,17 @@ public class FillMissingFromArchiveMapper extends AbstractHBaseVariantMapper<Byt
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
-        VariantTableHelper helper = new VariantTableHelper(context.getConfiguration());
-
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         boolean overwrite = FillGapsFromArchiveMapper.isOverwrite(context.getConfiguration());
         boolean simplifiedNewMultiAllelicVariants = context.getConfiguration().getBoolean(
                 FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS.key(),
                 FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS.defaultValue());
-        task = new FillMissingFromArchiveTask(getStudyMetadata(), metadataManager, helper, overwrite, simplifiedNewMultiAllelicVariants);
+        String gapsGenotype = context.getConfiguration().get(
+                FILL_MISSING_GAP_GENOTYPE.key(),
+                FILL_MISSING_GAP_GENOTYPE.defaultValue());
+        task = new FillMissingFromArchiveTask(getStudyMetadata(), metadataManager,
+                context.getConfiguration(), overwrite, simplifiedNewMultiAllelicVariants, gapsGenotype);
         task.setQuiet(true);
         task.pre();
     }
@@ -45,6 +48,8 @@ public class FillMissingFromArchiveMapper extends AbstractHBaseVariantMapper<Byt
         super.cleanup(context);
         try {
             task.post();
+        } catch (StorageEngineException e) {
+            throw new IOException(e);
         } finally {
             updateStats(context);
         }

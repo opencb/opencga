@@ -29,6 +29,8 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -518,6 +520,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
+    public void deleteStats(String study, Collection<String> cohorts, ObjectMap params) throws StorageEngineException {
+        throw new UnsupportedOperationException("Unsupported deleteStats");
+    }
+
     /**
      * Build the sample index. For advanced users only.
      * SampleIndex is built while loading data, so this operation should be executed only to rebuild the index,
@@ -575,22 +581,22 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     /**
      *
      * @param study     Study
-     * @param samples   Samples to fill gaps
+     * @param params    Aggregate Family params
      * @param options   Other options
      * @throws StorageEngineException if there is any error
      */
-    public void aggregateFamily(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options) throws StorageEngineException {
         throw new UnsupportedOperationException();
     }
 
     /**
      *
      * @param study     Study
-     * @param overwrite Overwrite gaps for all files and variants
+     * @param params    Aggregate Params
      * @param options   Other options
      * @throws StorageEngineException if there is any error
      */
-    public void aggregate(String study, boolean overwrite, ObjectMap options) throws StorageEngineException {
+    public void aggregate(String study, VariantAggregateParams params, ObjectMap options) throws StorageEngineException {
         throw new UnsupportedOperationException();
     }
 

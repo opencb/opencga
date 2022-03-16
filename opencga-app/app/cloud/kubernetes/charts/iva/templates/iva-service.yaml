@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: {{ .Values.iva.name }}
   labels:
+    {{- include "iva.labels" . | nindent 4 }}
     app: {{  .Values.iva.name  }}
 spec:
   type: {{ .Values.iva.service.type }}

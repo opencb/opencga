@@ -226,7 +226,6 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         String tableName = getVariantStorageEngine().getArchiveTableName(STUDY_ID);
         System.out.println("Query from archive HBase " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
-        GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyMetadata.getId(), FILE_ID);
         VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(archiveHelper.getFileMetadata().toVariantStudyMetadata(STUDY_NAME));
         hm.act(tableName, table -> {

@@ -904,7 +904,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                         getMongoDBDocument(new InterpretationStatus(InterpretationStatus.DELETED), "status"), interpretationDocument);
 
                 // Insert the document in the DELETE collection
-                deletedInterpretationCollection.insert(clientSession, interpretationDocument, null);
+                deletedInterpretationCollection.insert(clientSession, replaceDotsInKeys(interpretationDocument), null);
                 logger.debug("Inserted interpretation uid '{}' in DELETE collection", interpretation.getUid());
 
                 // Remove the document from the main INTERPRETATION collection

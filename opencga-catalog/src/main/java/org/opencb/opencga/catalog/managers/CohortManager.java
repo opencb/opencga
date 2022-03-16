@@ -190,10 +190,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 }
                 List<Sample> sampleList = catalogManager.getSampleManager().internalGet(study.getUid(), sampleIds,
                         SampleManager.INCLUDE_SAMPLE_IDS, userId, false).getResults();
-                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
-                        cohortParams.getModificationDate(), cohortParams.getDescription(), sampleList, 0, cohortParams.getAnnotationSets(),
-                        1, cohortParams.getStatus() != null ? cohortParams.getStatus().toStatus() : new Status(), null,
-                        cohortParams.getAttributes()));
+                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getName(), cohortParams.getType(),
+                        cohortParams.getCreationDate(), cohortParams.getModificationDate(), cohortParams.getDescription(), sampleList, 0,
+                        cohortParams.getAnnotationSets(), 1,
+                        cohortParams.getStatus() != null ? cohortParams.getStatus().toStatus() : new Status(),
+                        null, cohortParams.getAttributes()));
 
             } else if (StringUtils.isNotEmpty(variableSetId)) {
                 // Look for variable set
@@ -229,17 +230,17 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                             new Query(Constants.ANNOTATION, variableSetId + ":" + variableId + "=" + value),
                             SampleManager.INCLUDE_SAMPLE_IDS, token);
 
-                    cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
-                            cohortParams.getModificationDate(), cohortParams.getDescription(), sampleResults.getResults(), 0,
-                            cohortParams.getAnnotationSets(), 1,
-                            cohortParams.getStatus() != null ? cohortParams.getStatus().toStatus() : new Status(), null,
-                            cohortParams.getAttributes()));
+                    cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getName(), cohortParams.getType(),
+                            cohortParams.getCreationDate(), cohortParams.getModificationDate(), cohortParams.getDescription(),
+                            sampleResults.getResults(), 0, cohortParams.getAnnotationSets(), 1,
+                            cohortParams.getStatus() != null ? cohortParams.getStatus().toStatus() : new Status(),
+                            null, cohortParams.getAttributes()));
                 }
             } else {
                 //Create empty cohort
-                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getType(), cohortParams.getCreationDate(),
-                        cohortParams.getModificationDate(), cohortParams.getDescription(), Collections.emptyList(),
-                        cohortParams.getAnnotationSets(), -1, null));
+                cohorts.add(new Cohort(cohortParams.getId(), cohortParams.getName(), cohortParams.getType(),
+                        cohortParams.getCreationDate(), cohortParams.getModificationDate(), cohortParams.getDescription(),
+                        Collections.emptyList(), cohortParams.getAnnotationSets(), -1, null));
             }
         } catch (CatalogException e) {
             auditManager.audit(operationId, userId, Enums.Action.CREATE, Enums.Resource.COHORT, "", "", study.getId(),
@@ -372,6 +373,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         ParamUtils.checkObj(cohort, "Cohort");
         ParamUtils.checkParameter(cohort.getId(), "id");
         ParamUtils.checkObj(cohort.getSamples(), "Sample list");
+        cohort.setName(ParamUtils.defaultString(cohort.getName(), ""));
         cohort.setType(ParamUtils.defaultObject(cohort.getType(), Enums.CohortType.COLLECTION));
         cohort.setCreationDate(ParamUtils.checkDateOrGetCurrentDate(cohort.getCreationDate(),
                 CohortDBAdaptor.QueryParams.CREATION_DATE.key()));

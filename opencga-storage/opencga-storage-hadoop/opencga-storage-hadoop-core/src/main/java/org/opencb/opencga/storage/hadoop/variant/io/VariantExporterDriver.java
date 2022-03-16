@@ -194,14 +194,14 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
                 logger.info("Use sample index to read from HBase");
             }
 
-            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(getHelper(), getMetadataManager());
+            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(getMetadataManager());
             List<Scan> scans = parser.parseQueryMultiRegion(variantQuery, options);
             VariantMapReduceUtil.configureMapReduceScans(scans, getConf());
 
             VariantMapReduceUtil.initVariantMapperJobFromHBase(job, variantTable, scans, mapperClass, useSampleIndex);
         } else {
             logger.info("Init MapReduce job reading from Phoenix");
-            String sql = new VariantSqlQueryParser(getHelper(), variantTable, getMetadataManager())
+            String sql = new VariantSqlQueryParser(variantTable, getMetadataManager(), getHelper().getConf())
                     .parse(variantQuery, options);
 
             VariantMapReduceUtil.initVariantMapperJobFromPhoenix(job, variantTable, sql, mapperClass);

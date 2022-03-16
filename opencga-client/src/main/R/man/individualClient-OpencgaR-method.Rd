@@ -6,23 +6,23 @@
 \usage{
 \S4method{individualClient}{OpencgaR}(
   OpencgaR,
-  individuals,
-  individual,
   members,
+  individuals,
   annotationSet,
+  individual,
   endpointName,
   params = NULL,
   ...
 )
 }
 \arguments{
-\item{individuals}{Comma separated list of individual ids.}
-
-\item{individual}{Individual ID or UUID.}
-
 \item{members}{Comma separated list of user or group ids.}
 
+\item{individuals}{Comma separated list of individual ids.}
+
 \item{annotationSet}{AnnotationSet ID to be updated.}
+
+\item{individual}{Individual ID, name or UUID.}
 
 \item{propagate}{Propagate individual permissions to related samples.}
 
@@ -40,15 +40,11 @@
 
 \item{creationDayOfWeek}{Creation day of week (MONDAY, TUESDAY...).}
 
-\item{status}{Status.}
-
 \item{numSamples}{Number of samples.}
 
 \item{parentalConsanguinity}{Parental consanguinity.}
 
 \item{default}{Calculate default stats.}
-
-\item{field}{List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples\link{0..10}:1.}
 
 \item{variableSetId}{Variable set ID or name.}
 
@@ -58,55 +54,61 @@
 
 \item{annotationSetId}{Annotation set id. If not provided, variableSetId will be used.}
 
+\item{field}{Field for which to obtain the distinct values.}
+
 \item{limit}{Number of results to be returned.}
 
 \item{skip}{Number of results to skip.}
 
 \item{count}{Get the total number of results matching the query. Deactivated by default.}
 
-\item{name}{name.}
+\item{id}{Comma separated list individual IDs up to a maximum of 100.}
 
-\item{father}{father.}
+\item{uuid}{Comma separated list individual UUIDs up to a maximum of 100.}
 
-\item{mother}{mother.}
+\item{name}{Comma separated list individual names up to a maximum of 100.}
 
-\item{samples}{Comma separated list sample IDs or UUIDs up to a maximum of 100.}
+\item{father}{Father ID, name or UUID.}
 
-\item{sex}{sex.}
+\item{mother}{Mother ID, name or UUID.}
 
-\item{ethnicity}{ethnicity.}
+\item{samples}{Sample ID, name or UUID.}
+
+\item{familyIds}{Comma separated list of family ids the individuals may belong to.}
+
+\item{sex}{Individual sex.}
+
+\item{dateOfBirth}{Individual date of birth.}
+
+\item{ethnicity}{Individual ethnicity.}
 
 \item{disorders}{Comma separated list of disorder ids or names.}
 
-\item{population.name}{Population name.}
-
-\item{population.subpopulation}{Subpopulation name.}
-
-\item{population.description}{Population description.}
-
 \item{phenotypes}{Comma separated list of phenotype ids or names.}
 
-\item{karyotypicSex}{Karyotypic sex.}
+\item{populationName}{Population name.}
 
-\item{lifeStatus}{Life status.}
+\item{populationSubpopulation}{Subpopulation name.}
 
-\item{affectationStatus}{Affectation status.}
+\item{karyotypicSex}{Individual karyotypic sex.}
+
+\item{lifeStatus}{Individual life status.}
+
+\item{internalStatus}{Filter by internal status.}
+
+\item{status}{Filter by status.}
 
 \item{creationDate}{Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
 
 \item{modificationDate}{Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
 
-\item{annotationsetName}{DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}.}
-
-\item{variableSet}{DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}.}
-
 \item{annotation}{Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.}
 
 \item{acl}{Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .}
 
-\item{release}{Release value (Current release from the moment the individuals were first created).}
+\item{release}{Release when it was created.}
 
-\item{snapshot}{Snapshot value (Latest version of individuals in the specified release).}
+\item{snapshot}{Snapshot value (Latest version of the entry in the specified release).}
 
 \item{member}{User or group id.}
 
@@ -114,19 +116,23 @@
 
 \item{force}{Force the deletion of individuals that already belong to families.}
 
-\item{version}{Individual version.}
+\item{version}{Comma separated list of individual versions. 'all' to get all the individual versions. Not supported if multiple individual ids are provided.}
 
 \item{deleted}{Boolean to retrieve deleted individuals.}
 
 \item{samplesAction}{Action to be performed if the array of samples is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
 
+\item{phenotypesAction}{Action to be performed if the array of phenotypes is being updated \link{SET, ADD, REMOVE}. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+
+\item{disordersAction}{Action to be performed if the array of disorders is being updated \link{SET, ADD, REMOVE}. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+
 \item{annotationSetsAction}{Action to be performed if the array of annotationSets is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+
+\item{includeResult}{Flag indicating to include the created or updated document result in the response.}
 
 \item{action}{Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any. Allowed values: \link{'ADD', 'SET', 'REMOVE', 'RESET', 'REPLACE'}}
 
 \item{incVersion}{Create a new version of individual.}
-
-\item{updateSampleVersion}{Update all the sample references from the individual to point to their latest versions.}
 
 \item{data}{Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove' containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset' containing the comma separated variables that will be set to the default value when the action is RESET.}
 
@@ -147,13 +153,14 @@ The following table summarises the available \emph{actions} for this client:\tab
    updateAcl \tab /{apiVersion}/individuals/acl/{members}/update \tab study, members\link{*}, action\link{*}, propagate, body\link{*} \cr
    aggregationStats \tab /{apiVersion}/individuals/aggregationStats \tab study, hasFather, hasMother, sex, karyotypicSex, ethnicity, population, creationYear, creationMonth, creationDay, creationDayOfWeek, status, lifeStatus, phenotypes, numSamples, parentalConsanguinity, release, version, annotation, default, field \cr
    loadAnnotationSets \tab /{apiVersion}/individuals/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
-   create \tab /{apiVersion}/individuals/create \tab study, samples, body\link{*} \cr
-   search \tab /{apiVersion}/individuals/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, name, father, mother, samples, sex, ethnicity, disorders, population.name, population.subpopulation, population.description, phenotypes, karyotypicSex, lifeStatus, affectationStatus, deleted, creationDate, modificationDate, annotationsetName, variableSet, annotation, acl, release, snapshot \cr
+   create \tab /{apiVersion}/individuals/create \tab include, exclude, study, samples, includeResult, body\link{*} \cr
+   distinct \tab /{apiVersion}/individuals/distinct \tab study, id, uuid, name, familyIds, father, mother, samples, sex, ethnicity, dateOfBirth, disorders, phenotypes, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot, field\link{*} \cr
+   search \tab /{apiVersion}/individuals/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, name, father, mother, samples, familyIds, sex, dateOfBirth, ethnicity, disorders, phenotypes, populationName, populationSubpopulation, karyotypicSex, lifeStatus, internalStatus, status, deleted, creationDate, modificationDate, annotation, acl, release, snapshot \cr
    acl \tab /{apiVersion}/individuals/{individuals}/acl \tab individuals\link{*}, study, member, silent \cr
    delete \tab /{apiVersion}/individuals/{individuals}/delete \tab force, study, individuals \cr
    info \tab /{apiVersion}/individuals/{individuals}/info \tab include, exclude, flattenAnnotations, individuals\link{*}, study, version, deleted \cr
-   update \tab /{apiVersion}/individuals/{individuals}/update \tab individuals\link{*}, study, samplesAction, annotationSetsAction, incVersion, updateSampleVersion, body \cr
-   updateAnnotations \tab /{apiVersion}/individuals/{individual}/annotationSets/{annotationSet}/annotations/update \tab individual\link{*}, study, annotationSet, action, incVersion, updateSampleVersion, body \cr
+   update \tab /{apiVersion}/individuals/{individuals}/update \tab include, exclude, individuals\link{*}, study, samplesAction, phenotypesAction, disordersAction, annotationSetsAction, incVersion, includeResult, body \cr
+   updateAnnotations \tab /{apiVersion}/individuals/{individual}/annotationSets/{annotationSet}/annotations/update \tab individual\link{*}, study, annotationSet, action, incVersion, body \cr
    relatives \tab /{apiVersion}/individuals/{individual}/relatives \tab include, exclude, flattenAnnotations, individual\link{*}, study, degree \cr
 }
 }
@@ -175,6 +182,11 @@ Load annotation sets from a TSV file.
 \section{Endpoint /{apiVersion}/individuals/create}{
 
 Create individual.
+}
+
+\section{Endpoint /{apiVersion}/individuals/distinct}{
+
+Individual distinct method.
 }
 
 \section{Endpoint /{apiVersion}/individuals/search}{

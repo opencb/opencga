@@ -33,6 +33,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 
 import java.io.IOException;
 import java.net.URI;
@@ -119,7 +120,7 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
                                 dbAdaptor.getMetadataManager().cohortIterator(studyMetadata.getId()),
                                 CohortMetadata::isStatsReady),
                         CohortMetadata.class));
-        for (Variant variant : dbAdaptor) {
+        for (Variant variant : dbAdaptor.iterable(new VariantQuery().includeSampleAll(), new QueryOptions())) {
             for (StudyEntry study : variant.getStudies()) {
                 assertNotNull(study.getFiles().get(0));
                 Map<String, VariantStats> cohortStats = study.getStats()

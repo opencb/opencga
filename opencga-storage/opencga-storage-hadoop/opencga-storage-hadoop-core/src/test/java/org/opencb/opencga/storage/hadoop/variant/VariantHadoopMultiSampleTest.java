@@ -36,6 +36,8 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -151,7 +153,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
 
-        getVariantStorageEngine().aggregate(studyMetadata.getName(), false, new ObjectMap("local", true));
+        getVariantStorageEngine().aggregate(studyMetadata.getName(), new VariantAggregateParams(false, false), new ObjectMap("local", true));
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
@@ -177,7 +179,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
 
-        getVariantStorageEngine().aggregateFamily(studyMetadata.getName(), Arrays.asList("s1", "s2"), new ObjectMap("local", true));
+        ((VariantStorageEngine) getVariantStorageEngine()).aggregateFamily(studyMetadata.getName(), new VariantAggregateFamilyParams(Arrays.asList("s1", "s2"), false), new ObjectMap("local", true));
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
@@ -218,7 +220,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
 
-        getVariantStorageEngine().aggregateFamily(studyMetadata.getName(), Arrays.asList("s1", "s2"), new ObjectMap("local", true));
+        ((VariantStorageEngine) getVariantStorageEngine()).aggregateFamily(studyMetadata.getName(), new VariantAggregateFamilyParams(Arrays.asList("s1", "s2"), false), new ObjectMap("local", true));
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 

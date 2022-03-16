@@ -40,8 +40,10 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
     private boolean overwrite;
 
     public FillMissingFromArchiveTask(StudyMetadata studyMetadata, VariantStorageMetadataManager metadataManager,
-                                      GenomeHelper helper, boolean overwrite, boolean simplifiedNewMultiAllelicVariants) {
-        super(studyMetadata, metadataManager, helper, Collections.emptyList(), true, simplifiedNewMultiAllelicVariants);
+                                      Configuration configuration, boolean overwrite, boolean simplifiedNewMultiAllelicVariants,
+                                      String gapsGenotype) {
+        super(studyMetadata, metadataManager, configuration, Collections.emptyList(), true, simplifiedNewMultiAllelicVariants,
+                gapsGenotype);
         fillMissingColumn = VariantPhoenixSchema.getFillMissingColumn(studyMetadata.getId());
         this.overwrite = overwrite;
         this.indexedFiles = new ArrayList<>(metadataManager.getIndexedFiles(studyMetadata.getId()));

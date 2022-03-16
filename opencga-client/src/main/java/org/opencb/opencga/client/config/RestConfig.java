@@ -16,30 +16,44 @@
 
 package org.opencb.opencga.client.config;
 
+import java.util.List;
+
 /**
  * Created by imedina on 04/05/16.
  */
 public class RestConfig {
 
-    private String host;
+    private List<HostConfig> hosts;
+    private int defaultHostIndex = 0;
     private boolean tokenAutoRefresh;
     private boolean tlsAllowInvalidCertificates;
-    private int timeout;
     private QueryRestConfig query;
 
     public RestConfig() {
     }
 
-    public RestConfig(String host, boolean tokenAutoRefresh, QueryRestConfig query) {
-        this.host = host;
+    public RestConfig(List<HostConfig> hosts, boolean tokenAutoRefresh, QueryRestConfig query) {
+        this(hosts, 0, tokenAutoRefresh, false, query);
+    }
+
+    public RestConfig(List<HostConfig> hosts, boolean tokenAutoRefresh, boolean tlsAllowInvalidCertificates,
+                      QueryRestConfig query) {
+        this(hosts, 0, tokenAutoRefresh, tlsAllowInvalidCertificates, query);
+    }
+
+    public RestConfig(List<HostConfig> hosts, int defaultHostIndex, boolean tokenAutoRefresh,
+                      boolean tlsAllowInvalidCertificates, QueryRestConfig query) {
+        this.hosts = hosts;
+        this.defaultHostIndex = hosts != null && hosts.size() > 0 ? defaultHostIndex : -1;
         this.tokenAutoRefresh = tokenAutoRefresh;
+        this.tlsAllowInvalidCertificates = tlsAllowInvalidCertificates;
         this.query = query;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("RestConfig{");
-        sb.append("host='").append(host).append('\'');
+        sb.append("hosts=").append(hosts);
         sb.append(", tokenAutoRefresh=").append(tokenAutoRefresh);
         sb.append(", tlsAllowInvalidCertificates=").append(tlsAllowInvalidCertificates);
         sb.append(", query=").append(query);
@@ -47,12 +61,12 @@ public class RestConfig {
         return sb.toString();
     }
 
-    public String getHost() {
-        return host;
+    public List<HostConfig> getHosts() {
+        return hosts;
     }
 
-    public RestConfig setHost(String host) {
-        this.host = host;
+    public RestConfig setHosts(List<HostConfig> hosts) {
+        this.hosts = hosts;
         return this;
     }
 
@@ -74,21 +88,21 @@ public class RestConfig {
         return this;
     }
 
-    public int getTimeout() {
-        return timeout;
-    }
-
-    public RestConfig setTimeout(int timeout) {
-        this.timeout = timeout;
-        return this;
-    }
-
     public QueryRestConfig getQuery() {
         return query;
     }
 
     public RestConfig setQuery(QueryRestConfig query) {
         this.query = query;
+        return this;
+    }
+
+    public int getDefaultHostIndex() {
+        return defaultHostIndex;
+    }
+
+    public RestConfig setDefaultHostIndex(int defaultHostIndex) {
+        this.defaultHostIndex = defaultHostIndex;
         return this;
     }
 }

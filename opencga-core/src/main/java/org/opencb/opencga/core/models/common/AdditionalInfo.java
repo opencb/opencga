@@ -1,13 +1,29 @@
 package org.opencb.opencga.core.models.common;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 import java.util.Map;
 
 public class AdditionalInfo {
 
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
+    @DataField(id = "name", indexed = true,
+            description = FieldConstants.GENERIC_NAME)
     private String name;
+
+    @DataField(id = "description", defaultValue = "No description available",
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+
+    @DataField(id = "type", indexed = true,
+            description = FieldConstants.ADDITIONAL_INFO_TYPE)
     private String type;
+
+    @DataField(id = "attributes", indexed = true,
+            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public AdditionalInfo() {

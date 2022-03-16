@@ -3,6 +3,8 @@ apiVersion: cert-manager.io/v1
 kind: {{ .Values.tls.publicIssuer.type }}
 metadata:
   name: {{ .Values.tls.publicIssuer.name }}
+  labels:
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory

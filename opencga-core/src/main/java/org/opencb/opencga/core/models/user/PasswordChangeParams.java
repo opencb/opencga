@@ -22,10 +22,12 @@ public class PasswordChangeParams {
 
     @JsonProperty(required = true)
     private String user;
-    @JsonProperty(required = true)
+    @JsonProperty(required = false)
     private String password;
-    @JsonProperty(required = true)
+    @JsonProperty(required = false)
     private String newPassword;
+    @JsonProperty(required = false)
+    private String reset;
 
     public PasswordChangeParams() {
     }
@@ -70,6 +72,15 @@ public class PasswordChangeParams {
 
     public PasswordChangeParams setNewPassword(String newPassword) {
         this.newPassword = newPassword;
+        return this;
+    }
+
+    public String getReset() {
+        return reset;
+    }
+
+    public PasswordChangeParams setReset(String reset) {
+        this.reset = reset;
         return this;
     }
 }
