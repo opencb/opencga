@@ -291,18 +291,37 @@ public class SampleIndexQueryParser {
             // Copy list of samples, so we can modify the map internally
             for (String sampleName : new ArrayList<>(sampleGenotypeQuery.keySet())) {
                 if (parentsSet.contains(sampleName) && !childrenSet.contains(sampleName)) {
+                    parentsInQuery.add(sampleName);
                     // We can skip parents, as their genotype filter will be tested in the child
                     // Discard parents that are not children of another sample
                     // Parents filter can only be used when intersecting (AND) with child
-                    logger.debug("Discard parent {}", sampleName);
-                    parentsInQuery.add(sampleName);
+                    boolean discardParent = true;
 
-                    // Remove from negatedSamples (if present)
-                    negatedSamples.remove(sampleName);
-                    // FIXME: Removing parents from the query could be a bad idea.
-                    //   If there were other sampleData filters covered by the parent sample index
-                    //   Samples of this map will determine which set of sampleIndexes should be read
-                    sampleGenotypeQuery.remove(sampleName);
+                    // We should avoid discarding parents if there were other sampleData filters covered by the parent sample index
+                    // Samples of this map will determine which set of sampleIndexes should be read
+                    if (isValidParam(query, SAMPLE_DATA)) {
+                        ParsedQuery<KeyValues<String, KeyOpValue<String, String>>> sampleDataParsedQuery = parseSampleData(query);
+                        KeyValues<String, KeyOpValue<String, String>> sampleDataFilter
+                                = sampleDataParsedQuery.getValue(k -> k.getKey().equals(sampleName));
+                        if (sampleDataFilter != null) {
+                            // SampleData filter exists for this sample!
+                            // Check if ANY filter is covered by the index
+                            for (KeyOpValue<String, String> entry : sampleDataFilter.getValues()) {
+                                if (schema.getFileIndex().getField(IndexFieldConfiguration.Source.SAMPLE, entry.getKey()) != null) {
+                                    // This key is covered by the sample index. Do not discard this parent!
+                                    discardParent = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (discardParent) {
+                        logger.debug("Discard parent {}", sampleName);
+                        // Remove from negatedSamples (if present)
+                        negatedSamples.remove(sampleName);
+                        sampleGenotypeQuery.remove(sampleName);
+                    }
                 } else if (childrenSet.contains(sampleName)) {
                     // Parents filter can only be used when intersecting (AND) with child
                     List<String> parents = parentsMap.get(sampleName);

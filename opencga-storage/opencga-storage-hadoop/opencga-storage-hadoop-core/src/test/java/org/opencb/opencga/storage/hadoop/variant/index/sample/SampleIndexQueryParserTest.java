@@ -1189,14 +1189,55 @@ public class SampleIndexQueryParserTest {
 
         query = new Query()
                 .append(SAMPLE.key(), "fam1_child;fam1_father;fam1_mother")
-                .append(SAMPLE_DATA.key(), "fam1_father:DP>15;fam1_child:DP>=15;fam1_mother:DP>15");
+                .append(SAMPLE_DATA.key(), "fam1_father:DP>=15;fam1_child:DP>=15;fam1_mother:DP>=15");
         indexQuery = parse(query);
 
-        assertEquals(Collections.singleton("fam1_child"), indexQuery.getSamplesMap().keySet());
+        // Father and mother not discarded
+        assertEquals(new HashSet<>(Arrays.asList("fam1_child", "fam1_father", "fam1_mother")), indexQuery.getSamplesMap().keySet());
+        // Still using parent's filter
         assertEquals(1, indexQuery.getFatherFilterMap().size());
         assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
-        assertEquals("fam1_father:DP>15;fam1_mother:DP>15", query.getString(SAMPLE_DATA.key()));
+        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_father").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
+        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_mother").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
+        assertEquals("", query.getString(SAMPLE_DATA.key()));
+    }
 
+    @Test
+    public void parseFamilyQuery_dp_partial() {
+        Query query;
+        SampleIndexQuery indexQuery;
+
+        query = new Query()
+                .append(SAMPLE.key(), "fam1_child;fam1_father;fam1_mother")
+                .append(SAMPLE_DATA.key(), "fam1_father:DP>=15;fam1_child:DP>=15");
+        indexQuery = parse(query);
+
+        // Father and mother not discarded
+        assertEquals(new HashSet<>(Arrays.asList("fam1_child", "fam1_father")), indexQuery.getSamplesMap().keySet());
+        // Still using parent's filter
+        assertEquals(1, indexQuery.getFatherFilterMap().size());
+        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
+        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_father").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
+        assertEquals("", query.getString(SAMPLE_DATA.key()));
+    }
+
+    @Test
+    public void parseFamilyQuery_dp_partial_no_exact() {
+        Query query;
+        SampleIndexQuery indexQuery;
+
+        query = new Query()
+                .append(SAMPLE.key(), "fam1_child;fam1_father;fam1_mother")
+                .append(SAMPLE_DATA.key(), "fam1_father:DP>18;fam1_child:DP>=15");
+        indexQuery = parse(query);
+
+        // Father and mother not discarded
+        assertEquals(new HashSet<>(Arrays.asList("fam1_child", "fam1_father")), indexQuery.getSamplesMap().keySet());
+        // Still using parent's filter
+        assertEquals(1, indexQuery.getFatherFilterMap().size());
+        assertTrue(indexQuery.getSampleFileIndexQuery("fam1_child").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
+        assertFalse(indexQuery.getSampleFileIndexQuery("fam1_father").get(0).getFilter(IndexFieldConfiguration.Source.SAMPLE, "DP").isExactFilter());
+        assertEquals("fam1_father:DP>18", query.getString(SAMPLE_DATA.key()));
     }
 
     @Test
