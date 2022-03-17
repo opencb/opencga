@@ -14,10 +14,13 @@ public class VariantMapReduceUtilTest {
     public void testSerializeConfiguration() throws IOException {
         Job job = Job.getInstance();
         SampleIndexConfiguration configuration = SampleIndexConfiguration.defaultConfiguration();
-        VariantMapReduceUtil.setSampleIndexConfiguration(job, configuration);
+        int version = 156;
+        VariantMapReduceUtil.setSampleIndexConfiguration(job, configuration, version);
         SampleIndexConfiguration actualConfiguration = VariantMapReduceUtil.getSampleIndexConfiguration(job.getConfiguration());
+        int actualVersion = VariantMapReduceUtil.getSampleIndexConfigurationVersion(job.getConfiguration());
 //        System.out.println("configuration = " + configuration);
         assertEquals(configuration, actualConfiguration);
+        assertEquals(version, actualVersion);
     }
 
 }

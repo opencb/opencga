@@ -18,8 +18,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
@@ -82,6 +81,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     private static final String FIXED_ATTRIBUTES = "SampleIndexDriver.fixedAttributes";
     private static final String FIXED_SAMPLE_DATA_KEYS = "SampleIndexDriver.fixedSampleDataKeys";
     private static final String PARTIAL_SCAN = "SampleIndexDriver.partial_scan";
+    public static final String SAMPLE_INDEX_VERSION = "sample-index-version";
 
     private int study;
     private String outputTable;
@@ -116,6 +116,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         params.put("--" + SAMPLE_IDS, "<sample-ids>");
         params.put("--" + VariantStorageOptions.STUDY.key(), "<study>");
         params.put("--" + OUTPUT, "<output-table>");
+        params.put("--" + SAMPLE_INDEX_VERSION, "<version>");
         params.put("--" + SECONDARY_ONLY, "<true|false>");
 //        params.put("--" + MAIN_ONLY, "<main-alternate-only>");
         params.put("--" + VariantQueryParam.REGION.key(), "<region>");
@@ -331,18 +332,11 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         }
 
         StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(getStudyId());
-        VariantMapReduceUtil.setSampleIndexConfiguration(job, studyMetadata.getSampleIndexConfigurationLatest().getConfiguration());
+        int sampleIndexVersion = Integer.parseInt(getParam(SAMPLE_INDEX_VERSION));
+        SampleIndexConfiguration configuration = studyMetadata.getSampleIndexConfiguration(sampleIndexVersion).getConfiguration();
+        VariantMapReduceUtil.setSampleIndexConfiguration(job, configuration, sampleIndexVersion);
 
         return job;
-    }
-
-    @Override
-    protected void preExecution() throws IOException, StorageEngineException {
-        super.preExecution();
-
-        ObjectMap options = new ObjectMap();
-        options.putAll(getParams());
-        SampleIndexSchema.createTableIfNeeded(outputTable, getHBaseManager(), options);
     }
 
     public static void main(String[] args) throws Exception {
@@ -373,7 +367,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
-            schema = new SampleIndexSchema(VariantMapReduceUtil.getSampleIndexConfiguration(context.getConfiguration()));
+            schema = VariantMapReduceUtil.getSampleIndexSchema(context.getConfiguration());
             fileIndexConverter = new VariantFileIndexConverter(schema);
 
             int[] sampleIds = context.getConfiguration().getInts(SAMPLES);

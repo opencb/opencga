@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
-import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
@@ -57,6 +56,7 @@ import org.opencb.opencga.core.response.FederationNode;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.tools.ToolParams;
+import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -665,7 +665,11 @@ public class OpenCGAWSServer {
                 if (CollectionUtils.isNotEmpty(openCGAResult.getEvents())) {
                     for (Event event : openCGAResult.getEvents()) {
                         if (event.getType().equals(Event.Type.ERROR)) {
-                            return Response.Status.BAD_REQUEST;
+                            if (event.getMessage().contains("denied")) {
+                                return Response.Status.UNAUTHORIZED;
+                            } else {
+                                return Response.Status.BAD_REQUEST;
+                            }
                         }
                     }
                 }

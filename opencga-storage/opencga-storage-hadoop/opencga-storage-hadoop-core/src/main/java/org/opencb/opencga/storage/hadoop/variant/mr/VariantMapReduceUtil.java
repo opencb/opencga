@@ -42,6 +42,7 @@ import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverte
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,7 +166,9 @@ public class VariantMapReduceUtil {
                 Object geneRegions = query.get(VariantQueryUtils.ANNOT_GENE_REGIONS.key());
                 // Remove extra fields from the query
                 SampleIndexQuery sampleIndexQuery = new SampleIndexDBAdaptor(null, null, metadataManager).parseSampleIndexQuery(query);
-                setSampleIndexConfiguration(job, sampleIndexQuery.getSchema().getConfiguration());
+                setSampleIndexConfiguration(job,
+                        sampleIndexQuery.getSchema().getConfiguration(),
+                        sampleIndexQuery.getSchema().getVersion());
 
                 // Preserve regions and gene_regions
                 query.put(VariantQueryParam.REGION.key(), regions);
@@ -274,7 +277,9 @@ public class VariantMapReduceUtil {
             if (useSampleIndex) {
                 // Remove extra fields from the query
                 SampleIndexQuery sampleIndexQuery = new SampleIndexDBAdaptor(null, null, metadataManager).parseSampleIndexQuery(query);
-                setSampleIndexConfiguration(job, sampleIndexQuery.getSchema().getConfiguration());
+                setSampleIndexConfiguration(job,
+                        sampleIndexQuery.getSchema().getConfiguration(),
+                        sampleIndexQuery.getSchema().getVersion());
 
                 LOGGER.info("Use sample index to read from HBase");
             }
@@ -491,13 +496,28 @@ public class VariantMapReduceUtil {
         }
     }
 
-    public static void setSampleIndexConfiguration(Job job, SampleIndexConfiguration configuration) {
+    public static void setSampleIndexConfiguration(Job job, SampleIndexConfiguration configuration, int version) {
         try {
             String str = JacksonUtils.getDefaultNonNullObjectMapper().writeValueAsString(configuration);
             job.getConfiguration().set(SampleIndexConfiguration.class.getName(), str);
+            job.getConfiguration().setInt(SampleIndexConfiguration.class.getName() + ".version", version);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    public static SampleIndexSchema getSampleIndexSchema(Configuration conf) {
+        return new SampleIndexSchema(
+                VariantMapReduceUtil.getSampleIndexConfiguration(conf),
+                VariantMapReduceUtil.getSampleIndexConfigurationVersion(conf)
+        );
+    }
+    public static int getSampleIndexConfigurationVersion(Configuration conf) {
+        String version = conf.get(SampleIndexConfiguration.class.getName() + ".version");
+        if (version == null) {
+            throw new IllegalArgumentException("Missing " + SampleIndexConfiguration.class.getName() + ".version");
+        }
+        return Integer.parseInt(version);
     }
 
     public static SampleIndexConfiguration getSampleIndexConfiguration(Configuration conf) {

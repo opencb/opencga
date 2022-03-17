@@ -9,7 +9,6 @@ import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -21,7 +20,6 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParse
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -40,6 +38,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SampleIndexAnnotationLoaderDriver.class);
     public static final String OUTPUT = "output-table";
+    public static final String SAMPLE_INDEX_VERSION = "sample-index-version";
     public static final String SAMPLES = "samples";
     public static final String SAMPLE_IDS = "sampleIds";
 
@@ -59,6 +58,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
         Map<String, String> params = new HashMap<>();
         params.put("--" + SAMPLES, "<samples>");
         params.put("--" + SAMPLE_IDS, "<sample-ids>");
+        params.put("--" + SAMPLE_INDEX_VERSION, "<version>");
         params.put("--" + OUTPUT, "<output-table>");
         params.put("--" + VariantQueryParam.REGION.key(), "<region>");
         return params;
@@ -152,12 +152,12 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
 
         VariantMapReduceUtil.setNoneReduce(job);
 
+        sampleIndexVersion = Integer.parseInt(getParam(SAMPLE_INDEX_VERSION));
         StudyMetadata.SampleIndexConfigurationVersioned versioned = getMetadataManager()
                 .getStudyMetadata(getStudyId())
-                .getSampleIndexConfigurationLatest();
+                .getSampleIndexConfiguration(sampleIndexVersion);
         SampleIndexConfiguration configuration = versioned.getConfiguration();
-        sampleIndexVersion = versioned.getVersion();
-        VariantMapReduceUtil.setSampleIndexConfiguration(job, configuration);
+        VariantMapReduceUtil.setSampleIndexConfiguration(job, configuration, sampleIndexVersion);
 
         return job;
     }
@@ -165,14 +165,6 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
     @Override
     protected String getJobOperationName() {
         return "sample_index_annotation_loader";
-    }
-
-    @Override
-    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
-        super.postExecution(succeed);
-        if (succeed && StringUtils.isEmpty(region)) {
-            SampleIndexAnnotationLoader.postAnnotationLoad(getStudyId(), sampleIds, getMetadataManager(), sampleIndexVersion);
-        }
     }
 
     public static void main(String[] args) throws Exception {
