@@ -94,9 +94,9 @@ public final class ClientConfiguration {
         return clientConfiguration;
     }
 
-    private static ClientConfiguration readClientConfiguration(JsonFactory jf, InputStream configurationInputStream) throws IOException {
-        ObjectMapper objectMapper;
-        objectMapper = new ObjectMapper(jf);
+    private static ClientConfiguration readClientConfiguration(JsonFactory jf, InputStream configurationInputStream)
+            throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper(jf);
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return objectMapper.readValue(configurationInputStream, ClientConfiguration.class);
     }
