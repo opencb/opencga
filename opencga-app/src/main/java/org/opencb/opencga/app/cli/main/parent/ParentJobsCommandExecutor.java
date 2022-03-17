@@ -24,6 +24,9 @@ import org.opencb.opencga.app.cli.main.utils.JobsTopManager;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.job.JobTop;
+import org.opencb.opencga.core.response.QueryType;
+import org.opencb.opencga.core.response.RestResponse;
 
 public abstract class ParentJobsCommandExecutor extends OpencgaCommandExecutor {
 
@@ -35,7 +38,7 @@ public abstract class ParentJobsCommandExecutor extends OpencgaCommandExecutor {
         this.jobsCommandOptions = jobsCommandOptions;
     }
 
-    protected void top() throws Exception {
+    protected RestResponse<JobTop> top() throws Exception {
         JobsCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
 
         Query query = new Query();
@@ -47,11 +50,17 @@ public abstract class ParentJobsCommandExecutor extends OpencgaCommandExecutor {
         query.putAll(c.commonOptions.params);
 
         new JobsTopManager(openCGAClient, query, c.iterations, c.jobsLimit, c.delay, c.plain, c.columns).run();
+        RestResponse<JobTop> res = new RestResponse<>();
+        res.setType(QueryType.VOID);
+        return res;
     }
 
-    protected void log() throws Exception {
+    protected RestResponse<JobTop> log() throws Exception {
         JobsCommandOptions.LogCommandOptions c = jobsCommandOptions.logCommandOptions;
         new JobsLog(openCGAClient, c, System.out).run();
+        RestResponse<JobTop> res = new RestResponse<>();
+        res.setType(QueryType.VOID);
+        return res;
     }
 
 }

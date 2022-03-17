@@ -92,6 +92,14 @@ apiConfig:
     - name: jobs
       ignore: False
       key: Job
+      executorExtended: True
+      optionExtended: True
+      commands:
+        - name: top
+          executorExtended: True
+          optionExtended: True
+      addedMethods:
+        - log
     - name: samples
       ignore: False
       key: Sample
