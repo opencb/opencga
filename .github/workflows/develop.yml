@@ -5,6 +5,7 @@ on:
     branches:
       - develop
       - release-2.2.x
+      - TASK-*
   workflow_dispatch:
 
 jobs:
