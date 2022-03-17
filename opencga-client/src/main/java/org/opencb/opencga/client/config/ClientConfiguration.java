@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.client.config;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.collections4.CollectionUtils;
@@ -57,16 +59,13 @@ public final class ClientConfiguration {
 
     public static ClientConfiguration load(InputStream configurationInputStream, String format) throws IOException {
         ClientConfiguration clientConfiguration;
-        ObjectMapper objectMapper;
         switch (format.toUpperCase()) {
             case "JSON":
-                objectMapper = new ObjectMapper();
-                clientConfiguration = objectMapper.readValue(configurationInputStream, ClientConfiguration.class);
+                clientConfiguration = readClientConfiguration(new JsonFactory(), configurationInputStream);
                 break;
             case "YML":
             case "YAML":
-                objectMapper = new ObjectMapper(new YAMLFactory());
-                clientConfiguration = objectMapper.readValue(configurationInputStream, ClientConfiguration.class);
+                clientConfiguration = readClientConfiguration(new YAMLFactory(), configurationInputStream);
                 break;
             default:
                 logger.warn("Not valid client configuration format '{}'", format);
@@ -93,6 +92,13 @@ public final class ClientConfiguration {
         parseEnvironmentVariables(clientConfiguration);
 
         return clientConfiguration;
+    }
+
+    private static ClientConfiguration readClientConfiguration(JsonFactory jf, InputStream configurationInputStream)
+            throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper(jf);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        return objectMapper.readValue(configurationInputStream, ClientConfiguration.class);
     }
 
     private static void parseEnvironmentVariables(ClientConfiguration configuration) {
