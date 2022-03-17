@@ -38,6 +38,7 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     private static final String SAMPLE_INDEX_ANNOTATION_VERSIONS = "sampleIndexAnnotationReadyVersions";
     private static final String FAMILY_INDEX_STATUS_PREFIX = "familyIndex_";
     private static final String FAMILY_INDEX_VERSIONS = "familyIndexReadyVersions";
+    private static final String FAMILY_INDEX_DEFINED = "familyIndexDefined";
 
     public SampleMetadata() {
         files = new ArrayList<>(1);
@@ -217,8 +218,25 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
         return getStatus("mendelian_error");
     }
 
+    /**
+     * @return if the family index was enabled on this sample. It might not be READY.
+     */
+    @JsonIgnore
+    public boolean isFamilyIndexDefined() {
+        return getAttributes().getBoolean(FAMILY_INDEX_DEFINED, false);
+    }
+
+    @JsonIgnore
+    public void setFamilyIndexDefined(boolean defined) {
+        getAttributes().put(FAMILY_INDEX_DEFINED, defined);
+    }
+
     @JsonIgnore
     public SampleMetadata setFamilyIndexStatus(TaskMetadata.Status status, int version) {
+        if (status == TaskMetadata.Status.READY) {
+            // If any family index is ready, set "family index defined"
+            setFamilyIndexDefined(true);
+        }
         registerVersion(FAMILY_INDEX_VERSIONS, status, version);
         return setStatus(FAMILY_INDEX_STATUS_PREFIX + version, status);
     }

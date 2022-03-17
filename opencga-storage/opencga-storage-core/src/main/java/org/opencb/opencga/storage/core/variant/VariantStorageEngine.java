@@ -570,7 +570,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         int version = studyMetadata.getSampleIndexConfigurationLatest().getVersion();
         List<List<String>> trios = new LinkedList<>();
         for (SampleMetadata sampleMetadata : getMetadataManager().sampleMetadataIterable(studyId)) {
-            if (sampleMetadata.getMendelianErrorStatus() == TaskMetadata.Status.READY) {
+            if (sampleMetadata.isFamilyIndexDefined()) {
                 if (sampleMetadata.getFamilyIndexStatus(version) != TaskMetadata.Status.READY) {
                     // This sample's family index needs to be updated
                     String father;

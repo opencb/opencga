@@ -873,7 +873,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         if (sampleMetadata.getSampleIndexAnnotationStatus(version) != TaskMetadata.Status.READY) {
             return false;
         }
-        if (sampleMetadata.getMendelianErrorStatus() == TaskMetadata.Status.READY) {
+        if (sampleMetadata.isFamilyIndexDefined()) {
             if (sampleMetadata.getFamilyIndexStatus(version) != TaskMetadata.Status.READY) {
                 return false;
             }

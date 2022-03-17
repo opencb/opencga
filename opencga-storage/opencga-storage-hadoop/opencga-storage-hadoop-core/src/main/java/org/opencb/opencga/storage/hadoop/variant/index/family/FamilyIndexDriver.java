@@ -253,6 +253,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                 metadataManager.updateSampleMetadata(getStudyId(), child, sampleMetadata -> {
                     sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.READY);
                     sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, sampleIndexVersion);
+                    sampleMetadata.setFamilyIndexDefined(true);
                     if (father > 0) {
                         sampleMetadata.setFather(father);
                     }

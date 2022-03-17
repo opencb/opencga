@@ -91,6 +91,7 @@ public class FamilyIndexLoader {
                         if (motherDefined) {
                             s.setMother(motherId);
                         }
+                        s.setFamilyIndexDefined(true);
                     });
                 }
             }

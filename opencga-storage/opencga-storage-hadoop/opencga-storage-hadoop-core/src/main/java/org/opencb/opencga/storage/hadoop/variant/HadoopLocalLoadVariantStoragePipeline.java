@@ -126,7 +126,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                         || !loadSampleIndex && sampleMetadata.getSampleIndexStatus(version) == Status.READY
                         || sampleMetadata.getSampleIndexAnnotationStatus(version) == Status.READY
                         || sampleMetadata.getFamilyIndexStatus(version) == Status.READY
-                        || sampleMetadata.getMendelianErrorStatus() == Status.READY) {
+                        || sampleMetadata.isFamilyIndexDefined()) {
                     processedSamples.add(sampleMetadata.getId());
                 }
             }
