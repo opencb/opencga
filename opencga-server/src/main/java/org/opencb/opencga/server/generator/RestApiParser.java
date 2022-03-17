@@ -195,7 +195,7 @@ public class RestApiParser {
                                             && !Modifier.isStatic(modifiers) && !Modifier.isFinal(modifiers)) {
                                         RestParameter innerParam = getParameter(declaredField.getName(),
                                                 variablePrefix, declaredField,
-                                                declaredField.getType().getName(), declaredField.getName());
+                                                declaredField.getType().getName(), "");
                                         if (innerParam.isList()) {
                                             innerParam.setGenericType(declaredField.getGenericType().getTypeName());
                                         } else {
