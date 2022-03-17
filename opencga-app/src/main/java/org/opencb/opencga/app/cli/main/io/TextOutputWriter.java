@@ -402,6 +402,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 sb.append("  [");
                 if (file.getInternal() != null
                         && file.getInternal().getStatus() != null
+                        && file.getInternal().getStatus().getName() != null
                         && !READY.equals(file.getInternal().getStatus().getName())) {
                     sb.append(file.getInternal().getStatus().getName()).append(", ");
                 }
