@@ -170,6 +170,7 @@ public class OpencgaCliOptionsParser extends ParentCliOptionsParser {
         jobsSubCommands.addCommand("update", jobsCommandOptions.updateCommandOptions);
         jobsSubCommands.addCommand("log-head", jobsCommandOptions.headLogCommandOptions);
         jobsSubCommands.addCommand("log-tail", jobsCommandOptions.tailLogCommandOptions);
+        jobsSubCommands.addCommand("log", jobsCommandOptions.logCommandOptions);
 
         individualsCommandOptions = new IndividualsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("individuals", individualsCommandOptions);

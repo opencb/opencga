@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli.main.executors;
 
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -48,12 +49,13 @@ import org.opencb.opencga.core.models.job.JobUpdateParams;
  *    OpenCGA version: 2.2.0-rc2-SNAPSHOT
  *    PATH: /{apiVersion}/jobs
  */
-public class JobsCommandExecutor extends OpencgaCommandExecutor {
+public class JobsCommandExecutor extends ParentJobsCommandExecutor {
 
     private JobsCommandOptions jobsCommandOptions;
 
     public JobsCommandExecutor(JobsCommandOptions jobsCommandOptions) throws CatalogAuthenticationException {
-        super(jobsCommandOptions.commonCommandOptions);
+//        super(jobsCommandOptions.commonCommandOptions);
+        super(jobsCommandOptions.commonCommandOptions,jobsCommandOptions);
         this.jobsCommandOptions = jobsCommandOptions;
     }
 
@@ -86,7 +88,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = search();
                 break;
             case "top":
-                queryResponse = top();
+                top();
                 break;
             case "acl":
                 queryResponse = acl();
@@ -105,6 +107,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "log-tail":
                 queryResponse = tailLog();
+                break;
+            case "log":
+                log();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -323,25 +328,25 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getJobClient().search(queryParams);
     }
 
-    private RestResponse<JobTop> top() throws Exception {
-
-        logger.debug("Executing top in Jobs command line");
-
-        JobsCommandOptions.TopCommandOptions commandOptions = jobsCommandOptions.topCommandOptions;
-
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotNull("limit", commandOptions.limit);
-        queryParams.putIfNotEmpty("study", commandOptions.study);
-        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
-        queryParams.putIfNotEmpty("priority", commandOptions.priority);
-        queryParams.putIfNotEmpty("userId", commandOptions.userId);
-        queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
-        if(queryParams.get("study")==null && OpencgaMain.isShellMode()){
-                queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
-        }
-
-        return openCGAClient.getJobClient().top(queryParams);
-    }
+//    private RestResponse<JobTop> top() throws Exception {
+//
+//        logger.debug("Executing top in Jobs command line");
+//
+//        JobsCommandOptions.TopCommandOptions commandOptions = jobsCommandOptions.topCommandOptions;
+//
+//        ObjectMap queryParams = new ObjectMap();
+//        queryParams.putIfNotNull("limit", commandOptions.limit);
+//        queryParams.putIfNotEmpty("study", commandOptions.study);
+//        queryParams.putIfNotEmpty("internalStatus", commandOptions.internalStatus);
+//        queryParams.putIfNotEmpty("priority", commandOptions.priority);
+//        queryParams.putIfNotEmpty("userId", commandOptions.userId);
+//        queryParams.putIfNotEmpty("toolId", commandOptions.toolId);
+//        if(queryParams.get("study")==null && OpencgaMain.isShellMode()){
+//                queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
+//        }
+//
+//        return openCGAClient.getJobClient().top(queryParams);
+//    }
 
     private RestResponse<ObjectMap> acl() throws Exception {
 

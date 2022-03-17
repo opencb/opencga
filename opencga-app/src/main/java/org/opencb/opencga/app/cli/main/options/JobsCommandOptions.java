@@ -4,6 +4,8 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandOptions;
 
 import java.util.List;
 
@@ -27,7 +29,7 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
  *    PATH: /{apiVersion}/jobs
  */
 @Parameters(commandNames = {"jobs"}, commandDescription = "Jobs commands")
-public class JobsCommandOptions {
+public class JobsCommandOptions extends ParentJobsCommandOptions {
 
         public JCommander jCommander;
         public CommonCommandOptions commonCommandOptions;
@@ -38,7 +40,7 @@ public class JobsCommandOptions {
         public DistinctCommandOptions distinctCommandOptions;
         public RetryCommandOptions retryCommandOptions;
         public SearchCommandOptions searchCommandOptions;
-        public TopCommandOptions topCommandOptions;
+//        public TopCommandOptions topCommandOptions;
         public AclCommandOptions aclCommandOptions;
         public DeleteCommandOptions deleteCommandOptions;
         public InfoCommandOptions infoCommandOptions;
@@ -48,7 +50,7 @@ public class JobsCommandOptions {
 
 
     public JobsCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
-    
+        super(commonCommandOptions,jCommander);
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
         this.updateAclCommandOptions = new UpdateAclCommandOptions();
@@ -57,7 +59,7 @@ public class JobsCommandOptions {
         this.distinctCommandOptions = new DistinctCommandOptions();
         this.retryCommandOptions = new RetryCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
-        this.topCommandOptions = new TopCommandOptions();
+//        this.topCommandOptions = new TopCommandOptions();
         this.aclCommandOptions = new AclCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
@@ -379,31 +381,31 @@ public class JobsCommandOptions {
         public Boolean deleted; 
     
   }
-    @Parameters(commandNames = {"top"}, commandDescription ="Provide a summary of the running jobs")
-    public class TopCommandOptions {
-    
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-    
-        @Parameter(names = {"--limit"}, description = "Maximum number of jobs to be returned", required = false, arity = 1)
-        public Integer limit; 
-    
-        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
-        public String study; 
-    
-        @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
-        public String internalStatus; 
-    
-        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
-        public String priority; 
-    
-        @Parameter(names = {"--user-id"}, description = "User that created the job", required = false, arity = 1)
-        public String userId; 
-    
-        @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job", required = false, arity = 1)
-        public String toolId; 
-    
-  }
+//    @Parameters(commandNames = {"top"}, commandDescription ="Provide a summary of the running jobs")
+//    public class TopCommandOptions {
+//
+//        @ParametersDelegate
+//        public CommonCommandOptions commonOptions = commonCommandOptions;
+//
+//        @Parameter(names = {"--limit"}, description = "Maximum number of jobs to be returned", required = false, arity = 1)
+//        public Integer limit;
+//
+//        @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
+//        public String study;
+//
+//        @Parameter(names = {"--internal-status"}, description = "Filter by internal status", required = false, arity = 1)
+//        public String internalStatus;
+//
+//        @Parameter(names = {"--priority"}, description = "Priority of the job", required = false, arity = 1)
+//        public String priority;
+//
+//        @Parameter(names = {"--user-id"}, description = "User that created the job", required = false, arity = 1)
+//        public String userId;
+//
+//        @Parameter(names = {"--tool-id"}, description = "Tool ID executed by the job", required = false, arity = 1)
+//        public String toolId;
+//
+//  }
     @Parameters(commandNames = {"acl"}, commandDescription ="Return the acl of the job. If member is provided, it will only return the acl for the member.")
     public class AclCommandOptions {
     
