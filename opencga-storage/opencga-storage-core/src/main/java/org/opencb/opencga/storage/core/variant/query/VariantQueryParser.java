@@ -595,7 +595,7 @@ public class VariantQueryParser {
                     throw VariantQueryException.sampleNotFound(sample, defaultStudy.getName());
                 }
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(defaultStudy.getId(), sampleId);
-                if (!TaskMetadata.Status.READY.equals(sampleMetadata.getMendelianErrorStatus())) {
+                if (TaskMetadata.Status.READY != sampleMetadata.getMendelianErrorStatus()) {
                     throw VariantQueryException.malformedParam(param, "Sample \"" + sampleMetadata.getName()
                             + "\" does not have the Mendelian Errors precomputed yet");
                 }

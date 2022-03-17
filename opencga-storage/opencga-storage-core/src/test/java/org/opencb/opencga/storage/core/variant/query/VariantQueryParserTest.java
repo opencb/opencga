@@ -58,7 +58,6 @@ public class VariantQueryParserTest implements DummyVariantStorageTest {
         int file2 = metadataManager.registerFile(study1.getId(), "file2.vcf", Arrays.asList("sample1"));
         metadataManager.updateSampleMetadata(study1.getId(), metadataManager.getSampleId(study1.getId(), "sample1"), sm -> {
             sm.setSplitData(VariantStorageEngine.SplitData.MULTI);
-            return sm;
         });
         metadataManager.addIndexedFiles(study1.getId(), Collections.singletonList(file2));
     }

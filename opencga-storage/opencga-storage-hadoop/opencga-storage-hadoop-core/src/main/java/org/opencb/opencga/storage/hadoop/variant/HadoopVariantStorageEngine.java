@@ -388,15 +388,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        new SampleIndexLoader(getSampleIndexDBAdaptor(), getMRExecutor())
-                .buildSampleIndex(study, samples, options);
+        System.out.println("options.toJson() = " + options.toJson());
+        new SampleIndexLoader(getSampleIndexDBAdaptor(), study, getMRExecutor())
+                .buildSampleIndex(samples, options);
     }
 
 
     @Override
     public void sampleIndexAnnotate(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        new SampleIndexAnnotationLoader(hBaseManager, getTableNameGenerator(), getMetadataManager(), getMRExecutor())
+        new SampleIndexAnnotationLoader(getSampleIndexDBAdaptor(), getMRExecutor())
                 .updateSampleAnnotation(study, samples, options);
     }
 
@@ -749,7 +750,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
             String archiveTable = getArchiveTableName(studyId);
             String variantsTable = getVariantTableName();
-            String sampleIndexTable = getSampleIndexDBAdaptor().getSampleIndexTableName(studyId);
+            String sampleIndexTable = getSampleIndexDBAdaptor().getSampleIndexTableNameLatest(studyId);
 
 
             long startTime = System.currentTimeMillis();
@@ -874,9 +875,15 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 for (String sample : samplesToRebuildIndex) {
                     int sampleId = getMetadataManager().getSampleIdOrFail(studyId, sample);
                     getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                        SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, TaskMetadata.Status.ERROR, 0);
-                        SampleIndexDBAdaptor.setSampleIndexAnnotationStatus(sampleMetadata, TaskMetadata.Status.ERROR, 0);
-                        return sampleMetadata;
+                        for (int v : sampleMetadata.getSampleIndexVersions()) {
+                            sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.ERROR, v);
+                        }
+                        for (int v : sampleMetadata.getSampleIndexAnnotationVersions()) {
+                            sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.ERROR, v);
+                        }
+                        for (int v : sampleMetadata.getFamilyIndexVersions()) {
+                            sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.ERROR, v);
+                        }
                     });
                 }
                 sampleIndex(study, samplesToRebuildIndex, options);

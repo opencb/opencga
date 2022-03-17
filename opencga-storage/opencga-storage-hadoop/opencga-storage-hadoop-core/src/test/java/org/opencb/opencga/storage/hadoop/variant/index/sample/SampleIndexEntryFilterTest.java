@@ -11,6 +11,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration.Population;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.core.variant.query.OpValue;
@@ -45,7 +46,8 @@ public class SampleIndexEntryFilterTest {
                 .addPopulation(new Population("s2", "ALL"))
                 .addPopulation(new Population("s3", "ALL"))
                 .addPopulation(new Population("s4", "ALL"))
-                .addPopulation(new Population("s5", "ALL")));
+                .addPopulation(new Population("s5", "ALL")),
+                StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION);
     }
 
     @Test
@@ -244,8 +246,9 @@ public class SampleIndexEntryFilterTest {
 
     private SingleSampleIndexQuery getSingleSampleIndexQuery(Query query) {
         VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
-        SampleIndexQueryParser parser = new SampleIndexQueryParser(metadataManager, SampleIndexSchema.defaultSampleIndexSchema());
-        SampleAnnotationIndexQuery annotQuery = parser.parseAnnotationIndexQuery(query);
+        SampleIndexSchema schema = SampleIndexSchema.defaultSampleIndexSchema();
+        SampleIndexQueryParser parser = new SampleIndexQueryParser(metadataManager);
+        SampleAnnotationIndexQuery annotQuery = parser.parseAnnotationIndexQuery(schema, query);
 
         return getSingleSampleIndexQuery(annotQuery);
     }
