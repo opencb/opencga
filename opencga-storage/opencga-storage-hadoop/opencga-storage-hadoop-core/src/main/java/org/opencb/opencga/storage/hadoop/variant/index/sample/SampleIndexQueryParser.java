@@ -407,12 +407,12 @@ public class SampleIndexQueryParser {
                 = parseSampleSpecificQuery(schema, query, studyId, queryOperation, sampleGenotypeQuery, multiFileSamples,
                 partialGtIndex, partialFilesIndex);
 
-        int sampleIndexVersion = defaultStudy.getSampleIndexConfigurationLatest().getVersion();
+        // It might happen that some sampleIndexes are not fully annotated.
         boolean allSamplesAnnotated = true;
         if (negatedGenotypesSamples.isEmpty()) {
             for (String sample : sampleGenotypeQuery.keySet()) {
                 SampleMetadata sampleMetadata = getSampleMetadata(sampleMetadatas, sample, studyId);
-                if (sampleMetadata.getSampleIndexAnnotationStatus(sampleIndexVersion) != TaskMetadata.Status.READY) {
+                if (sampleMetadata.getSampleIndexAnnotationStatus(schema.getVersion()) != TaskMetadata.Status.READY) {
                     allSamplesAnnotated = false;
                     break;
                 }
