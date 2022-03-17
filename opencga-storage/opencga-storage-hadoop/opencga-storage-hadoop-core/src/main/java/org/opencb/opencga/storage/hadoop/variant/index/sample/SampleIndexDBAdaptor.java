@@ -795,19 +795,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
             // Update only if status is STAGING
             return;
         }
-        Iterator<SampleMetadata> it = metadataManager.sampleMetadataIterator(studyId);
-        boolean allSamplesWithThisVersion = true;
-        while (it.hasNext()) {
-            SampleMetadata sampleMetadata = it.next();
-            if (sampleMetadata.getIndexStatus() == TaskMetadata.Status.READY) {
-                // Only check indexed samples
-                if (sampleMetadata.getSampleIndexStatus(version) != TaskMetadata.Status.READY
-                        && sampleMetadata.getSampleIndexAnnotationStatus(version) != TaskMetadata.Status.READY) {
-                    allSamplesWithThisVersion = false;
-                    break;
-                }
-            }
-        }
+        boolean allSamplesWithThisVersion = isAllSamplesWithThisVersion(studyId, version);
         if (allSamplesWithThisVersion) {
             metadataManager.updateStudyMetadata(studyId, sm -> {
                 sm.getSampleIndexConfiguration(version)
@@ -818,11 +806,80 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         }
     }
 
-//    public void deprecateSampleIndexSchemas(int studyId) throws StorageEngineException {
-//
-//
-//
-//    }
+    public void deprecateSampleIndexSchemas(int studyId) throws StorageEngineException {
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
+        Set<Integer> deprecatables = new LinkedHashSet<>();
+        for (StudyMetadata.SampleIndexConfigurationVersioned sampleIndexConfiguration : studyMetadata.getSampleIndexConfigurations()) {
+            if (sampleIndexConfiguration.getStatus() == StudyMetadata.SampleIndexConfigurationVersioned.Status.ACTIVE
+                    || sampleIndexConfiguration.getStatus() == StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING) {
+                deprecatables.add(sampleIndexConfiguration.getVersion());
+            }
+        }
+        StudyMetadata.SampleIndexConfigurationVersioned latest = studyMetadata.getSampleIndexConfigurationLatest(false);
+        if (latest == null) {
+            logger.info("No active sample index available for study '{}'", studyMetadata.getName());
+            return;
+        }
+        int latestVersion = latest.getVersion();
+        deprecatables.remove(latestVersion);
+        if (deprecatables.isEmpty()) {
+            logger.info("No sample indexes to deprecate for study '{}'", studyMetadata.getName());
+            return;
+        }
+
+        int totalSamples = 0;
+        int samplesNotInLatest = 0;
+        for (SampleMetadata sampleMetadata : metadataManager.sampleMetadataIterable(studyId)) {
+            // Only check indexed samples
+            if (sampleMetadata.getIndexStatus() == TaskMetadata.Status.READY) {
+                totalSamples++;
+                if (!sampleWithThisVersion(sampleMetadata, latestVersion)) {
+                    samplesNotInLatest++;
+                }
+            }
+        }
+        if (samplesNotInLatest > 0) {
+            logger.warn("Unable to deprecate sample indexes. {} samples out of {} not in the latest sample index for study '{}'",
+                    samplesNotInLatest, totalSamples, studyMetadata.getName());
+            return;
+        }
+        logger.info("Deprecate sample indexes {} for study '{}'", deprecatables, studyMetadata.getName());
+        metadataManager.updateStudyMetadata(studyId, sm -> {
+            for (Integer version : deprecatables) {
+                sm.getSampleIndexConfiguration(version).setStatus(StudyMetadata.SampleIndexConfigurationVersioned.Status.DEPRECATED);
+            }
+        });
+    }
+
+    private boolean isAllSamplesWithThisVersion(int studyId, int version) {
+        boolean allSamplesWithThisVersion = true;
+        for (SampleMetadata sampleMetadata : metadataManager.sampleMetadataIterable(studyId)) {
+            // Only check indexed samples
+            if (sampleMetadata.getIndexStatus() == TaskMetadata.Status.READY) {
+                allSamplesWithThisVersion = sampleWithThisVersion(sampleMetadata, version);
+                if (!allSamplesWithThisVersion) {
+                    break;
+                }
+            }
+        }
+        return allSamplesWithThisVersion;
+    }
+
+    private boolean sampleWithThisVersion(SampleMetadata sampleMetadata, int version) {
+        // Check SampleIndex + SampleIndexAnnotation + FamilyIndex (if needed)
+        if (sampleMetadata.getSampleIndexStatus(version) != TaskMetadata.Status.READY) {
+            return false;
+        }
+        if (sampleMetadata.getSampleIndexAnnotationStatus(version) != TaskMetadata.Status.READY) {
+            return false;
+        }
+        if (sampleMetadata.getMendelianErrorStatus() == TaskMetadata.Status.READY) {
+            if (sampleMetadata.getFamilyIndexStatus(version) != TaskMetadata.Status.READY) {
+                return false;
+            }
+        }
+        return true;
+    }
 
 
 }

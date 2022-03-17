@@ -8,6 +8,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.utils.BatchUtils;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -101,22 +102,23 @@ public class FamilyIndexLoader {
 
         int batchSize = options.getInt(HadoopVariantStorageOptions.SAMPLE_INDEX_FAMILY_MAX_TRIOS_PER_MR.key(),
                 HadoopVariantStorageOptions.SAMPLE_INDEX_FAMILY_MAX_TRIOS_PER_MR.defaultValue());
-        List<List<List<String>>> batches = splitLists(trios, batchSize);
+        List<List<List<String>>> batches = BatchUtils.splitBatches(trios, batchSize);
         if (batches.size() == 1) {
-            run(study, trios, options, studyId);
+            runBatch(study, trios, options, studyId);
         } else {
             logger.warn("Unable to run family index in one single MapReduce operation.");
             logger.info("Split in {} jobs of {} samples each.", batches, batches.get(0).size());
             for (int i = 0; i < batches.size(); i++) {
                 List<List<String>> batch = batches.get(i);
                 logger.info("Running MapReduce {}/{} over {} trios", i + 1, batches, batch.size());
-                run(study, batch, options, studyId);
+                runBatch(study, batch, options, studyId);
             }
         }
+        postIndex(studyId, version);
         return dr;
     }
 
-    private void run(String study, List<List<String>> trios, ObjectMap options, int studyId) throws StorageEngineException {
+    private void runBatch(String study, List<List<String>> trios, ObjectMap options, int studyId) throws StorageEngineException {
         if (trios.size() < 500) {
             options.put(FamilyIndexDriver.TRIOS, trios.stream().map(trio -> String.join(",", trio)).collect(Collectors.joining(";")));
         } else {
@@ -134,15 +136,9 @@ public class FamilyIndexLoader {
                 "Precompute mendelian errors for " + (trios.size() == 1 ? "trio " + trios.get(0) : trios.size() + " trios"));
     }
 
-    private static <T> List<List<T>> splitLists(List<T> list, int maxBatchSize) {
-        int batchSize = maxBatchSize;
-        int batches = (int) Math.round(Math.ceil(list.size() / ((float) batchSize)));
-        batchSize = (int) Math.round(Math.ceil(list.size() / ((float) batches)));
-        List<List<T>> parts = new ArrayList<>(batches);
-        for (int i = 0; i < batches; i++) {
-            parts.add(list.subList(i * batchSize, Math.min((i + 1) * batchSize, list.size())));
-        }
-        return parts;
+    public void postIndex(int studyId, int version)
+            throws StorageEngineException {
+        sampleIndexDBAdaptor.updateSampleIndexSchemaStatus(studyId, version);
     }
 
 }

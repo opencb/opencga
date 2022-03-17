@@ -144,10 +144,13 @@ public class StudyMetadata {
             return new SampleIndexConfigurationVersioned(SampleIndexConfiguration.defaultConfiguration(),
                     DEFAULT_SAMPLE_INDEX_VERSION, Date.from(Instant.now()), SampleIndexConfigurationVersioned.Status.ACTIVE);
         } else {
-            SampleIndexConfigurationVersioned conf = sampleIndexConfigurations.get(0);
+            SampleIndexConfigurationVersioned conf = null;
             for (SampleIndexConfigurationVersioned thisConf : sampleIndexConfigurations) {
-                if (includeStagingSchemas || thisConf.getStatus() != SampleIndexConfigurationVersioned.Status.STAGING) {
-                    if (thisConf.getVersion() > conf.getVersion()) {
+                if (thisConf.getStatus() == SampleIndexConfigurationVersioned.Status.ACTIVE
+                        || includeStagingSchemas && thisConf.getStatus() == SampleIndexConfigurationVersioned.Status.STAGING) {
+                    if (conf == null) {
+                        conf = thisConf;
+                    } else if (thisConf.getVersion() > conf.getVersion()) {
                         conf = thisConf;
                     }
                 }
