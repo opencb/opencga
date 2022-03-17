@@ -170,7 +170,6 @@ public class DatasetCommandLineGenerator {
             separator = File.separator;
         }
         command = command.replace("${OUTPUT}", output + separator + environment.getId() + "/vcf/${FASTQNAME}.vcf");
-
         command = command.replace("${BAM}", output + separator + environment.getId() + "/bam/${FASTQNAME}.bam");
 
         return command;
