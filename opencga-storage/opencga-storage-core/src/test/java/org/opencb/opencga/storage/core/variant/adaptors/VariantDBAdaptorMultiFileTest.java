@@ -273,6 +273,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 .append(INCLUDE_SAMPLE.key(), ALL);
         queryResult = query(query, options);
         VariantQueryResult<Variant> allVariants = dbAdaptor.get(new Query()
+                .append(INCLUDE_SAMPLE.key(), ALL)
                 .append(VariantQueryParam.INCLUDE_STUDY.key(), study1), options);
         assertThat(queryResult, everyResult(allVariants, withStudy(study1)));
 
