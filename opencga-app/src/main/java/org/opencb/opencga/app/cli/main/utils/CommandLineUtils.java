@@ -14,7 +14,6 @@ import static org.opencb.commons.utils.PrintUtils.*;
 
 public class CommandLineUtils {
 
-
     public static String getVersionString() {
         String res = PrintUtils.getKeyValueAsFormattedString("\tOpenCGA CLI version: ", "\t" + GitRepositoryState.get().getBuildVersion() + "\n");
         res += PrintUtils.getKeyValueAsFormattedString("\tGit version:", "\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId() + "\n");
@@ -48,7 +47,6 @@ public class CommandLineUtils {
     }
 
     public static void printLog(String message, Exception e) {
-
         if (OpencgaMain.getLogLevel().equals(Level.FINE)) {
             PrintUtils.printDebug(message);
         } else if (OpencgaMain.getLogLevel().equals(Level.INFO)) {
@@ -95,7 +93,6 @@ public class CommandLineUtils {
     public static void debug(String s) {
         CommandLineUtils.printLevel(s, Level.FINE);
     }
-
 
     public static String[] processShortCuts(String[] args) {
         OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
