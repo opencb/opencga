@@ -49,6 +49,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
     public static final String TRIOS_COHORT_DELETE = "triosCohortDelete";
     public static final String OVERWRITE = "overwrite";
     public static final String OUTPUT = "output-table";
+    public static final String SAMPLE_INDEX_VERSION = "sample-index-version";
 
     private static final String TRIOS_LIST = "FamilyIndexDriver.trios_list";
     // Samples where at least one parent is not in its file
@@ -59,6 +60,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
     private boolean partial;
     private String region;
     private String sampleIndexTableName;
+    private int sampleIndexVersion;
 
     @Override
     protected Class<FamilyIndexMapper> getMapperClass() {
@@ -70,6 +72,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
         Map<String, String> params = new HashMap<>();
         params.put("--" + TRIOS, "(father,mother,child;)**");
         params.put("--" + VariantQueryParam.REGION.key(), "<region>");
+        params.put("--" + SAMPLE_INDEX_VERSION, "<version>");
         params.put("--" + OVERWRITE, "<true|false>");
         return params;
     }
@@ -84,6 +87,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
             throw new IllegalArgumentIOException("Missing output table");
         }
         sampleIndexTableName = getParam(OUTPUT);
+        sampleIndexVersion = Integer.parseInt(getParam(SAMPLE_INDEX_VERSION));
 
         boolean overwrite = Boolean.parseBoolean(getParam(OVERWRITE));
         String triosCohort = getParam(TRIOS_COHORT);
@@ -111,7 +115,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                     throw new IllegalArgumentException("Found trio with " + trioList.size() + " members, instead of 3: " + trioList);
                 }
                 SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(getStudyId(), trioList.get(2));
-                if (!overwrite && sampleMetadata.getMendelianErrorStatus().equals(TaskMetadata.Status.READY)) {
+                if (!overwrite && sampleMetadata.getFamilyIndexStatus(sampleIndexVersion) == TaskMetadata.Status.READY) {
                     LOGGER.info("Skip sample " + sampleMetadata.getName() + ". Already precomputed!");
                 } else {
                     sampleIds.addAll(trioList);
@@ -248,7 +252,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
                 Integer child = sampleIds.get(i + 2);
                 metadataManager.updateSampleMetadata(getStudyId(), child, sampleMetadata -> {
                     sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.READY);
-                    sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY);
+                    sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, sampleIndexVersion);
                     if (father > 0) {
                         sampleMetadata.setFather(father);
                     }

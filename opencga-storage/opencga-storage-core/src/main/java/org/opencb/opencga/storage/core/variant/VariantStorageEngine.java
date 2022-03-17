@@ -564,6 +564,39 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         throw new UnsupportedOperationException("Unsupported familyIndex");
     }
 
+    public DataResult<List<String>> familyIndexUpdate(String study, ObjectMap options) throws StorageEngineException {
+        StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(study);
+        int studyId = studyMetadata.getId();
+        int version = studyMetadata.getSampleIndexConfigurationLatest().getVersion();
+        List<List<String>> trios = new LinkedList<>();
+        for (SampleMetadata sampleMetadata : getMetadataManager().sampleMetadataIterable(studyId)) {
+            if (sampleMetadata.getMendelianErrorStatus() == TaskMetadata.Status.READY) {
+                if (sampleMetadata.getFamilyIndexStatus(version) != TaskMetadata.Status.READY) {
+                    // This sample's family index needs to be updated
+                    String father;
+                    if (sampleMetadata.getFather() == null) {
+                        father = "-";
+                    } else {
+                        father = getMetadataManager().getSampleName(studyId, sampleMetadata.getFather());
+                    }
+                    String mother;
+                    if (sampleMetadata.getMother() == null) {
+                        mother = "-";
+                    } else {
+                        mother = getMetadataManager().getSampleName(studyId, sampleMetadata.getMother());
+                    }
+                    trios.add(Arrays.asList(father, mother, sampleMetadata.getName()));
+                }
+            }
+        }
+        if (trios.isEmpty()) {
+            logger.info("Nothing to do!");
+            return new DataResult<List<String>>().setEvents(Collections.singletonList(new Event(Event.Type.INFO, "Nothing to do")));
+        } else {
+            return familyIndex(study, trios, options);
+        }
+    }
+
     /**
      * Provide a new VariantStatisticsManager for creating and loading statistics.
      *
@@ -874,8 +907,16 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 for (Integer sampleId : sampleIds) {
                     metadataManager.updateSampleMetadata(studyMetadata.getId(), sampleId, s -> {
                         s.setIndexStatus(TaskMetadata.Status.NONE);
+                        for (Integer v : s.getSampleIndexVersions()) {
+                            s.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
+                        }
+                        for (Integer v : s.getSampleIndexAnnotationVersions()) {
+                            s.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
+                        }
+                        for (Integer v : s.getFamilyIndexVersions()) {
+                            s.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
+                        }
                         s.setAnnotationStatus(TaskMetadata.Status.NONE);
-                        s.setFamilyIndexStatus(TaskMetadata.Status.NONE);
                         s.setMendelianErrorStatus(TaskMetadata.Status.NONE);
                         s.setFiles(Collections.emptyList());
                         s.setCohorts(Collections.emptySet());

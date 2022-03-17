@@ -26,6 +26,8 @@ public class UpdateSampleIndexStatus extends StorageMigrationTool {
     protected static final String SAMPLE_INDEX_ANNOTATION_STATUS = "sampleIndexAnnotation";
     protected static final String SAMPLE_INDEX_ANNOTATION_VERSION = "sampleIndexAnnotationVersion";
 
+    private static final String FAMILY_INDEX_STATUS = "family_index";
+
     private final String markKey = "migration_" + getAnnotation().id();
     private final int markValue = getAnnotation().patch();
 
@@ -66,6 +68,7 @@ public class UpdateSampleIndexStatus extends StorageMigrationTool {
             addVersionToSampleIndexStatus(sampleMetadata);
             renameOldSampleIndexAnnotationStatus(sampleMetadata);
             addVersionToSampleIndexAnnotationStatus(sampleMetadata);
+            addVersionToFamilyIndexStatus(sampleMetadata);
 //        removeOldSampleIndexStatus(sampleMetadata);
             addUpdatedMark(sampleMetadata);
         }
@@ -109,10 +112,17 @@ public class UpdateSampleIndexStatus extends StorageMigrationTool {
         }
     }
 
+    private void addVersionToFamilyIndexStatus(SampleMetadata sampleMetadata) {
+        if (sampleMetadata.getStatus(FAMILY_INDEX_STATUS) == TaskMetadata.Status.READY) {
+            sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION);
+        }
+    }
+
     private void removeOldSampleIndexStatus(SampleMetadata sampleMetadata) {
         sampleMetadata.getStatus().remove(SAMPLE_INDEX_STATUS);
         sampleMetadata.getStatus().remove(SAMPLE_INDEX_ANNOTATION_STATUS_OLD);
         sampleMetadata.getStatus().remove(SAMPLE_INDEX_ANNOTATION_STATUS);
+        sampleMetadata.getStatus().remove(FAMILY_INDEX_STATUS);
     }
 
 

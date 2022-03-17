@@ -253,7 +253,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
             // Get the version with ALL samples indexed
             // This is a special case for STUDY, that has a sample index version with missing samples
             int version = sampleIndexDBAdaptor.getSchemaFactory()
-                    .getSchema(studyId, dbAdaptor.getMetadataManager().getIndexedSamplesMap(studyId).keySet()).getVersion();
+                    .getSchema(studyId, dbAdaptor.getMetadataManager().getIndexedSamplesMap(studyId).keySet(), true, false).getVersion();
             String orig = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId, version);
             String copy = orig + "_copy";
 

@@ -125,7 +125,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
                 if (sampleMetadata.isAnnotated()
                         || !loadSampleIndex && sampleMetadata.getSampleIndexStatus(version) == Status.READY
                         || sampleMetadata.getSampleIndexAnnotationStatus(version) == Status.READY
-                        || sampleMetadata.getFamilyIndexStatus() == Status.READY
+                        || sampleMetadata.getFamilyIndexStatus(version) == Status.READY
                         || sampleMetadata.getMendelianErrorStatus() == Status.READY) {
                     processedSamples.add(sampleMetadata.getId());
                 }
@@ -146,11 +146,17 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
             for (Integer sampleId : processedSamples) {
                 getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
                     if (!loadSampleIndex) {
-                        sampleMetadata.setSampleIndexStatus(Status.NONE, 0);
+                        for (Integer v : sampleMetadata.getSampleIndexVersions()) {
+                            sampleMetadata.setSampleIndexStatus(Status.NONE, v);
+                        }
+                    }
+                    for (Integer v : sampleMetadata.getSampleIndexAnnotationVersions()) {
+                        sampleMetadata.setSampleIndexAnnotationStatus(Status.NONE, v);
+                    }
+                    for (Integer v : sampleMetadata.getFamilyIndexVersions()) {
+                        sampleMetadata.setFamilyIndexStatus(Status.NONE, v);
                     }
                     sampleMetadata.setAnnotationStatus(Status.NONE);
-                    sampleMetadata.setSampleIndexAnnotationStatus(Status.NONE, 0);
-                    sampleMetadata.setFamilyIndexStatus(Status.NONE);
                     sampleMetadata.setMendelianErrorStatus(Status.NONE);
                 });
             }

@@ -20,15 +20,15 @@ public class SampleIndexSchemaFactory {
     }
 
     public SampleIndexSchema getSchema(int studyId, int sampleId) {
-        return getSchema(studyId, sampleId, false);
+        return getSchema(studyId, sampleId, true);
     }
 
-    public SampleIndexSchema getSchema(int studyId, int sampleId, boolean acceptPartialAnnotationIndex) {
+    public SampleIndexSchema getSchema(int studyId, int sampleId, boolean requireAnnotation) {
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
-        Collection<Integer> versions = getSampleIndexConfigurationVersions(studyId, sampleId, true);
+        Collection<Integer> versions = getSampleIndexConfigurationVersions(studyId, sampleId, true, false);
         removeStagingVersions(studyMetadata, versions);
-        if (versions.isEmpty() && acceptPartialAnnotationIndex) {
-            versions = getSampleIndexConfigurationVersions(studyId, sampleId, false);
+        if (versions.isEmpty() && !requireAnnotation) {
+            versions = getSampleIndexConfigurationVersions(studyId, sampleId, false, false);
         }
         removeStagingVersions(studyMetadata, versions);
         if (versions.isEmpty()) {
@@ -44,16 +44,12 @@ public class SampleIndexSchemaFactory {
         return new SampleIndexSchema(sampleIndexConfiguration, version);
     }
 
-    public SampleIndexSchema getSchema(int studyId, Collection<String> samples) {
-        return getSchema(studyId, samples, false);
-    }
-
-    public SampleIndexSchema getSchema(int studyId, Collection<String> samples, boolean acceptPartialAnnotationIndex) {
+    public SampleIndexSchema getSchema(int studyId, Collection<String> samples, boolean requireAnnotation, boolean requireFamilyIndex) {
         if (samples.isEmpty()) {
             throw new IllegalArgumentException("Missing samples");
         }
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyId);
-        int version = getSampleIndexConfigurationVersion(studyId, samples, acceptPartialAnnotationIndex, studyMetadata);
+        int version = getSampleIndexConfigurationVersion(studyId, samples, requireAnnotation, requireFamilyIndex, studyMetadata);
         SampleIndexConfiguration sampleIndexConfiguration = studyMetadata.getSampleIndexConfiguration(version).getConfiguration();
 
         if (sampleIndexConfiguration == null) {
@@ -63,13 +59,15 @@ public class SampleIndexSchemaFactory {
     }
 
     public Collection<Integer> getSampleIndexConfigurationVersions(int studyId, Collection<?> samples) {
-        return getSampleIndexConfigurationVersions(studyId, samples, true);
+        return getSampleIndexConfigurationVersions(studyId, samples, true, false);
     }
 
-    public Collection<Integer> getSampleIndexConfigurationVersions(int studyId, Collection<?> samples, boolean withAnnotation) {
+    public Collection<Integer> getSampleIndexConfigurationVersions(int studyId, Collection<?> samples,
+                                                                   boolean withAnnotation,
+                                                                   boolean withFamilyIndex) {
         List<Collection<Integer>> allVersions = new ArrayList<>(samples.size());
         for (Object sample : samples) {
-            allVersions.add(getSampleIndexConfigurationVersions(studyId, sample, withAnnotation));
+            allVersions.add(getSampleIndexConfigurationVersions(studyId, sample, withAnnotation, withFamilyIndex));
         }
         Collection<Integer> intersection = allVersions.get(0);
         for (int i = 1; i < allVersions.size(); i++) {
@@ -78,29 +76,35 @@ public class SampleIndexSchemaFactory {
         return intersection;
     }
 
-    private Collection<Integer> getSampleIndexConfigurationVersions(int studyId, Object sample, boolean withAnnotation) {
+    private Collection<Integer> getSampleIndexConfigurationVersions(int studyId, Object sample, boolean withAnnotation,
+                                                                   boolean withFamilyIndex) {
         int sampleId = metadataManager.getSampleIdOrFail(studyId, sample);
         SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+        Collection<Integer> versions = sampleMetadata.getSampleIndexVersions();
         if (withAnnotation) {
-            return CollectionUtils.intersection(
-                    sampleMetadata.getSampleIndexVersions(),
+            versions = CollectionUtils.intersection(
+                    versions,
                     sampleMetadata.getSampleIndexAnnotationVersions());
-        } else {
-            return sampleMetadata.getSampleIndexVersions();
         }
+        if (withFamilyIndex) {
+            versions = CollectionUtils.intersection(
+                    versions,
+                    sampleMetadata.getFamilyIndexVersions());
+        }
+        return versions;
     }
 
-    public int getSampleIndexConfigurationVersion(int studyId, Collection<?> samples, boolean acceptPartialAnnotationIndex) {
+    public int getSampleIndexConfigurationVersion(int studyId, Collection<?> samples, boolean requireAnnotation) {
         return getSampleIndexConfigurationVersion(
-                studyId, samples, acceptPartialAnnotationIndex, metadataManager.getStudyMetadata(studyId));
+                studyId, samples, requireAnnotation, false, metadataManager.getStudyMetadata(studyId));
     }
 
-    private int getSampleIndexConfigurationVersion(int studyId, Collection<?> samples, boolean acceptPartialAnnotationIndex,
-                                                   StudyMetadata studyMetadata) {
-        Collection<Integer> validVersions = getSampleIndexConfigurationVersions(studyId, samples, true);
+    private int getSampleIndexConfigurationVersion(int studyId, Collection<?> samples, boolean requireAnnotation,
+                                                   boolean requireFamilyIndex, StudyMetadata studyMetadata) {
+        Collection<Integer> validVersions = getSampleIndexConfigurationVersions(studyId, samples, true, requireFamilyIndex);
         removeStagingVersions(studyMetadata, validVersions);
-        if (validVersions.isEmpty() && acceptPartialAnnotationIndex) {
-            validVersions = getSampleIndexConfigurationVersions(studyId, samples, false);
+        if (validVersions.isEmpty() && !requireAnnotation) {
+            validVersions = getSampleIndexConfigurationVersions(studyId, samples, false, requireFamilyIndex);
         }
         removeStagingVersions(studyMetadata, validVersions);
         if (validVersions.isEmpty()) {

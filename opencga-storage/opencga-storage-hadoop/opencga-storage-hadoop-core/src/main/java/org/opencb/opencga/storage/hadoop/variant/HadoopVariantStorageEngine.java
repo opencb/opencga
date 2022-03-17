@@ -811,8 +811,15 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 for (String sample : samplesToRebuildIndex) {
                     int sampleId = getMetadataManager().getSampleIdOrFail(studyId, sample);
                     getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                        sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.ERROR, 0);
-                        sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.ERROR, 0);
+                        for (int v : sampleMetadata.getSampleIndexVersions()) {
+                            sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.ERROR, v);
+                        }
+                        for (int v : sampleMetadata.getSampleIndexAnnotationVersions()) {
+                            sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.ERROR, v);
+                        }
+                        for (int v : sampleMetadata.getFamilyIndexVersions()) {
+                            sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.ERROR, v);
+                        }
                     });
                 }
                 sampleIndex(study, samplesToRebuildIndex, options);

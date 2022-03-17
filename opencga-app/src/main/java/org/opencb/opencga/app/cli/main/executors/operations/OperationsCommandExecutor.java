@@ -329,6 +329,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 new VariantFamilyIndexParams(
                         cliOptions.family,
                         cliOptions.overwrite,
+                        cliOptions.update,
                         cliOptions.skipIncompleteFamilies
                 ), params);
     }

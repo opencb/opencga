@@ -6,7 +6,10 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Created on 10/01/19.
@@ -33,7 +36,8 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     private static final String SAMPLE_INDEX_VERSIONS = "sampleIndexGenotypesReadyVersions";
     private static final String SAMPLE_INDEX_ANNOTATION_STATUS_PREFIX = "sampleIndexAnnotation_";
     private static final String SAMPLE_INDEX_ANNOTATION_VERSIONS = "sampleIndexAnnotationReadyVersions";
-
+    private static final String FAMILY_INDEX_STATUS_PREFIX = "familyIndex_";
+    private static final String FAMILY_INDEX_VERSIONS = "familyIndexReadyVersions";
 
     public SampleMetadata() {
         files = new ArrayList<>(1);
@@ -160,41 +164,6 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     }
 
     @JsonIgnore
-    public TaskMetadata.Status getSampleIndexAnnotationStatus(int sampleIndexVersion) {
-        return this.getStatus(SAMPLE_INDEX_ANNOTATION_STATUS_PREFIX + sampleIndexVersion);
-    }
-
-    @JsonIgnore
-    public List<Integer> getSampleIndexAnnotationVersions() {
-        return this.getAttributes().getAsIntegerList(SAMPLE_INDEX_ANNOTATION_VERSIONS);
-    }
-
-    @JsonIgnore
-    public Integer getSampleIndexAnnotationVersion() {
-        List<Integer> versions = getSampleIndexAnnotationVersions();
-        if (versions.isEmpty()) {
-            return null;
-        } else {
-            return versions.get(versions.size() - 1);
-        }
-    }
-
-    @JsonIgnore
-    public SampleMetadata setSampleIndexAnnotationStatus(TaskMetadata.Status status, int version) {
-        ObjectMap attributes = this.getAttributes();
-        if (status == TaskMetadata.Status.READY) {
-            List<Integer> versions = new ArrayList<>(getSampleIndexAnnotationVersions());
-            if (!versions.contains(version)) {
-                versions.add(version);
-                versions.sort(Integer::compareTo);
-                attributes.put(SAMPLE_INDEX_ANNOTATION_VERSIONS, versions);
-            }
-        }
-        this.setStatus(SAMPLE_INDEX_ANNOTATION_STATUS_PREFIX + version, status);
-        return this;
-    }
-
-    @JsonIgnore
     public TaskMetadata.Status getSampleIndexStatus(int sampleIndexVersion) {
         return this.getStatus(SAMPLE_INDEX_STATUS_PREFIX + sampleIndexVersion);
     }
@@ -206,26 +175,35 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
 
     @JsonIgnore
     public Integer getSampleIndexVersion() {
-        List<Integer> versions = getSampleIndexVersions();
-        if (versions.isEmpty()) {
-            return null;
-        } else {
-            return versions.get(versions.size() - 1);
-        }
+        return getLatestVersion(SAMPLE_INDEX_VERSIONS);
     }
 
     @JsonIgnore
     public SampleMetadata setSampleIndexStatus(TaskMetadata.Status status, int version) {
-        ObjectMap attributes = this.getAttributes();
-        if (status == TaskMetadata.Status.READY) {
-            List<Integer> versions = new ArrayList<>(getSampleIndexVersions());
-            if (!versions.contains(version)) {
-                versions.add(version);
-                versions.sort(Integer::compareTo);
-                attributes.put(SAMPLE_INDEX_VERSIONS, versions);
-            }
-        }
+        registerVersion(SAMPLE_INDEX_VERSIONS, status, version);
         this.setStatus(SAMPLE_INDEX_STATUS_PREFIX + version, status);
+        return this;
+    }
+
+    @JsonIgnore
+    public TaskMetadata.Status getSampleIndexAnnotationStatus(int sampleIndexVersion) {
+        return this.getStatus(SAMPLE_INDEX_ANNOTATION_STATUS_PREFIX + sampleIndexVersion);
+    }
+
+    @JsonIgnore
+    public List<Integer> getSampleIndexAnnotationVersions() {
+        return this.getAttributes().getAsIntegerList(SAMPLE_INDEX_ANNOTATION_VERSIONS);
+    }
+
+    @JsonIgnore
+    public Integer getSampleIndexAnnotationVersion() {
+        return getLatestVersion(SAMPLE_INDEX_ANNOTATION_VERSIONS);
+    }
+
+    @JsonIgnore
+    public SampleMetadata setSampleIndexAnnotationStatus(TaskMetadata.Status status, int version) {
+        registerVersion(SAMPLE_INDEX_ANNOTATION_VERSIONS, status, version);
+        this.setStatus(SAMPLE_INDEX_ANNOTATION_STATUS_PREFIX + version, status);
         return this;
     }
 
@@ -240,15 +218,54 @@ public class SampleMetadata extends StudyResourceMetadata<SampleMetadata> {
     }
 
     @JsonIgnore
-    public SampleMetadata setFamilyIndexStatus(TaskMetadata.Status familyIndexStatus) {
-        return setStatus("family_index", familyIndexStatus);
+    public SampleMetadata setFamilyIndexStatus(TaskMetadata.Status status, int version) {
+        registerVersion(FAMILY_INDEX_VERSIONS, status, version);
+        return setStatus(FAMILY_INDEX_STATUS_PREFIX + version, status);
     }
 
     @JsonIgnore
-    public TaskMetadata.Status getFamilyIndexStatus() {
-        return getStatus("family_index");
+    public List<Integer> getFamilyIndexVersions() {
+        return getAttributes().getAsIntegerList(FAMILY_INDEX_VERSIONS);
     }
 
+    @JsonIgnore
+    public Integer getFamilyIndexVersion() {
+        return getLatestVersion(FAMILY_INDEX_VERSIONS);
+    }
+
+    @JsonIgnore
+    public TaskMetadata.Status getFamilyIndexStatus(int version) {
+        return getStatus(FAMILY_INDEX_STATUS_PREFIX + version);
+    }
+
+    private void registerVersion(String versionsKey, TaskMetadata.Status status, int version) {
+        ObjectMap attributes = this.getAttributes();
+        List<Integer> versions = attributes.getAsIntegerList(versionsKey);
+        if (status == TaskMetadata.Status.READY) {
+            if (!versions.contains(version)) {
+                versions = new ArrayList<>(versions);
+                versions.add(version);
+                versions.sort(Integer::compareTo);
+                attributes.put(versionsKey, versions);
+            }
+        } else {
+            if (versions.contains(version)) {
+                versions = new ArrayList<>(versions);
+                versions.remove(version);
+                versions.sort(Integer::compareTo);
+                attributes.put(versionsKey, versions);
+            }
+        }
+    }
+
+    private Integer getLatestVersion(String key) {
+        List<Integer> versions = this.getAttributes().getAsIntegerList(key);
+        if (versions.isEmpty()) {
+            return null;
+        } else {
+            return versions.get(versions.size() - 1);
+        }
+    }
 
     @Override
     public String toString() {

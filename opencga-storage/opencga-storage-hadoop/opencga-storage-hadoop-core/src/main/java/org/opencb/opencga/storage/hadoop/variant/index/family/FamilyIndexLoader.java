@@ -48,6 +48,9 @@ public class FamilyIndexLoader {
             throw new StorageEngineException("Undefined family trios");
         }
         int studyId = metadataManager.getStudyId(study);
+        int version = sampleIndexDBAdaptor.getSchemaFactory().getSampleIndexConfigurationLatest(studyId, true).getVersion();
+        options.put(FamilyIndexDriver.SAMPLE_INDEX_VERSION, version);
+        options.put(FamilyIndexDriver.OUTPUT, sampleIndexDBAdaptor.getSampleIndexTableName(studyId, version));
         Iterator<List<String>> iterator = trios.iterator();
         while (iterator.hasNext()) {
             List<Integer> trioIds = new ArrayList<>(3);
@@ -68,7 +71,7 @@ public class FamilyIndexLoader {
                 throw new IllegalArgumentException("Found trio with " + trioIds.size() + " members, instead of 3: " + trioIds);
             }
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, trioIds.get(2));
-            if (!overwrite && sampleMetadata.getMendelianErrorStatus().equals(TaskMetadata.Status.READY)) {
+            if (!overwrite && sampleMetadata.getFamilyIndexStatus(version) == TaskMetadata.Status.READY) {
                 String msg = "Skip sample " + sampleMetadata.getName() + ". Already precomputed!";
                 logger.info(msg);
                 dr.getEvents().add(new Event(Event.Type.INFO, msg));
@@ -123,7 +126,6 @@ public class FamilyIndexLoader {
             options.put(FamilyIndexDriver.TRIOS_COHORT, cohortMetadata.getName());
             options.put(FamilyIndexDriver.TRIOS_COHORT_DELETE, true);
         }
-        options.put(FamilyIndexDriver.OUTPUT, sampleIndexDBAdaptor.getSampleIndexTableNameLatest(studyId));
 
         mrExecutor.run(FamilyIndexDriver.class, FamilyIndexDriver.buildArgs(
                 tableNameGenerator.getArchiveTableName(studyId),

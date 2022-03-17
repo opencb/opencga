@@ -841,6 +841,10 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         }
     }
 
+    public Iterable<SampleMetadata> sampleMetadataIterable(int studyId) {
+        return () -> sampleMetadataIterator(studyId);
+    }
+
     public Iterator<SampleMetadata> sampleMetadataIterator(int studyId) {
         return sampleDBAdaptor.sampleMetadataIterator(studyId);
     }

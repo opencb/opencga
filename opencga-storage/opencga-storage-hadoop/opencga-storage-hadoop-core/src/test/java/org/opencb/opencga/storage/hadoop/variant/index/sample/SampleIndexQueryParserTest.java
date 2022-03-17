@@ -87,10 +87,11 @@ public class SampleIndexQueryParserTest {
         mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "fam2_child", Arrays.asList("fam2_child"))));
         mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "fam2_father", Arrays.asList("fam2_father"))));
         mm.addIndexedFiles(studyId, Arrays.asList(mm.registerFile(studyId, "fam2_mother", Arrays.asList("fam2_mother"))));
+        int version = mm.getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
         for (String family : Arrays.asList("fam1", "fam2")) {
             mm.updateSampleMetadata(studyId, mm.getSampleId(studyId, family + "_child"),
                     sampleMetadata -> sampleMetadata
-                            .setFamilyIndexStatus(TaskMetadata.Status.READY)
+                            .setFamilyIndexStatus(TaskMetadata.Status.READY, version)
                             .setFather(mm.getSampleId(studyId, family + "_father"))
                             .setMother(mm.getSampleId(studyId, family + "_mother")));
         }
@@ -115,8 +116,8 @@ public class SampleIndexQueryParserTest {
         while (it.hasNext()) {
             SampleMetadata sm = it.next();
             mm.updateSampleMetadata(studyId, sm.getId(), sampleMetadata -> {
-                sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.READY, 1)
-                        .setSampleIndexAnnotationStatus(TaskMetadata.Status.READY, 1);
+                sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.READY, version)
+                        .setSampleIndexAnnotationStatus(TaskMetadata.Status.READY, version);
             });
         }
     }

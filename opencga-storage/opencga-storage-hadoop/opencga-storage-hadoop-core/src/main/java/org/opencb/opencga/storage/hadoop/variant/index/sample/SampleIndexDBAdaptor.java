@@ -205,7 +205,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
     protected Map<String, List<Variant>> queryByGt(int study, int sample, String chromosome, int position)
             throws IOException {
-        SampleIndexSchema schema = schemaFactory.getSchema(study, sample, true);
+        SampleIndexSchema schema = schemaFactory.getSchema(study, sample, false);
         Result result = queryByGtInternal(study, sample, chromosome, position, schema.getVersion());
         return newConverter(schema).convertToMap(result);
     }
@@ -227,7 +227,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public Iterator<Map<String, List<Variant>>> iteratorByGt(int study, int sample) throws IOException {
-        SampleIndexSchema schema = schemaFactory.getSchema(study, sample, true);
+        SampleIndexSchema schema = schemaFactory.getSchema(study, sample, false);
         String tableName = getSampleIndexTableName(study, schema.getVersion());
         HBaseToSampleIndexConverter converter = newConverter(schema);
         return hBaseManager.act(tableName, table -> {
@@ -248,7 +248,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     }
 
     public CloseableIterator<SampleIndexEntry> rawIterator(int study, int sample, Region region) throws IOException {
-        SampleIndexSchema schema = schemaFactory.getSchema(study, sample, true);
+        SampleIndexSchema schema = schemaFactory.getSchema(study, sample, false);
         String tableName = getSampleIndexTableName(study, schema.getVersion());
         return hBaseManager.act(tableName, table -> {
             Scan scan = new Scan();

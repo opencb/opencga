@@ -130,7 +130,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             Integer mother = metadataManager.getSampleId(studyId, trio.get(1));
             Integer child = metadataManager.getSampleId(studyId, trio.get(2));
             metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
-                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY);
+                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, 1);
                 if (father != null && father > 0) {
                     sampleMetadata.setFather(father);
                 }

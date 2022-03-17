@@ -514,6 +514,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         VariantFamilyIndexParams params = new VariantFamilyIndexParams(
                 cliOptions.family,
                 cliOptions.overwrite,
+                cliOptions.update,
                 cliOptions.skipIncompleteFamilies);
 
         toolRunner.execute(VariantFamilyIndexOperationTool.class,
