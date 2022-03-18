@@ -1,14 +1,11 @@
 package org.opencb.opencga.app.cli.main.executors;
 
-import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.*;
 import org.opencb.opencga.core.response.RestResponse;
-import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 
-import java.util.List;
 import org.opencb.opencga.core.response.QueryType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -22,7 +19,6 @@ import org.opencb.opencga.core.models.variant.CircosAnalysisParams;
 import org.opencb.opencga.core.models.variant.VariantExportParams;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
-import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.opencga.core.models.variant.IndividualQcAnalysisParams;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -37,16 +33,12 @@ import org.opencb.opencga.core.models.variant.CohortVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.biodata.models.clinical.qc.Signature;
 import org.opencb.opencga.core.models.variant.RelatednessAnalysisParams;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.variant.FamilyQcAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
-import java.util.Map;
-import org.opencb.biodata.models.clinical.ClinicalProperty.ModeOfInheritance;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.variant.VariantIndexParams;
-import org.opencb.biodata.models.clinical.ClinicalProperty.Penetrance;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.opencga.core.models.variant.GatkWrapperParams;
 import org.opencb.opencga.core.models.analysis.knockout.KnockoutByGene;
@@ -432,7 +424,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
         ((VariantExportParams)variantExportParams)
             .setOutdir(commandOptions.outdir)
             .setOutputFileName(commandOptions.outputFileName)
-            .setOutputFormat(commandOptions.outputFormat)
+            .setOutputFileFormat(commandOptions.outputFormat)
             .setVariantsFile(commandOptions.variantsFile)
             .setInclude(commandOptions.bodyInclude)
             .setExclude(commandOptions.bodyExclude)
