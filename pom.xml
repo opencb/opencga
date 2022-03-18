@@ -48,7 +48,7 @@
         <iva.version>2.2.0-dev</iva.version>
         <cellbase.version>5.0.2</cellbase.version>
         <biodata.version>2.2.1</biodata.version>
-        <java-common-libs.version>4.2.0</java-common-libs.version>
+        <java-common-libs.version>4.2.1-SNAPSHOT</java-common-libs.version>
         <iva.version>2.2.0-dev</iva.version>
         <oskar.version>0.2.0</oskar.version>
 
