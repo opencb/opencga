@@ -588,6 +588,20 @@
          if (!Response.Status.Family.SUCCESSFUL.equals(status.getFamily())) {
              String message = "Unsuccessful HTTP status " + status.getFamily() + ":" + status.getStatusCode()
                      + " '" + status.getReasonPhrase() + "'";
+             if (restResponse != null && CollectionUtils.isNotEmpty(restResponse.getResponses())) {
+                 OpenCGAResult<T> result = restResponse.getResponses().get(0);
+                 if (CollectionUtils.isNotEmpty(result.getEvents())) {
+                     List<String> msgs = new ArrayList<>();
+                     for (Event event : result.getEvents()) {
+                         if (Event.Type.ERROR.equals(event.getType())) {
+                            msgs.add(event.getMessage());
+                         }
+                     }
+                     if (!msgs.isEmpty()) {
+                         message += " [" + StringUtils.join(msgs, ",") + "]";
+                     }
+                 }
+             }
              if (throwExceptionOnError) {
                  throw new ClientException(message);
 

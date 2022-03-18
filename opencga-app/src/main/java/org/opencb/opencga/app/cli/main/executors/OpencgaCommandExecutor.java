@@ -36,10 +36,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created on 27/05/16.
@@ -70,10 +67,14 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     }
 
     public static List<String> splitWithTrim(String value, String separator) {
-        String[] splitFields = value.split(separator);
-        List<String> result = new ArrayList<>(splitFields.length);
-        for (String s : splitFields) {
-            result.add(s.trim());
+        List<String> result = null;
+        if (value != null) {
+            String[] splitFields = value.split(separator);
+
+            result = new ArrayList<>(splitFields.length);
+            for (String s : splitFields) {
+                result.add(s.trim());
+            }
         }
         return result;
     }
@@ -209,23 +210,33 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     public String getObjectAsJSON(Object o) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
-        retrieveDeepObject(o);
         //Convert object to JSON string and pretty print
-        String jsonInString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(o);
+        String jsonInString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(retrieveDeepObject(o));
         return jsonInString;
     }
 
-    private void retrieveDeepObject(Object o) {
+    private Object retrieveDeepObject(Object ob) {
+        Object res = ob;
         try {
-            Field[] fields = o.getClass().getDeclaredFields();
+            Field[] fields = res.getClass().getDeclaredFields();
             for (Field field : fields) {
-                if (!field.getType().isPrimitive()) {
-                    Class<?> cl = Class.forName(field.getType().getCanonicalName());
-                    invokeSetter(o, field.getName(), cl.newInstance());
+                Class<?> cl = Class.forName(field.getType().getCanonicalName());
+                if (field.getType().getCanonicalName().equals("java.util.List")) {
+                    invokeSetter(res, field.getName(), Collections.emptyList());
+                } else if (field.getType().getCanonicalName().equals("java.util.Map")) {
+                    invokeSetter(res, field.getName(), Collections.emptyMap());
+                } else if (field.getType().getCanonicalName().equals("java.lang.Boolean")) {
+                    invokeSetter(res, field.getName(), new Boolean(false));
+                } else if (field.getType().getCanonicalName().equals("java.lang.Integer")) {
+                    invokeSetter(res, field.getName(), new Integer(-1));
+                } else if (!field.getType().isPrimitive()) {
+                    invokeSetter(res, field.getName(), cl.newInstance());
                 }
             }
         } catch (Exception e) {
-
+            e.printStackTrace();
+            return ob;
         }
+        return res;
     }
 }

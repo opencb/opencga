@@ -65,24 +65,20 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **internal**<br>*[FileInternal](https://docs.opencga.opencb.org/data-models/file#fileinternal)* <br> | <p>Internal field for manage the object.</p> |
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
-### FileQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileQualityControl.java).
+### FileRelatedFile
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileRelatedFile.java).
 
 
-### Software
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/interpretation/Software.java).
+### Status
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
 
-| Field | Description |
-| :---  | :--- |
-| **name**<br>*String* <br> | <p>Software name</p> |
-| **version**<br>*String* <br> | <p>Software version</p> |
-| **repository**<br>*String* <br> | <p>Software repository</p> |
-| **commit**<br>*String* <br> | <p>Software commit</p> |
-| **website**<br>*String* <br> | <p>Software website</p> |
-| **params**<br>*Map<String,String>* <br> | <p>Software params</p> |
 
 ### URI
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/java/net/URI.java).
+
+
+### FileQualityControl
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileQualityControl.java).
 
 
 ### FileInternal
@@ -99,24 +95,28 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
 
-### Status
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
-
-
 ### FileExperiment
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment.java).
 
 
-### FileRelatedFile
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileRelatedFile.java).
+### Software
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/interpretation/Software.java).
+
+| Field | Description |
+| :---  | :--- |
+| **name**<br>*String* <br> | <p>Software name</p> |
+| **version**<br>*String* <br> | <p>Software version</p> |
+| **repository**<br>*String* <br> | <p>Software repository</p> |
+| **commit**<br>*String* <br> | <p>Software commit</p> |
+| **website**<br>*String* <br> | <p>Software website</p> |
+| **params**<br>*Map<String,String>* <br> | <p>Software params</p> |
+
+### FileStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileStatus.java).
 
 
 ### FileInternalVariant
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternalVariant.java).
-
-
-### FileStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileStatus.java).
 
 
 ### MissingSamples
