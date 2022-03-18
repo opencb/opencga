@@ -34,7 +34,7 @@ public class DatasetCommandLineGenerator {
 
     public static List<String> findAllFileNamesInFolder(File folder) {
         List<String> res = new ArrayList<>();
-        for (File file : folder.listFiles()) {
+        for (File file : Objects.requireNonNull(folder.listFiles())) {
             if (!file.isDirectory()) {
                 res.add(file.getName());
             }
