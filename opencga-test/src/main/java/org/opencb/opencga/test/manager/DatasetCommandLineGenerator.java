@@ -78,7 +78,7 @@ public class DatasetCommandLineGenerator {
 
         List<String> commandLines = getAlignerCommandLines(environment, alignerCommand, alignerParams);
         for (String caller : callersCommands.keySet()) {
-            commandLines.addAll(getCallerCommandLines(environment, callersCommands.get(caller), callersParams.get(caller)));
+            commandLines.addAll(getVariantCallerCommandLines(environment, callersCommands.get(caller), callersParams.get(caller)));
         }
         return commandLines;
     }
@@ -103,7 +103,7 @@ public class DatasetCommandLineGenerator {
      * @param environment
      * @return
      */
-    private List<String> getCallerCommandLines(Env environment, String command, List<String> params) {
+    private List<String> getVariantCallerCommandLines(Env environment, String command, List<String> params) {
         String param = String.join(" ", params);
         command = command.replace("${PARAMS}", param);
         command = replaceCallerEnvironmentVariables(environment, command);
@@ -112,7 +112,6 @@ public class DatasetCommandLineGenerator {
     }
 
     /***
-     *
      *
      * @param environment
      * @param command
@@ -136,7 +135,6 @@ public class DatasetCommandLineGenerator {
     }
 
     /***
-     *
      *
      * @param environment
      * @param command
