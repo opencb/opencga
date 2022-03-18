@@ -274,8 +274,11 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                     sb.append(generateBeans(restParameter.getData()));
                     for (RestParameter bparameter : restParameter.getData()) {
                         if (bparameter.getType().equals("enum")) {
-                            sb.append("        " + getEnumName(bparameter.getTypeClass()) + " " + normaliceNames(getAsCamelCase(bparameter.getName() + "Param")) + " = "
+                            sb.append("        " + getEnumName(bparameter.getTypeClass()) + " " + normaliceNames(getAsCamelCase(bparameter.getName() + "Param")) + " = null;");
+                            sb.append("\n        if (commandOptions." + normaliceNames(getAsCamelCase(bparameter.getName())) + "!= null) {\n ");
+                            sb.append("        " + normaliceNames(getAsCamelCase(bparameter.getName() + "Param")) + " = "
                                     + getEnumName(bparameter.getTypeClass()) + ".valueOf(commandOptions." + normaliceNames(getAsCamelCase(bparameter.getName())) + ");\n");
+                            sb.append("\n        } \n");
                             //   sb.append(getSwitchEnum(bparameter, normaliceNames(getAsCamelCase(bparameter.getName() + "Param")), getEnumName(bparameter.getTypeClass())));
 
                         }
@@ -296,13 +299,19 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             sb.append("\n        } ");
             if (hasParameters(restEndpoint.getParameters(), commandName, config)) {
                 sb.append(" else {");
-                sb.append("\n        ((" + bodyParamsObject + ")" + getAsVariableName(bodyParamsObject) + ")");
+                if (hasParametersNoBoolean(restEndpoint.getParameters(), commandName, config)) {
+                    sb.append("\n        ((" + bodyParamsObject + ")" + getAsVariableName(bodyParamsObject) + ")");
+                }
                 Set<String> variables = new HashSet<>();
                 for (RestParameter restParameter : restEndpoint.getParameters()) {
                     if (restParameter.getData() != null && !restParameter.getData().isEmpty()) {
+                        List<RestParameter> booleanParams = new ArrayList<>();
                         for (RestParameter bodyParam : restParameter.getData()) {
                             if (config.isAvailableSubCommand(bodyParam.getName(), commandName)) {
-                                if (!bodyParam.isComplex() && !bodyParam.isInnerParam()) {
+                                if (bodyParam.getType().toLowerCase().contains("boolean") && !bodyParam.isComplex() && !bodyParam.isInnerParam()) {
+                                    //boolean params must check null values
+                                    booleanParams.add(bodyParam);
+                                } else if (!bodyParam.isComplex() && !bodyParam.isInnerParam()) {
                                     //sometimes the name of the parameter has the prefix "body" so as not to coincide with another parameter
                                     // with the same name, but the setter does not have this prefix, so it must be removed
                                     sb.append("\n            .set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
@@ -336,16 +345,71 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
 
                             }
                         }
+                        sb.append(";\n");
+                        sb.append(appendBooleanParams(booleanParams, "((" + bodyParamsObject + ")" + getAsVariableName(bodyParamsObject) + ")"));
+                        sb.append("\n        }\n");
                     }
-
                 }
-                sb.append(";\n");
-                sb.append("\n        }\n");
+
             }
+
+
         }
 
 
         return sb.toString();
+    }
+
+    private StringBuilder appendBooleanParams(List<RestParameter> booleanParams, String variableName) {
+        StringBuilder sb = new StringBuilder();
+        for (RestParameter bodyParam : booleanParams) {
+            sb.append("\n            if (commandOptions." + normaliceNames(getAsCamelCase(bodyParam.getName())) + " != null){");
+            sb.append("\n                " + variableName + ".set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
+                    "(commandOptions." + normaliceNames(getAsCamelCase(bodyParam.getName())) + ");");
+            sb.append("\n             }\n");
+
+        }
+        return sb;
+    }
+
+
+    private boolean hasParametersNoBoolean(List<RestParameter> parameters, String commandName, CategoryConfig config) {
+
+        boolean res = false;
+        Set<String> variables = new HashSet<>();
+        for (RestParameter restParameter : parameters) {
+            if (restParameter.getData() != null && !restParameter.getData().isEmpty()) {
+                for (RestParameter bodyParam : restParameter.getData()) {
+                    if (config.isAvailableSubCommand(bodyParam.getName(), commandName)) {
+                        if (!bodyParam.isComplex() && !bodyParam.isInnerParam() && !bodyParam.getType().toLowerCase().contains("boolean")) {
+                            //sometimes the name of the parameter has the prefix "body" so as not to coincide with another parameter
+                            // with the same name, but the setter does not have this prefix, so it must be removed
+                            return true;
+                        } else if (bodyParam.isStringList() && !bodyParam.getType().toLowerCase().contains("boolean")) {
+                            return true;
+
+                        }
+                        if (bodyParam.getType().equals("enum")) {
+                            if (reverseCommandName(commandName).contains("create")) {
+                                return true;
+                            }
+                        }
+                    }
+                    //If the parameter is InnerParam (It means it's a field of inner bean) need to add to the variables Set
+                    // for no duplicate set action of Bean (Parent)
+                    if (bodyParam.isInnerParam() && !bodyParam.isCollection()) {
+                        if (!variables.contains(bodyParam.getParentParamName())) {
+                            variables.add(bodyParam.getParentParamName());
+                            return true;
+                        }
+
+
+                    }
+                }
+            }
+
+        }
+        return res;
     }
 
     private boolean hasParameters(List<RestParameter> parameters, String commandName, CategoryConfig config) {

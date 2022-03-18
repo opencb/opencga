@@ -67,10 +67,14 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     }
 
     public static List<String> splitWithTrim(String value, String separator) {
-        String[] splitFields = value.split(separator);
-        List<String> result = new ArrayList<>(splitFields.length);
-        for (String s : splitFields) {
-            result.add(s.trim());
+        List<String> result = null;
+        if (value != null) {
+            String[] splitFields = value.split(separator);
+
+            result = new ArrayList<>(splitFields.length);
+            for (String s : splitFields) {
+                result.add(s.trim());
+            }
         }
         return result;
     }
