@@ -51,8 +51,8 @@ public class CommandProcessor {
 
                             OpencgaCommandExecutor commandExecutor = ExecutorProvider.getOpencgaCommandExecutor(cliOptionsParser, parsedCommand);
                             // 5. Execute parsed command with executor provided using CommandProcessor Implementation
-                            CommandLineUtils.debug("EXECUTING ::: " + ArrayUtils.toString(args));
-                            logger.debug("EXECUTING ::: " + ArrayUtils.toString(args));
+                            CommandLineUtils.debug("EXECUTING ::: " + CommandLineUtils.argsToString(args));
+                            logger.debug("EXECUTING ::: " + CommandLineUtils.argsToString(args));
 
                             if (commandExecutor != null) {
                                 try {
@@ -151,11 +151,7 @@ public class CommandProcessor {
                 }
             } catch (Exception e) {
                 CommandLineUtils.error("Failure reloading studies ", e);
-                CommandLineUtils.error("Session studies: " + commandExecutor.getSessionManager().getSession().getStudies().toString(), e);
-                CommandLineUtils.error("Current study: " + commandExecutor.getSessionManager().getSession().getCurrentStudy(), e);
                 logger.error("Failure reloading studies ", e);
-                logger.error("Session studies: " + commandExecutor.getSessionManager().getSession().getStudies().toString(), e);
-                logger.error("Current study: " + commandExecutor.getSessionManager().getSession().getCurrentStudy(), e);
             }
             CommandLineUtils.debug("Session studies: " + commandExecutor.getSessionManager().getSession().getStudies().toString());
             CommandLineUtils.debug("Current study: " + commandExecutor.getSessionManager().getSession().getCurrentStudy());

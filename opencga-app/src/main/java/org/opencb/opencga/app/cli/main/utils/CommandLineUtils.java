@@ -166,7 +166,7 @@ public class CommandLineUtils {
     public static String argsToString(String[] args) {
 
         String[] res = Arrays.copyOf(args, args.length);
-        if (ArrayUtils.contains(res, "--password")) {
+        if (ArrayUtils.contains(res, "--password") && (ArrayUtils.indexOf(res, "--password") + 1) < res.length) {
             res[(ArrayUtils.indexOf(res, "--password") + 1)] = "********";
         }
         String sArgs = ArrayUtils.toString(res);
