@@ -23,6 +23,8 @@ import org.opencb.opencga.app.cli.main.processors.CommandProcessor;
 import org.opencb.opencga.app.cli.main.shell.Shell;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -34,6 +36,7 @@ import java.util.logging.Level;
  */
 public class OpencgaMain {
 
+    private static final Logger logger = LoggerFactory.getLogger(OpencgaMain.class);
     public static Mode mode = Mode.CLI;
     public static Shell shell;
     public static Level logLevel = Level.OFF;
@@ -48,6 +51,7 @@ public class OpencgaMain {
         checkLogLevel(args);
         checkMode(args);
         CommandLineUtils.printLog(Arrays.toString(args));
+        logger.debug(Arrays.toString(args));
         try {
             if (Mode.SHELL.equals(getMode())) {
                 executeShell(args);
@@ -56,7 +60,7 @@ public class OpencgaMain {
             }
         } catch (Exception e) {
             CommandLineUtils.error("Failed to initialize OpenCGA CLI " + e.getMessage(), e);
-            e.printStackTrace();
+            logger.error("Failed to initialize OpenCGA CLI " + e.getMessage(), e);
         }
     }
 
@@ -67,17 +71,23 @@ public class OpencgaMain {
             setMode(Mode.CLI);
         }
         CommandLineUtils.printLog("Execution mode " + getMode());
+        logger.debug("Execution mode " + getMode());
+
     }
 
 
     private static void checkLogLevel(String[] args) {
         if (ArrayUtils.contains(args, "--log-level")) {
+            String level = "";
             try {
-                String level = args[ArrayUtils.indexOf(args, "--log-level") + 1].toLowerCase(Locale.ROOT);
-                setLogLevel(getNormalizedLogLevel(level));
+                level = args[ArrayUtils.indexOf(args, "--log-level") + 1].toLowerCase(Locale.ROOT);
+                Level logLevel = getNormalizedLogLevel(level);
+                setLogLevel(logLevel);
+                logger.debug("Console verbose mode: " + logLevel);
             } catch (Exception e) {
                 setLogLevel(Level.SEVERE);
                 CommandLineUtils.error("Invalid log level. Valid values are INFO, WARN, DEBUG, ERROR", e);
+                logger.error("Invalid log level " + level + ": Valid values are INFO, WARN, DEBUG, ERROR", e);
                 System.exit(0);
             }
         }
@@ -96,7 +106,7 @@ public class OpencgaMain {
             case "warn":
                 return Level.WARNING;
             case "error":
-            case "sever":
+            case "severe":
                 return Level.SEVERE;
             default:
                 return Level.OFF;
@@ -123,13 +133,16 @@ public class OpencgaMain {
             }
             // Create a shell executor instance
             shell = new Shell(options);
-            CommandLineUtils.printLog("Shell created ");
+            CommandLineUtils.debug("Shell created ");
+            logger.debug("Shell created ");
             // Launch execute command to begin the execution
             shell.execute();
         } catch (CatalogAuthenticationException e) {
             CommandLineUtils.printLog("Failed to initialize shell", e);
+            logger.error("Failed to initialize shell", e);
         } catch (Exception e) {
             CommandLineUtils.printLog("Failed to execute shell", e);
+            logger.error("Failed to execute shell", e);
         }
     }
 
@@ -143,23 +156,24 @@ public class OpencgaMain {
         return args;
     }
 
-    public static String[] parseCliParams(String[] args) throws CatalogAuthenticationException {
+    public static String[] parseCliParams(String[] args) {
         CommandLineUtils.printLog("Executing " + CommandLineUtils.argsToString(args));
         if (CommandLineUtils.isNotHelpCommand(args)) {
             if (ArrayUtils.contains(args, "--user-password")) {
                 normalizePasswordArgs(args, "--user-password");
             }
         }
-        CommandLineUtils.printLog("CLI PARSED PARAMS ::: " + CommandLineUtils.argsToString(args));
+        CommandLineUtils.debug("CLI parsed params ::: " + CommandLineUtils.argsToString(args));
+        logger.debug("CLI parsed params ::: " + CommandLineUtils.argsToString(args));
         String shortcut = CommandLineUtils.getShortcut(args);
         args = CommandLineUtils.processShortCuts(args);
-
         if (args != null) {
-            CommandLineUtils.printLog("PROCESS SHORTCUTS RESULT ::: " + CommandLineUtils.argsToString(args));
+            CommandLineUtils.debug("Process shortcut result ::: " + CommandLineUtils.argsToString(args));
+            logger.debug("Process shortcut result ::: " + CommandLineUtils.argsToString(args));
         } else {
-            CommandLineUtils.printLog("IS SHORTCUT " + shortcut);
+            CommandLineUtils.debug("Is shortcut " + shortcut);
+            logger.debug("Is shortcut " + shortcut);
         }
-
         return args;
     }
 
