@@ -184,7 +184,7 @@ public abstract class MigrationTool {
         List<WriteModel<Document>> list = new ArrayList<>(BATCH_SIZE);
 
         ProgressLogger progressLogger = new ProgressLogger("Execute bulk update").setBatchSize(BATCH_SIZE);
-        try (MongoCursor<Document> it = inputCollection.find(query).projection(projection).cursor()) {
+        try (MongoCursor<Document> it = inputCollection.find(query).noCursorTimeout(true).projection(projection).cursor()) {
             while (it.hasNext()) {
                 Document document = it.next();
                 migrateFunc.accept(document, list);
