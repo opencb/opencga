@@ -96,7 +96,7 @@ public class ClientsGenerator {
             BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line;
             while ((line = input.readLine()) != null) {
-                logger.info("{} library generator: {}", language, line);
+                logger.debug("{} library generator: {}", language, line);
             }
             p.waitFor();
             input.close();

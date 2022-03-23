@@ -72,9 +72,7 @@ public class OpencgaMain {
         }
         CommandLineUtils.printLog("Execution mode " + getMode());
         logger.debug("Execution mode " + getMode());
-
     }
-
 
     private static void checkLogLevel(String[] args) {
         if (ArrayUtils.contains(args, "--log-level")) {
@@ -91,8 +89,6 @@ public class OpencgaMain {
                 System.exit(0);
             }
         }
-
-
     }
 
     private static Level getNormalizedLogLevel(String level) {

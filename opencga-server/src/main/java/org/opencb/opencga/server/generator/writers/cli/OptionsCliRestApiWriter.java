@@ -102,10 +102,8 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             sb.append("\n");
         }
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
-            //If it is post, it must have parameters in the body,
-            // therefore it must be different from post or have some primitive value in the body so that we can generate the method
             String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
-            if ((!"POST".equals(restEndpoint.getMethod()) || restEndpoint.hasPrimitiveBodyParams(config, commandName)) && restEndpoint.hasParameters()) {
+            if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName)) {
                     sb.append("        public " + getAsClassName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions "
                             + getAsVariableName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions;\n");
@@ -125,12 +123,9 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             sb.append("        this.commonCommandOptions = commonCommandOptions;\n");
         }
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
-            //If it is post, it must have parameters in the body,
-            // therefore it must be different from post or have some primitive value in the body so that we can generate the method
             String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
-            if ((!"POST".equals(restEndpoint.getMethod()) || restEndpoint.hasPrimitiveBodyParams(config, commandName)) && restEndpoint.hasParameters()) {
+            if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName)) {
-
                     sb.append("        this." + getAsVariableName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions = " +
                             "new "
                             + getAsClassName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions();\n");
@@ -145,15 +140,12 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
 
     @Override
     protected String getClassMethods(String key) {
-
         RestCategory restCategory = availableCategories.get(key);
         CategoryConfig config = availableCategoryConfigs.get(key);
         StringBuilder sb = new StringBuilder();
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
-            //If it is post, it must have parameters in the body,
-            // therefore it must be different from post or have some primitive value in the body so that we can generate the method
             String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
-            if ((!"POST".equals(restEndpoint.getMethod()) || restEndpoint.hasPrimitiveBodyParams(config, commandName)) && restEndpoint.hasParameters()) {
+            if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName) && !config.isExtendedOptionCommand(commandName)) {
                     sb.append("    @Parameters(commandNames = {\"" + reverseCommandName(commandName) + "\"}, commandDescription =\"" +
                             restEndpoint.getDescription().replaceAll("\"", "'") + "\")\n");
@@ -172,25 +164,23 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                         sb.append("    \n");
                     }
 
-
                     Set<String> variable_names = new HashSet<>();
-
                     for (RestParameter restParameter : restEndpoint.getParameters()) {
                         if (config.isAvailableSubCommand(restParameter.getName(), commandName)) {
-                            if (!"body".equals(normaliceNames(restParameter.getName()))) {
-                                if (restParameter.isAvailableType() && !variable_names.contains(normaliceNames(getAsCamelCase(restParameter.getName())))) {
+                            if (!"body".equals(normalizeNames(restParameter.getName()))) {
+                                if (restParameter.isAvailableType() && !variable_names.contains(normalizeNames(getAsCamelCase(restParameter.getName())))) {
                                     sb.append("        @Parameter(names = {" + getShortCuts(restParameter, config) + "}, description = " +
                                             "\"" + restParameter.getDescription().replaceAll("\"", "'") + "\", required = " + restParameter.isRequired() + ", arity = 1)\n");
                                     sb.append("        public " + getValidValue(restParameter.getType()) + " " + getVariableName(restParameter) + ";" +
                                             " " +
                                             "\n");
                                     sb.append("    \n");
-                                    variable_names.add(normaliceNames(getAsCamelCase(restParameter.getName())));
+                                    variable_names.add(normalizeNames(getAsCamelCase(restParameter.getName())));
                                 }
                             } else {
-                                if (restParameter.getData() != null)
+                                if (restParameter.getData() != null) {
                                     for (RestParameter bodyRestParameter : restParameter.getData()) {
-                                        if (config.isAvailableSubCommand(bodyRestParameter.getName(), commandName) && bodyRestParameter.isAvailableType() && !variable_names.contains(normaliceNames(getAsCamelCase(restParameter.getName())))) {
+                                        if (config.isAvailableSubCommand(bodyRestParameter.getName(), commandName) && bodyRestParameter.isAvailableType() && !variable_names.contains(normalizeNames(getAsCamelCase(restParameter.getName())))) {
                                             sb.append("        @Parameter(names = {" + getShortCuts(bodyRestParameter, config) + "}, " +
                                                     "description"
                                                     + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + "\", required = "
@@ -200,7 +190,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                             sb.append("        public " + getValidValue(bodyRestParameter.getType()) + " "
                                                     + getVariableName(bodyRestParameter) + ";\n");
                                             sb.append("    \n");
-                                            variable_names.add(normaliceNames(getAsCamelCase(bodyRestParameter.getName())));
+                                            variable_names.add(normalizeNames(getAsCamelCase(bodyRestParameter.getName())));
                                         } else if (bodyRestParameter.getType().equals("enum")) {
 
                                             sb.append("        @Parameter(names = {" + getShortCuts(bodyRestParameter, config) + "}, " +
@@ -214,6 +204,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                             sb.append("    \n");
                                         }
                                     }
+                                }
                             }
                         }
                     }
@@ -228,9 +219,9 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
     private String getVariableName(RestParameter restParameter) {
         String res = "";
         if (restParameter.isInnerParam()) {
-            res = normaliceNames(getAsCamelCase(restParameter.getParentParamName() + " " + restParameter.getName()));
+            res = normalizeNames(getAsCamelCase(restParameter.getParentParamName() + " " + restParameter.getName()));
         } else {
-            res = normaliceNames(getAsCamelCase(restParameter.getName()));
+            res = normalizeNames(getAsCamelCase(restParameter.getName()));
         }
         return res;
     }
@@ -239,7 +230,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         return "create".equals(commandName) && "id".equals(normaliseNames);
     }
 
-    private String normaliceNames(String name) {
+    private String normalizeNames(String name) {
         name = getAsCamelCase(name, "\\.");
         if (invalidNames.containsKey(name)) {
             name = invalidNames.get(name);
@@ -274,7 +265,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             }
         }
 
-        //category shortcuts
+        // category shortcuts
         if (categoryConfig.getShortcuts() != null) {
             for (Shortcut sc : categoryConfig.getShortcuts()) {
                 if (parameter.equals(sc.getName()) && !scut.contains(sc.getShortcut())) {

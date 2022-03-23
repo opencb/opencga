@@ -22,6 +22,7 @@ import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.models.RestEndpoint;
 import org.opencb.opencga.server.rest.SampleWSServer;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
+import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -42,11 +43,11 @@ public class RestApiParserTest {
 
     @Test
     public void parse() {
-        RestApi parse = restApiParser.parse(ClinicalWebService.class);
+        RestApi parse = restApiParser.parse(VariantOperationWebService.class);
         List<RestEndpoint> create = parse.getCategories().get(0).getEndpoints().stream()
-                .filter(endpoint -> endpoint.getPath().contains("create"))
+                .filter(endpoint -> endpoint.getPath().contains("configure"))
                 .collect(Collectors.toList());
-        System.out.println("create = " + create);
+        System.out.println("configure = " + create);
     }
 
     @Test
