@@ -42,7 +42,14 @@ public class ImproveClinicalAnalysisQualityControl extends MigrationTool {
                             String summary = qc.get("summary", String.class);
                             String text = qc.get("comment", String.class);
                             String user = qc.get("user", String.class);
-                            Date date = qc.containsKey("date") ? new Date(qc.get("date", Number.class).longValue()) : null;
+                            Date date = null;
+                            try {
+                                if (qc.containsKey("date")) {
+                                    date = new Date(qc.get("date", Number.class).longValue());
+                                }
+                            } catch (Exception e) {
+                                // empty catch block
+                            }
 
 //                            if EXCELLENT, GOOD, NORMAL, BAD, UNKNOWN
                             String newSummary = null;
