@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -64,7 +65,6 @@ import static org.junit.Assert.*;
  */
 public class FamilyManagerTest extends GenericTest {
 
-    public final static String PASSWORD = "asdf";
     public final static String STUDY = "user@1000G:phase1";
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -86,8 +86,8 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
@@ -372,8 +372,8 @@ public class FamilyManagerTest extends GenericTest {
     public void testPropagateFamilyPermission() throws CatalogException {
         createDummyFamily("Martinez-Martinez", true);
 
-        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
-        String token = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, null);
+        String token = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
 
         try {
             familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
@@ -433,8 +433,8 @@ public class FamilyManagerTest extends GenericTest {
     public void getFamilyWithOnlyAllowedMembers2() throws CatalogException, IOException {
         createDummyFamily("Martinez-Martinez", true);
 
-        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
-        String token = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, null);
+        String token = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
 
         try {
             familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);

@@ -37,6 +37,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -73,7 +74,6 @@ import static org.junit.Assert.*;
 
 public class ClinicalAnalysisManagerTest extends GenericTest {
 
-    public final static String PASSWORD = "asdf";
     public final static String STUDY = "user@1000G:phase1";
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -96,10 +96,10 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 
-        catalogManager.getUserManager().create("user2", "User Name2", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST,
+        catalogManager.getUserManager().create("user2", "User Name2", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST,
                 null);
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
@@ -978,7 +978,7 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
     @Test
     public void assignPermissions() throws CatalogException {
         ClinicalAnalysis clinicalAnalysis = createDummyEnvironment(true, false).first();
-        catalogManager.getUserManager().create("external", "User Name", "external@mail.com", PASSWORD, "", null,
+        catalogManager.getUserManager().create("external", "User Name", "external@mail.com", TestParamConstants.PASSWORD, "", null,
                 Account.AccountType.GUEST, null);
 
         OpenCGAResult<Map<String, List<String>>> aclResult = catalogManager.getClinicalAnalysisManager().getAcls(STUDY,

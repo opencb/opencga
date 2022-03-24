@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -145,9 +146,9 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testLinkAnalystUser() throws CatalogException {
-        catalogManager.getUserManager().create("analyst", "analyst", "a@mail.com", "analyst", "", 200000L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("analyst", "analyst", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, null);
         catalogManager.getStudyManager().updateAcl(studyFqn, "analyst", new StudyAclParams("", "analyst"), ParamUtils.AclAction.SET, token);
-        String analystToken = catalogManager.getUserManager().login("analyst", "analyst").getToken();
+        String analystToken = catalogManager.getUserManager().login("analyst", TestParamConstants.PASSWORD).getToken();
 
         String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
         File referenceFile = fileManager.link(studyFqn, Paths.get(reference).toUri(), "", null, analystToken).first();
@@ -157,9 +158,9 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testLinkUserWithNoWritePermissions() throws CatalogException {
-        catalogManager.getUserManager().create("view_user", "view_user", "a@mail.com", "view_user", "", 200000L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("view_user", "view_user", "a@mail.com", TestParamConstants.PASSWORD, "", 200000L, Account.AccountType.GUEST, null);
         catalogManager.getStudyManager().updateAcl(studyFqn, "view_user", new StudyAclParams("", "view_only"), ParamUtils.AclAction.SET, token);
-        String analystToken = catalogManager.getUserManager().login("view_user", "view_user").getToken();
+        String analystToken = catalogManager.getUserManager().login("view_user", TestParamConstants.PASSWORD).getToken();
 
         String reference = getClass().getResource("/biofiles/cram/hg19mini.fasta").getFile();
 

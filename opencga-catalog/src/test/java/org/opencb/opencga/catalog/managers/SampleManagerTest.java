@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -2363,12 +2364,12 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void getSharedProject() throws CatalogException, IOException {
-        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L,
+        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L,
                 Account.AccountType.GUEST, null);
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("dummy")), token);
 
-        String token = catalogManager.getUserManager().login("dummy", "dummy").getToken();
+        String token = catalogManager.getUserManager().login("dummy", TestParamConstants.PASSWORD).getToken();
         DataResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("dummy", QueryOptions.empty(), token);
         assertEquals(1, queryResult.getNumResults());
 
@@ -2388,8 +2389,8 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void checkRegisteredUserPermissions() throws CatalogException {
-        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L, Account.AccountType.GUEST, null);
-        String token = catalogManager.getUserManager().login("dummy", "dummy").getToken();
+        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, null);
+        String token = catalogManager.getUserManager().login("dummy", TestParamConstants.PASSWORD).getToken();
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList(ParamConstants.REGISTERED_USERS)), this.token);
@@ -2401,8 +2402,8 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void checkRegisteredUserPermissions2() throws CatalogException {
-        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L, Account.AccountType.GUEST, null);
-        String token = catalogManager.getUserManager().login("dummy", "dummy").getToken();
+        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, null);
+        String token = catalogManager.getUserManager().login("dummy", TestParamConstants.PASSWORD).getToken();
 
         catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList(ParamConstants.REGISTERED_USERS)), this.token);
@@ -2449,8 +2450,8 @@ public class SampleManagerTest extends AbstractManagerTest {
         assertTrue(catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(), "").getNumResults() > 0);
         assertTrue(catalogManager.getFileManager().search(studyFqn, new Query(), new QueryOptions(), "").getNumResults() > 0);
 
-        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L, Account.AccountType.GUEST, null);
-        String token = catalogManager.getUserManager().login("dummy", "dummy").getToken();
+        catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", TestParamConstants.PASSWORD, "", 50000L, Account.AccountType.GUEST, null);
+        String token = catalogManager.getUserManager().login("dummy", TestParamConstants.PASSWORD).getToken();
         studyResult = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), token);
         assertEquals(1, studyResult.getNumResults());
         assertTrue(catalogManager.getSampleManager().search(studyFqn, new Query(), new QueryOptions(), token).getNumResults() > 0);
