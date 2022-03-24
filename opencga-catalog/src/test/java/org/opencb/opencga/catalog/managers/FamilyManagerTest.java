@@ -145,6 +145,97 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     @Test
+    public void deleteFamilyTest() throws CatalogException {
+        DataResult<Family> familyDataResult = createDummyFamily("Martinez-Martinez", true);
+        String familyId = familyDataResult.first().getId();
+
+        assertEquals(1, familyDataResult.getNumResults());
+        assertEquals(5, familyDataResult.first().getMembers().size());
+        for (Individual member : familyDataResult.first().getMembers()) {
+            assertEquals(1, member.getFamilyIds().size());
+            assertEquals(familyId, member.getFamilyIds().get(0));
+        }
+
+        catalogManager.getFamilyManager().delete(STUDY, Collections.singletonList(familyId), QueryOptions.empty(), sessionIdUser);
+        try {
+            catalogManager.getFamilyManager().get(STUDY, familyId, QueryOptions.empty(), sessionIdUser);
+            fail("Family should not exist");
+        } catch (CatalogException e) {
+            // empty block
+        }
+
+        List<String> members = familyDataResult.first().getMembers().stream().map(Individual::getId).collect(Collectors.toList());
+        OpenCGAResult<Individual> result = catalogManager.getIndividualManager().get(STUDY, members, QueryOptions.empty(), sessionIdUser);
+
+        for (Individual member : result.getResults()) {
+            assertTrue(member.getFamilyIds().isEmpty());
+        }
+    }
+
+    @Test
+    public void deleteWithClinicalAnalysisTest() throws CatalogException {
+        Sample sample = new Sample().setId("sample1");
+        catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+
+        sample = new Sample().setId("sample2");
+        catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+
+        sample = new Sample().setId("sample3");
+        catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+
+        sample = new Sample().setId("sample4");
+        catalogManager.getSampleManager().create(STUDY, sample, QueryOptions.empty(), sessionIdUser);
+
+        Individual individual = new Individual()
+                .setId("proband")
+                .setDisorders(Collections.singletonList(new Disorder().setId("disorder")));
+        catalogManager.getIndividualManager().create(STUDY, individual, Arrays.asList("sample1", "sample2"), QueryOptions.empty(), sessionIdUser);
+
+        individual = new Individual().setId("father");
+        catalogManager.getIndividualManager().create(STUDY, individual, Arrays.asList("sample3"), QueryOptions.empty(), sessionIdUser);
+
+        Family family = new Family().setId("family");
+        catalogManager.getFamilyManager().create(STUDY, family, Arrays.asList("proband", "father"), QueryOptions.empty(), sessionIdUser);
+
+        family.setMembers(Arrays.asList(
+                new Individual().setId("proband").setSamples(Collections.singletonList(new Sample().setId("sample2"))),
+                new Individual().setId("father").setSamples(Collections.singletonList(new Sample().setId("sample3")))
+        ));
+
+        ClinicalAnalysis clinicalAnalysis = new ClinicalAnalysis()
+                .setId("clinical")
+                .setProband(new Individual().setId("proband"))
+                .setFamily(family)
+                .setLocked(true)
+                .setType(ClinicalAnalysis.Type.FAMILY);
+        catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
+
+        try {
+            catalogManager.getFamilyManager().delete(STUDY, Collections.singletonList(family.getId()), QueryOptions.empty(), sessionIdUser);
+            fail("Clinical is locked. It should  not delete anything");
+        } catch (CatalogException e) {
+            System.out.println(e.getMessage());
+            // empty block
+        }
+
+        OpenCGAResult<?> result = catalogManager.getFamilyManager().get(STUDY, family.getId(), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(),
+                new ClinicalAnalysisUpdateParams()
+                        .setLocked(false),
+                QueryOptions.empty(), sessionIdUser);
+
+        try {
+            catalogManager.getFamilyManager().delete(STUDY, Collections.singletonList(family.getId()), QueryOptions.empty(), sessionIdUser);
+            fail("Clinical is not locked. It should  not delete anything either");
+        } catch (CatalogException e) {
+            System.out.println(e.getMessage());
+            // empty block
+        }
+    }
+
+    @Test
     public void updateFamilyReferencesInIndividualTest() throws CatalogException {
         DataResult<Family> familyDataResult = createDummyFamily("Martinez-Martinez", true);
         for (Individual member : familyDataResult.first().getMembers()) {
