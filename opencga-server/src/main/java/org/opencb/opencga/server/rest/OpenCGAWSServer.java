@@ -393,10 +393,6 @@ public class OpenCGAWSServer {
                 throw new ParamException.PathParamException(new Throwable("Version not valid: '" + apiVersion + "'"), "apiVersion", "v2");
             }
         }
-        uriInfo.getPathParameters().forEach((key, value) -> {
-            logger.warn(key);
-            logger.warn(value.toString());
-        });
 
         // Check apiVersion parameter, must be: v1, v2, ... If 'latest' then is converted to appropriate apiVersion.
         if (apiVersion.equalsIgnoreCase("latest")) {
