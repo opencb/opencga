@@ -25,18 +25,18 @@ public class VariantStatsExportParams extends ToolParams {
 
     public VariantStatsExportParams() {
     }
-    public VariantStatsExportParams(List<String> cohorts, String output, String region, String gene, String outputFormat) {
+    public VariantStatsExportParams(List<String> cohorts, String output, String region, String gene, String outputFileFormat) {
         this.cohorts = cohorts;
         this.output = output;
         this.region = region;
         this.gene = gene;
-        this.outputFormat = outputFormat;
+        this.outputFileFormat = outputFileFormat;
     }
     private List<String> cohorts;
     private String output;
     private String region;
     private String gene;
-    private String outputFormat;
+    private String outputFileFormat;
 
     public List<String> getCohorts() {
         return cohorts;
@@ -74,12 +74,12 @@ public class VariantStatsExportParams extends ToolParams {
         return this;
     }
 
-    public String getOutputFormat() {
-        return outputFormat;
+    public String getOutputFileFormat() {
+        return outputFileFormat;
     }
 
-    public VariantStatsExportParams setOutputFormat(String outputFormat) {
-        this.outputFormat = outputFormat;
+    public VariantStatsExportParams setOutputFileFormat(String outputFileFormat) {
+        this.outputFileFormat = outputFileFormat;
         return this;
     }
 }
