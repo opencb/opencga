@@ -59,6 +59,7 @@ public class Shell extends OpencgaCommandExecutor {
                     defaultHistory.save();
                 } catch (IOException e) {
                     CommandLineUtils.error("Failed to save terminal history", e);
+                    logger.error("Failed to save terminal history", e);
                 }
             }));
             reader = LineReaderBuilder.builder()
@@ -68,6 +69,7 @@ public class Shell extends OpencgaCommandExecutor {
                     .build();
         } catch (Exception e) {
             CommandLineUtils.error("Failed to create terminal ", e);
+            logger.error("Failed to create terminal ", e);
 
         }
 
@@ -119,6 +121,9 @@ public class Shell extends OpencgaCommandExecutor {
             CommandLineUtils.error("OpenCGA execution error ", e);
             CommandLineUtils.debug("sessionManager:" + sessionManager);
             CommandLineUtils.debug("getCliSession:" + sessionManager.getSession());
+            logger.error("OpenCGA execution error ", e);
+            logger.debug("sessionManager:" + sessionManager);
+            logger.debug("getCliSession:" + sessionManager.getSession());
 
         }
     }
@@ -217,11 +222,15 @@ public class Shell extends OpencgaCommandExecutor {
                     }
                 } catch (ClientException e) {
                     CommandLineUtils.error(e);
+                    logger.error(e.getMessage(), e);
+
                 } catch (IOException e) {
                     CommandLineUtils.error(e);
+                    logger.error(e.getMessage(), e);
                 }
             } else {
                 printError("Client not available");
+                logger.error("Client not available");
             }
         } else {
             printWarn("To set a study you must be logged in");

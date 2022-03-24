@@ -6,6 +6,7 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -163,10 +164,16 @@ public class CommandLineUtils {
     }
 
     public static String argsToString(String[] args) {
-        String sArgs = ArrayUtils.toString(args);
+
+        String[] res = Arrays.copyOf(args, args.length);
+        if (ArrayUtils.contains(res, "--password") && (ArrayUtils.indexOf(res, "--password") + 1) < res.length) {
+            res[(ArrayUtils.indexOf(res, "--password") + 1)] = "********";
+        }
+        String sArgs = ArrayUtils.toString(res);
         sArgs = sArgs.replaceAll("\\{", "");
         sArgs = sArgs.replaceAll("}", "");
         sArgs = sArgs.replaceAll(",", " ");
+
         return sArgs;
     }
 }

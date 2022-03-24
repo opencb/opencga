@@ -7,6 +7,7 @@ import org.opencb.commons.utils.PrintUtils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created on 08/09/17.
@@ -54,15 +55,12 @@ public abstract class CliOptionsParser {
     }
 
     protected void printCommands(JCommander commander) {
-        int pad = commander.getCommands().keySet().stream().mapToInt(String::length).max().orElse(0);
-        // Set padding between 14 and 40
-        pad = Math.max(14, pad);
-        pad = Math.min(40, pad);
+        // Calculate the padding needed and add 10 extra spaces to get some left indentation
+        int padding = 10 + commander.getCommands().keySet().stream().mapToInt(String::length).max().orElse(0);
 
-        List<String> cmds = new ArrayList(commander.getCommands().keySet());
-        Collections.sort(cmds);
+        List<String> cmds = commander.getCommands().keySet().stream().sorted().collect(Collectors.toList());
         for (String key : cmds) {
-            PrintUtils.printCommandHelpFormattedString(key, commander.getCommandDescription(key));
+            PrintUtils.printCommandHelpFormattedString(padding, key, commander.getCommandDescription(key));
         }
     }
 

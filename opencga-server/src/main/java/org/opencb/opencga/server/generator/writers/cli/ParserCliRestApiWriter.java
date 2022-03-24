@@ -105,10 +105,11 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
                     + "\", " + getAsVariableName(restCategory.getName()) + "CommandOptions);\n");
             sb.append("        JCommander " + getAsVariableName(restCategory.getName()) + "SubCommands = jCommander.getCommands().get(\""
                     + getCategoryCommandName(restCategory, config) + "\");\n");
-            for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
 
+            for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
                 String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
-                if ((!"POST".equals(restEndpoint.getMethod()) || restEndpoint.hasPrimitiveBodyParams(config, commandName)) && restEndpoint.hasParameters()) {
+//                if ((!"POST".equals(restEndpoint.getMethod()) || restEndpoint.hasPrimitiveBodyParams(config, commandName)) && restEndpoint.hasParameters()) {
+                if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                     if (config.isAvailableCommand(commandName)) {
                         sb.append("        " + getAsVariableName(restCategory.getName()) + "SubCommands.addCommand(\"" + reverseCommandName(commandName) + "\", "
                                 + getAsVariableName(restCategory.getName()) + "CommandOptions." + getAsCamelCase(commandName) +
@@ -147,7 +148,6 @@ public class ParserCliRestApiWriter extends ParentClientRestApiWriter {
     @Override
     protected String getClassMethods(String key) {
         StringBuilder sb = new StringBuilder();
-
         for (RestCategory restCategory : availableCategories.values()) {
             sb.append("    \n");
             sb.append("    public " + getAsClassName(restCategory.getName()) + "CommandOptions get" + getAsClassName(restCategory.getName())

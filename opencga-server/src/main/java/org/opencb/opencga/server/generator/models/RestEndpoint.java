@@ -40,10 +40,17 @@ public class RestEndpoint {
         return false;
     }
 
-    public String getBodyParamsObject() {
+    public String getBodyClassName() {
         for (RestParameter restParameter : getParameters()) {
-            if (restParameter.getData() != null) {
-                return restParameter.getTypeClass().substring(restParameter.getTypeClass().lastIndexOf('.') + 1).replaceAll(";", "").trim();
+            if (restParameter.getName().equals("body")) {
+                String className = restParameter.getTypeClass()
+                        .substring(restParameter.getTypeClass().lastIndexOf('.') + 1).replaceAll(";", "").trim();
+
+                // We cannot instantiate an interface, we always use ObjectMap in these cases.
+                if (className.equalsIgnoreCase("Map")) {
+                    className = "ObjectMap";
+                }
+                return className;
             }
         }
         return "";

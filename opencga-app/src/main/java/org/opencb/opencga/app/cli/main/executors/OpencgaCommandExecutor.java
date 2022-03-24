@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.DataModelsUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
@@ -33,10 +34,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Created on 27/05/16.
@@ -209,34 +212,12 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     }
 
     public String getObjectAsJSON(Object o) throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
-        //Convert object to JSON string and pretty print
-        String jsonInString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(retrieveDeepObject(o));
-        return jsonInString;
-    }
-
-    private Object retrieveDeepObject(Object ob) {
-        Object res = ob;
+        String jsonInString = "Data model not found.";
         try {
-            Field[] fields = res.getClass().getDeclaredFields();
-            for (Field field : fields) {
-                Class<?> cl = Class.forName(field.getType().getCanonicalName());
-                if (field.getType().getCanonicalName().equals("java.util.List")) {
-                    invokeSetter(res, field.getName(), Collections.emptyList());
-                } else if (field.getType().getCanonicalName().equals("java.util.Map")) {
-                    invokeSetter(res, field.getName(), Collections.emptyMap());
-                } else if (field.getType().getCanonicalName().equals("java.lang.Boolean")) {
-                    invokeSetter(res, field.getName(), new Boolean(false));
-                } else if (field.getType().getCanonicalName().equals("java.lang.Integer")) {
-                    invokeSetter(res, field.getName(), new Integer(-1));
-                } else if (!field.getType().isPrimitive()) {
-                    invokeSetter(res, field.getName(), cl.newInstance());
-                }
-            }
-        } catch (Exception e) {
+            jsonInString = DataModelsUtils.dataModelToJsonString(o.getClass());
+        } catch (Throwable e) {
             e.printStackTrace();
-            return ob;
         }
-        return res;
+        return jsonInString;
     }
 }

@@ -41,6 +41,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserQuota.java).
 
 
+### UserInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserInternal.java).
+
+
 ### Account
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/user/Account.java).
 
@@ -61,10 +65,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1
 | **resource**<br>*Resource* <br> | <p>User resource can have the values AUDIT, USER, PROJECT, STUDY, FILE, SAMPLE, JOB, INDIVIDUAL, COHORT, DISEASE_PANEL, FAMILY, CLINICAL_ANALYSIS, INTERPRETATION, VARIANT, ALIGNMENT, CLINICAL, EXPRESSION, RGA and FUNCTIONAL.</p> |
 | **query**<br>*Query* <br> | <p>User filter query</p> |
 | **query**<br>*QueryOptions* <br> | <p>User filter query options</p> |
-
-### UserInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserInternal.java).
-
 
 ### AuthenticationOrigin
 You can find the Java code [here](https://github.com/opencb/opencga/tree/issue-1806/opencga-core/src/main/java/org/opencb/opencga/core/models/user/Account/AuthenticationOrigin.java).
