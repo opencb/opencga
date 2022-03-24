@@ -159,8 +159,8 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                         sb.append("        @Parameter(names = {\"--json-file\"}, description = \"File with the body data in JSON format. Note, that using this parameter will ignore all the other parameters.\", required = false, arity = 1)\n");
                         sb.append("        public String jsonFile;\n");
                         sb.append("    \n");
-                        sb.append("        @Parameter(names = {\"--json-view-template\"}, description = \"Show example of file structure for body data.\", help = true, arity = 0)\n");
-                        sb.append("        public Boolean jsonViewTemplate= false;\n");
+                        sb.append("        @Parameter(names = {\"--json-data-model\"}, description = \"Show example of file structure for body data.\", help = true, arity = 0)\n");
+                        sb.append("        public Boolean jsonDataModel = false;\n");
                         sb.append("    \n");
                     }
 

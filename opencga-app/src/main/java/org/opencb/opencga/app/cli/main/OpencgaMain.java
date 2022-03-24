@@ -81,6 +81,7 @@ public class OpencgaMain {
                 level = args[ArrayUtils.indexOf(args, "--log-level") + 1].toLowerCase(Locale.ROOT);
                 Level logLevel = getNormalizedLogLevel(level);
                 setLogLevel(logLevel);
+                
                 logger.debug("Console verbose mode: " + logLevel);
             } catch (Exception e) {
                 setLogLevel(Level.SEVERE);

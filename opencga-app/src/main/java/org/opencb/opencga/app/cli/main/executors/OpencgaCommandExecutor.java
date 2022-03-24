@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.utils.DataModelsUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
@@ -33,10 +34,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Created on 27/05/16.
@@ -209,12 +212,15 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     }
 
     public String getObjectAsJSON(Object o) throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
-        //Convert object to JSON string and pretty print
-        String jsonInString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(retrieveDeepObject(o));
+        String jsonInString = "Data model not found.";
+        try {
+            jsonInString = DataModelsUtils.dataModelToJsonString(o.getClass());
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
         return jsonInString;
     }
-
+/*
     private Object retrieveDeepObject(Object ob) {
         Object res = ob;
         try {
@@ -238,5 +244,5 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             return ob;
         }
         return res;
-    }
+    }*/
 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="DEBUG">
+<Configuration status="WARN">
     <Properties>
         <Property name="basePath">~/.opencga/logs</Property>
     </Properties>
@@ -11,6 +11,8 @@
         <RollingFile name="fileLogger"
                      fileName="${basePath}/opencga.log"
                      filePattern="${basePath}/opencga-%d{yyyy-MM-dd}.log">
+            <LevelRangeFilter minLevel="DEBUG" maxLevel="DEBUG" onMatch="ACCEPT"
+                              onMismatch="DENY"/>
             <PatternLayout>
                 <pattern>[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
@@ -21,7 +23,7 @@
             </Policies>
             <!-- Max 10 files will be created everyday -->
             <DefaultRolloverStrategy max="10">
-                <Delete basePath="${basePathr}" maxDepth="10">
+                <Delete basePath="${basePath}" maxDepth="10">
                     <!-- Delete all files older than 30 days -->
                     <IfLastModified age="30d"/>
                 </Delete>
@@ -29,8 +31,9 @@
         </RollingFile>
     </Appenders>
     <Loggers>
-        <Root level="DEBUG">
+        <Root level="ERROR">
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="fileLogger"/>
         </Root>
         <Logger name="org.opencb.opencga.app.cli" level="DEBUG" additivity="false">
             <AppenderRef ref="fileLogger"/>
