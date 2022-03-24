@@ -83,7 +83,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     protected MongoDBAdaptorFactory dbAdaptorFactory;
     protected Configuration configuration;
 
-    protected final static QueryOptions EXCLUDE_MONGO_ID = new QueryOptions(QueryOptions.EXCLUDE, "_id");
+    protected static final QueryOptions EXCLUDE_MONGO_ID = new QueryOptions(QueryOptions.EXCLUDE, "_id");
 
     public MongoDBAdaptor(Configuration configuration, Logger logger) {
         super(logger);
