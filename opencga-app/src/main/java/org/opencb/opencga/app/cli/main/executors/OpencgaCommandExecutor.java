@@ -220,29 +220,4 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
         return jsonInString;
     }
-/*
-    private Object retrieveDeepObject(Object ob) {
-        Object res = ob;
-        try {
-            Field[] fields = res.getClass().getDeclaredFields();
-            for (Field field : fields) {
-                Class<?> cl = Class.forName(field.getType().getCanonicalName());
-                if (field.getType().getCanonicalName().equals("java.util.List")) {
-                    invokeSetter(res, field.getName(), Collections.emptyList());
-                } else if (field.getType().getCanonicalName().equals("java.util.Map")) {
-                    invokeSetter(res, field.getName(), Collections.emptyMap());
-                } else if (field.getType().getCanonicalName().equals("java.lang.Boolean")) {
-                    invokeSetter(res, field.getName(), new Boolean(false));
-                } else if (field.getType().getCanonicalName().equals("java.lang.Integer")) {
-                    invokeSetter(res, field.getName(), new Integer(-1));
-                } else if (!field.getType().isPrimitive()) {
-                    invokeSetter(res, field.getName(), cl.newInstance());
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ob;
-        }
-        return res;
-    }*/
 }
