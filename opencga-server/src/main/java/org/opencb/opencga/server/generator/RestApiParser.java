@@ -1,9 +1,14 @@
 package org.opencb.opencga.server.generator;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.generator.models.RestApi;
@@ -19,30 +24,42 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class RestApiParser {
 
     private final Logger logger;
+    private final ObjectMapper objectMapper;
 
     // This class might accept some configuration in the future
     public RestApiParser() {
         logger = LoggerFactory.getLogger(RestApiParser.class);
+        objectMapper = new ObjectMapper();
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+        objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.addMixIn(ObjectMap.class, ObjectMapMixin.class);
     }
 
-    public RestApi parse(Class clazz) {
+    public interface ObjectMapMixin {
+        @JsonIgnore
+        boolean isEmpty();
+    }
+
+    public RestApi parse(Class<?> clazz) {
         return parse(Collections.singletonList(clazz));
     }
 
-    public RestApi parse(List<Class> classes) {
+    public RestApi parse(List<Class<?>> classes) {
         RestApi restApi = new RestApi();
         restApi.getCategories().addAll(getCategories(classes));
         return restApi;
     }
 
-    public void parseToFile(List<Class> classes, java.nio.file.Path path) throws IOException {
+    public void parseToFile(List<Class<?>> classes, java.nio.file.Path path) throws IOException {
         // Check if parent folder exists and is writable
         FileUtils.checkDirectory(path.getParent(), true);
 
@@ -60,15 +77,15 @@ public class RestApiParser {
         bufferedWriter.close();
     }
 
-    private List<RestCategory> getCategories(List<Class> classes) {
+    private List<RestCategory> getCategories(List<Class<?>> classes) {
         List<RestCategory> restCategories = new ArrayList<>();
-        for (Class clazz : classes) {
+        for (Class<?> clazz : classes) {
             restCategories.add(getCategory(clazz));
         }
         return restCategories;
     }
 
-    private RestCategory getCategory(Class clazz) {
+    private RestCategory getCategory(Class<?> clazz) {
         RestCategory restCategory = new RestCategory();
         restCategory.setName(((Api) clazz.getAnnotation(Api.class)).value());
         restCategory.setPath(((Path) clazz.getAnnotation(Path.class)).value());
@@ -178,70 +195,38 @@ public class RestApiParser {
                             // 4.3.2 Process body parameters
                             type = "object";
                             try {
-                                // Get all body fields by Java reflection
+                                // Get all body properties using Jackson
                                 Class<?> aClass = Class.forName(typeClass);
-                                Field[] classFields = aClass.getDeclaredFields();
-                                List<Field> declaredFields = new ArrayList<>(Arrays.asList(classFields));
-                                if (aClass.getSuperclass() != null
-                                        && !"java.lang.Object".equals(aClass.getSuperclass().getName())) {
-                                    Field[] parentFields = aClass.getSuperclass().getDeclaredFields();
-                                    Collections.addAll(declaredFields, parentFields);
-                                }
+                                List<BeanPropertyDefinition> declaredFields = getPropertyDefinitions(aClass);
 
-                                for (Field declaredField : declaredFields) {
-                                    int modifiers = declaredField.getModifiers();
-                                    // Ignore non-private or static fields
-                                    if ((Modifier.isPrivate(modifiers) || Modifier.isProtected(modifiers))
-                                            && !Modifier.isStatic(modifiers) && !Modifier.isFinal(modifiers)) {
-                                        RestParameter innerParam = getParameter(declaredField.getName(),
-                                                variablePrefix, declaredField,
-                                                declaredField.getType().getName(), "");
-                                        if (innerParam.isList()) {
-                                            innerParam.setGenericType(declaredField.getGenericType().getTypeName());
-                                        } else {
-                                            if (innerParam.isComplex()
-                                                    && !innerParam.getTypeClass().replaceAll(";", "").contains("$")) {
-                                                String classAndPackageName = innerParam.getTypeClass().replaceAll(";", "");
-                                                Class<?> cls = Class.forName(classAndPackageName);
-                                                Field[] fields = cls.getDeclaredFields();
-                                                List<RestParameter> complexParams = new ArrayList<>();
-                                                for (Field field : fields) {
-                                                    int innerModifiers = field.getModifiers();
-                                                    if (CommandLineUtils.isPrimitiveType(field.getType().getSimpleName())
-                                                            && !Modifier.isStatic(innerModifiers)) {
-                                                        RestParameter complexParam = getParameter(field.getName(),
-                                                                variablePrefix, field, field.getType().getName(),
-                                                                declaredField.getName());
-                                                        complexParam.setGenericType(declaredField.getType().getName());
-                                                        complexParam.setInnerParam(true);
-                                                        complexParams.add(complexParam);
-                                                    }
-                                                }
-                                                if (CollectionUtils.isNotEmpty(complexParams)) {
-                                                    bodyParams.addAll(complexParams);
-                                                }
-                                            } else {
-                                                // The body param is an Enum
-                                                if (declaredField.getType().isEnum()) {
-                                                    List<String> allowedValues = new ArrayList<>();
-                                                    final Object[] enumConstants = declaredField.getType().getEnumConstants();
-                                                    for (Object enumValue : enumConstants) {
-                                                        allowedValues.add(String.valueOf(enumValue));
-                                                    }
-                                                    innerParam.setType("enum");
-                                                    innerParam.setAllowedValues(StringUtils.join(allowedValues, " "));
-                                                    innerParam.setDescription("Enum param allowed values: " +
-                                                            StringUtils.join(allowedValues, ", "));
-                                                }
-                                            }
+                                for (BeanPropertyDefinition declaredField : declaredFields) {
+                                    RestParameter innerParam = getParameter(variablePrefix, "", declaredField);
+                                    if (innerParam.isComplex()
+                                            && !innerParam.isList()
+                                            && !innerParam.getType().equals("enum")
+                                            && !innerParam.getTypeClass().contains("$")) {
+                                        // FIXME: Why discarding params with "$" ?  Why discarding inner classes?
+                                        // FIXME: Get more than one level here
+                                        String classAndPackageName = StringUtils.removeEnd(innerParam.getTypeClass(), ";");
+                                        Class<?> cls = Class.forName(classAndPackageName);
+                                        List<BeanPropertyDefinition> nestedProperties = getPropertyDefinitions(cls);
+                                        List<RestParameter> complexParams = new ArrayList<>();
+                                        for (BeanPropertyDefinition field : nestedProperties) {
+                                            RestParameter complexParam = getParameter(variablePrefix, declaredField.getName(), field);
+                                            // FIXME: Why? This is wrong. It's using the genericType field to specify the parent type
+                                            complexParam.setGenericType(declaredField.getRawPrimaryType().getName());
+                                            complexParam.setInnerParam(true);
+                                            complexParams.add(complexParam);
                                         }
-
-                                        bodyParams.add(innerParam);
+                                        if (CollectionUtils.isNotEmpty(complexParams)) {
+                                            bodyParams.addAll(complexParams);
+                                        }
                                     }
+
+                                    bodyParams.add(innerParam);
                                 }
                             } catch (ClassNotFoundException e) {
-                                logger.error("Error processing: " + typeClass);
-                                e.printStackTrace();
+                                logger.error("Error processing: " + typeClass, e);
                             }
                         }
                     }
@@ -270,32 +255,50 @@ public class RestApiParser {
         return restCategory;
     }
 
-    private RestParameter getParameter(String paramName, String variablePrefix, Field declaredField, String className,
-                                       String variableName) {
-        RestParameter innerParam = new RestParameter();
-        innerParam.setName(paramName);
-        innerParam.setParam("body");
-        innerParam.setParentParamName(variableName);
-        innerParam.setType(declaredField.getType().getSimpleName());
-        innerParam.setTypeClass(className + ";");
-        innerParam.setAllowedValues("");
-        innerParam.setRequired(isRequired(declaredField));
-        innerParam.setDefaultValue("");
-        innerParam.setComplex(!CommandLineUtils.isPrimitiveType(declaredField.getType().getSimpleName()));
+    private List<BeanPropertyDefinition> getPropertyDefinitions(Class<?> aClass) {
+        JavaType javaType = objectMapper.constructType(aClass);
+        BeanDescription beanDescription = objectMapper.getDeserializationConfig().introspect(javaType);
+        return beanDescription.findProperties();
+    }
 
-        String fieldName = normalize(variablePrefix + declaredField.getName().toUpperCase());
-        String des = getDescriptionField(fieldName);
-        if (StringUtils.isNotEmpty(des)) {
-            innerParam.setDescription(des);
+    private RestParameter getParameter(String variablePrefix, String parentParamName, BeanPropertyDefinition property) {
+        RestParameter innerParam = new RestParameter();
+        innerParam.setName(property.getName());
+        innerParam.setParam("body");
+        innerParam.setParentParamName(parentParamName);
+        if (property.getRawPrimaryType().isEnum()) {
+            // The param is an Enum
+            innerParam.setType("enum");
+            innerParam.setAllowedValues(Arrays.stream(property.getRawPrimaryType().getEnumConstants())
+                    .map(Object::toString)
+                    .collect(Collectors.joining(" ")));
         } else {
-            innerParam.setDescription("The body web service " + declaredField.getName() + " " + "parameter");
+            innerParam.setType(property.getRawPrimaryType().getSimpleName());
+            innerParam.setAllowedValues("");
         }
+
+        innerParam.setTypeClass(property.getRawPrimaryType().getName() + ";");
+        innerParam.setRequired(isRequired(property));
+        innerParam.setDefaultValue("");
+        innerParam.setComplex(!CommandLineUtils.isPrimitiveType(property.getRawPrimaryType().getSimpleName()));
+
+
+        if (innerParam.isList()) {
+//            innerParam.setGenericType(property.getPrimaryType().getContentType().getRawClass().getName());
+            innerParam.setGenericType(property.getPrimaryType().toCanonical());
+        }
+
+        innerParam.setDescription(getDescriptionField(variablePrefix, property));
         return innerParam;
     }
 
-    private boolean isRequired(Field declaredField) {
-        CliParam annotation = declaredField.getAnnotation(CliParam.class);
-        return annotation != null && annotation.required();
+    private boolean isRequired(BeanPropertyDefinition property) {
+        if (property.getField() == null || property.getField().getAnnotated() == null) {
+            return false;
+        } else {
+            CliParam annotation = property.getField().getAnnotated().getAnnotation(CliParam.class);
+            return annotation != null && annotation.required();
+        }
     }
 
     private String normalize(String s) {
@@ -327,16 +330,38 @@ public class RestApiParser {
         return res;
     }
 
-    private String getDescriptionField(String fieldName) {
-        String res = null;
+    private String getDescriptionField(String variablePrefix, BeanPropertyDefinition property) {
+        // Get from jackson
+        if (StringUtils.isNotEmpty(property.getMetadata().getDescription())) {
+            return property.getMetadata().getDescription();
+        }
+        // Get from custom annotation
+        if (property.getField() != null) {
+            DataField dataField = property.getField().getAnnotated().getAnnotation(DataField.class);
+            if (dataField != null && StringUtils.isNotEmpty(dataField.description())) {
+                return dataField.description();
+            }
+        }
+
+        // Get from ParamConstants
+        String fieldName = normalize(variablePrefix + property.getName().toUpperCase());
+
         try {
             Field barField = org.opencb.opencga.core.api.ParamConstants.class.getDeclaredField(fieldName);
-            barField.setAccessible(true);
-            res = (String) barField.get(null);
-        } catch (Exception e) {
-            return null;
+            if (barField != null) {
+                barField.setAccessible(true);
+                return (String) barField.get(null);
+            }
+        } catch (Exception ignore) {
             // logger.error("RestApiParser error: field: '" + fieldName + "' not found in ParamConstants");
         }
-        return res;
+
+        if (property.getRawPrimaryType().isEnum()) {
+            return "Enum param allowed values: " + Arrays.stream(property.getRawPrimaryType().getEnumConstants())
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", "));
+        } else {
+            return "The body web service " + property.getName() + " parameter";
+        }
     }
 }

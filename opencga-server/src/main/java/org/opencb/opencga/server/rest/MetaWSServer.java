@@ -225,7 +225,7 @@ public class MetaWSServer extends OpenCGAWSServer {
     @Path("/api")
     @ApiOperation(value = "API", response = List.class)
     public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr) {
-        Map<String, Class> classMap = new LinkedHashMap<>();
+        Map<String, Class<?>> classMap = new LinkedHashMap<>();
         classMap.put("users", UserWSServer.class);
         classMap.put("projects", ProjectWSServer.class);
         classMap.put("studies", StudyWSServer.class);
@@ -244,7 +244,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         classMap.put("ga4gh", Ga4ghWSServer.class);
         classMap.put("admin", AdminWSServer.class);
 
-        List<Class> classes = new ArrayList<>();
+        List<Class<?>> classes = new ArrayList<>();
         // Check if some categories have been selected
         if (StringUtils.isNotEmpty(categoryStr)) {
             for (String category : categoryStr.split(",")) {

@@ -90,7 +90,7 @@ public class CellBaseConfiguration {
     }
 
     @Deprecated
-    public void setHosts(List<String> hosts) {
+    public CellBaseConfiguration setHosts(List<String> hosts) {
         if (hosts != null) {
             LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'cellbase.hosts'. Use 'cellbase.url'");
         }
@@ -102,6 +102,7 @@ public class CellBaseConfiguration {
             }
             url = hosts.get(0);
         }
+        return this;
     }
 
     public String getVersion() {
@@ -119,10 +120,11 @@ public class CellBaseConfiguration {
     }
 
     @Deprecated
-    public void setDatabase(Object database) {
+    public CellBaseConfiguration setDatabase(Object database) {
         if (database != null) {
             LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'storage-configuration.yml#cellbase.database'");
         }
+        return this;
     }
 
     @Deprecated
@@ -131,10 +133,11 @@ public class CellBaseConfiguration {
     }
 
     @Deprecated
-    public void setPreferred(String preferred) {
+    public CellBaseConfiguration setPreferred(String preferred) {
         if (StringUtils.isNotEmpty(preferred)) {
             LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'storage-configuration.yml#cellbase.preferred'");
         }
+        return this;
     }
 
     public ClientConfiguration toClientConfiguration() {

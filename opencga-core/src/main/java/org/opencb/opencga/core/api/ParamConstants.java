@@ -874,7 +874,7 @@ public class ParamConstants {
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_ID = "The body web service id parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_NAME = "The body web service name parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_CATEGORY = "The body web service category parameter";
-    public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_TYPE = "The body web service type parameter";
+//    public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_TYPE = "The body web service type parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_DEFAULTVALUE = "The body web service defaultValue parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_REQUIRED = "The body web service required parameter";
     public static final String STUDIES_VARIABLESET_VARIABLES_UPDATE_MULTIVALUE = "The body web service multiValue parameter";
@@ -900,8 +900,8 @@ public class ParamConstants {
     public static final String FILES_UPDATE_MODIFICATIONDATE = "The body web service modificationDate parameter";
     public static final String FILES_UPDATE_SAMPLEIDS = "The body web service sampleIds parameter";
     public static final String FILES_UPDATE_CHECKSUM = "The body web service checksum parameter";
-    public static final String FILES_UPDATE_FORMAT = "The body web service format parameter";
-    public static final String FILES_UPDATE_BIOFORMAT = "The body web service bioformat parameter";
+//    public static final String FILES_UPDATE_FORMAT = "The body web service format parameter";
+//    public static final String FILES_UPDATE_BIOFORMAT = "The body web service bioformat parameter";
     public static final String FILES_UPDATE_SOFTWARE = "The body web service software parameter";
     public static final String FILES_UPDATE_EXPERIMENT = "The body web service experiment parameter";
     public static final String FILES_UPDATE_TAGS = "The body web service tags parameter";
@@ -1054,7 +1054,7 @@ public class ParamConstants {
     public static final String FAMILIES_CREATE_ATTRIBUTES = "The body web service attributes parameter";
     public static final String FAMILIES_CREATE_ANNOTATIONSETS = "The body web service annotationSets parameter";
     public static final String COHORTS_UPDATE_ID = "The body web service id parameter";
-    public static final String COHORTS_UPDATE_TYPE = "The body web service type parameter";
+//    public static final String COHORTS_UPDATE_TYPE = "The body web service type parameter";
     public static final String COHORTS_UPDATE_DESCRIPTION = "The body web service description parameter";
     public static final String COHORTS_UPDATE_CREATIONDATE = "The body web service creationDate parameter";
     public static final String COHORTS_UPDATE_MODIFICATIONDATE = "The body web service modificationDate parameter";
@@ -1065,7 +1065,7 @@ public class ParamConstants {
     public static final String COHORTS_ANNOTATIONSETS_LOAD_CONTENT = "The body web service content parameter";
     public static final String COHORTS_UPDATE_COHORT = "The body web service cohort parameter";
     public static final String COHORTS_CREATE_ID = "The body web service id parameter";
-    public static final String COHORTS_CREATE_TYPE = "The body web service type parameter";
+//    public static final String COHORTS_CREATE_TYPE = "The body web service type parameter";
     public static final String COHORTS_CREATE_DESCRIPTION = "The body web service description parameter";
     public static final String COHORTS_CREATE_CREATIONDATE = "The body web service creationDate parameter";
     public static final String COHORTS_CREATE_MODIFICATIONDATE = "The body web service modificationDate parameter";
@@ -1074,7 +1074,7 @@ public class ParamConstants {
     public static final String COHORTS_CREATE_ATTRIBUTES = "The body web service attributes parameter";
     public static final String COHORTS_CREATE_STATUS = "The body web service status parameter";
     public static final String COHORTS_GENERATE_ID = "The body web service id parameter";
-    public static final String COHORTS_GENERATE_TYPE = "The body web service type parameter";
+//    public static final String COHORTS_GENERATE_TYPE = "The body web service type parameter";
     public static final String COHORTS_GENERATE_DESCRIPTION = "The body web service description parameter";
     public static final String COHORTS_GENERATE_CREATIONDATE = "The body web service creationDate parameter";
     public static final String COHORTS_GENERATE_MODIFICATIONDATE = "The body web service modificationDate parameter";
@@ -1300,7 +1300,7 @@ public class ParamConstants {
     public static final String ANALYSIS_VARIANT_CIRCOS_RUN_OUTDIR = "The body web service outdir parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_ID = "The body web service id parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_DESCRIPTION = "The body web service description parameter";
-    public static final String ANALYSIS_CLINICAL_UPDATE_TYPE = "The body web service type parameter";
+//    public static final String ANALYSIS_CLINICAL_UPDATE_TYPE = "The body web service type parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_DISORDER = "The body web service disorder parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_FILES = "The body web service files parameter";
     public static final String ANALYSIS_CLINICAL_UPDATE_PANELS = "The body web service panels parameter";
@@ -1335,7 +1335,7 @@ public class ParamConstants {
     public static final String ANALYSIS_CLINICAL_INTERPRETATION_CREATE_ATTRIBUTES = "The body web service attributes parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_ID = "The body web service id parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_DESCRIPTION = "The body web service description parameter";
-    public static final String ANALYSIS_CLINICAL_CREATE_TYPE = "The body web service type parameter";
+//    public static final String ANALYSIS_CLINICAL_CREATE_TYPE = "The body web service type parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_DISORDER = "The body web service disorder parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_FILES = "The body web service files parameter";
     public static final String ANALYSIS_CLINICAL_CREATE_PROBAND = "The body web service proband parameter";
@@ -1521,13 +1521,13 @@ public class ParamConstants {
     public static final String OPERATIONS_VARIANT_STORAGE_VARIANT_SAMPLE_INDEX_BUILDINDEX = "The body web service buildIndex parameter";
     public static final String OPERATIONS_VARIANT_STORAGE_VARIANT_SAMPLE_INDEX_ANNOTATE = "The body web service annotate parameter";
     public static final String OPERATIONS_VARIANT_STORAGE_VARIANT_SAMPLE_INDEX_OVERWRITE = "The body web service overwrite parameter";
-    public static final String ADMIN_USERS_CREATE_TYPE = "The body web service type parameter";
+//    public static final String ADMIN_USERS_CREATE_TYPE = "The body web service type parameter";
     public static final String ADMIN_USERS_SYNC_AUTHENTICATIONORIGINID = "The body web service authenticationOriginId parameter";
     public static final String ADMIN_USERS_SYNC_FROM = "The body web service from parameter";
     public static final String ADMIN_USERS_SYNC_TO = "The body web service to parameter";
     public static final String ADMIN_USERS_SYNC_STUDY = "The body web service study parameter";
     public static final String ADMIN_USERS_SYNC_SYNCALL = "The body web service syncAll parameter";
-    public static final String ADMIN_USERS_SYNC_TYPE = "The body web service type parameter";
+//    public static final String ADMIN_USERS_SYNC_TYPE = "The body web service type parameter";
     public static final String ADMIN_USERS_SYNC_FORCE = "The body web service force parameter";
     public static final String ADMIN_USERS_IMPORT_AUTHENTICATIONORIGINID = "The body web service authenticationOriginId parameter";
     public static final String ADMIN_USERS_IMPORT_ID = "The body web service id parameter";
