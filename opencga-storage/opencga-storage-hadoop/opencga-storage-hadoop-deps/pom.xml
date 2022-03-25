@@ -55,12 +55,12 @@
     </parent>
 
     <modules>
-        <module>opencga-storage-hadoop-deps-hdp2.6</module>
         <module>opencga-storage-hadoop-deps-hdp3.1</module>
+        <module>opencga-storage-hadoop-deps-emr6.1</module>
+<!--        <module>opencga-storage-hadoop-deps-hdp2.6</module>-->
 <!--        <module>opencga-storage-hadoop-deps-hdp2.5</module>-->
 <!--        <module>opencga-storage-hadoop-deps-emr5.8</module>-->
 <!--        <module>opencga-storage-hadoop-deps-emr5.31</module>-->
-        <module>opencga-storage-hadoop-deps-emr6.1</module>
 <!--        <module>opencga-storage-hadoop-deps-cdh5.13</module>-->
     </modules>
 
