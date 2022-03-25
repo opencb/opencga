@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.CohortMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
@@ -202,7 +203,7 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
 
         // We create a new user
-        catalogManager.getUserManager().create("user4", "User4 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("user4", "User4 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.GUEST, null);
 
         // We query facets with the new user. That user should be able to see the information because anonymous can see it as well.
         DataResult<FacetField> facet = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION,

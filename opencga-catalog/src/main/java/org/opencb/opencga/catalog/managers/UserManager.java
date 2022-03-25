@@ -36,11 +36,8 @@ import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
-
-import org.opencb.opencga.core.common.PasswordUtils;
-
 import org.opencb.opencga.core.api.ParamConstants;
-
+import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
@@ -205,7 +202,7 @@ public class UserManager extends AbstractManager {
 
         try {
             if (!PasswordUtils.isStrongPassword(password)) {
-                throw new CatalogException("Invalid password. Check password strength for user " + user);
+                throw new CatalogException("Invalid password. Check password strength for user " + user.getId());
             }
             if (user.getProjects() != null && !user.getProjects().isEmpty()) {
                 throw new CatalogException("Creating user and projects in a single transaction is forbidden");

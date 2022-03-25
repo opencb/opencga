@@ -7,6 +7,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
@@ -130,7 +131,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     @Test
     public void testMigration() throws Exception {
         MigrationManager migrationManager = catalogManager.getMigrationManager();
-        String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
         List<Class<? extends MigrationTool>> pendingMigrations = migrationManager.getPendingMigrations("0.0.1", token);
         assertEquals(0, pendingMigrations.size());
@@ -212,7 +213,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testManualMigrations() throws CatalogException, IOException {
-        String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
         MigrationRun migrationRun = catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "OtherValue"), token);
         assertEquals(MigrationRun.MigrationStatus.ERROR, migrationRun.getStatus());
@@ -223,7 +224,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testMigrationsWithJobs() throws CatalogException, IOException {
-        String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
 
         catalogManager.getMigrationManager().runManualMigration("0.2.1", "test4-1-manual", Paths.get(""), new ObjectMap("key", "value"), token);
 
