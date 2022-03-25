@@ -356,7 +356,29 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         Document familyUpdate = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery).toFinalUpdateDocument();
 
         if (CollectionUtils.isNotEmpty(parameters.getAsList(QueryParams.MEMBERS.key()))) {
-            updateFamilyReferenceInIndividuals(clientSession, family, parameters.getAsList(QueryParams.MEMBERS.key(), Map.class));
+            List<Map> newIndividuals = parameters.getAsList(QueryParams.MEMBERS.key(), Map.class);
+            Set<String> newIndividualIds = newIndividuals.stream().map(i -> (String) i.get(IndividualDBAdaptor.QueryParams.ID.key()))
+                    .collect(Collectors.toSet());
+
+            Set<String> currentIndividualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toSet());
+
+            // Obtain new members to be added to the family
+            List<String> missingIndividualIds = new ArrayList<>();
+            for (String newIndividualId : newIndividualIds) {
+                if (!currentIndividualIds.contains(newIndividualId)) {
+                    missingIndividualIds.add(newIndividualId);
+                }
+            }
+
+            // Obtain members to remove from family
+            List<String> oldIndividualIds = new ArrayList<>();
+            for (String currentIndividualId : currentIndividualIds) {
+                if (!newIndividualIds.contains(currentIndividualId)) {
+                    oldIndividualIds.add(currentIndividualId);
+                }
+            }
+
+            updateFamilyReferenceInIndividuals(clientSession, family, missingIndividualIds, oldIndividualIds);
         }
 
         if (familyUpdate.isEmpty() && result.getNumUpdated() == 0) {
@@ -391,34 +413,16 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         return endWrite(tmpStartTime, 1, 1, events);
     }
 
-    private void updateFamilyReferenceInIndividuals(ClientSession clientSession, Family family, List<Map> individuals)
+    private void updateFamilyReferenceInIndividuals(ClientSession clientSession, Family family, List<String> newIndividuals,
+                                                     List<String> removeIndividuals)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
-        List<String> newIndividualIds = new ArrayList<>();
-        List<String> individualIdsToRemove = new ArrayList<>();
-
-        Set<String> finalMemberSet = individuals.stream().map(i -> String.valueOf(i.get(IndividualDBAdaptor.QueryParams.ID.key())))
-                .collect(Collectors.toSet());
-        Set<String> currentIndividualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toSet());
-
-        for (Map<String, Object> individual : individuals) {
-            String individualId = String.valueOf(individual.get(IndividualDBAdaptor.QueryParams.ID.key()));
-            if (!currentIndividualIds.contains(individualId)) {
-                newIndividualIds.add(individualId);
-            }
-        }
-        if (!newIndividualIds.isEmpty()) {
-            dbAdaptorFactory.getCatalogIndividualDBAdaptor().updateFamilyReferences(clientSession, family.getStudyUid(), newIndividualIds,
+        if (CollectionUtils.isNotEmpty(newIndividuals)) {
+            dbAdaptorFactory.getCatalogIndividualDBAdaptor().updateFamilyReferences(clientSession, family.getStudyUid(), newIndividuals,
                     family.getId(), ParamUtils.BasicUpdateAction.ADD);
         }
-
-        for (Individual member : family.getMembers()) {
-            if (!finalMemberSet.contains(member.getId())) {
-                individualIdsToRemove.add(member.getId());
-            }
-        }
-        if (!individualIdsToRemove.isEmpty()) {
+        if (CollectionUtils.isNotEmpty(removeIndividuals)) {
             dbAdaptorFactory.getCatalogIndividualDBAdaptor().updateFamilyReferences(clientSession, family.getStudyUid(),
-                    individualIdsToRemove, family.getId(), ParamUtils.BasicUpdateAction.REMOVE);
+                    removeIndividuals, family.getId(), ParamUtils.BasicUpdateAction.REMOVE);
         }
     }
 
@@ -752,8 +756,21 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             logger.debug("Family uid '{}' version '{}' deleted from main SAMPLE collection", familyUid, sampleVersion);
         }
 
+        // Remove family references
+        removeFamilyReferences(clientSession, familyDocument);
+
         logger.debug("Family {}({}) deleted", familyId, familyUid);
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
+    }
+
+    private void removeFamilyReferences(ClientSession clientSession, Document familyDocument)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        // Remove family reference from individuals
+        Family family = familyConverter.convertToDataModelType(familyDocument);
+        if (CollectionUtils.isNotEmpty(family.getMembers())) {
+            List<String> members = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
+            updateFamilyReferenceInIndividuals(clientSession, family, Collections.emptyList(), members);
+        }
     }
 
     @Override

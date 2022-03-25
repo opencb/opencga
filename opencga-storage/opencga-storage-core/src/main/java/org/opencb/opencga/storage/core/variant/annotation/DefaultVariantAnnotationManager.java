@@ -508,7 +508,6 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 for (Integer sampleId : sampleIds) {
                     metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
                         sampleMetadata.setAnnotationStatus(TaskMetadata.Status.READY);
-                        return sampleMetadata;
                     });
                 }
             }

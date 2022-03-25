@@ -60,7 +60,6 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
             mm.updateSampleMetadata(studyId, mm.getSampleId(studyId, child), sampleMetadata -> {
                 sampleMetadata.setFather(mm.getSampleId(studyId, father));
                 sampleMetadata.setMother(mm.getSampleId(studyId, mother));
-                return sampleMetadata;
             });
 
             engine.annotate(new Query(), new ObjectMap());

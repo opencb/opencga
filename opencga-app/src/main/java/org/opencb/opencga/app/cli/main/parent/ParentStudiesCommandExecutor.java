@@ -60,9 +60,9 @@ public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecuto
         return openCGAClient.getStudyClient().runTemplates(c.study, templateParams, params);
     }
 
-    protected RestResponse<String> templatesUpload() throws Exception {
+    protected RestResponse<String> uploadTemplates() throws Exception {
         logger.debug("Upload template file");
-        StudiesCommandOptions.TemplatesUploadCommandOptions c = studiesCommandOptions.templatesUploadCommandOptions;
+        StudiesCommandOptions.UploadTemplatesCommandOptions c = studiesCommandOptions.uploadTemplatesCommandOptions;
 
         ObjectMap params = new ObjectMap();
 

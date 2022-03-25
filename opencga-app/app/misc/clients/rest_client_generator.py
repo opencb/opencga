@@ -1,10 +1,9 @@
+import json
 import os
 import re
 import sys
 from abc import ABC, abstractmethod
 from datetime import datetime
-
-import json
 
 
 class RestClientGenerator(ABC):
@@ -27,9 +26,12 @@ class RestClientGenerator(ABC):
         self.endpoints = {
             'users/{user}/filters/{filterId}/update': {'method_name': 'update_filter'},
             'ga4gh/reads/{study}/{file}': {'method_name': 'fetch_reads'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge': {'method_name': 'merge_interpretation'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/update': {'method_name': 'update_interpretation'},
-            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete': {'method_name': 'delete_interpretation'}
+            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge': {
+                'method_name': 'merge_interpretation'},
+            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/update': {
+                'method_name': 'update_interpretation'},
+            'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete': {
+                'method_name': 'delete_interpretation'}
         }
         self.categories = {
             'Users': 'User',
@@ -190,7 +192,7 @@ class RestClientGenerator(ABC):
         elif len(items) == 4:
             # e.g. /{apiVersion}/operation/variant/sample/genotype/index
             if not self.any_arg(items):
-                method_name = '_'.join([items[3], items[1], items[2]])
+                method_name = '_'.join([items[0], items[1], items[2], items[3]])
             # /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/merge
             elif self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3]]):
                 method_name = '_'.join([items[3], items[1]])
@@ -257,9 +259,12 @@ class RestClientGenerator(ABC):
             self.action = ''
         else:
             subpath = endpoint['path'].replace('/{apiVersion}/', '')
-            resources = re.findall('([a-zA-Z0-9\/]+)(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9]+)?(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9\/]+)', subpath)
+            resources = re.findall(
+                '([a-zA-Z0-9\/]+)(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9]+)?(\/\{[a-zA-Z0-9]+\})?(\/[a-zA-Z0-9\/]+)',
+                subpath)
             if resources:
-                [self.category, self.id1, self.subcategory, self.id2, self.action] = resources if type(resources[0]) != tuple else list(resources[0])
+                [self.category, self.id1, self.subcategory, self.id2, self.action] = resources if type(
+                    resources[0]) != tuple else list(resources[0])
 
             if self.id1.startswith("/"):
                 self.id1 = self.id1[2:-1]

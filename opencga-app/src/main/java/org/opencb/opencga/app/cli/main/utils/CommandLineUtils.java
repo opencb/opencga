@@ -6,6 +6,7 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -13,7 +14,6 @@ import static org.opencb.commons.utils.PrintUtils.*;
 
 
 public class CommandLineUtils {
-
 
     public static String getVersionString() {
         String res = PrintUtils.getKeyValueAsFormattedString("\tOpenCGA CLI version: ", "\t" + GitRepositoryState.get().getBuildVersion() + "\n");
@@ -48,7 +48,6 @@ public class CommandLineUtils {
     }
 
     public static void printLog(String message, Exception e) {
-
         if (OpencgaMain.getLogLevel().equals(Level.FINE)) {
             PrintUtils.printDebug(message);
         } else if (OpencgaMain.getLogLevel().equals(Level.INFO)) {
@@ -95,7 +94,6 @@ public class CommandLineUtils {
     public static void debug(String s) {
         CommandLineUtils.printLevel(s, Level.FINE);
     }
-
 
     public static String[] processShortCuts(String[] args) {
         OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
@@ -166,10 +164,16 @@ public class CommandLineUtils {
     }
 
     public static String argsToString(String[] args) {
-        String sArgs = ArrayUtils.toString(args);
+
+        String[] res = Arrays.copyOf(args, args.length);
+        if (ArrayUtils.contains(res, "--password") && (ArrayUtils.indexOf(res, "--password") + 1) < res.length) {
+            res[(ArrayUtils.indexOf(res, "--password") + 1)] = "********";
+        }
+        String sArgs = ArrayUtils.toString(res);
         sArgs = sArgs.replaceAll("\\{", "");
         sArgs = sArgs.replaceAll("}", "");
         sArgs = sArgs.replaceAll(",", " ");
+
         return sArgs;
     }
 }

@@ -190,7 +190,8 @@ public abstract class ParentClientRestApiWriter {
             }
         } else if (items.length == 4) {
             if (notAny(items)) {
-                methodName = items[3] + "_" + items[1] + "_" + items[2];
+                methodName = items[0] + "_" + items[1] + "_" + items[2] + "_" + items[3];
+//                 methodName = items[3] + "_" + items[1] + "_" + items[2];
             } else if (items[0].contains("}") && items[2].contains("}") && (!items[1].contains("}")) && (!items[3].contains("}"))) {
                 methodName = items[3] + "_" + items[1];
             }

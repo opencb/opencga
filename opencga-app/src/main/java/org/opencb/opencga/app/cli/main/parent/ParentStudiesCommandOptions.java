@@ -24,19 +24,19 @@ public class ParentStudiesCommandOptions {
 
     public JCommander jCommander;
     public CommonCommandOptions commonCommandOptions;
-    public TemplatesUploadCommandOptions templatesUploadCommandOptions;
+    public UploadTemplatesCommandOptions uploadTemplatesCommandOptions;
     public RunTemplatesCommandOptions templateRunCommandOptions;
 
     public ParentStudiesCommandOptions(CommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
         this.jCommander = jCommander;
         this.commonCommandOptions = commonCommandOptions;
-        this.templatesUploadCommandOptions = new TemplatesUploadCommandOptions();
+        this.uploadTemplatesCommandOptions = new UploadTemplatesCommandOptions();
         this.templateRunCommandOptions = new RunTemplatesCommandOptions();
     }
 
     @Parameters(commandNames = {"templates-upload"}, commandDescription = "Upload template")
-    public class TemplatesUploadCommandOptions {
+    public class UploadTemplatesCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 

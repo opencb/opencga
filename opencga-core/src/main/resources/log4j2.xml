@@ -1,15 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
+    <Properties>
+        <Property name="basePath">${sys:user.home}/.opencga/logs</Property>
+    </Properties>
     <Appenders>
         <Console name="Console" target="SYSTEM_ERR">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n"/>
             <ThresholdFilter level="${sys:opencga.log.level:-info}" onMatch="ACCEPT" onMismatch="DENY"/>
         </Console>
+        <RollingFile name="fileLogger"
+                     fileName="${basePath}/opencga.log"
+                     filePattern="${basePath}/opencga-%d{yyyy-MM-dd}.log">
+            <PatternLayout>
+                <pattern>[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                </pattern>
+            </PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <!-- Max 10 files will be created everyday -->
+            <DefaultRolloverStrategy max="10">
+                <Delete basePath="${basePath}" maxDepth="10">
+                    <!-- Delete all files older than 30 days -->
+                    <IfLastModified age="30d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
     </Appenders>
     <Loggers>
-        <Root level="DEBUG">
-            <AppenderRef ref="Console" />
+        <Root level="ERROR">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="fileLogger"/>
         </Root>
+        <Logger name="org.opencb.opencga.app.cli" level="DEBUG" additivity="false">
+            <AppenderRef ref="fileLogger"/>
+        </Logger>
+
         <Logger name="org.mongodb.driver.cluster" level="WARN"/>
         <Logger name="org.mongodb.driver.connection" level="WARN"/>
         <Logger name="org.mongodb.driver.protocol.command" level="WARN"/>

@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
-import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
@@ -57,6 +56,7 @@ import org.opencb.opencga.core.response.FederationNode;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.tools.ToolParams;
+import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -393,10 +393,6 @@ public class OpenCGAWSServer {
                 throw new ParamException.PathParamException(new Throwable("Version not valid: '" + apiVersion + "'"), "apiVersion", "v2");
             }
         }
-        uriInfo.getPathParameters().forEach((key, value) -> {
-            logger.warn(key);
-            logger.warn(value.toString());
-        });
 
         // Check apiVersion parameter, must be: v1, v2, ... If 'latest' then is converted to appropriate apiVersion.
         if (apiVersion.equalsIgnoreCase("latest")) {
@@ -665,7 +661,11 @@ public class OpenCGAWSServer {
                 if (CollectionUtils.isNotEmpty(openCGAResult.getEvents())) {
                     for (Event event : openCGAResult.getEvents()) {
                         if (event.getType().equals(Event.Type.ERROR)) {
-                            return Response.Status.BAD_REQUEST;
+                            if (event.getMessage().contains("denied")) {
+                                return Response.Status.UNAUTHORIZED;
+                            } else {
+                                return Response.Status.BAD_REQUEST;
+                            }
                         }
                     }
                 }
@@ -781,7 +781,7 @@ public class OpenCGAWSServer {
     }
 
     protected List<String> getIdListOrEmpty(String id) throws WebServiceException {
-        return id == null ? Collections.emptyList() : getIdList(id, true);
+        return StringUtils.isEmpty(id) ? Collections.emptyList() : getIdList(id, true);
     }
 
     protected List<String> getIdList(String id) throws WebServiceException {

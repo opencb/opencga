@@ -189,9 +189,10 @@ public class VariantQueryException extends IllegalArgumentException {
                 + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
     }
 
-//    public static VariantQueryException missingStudy() {
-//
-//    }
+    public static VariantQueryException missingStudy(Collection<String> availableStudies) {
+        return new VariantQueryException("Missing study param. Please, specify one study."
+                + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
+    }
 
     public static VariantQueryException sampleNotFound(Object sample, Object study) {
         return new VariantQueryException("Sample '" + sample + "' not found in study '" + study + "'");

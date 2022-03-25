@@ -22,7 +22,7 @@ public class VariantExportParams extends VariantQueryParams {
     public static final String DESCRIPTION = "Variant export params";
     private String outdir;
     private String outputFileName;
-    private String outputFormat;
+    private String outputFileFormat; //<<<<< CAMBIAR
     private String variantsFile;
     private String include;
     private String exclude;
@@ -34,12 +34,12 @@ public class VariantExportParams extends VariantQueryParams {
     public VariantExportParams() {
     }
 
-    public VariantExportParams(Query query, String outdir, String outputFileName, String outputFormat,
+    public VariantExportParams(Query query, String outdir, String outputFileName, String outputFileFormat,
                                String variantsFile) {
         super(query);
         this.outdir = outdir;
         this.outputFileName = outputFileName;
-        this.outputFormat = outputFormat;
+        this.outputFileFormat = outputFileFormat;
         this.variantsFile = variantsFile;
     }
 
@@ -61,12 +61,12 @@ public class VariantExportParams extends VariantQueryParams {
         return this;
     }
 
-    public String getOutputFormat() {
-        return outputFormat;
+    public String getOutputFileFormat() {
+        return outputFileFormat;
     }
 
-    public VariantExportParams setOutputFormat(String outputFormat) {
-        this.outputFormat = outputFormat;
+    public VariantExportParams setOutputFileFormat(String outputFileFormat) {
+        this.outputFileFormat = outputFileFormat;
         return this;
     }
 

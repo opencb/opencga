@@ -66,8 +66,9 @@ apiConfig:
         - name: run-templates
           executorExtended: True
           optionExtended: True
-      addedMethods:
-        - templates-upload
+        - name: upload-templates
+          executorExtended: True
+          optionExtended: True
       ignore: False
       key: Study
     - name: files
@@ -75,8 +76,6 @@ apiConfig:
       key: File
       executorExtended: True
       optionExtended: True
-      addedMethods:
-        - upload
       commands:
         - name: upload
           executorExtended: True
@@ -92,6 +91,14 @@ apiConfig:
     - name: jobs
       ignore: False
       key: Job
+      executorExtended: True
+      optionExtended: True
+      commands:
+        - name: top
+          executorExtended: True
+          optionExtended: True
+      addedMethods:
+        - log
     - name: samples
       ignore: False
       key: Sample
