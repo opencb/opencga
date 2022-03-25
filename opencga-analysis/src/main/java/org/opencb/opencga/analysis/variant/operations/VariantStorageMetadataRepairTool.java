@@ -141,7 +141,7 @@ public class VariantStorageMetadataRepairTool extends OperationTool {
                     metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
                         logger.info("Repair sample {}. Had {} fileIds instead of {}.",
                                 sampleMetadata.getName(), sampleMetadata.getFiles().size(), fileIds.size());
-                        return sampleMetadata.setFiles(fileIds);
+                        sampleMetadata.setFiles(fileIds);
                     });
                 }
             }

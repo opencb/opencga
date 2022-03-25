@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
-import io.swagger.annotations.*;
+import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -50,7 +50,6 @@ import java.nio.file.Files;
 import java.util.*;
 
 import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
-
 
 @Path("/{apiVersion}/files")
 @Produces(MediaType.APPLICATION_JSON)
@@ -169,7 +168,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @ApiOperation(httpMethod = "POST", value = "Resource to upload a file by chunks", response = File.class)
     public Response upload(
-            @FormDataParam("file") InputStream fileInputStream,
+            @ApiParam(value = "File to upload") @FormDataParam("file") InputStream fileInputStream,
             @FormDataParam("file") FormDataContentDisposition fileMetaData,
 
             @ApiParam(value = "File name to overwrite the input fileName") @FormDataParam("filename") String filename,
@@ -180,7 +179,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Path within catalog where the file will be located (default: root folder)") @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
             @ApiParam(value = "description") @DefaultValue("") @FormDataParam("description")
                     String description,
-            @ApiParam(value = "Create the parent directories if they do not exist", type = "form") @DefaultValue("true") @FormDataParam("parents") boolean parents) {
+            @ApiParam(value = "Create the parent directories if they do not exist", type = "form") @DefaultValue("true") @FormDataParam(
+                    "parents") boolean parents) {
         if (StringUtils.isNotEmpty(relativeFilePath)) {
             if (relativeFilePath.equals(".")) {
                 relativeFilePath = "";
@@ -279,7 +279,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "String pattern") @QueryParam("pattern") String pattern,
             @ApiParam(value = "Flag to perform a case insensitive search") @DefaultValue("false") @QueryParam("ignoreCase")
                     Boolean ignoreCase,
-            @ApiParam(value = "Stop reading a file after 'n' matching lines. 0 means no limit.") @DefaultValue("10") @QueryParam("maxCount") int maxCount) {
+            @ApiParam(value = "Stop reading a file after 'n' matching lines. 0 means no limit.") @DefaultValue("10") @QueryParam(
+                    "maxCount") int maxCount) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
             return createOkResponse(catalogManager.getFileManager().grep(studyStr, fileIdStr, pattern, ignoreCase, maxCount, token));
@@ -292,12 +293,17 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/search")
     @ApiOperation(value = "File search method.", response = File.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType =
+                    "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType =
+                    "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, defaultValue = "false", dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = ParamConstants.FLATTEN_ANNOTATIONS, value = ParamConstants.FLATTEN_ANNOTATION_DESCRIPTION, defaultValue = "false",
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, defaultValue = "false", dataType =
+                    "boolean", paramType = "query"),
+            @ApiImplicitParam(name = ParamConstants.FLATTEN_ANNOTATIONS, value = ParamConstants.FLATTEN_ANNOTATION_DESCRIPTION,
+                    defaultValue = "false",
                     dataType = "boolean", paramType = "query")
     })
     public Response search(
@@ -379,11 +385,15 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{folder}/list")
     @ApiOperation(value = "List all the files inside the folder", response = File.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType =
+                    "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType =
+                    "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, defaultValue = "false", dataType = "boolean",
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, defaultValue = "false", dataType =
+                    "boolean",
                     paramType = "query")
     })
     public Response list(@ApiParam(value = ParamConstants.FILE_FOLDER_DESCRIPTION) @PathParam(ParamConstants.FILE_FOLDER) String folder,
@@ -401,8 +411,10 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{folder}/tree")
     @ApiOperation(value = "Obtain a tree view of the files and folders within a folder", response = FileTree.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType =
+                    "string", paramType = "query")
     })
     public Response treeView(
             @ApiParam(value = "Folder id or name. Paths must be separated by : instead of /") @DefaultValue(":") @PathParam("folder") String folderId,
@@ -484,10 +496,14 @@ public class FileWSServer extends OpenCGAWSServer {
 //            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes,
 //            @ApiParam(value = "Release value") @QueryParam("release") String release,
 //
-//            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
-//            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
-//            @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.BasicUpdateAction relatedFilesAction,
-//            @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.BasicUpdateAction tagsAction,
+//            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE",
+//            defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.BasicUpdateAction samplesAction,
+//            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,
+//            REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
+//            @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", allowableValues = "ADD,SET,
+//            REMOVE", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.BasicUpdateAction relatedFilesAction,
+//            @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,SET,REMOVE",
+//            defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.BasicUpdateAction tagsAction,
 //            @ApiParam(name = "body", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
 //        try {
 //            query.remove(ParamConstants.STUDY_PARAM);
@@ -525,11 +541,15 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of file ids, names or paths. Paths must be separated by : instead of /")
             @PathParam(value = "files") String fileIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("sampleIdsAction") ParamUtils.BasicUpdateAction samplesAction,
-            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
-            @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.BasicUpdateAction relatedFilesAction,
-            @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.BasicUpdateAction tagsAction,
-            @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
+            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE",
+                    defaultValue = "ADD") @QueryParam("sampleIdsAction") ParamUtils.BasicUpdateAction samplesAction,
+            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET," +
+                    "REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
+            @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", allowableValues = "ADD,SET,REMOVE"
+                    , defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.BasicUpdateAction relatedFilesAction,
+            @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,SET,REMOVE",
+                    defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.BasicUpdateAction tagsAction,
+
             @ApiParam(name = "body", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
             if (samplesAction == null) {
@@ -567,7 +587,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.VARIABLE_SET_DESCRIPTION, required = true) @QueryParam("variableSetId") String variableSetId,
             @ApiParam(value = "Path where the TSV file is located in OpenCGA or where it should be located.", required = true)
             @QueryParam("path") String path,
-            @ApiParam(value = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not previously associated).")
+            @ApiParam(value = "Flag indicating whether to create parent directories if they don't exist (only when TSV file was not " +
+                    "previously associated).")
             @DefaultValue("false") @QueryParam("parents") boolean parents,
             @ApiParam(value = "Annotation set id. If not provided, variableSetId will be used.") @QueryParam("annotationSetId") String annotationSetId,
             @ApiParam(value = ParamConstants.TSV_ANNOTATION_DESCRIPTION) TsvAnnotationParams params) {
@@ -592,7 +613,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @PathParam("file") String fileStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_ID) @PathParam("annotationSet") String annotationSetId,
-            @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+            @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue =
+                    "ADD")
             @QueryParam("action") ParamUtils.CompleteUpdateAction action,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION) Map<String, Object> updateParams) {
         try {
@@ -614,9 +636,11 @@ public class FileWSServer extends OpenCGAWSServer {
 //    public Response linkGet(
 //            @ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
 //            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-//            @ApiParam(value = "Path where the external file will be allocated in catalog", required = true) @QueryParam("path") String path,
+//            @ApiParam(value = "Path where the external file will be allocated in catalog", required = true) @QueryParam("path") String
+//            path,
 //            @ApiParam(value = ParamConstants.FILE_DESCRIPTION_DESCRIPTION) @QueryParam("description") String description,
-//            @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
+//            @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents")
+//            boolean parents,
 //            @ApiParam(value = "Size of the folder/file") @QueryParam("size") long size,
 //            @ApiParam(value = "Checksum of something") @QueryParam("checksum") String checksum) {
 //        try {
@@ -693,7 +717,8 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap params = new ObjectMap()
                     .append("files", files)
                     .append("study", studyStr);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, "files-unlink", Enums.Priority.MEDIUM, params, token);
+            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, "files-unlink", Enums.Priority.MEDIUM, params,
+                    token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -735,7 +760,8 @@ public class FileWSServer extends OpenCGAWSServer {
 //    @POST
 //    @Path("/scan")
 //    @ApiOperation(value = "Scan the study folder to find untracked or missing files")
-//    public Response scanFiles(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
+//    public Response scanFiles(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String
+//    studyStr) {
 //        try {
 //            ParamUtils.checkIsSingleID(studyStr);
 //            Study study = catalogManager.getStudyManager().get(studyStr, null, token).first();
@@ -752,7 +778,8 @@ public class FileWSServer extends OpenCGAWSServer {
 //            Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, token);
 //
 //            /** Get missing files **/
-//            List<File> missingFiles = catalogManager.getFileManager().search(studyStr, query.append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.MISSING), queryOptions, token).getResults();
+//            List<File> missingFiles = catalogManager.getFileManager().search(studyStr, query.append(FileDBAdaptor.QueryParams
+//            .STATUS_NAME.key(), File.FileStatus.MISSING), queryOptions, token).getResults();
 //
 //            ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
 //
@@ -795,7 +822,8 @@ public class FileWSServer extends OpenCGAWSServer {
 //            + "consistency between the database and the file system. It will check all the files and folders belonging to the study and "
 //            + "will keep track of those new files and/or folders found in the file system as well as update the status of those "
 //            + "files/folders that are no longer available in the file system setting their status to MISSING.")
-//    public Response resyncFiles(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
+//    public Response resyncFiles(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String
+//    studyStr) {
 //        try {
 //            ParamUtils.checkIsSingleID(studyStr);
 //            Study study = catalogManager.getStudyManager().get(studyStr, null, token).first();
@@ -910,7 +938,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{files}/acl")
-    @ApiOperation(value = "Return the acl defined for the file or folder. If member is provided, it will only return the acl for the member.",
+    @ApiOperation(value = "Return the acl defined for the file or folder. If member is provided, it will only return the acl for the " +
+            "member.",
             response = Map.class)
     public Response getAcls(@ApiParam(value = ParamConstants.FILES_DESCRIPTION, required = true) @PathParam("files") String fileIdStr,
                             @ApiParam(value = ParamConstants.STUDIES_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -948,7 +977,8 @@ public class FileWSServer extends OpenCGAWSServer {
 //    @GET
 //    @Path("/{folder}/scan")
 //    @ApiOperation(value = "Scans a folder", position = 6)
-//    public Response scan(@ApiParam(value = "Folder id, name or path. Paths must be separated by : instead of /") @PathParam("folder") String folderIdStr,
+//    public Response scan(@ApiParam(value = "Folder id, name or path. Paths must be separated by : instead of /") @PathParam("folder")
+//    String folderIdStr,
 //                         @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
 //                         @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
 //                         @ApiParam(value = "calculateChecksum") @QueryParam("calculateChecksum") @DefaultValue("false")
@@ -991,7 +1021,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
             @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
 
-            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
+            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: " +
+                    "studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove("field");
@@ -1004,5 +1035,4 @@ public class FileWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-
 }

@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: {{ .Values.rest.name }}
   labels:
+    {{- include "opencga.labels" . | nindent 4 }}
     app: {{  .Values.rest.name  }}
 spec:
   replicas: {{ .Values.rest.replicaCount }}

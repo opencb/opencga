@@ -23,6 +23,7 @@ import java.util.List;
 public class VariantAggregateFamilyParams extends ToolParams {
     public static final String DESCRIPTION = "Variant aggregate family params.";
     private List<String> samples;
+    private String gapsGenotype;
     private boolean resume;
 
     public VariantAggregateFamilyParams() {
@@ -30,6 +31,12 @@ public class VariantAggregateFamilyParams extends ToolParams {
 
     public VariantAggregateFamilyParams(List<String> samples, boolean resume) {
         this.samples = samples;
+        this.resume = resume;
+    }
+
+    public VariantAggregateFamilyParams(List<String> samples, String gapsGenotype, boolean resume) {
+        this.samples = samples;
+        this.gapsGenotype = gapsGenotype;
         this.resume = resume;
     }
 
@@ -48,6 +55,15 @@ public class VariantAggregateFamilyParams extends ToolParams {
 
     public VariantAggregateFamilyParams setSamples(List<String> samples) {
         this.samples = samples;
+        return this;
+    }
+
+    public String getGapsGenotype() {
+        return gapsGenotype;
+    }
+
+    public VariantAggregateFamilyParams setGapsGenotype(String gapsGenotype) {
+        this.gapsGenotype = gapsGenotype;
         return this;
     }
 }

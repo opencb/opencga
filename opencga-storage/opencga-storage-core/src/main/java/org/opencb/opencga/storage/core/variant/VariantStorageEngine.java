@@ -29,6 +29,8 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -518,6 +520,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
+    public void deleteStats(String study, Collection<String> cohorts, ObjectMap params) throws StorageEngineException {
+        throw new UnsupportedOperationException("Unsupported deleteStats");
+    }
+
     /**
      * Build the sample index. For advanced users only.
      * SampleIndex is built while loading data, so this operation should be executed only to rebuild the index,
@@ -562,6 +568,39 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         throw new UnsupportedOperationException("Unsupported familyIndex");
     }
 
+    public DataResult<List<String>> familyIndexUpdate(String study, ObjectMap options) throws StorageEngineException {
+        StudyMetadata studyMetadata = getMetadataManager().getStudyMetadata(study);
+        int studyId = studyMetadata.getId();
+        int version = studyMetadata.getSampleIndexConfigurationLatest().getVersion();
+        List<List<String>> trios = new LinkedList<>();
+        for (SampleMetadata sampleMetadata : getMetadataManager().sampleMetadataIterable(studyId)) {
+            if (sampleMetadata.isFamilyIndexDefined()) {
+                if (sampleMetadata.getFamilyIndexStatus(version) != TaskMetadata.Status.READY) {
+                    // This sample's family index needs to be updated
+                    String father;
+                    if (sampleMetadata.getFather() == null) {
+                        father = "-";
+                    } else {
+                        father = getMetadataManager().getSampleName(studyId, sampleMetadata.getFather());
+                    }
+                    String mother;
+                    if (sampleMetadata.getMother() == null) {
+                        mother = "-";
+                    } else {
+                        mother = getMetadataManager().getSampleName(studyId, sampleMetadata.getMother());
+                    }
+                    trios.add(Arrays.asList(father, mother, sampleMetadata.getName()));
+                }
+            }
+        }
+        if (trios.isEmpty()) {
+            logger.info("Nothing to do!");
+            return new DataResult<List<String>>().setEvents(Collections.singletonList(new Event(Event.Type.INFO, "Nothing to do")));
+        } else {
+            return familyIndex(study, trios, options);
+        }
+    }
+
     /**
      * Provide a new VariantStatisticsManager for creating and loading statistics.
      *
@@ -575,22 +614,22 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     /**
      *
      * @param study     Study
-     * @param samples   Samples to fill gaps
+     * @param params    Aggregate Family params
      * @param options   Other options
      * @throws StorageEngineException if there is any error
      */
-    public void aggregateFamily(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options) throws StorageEngineException {
         throw new UnsupportedOperationException();
     }
 
     /**
      *
      * @param study     Study
-     * @param overwrite Overwrite gaps for all files and variants
+     * @param params    Aggregate Params
      * @param options   Other options
      * @throws StorageEngineException if there is any error
      */
-    public void aggregate(String study, boolean overwrite, ObjectMap options) throws StorageEngineException {
+    public void aggregate(String study, VariantAggregateParams params, ObjectMap options) throws StorageEngineException {
         throw new UnsupportedOperationException();
     }
 
@@ -872,12 +911,19 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 for (Integer sampleId : sampleIds) {
                     metadataManager.updateSampleMetadata(studyMetadata.getId(), sampleId, s -> {
                         s.setIndexStatus(TaskMetadata.Status.NONE);
+                        for (Integer v : s.getSampleIndexVersions()) {
+                            s.setSampleIndexStatus(TaskMetadata.Status.NONE, v);
+                        }
+                        for (Integer v : s.getSampleIndexAnnotationVersions()) {
+                            s.setSampleIndexAnnotationStatus(TaskMetadata.Status.NONE, v);
+                        }
+                        for (Integer v : s.getFamilyIndexVersions()) {
+                            s.setFamilyIndexStatus(TaskMetadata.Status.NONE, v);
+                        }
                         s.setAnnotationStatus(TaskMetadata.Status.NONE);
-                        s.setFamilyIndexStatus(TaskMetadata.Status.NONE);
                         s.setMendelianErrorStatus(TaskMetadata.Status.NONE);
                         s.setFiles(Collections.emptyList());
                         s.setCohorts(Collections.emptySet());
-                        return s;
                     });
                 }
 

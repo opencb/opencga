@@ -3,6 +3,7 @@
 import argparse
 import re
 import sys
+from datetime import date
 from rest_client_generator import RestClientGenerator
 
 
@@ -30,7 +31,7 @@ class JavaClientGenerator(RestClientGenerator):
     def get_imports(self):
         headers = []
         headers.append('/*')
-        headers.append('* Copyright 2015-2020 OpenCB')
+        headers.append('* Copyright 2015-' + str(date.today().year) + ' OpenCB')
         headers.append('*')
         headers.append('* Licensed under the Apache License, Version 2.0 (the "License");')
         headers.append('* you may not use this file except in compliance with the License.')

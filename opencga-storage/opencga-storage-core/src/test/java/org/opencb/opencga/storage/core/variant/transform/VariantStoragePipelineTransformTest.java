@@ -30,6 +30,7 @@ import org.opencb.biodata.tools.variant.normalizer.extensions.VafVariantNormaliz
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.avro.AvroDataReader;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -94,7 +95,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
     @Test
     public void corruptedTransformNoFailTest() throws Exception {
 
-        ObjectMap params = new ObjectMap(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), true);
+        ObjectMap params = new ObjectMap(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), YesNoAuto.YES);
 
         URI outputUri = newOutputUri();
 
@@ -113,17 +114,15 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
             String[] malformedFiles = Paths.get(outputUri).toFile().list((dir, name) -> name.contains(MALFORMED_FILE));
             assertEquals(1, malformedFiles.length);
             throw e;
-        } catch (Exception e) {
-            System.out.println("e.getClass().getName() = " + e.getClass().getName());
-            throw e;
         }
-
     }
 
     @Test
     public void corruptedTransformTest() throws Exception {
 
-        ObjectMap params = new ObjectMap(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false);
+        ObjectMap params = new ObjectMap()
+                .append(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), YesNoAuto.NO)
+                .append(VariantStorageOptions.TRANSFORM_BATCH_SIZE.key(), 2);
         URI outputUri = newOutputUri();
         StoragePipelineResult result = runETL(getVariantStorageEngine(), corruptedInputUri, outputUri, params, true, true, false);
 

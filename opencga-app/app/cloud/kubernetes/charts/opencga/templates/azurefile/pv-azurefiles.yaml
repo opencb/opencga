@@ -3,6 +3,8 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: {{ include "pvConf" . | quote}}
+  labels:
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   capacity:
     storage: 1Gi
@@ -20,6 +22,8 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: {{ include "pvAnalysisconf" . | quote}}
+  labels:
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   capacity:
     storage: 2Gi
@@ -37,6 +41,8 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: {{ include "pvSessions" . | quote}}
+  labels:
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   capacity:
     storage: 100Gi
@@ -54,6 +60,8 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: {{ include "pvVariants" . | quote}}
+  labels:
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   capacity:
     storage: 100Gi

@@ -16,10 +16,16 @@
 
 package org.opencb.opencga.core.models.study;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 import java.net.URL;
 
 public class StudyNotification {
 
+
+    @DataField(id = "webhook", indexed = true,
+            description = FieldConstants.STUDY_NOTIFICATION_WEBHOOK)
     private URL webhook;
 
     public StudyNotification() {

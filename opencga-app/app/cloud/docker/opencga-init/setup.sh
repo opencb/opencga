@@ -57,12 +57,23 @@ echo "DB Name: $INSTALLED"
 echo "Catalog installed : $INSTALLED"
 
 if [ "$INSTALLED" == false ]; then
+    # Disable debug output. Do not print password
+    set +x
     echo "Installing catalog"
+    echo "+ /opt/opencga/bin/opencga-admin.sh catalog install"
     echo "${INIT_OPENCGA_PASS}" | /opt/opencga/bin/opencga-admin.sh catalog install
     echo "catalog installed"
+    set -x
 #    echo "copying session files"
 #    cp -r /opt/opencga/sessions/* /opt/volume/sessions
 #    echo "copied session files"
 else
     echo "DB '${DB_NAME}' already installed"
 fi
+
+# Disable debug output. Do not print password
+set +x
+echo "------------ OpenCGA Migrations summary ------------"
+echo "+ /opt/opencga/bin/opencga-admin.sh migration summary --log-level warn"
+echo "${INIT_OPENCGA_PASS}" | /opt/opencga/bin/opencga-admin.sh migration summary --log-level warn
+set -x

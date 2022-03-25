@@ -539,6 +539,9 @@ public class VariantCommandOptions {
         @Parameter(names = {"--overwrite"}, description = "Overwrite existing values")
         public boolean overwrite = false;
 
+        @Parameter(names = {"--update"}, description = "Update family index")
+        public boolean update = false;
+
         @Parameter(names = {"--skip-incomplete-families"}, description = "Do not process incomplete families.")
         public boolean skipIncompleteFamilies = false;
 

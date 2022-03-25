@@ -5,6 +5,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManagerMultiFilesTest;
@@ -46,7 +47,7 @@ public class HadoopVariantStatisticsManagerMultiFilesTest extends VariantStatist
     @Test
     public void calculateStatsMultiCohortsAfterFillMissingTest() throws Exception {
         VariantStorageEngine storageEngine = getVariantStorageEngine();
-        storageEngine.aggregate(studyMetadata.getName(), false, new ObjectMap());
+        storageEngine.aggregate(studyMetadata.getName(), new VariantAggregateParams(false, false), new ObjectMap());
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
         calculateStatsMultiCohortsTest();
     }

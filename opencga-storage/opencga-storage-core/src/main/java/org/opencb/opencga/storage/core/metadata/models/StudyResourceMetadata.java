@@ -98,6 +98,11 @@ public abstract class StudyResourceMetadata<T extends StudyResourceMetadata> {
         return getThis();
     }
 
+    public T putAttribute(String key, Object value) {
+        getAttributes().put(key, value);
+        return getThis();
+    }
+
     @SuppressWarnings("unchecked")
     public T getThis() {
         return (T) this;

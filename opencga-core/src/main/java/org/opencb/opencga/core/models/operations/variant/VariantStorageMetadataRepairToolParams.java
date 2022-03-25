@@ -47,8 +47,9 @@ public class VariantStorageMetadataRepairToolParams extends ToolParams {
         return samplesBatchSize;
     }
 
-    public void setSamplesBatchSize(int samplesBatchSize) {
+    public VariantStorageMetadataRepairToolParams setSamplesBatchSize(int samplesBatchSize) {
         this.samplesBatchSize = samplesBatchSize;
+        return this;
     }
 
     public List<What> getWhat() {

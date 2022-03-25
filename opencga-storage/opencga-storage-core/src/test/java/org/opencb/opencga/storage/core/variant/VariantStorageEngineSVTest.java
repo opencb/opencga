@@ -73,7 +73,7 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
 
     @Test
     public void checkCount() throws Exception {
-        int expected = 24 + 7;
+        int expected = 24 + 7 + 1;
         int count = variantStorageEngine.getDBAdaptor().count().first().intValue();
         assertEquals(expected, count);
     }

@@ -20,6 +20,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
+import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AbstractAclEntry;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -38,6 +39,7 @@ import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.text.SimpleDateFormat;
@@ -73,21 +75,42 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
     @Override
     public void print(RestResponse queryResponse) {
+        if (queryResponse != null && queryResponse.getType().equals(QueryType.VOID)) {
+            if (queryResponse.getEvents() != null) {
+                for (Event event : ((RestResponse<?>) queryResponse).getEvents()) {
+                    if (StringUtils.isNotEmpty(event.getMessage())) {
+                        if (event.getType().equals(Event.Type.ERROR)) {
+                            PrintUtils.printError(event.getMessage());
+                        } else {
+                            PrintUtils.printInfo(event.getMessage());
+                        }
+                    }
+                }
+            }
+            return;
+        }
         if (checkErrors(queryResponse) && queryResponse.allResultsSize() == 0) {
             return;
         }
 
+        if (checkLogin(queryResponse) && queryResponse.allResultsSize() == 0) {
+            return;
+        }
         if (queryResponse.getResponses().size() == 0 || ((OpenCGAResult) queryResponse.getResponses().get(0)).getNumResults() == 0) {
             if (queryResponse.getResponses().size() == 1 && queryResponse.first().getNumMatches() > 0) {
                 // count
-                ps.println(queryResponse.first().getNumMatches());
+                PrintUtils.println(String.valueOf(queryResponse.first().getNumMatches()));
             } else {
+
                 if (CollectionUtils.isNotEmpty(queryResponse.getEvents())) {
                     for (Event event : ((RestResponse<?>) queryResponse).getEvents()) {
-                        ps.println("EVENT: " + event.getMessage());
+                        if (StringUtils.isNotEmpty(event.getMessage())) {
+                            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("EVENT: ", event.getMessage()));
+                        }
                     }
                 }
-                ps.println("No results found for the query.");
+
+                PrintUtils.printInfo("No results found for the query.");
             }
             return;
         }
@@ -125,9 +148,6 @@ public class TextOutputWriter extends AbstractOutputWriter {
             case "Individual":
                 printIndividual(queryResponse.getResponses());
                 break;
-//            case "Family":
-//                printFamily(queryResponse.getResponses());
-//                break;
             case "Job":
                 printJob(queryResponse.getResponses());
                 break;
@@ -144,26 +164,22 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 ps.println(StringUtils.join((List<String>) queryResponse.first().getResults(), ", "));
                 break;
             default:
-                System.err.println(ANSI_YELLOW + "Warning: " + clazz + " results not yet supported in text format. Using YAML format"
-                        + ANSI_RESET);
+                PrintUtils.printWarn(clazz + " results not yet supported in text format. Using YAML format");
                 YamlOutputWriter yamlOutputWriter = new YamlOutputWriter(writerConfiguration);
                 yamlOutputWriter.print(queryResponse, false);
                 break;
         }
-
     }
 
     private String printMetadata(RestResponse queryResponse) {
         StringBuilder sb = new StringBuilder();
         if (writerConfiguration.isMetadata()) {
             int numResults = 0;
-//            int totalResults = 0;
             int time = 0;
 
             List<DataResult> queryResultList = queryResponse.getResponses();
             for (DataResult queryResult : queryResultList) {
                 numResults += queryResult.getNumResults();
-//                totalResults += queryResult.getNumMatches();
                 time += queryResult.getTime();
             }
 
@@ -225,14 +241,15 @@ public class TextOutputWriter extends AbstractOutputWriter {
             }
         }
 
-        ps.println(sb.toString());
+        ps.println(sb);
     }
 
     private void printProject(List<DataResult<Project>> queryResultList) {
         new Table<Project>(tableType)
                 .addColumn("ID", Project::getId)
                 .addColumn("NAME", Project::getName)
-                .addColumn("ORGANISM", p -> StringUtils.defaultIfEmpty(p.getOrganism().getScientificName(), p.getOrganism().getCommonName()), "NA")
+                .addColumn("ORGANISM", p -> StringUtils.defaultIfEmpty(p.getOrganism().getScientificName(),
+                        p.getOrganism().getCommonName()), "NA")
                 .addColumn("ASSEMBLY", p -> p.getOrganism().getAssembly(), "NA")
                 .addColumn("DESCRIPTION", Project::getDescription)
                 .addColumnNumber("#STUDIES", p -> p.getStudies().size())
@@ -325,38 +342,6 @@ public class TextOutputWriter extends AbstractOutputWriter {
         table.printTable(unwind(queryResultList));
     }
 
-//    private void printFamily(List<DataResult<Family>> queryResultList) {
-//        StringBuilder sb = new StringBuilder();
-//        for (DataResult<Family> queryResult : queryResultList) {
-//            // Write header
-//            if (writerConfiguration.isHeader()) {
-//                sb.append("#NAME\tID\tMOTHER\tFATHER\tMEMBER\tSTATUS\tCREATION_DATE\n");
-//            }
-//
-//            for (Family family : queryResult.getResults()) {
-//                String mother = (family.getMother() != null && StringUtils.isNotEmpty(family.getMother().getName()))
-//                        ? family.getMother().getName() + "(" + family.getMother().getId() + ")"
-//                        : "NA";
-//                String father = (family.getFather() != null && StringUtils.isNotEmpty(family.getFather().getName()))
-//                        ? family.getFather().getName() + "(" + family.getFather().getId() + ")"
-//                        : "NA";
-//                String children = family.getChildren() != null
-//                        ? StringUtils.join(
-//                                family.getChildren().stream()
-//                                    .filter(Objects::nonNull)
-//                                    .filter(individual -> StringUtils.isNotEmpty(individual.getName()))
-//                                    .map(individual -> individual.getName() + "(" + individual.getId() + ")")
-//                                    .collect(Collectors.toList()), ", ")
-//                        : "NA";
-//                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
-//                        family.getName(), family.getId(), mother, father, children,
-//                        family.getStatus().getName(), family.getCreationDate()));
-//            }
-//        }
-//
-//        ps.println(sb.toString());
-//    }
-
     private void printJob(List<DataResult<Job>> queryResultList) {
         List<JobColumns> jobColumns = Arrays.asList(
                 JobColumns.ID,
@@ -374,8 +359,75 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 .printTable(unwind(queryResultList));
     }
 
-    public interface TableSchema<T> {
-        Table.TableColumnSchema<T> getColumnSchema();
+    private void printVariableSet(List<DataResult<VariableSet>> queryResultList) {
+        new Table<VariableSet>(tableType)
+                .addColumn("ID", VariableSet::getId)
+                .addColumn("NAME", VariableSet::getName)
+                .addColumn("DESCRIPTION", VariableSet::getDescription)
+                .addColumn("VARIABLES", v -> v.getVariables().stream().map(Variable::getId).collect(Collectors.joining(",")))
+                .printTable(unwind(queryResultList));
+    }
+
+    private void printAnnotationSet(List<DataResult<AnnotationSet>> queryResultList) {
+        new Table<Map.Entry<String, Object>>(tableType)
+                .addColumn("KEY", Map.Entry::getKey)
+                .addColumn("VALUE", e -> e.getValue().toString())
+                .printTable(queryResultList.stream().flatMap(r -> r.getResults().stream().flatMap(a -> a.getAnnotations().entrySet().stream())).collect(Collectors.toList()));
+    }
+
+    private void printTreeFile(RestResponse<FileTree> queryResponse) {
+        StringBuilder sb = new StringBuilder();
+        for (DataResult<FileTree> fileTreeQueryResult : queryResponse.getResponses()) {
+            printRecursiveTree(fileTreeQueryResult.getResults(), sb, "");
+        }
+        ps.println(sb);
+    }
+
+    private void printRecursiveTree(List<FileTree> fileTreeList, StringBuilder sb, String indent) {
+        if (fileTreeList == null || fileTreeList.size() == 0) {
+            return;
+        }
+
+        for (Iterator<FileTree> iterator = fileTreeList.iterator(); iterator.hasNext(); ) {
+            FileTree fileTree = iterator.next();
+            File file = fileTree.getFile();
+
+            if (!indent.isEmpty()) {
+                sb.append(indent);
+                sb.append(iterator.hasNext() ? "├──" : "└──");
+                sb.append(" ");
+            }
+            if (file.getType() == File.Type.FILE) {
+                sb.append(file.getName());
+                sb.append("  [");
+                if (file.getInternal() != null
+                        && file.getInternal().getStatus() != null
+                        && file.getInternal().getStatus().getName() != null
+                        && !READY.equals(file.getInternal().getStatus().getName())) {
+                    sb.append(file.getInternal().getStatus().getName()).append(", ");
+                }
+                sb.append(humanReadableByteCount(file.getSize(), false)).append("]");
+            } else {
+                sb.append(file.getName()).append("/");
+            }
+            sb.append("\n");
+
+            if (file.getType() == File.Type.DIRECTORY) {
+                printRecursiveTree(fileTree.getChildren(), sb, indent + (iterator.hasNext() ? "│   " : "    "));
+            }
+        }
+    }
+
+    private <T> List<T> unwind(List<DataResult<T>> queryResultList) {
+        return queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList());
+    }
+
+    private String getId(Annotable annotable) {
+        return getId(annotable, "-");
+    }
+
+    private String getId(Annotable annotable, String defaultStr) {
+        return annotable != null ? StringUtils.defaultIfEmpty(annotable.getId(), defaultStr) : defaultStr;
     }
 
     public enum JobColumns implements TableSchema<Job> {
@@ -424,6 +476,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         END(new Table.TableColumnSchema<>("End", job -> getEnd(job) != null
                 ? SIMPLE_DATE_FORMAT.format(getEnd(job)) : "")),
         INPUT(new Table.TableColumnSchema<>("Input", j -> j.getInput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
+
         OUTPUT(new Table.TableColumnSchema<>("Output", j -> j.getOutput().stream().map(File::getName).collect(Collectors.joining(",")), 45)),
         OUTPUT_DIRECTORY(new Table.TableColumnSchema<>("Output directory", j -> j.getOutDir().getPath(), 45));
 
@@ -431,11 +484,6 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
         JobColumns(Table.TableColumnSchema<Job> columnSchema) {
             this.columnSchema = columnSchema;
-        }
-
-        @Override
-        public Table.TableColumnSchema<Job> getColumnSchema() {
-            return columnSchema;
         }
 
         private static Date getStart(Job job) {
@@ -480,76 +528,15 @@ public class TextOutputWriter extends AbstractOutputWriter {
             }
             return durationInMillis;
         }
-    }
 
-    private void printVariableSet(List<DataResult<VariableSet>> queryResultList) {
-        new Table<VariableSet>(tableType)
-                .addColumn("ID", VariableSet::getId)
-                .addColumn("NAME", VariableSet::getName)
-                .addColumn("DESCRIPTION", VariableSet::getDescription)
-                .addColumn("VARIABLES", v -> v.getVariables().stream().map(Variable::getId).collect(Collectors.joining(",")))
-                .printTable(unwind(queryResultList));
-    }
 
-    private void printAnnotationSet(List<DataResult<AnnotationSet>> queryResultList) {
-        new Table<Map.Entry<String, Object>>(tableType)
-                .addColumn("KEY", Map.Entry::getKey)
-                .addColumn("VALUE", e -> e.getValue().toString())
-                .printTable(queryResultList.stream().flatMap(r -> r.getResults().stream().flatMap(a -> a.getAnnotations().entrySet().stream())).collect(Collectors.toList()));
-    }
-
-    private void printTreeFile(RestResponse<FileTree> queryResponse) {
-        StringBuilder sb = new StringBuilder();
-        for (DataResult<FileTree> fileTreeQueryResult : queryResponse.getResponses()) {
-            printRecursiveTree(fileTreeQueryResult.getResults(), sb, "");
-        }
-        ps.println(sb.toString());
-    }
-
-    private void printRecursiveTree(List<FileTree> fileTreeList, StringBuilder sb, String indent) {
-        if (fileTreeList == null || fileTreeList.size() == 0) {
-            return;
-        }
-
-        for (Iterator<FileTree> iterator = fileTreeList.iterator(); iterator.hasNext(); ) {
-            FileTree fileTree = iterator.next();
-            File file = fileTree.getFile();
-
-            if (!indent.isEmpty()) {
-                sb.append(indent);
-                sb.append(iterator.hasNext() ? "├──" : "└──");
-                sb.append(" ");
-            }
-            if (file.getType() == File.Type.FILE) {
-                sb.append(file.getName());
-                sb.append("  [");
-                if (file.getInternal() != null
-                        && file.getInternal().getStatus() != null
-                        && !READY.equals(file.getInternal().getStatus().getId())) {
-                    sb.append(file.getInternal().getStatus().getId()).append(", ");
-                }
-                sb.append(humanReadableByteCount(file.getSize(), false)).append("]");
-
-            } else {
-                sb.append(file.getName()).append("/");
-            }
-            sb.append("\n");
-
-            if (file.getType() == File.Type.DIRECTORY) {
-                printRecursiveTree(fileTree.getChildren(), sb, indent + (iterator.hasNext() ? "│   " : "    "));
-            }
+        @Override
+        public Table.TableColumnSchema<Job> getColumnSchema() {
+            return columnSchema;
         }
     }
 
-    private <T> List<T> unwind(List<DataResult<T>> queryResultList) {
-        return queryResultList.stream().flatMap(r -> r.getResults().stream()).collect(Collectors.toList());
-    }
-
-    private String getId(Annotable annotable) {
-        return getId(annotable, "-");
-    }
-
-    private String getId(Annotable annotable, String defaultStr) {
-        return annotable != null ? StringUtils.defaultIfEmpty(annotable.getId(), defaultStr) : defaultStr;
+    public interface TableSchema<T> {
+        Table.TableColumnSchema<T> getColumnSchema();
     }
 }

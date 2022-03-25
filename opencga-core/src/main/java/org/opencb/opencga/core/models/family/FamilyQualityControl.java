@@ -2,14 +2,26 @@ package org.opencb.opencga.core.models.family;
 
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.qc.RelatednessReport;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 public class FamilyQualityControl implements Serializable {
+
+
+    @DataField(id = "relatedness",
+            description = FieldConstants.FAMILY_QUALITY_CONTROL_RELATEDNESS_DESCRIPTION)
     private List<RelatednessReport> relatedness;
+
+    @DataField(id = "files",
+            description = FieldConstants.QUALITY_CONTROL_FILES_DESCRIPTION)
     private List<String> files;
+
+    @DataField(id = "comments",
+            description = FieldConstants.QUALITY_CONTROL_COMMENTS_DESCRIPTION)
     private List<ClinicalComment> comments;
 
     public FamilyQualityControl() {

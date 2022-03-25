@@ -442,7 +442,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
         }
 
-        String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
+        String[] acceptedParams = {NAME.key(), QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
 
         if (StringUtils.isNotEmpty(parameters.getString(QueryParams.CREATION_DATE.key()))) {
@@ -563,6 +563,9 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     OpenCGAResult<Cohort> privateDelete(ClientSession clientSession, Document cohortDocument) throws CatalogDBException {
         long tmpStartTime = startQuery();
 
+        // Remove private _id from the document to avoid issues with mongo in case a document already exists
+        cohortDocument.remove("_id");
+
         String cohortId = cohortDocument.getString(QueryParams.ID.key());
         long cohortUid = cohortDocument.getLong(PRIVATE_UID);
         long studyUid = cohortDocument.getLong(PRIVATE_STUDY_UID);
@@ -579,7 +582,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         Bson query = new Document()
                 .append(QueryParams.ID.key(), cohortId)
                 .append(PRIVATE_STUDY_UID, studyUid);
-        deletedCohortCollection.update(clientSession, query, new Document("$set", cohortDocument),
+        deletedCohortCollection.update(clientSession, query, new Document("$set", replaceDotsInKeys(cohortDocument)),
                 new QueryOptions(MongoDBCollection.UPSERT, true));
 
         // Delete the document from the main COHORT collection
@@ -918,6 +921,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                         break;
                     case UUID:
                     case ID:
+                    case NAME:
                     case TYPE:
                     case RELEASE:
                     case NUM_SAMPLES:

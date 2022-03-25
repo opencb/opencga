@@ -43,7 +43,7 @@ import java.util.Map;
 public class VariantTableHelper extends GenomeHelper {
 
     private final byte[] variantsTable;
-    private HBaseVariantTableNameGenerator generator;
+    private final HBaseVariantTableNameGenerator generator;
 
     public VariantTableHelper(Configuration conf) {
         this(conf, conf.get(AbstractVariantsTableDriver.CONFIG_VARIANT_TABLE_NAME, StringUtils.EMPTY));
@@ -65,17 +65,17 @@ public class VariantTableHelper extends GenomeHelper {
 //        setStudyId(HBaseVariantTableNameGenerator.getStudyIdFromArchiveTable(archiveTable));
     }
 
-    public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName) throws IOException {
-        try (Connection con = ConnectionFactory.createConnection(genomeHelper.getConf())) {
-            return createVariantTableIfNeeded(genomeHelper, tableName, con);
+    public static boolean createVariantTableIfNeeded(String tableName, Configuration conf) throws IOException {
+        try (Connection con = ConnectionFactory.createConnection(conf)) {
+            return createVariantTableIfNeeded(tableName, con, conf);
         }
     }
 
-    public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con)
+    public static boolean createVariantTableIfNeeded(String tableName, Connection con, Configuration conf)
             throws IOException {
 //        VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(genomeHelper);
 
-        int nsplits = genomeHelper.getConf().getInt(
+        int nsplits = conf.getInt(
                 HadoopVariantStorageOptions.VARIANT_TABLE_PRESPLIT_SIZE.key(),
                 HadoopVariantStorageOptions.VARIANT_TABLE_PRESPLIT_SIZE.defaultValue());
         List<byte[]> splitList = generateBootPreSplitsHuman(
@@ -83,7 +83,7 @@ public class VariantTableHelper extends GenomeHelper {
                 VariantPhoenixKeyFactory::generateVariantRowKey);
         boolean newTable = HBaseManager.createTableIfNeeded(con, tableName, COLUMN_FAMILY_BYTES,
                 splitList, Compression.getCompressionAlgorithmByName(
-                        genomeHelper.getConf().get(
+                        conf.get(
                                 HadoopVariantStorageOptions.VARIANT_TABLE_COMPRESSION.key(),
                                 HadoopVariantStorageOptions.VARIANT_TABLE_COMPRESSION.defaultValue())));
 //        if (newTable) {

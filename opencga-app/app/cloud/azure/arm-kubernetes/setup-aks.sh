@@ -8,13 +8,14 @@ function printUsage() {
   echo ""
   echo "Options:"
   echo "   * -s     --subscription            STRING      Subscription name or subscription id"
+  echo "            --skip-k8s-deployment     FLAG        Skip k8s deployment. Skip 'setup-k8s.sh' "
   echo "     -c     --k8s-context             STRING      Kubernetes context"
   echo "            --k8s-namespace           STRING      Kubernetes namespace"
   echo "     --aof  --azure-output-file       FILE        Azure deployment output file"
   echo "     --hf   --helm-file               FILE        Helm values file. Used when calling to 'setup-k8s.sh' "
   echo "     -o     --outdir                  DIRECTORY   Output directory where to write the generated manifests. Default: \$PWD"
   echo "            --opencga-conf-dir        DIRECTORY   OpenCGA configuration folder. Default: build/conf/ "
-  echo "            --keep-tmp-files           FLAG       Do not remove any temporary file generated in the outdir"
+  echo "            --keep-tmp-files          FLAG        Do not remove any temporary file generated in the outdir"
   echo "            --verbose                 FLAG        Verbose mode. Print debugging messages about the progress."
   echo "     -h     --help                    FLAG        Print this help"
   echo ""
@@ -53,16 +54,16 @@ function requiredDirectory() {
 #subscriptionName
 #deploymentOut
 #userHelmValues
-#setupK8sOpts
+setupK8sOpts=()
 #k8sContext
 #k8sNamespace
 #outputDir
+skipK8s=false
 
-while [[ $# -gt 0 ]]
-do
-key="$1"
-value="$2"
-case $key in
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  value="$2"
+  case $key in
   -h | --help)
     printUsage
     exit 0
@@ -84,6 +85,10 @@ case $key in
     shift # past argument
     shift # past value
     ;;
+  --skip-k8s-deployment)
+    skipK8s=true
+    shift # past argument
+    ;;
   -c | --k8s-context)
     k8sContext="$value"
     shift # past argument
@@ -95,13 +100,13 @@ case $key in
     shift # past value
     ;;
   --keep-tmp-files)
-    setupK8sOpts="${setupK8sOpts} $key "
+    setupK8sOpts+=("$key")
     shift # past argument
     ;;
   -o | --outdir)
     requiredDirectory "$key" "$value"
     value=$(realpath "$value")
-    setupK8sOpts="${setupK8sOpts} --outdir $value "
+    setupK8sOpts+=("$key" "$value")
     outputDir=$value
     shift # past argument
     shift # past value
@@ -109,21 +114,21 @@ case $key in
   --opencga-conf-dir)
     requiredDirectory "$key" "$value"
     value=$(realpath "$value")
-    setupK8sOpts="${setupK8sOpts} --opencga-conf-dir $value "
+    setupK8sOpts+=("$key" "$value")
     shift # past argument
     shift # past value
     ;;
   --verbose)
     set -x
-    setupK8sOpts="${setupK8sOpts} --verbose "
+    setupK8sOpts+=("$key")
     shift # past argument
     ;;
-  *)    # unknown option
+  *) # unknown option
     echo "Unknown option $key"
     printUsage
     exit 1
     ;;
-esac
+  esac
 done
 
 requiredParam "--subscription" "$subscriptionName"
@@ -165,7 +170,7 @@ function generateHelmValuesFile() {
     mongodbAgentPool=default
   fi
   ## Generate helm values file
-  cat >> "${helmValues}" << EOF
+  cat >>"${helmValues}" <<EOF
 # $(date "+%Y%m%d%H%M%S")
 # Auto generated file from deployment output ${deploymentOut}
 
@@ -178,11 +183,14 @@ solr:
       agentpool: "$solrAgentPool"
     zookeeper:
       nodeSelector:
-        agentpool: "$mongodbAgentPool"
+        agentpool: "$solrAgentPool"
 
 mongodb:
   user: "$(getOutput "mongoDbUser")"
   password: "$(getOutput "mongoDbPassword")"
+  ssl: true
+  authenticationDatabase : "admin"
+  authenticationMechanism : "SCRAM-SHA-256"
   external:
     hosts: "$(getOutput "mongoDbHostsCSV")"
   deploy:
@@ -235,37 +243,36 @@ EOF
 function registerIngressDomainName() {
   ## Register manually the nginx external IP for ingress
   EXTERNAL_IP=$(kubectl get services \
-             --context "${k8sContext}" \
-             --namespace "${k8sNamespace}" \
-             -o "jsonpath={.status.loadBalancer.ingress[0].ip}" \
-             opencga-nginx-ingress-nginx-controller)
+    --context "${k8sContext}" \
+    --namespace "${k8sNamespace}" \
+    -o "jsonpath={.status.loadBalancer.ingress[0].ip}" \
+    opencga-nginx-ingress-nginx-controller)
 
   ACTUAL_IP=$(az network private-dns record-set a show \
-             --subscription "${subscriptionName}" \
-             --resource-group $(getOutput "aksResourceGroupName") \
-             --zone-name $(getOutput "privateDnsZonesName")       \
-             --name opencga 2> /dev/null | jq .aRecords[].ipv4Address -r)
+    --subscription "${subscriptionName}" \
+    --resource-group $(getOutput "aksResourceGroupName") \
+    --zone-name $(getOutput "privateDnsZonesName") \
+    --name opencga 2>/dev/null | jq .aRecords[].ipv4Address -r)
 
-  if [ "$ACTUAL_IP" != "" ] && [ "$ACTUAL_IP" != "$EXTERNAL_IP" ] ; then
+  if [ "$ACTUAL_IP" != "" ] && [ "$ACTUAL_IP" != "$EXTERNAL_IP" ]; then
     echo "Delete outdated A record: opencga.$(getOutput "privateDnsZonesName") : ${ACTUAL_IP}"
-    az network private-dns record-set a delete              \
-      --subscription "${subscriptionName}"                  \
-      --resource-group $(getOutput "aksResourceGroupName")  \
-      --zone-name "$(getOutput "privateDnsZonesName")"      \
+    az network private-dns record-set a delete \
+      --subscription "${subscriptionName}" \
+      --resource-group $(getOutput "aksResourceGroupName") \
+      --zone-name "$(getOutput "privateDnsZonesName")" \
       --name opencga
   fi
 
-  if [ "$ACTUAL_IP" == "" ] || [ "$ACTUAL_IP" != "$EXTERNAL_IP" ] ; then
+  if [ "$ACTUAL_IP" == "" ] || [ "$ACTUAL_IP" != "$EXTERNAL_IP" ]; then
     echo "Create A record: opencga.$(getOutput "privateDnsZonesName") : ${EXTERNAL_IP}"
-    az network private-dns record-set a add-record          \
-      --subscription "${subscriptionName}"                  \
-      --resource-group $(getOutput "aksResourceGroupName")  \
-      --zone-name "$(getOutput "privateDnsZonesName")"      \
-      --record-set-name opencga                             \
+    az network private-dns record-set a add-record \
+      --subscription "${subscriptionName}" \
+      --resource-group $(getOutput "aksResourceGroupName") \
+      --zone-name "$(getOutput "privateDnsZonesName")" \
+      --record-set-name opencga \
       --ipv4-address ${EXTERNAL_IP}
   fi
 }
-
 
 echo "# Configure K8s context"
 configureContext
@@ -273,8 +280,14 @@ configureContext
 echo "# Generate helm values file ${helmValues}"
 generateHelmValuesFile
 
-echo "$(realpath "$(pwd)/../../kubernetes/setup-k8s.sh") --context \"${k8sContext}\" --namespace \"${k8sNamespace}\" --values \"${allHelmValues}\" $setupK8sOpts" | tee -a "$outputDir/setup-k8s-$(date "+%Y%m%d%H%M%S").sh"
-../../kubernetes/setup-k8s.sh --context "${k8sContext}" --namespace "${k8sNamespace}" --values "${allHelmValues}" $setupK8sOpts
+setupK8sCommandFile="$outputDir/setup-k8s-$(date "+%Y%m%d%H%M%S").sh"
+echo "$(realpath "$(pwd)/../../kubernetes/setup-k8s.sh") --context \"${k8sContext}\" --namespace \"${k8sNamespace}\" --values \"${allHelmValues}\" ${setupK8sOpts[*]}" | tee -a "$setupK8sCommandFile"
+if [ "${skipK8s}" == "true" ]; then
+  echo "Skip setup-k8s.sh"
+  echo "See ${setupK8sCommandFile}"
+else
+  ../../kubernetes/setup-k8s.sh --context "${k8sContext}" --namespace "${k8sNamespace}" --values "${allHelmValues}" "${setupK8sOpts[@]}"
 
-echo "# Register Ingress domain name (if needed)"
-registerIngressDomainName
+  echo "# Register Ingress domain name (if needed)"
+  registerIngressDomainName
+fi

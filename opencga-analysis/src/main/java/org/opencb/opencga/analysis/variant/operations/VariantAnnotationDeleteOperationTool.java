@@ -19,8 +19,9 @@ package org.opencb.opencga.analysis.variant.operations;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.models.operations.variant.VariantAnnotationDeleteParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.tools.annotations.ToolParams;
 
-@Tool(id = VariantAnnotationDeleteOperationTool.ID, description = VariantAnnotationDeleteOperationTool.ID,
+@Tool(id = VariantAnnotationDeleteOperationTool.ID, description = VariantAnnotationDeleteOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION,
         scope = Tool.Scope.PROJECT,
         resource = Enums.Resource.VARIANT)
@@ -28,16 +29,15 @@ public class VariantAnnotationDeleteOperationTool extends OperationTool {
 
     public static final String ID = "variant-annotation-delete";
     public static final String DESCRIPTION = "Deletes a saved copy of variant annotation";
-    private VariantAnnotationDeleteParams variantAnnotationDeleteParams;
+
+    @ToolParams
+    protected VariantAnnotationDeleteParams variantAnnotationDeleteParams;
     private String project;
 
     @Override
     protected void check() throws Exception {
         super.check();
-
-        variantAnnotationDeleteParams = VariantAnnotationDeleteParams.fromParams(VariantAnnotationDeleteParams.class, params);
         project = getProjectFqn();
-
     }
 
     @Override

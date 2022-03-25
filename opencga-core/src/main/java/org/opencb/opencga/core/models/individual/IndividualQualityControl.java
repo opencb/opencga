@@ -20,6 +20,8 @@ import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.biodata.models.clinical.qc.MendelianErrorReport;
 import org.opencb.biodata.models.clinical.qc.SampleRelatednessReport;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,21 +31,32 @@ public class IndividualQualityControl {
     /**
      * List of inferred sex reports, it depends on the method (currently by coverage ratio)
      */
+
+    @DataField(id = "inferredSexReports", indexed = true,
+            description = FieldConstants.INDIVIDUAL_QUALITY_CONTROL_INFERRED_SEX_REPORT_DESCRIPTION)
     private List<InferredSexReport> inferredSexReports;
 
+    @DataField(id = "sampleRelatednessReport", indexed = true,
+            description = FieldConstants.INDIVIDUAL_QUALITY_CONTROL_SAMPLE_RELATEDNESS_REPORT_DESCRIPTION)
     private SampleRelatednessReport sampleRelatednessReport;
 
     /**
      * Mendelian errors
      */
+    @DataField(id = "mendelianErrorReports", indexed = true,
+            description = FieldConstants.INDIVIDUAL_QUALITY_CONTROL_MENDELIAN_ERRORS_DESCRIPTION)
     private List<MendelianErrorReport> mendelianErrorReports;
     /**
      * File IDs related to the quality control
      */
+    @DataField(id = "files", indexed = true,
+            description = FieldConstants.QUALITY_CONTROL_FILES_DESCRIPTION)
     private List<String> files;
     /**
      * Comments related to the quality control
      */
+    @DataField(id = "author", indexed = true,
+            description = FieldConstants.QUALITY_CONTROL_COMMENTS_DESCRIPTION)
     private List<ClinicalComment> comments;
 
     public IndividualQualityControl() {

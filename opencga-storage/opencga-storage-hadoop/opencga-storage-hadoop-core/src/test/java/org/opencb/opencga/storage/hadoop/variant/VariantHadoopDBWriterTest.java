@@ -226,8 +226,8 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         sc.getAttributes().append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         VariantStorageMetadataManager metadataManager = this.metadataManager;
         metadataManager.unsecureUpdateStudyMetadata(sc);
-        ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper().getConf(), archiveTableName);
-        VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), dbAdaptor.getVariantTable());
+        ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getConfiguration(), archiveTableName);
+        VariantTableHelper.createVariantTableIfNeeded(dbAdaptor.getVariantTable(), dbAdaptor.getConfiguration());
         metadataManager.updateProjectMetadata(projectMetadata -> {
             if (projectMetadata == null) {
                 return new ProjectMetadata("hsapiens", "grch37", 1);
@@ -241,7 +241,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         fileMetadata.setSampleIds(variants.get(0).getStudies().get(0).getOrderedSamplesName());
         metadataManager.updateVariantFileMetadata(String.valueOf(sc.getId()), fileMetadata);
 
-        ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), sc.getId(), fileMetadata);
+        ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getConfiguration(), sc.getId(), fileMetadata);
 
 
         // Create dummy reader
@@ -270,7 +270,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
     private void stageVariants(StudyMetadata study, int fileId, List<Variant> variants) throws Exception {
         String archiveTableName = engine.getArchiveTableName(study.getId());
-        ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper().getConf(), archiveTableName);
+        ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getConfiguration(), archiveTableName);
 
         // Create empty VariantFileMetadata
         VariantFileMetadata fileMetadata = new VariantFileMetadata(String.valueOf(fileId), String.valueOf(fileId));
@@ -326,7 +326,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
         @SuppressWarnings("unchecked")
         Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Mutation>.Context context = Mockito.mock(Mapper.Context.class);
         Mockito.doReturn(new TaskAttemptID("", 1, TaskType.MAP, 1, 1)).when(context).getTaskAttemptID();
-        Mockito.doReturn(dbAdaptor.getGenomeHelper().getConf()).when(context).getConfiguration();
+        Mockito.doReturn(dbAdaptor.getConfiguration()).when(context).getConfiguration();
         Mockito.doAnswer(invocation -> counterMap.computeIfAbsent(invocation.getArgument(0) + "_" + invocation.getArgument(1), (k) -> new GenericCounter(k, k)))
                 .when(context).getCounter(ArgumentMatchers.anyString(), ArgumentMatchers.anyString());
         Mockito.doAnswer(invocation -> counterMap.computeIfAbsent(invocation.getArgument(0).toString(), (k) -> new GenericCounter(k, k))).when(context).getCounter(ArgumentMatchers.any());

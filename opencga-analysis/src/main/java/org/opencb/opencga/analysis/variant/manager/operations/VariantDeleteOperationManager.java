@@ -62,7 +62,7 @@ public class VariantDeleteOperationManager extends OperationManager {
                 if (!catalogIndexStatus.equals(VariantIndexStatus.READY)) {
                     // Might be partially loaded in VariantStorage. Check FileMetadata
                     FileMetadata fileMetadata = variantStorageEngine.getMetadataManager().getFileMetadata(studyMetadata.getId(), fileStr);
-                    if (fileMetadata == null || !fileMetadata.getIndexStatus().equals(TaskMetadata.Status.NONE)) {
+                    if (fileMetadata == null || fileMetadata.getIndexStatus() != TaskMetadata.Status.NONE) {
                         throw new CatalogException("Unable to remove variants from file " + file.getName() + ". "
                                 + "IndexStatus = " + catalogIndexStatus);
                     }

@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: {{ .Values.rest.name }}
   labels:
+    {{- include "opencga.labels" . | nindent 4 }}
     app: {{  .Values.rest.name  }}
 spec:
   type: {{ .Values.rest.service.type }}

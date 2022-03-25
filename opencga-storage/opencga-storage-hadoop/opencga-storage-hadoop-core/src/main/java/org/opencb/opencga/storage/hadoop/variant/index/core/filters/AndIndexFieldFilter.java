@@ -34,4 +34,13 @@ public class AndIndexFieldFilter extends IndexFieldFilter {
     public boolean isExactFilter() {
         return exactFilter;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("AndIndexFieldFilter{");
+        sb.append("exact:").append(exactFilter).append(", ");
+        sb.append("filters:").append(filters);
+        sb.append('}');
+        return sb.toString();
+    }
 }

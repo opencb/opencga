@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.core.models.project;
 
+import org.opencb.commons.annotations.DataClass;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.study.Study;
@@ -28,6 +31,8 @@ import java.util.Map;
 /**
  * Created by jacobo on 11/09/14.
  */
+@DataClass(id = "Project", since = "1.0",
+        description = "Project data model hosts information about any project.")
 public class Project extends PrivateFields {
 
     /**
@@ -35,6 +40,8 @@ public class Project extends PrivateFields {
      *
      * @apiNote Required, Immutable, Unique
      */
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
 
     /**
@@ -42,12 +49,21 @@ public class Project extends PrivateFields {
      *
      * @apiNote Internal, Unique, Immutable
      */
+    @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String uuid;
+
+
+    @DataField(id = "name", indexed = true,
+            description = FieldConstants.GENERIC_NAME)
     private String name;
 
     /**
      * Full Qualified Name (user@projectId).
      */
+
+    @DataField(id = "fqn", indexed = true,
+            description = FieldConstants.PROJECT_FQN)
     private String fqn;
 
     /**
@@ -55,6 +71,8 @@ public class Project extends PrivateFields {
      *
      * @apiNote Internal
      */
+    @DataField(id = "creationDate", indexed = true,
+            description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
 
     /**
@@ -62,6 +80,8 @@ public class Project extends PrivateFields {
      *
      * @apiNote Internal
      */
+    @DataField(id = "modificationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
     /**
@@ -69,11 +89,22 @@ public class Project extends PrivateFields {
      *
      * @apiNote
      */
+    @DataField(id = "description", defaultValue = "No description available",
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
+    @DataField(id = "organism",
+            description = FieldConstants.PROJECT_ORGANISM)
     private ProjectOrganism organism;
+
+
+    @DataField(id = "currentRelease", indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int currentRelease;
 
+
+    @DataField(id = "studies",
+            description = FieldConstants.PROJECT_STUDIES)
     private List<Study> studies;
 
     /**
@@ -81,6 +112,9 @@ public class Project extends PrivateFields {
      *
      * @apiNote Internal
      */
+
+    @DataField(id = "release", indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private ProjectInternal internal;
 
     /**
@@ -88,6 +122,8 @@ public class Project extends PrivateFields {
      *
      * @apiNote
      */
+    @DataField(id = "attributes", indexed = true,
+            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public Project() {

@@ -1,9 +1,20 @@
 package org.opencb.opencga.core.models.common;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 public class FlagAnnotation {
 
+    @DataField(id = "id", indexed = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
+
+    @DataField(id = "description", indexed = true,
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+
+    @DataField(id = "date", indexed = true,
+            description = FieldConstants.FLAG_ANNOTATION_DATE_DESCRIPTION)
     private String date;
 
     public FlagAnnotation() {

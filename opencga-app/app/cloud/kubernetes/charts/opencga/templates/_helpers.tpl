@@ -33,6 +33,7 @@ Create chart name and version as used by the chart label.
 
 {{/*
 Common labels
+See https://helm.sh/docs/chart_best_practices/labels/#standard-labels
 */}}
 {{- define "opencga.labels" -}}
 helm.sh/chart: {{ include "opencga.chart" . }}
@@ -138,6 +139,8 @@ pvc-{{ include "opencga.fullname" . }}-analysisconf
 {{- define "mongodb.replicaSet" -}}
 {{- if .Values.mongodb.deploy.enabled -}}
     {{- .Values.mongodb.deploy.name }}
+{{- else -}}
+    {{- .Values.mongodb.replicaSet }}
 {{- end -}}
 {{- end -}}
 
@@ -149,7 +152,7 @@ pvc-{{ include "opencga.fullname" . }}-analysisconf
         {{- if ne $i 0 -}}
           ,
         {{- end -}}
-        {{- cat $name "-" $i "." $name "-svc." $namespace ":27017" | replace " " "" -}}
+        {{- cat $name "-" $i "." $name "-svc." $namespace ".svc.cluster.local:27017" | replace " " "" -}}
     {{- end -}}
 {{- else -}}
     {{- .Values.mongodb.external.hosts }}
