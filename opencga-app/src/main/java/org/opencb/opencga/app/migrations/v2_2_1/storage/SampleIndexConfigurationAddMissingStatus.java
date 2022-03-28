@@ -19,7 +19,9 @@ public class SampleIndexConfigurationAddMissingStatus extends StorageMigrationTo
             VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
             for (Integer studyId : metadataManager.getStudyIds()) {
                 StudyMetadata study = metadataManager.getStudyMetadata(studyId);
-                if (study.getSampleIndexConfigurations().stream().anyMatch(sc -> sc.getStatus() == null)) {
+                if (study.getSampleIndexConfigurations() != null &&
+                        study.getSampleIndexConfigurations().stream().anyMatch(sc -> sc.getStatus() == null)) {
+                    logger.info("Update study {} as it contains sample index configurations without Status", study.getName());
                     metadataManager.updateStudyMetadata(studyId, sm -> {
                         for (StudyMetadata.SampleIndexConfigurationVersioned sc : sm.getSampleIndexConfigurations()) {
                             if (sc.getStatus() == null) {
