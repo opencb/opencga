@@ -60,7 +60,8 @@ public abstract class CliOptionsParser {
 
         List<String> cmds = commander.getCommands().keySet().stream().sorted().collect(Collectors.toList());
         for (String key : cmds) {
-            PrintUtils.printCommandHelpFormattedString(padding, key, commander.getCommandDescription(key));
+//            PrintUtils.printCommandHelpFormattedString(padding, key, commander.getCommandDescription(key));
+            PrintUtils.printCommandHelpFormattedString(padding, key, commander.getDescriptions().get(key).toString());
         }
     }
 

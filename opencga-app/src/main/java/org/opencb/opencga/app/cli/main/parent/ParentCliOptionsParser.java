@@ -105,7 +105,9 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         for (int i = 0; i < catalog.length; i++) {
             for (String command : jCommander.getCommands().keySet()) {
                 if (command.equals(catalog[i])) {
-                    PrintUtils.printCommandHelpFormattedString(command, jCommander.getCommandDescription(command));
+//                    PrintUtils.printCommandHelpFormattedString(command, jCommander.getCommandDescription(command));
+                    PrintUtils.printCommandHelpFormattedString(command,
+                            jCommander.getDescriptions().get(command).toString());
                 }
             }
         }
@@ -115,7 +117,9 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         for (int i = 0; i < analysis.length; i++) {
             for (String command : jCommander.getCommands().keySet()) {
                 if (command.equals(analysis[i])) {
-                    PrintUtils.printCommandHelpFormattedString(command, jCommander.getCommandDescription(command));
+//                    PrintUtils.printCommandHelpFormattedString(command, jCommander.getCommandDescription(command));
+                    PrintUtils.printCommandHelpFormattedString(command,
+                            jCommander.getDescriptions().get(command).toString());
                 }
             }
         }
@@ -126,7 +130,9 @@ public class ParentCliOptionsParser extends CliOptionsParser {
         for (int i = 0; i < operations.length; i++) {
             for (String command : jCommander.getCommands().keySet()) {
                 if (command.equals(operations[i])) {
-                    PrintUtils.printCommandHelpFormattedString(command, jCommander.getCommandDescription(command));
+//                    PrintUtils.printCommandHelpFormattedString(command, jCommander.getCommandDescription(command));
+                    PrintUtils.printCommandHelpFormattedString(command,
+                            jCommander.getDescriptions().get(command).toString());
                 }
             }
         }

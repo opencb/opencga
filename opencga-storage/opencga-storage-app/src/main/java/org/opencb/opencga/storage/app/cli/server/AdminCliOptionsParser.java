@@ -107,13 +107,15 @@ public class AdminCliOptionsParser extends GeneralCliOptions {
 
     private void printMainUsage() {
         for (String s : jcommander.getCommands().keySet()) {
-            System.err.printf("%14s  %s\n", s, jcommander.getCommandDescription(s));
+//            System.err.printf("%14s  %s\n", s, jcommander.getCommandDescription(s));
+            System.err.printf("%14s  %s\n", s, jcommander.getDescriptions().get(s));
         }
     }
 
     private void printCommands(JCommander commander) {
         for (Map.Entry<String, JCommander> entry : commander.getCommands().entrySet()) {
-            System.err.printf("%14s  %s\n", entry.getKey(), commander.getCommandDescription(entry.getKey()));
+//            System.err.printf("%14s  %s\n", entry.getKey(), commander.getCommandDescription(entry.getKey()));
+            System.err.printf("%14s  %s\n", entry.getKey(), commander.getDescriptions().get(entry.getKey()));
         }
     }
 
