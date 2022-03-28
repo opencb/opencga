@@ -78,7 +78,7 @@
         <hbase.version>1.1.2</hbase.version>
         <phoenix.version>4.7.0-HBase-1.1</phoenix.version>
 
-        <protobuf2.version>2.5.0</protobuf2.version>
+        <protobuf2.version>3.16.1</protobuf2.version>
         <guava.version>15.0</guava.version>
 
         <!--Read from main hadoop pom.xml . Versions not as a property in that pom-->
