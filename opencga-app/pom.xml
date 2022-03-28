@@ -83,6 +83,12 @@
             <version>${opencga.version}</version>
             <!--<type>war</type>-->
         </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>com.beust</groupId>-->
+<!--            <artifactId>jcommander</artifactId>-->
+<!--            <version>1.82</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet-core</artifactId>
@@ -109,25 +115,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        <!--Uncomment if hadoop dependencies are provided-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.hadoop</groupId>-->
-        <!--<artifactId>hadoop-common</artifactId>-->
-        <!--<version>${hadoop.version}</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.hadoop</groupId>-->
-        <!--<artifactId>hadoop-client</artifactId>-->
-        <!--<version>${hadoop.version}</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.hbase</groupId>-->
-        <!--<artifactId>hbase-server</artifactId>-->
-        <!--<version>${hbase.version}</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -144,7 +131,6 @@
             <artifactId>jline-terminal</artifactId>
             <version>${dep.jline.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline-terminal-jna</artifactId>
