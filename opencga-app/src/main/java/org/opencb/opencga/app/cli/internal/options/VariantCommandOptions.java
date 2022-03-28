@@ -532,7 +532,7 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public Object internalJobOptions = internalJobOptionsObject;
 
-        @Parameter(names = {"--family"}, required = true, description = "Families to index. " +
+        @Parameter(names = {"--family"}, required = false, description = "Families to index. " +
                 "Use \"" + VariantQueryUtils.ALL + "\" to index all families in the study.")
         public List<String> family;
 
