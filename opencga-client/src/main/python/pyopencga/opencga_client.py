@@ -149,15 +149,13 @@ class OpencgaClient(object):
         retry_seconds = retry_seconds if retry_seconds >= 10 else 10
         while True:
             job_info = self.jobs.info(study=study_id, jobs=job_id).get_result(0)
-            if job_info['internal']['status']['name'] in ['ERROR', 'ABORTED']:
-                if 'id' in job_info['internal']['status']:
-                    id_ = job_info['internal']['status']['id']
-                else:
-                    id_ = job_info['internal']['status']['name']
+            if job_info['internal']['status']['id'] in ['ERROR', 'ABORTED']:
                 raise ValueError('{} ({}): {}'.format(
-                    id_, job_info['internal']['status']['date'], job_info['internal']['status']['description']
+                    job_info['internal']['status']['id'],
+                    job_info['internal']['status']['date'],
+                    job_info['internal']['status']['description']
                 ))
-            elif job_info['internal']['status']['name'] in ['DONE']:
+            elif job_info['internal']['status']['id'] in ['DONE']:
                 break
             time.sleep(retry_seconds)
 
