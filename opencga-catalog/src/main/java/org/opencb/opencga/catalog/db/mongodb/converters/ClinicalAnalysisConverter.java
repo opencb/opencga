@@ -118,7 +118,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
             // We make sure we don't store duplicates
             Map<Long, Panel> panelMap = new HashMap<>();
             for (Document panel : panels) {
-                long uid = panel.getInteger(PanelDBAdaptor.QueryParams.UID.key()).longValue();
+                long uid = panel.get(PanelDBAdaptor.QueryParams.UID.key(), Number.class).longValue();
                 int version = panel.getInteger(PanelDBAdaptor.QueryParams.VERSION.key());
                 if (uid > 0) {
                     Panel tmpPanel = new Panel()
@@ -145,7 +145,7 @@ public class ClinicalAnalysisConverter extends OpenCgaMongoConverter<ClinicalAna
             // We make sure we don't store duplicates
             Map<Long, File> fileMap = new HashMap<>();
             for (Document file : files) {
-                long uid = file.getInteger(FileDBAdaptor.QueryParams.UID.key()).longValue();
+                long uid = file.get(FileDBAdaptor.QueryParams.UID.key(), Number.class).longValue();
                 if (uid > 0) {
                     File tmpFile = new File()
                             .setPath(file.getString(FileDBAdaptor.QueryParams.PATH.key()))
