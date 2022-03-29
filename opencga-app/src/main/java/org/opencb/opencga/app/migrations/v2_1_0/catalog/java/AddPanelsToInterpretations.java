@@ -13,7 +13,7 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
 
-import java.util.List;
+import java.util.*;
 
 import static com.mongodb.client.model.Filters.eq;
 
@@ -21,7 +21,6 @@ import static com.mongodb.client.model.Filters.eq;
         description = "Add panels to Interpretations #1802", version = "2.1.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
-        patch = 1,
         date = 20210713)
 public class AddPanelsToInterpretations extends MigrationTool {
 
@@ -29,6 +28,47 @@ public class AddPanelsToInterpretations extends MigrationTool {
     protected void run() throws Exception {
         MongoCollection<Document> clinicalCollection = getMongoCollection(MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION);
 
+        /*
+            1. Check if there is any orphan interpretation (attached to an unknown clinical analysis)
+        */
+        // Obtain all clinicalAnalysisIds (study - [clinicalIds])
+        Map<String, Set<String>> clinicalMap = new HashMap<>();
+        queryMongo(MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION, new Document(),
+                Projections.include(Arrays.asList("id", "studyUid")), (doc) -> {
+                    String id = doc.getString("id");
+                    String studyUid = String.valueOf(doc.getLong("studyUid"));
+
+                    if (!clinicalMap.containsKey(studyUid)) {
+                        clinicalMap.put(studyUid, new HashSet<>());
+                    }
+                    clinicalMap.get(studyUid).add(id);
+                });
+
+        List<Object> interpretationsToRemove = new LinkedList<>();
+        // Iterate over all interpretations and remove orphan ones
+        queryMongo(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION, new Document(),
+                Projections.include(Arrays.asList("_id", "clinicalAnalysisId", "studyUid")), (doc) -> {
+                    Object interpretationId = doc.get("_id");
+                    String clinicalId = doc.getString("clinicalAnalysisId");
+                    String studyUid = String.valueOf(doc.getLong("studyUid"));
+
+                    if (!clinicalMap.containsKey(studyUid) || !clinicalMap.get(studyUid).contains(clinicalId)) {
+                        interpretationsToRemove.add(interpretationId);
+                    }
+                });
+
+        if (!interpretationsToRemove.isEmpty()) {
+            MongoCollection<Document> interpretationCollection = getMongoCollection(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION);
+            List<List<Object>> bulkList = generateBulks(interpretationsToRemove);
+            logger.info("Removing " + interpretationsToRemove.size() + " orphan interpretations...");
+            for (List<Object> list : bulkList) {
+                interpretationCollection.deleteMany(Filters.in("_id", list));
+            }
+        }
+
+        /*
+            2. Add panels to Interpretations
+        */
         migrateCollection(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION,
                 new Document(InterpretationDBAdaptor.QueryParams.PANELS.key(), new Document("$exists", false)),
                 Projections.include("_id", InterpretationDBAdaptor.QueryParams.ID.key(),
