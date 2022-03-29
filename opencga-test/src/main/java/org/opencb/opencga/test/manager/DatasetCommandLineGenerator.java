@@ -34,7 +34,7 @@ public class DatasetCommandLineGenerator {
 
     public static List<String> findAllFileNamesInFolder(File folder) {
         List<String> res = new ArrayList<>();
-        for (File file : folder.listFiles()) {
+        for (File file : Objects.requireNonNull(folder.listFiles())) {
             if (!file.isDirectory()) {
                 res.add(file.getName());
             }
@@ -78,7 +78,7 @@ public class DatasetCommandLineGenerator {
 
         List<String> commandLines = getAlignerCommandLines(environment, alignerCommand, alignerParams);
         for (String caller : callersCommands.keySet()) {
-            commandLines.addAll(getCallerCommandLines(environment, callersCommands.get(caller), callersParams.get(caller)));
+            commandLines.addAll(getVariantCallerCommandLines(environment, callersCommands.get(caller), callersParams.get(caller)));
         }
         return commandLines;
     }
@@ -103,7 +103,7 @@ public class DatasetCommandLineGenerator {
      * @param environment
      * @return
      */
-    private List<String> getCallerCommandLines(Env environment, String command, List<String> params) {
+    private List<String> getVariantCallerCommandLines(Env environment, String command, List<String> params) {
         String param = String.join(" ", params);
         command = command.replace("${PARAMS}", param);
         command = replaceCallerEnvironmentVariables(environment, command);
@@ -112,7 +112,6 @@ public class DatasetCommandLineGenerator {
     }
 
     /***
-     *
      *
      * @param environment
      * @param command
@@ -133,11 +132,9 @@ public class DatasetCommandLineGenerator {
             result.add(command);
         }
         return result;
-
     }
 
     /***
-     *
      *
      * @param environment
      * @param command
@@ -170,7 +167,6 @@ public class DatasetCommandLineGenerator {
             separator = File.separator;
         }
         command = command.replace("${OUTPUT}", output + separator + environment.getId() + "/vcf/${FASTQNAME}.vcf");
-
         command = command.replace("${BAM}", output + separator + environment.getId() + "/bam/${FASTQNAME}.bam");
 
         return command;
