@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.migration.Migration;
 import org.opencb.opencga.catalog.migration.MigrationTool;
+import org.opencb.opencga.core.common.BatchUtils;
 
 import java.util.*;
 
@@ -59,7 +60,7 @@ public class AddPanelsToInterpretations extends MigrationTool {
 
         if (!interpretationsToRemove.isEmpty()) {
             MongoCollection<Document> interpretationCollection = getMongoCollection(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION);
-            List<List<Object>> bulkList = generateBulks(interpretationsToRemove);
+            List<List<Object>> bulkList = BatchUtils.splitBatches(interpretationsToRemove, 100);
             logger.info("Removing " + interpretationsToRemove.size() + " orphan interpretations...");
             for (List<Object> list : bulkList) {
                 interpretationCollection.deleteMany(Filters.in("_id", list));

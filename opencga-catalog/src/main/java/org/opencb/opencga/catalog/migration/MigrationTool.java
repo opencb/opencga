@@ -4,7 +4,6 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.WriteModel;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -26,8 +25,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 public abstract class MigrationTool {
@@ -250,29 +247,6 @@ public abstract class MigrationTool {
                 queryCollectionFunc.accept(document);
             }
         }
-    }
-
-    protected final <T> List<List<T>> generateBulks(List<T> list) {
-        return generateBulks(list, 100);
-    }
-
-    protected final <T> List<List<T>> generateBulks(List<T> list, int bulkSize) {
-        if (CollectionUtils.isEmpty(list)) {
-            return Collections.emptyList();
-        }
-
-        List<List<T>> bulkList = new LinkedList<>();
-        List<T> tmpList = new ArrayList<>(bulkSize);
-        for (T object : list) {
-            if (tmpList.size() == bulkSize) {
-                bulkList.add(tmpList);
-                tmpList = new ArrayList<>(bulkSize);
-            }
-            tmpList.add(object);
-        }
-        bulkList.add(tmpList);
-
-        return bulkList;
     }
 
     protected final MongoCollection<Document> getMongoCollection(String collectionName) {
