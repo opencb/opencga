@@ -15,6 +15,12 @@
                 "description": "Storage account name"
             }
         },
+        "storageAccountBlobName": {
+            "type": "string",
+            "metadata": {
+                "description": "Storage account blob file name"
+            }
+        },
         "clusterLoginUserName": {
             "type": "string",
             "defaultValue": "admin",
@@ -93,6 +99,14 @@
         },
         "sshPassword": {
             "type": "securestring",
+            "defaultValue": null,
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "sshPublicKey": {
+            "type": "string",
+            "defaultValue": "",
             "metadata": {
                 "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
             }
@@ -126,7 +140,7 @@
             "metadata": {
                 "description": "Log Analytics Workspace Resource ID"
             }
-        },    
+        },
         "yarnSiteMemoryInMb": {
             "type": "int",
             "metadata": {
@@ -150,27 +164,40 @@
         }
     },
     "variables": {
+        "osProfilePublicKeys": {
+            "linuxOperatingSystemProfile": {
+                "sshProfile": {
+                    "publicKeys":[
+                        {
+                            "certificateData": "[parameters('sshPublicKey')]"
+                        }
+                    ]
+                }
+            }
+        },
+        "osProfileBase": {
+            "linuxOperatingSystemProfile": {
+                "username": "[parameters('sshUserName')]",
+                "password": "[parameters('sshPassword')]",
+            }
+        },
+        "osProfile": "[if(empty(parameters('sshPublicKey')), variables('osProfileBase'), union(variables('osProfileBase'), variables('osProfilePublicKeys')))]",
         "dataDisksGroups1": {"dataDisksGroups":[{ "disksPerNode": 1 }]},
         "storageIdentityName": "hdinsight-storage-identity",
-        "storageRoleAssignmentId": "[guid(concat(resourceGroup().id, 'storagecontributor'))]",
+        "storageRoleAssignmentId": "[guid(concat(resourceGroup().id, 'storagecontributor', parameters('storageAccountName')))]",
         "storageBlobDataOwnerRoleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')]",
         "workernodeBase": {
-                            "name": "workernode",
-                            "targetInstanceCount": "[parameters('clusterWorkerNodeCount')]",
-                            "hardwareProfile": {
-                                "vmSize": "[parameters('clusterWorkerNodeSize')]"
-                            },
-                            "osProfile": {
-                                "linuxOperatingSystemProfile": {
-                                    "username": "[parameters('sshUserName')]",
-                                    "password": "[parameters('sshPassword')]"
-                                }
-                            },
-                            "virtualNetworkProfile": {
-                                "id": "[parameters('vnetId')]",
-                                "subnet": "[parameters('subnetId')]"
-                            }
-                        },
+            "name": "workernode",
+            "targetInstanceCount": "[parameters('clusterWorkerNodeCount')]",
+            "hardwareProfile": {
+                "vmSize": "[parameters('clusterWorkerNodeSize')]"
+            },
+            "osProfile": "[variables('osProfile')]",
+            "virtualNetworkProfile": {
+                "id": "[parameters('vnetId')]",
+                "subnet": "[parameters('subnetId')]"
+            }
+        },
         "workernode": "[if(parameters('enableHBaseAcceleratedWrites'), union(variables('workernodeBase'), variables('dataDisksGroups1')), variables('workernodeBase'))]",
         "privateDnsZonesName": "azurehdinsight.net"
     },
@@ -209,22 +236,21 @@
                 "name": "[parameters('accountType')]"
             },
             "kind": "StorageV2",
-            "resources": [
-                {
-                    "condition": "[not(parameters('skipRoleAssignment'))]",
-                    "type": "Microsoft.Authorization/roleAssignments",
-                    "apiVersion": "2018-01-01-preview",
-                    "name": "[variables('storageRoleAssignmentId')]",
-                    "properties": {
-                        "roleDefinitionId": "[variables('storageBlobDataOwnerRoleDefinitionId')]",
-                        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName')), '2015-08-31-preview').principalId]",
-                        "principalType":"ServicePrincipal"
-                    },
-                    "dependsOn": [
-                        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName'))]",
-                        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
-                    ]
-                }
+        },
+        {
+            "condition": "[not(parameters('skipRoleAssignment'))]",
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2018-01-01-preview",
+            "name": "[variables('storageRoleAssignmentId')]",
+            "scope": "[format('Microsoft.Storage/storageAccounts/{0}', parameters('storageAccountName'))]",
+            "properties": {
+                "roleDefinitionId": "[variables('storageBlobDataOwnerRoleDefinitionId')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName')), '2015-08-31-preview').principalId]",
+                "principalType":"ServicePrincipal"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
             ]
         },
         {
@@ -234,7 +260,8 @@
             "location": "[resourceGroup().location]",
             "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]",
-                "[resourceId('Microsoft.Authorization/roleAssignments',variables('storageRoleAssignmentId'))]"
+                "[variables('storageRoleAssignmentId')]",
+                "[variables('privateDnsZonesName')]"
             ],
             "properties": {
                 "clusterVersion": "[parameters('clusterVersion')]",
@@ -263,8 +290,9 @@
                     "storageaccounts": [
                         {
                             "name": "[concat(parameters('storageAccountName'),'.dfs.core.windows.net')]",
+
                             "isDefault": true,
-                            "fileSystem": "opencga",
+                            "fileSystem": "[parameters('storageAccountBlobName')]",
                             "resourceId":   "[resourceId('Microsoft.Storage/storageAccounts',parameters('storageAccountName'))]",
                             "msiResourceId": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('storageIdentityName'))]"
                         }
@@ -279,12 +307,7 @@
                             "hardwareProfile": {
                                 "vmSize": "[parameters('clusterHeadNodeSize')]"
                             },
-                            "osProfile": {
-                                "linuxOperatingSystemProfile": {
-                                    "username": "[parameters('sshUserName')]",
-                                    "password": "[parameters('sshPassword')]"
-                                }
-                            },
+                            "osProfile": "[variables('osProfile')]",
                             "virtualNetworkProfile": {
                                 "id": "[parameters('vnetId')]",
                                 "subnet": "[parameters('subnetId')]"
@@ -300,12 +323,7 @@
                             "hardwareProfile": {
                                 "vmSize": "[parameters('clusterZookeeperNodeSize')]"
                             },
-                            "osProfile": {
-                                "linuxOperatingSystemProfile": {
-                                    "username": "[parameters('sshUserName')]",
-                                    "password": "[parameters('sshPassword')]"
-                                }
-                            },
+                            "osProfile": "[variables('osProfile')]",
                             "virtualNetworkProfile": {
                                 "id": "[parameters('vnetId')]",
                                 "subnet": "[parameters('subnetId')]"
@@ -357,7 +375,10 @@
             "name": "[variables('privateDnsZonesName')]",
             "location": "global",
             "tags": {},
-            "properties": {}
+            "properties": {},
+            "dependsOn": [
+                "[variables('storageRoleAssignmentId')]"
+            ]
         },
         {
             "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
@@ -377,7 +398,7 @@
 
         {
             "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2018-05-01",
+            "apiVersion": "2019-05-01",
             "name": "hdInsightRecords",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZonesName'))]",

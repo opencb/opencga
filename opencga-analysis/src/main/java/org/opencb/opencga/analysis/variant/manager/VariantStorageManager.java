@@ -60,9 +60,7 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
+import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -71,6 +69,7 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.VariantQueryResult;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -83,6 +82,7 @@ import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
@@ -314,14 +314,18 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public Collection<String> stats(String study, List<String> cohorts, String region, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
 
-        return secureOperation(VariantStatsAnalysis.ID, study, params, token, engine -> {
+        return secureOperation(VariantStatsIndexOperationTool.ID, study, params, token, engine -> {
             return new VariantStatsOperationManager(this, engine)
                     .stats(getStudyFqn(study, token), cohorts, region, params, token);
         });
     }
 
-    public void deleteStats(List<String> cohorts, String studyId, String token) {
-        throw new UnsupportedOperationException();
+    public Collection<String> deleteStats(String study, List<String> cohorts, ObjectMap params, String token)
+            throws StorageEngineException, CatalogException {
+        return secureOperation(VariantStatsDeleteOperationTool.ID, study, params, token, engine -> {
+            return new VariantStatsOperationManager(this, engine)
+                    .delete(getStudyFqn(study, token), cohorts, params, token);
+        });
     }
 
     public List<VariantScoreMetadata> listVariantScores(String study, String token) throws CatalogException, StorageEngineException {
@@ -384,6 +388,14 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         });
     }
 
+    public DataResult<List<String>> familyIndexUpdate(String study,
+                                                ObjectMap params, String token)
+            throws CatalogException, StorageEngineException {
+        return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
+            return engine.familyIndexUpdate(study, params);
+        });
+    }
+
     public DataResult<List<String>> familyIndex(String study, List<String> familiesStr, boolean skipIncompleteFamilies,
                                                 ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
@@ -404,7 +416,6 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                     trios.addAll(catalogUtils.getTriosFromFamily(study, family, metadataManager, skipIncompleteFamilies, token));
                 }
             }
-
             return engine.familyIndex(study, trios, params);
         });
     }
@@ -430,19 +441,18 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return catalogUtils.getTriosFromFamily(study, family, variantStorageEngine.getMetadataManager(), skipIncompleteFamilies, token);
     }
 
-    public void aggregateFamily(String studyStr, List<String> samples, ObjectMap params, String token)
+    public void aggregateFamily(String studyStr, VariantAggregateFamilyParams params, String token)
             throws CatalogException, StorageEngineException {
-
-        secureOperation(VariantAggregateFamilyOperationTool.ID, studyStr, params, token, engine -> {
-            engine.aggregateFamily(getStudyFqn(studyStr, token), samples, params);
+        secureOperation(VariantAggregateFamilyOperationTool.ID, studyStr, params.toObjectMap(), token, engine -> {
+            engine.aggregateFamily(getStudyFqn(studyStr, token), params, new ObjectMap());
             return null;
         });
     }
 
-    public void aggregate(String studyStr, boolean overwrite, ObjectMap params, String token)
+    public void aggregate(String studyStr, VariantAggregateParams params, String token)
             throws CatalogException, StorageEngineException {
-        secureOperation(VariantAggregateOperationTool.ID, studyStr, params, token, engine -> {
-            engine.aggregate(getStudyFqn(studyStr, token), overwrite, params);
+        secureOperation(VariantAggregateOperationTool.ID, studyStr, params.toObjectMap(), token, engine -> {
+            engine.aggregate(getStudyFqn(studyStr, token), params, new ObjectMap());
             return null;
         });
     }
@@ -499,7 +509,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         return secureOperation("configure", studyStr, new ObjectMap(), token, engine -> {
             sampleIndexConfiguration.validate();
             String studyFqn = getStudyFqn(studyStr, token);
-            engine.getMetadataManager().addSampleIndexConfiguration(studyFqn, sampleIndexConfiguration);
+            engine.getMetadataManager().addSampleIndexConfiguration(studyFqn, sampleIndexConfiguration, true);
 
             catalogManager.getStudyManager()
                     .setVariantEngineConfigurationSampleIndex(studyStr, sampleIndexConfiguration, token);
@@ -507,10 +517,14 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 return new OpenCGAResult<>(0, new ArrayList<>(), 0, new ArrayList<>(), 0);
             } else {
                 // If changes, launch sample-index-run
-                VariantSampleIndexParams params =
+                ToolParams params =
                         new VariantSampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, false);
-                return catalogManager.getJobManager().submit(studyFqn, VariantSampleIndexOperationTool.ID, null,
-                        params.toParams(STUDY_PARAM, studyFqn), token);
+                Job job = catalogManager.getJobManager().submit(studyFqn, VariantSampleIndexOperationTool.ID, null,
+                        params.toParams(STUDY_PARAM, studyFqn), token).first();
+                params = new VariantFamilyIndexParams(Collections.emptyList(), false, true, false);
+                Job job2 = catalogManager.getJobManager().submit(studyFqn, VariantFamilyIndexOperationTool.ID, null,
+                        params.toParams(STUDY_PARAM, studyFqn), token).first();
+                return new OpenCGAResult<>(0, new ArrayList<>(), 2, Arrays.asList(job, job2), 0);
             }
         });
     }
@@ -749,7 +763,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                         // Make initial batchLimit shorter
                         int batchLimit = Math.min(SAMPLE_BATCH_SIZE_DEFAULT, limit * 3 + skip);
                         // but not too short
-                        batchLimit = Math.max(100, batchLimit);
+                        batchLimit = Math.max(options.getInt(VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), 200), batchLimit);
                         int batchSkip = 0;
                         int numReadSamples = 0;
                         int numValidSamples = 0;
@@ -761,6 +775,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                         options.put(SKIP, batchSkip);
                         Variant variantResult = null;
 
+                        List<String> readValidSamples = new ArrayList<>(batchLimit);
                         List<SampleEntry> sampleEntries = new ArrayList<>(limit);
                         List<FileEntry> fileEntries = new ArrayList<>(limit);
                         LinkedHashMap<String, Integer> fileEntriesPosition = new LinkedHashMap<>(limit);
@@ -806,6 +821,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                             auditAttributes.put("checkSamplePermissionsTimeMillis",
                                     checkPermissionsStopWatch.getTime(TimeUnit.MILLISECONDS)
                                             + auditAttributes.getInt("checkSamplePermissionsTimeMillis", 0));
+                            readValidSamples.addAll(validSamples);
                             numValidSamples += validSamples.size();
                             List<String> samplesToReturn;
                             if (skip > validSamples.size()) {
@@ -832,8 +848,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                                     }
                                 }
                             }
-                            batchLimit = options.getInt(SAMPLE_BATCH_SIZE, SAMPLE_BATCH_SIZE_DEFAULT);
                             batchSkip += batchLimit;
+                            // Increase batch limit to match internal VariantSampleDataManager
+                            batchLimit = options.getInt(SAMPLE_BATCH_SIZE, SAMPLE_BATCH_SIZE_DEFAULT);
                         } while (moreResults && sampleEntries.size() < limit);
 
 
@@ -845,13 +862,20 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                                 1, 1, new ArrayList<>(), Collections.singletonList(variantResult), null, null)
                                 .setNumSamples(sampleEntries.size());
                         if (exactNumSamples) {
-                            result.setNumTotalSamples(numValidSamples).setApproximateCount(false);
+                            result.setApproximateCount(false);
+                            result.setNumTotalSamples(numValidSamples);
+                            result.getAttributes().put("numSamplesWithoutPermissions", numReadSamples - numValidSamples);
+                            result.getAttributes().put("numSamplesRegardlessPermissions", numReadSamples);
                         } else {
                             VariantStats stats = variantResult.getStudies().get(0).getStats(StudyEntry.DEFAULT_COHORT);
-                            if (stats != null) {
+                            if (stats == null) {
+                                result.addEvent(new Event(Event.Type.WARNING,
+                                        "Missing VariantStats for cohort '" + StudyEntry.DEFAULT_COHORT + "', unable to get approximate count"));
+                            } else {
                                 List<String> genotypesFilter = new ArrayList<>(options.getAsStringList(GENOTYPE.key()));
                                 if (genotypesFilter.isEmpty()) {
                                     genotypesFilter.add(GenotypeClass.MAIN_ALT.name());
+                                    genotypesFilter.add(GenotypeClass.NA.name());
                                 }
                                 int expectedSamplesCount = 0;
                                 List<String> gtsInVariant = new ArrayList<>(stats.getGenotypeCount().keySet());
@@ -863,9 +887,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                                 int numTotalSamples = ((int) (expectedSamplesCount * (((float) numValidSamples) / numReadSamples)));
                                 result.setNumTotalSamples(numTotalSamples);
                                 result.setApproximateCountSamplingSize(numReadSamples);
+                                result.getAttributes().put("numSamplesWithoutPermissions", expectedSamplesCount - numTotalSamples);
+                                result.getAttributes().put("numSamplesRegardlessPermissions", expectedSamplesCount);
                             }
                             result.setApproximateCount(true);
                         }
+                        result.getAttributes().put("readSamples", readValidSamples);
                         return result;
                     });
         }

@@ -23,6 +23,7 @@ import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -73,7 +74,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
             Files.createDirectory(opencgaHome);
         }
         catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "", true);
+        catalogManager.installCatalogDB("dummy", TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "", true);
         catalogManager.close();
         // FIXME!! Should not need to create again the catalogManager
         //  Have to create again the CatalogManager, as it has a random "secretKey" inside

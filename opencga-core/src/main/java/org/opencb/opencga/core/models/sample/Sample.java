@@ -20,6 +20,9 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.biodata.models.common.Status;
+import org.opencb.commons.annotations.DataClass;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.ExternalSource;
@@ -30,14 +33,20 @@ import java.util.*;
  * Sample data model hosts information about any biological material, normally extracted from an _Individual_, that is used for a particular
  * analysis. This is the main data model, it stores the most basic and important information.
  */
+@DataClass(id = "Sample", since = "1.0",
+        description = "Sample data model hosts information about any biological material, normally extracted from " +
+                "an _Individual_, that is used for a particular analysis. This is the main data model, it stores the " +
+                "most basic and important information.")
 public class Sample extends Annotable {
 
     /**
-     * Sample ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter
-     * when creating a new sample, this ID cannot be changed at the moment.
+     * Sample ID in the study, this must be unique in the study but can be repeated in different studies. This is a mandatory parameter when
+     * creating a new sample, this ID cannot be changed at the moment.
      *
      * @apiNote Required, Immutable, Unique
      */
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.SAMPLE_ID_DESCRIPTION)
     private String id;
 
     /**
@@ -45,22 +54,35 @@ public class Sample extends Annotable {
      *
      * @apiNote Immutable, Unique
      */
+    @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String uuid;
 
+    /**
+     * Generic: Unique 32-character identifier assigned automatically by OpenCGA.
+     *
+     * @apiNote Immutable, Unique
+     */
+    @DataField(id = "source", since = "2.2",
+            description = FieldConstants.SAMPLE_EXTERNAL_SOURCE_DESCRIPTION)
     private ExternalSource source;
 
     /**
      * Describes how the sample was processed in the lab.
      */
+    @DataField(id = "processing", since = "2.0",
+            description = FieldConstants.SAMPLE_PROCESSING_DESCRIPTION)
     private SampleProcessing processing;
 
     /**
      * Describes how the sample was collected.
      *
      * @apiNote
-     * @implNote The sample collection is a list of samples
+     * @implNote Describes how the sample was collected.
      * @since 2.1
      */
+    @DataField(id = "collection", since = "2.0",
+            description = FieldConstants.SAMPLE_SAMPLE_COLLECTION_DESCRIPTION)
     private SampleCollection collection;
 
     /**
@@ -71,6 +93,8 @@ public class Sample extends Annotable {
      * @see [ZetaGenomics] (https://www.zettagenomics.com)
      * @since 2.1
      */
+    @DataField(id = "qualityControl", since = "2.0",
+            description = FieldConstants.SAMPLE_QUALITY_CONTROL_DESCRIPTION)
     private SampleQualityControl qualityControl;
 
     /**
@@ -78,6 +102,8 @@ public class Sample extends Annotable {
      *
      * @apiNote Immutable
      */
+    @DataField(id = "release", managed = true, indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
 
     /**
@@ -86,6 +112,8 @@ public class Sample extends Annotable {
      *
      * @apiNote Immutable
      */
+    @DataField(id = "version", managed = true, indexed = true,
+            description = FieldConstants.GENERIC_VERSION_DESCRIPTION)
     private int version;
 
     /**
@@ -93,6 +121,8 @@ public class Sample extends Annotable {
      *
      * @apiNote Immutable
      */
+    @DataField(id = "creationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
 
     /**
@@ -100,11 +130,15 @@ public class Sample extends Annotable {
      *
      * @apiNote Immutable
      */
+    @DataField(id = "modificationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
     /**
      * Generic: Users may provide a description for the entry.
      */
+    @DataField(id = "description", defaultValue = "No description available",
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
     /**
@@ -112,17 +146,34 @@ public class Sample extends Annotable {
      *
      * @apiNote
      */
+    @DataField(id = "somatic", indexed = true,
+            description = FieldConstants.SAMPLE_SOMATIC_DESCRIPTION)
     private boolean somatic;
+
+    @DataField(id = "phenotypes", alias = {"phenotypes.id", "phenotypesId"},
+            description = FieldConstants.GENERIC_PHENOTYPES_DESCRIPTION)
     private List<Phenotype> phenotypes;
 
+    @DataField(id = "individualId", indexed = true, alias = {"individual", "individual.id"},
+            description = FieldConstants.SAMPLE_INDIVIDUAL_ID_DESCRIPTION)
     private String individualId;
+
+    @DataField(id = "fileIds", indexed = true, alias = {"file", "file.id"},
+            description = FieldConstants.SAMPLE_FILE_IDS_DESCRIPTION)
     private List<String> fileIds;
+
+    @DataField(id = "cohortIds", indexed = true,
+            description = FieldConstants.SAMPLE_COHORT_IDS_DESCRIPTION)
     private List<String> cohortIds;
 
     /**
      * Generic: Object to define the status of the entry.
      */
+
+    @DataField(id = "status", since = "2.0",
+            description = FieldConstants.SAMPLE_COHORT_IDS_DESCRIPTION)
     private Status status;
+
 
     /**
      * Generic: Field automatically managed by OpenCGA containing relevant information of the entry. This field is used for internal
@@ -130,14 +181,16 @@ public class Sample extends Annotable {
      *
      * @apiNote Immutable
      */
+    @DataField(id = "internal", managed = true, since = "2.0",
+            description = FieldConstants.SAMPLE_INTERNAL_DESCRIPTION)
     private SampleInternal internal;
 
     /**
-     * Dictionary that can be customised by users to store any additional information users may require.
-     *
      * @implNote This field is not meant to be queried. It should only contain extra information. To store additional information meant to
      * be queried, please use annotationSets.
      */
+    @DataField(id = "attributes", since = "1.0",
+            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public Sample() {

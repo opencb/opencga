@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.app.cli.client.options;
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.opencga.core.common.YesNoAuto;
 import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -105,7 +104,7 @@ public class StorageVariantCommandOptions {
                 + "This only applies to the GT field from the FORMAT. All the rest of fields from the INFO and FORMAT will be loaded. "
                 + "Use this parameter skip load data when the GT field is not reliable, or its only value across the file is \"./.\". "
                 + "If \"auto\", genotypes will be automatically excluded if all genotypes are either missing, ./. or 0/0. "
-                + "(yes, no, auto)")
+                + "(yes, no, auto) [auto]")
         public String includeGenotype;
 
         @Parameter(names = {"--include-sample-data"}, description = "Index including other sample data fields (i.e. FORMAT fields)."
@@ -156,17 +155,17 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--load-multi-file-data"}, description = "Indicate the presence of multiple files for the same sample. Each file could be the result of a different vcf-caller or experiment over the same sample.", arity = 0)
         public boolean loadMultiFileData;
 
-        @Parameter(names = {"--load-sample-index"}, description = "Build sample index while loading. (yes, no, auto)")
-        public String loadSampleIndex = "auto";
+        @Parameter(names = {"--load-sample-index"}, description = "Build sample index while loading. (yes, no, auto) [auto]")
+        public String loadSampleIndex;
 
-        @Parameter(names = {"--load-archive"}, description = "Load archive data. (yes, no, auto)")
-        public String loadArchive = "auto";
+        @Parameter(names = {"--load-archive"}, description = "Load archive data. (yes, no, auto) [auto]")
+        public String loadArchive;
 
-        @Parameter(names = {"--load-hom-ref"}, description = "Load HOM_REF genotypes. (yes, no, auto)")
-        public String loadHomRef = "auto";
+        @Parameter(names = {"--load-hom-ref"}, description = "Load HOM_REF genotypes. (yes, no, auto) [auto]")
+        public String loadHomRef;
 
-        @Parameter(names = {"--post-load-check"}, description = "Execute post load checks over the database. (yes, no, auto)")
-        public String postLoadCheck = "auto";
+        @Parameter(names = {"--post-load-check"}, description = "Execute post load checks over the database. (yes, no, auto) [auto]")
+        public String postLoadCheck;
 
         @Parameter(names = {"--normalization-skip"}, description = "Do not execute the normalization process. "
                 + "WARN: INDELs will be stored with the context base")
@@ -175,6 +174,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--reference-genome"}, description = "Reference genome in FASTA format used during the normalization step "
                 + "for a complete left alignment")
         public String referenceGenome;
+
+        @Parameter(names = {"--fail-on-malformed-lines"}, description = "Do not fail when encountering malformed lines. (yes, no, auto) [auto]")
+        public String failOnMalformedLines;
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -572,7 +574,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--custom-name"}, description = "Provide a name to the custom annotation")
         public String customName = null;
 
-        @Parameter(names = {"--sample-index-annotation"}, description = "Annotate sample index. (yes, no, auto)")
+        @Parameter(names = {"--sample-index-annotation"}, description = "Annotate sample index. (yes, no, auto) [auto]")
         public String sampleIndexAnnotation;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
@@ -750,6 +752,9 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--samples"}, description = "Samples within the same study to fill", required = true)
         public List<String> samples;
+
+        @Parameter(names = {"--gaps-genotype"}, description = "Genotype to be used in gaps. Either 0/0, ./. or ?/?.", required = false)
+        public String gapsGenotype;
 
         @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
         public boolean resume;

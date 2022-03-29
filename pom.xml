@@ -45,21 +45,22 @@
     <properties>
         <opencga.version>2.3.0-SNAPSHOT</opencga.version>
         <pyopencga.version>${opencga.version}</pyopencga.version>
-        <cellbase.version>5.0.1</cellbase.version>
+        <cellbase.version>5.1.0-SNAPSHOT</cellbase.version>
         <biodata.version>2.3.0-SNAPSHOT</biodata.version>
         <java-common-libs.version>4.3.0-SNAPSHOT</java-common-libs.version>
-        <iva.version>2.2.0-rc</iva.version>
+        <iva.version>2.2.0-dev</iva.version>
         <oskar.version>0.2.0</oskar.version>
 
-        <jackson.version>2.10.5</jackson.version>
+        <jackson.version>2.11.4</jackson.version>
         <jersey.version>2.25.1</jersey.version>
         <collections.version>4.4</collections.version>
         <avro.version>1.7.7</avro.version>
-        <protobuf.version>3.9.2</protobuf.version>
-        <grpc.version>1.23.1</grpc.version>
-        <slf4j.version>1.7.25</slf4j.version>
-        <log4j2.version>2.17.1</log4j2.version>
+        <protobuf.version>3.11.4</protobuf.version>
+        <grpc.version>1.28.1</grpc.version>
+        <slf4j.version>1.7.32</slf4j.version>
+        <log4j2.version>2.17.2</log4j2.version>
         <solr.version>8.8.2</solr.version>
+        <jjwt.version>0.11.2</jjwt.version>
         <jetty.version>9.4.17.v20190418</jetty.version>
         <junit.version>4.13.2</junit.version>
 
@@ -73,7 +74,7 @@
         <!-- This prevents findbugs plugin to check all the dependency locations -->
         <dependency.locations.enabled>false</dependency.locations.enabled>
 
-        <java.version>1.8</java.version>
+        <maven.compiler.source>11</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -112,9 +113,9 @@
             <email>joaquintarraga@gmail.com</email>
         </developer>
         <developer>
-            <id>wbari</id>
-            <name>Wasim</name>
-            <email>wasimbari@gmail.com</email>
+            <id>juanfeSanahuja</id>
+            <name>Juanfe</name>
+            <email>juanfesanahuja@gmail.com</email>
         </developer>
     </developers>
 
@@ -413,8 +414,20 @@
             </dependency>
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt</artifactId>
-                <version>0.9.1</version>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
@@ -425,6 +438,11 @@
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java-util</artifactId>
                 <version>${protobuf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-all</artifactId>
+                <version>${grpc.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.avro</groupId>
@@ -486,13 +504,15 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.10.1</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.source}</target>
                     <showDeprecation>true</showDeprecation>
                     <showWarnings>true</showWarnings>
-                    <encoding>UTF-8</encoding>
+                    <meminitial>128m</meminitial>
+                    <maxmem>512m</maxmem>
+                    <encoding>${project.build.sourceEncoding}</encoding>
                 </configuration>
             </plugin>
             <plugin>
@@ -500,7 +520,7 @@
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>3.2.0</version>
                 <configuration>
-                    <encoding>UTF-8</encoding>
+                    <encoding>${project.build.sourceEncoding}</encoding>
                 </configuration>
             </plugin>
             <plugin>
@@ -533,7 +553,7 @@
                         org/opencb/opencga/server/**,
                         org/opencb/opencga/test/**,
                         org/opencb/opencga/storage/app/**,
-
+                        org/opencb/opencga/client/rest/clients/**,
                         org/opencb/opencga/storage/alignment/**,
                         org/opencb/opencga/storage/variant/**,
                         org/opencb/opencga/storage/datamanagers/**,
@@ -683,7 +703,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>3.2.1</version>
+                        <version>3.2.0</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
@@ -696,7 +716,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.1.1</version>
+                        <version>3.3.2</version>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>

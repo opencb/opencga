@@ -34,6 +34,7 @@
         <build.dir>${project.basedir}/../build</build.dir>
         <app.dir>${project.basedir}/app</app.dir>
         <sonar.skip>true</sonar.skip>
+        <dep.jline.version>3.12.1</dep.jline.version>
         <opencga.client.dir>opencga-client-${opencga.version}</opencga.client.dir>
     </properties>
 
@@ -82,6 +83,12 @@
             <version>${opencga.version}</version>
             <!--<type>war</type>-->
         </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>com.beust</groupId>-->
+<!--            <artifactId>jcommander</artifactId>-->
+<!--            <version>1.82</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet-core</artifactId>
@@ -108,33 +115,27 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        <!--Uncomment if hadoop dependencies are provided-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.hadoop</groupId>-->
-        <!--<artifactId>hadoop-common</artifactId>-->
-        <!--<version>${hadoop.version}</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.hadoop</groupId>-->
-        <!--<artifactId>hadoop-client</artifactId>-->
-        <!--<version>${hadoop.version}</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.hbase</groupId>-->
-        <!--<artifactId>hbase-server</artifactId>-->
-        <!--<version>${hbase.version}</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
         </dependency>
+        <!--JLINE Terminal dependencies-->
         <dependency>
-            <groupId>org.fusesource.jansi</groupId>
-            <artifactId>jansi</artifactId>
-            <version>1.18</version>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-reader</artifactId>
+            <version>${dep.jline.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-terminal</artifactId>
+            <version>${dep.jline.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline-terminal-jna</artifactId>
+            <version>${dep.jline.version}</version>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
 
@@ -316,6 +317,11 @@
                                     <arg value="${project.basedir}/../opencga-client/src/main/R"/>
                                     <arg value="${build.dir}/clients"/>
                                 </exec>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-client/src/main/javascript"/>
+                                    <arg value="${build.dir}/clients"/>
+                                </exec>
 
                                 <echo>Copying configuration files</echo>
                                 <exec executable="cp">
@@ -394,6 +400,7 @@
                                     <arg value="${build.dir}/libs"/>
                                     <arg value="${build.dir}/clients/python"/>
                                     <arg value="${build.dir}/clients/R"/>
+                                    <arg value="${build.dir}/clients/javascript"/>
                                     <arg value="${build.dir}/LICENSE"/>
                                     <arg value="${build.dir}/README.md"/>
                                     <arg value="${build.dir}/${opencga.client.dir}"/>

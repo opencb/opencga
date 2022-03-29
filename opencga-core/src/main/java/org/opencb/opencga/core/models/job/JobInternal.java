@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.core.models.job;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.Event;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Internal;
@@ -27,8 +29,17 @@ import java.util.List;
 
 public class JobInternal extends Internal implements Cloneable {
 
+    @DataField(id = "status", indexed = true,
+            description = FieldConstants.JOB_INTERNAL_STATUS_DESCRIPTION)
     private Enums.ExecutionStatus status;
+
+    @DataField(id = "webhook", indexed = true,
+            description = FieldConstants.JOB_INTERNAL_WEBHOOK_DESCRIPTION)
     private JobInternalWebhook webhook;
+
+    //TODO add tags to commons-datastore-core
+    @DataField(id = "events", indexed = true, uncommentedClasses = {"Event"},
+            description = FieldConstants.JOB_INTERNAL_EVENTS_DESCRIPTION)
     private List<Event> events;
 
     public JobInternal() {

@@ -7,10 +7,6 @@
 \S4method{adminClient}{OpencgaR}(OpencgaR, endpointName, params = NULL, ...)
 }
 \arguments{
-\item{count}{Count the number of elements matching the group.}
-
-\item{limit}{Maximum number of documents (groups) to be returned.}
-
 \item{fields}{Comma separated list of fields by which to group by.}
 
 \item{entity}{Entity to be grouped by.}
@@ -23,6 +19,24 @@
 
 \item{date}{Date <,<=,>,>=(Format: yyyyMMddHHmmss) and yyyyMMddHHmmss-yyyyMMddHHmmss.}
 
+\item{collection}{Collection to be indexed (file, sample, individual, family, cohort and/or job). If not provided, all of them will be indexed.}
+
+\item{include}{Fields included in the response, whole JSON path must be provided.}
+
+\item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
+
+\item{limit}{Number of results to be returned.}
+
+\item{skip}{Number of results to skip.}
+
+\item{count}{Get the total number of results matching the query. Deactivated by default.}
+
+\item{user}{User ID.}
+
+\item{account}{Account type \link{GUEST, FULL, ADMINISTRATOR}.}
+
+\item{authenticationId}{Authentication origin ID.}
+
 \item{data}{JSON containing the parameters.}
 }
 \description{
@@ -30,11 +44,12 @@ This function implements the OpenCGA calls for managing Admin.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    groupByAudit \tab /{apiVersion}/admin/audit/groupBy \tab count, limit, fields\link{*}, entity\link{*}, action, before, after, date \cr
-   indexStatsCatalog \tab /{apiVersion}/admin/catalog/indexStats \tab  \cr
+   indexStatsCatalog \tab /{apiVersion}/admin/catalog/indexStats \tab collection \cr
    installCatalog \tab /{apiVersion}/admin/catalog/install \tab body\link{*} \cr
    jwtCatalog \tab /{apiVersion}/admin/catalog/jwt \tab body\link{*} \cr
    createUsers \tab /{apiVersion}/admin/users/create \tab body\link{*} \cr
    importUsers \tab /{apiVersion}/admin/users/import \tab body\link{*} \cr
+   searchUsers \tab /{apiVersion}/admin/users/search \tab include, exclude, limit, skip, count, user, account, authenticationId \cr
    syncUsers \tab /{apiVersion}/admin/users/sync \tab body\link{*} \cr
 }
 }
@@ -68,9 +83,14 @@ Create a new user.
 Import users or a group of users from LDAP or AAD.
 }
 
+\section{Endpoint /{apiVersion}/admin/users/search}{
+
+User search method.
+}
+
 \section{Endpoint /{apiVersion}/admin/users/sync}{
 
-Synchronise groups of users with LDAP groups.
+Synchronise a group of users from an authentication origin with a group in a study from catalog.
 }
 
 \seealso{

@@ -587,7 +587,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         result.first().put(AUDIT.key(), auditList);
 
         // Insert the document in the DELETE collection
-        deletedClinicalCollection.insert(clientSession, result.first(), null);
+        deletedClinicalCollection.insert(clientSession, replaceDotsInKeys(result.first()), null);
         logger.debug("Inserted Clinical Analysis uid '{}' in DELETE collection", clinicalUid);
 
         // Remove the document from the main Clinical collection

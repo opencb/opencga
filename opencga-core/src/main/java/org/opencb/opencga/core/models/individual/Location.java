@@ -16,11 +16,21 @@
 
 package org.opencb.opencga.core.models.individual;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 public class Location {
+
+
+    @DataField(id = "address", indexed = true, description = FieldConstants.LOCATION_ADDRESS)
     private String address;
+    @DataField(id = "postalCode", indexed = true, description = FieldConstants.LOCATION_POSTAL_CODE)
     private String postalCode;
+    @DataField(id = "city", indexed = true, description = FieldConstants.LOCATION_CITY)
     private String city;
+    @DataField(id = "state", indexed = true, description = FieldConstants.LOCATION_STATE)
     private String state;
+    @DataField(id = "country", indexed = true, description = FieldConstants.LOCATION_COUNTRY)
     private String country;
 
 

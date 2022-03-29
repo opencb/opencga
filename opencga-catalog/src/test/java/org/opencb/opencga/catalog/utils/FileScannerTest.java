@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.IOManager;
@@ -58,7 +59,6 @@ public class FileScannerTest {
     @Rule
     public CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
 
-    public static final String PASSWORD = "asdf";
     private CatalogManager catalogManager;
     private String sessionIdUser;
     private File folder;
@@ -72,8 +72,8 @@ public class FileScannerTest {
     public void setUp() throws IOException, CatalogException {
         catalogManager = catalogManagerExternalResource.getCatalogManager();
 
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
         project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first();
         study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", "Done", null, null, null, null, INCLUDE_RESULT, sessionIdUser).first();

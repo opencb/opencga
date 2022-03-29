@@ -12,12 +12,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.iterators.CloseableIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.executors.VariantAggregationExecutor;
 import org.opencb.opencga.storage.core.variant.query.executors.accumulators.*;
@@ -110,7 +108,10 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
     protected VariantQueryResult<FacetField> aggregation(Query query, QueryOptions options, String facet) throws Exception {
         StopWatch stopWatch = StopWatch.createStarted();
         boolean filterTranscript = options.getBoolean("filterTranscript", false);
-        List<FacetFieldAccumulator<SampleVariantIndexEntry>> accumulators = createAccumulators(query, facet, filterTranscript);
+        SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.parseSampleIndexQuery(new Query(query));
+        SampleIndexSchema schema = sampleIndexQuery.getSchema();
+
+        List<FacetFieldAccumulator<SampleVariantIndexEntry>> accumulators = createAccumulators(schema, query, facet, filterTranscript);
         List<FacetField> fields = new ArrayList<>();
 
         logger.info("Filter transcript = {}", filterTranscript);
@@ -147,19 +148,19 @@ public class SampleIndexVariantAggregationExecutor extends VariantAggregationExe
         }
     }
 
-    private List<FacetFieldAccumulator<SampleVariantIndexEntry>> createAccumulators(Query query, String facet, boolean filterTranscript) {
+    private List<FacetFieldAccumulator<SampleVariantIndexEntry>> createAccumulators(
+            SampleIndexSchema schema, Query query, String facet, boolean filterTranscript) {
         List<FacetFieldAccumulator<SampleVariantIndexEntry>> list = new ArrayList<>();
         for (String f : facet.split(FACET_SEPARATOR)) {
-            list.add(createAccumulator(query, f, filterTranscript));
+            list.add(createAccumulator(schema, query, f, filterTranscript));
         }
         return list;
     }
 
-    private FacetFieldAccumulator<SampleVariantIndexEntry> createAccumulator(Query query, String facet, boolean filterTranscript) {
+    private FacetFieldAccumulator<SampleVariantIndexEntry> createAccumulator(
+            SampleIndexSchema schema, Query query, String facet, boolean filterTranscript) {
         String[] split = facet.split(NESTED_FACET_SEPARATOR);
         FacetFieldAccumulator<SampleVariantIndexEntry> accumulator = null;
-        StudyMetadata defaultStudy = VariantQueryParser.getDefaultStudy(query, metadataManager);
-        SampleIndexSchema schema = sampleIndexDBAdaptor.getSchema(defaultStudy.getId());
 
         Set<String> ctFilter = new HashSet<>(VariantQueryUtils
                 .parseConsequenceTypes(query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key())));

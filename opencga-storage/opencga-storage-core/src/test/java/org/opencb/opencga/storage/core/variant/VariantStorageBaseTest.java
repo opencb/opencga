@@ -52,9 +52,6 @@ import java.util.stream.Collectors;
 @Ignore
 public abstract class VariantStorageBaseTest extends GenericTest implements VariantStorageTest {
 
-    public static final String VCF_TEST_FILE_NAME = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
-    public static final String SMALL_VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
-    public static final String VCF_CORRUPTED_FILE_NAME = "variant-test-file-corrupted.vcf";
     public static final int NUM_VARIANTS = 9792;
     @Deprecated public static final int STUDY_ID = 1;
     public static final String STUDY_NAME = "1000g";
@@ -95,9 +92,15 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
             "22:16616084:G:A"
     )));
 
+    public static final String VCF_TEST_FILE_NAME = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
     protected static URI inputUri;
+
+    public static final String SMALL_VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
     protected static URI smallInputUri;
+
+    public static final String VCF_CORRUPTED_FILE_NAME = "variant-test-file-corrupted.vcf";
     protected static URI corruptedInputUri;
+
     protected static URI outputUri;
     protected VariantStorageEngine variantStorageEngine;
     protected VariantStorageMetadataManager metadataManager;
@@ -155,6 +158,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
                 stream = VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(resourceName);
             }
 
+            Assert.assertNotNull(resourceName, stream);
             Files.copy(stream, resourcePath, StandardCopyOption.REPLACE_EXISTING);
         }
         return resourcePath.toUri();

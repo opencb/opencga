@@ -1071,7 +1071,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             int individualVersion = tmpIndividual.getInteger(QueryParams.VERSION.key());
 
             // Insert the document in the DELETE collection
-            deletedIndividualCollection.insert(clientSession, tmpIndividual, null);
+            deletedIndividualCollection.insert(clientSession, replaceDotsInKeys(tmpIndividual), null);
             logger.debug("Inserted individual uid '{}' version '{}' in DELETE collection", individualUid, individualVersion);
 
             // Remove the document from the main INDIVIDUAL collection

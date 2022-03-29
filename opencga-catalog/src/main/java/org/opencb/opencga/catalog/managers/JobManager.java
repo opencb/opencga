@@ -420,9 +420,20 @@ public class JobManager extends ResourceManager<Job> {
                                     String jobId, String jobDescription, List<String> jobDependsOn, List<String> jobTags, String token)
             throws CatalogException {
         Job job = get(studyStr, jobRetry.getJob(), new QueryOptions(), token).first();
-        if (job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ERROR)
+        if (jobRetry.isForce()
+                || job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ERROR)
                 || job.getInternal().getStatus().getId().equals(Enums.ExecutionStatus.ABORTED)) {
-            return submit(studyStr, job.getTool().getId(), priority, job.getParams(), jobId, jobDescription, jobDependsOn, jobTags, token);
+            Map<String, Object> params = new ObjectMap(job.getParams());
+            if (jobRetry.getParams() != null) {
+                params.putAll(jobRetry.getParams());
+            }
+            HashMap<String, Object> attributes = new HashMap<>();
+            attributes.put("retry_from", jobRetry.getJob());
+            if (StringUtils.isEmpty(jobDescription)) {
+                jobDescription = "Retry from job '" + jobRetry.getJob() + "'";
+            }
+            return submit(studyStr, job.getTool().getId(), priority, params, jobId, jobDescription, jobDependsOn, jobTags,
+                    attributes, token);
         } else {
             throw new CatalogException("Unable to retry job with status " + job.getInternal().getStatus().getId());
         }
@@ -454,6 +465,13 @@ public class JobManager extends ResourceManager<Job> {
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,
                                      String jobDescription, List<String> jobDependsOn, List<String> jobTags, String token)
             throws CatalogException {
+        return submit(studyStr, toolId, priority, params, jobId, jobDescription, jobDependsOn, jobTags, null, token);
+    }
+
+    public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,
+                                     String jobDescription, List<String> jobDependsOn, List<String> jobTags,
+                                     Map<String, Object> attributes, String token)
+            throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
@@ -480,7 +498,7 @@ public class JobManager extends ResourceManager<Job> {
         job.setDependsOn(jobDependsOn != null
                 ? jobDependsOn.stream().map(j -> new Job().setId(j)).collect(Collectors.toList())
                 : Collections.emptyList());
-
+        job.setAttributes(attributes);
         try {
             autoCompleteNewJob(study, job, token);
 

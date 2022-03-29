@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.app.cli.admin.executors;
 
-
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -29,6 +27,7 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.master.monitor.MonitorService;
 
 import javax.ws.rs.client.Client;
@@ -51,7 +50,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         super(catalogCommandOptions.commonOptions);
         this.catalogCommandOptions = catalogCommandOptions;
     }
-
 
     @Override
     public void execute() throws Exception {
@@ -83,7 +81,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 logger.error("Subcommand not valid");
                 break;
         }
-
     }
 
     private void export() throws CatalogException {
@@ -94,7 +91,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         String token = catalogManager.getUserManager().loginAsAdmin(adminPassword).getToken();
 
         if (StringUtils.isNotEmpty(commandOptions.project)) {
-            catalogManager.getProjectManager().exportReleases(commandOptions.project, commandOptions.release, commandOptions.outputDir, token);
+            catalogManager.getProjectManager().exportReleases(commandOptions.project, commandOptions.release, commandOptions.outputDir,
+                    token);
         } else if (StringUtils.isNotEmpty(commandOptions.study) && StringUtils.isNotEmpty(commandOptions.inputFile)) {
             catalogManager.getProjectManager().exportByFileNames(commandOptions.study, Paths.get(commandOptions.outputDir).toFile(),
                     Paths.get(commandOptions.inputFile).toFile(), token);
@@ -170,7 +168,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         this.configuration.getAdmin().setSecretKey(commandOptions.secretKey);
         if (StringUtils.isEmpty(configuration.getAdmin().getSecretKey())) {
-            configuration.getAdmin().setSecretKey(RandomStringUtils.randomAlphabetic(16));
+            //  configuration.getAdmin().setSecretKey(RandomStringUtils.randomAlphabetic(16));
+            configuration.getAdmin().setSecretKey(PasswordUtils.getStrongRandomPassword());
         }
 
         if (StringUtils.isEmpty(commandOptions.commonOptions.adminPassword)) {
@@ -185,7 +184,15 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 String token = catalogManager.getUserManager().loginAsAdmin(commandOptions.commonOptions.adminPassword).getToken();
                 catalogManager.deleteCatalogDB(token);
             } else {
-                throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " already exists");
+                // Check admin password ...
+                try {
+                    catalogManager.getUserManager().loginAsAdmin(commandOptions.commonOptions.adminPassword);
+                    logger.warn("A database called " + catalogManager.getCatalogDatabase() + " already exists");
+                    return;
+                } catch (CatalogException e) {
+                    throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " with a different admin"
+                            + " password already exists. If you are aware of that installation, please delete it first.");
+                }
             }
         }
 

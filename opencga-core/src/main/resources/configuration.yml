@@ -13,9 +13,9 @@ panel:
 
 ## Configuration for Catalog databases
 catalog:
-  database:   # MongoDB database credentials
+  database: # MongoDB database credentials
     hosts:
-    - ${OPENCGA.CATALOG.DB.HOSTS}
+      - ${OPENCGA.CATALOG.DB.HOSTS}
     user: ${OPENCGA.CATALOG.DB.USER}
     password: ${OPENCGA.CATALOG.DB.PASSWORD}
     options:
@@ -27,7 +27,7 @@ catalog:
     #    Example for Solr connection:       http://opencga-solr-01.zone:8983/solr
     #    Example for Zookeeper connection:  opencga-zookeeper-01:2181               <-- Recommended for replicated installations
     hosts:
-    - ${OPENCGA.CATALOG.SEARCH.HOST}
+      - ${OPENCGA.CATALOG.SEARCH.HOST}
     user: ""
     password: ""
     options:
@@ -97,7 +97,7 @@ monitor:
   port: ${OPENCGA.MONITOR.PORT}
 
 healthCheck:
-  interval : 30 # seconds to get actual healthCheck than cache
+  interval: 30 # seconds to get actual healthCheck than cache
 
 #execution:
 #  mode: ${OPENCGA.EXECUTION.MODE}
@@ -117,48 +117,49 @@ analysis:
     defaultQueue: ""            # Default queue to be used to submit jobs
     availableQueues:            # Other queues for specific applications
     toolsPerQueue:
-#       docker:
-#          - "circos"
-#          - "deeptools"
-#          - "bwa"
-#          - "fastqc"
-#          - "gatk"
-#          - "picard"
-#          - "plink"
-#          - "rvtests"
-#          - "samtools"
-#          - "relatedness"
-#          - "family-qc"
-#          - "sample-qc"
-#          - "individual-qc"
-#          - "mutational-signature"
-#       fast:
-#          - "alignmentIndex"
-#       slow:
-#          - "coverage"
-#          - "alignmentStats"
+    #       docker:
+    #          - "circos"
+    #          - "deeptools"
+    #          - "bwa"
+    #          - "fastqc"
+    #          - "gatk"
+    #          - "picard"
+    #          - "plink"
+    #          - "rvtests"
+    #          - "samtools"
+    #          - "relatedness"
+    #          - "family-qc"
+    #          - "sample-qc"
+    #          - "individual-qc"
+    #          - "mutational-signature"
+    #       fast:
+    #          - "alignmentIndex"
+    #       slow:
+    #          - "coverage"
+    #          - "alignmentStats"
     maxConcurrentJobs:
       variant-index: 20
       variant-annotation-index: 5
       variant-secondary-index: 2
     options:
-     ## Local executor configuration
+      ## Local executor configuration
       local.maxConcurrentJobs: 1    # Max number of concurrent jobs to be executed locally in the master
-     ## Azure Batch Service configuration example
-     # azure.batchAccount : "batchAccount"
-     # azure.batchKey : "batchKey"
-     # azure.batchUri : "https://batchservice.uksouth.batch.azure.com"
-     # azure.batchPoolId : "poolId"
-     # azure.dockerImageName : "openCGADockerImageName"
-     # azure.dockerArgs : "dockerRunOptions"
+      ## Azure Batch Service configuration example
+      # azure.batchAccount : "batchAccount"
+      # azure.batchKey : "batchKey"
+      # azure.batchUri : "https://batchservice.uksouth.batch.azure.com"
+      # azure.batchPoolId : "poolId"
+      # azure.dockerImageName : "openCGADockerImageName"
+      # azure.dockerArgs : "dockerRunOptions"
 
-     ## Kubernetes executor configuration example
-     # k8s.masterUrl: "https://192.168.99.100:8443/"
+      ## Kubernetes executor configuration example
+      # k8s.masterUrl: "https://192.168.99.100:8443/"
       k8s.clientTimeout: 30000 # ms
       k8s.imageName: "opencb/opencga-base:${opencga.version}-hdp3.1"
       k8s.imagePullPolicy: "IfNotPresent"
-#      k8s.imagePullSecrets:
-#        name : "dockerhub-secrets-name"
+      #      k8s.imagePullSecrets:
+      #        name : "dockerhub-secrets-name"
+      k8s.ttlSecondsAfterFinished: 3600 # s
       k8s.namespace: "default"
       # FOR Cluster Autoscaler and dedicated jobs agent pool:
       k8s.requests:
@@ -171,22 +172,23 @@ analysis:
         agentpool: jobs
         kubernetes.io/os: linux
         kubernetes.io/role: agent
-     # FOR ACI:
-     # k8s.requests:
-     #   cpu: 2
-     #   memory: "12G"
-     # k8s.limits:
-     #   cpu: 2
-     #   memory: "12G"
-     # k8s.nodeSelector:
-     #   kubernetes.io/role: agent
-     #   kubernetes.io/os: linux
-     #   type: virtual-kubelet
-     # k8s.tolerations:
-     # - key: virtual-kubelet.io/provider
-     #   operator: Exists
-     # - key: azure.com/aci
-     #   effect: NoSchedule
+      # FOR ACI:
+      # k8s.requests:
+      #   cpu: 2
+      #   memory: "12G"
+      # k8s.limits:
+      #   cpu: 2
+      #   memory: "12G"
+      # k8s.nodeSelector:
+      #   kubernetes.io/role: agent
+      #   kubernetes.io/os: linux
+      #   type: virtual-kubelet
+      # k8s.tolerations:
+      # - key: virtual-kubelet.io/provider
+      #   operator: Exists
+      # - key: azure.com/aci
+      #   effect: NoSchedule
+
       k8s.volumeMounts:
         - name: conf
           mountPath: /opt/opencga/conf
@@ -220,18 +222,18 @@ analysis:
   frameworks:
     - id: "local"
       available: true
-      options: {}
+      options: { }
 
     - id: "spark"
       available: false
       queue: "hadoop_queue" # Special executor queue to be used for jobs using this framework.
-      options:     # Spark properties from https://spark.apache.org/docs/latest/configuration.html#viewing-spark-properties
+      options: # Spark properties from https://spark.apache.org/docs/latest/configuration.html#viewing-spark-properties
         spark.executor.memory: "1g"
 
     - id: "mapreduce"
       available: false
       queue: "hadoop_queue" # Special executor queue to be used for jobs using this framework. This is NOT a yarn queue.
-      options:   # MapReduce configuration from https://hadoop.apache.org/docs/r2.7.2/hadoop-mapreduce-client/hadoop-mapreduce-client-core/mapred-default.xml
+      options: # MapReduce configuration from https://hadoop.apache.org/docs/r2.7.2/hadoop-mapreduce-client/hadoop-mapreduce-client-core/mapred-default.xml
         mapreduce.job.queuename: default
 
 email:
@@ -239,7 +241,7 @@ email:
   port: ${OPENCGA.MAIL.PORT}
   user: ${OPENCGA.MAIL.USER}
   password: ${OPENCGA.MAIL.PASSWORD}
-  from: ""
+  from: ${OPENCGA.MAIL.USER}
   ssl: false
 
 #hooks:

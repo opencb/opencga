@@ -23,12 +23,12 @@ containing the data that has been queried.
 \describe{
 \item{\code{apiVersion}}{a character specifying the API version. Example: "v2"}
 
-\item{\code{time}}{integer especifying the time in milliseconds (ms) that took to 
+\item{\code{time}}{integer specifying the time in milliseconds (ms) that took to 
 retrieve the information. If the query requires multiple calls, time is added.}
 
 \item{\code{events}}{list containing any warnings or errors}
 
-\item{\code{params}}{list containg the specified parameters}
+\item{\code{params}}{list containing the specified parameters}
 
 \item{\code{responses}}{list containing the results from the query. There is one list 
 per OpenCGA federated servers that could be connected. The first response of 

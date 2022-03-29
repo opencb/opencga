@@ -1,11 +1,19 @@
 package org.opencb.opencga.core.models.file;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 import java.util.LinkedList;
 import java.util.List;
 
 public class MissingSamples {
 
+    @DataField(id = "existing", indexed = true,
+            description = FieldConstants.MISSING_SAMPLE_EXISTING_DESCRIPTION)
     private List<String> existing;
+
+    @DataField(id = "nonExisting", indexed = true,
+            description = FieldConstants.MISSING_SAMPLE_NON_EXISTING_DESCRIPTION)
     private List<String> nonExisting;
 
     public MissingSamples() {

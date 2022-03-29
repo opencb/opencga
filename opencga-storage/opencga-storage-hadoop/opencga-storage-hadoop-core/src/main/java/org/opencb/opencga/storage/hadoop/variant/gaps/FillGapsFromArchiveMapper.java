@@ -5,6 +5,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.mapreduce.Job;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.mr.AbstractArchiveTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
@@ -14,6 +15,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.FILL_GAPS_GAP_GENOTYPE;
 
 /**
  * Created on 15/01/18.
@@ -61,10 +64,13 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
         if (isFillGaps(context.getConfiguration())) {
             Collection<Integer> samples = getSamples(context.getConfiguration());
             String archiveTableName = context.getConfiguration().get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME);
+            String gapsGenotype = context.getConfiguration().get(
+                    FILL_GAPS_GAP_GENOTYPE.key(),
+                    FILL_GAPS_GAP_GENOTYPE.defaultValue());
             task = new FillGapsFromArchiveTask(getHBaseManager(),
                     archiveTableName,
-                    getStudyMetadata(), getHelper(),
-                    samples, getMetadataManager());
+                    getStudyMetadata(), context.getConfiguration(),
+                    samples, gapsGenotype, getMetadataManager());
         } else {
             throw new IllegalArgumentException("Attempting to run FillMissings with FillGapsFromArchiveMapper");
 //            boolean overwrite = FillGapsFromArchiveMapper.isOverwrite(context.getConfiguration());
@@ -82,6 +88,8 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
         super.cleanup(context);
         try {
             task.post();
+        } catch (StorageEngineException e) {
+            throw new IOException(e);
         } finally {
             updateStats(context);
         }

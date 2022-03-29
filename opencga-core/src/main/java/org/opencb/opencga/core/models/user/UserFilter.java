@@ -16,16 +16,33 @@
 
 package org.opencb.opencga.core.models.user;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.common.Enums;
 
 public class UserFilter {
 
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
+
+    @DataField(id = "description", defaultValue = "No description available",
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+
+    @DataField(id = "resource",
+            description = FieldConstants.USER_FILTER_RESOURCE_DESCRIPTION)
     private Enums.Resource resource;
+
+    @DataField(id = "query",
+            description = FieldConstants.USER_FILTER_QUERY)
     private Query query;
+
+
+    @DataField(id = "query", uncommentedClasses = {"QueryOptions"},
+            description = FieldConstants.USER_FILTER_QUERY_OPTIONS)
     private QueryOptions options;
 
     public UserFilter() {

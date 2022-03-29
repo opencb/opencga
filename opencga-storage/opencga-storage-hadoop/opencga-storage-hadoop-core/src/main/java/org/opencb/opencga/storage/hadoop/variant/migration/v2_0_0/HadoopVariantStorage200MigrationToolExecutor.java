@@ -11,11 +11,11 @@ import org.opencb.opencga.core.tools.migration.v2_0_0.VariantStorage200Migration
 import org.opencb.opencga.core.tools.migration.v2_0_0.VariantStorage200MigrationToolParams;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantStorageToolExecutor;
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.AnnotationPendingVariantsManager;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,16 +76,22 @@ public class HadoopVariantStorage200MigrationToolExecutor extends VariantStorage
                         Integer studyId = entry.getValue();
                         metadataManager.sampleMetadataIterator(studyId).forEachRemaining(sampleMetadata -> {
                             if (sampleMetadata.isIndexed()
-                                    && (SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata, 1).equals(Status.READY)
-                                    || SampleIndexDBAdaptor.getSampleIndexAnnotationStatus(sampleMetadata, 1).equals(Status.READY))) {
+                                    && (sampleMetadata.getSampleIndexStatus(1).equals(Status.READY)
+                                    || sampleMetadata.getSampleIndexAnnotationStatus(1).equals(Status.READY))) {
                                 samplesToModify.add(sampleMetadata.getId());
                             }
                         });
                         for (Integer sampleId : samplesToModify) {
                             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                                SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, Status.NONE, 0);
-                                SampleIndexDBAdaptor.setSampleIndexAnnotationStatus(sampleMetadata, Status.NONE, 0);
-                                return sampleMetadata;
+                                for (int v : sampleMetadata.getSampleIndexVersions()) {
+                                    sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.ERROR, v);
+                                }
+                                for (int v : sampleMetadata.getSampleIndexAnnotationVersions()) {
+                                    sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.ERROR, v);
+                                }
+                                for (int v : sampleMetadata.getSampleIndexAnnotationVersions()) {
+                                    sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.ERROR, v);
+                                }
                             });
                         }
                     }

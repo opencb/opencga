@@ -101,7 +101,6 @@ public class VariantHbaseTestUtils {
     public static VariantHadoopDBAdaptor printVariantsFromArchiveTable(VariantHadoopDBAdaptor dbAdaptor,
                                                                        StudyMetadata studyMetadata, PrintStream out)
             throws Exception {
-        GenomeHelper helper = dbAdaptor.getGenomeHelper();
         String archiveTableName = dbAdaptor.getArchiveTableName(studyMetadata.getId());
         if (!dbAdaptor.getHBaseManager().tableExists(archiveTableName)) {
             return dbAdaptor;
@@ -144,7 +143,6 @@ public class VariantHbaseTestUtils {
             return;
         }
         System.out.println("Query from HBase : " + tableName);
-        GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         Path outputFile;
         if (dir.toFile().isDirectory()) {
             outputFile = dir.resolve("variant." + tableName + "." + TimeUtils.getTimeMillis() + ".txt");
@@ -417,11 +415,18 @@ public class VariantHbaseTestUtils {
 
     public static void printSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
         for (Integer studyId : dbAdaptor.getMetadataManager().getStudies(null).values()) {
-            int version = dbAdaptor.getMetadataManager().getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getVersion();
-            String sampleGtTableName = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId, version);
-            if (dbAdaptor.getHBaseManager().tableExists(sampleGtTableName)) {
-                printSampleIndexTable(dbAdaptor, outDir, studyId, sampleGtTableName);
-                printSampleIndexTable2(dbAdaptor, outDir, studyId, sampleGtTableName);
+            StudyMetadata studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyId);
+            List<StudyMetadata.SampleIndexConfigurationVersioned> confs = studyMetadata.getSampleIndexConfigurations();
+            if (confs == null) {
+                confs = Collections.singletonList(studyMetadata.getSampleIndexConfigurationLatest());
+            }
+            for (StudyMetadata.SampleIndexConfigurationVersioned c : confs) {
+                int version = c.getVersion();
+                String sampleGtTableName = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId, version);
+                if (dbAdaptor.getHBaseManager().tableExists(sampleGtTableName)) {
+                    printSampleIndexTable(dbAdaptor, outDir, studyId, sampleGtTableName);
+                    printSampleIndexTable2(dbAdaptor, outDir, studyId, sampleGtTableName);
+                }
             }
         }
     }
@@ -436,7 +441,7 @@ public class VariantHbaseTestUtils {
                 FileOutputStream fos = new FileOutputStream(fileName.toFile()); PrintStream out = new PrintStream(fos)
         ) {
             SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getHBaseManager(), dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
-            SampleIndexSchema schema = sampleIndexDBAdaptor.getSchema(studyId);
+            SampleIndexSchema schema = sampleIndexDBAdaptor.getSchemaLatest(studyId);
             for (Integer sampleId : dbAdaptor.getMetadataManager().getIndexedSamples(studyId)) {
                 String sampleName = dbAdaptor.getMetadataManager().getSampleName(studyId, sampleId);
                 RawSingleSampleIndexVariantDBIterator it = sampleIndexDBAdaptor.rawIterator(dbAdaptor.getMetadataManager().getStudyName(studyId), sampleName);
@@ -464,7 +469,7 @@ public class VariantHbaseTestUtils {
         try (
                 FileOutputStream fos = new FileOutputStream(fileName.toFile()); PrintStream out = new PrintStream(fos)
         ) {
-            SampleIndexSchema schema = new SampleIndexSchema(dbAdaptor.getMetadataManager().getStudyMetadata(studyId).getSampleIndexConfigurationLatest().getConfiguration());
+            SampleIndexSchema schema = new SampleIndexSchemaFactory(dbAdaptor.getMetadataManager()).getSchemaLatest(studyId);
             dbAdaptor.getHBaseManager().act(sampleGtTableName, table -> {
 
                 table.getScanner(new Scan()).iterator().forEachRemaining(result -> {

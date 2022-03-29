@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 import os
 import requests
 import sys
 import json
-# import pathlib
 from pathlib import Path
 
 ## Configure command-line options
@@ -45,6 +45,7 @@ def run(command):
     if code != 0:
         error("Error executing: " + command)
 
+
 def login(loginRequired=False):
     if args.username is None or args.password is None:
         if loginRequired:
@@ -55,6 +56,7 @@ def login(loginRequired=False):
     code = os.system("docker login -u " + args.username + " --password " + args.password)
     if code != 0:
         error("Error executing: docker login")
+
 
 def build():
     print_header('Building docker images: ' + ', '.join(images))
@@ -79,6 +81,7 @@ def build():
                 + " " + build_folder)
         run(command)
 
+
 def tag_latest(image):
     if "hdp" in tag or "dev" in tag:
         print("Don't use tag " + tag + " as latest")
@@ -88,12 +91,12 @@ def tag_latest(image):
         return
 
     latest_tag = os.popen(("curl -s https://registry.hub.docker.com/v1/repositories/" + org + "/opencga-" + image + "/tags"
-                            + " | jq -r .[].name"
-                            + " | grep -v latest"
-                            + " | grep -v hdp"
-                            + " | grep -v dev"
-                            + " | sort -r -h"
-                            + " | head"))
+                           + " | jq -r .[].name"
+                           + " | grep -v latest"
+                           + " | grep -v hdp"
+                           + " | grep -v dev"
+                           + " | sort -r -h"
+                           + " | head"))
     if tag >= latest_tag.read():
         print("*********************************************")
         print("Pushing " + org + "/opencga-" + image + ":latest")
@@ -103,6 +106,7 @@ def tag_latest(image):
     else:
         print("Don't use tag " + tag + " as latest")
 
+
 def push():
     print("Pushing images to Docker hub")
     for i in images:
@@ -111,9 +115,10 @@ def push():
         print("Pushing " + server + image + ":" + tag)
         print("*********************************************")
         if server:
-            run("docker tag " + image + ":" + tag + " " +  server + image + ":" + tag)
+            run("docker tag " + image + ":" + tag + " " + server + image + ":" + tag)
         run("docker push " + server + image + ":" + tag)
         tag_latest(i)
+
 
 def delete():
     if args.username is None or args.password is None:

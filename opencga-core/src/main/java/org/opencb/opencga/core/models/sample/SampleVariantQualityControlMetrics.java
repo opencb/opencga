@@ -3,15 +3,28 @@ package org.opencb.opencga.core.models.sample;
 import org.opencb.biodata.models.clinical.qc.GenomePlot;
 import org.opencb.biodata.models.clinical.qc.SampleQcVariantStats;
 import org.opencb.biodata.models.clinical.qc.Signature;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class SampleVariantQualityControlMetrics {
 
+    @DataField(id = "variantStats", name = "variantStats",
+            description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_VARIANT_STATS_DESCRIPTION)
     private List<SampleQcVariantStats> variantStats;
+
+    @DataField(id = "signatures", name = "signatures",
+            description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_SIGNATURES_DESCRIPTION)
     private List<Signature> signatures;
+
+    @DataField(id = "genomePlot", name = "genomePlot",
+            description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_GENOME_PLOT_DESCRIPTION)
     private GenomePlot genomePlot;
+
+    @DataField(id = "files", name = "files",
+            description = FieldConstants.SAMPLE_QUALITY_CONTROL_METRICS_FILES_DESCRIPTION)
     private List<String> files;
 
     public SampleVariantQualityControlMetrics() {

@@ -36,6 +36,9 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -46,6 +49,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
@@ -151,7 +155,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
 
-        getVariantStorageEngine().aggregate(studyMetadata.getName(), false, new ObjectMap("local", true));
+        getVariantStorageEngine().aggregate(studyMetadata.getName(), new VariantAggregateParams(false, false), new ObjectMap("local", true));
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
@@ -177,7 +181,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
 
-        getVariantStorageEngine().aggregateFamily(studyMetadata.getName(), Arrays.asList("s1", "s2"), new ObjectMap("local", true));
+        ((VariantStorageEngine) getVariantStorageEngine()).aggregateFamily(studyMetadata.getName(), new VariantAggregateFamilyParams(Arrays.asList("s1", "s2"), false), new ObjectMap("local", true));
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
@@ -218,7 +222,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
 
-        getVariantStorageEngine().aggregateFamily(studyMetadata.getName(), Arrays.asList("s1", "s2"), new ObjectMap("local", true));
+        ((VariantStorageEngine) getVariantStorageEngine()).aggregateFamily(studyMetadata.getName(), new VariantAggregateFamilyParams(Arrays.asList("s1", "s2"), false), new ObjectMap("local", true));
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
@@ -462,7 +466,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         System.out.println("studyMetadata = " + studyMetadata);
         Map<String, Variant> variants = new HashMap<>();
-        for (Variant variant : dbAdaptor) {
+        for (Variant variant : dbAdaptor.iterable(new VariantQuery().includeSample(ParamConstants.ALL), new QueryOptions())) {
             String v = variant.toString();
             assertFalse(variants.containsKey(v));
             variants.put(v, variant);
@@ -613,7 +617,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
         int numHomRef = 0;
-        for (Variant variant : dbAdaptor) {
+        for (Variant variant : dbAdaptor.iterable(new VariantQuery().includeSample(ParamConstants.ALL), new QueryOptions())) {
             StudyEntry study = variant.getStudies().get(0);
             for (String s : study.getSamplesName()) {
                 String gt = study.getSampleData(s, "GT");

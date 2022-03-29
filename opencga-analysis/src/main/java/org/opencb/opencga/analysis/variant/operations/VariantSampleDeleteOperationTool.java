@@ -56,6 +56,7 @@ public class VariantSampleDeleteOperationTool extends OperationTool {
             throw new ToolException("Missing sample/s");
         }
 
+        params.put(VariantStorageOptions.FORCE.key(), variantSampleDeleteParams.isForce());
         params.put(VariantStorageOptions.RESUME.key(), variantSampleDeleteParams.isResume());
     }
 
