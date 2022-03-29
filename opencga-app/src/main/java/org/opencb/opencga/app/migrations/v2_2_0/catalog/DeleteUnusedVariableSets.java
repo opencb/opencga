@@ -57,8 +57,9 @@ public class DeleteUnusedVariableSets extends MigrationTool {
                 ));
         Bson update = new Document()
                 .append("$pull", new Document()
-                        .append("customAnnotationSets", new Document("vs", variableSet.getUid())))
+                        .append("customAnnotationSets", new Document("vs", variableSet.getUid()))
                         .append("customInternalAnnotationSets", new Document("vs", variableSet.getUid()))
+                )
                 .append("$unset", new Document()
                         .append("_vsMap." + variableSet.getUid(), "")
                         .append("_ivsMap." + variableSet.getUid(), "")
