@@ -23,9 +23,12 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.OntologyTerm;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
@@ -108,6 +111,8 @@ public class PanelManagerTest extends GenericTest {
     @Test
     public void updateTest() throws CatalogException {
         panelManager.importFromSource(studyFqn, "cancer-gene-census", null, sessionIdUser);
+        Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, panel.getVersion());
 
         DiseasePanel.RegionPanel regionPanel = new DiseasePanel.RegionPanel();
         regionPanel.setCoordinates(Collections.singletonList(new DiseasePanel.Coordinate("", "chr1:1-1000", "")));
@@ -129,6 +134,7 @@ public class PanelManagerTest extends GenericTest {
         assertEquals(1, updateResult.getNumUpdated());
 
         Panel updatedPanel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(2, updatedPanel.getVersion());
         assertEquals("author", updatedPanel.getSource().getAuthor());
         assertEquals(1, updatedPanel.getRegions().size());
         assertEquals("chr1:1-1000", updatedPanel.getRegions().get(0).getCoordinates().get(0).getLocation());
@@ -138,6 +144,55 @@ public class PanelManagerTest extends GenericTest {
         assertEquals("ontologyTerm", updatedPanel.getDisorders().get(0).getId());
         assertEquals(1, updatedPanel.getVariants().size());
         assertEquals("variant1", updatedPanel.getVariants().get(0).getId());
+
+        Query query = new Query()
+                .append(PanelDBAdaptor.QueryParams.VERSION.key(), 1);
+        panel = panelManager.get(studyFqn, Collections.singletonList("gene-census"), query, QueryOptions.empty(), false, sessionIdUser).first();
+        assertEquals("gene-census", panel.getId());
+        assertEquals(1, panel.getVersion());
+    }
+
+    @Test
+    public void deletePanelTest() throws CatalogException {
+        panelManager.importFromSource(studyFqn, "cancer-gene-census", null, sessionIdUser);
+        Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, panel.getVersion());
+
+        OpenCGAResult<?> result = panelManager.delete(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumDeleted());
+
+        result = panelManager.get(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), true, sessionIdUser);
+        assertEquals(0, result.getNumResults());
+
+        Query query = new Query()
+                .append(ParamConstants.DELETED_PARAM, true);
+        result = panelManager.get(studyFqn, Collections.singletonList("gene-census"), query, QueryOptions.empty(), false, sessionIdUser);
+        assertEquals(1, result.getNumResults());
+    }
+
+    @Test
+    public void deletePanelWithVersionsTest() throws CatalogException {
+        panelManager.importFromSource(studyFqn, "cancer-gene-census", null, sessionIdUser);
+        Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, panel.getVersion());
+
+        PanelUpdateParams updateParams = new PanelUpdateParams()
+                .setSource(new DiseasePanel.SourcePanel().setAuthor("author"))
+                .setDisorders(Collections.singletonList(new OntologyTerm().setId("ontologyTerm")));
+        DataResult<Panel> updateResult = panelManager.update(studyFqn, "gene-census", updateParams, null, sessionIdUser);
+        assertEquals(1, updateResult.getNumUpdated());
+
+        OpenCGAResult<?> result = panelManager.delete(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumDeleted());
+
+        result = panelManager.get(studyFqn, Collections.singletonList("gene-census"), QueryOptions.empty(), true, sessionIdUser);
+        assertEquals(0, result.getNumResults());
+
+        Query query = new Query()
+                .append(Constants.ALL_VERSIONS, true)
+                .append(ParamConstants.DELETED_PARAM, true);
+        result = panelManager.get(studyFqn, Collections.singletonList("gene-census"), query, QueryOptions.empty(), false, sessionIdUser);
+        assertEquals(2, result.getNumResults());
     }
 
 }

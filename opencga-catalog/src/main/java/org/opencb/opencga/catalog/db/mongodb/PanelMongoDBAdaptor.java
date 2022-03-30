@@ -26,6 +26,7 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
+import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.PanelConverter;
@@ -56,14 +57,17 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdaptor {
 
     private final MongoDBCollection panelCollection;
+    private final MongoDBCollection panelArchiveCollection;
     private final MongoDBCollection deletedPanelCollection;
     private PanelConverter panelConverter;
 
-    public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBCollection deletedPanelCollection, Configuration configuration,
+    public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBCollection panelArchiveCollection,
+                               MongoDBCollection deletedPanelCollection, Configuration configuration,
                                MongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(JobMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.panelCollection = panelCollection;
+        this.panelArchiveCollection = panelArchiveCollection;
         this.deletedPanelCollection = deletedPanelCollection;
         this.panelConverter = new PanelConverter();
     }
@@ -125,6 +129,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         Document panelDocument = getPanelDocumentForInsertion(clientSession, panel, studyUid);
         panelCollection.insert(clientSession, panelDocument, null);
+        panelArchiveCollection.insert(clientSession, panelDocument, null);
 
         logger.info("Panel '" + panel.getId() + "(" + panel.getUid() + ")' successfully created");
     }
@@ -310,10 +315,6 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                 .append(QueryParams.STUDY_UID.key(), panel.getStudyUid())
                 .append(QueryParams.UID.key(), panel.getUid());
 
-        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-            createNewVersion(clientSession, panel.getStudyUid(), panel.getUid());
-        }
-
         Document panelUpdate = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery);
 
         if (panelUpdate.isEmpty()) {
@@ -324,39 +325,27 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         }
 
         Bson finalQuery = parseQuery(tmpQuery);
-        logger.debug("Panel update: query : {}, update: {}",
-                finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                panelUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        return updateVersionedModel(clientSession, finalQuery, panelCollection, panelArchiveCollection, () -> {
+                    logger.debug("Panel update: query : {}, update: {}",
+                            finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                            panelUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-        DataResult result = panelCollection.update(clientSession, finalQuery, new Document("$set", panelUpdate),
-                new QueryOptions("multi", true));
+                    DataResult result = panelCollection.update(clientSession, finalQuery, new Document("$set", panelUpdate),
+                            new QueryOptions("multi", true));
 
-        if (result.getNumMatches() == 0) {
-            throw new CatalogDBException("Panel " + panel.getId() + " not found");
-        }
-        List<Event> events = new ArrayList<>();
-        if (result.getNumUpdated() == 0) {
-            events.add(new Event(Event.Type.WARNING, panel.getId(), "Panel was already updated"));
-        }
-        logger.debug("Panel {} successfully updated", panel.getId());
+                    if (result.getNumMatches() == 0) {
+                        throw new CatalogDBException("Panel " + panel.getId() + " not found");
+                    }
+                    List<Event> events = new ArrayList<>();
+                    if (result.getNumUpdated() == 0) {
+                        events.add(new Event(Event.Type.WARNING, panel.getId(), "Panel was already updated"));
+                    }
+                    logger.debug("Panel {} successfully updated", panel.getId());
 
-        return endWrite(tmpStartTime, 1, 1, events);
+                    return endWrite(tmpStartTime, 1, 1, events);
+                }
+        );
     }
-
-    private void createNewVersion(ClientSession clientSession, long studyUid, long panelUid)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Query query = new Query()
-                .append(QueryParams.STUDY_UID.key(), studyUid)
-                .append(QueryParams.UID.key(), panelUid);
-        OpenCGAResult<Document> queryResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
-
-        if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Could not find panel '" + panelUid + "'");
-        }
-
-        createNewVersion(clientSession, panelCollection, queryResult.first());
-    }
-
 
     private Document parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -474,47 +463,21 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         logger.debug("Deleting panel {} ({})", panelId, panelUid);
 
+        // Check if panel is in use in a case
+        Query queryCheck = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.PANELS_UID.key(), panelUid)
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
+        OpenCGAResult<Long> count = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().count(clientSession, queryCheck);
+        if (count.getNumMatches() > 0) {
+            throw new CatalogDBException("Could not delete panel. Panel is in use in " + count.getNumMatches() + " cases");
+        }
+
         // Look for all the different panel versions
         Query panelQuery = new Query()
                 .append(QueryParams.UID.key(), panelUid)
-                .append(QueryParams.STUDY_UID.key(), studyUid)
-                .append(Constants.ALL_VERSIONS, true);
-        DBIterator<Document> panelDBIterator = nativeIterator(panelQuery, QueryOptions.empty());
-
-        // Delete any documents that might have been already deleted with that id
-        Bson query = new Document()
-                .append(QueryParams.ID.key(), panelId)
-                .append(PRIVATE_STUDY_UID, studyUid);
-        deletedPanelCollection.remove(clientSession, query, new QueryOptions(MongoDBCollection.MULTI, true));
-
-        while (panelDBIterator.hasNext()) {
-            Document tmpPanel = panelDBIterator.next();
-
-            // Set status to DELETED
-            nestedPut(QueryParams.STATUS.key(), getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"), tmpPanel);
-
-            int panelVersion = tmpPanel.getInteger(QueryParams.VERSION.key());
-
-            // Insert the document in the DELETE collection
-            deletedPanelCollection.insert(clientSession, tmpPanel, null);
-            logger.debug("Inserted panel uid '{}' version '{}' in DELETE collection", panelUid, panelVersion);
-
-            // Remove the document from the main INDIVIDUAL collection
-            query = parseQuery(new Query()
-                    .append(QueryParams.UID.key(), panelUid)
-                    .append(QueryParams.VERSION.key(), panelVersion));
-            DataResult remove = panelCollection.remove(clientSession, query, null);
-            if (remove.getNumMatches() == 0) {
-                throw new CatalogDBException("Panel " + panelId + " not found");
-            }
-            if (remove.getNumDeleted() == 0) {
-                throw new CatalogDBException("Panel " + panelId + " could not be deleted");
-            }
-
-            logger.debug("Panel uid '{}' version '{}' deleted from main PANEL collection", panelUid, panelVersion);
-        }
-
-        logger.debug("Panel {}({}) deleted", panelId, panelUid);
+                .append(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(panelQuery);
+        deleteVersionedModel(clientSession, bson, panelCollection, panelArchiveCollection, deletedPanelCollection);
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
@@ -607,11 +570,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         Bson bson = parseQuery(finalQuery, user);
         logger.debug("Panel query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return panelCollection.iterator(clientSession, bson, null, null, qOptions);
-        } else {
-            return deletedPanelCollection.iterator(clientSession, bson, null, null, qOptions);
-        }
+        MongoDBCollection collection = getQueryCollection(query, panelCollection, panelArchiveCollection, deletedPanelCollection);
+        return collection.iterator(clientSession, bson, null, null, qOptions);
     }
 
     @Override
@@ -804,14 +764,10 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         }
 
         // If the user doesn't look for a concrete version...
-        if (!uidVersionQueryFlag && !queryCopy.getBoolean(Constants.ALL_VERSIONS) && !queryCopy.containsKey(QueryParams.VERSION.key())) {
-            if (queryCopy.containsKey(QueryParams.SNAPSHOT.key())) {
+        if (!uidVersionQueryFlag && !queryCopy.getBoolean(Constants.ALL_VERSIONS) && !queryCopy.containsKey(QueryParams.VERSION.key())
+                && queryCopy.containsKey(QueryParams.SNAPSHOT.key())) {
                 // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
                 andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
-            } else {
-                // Otherwise, we will always look for the latest version
-                andBsonList.add(Filters.eq(LAST_OF_VERSION, true));
-            }
         }
 
         if (extraQuery != null && extraQuery.size() > 0) {

@@ -56,6 +56,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             CLINICAL_ANALYSIS_COLLECTION,
             INTERPRETATION_COLLECTION,
 
+            PANEL_ARCHIVE_COLLECTION,
             INTERPRETATION_ARCHIVE_COLLECTION,
 
             DELETED_USER_COLLECTION,
@@ -87,6 +88,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String INTERPRETATION_COLLECTION = "interpretation";
 
+    public static final String PANEL_ARCHIVE_COLLECTION = "panel_archive";
     public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
 
     public static final String DELETED_USER_COLLECTION = "deleted_user";
@@ -323,6 +325,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         MongoDBCollection clinicalCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION);
         MongoDBCollection interpretationCollection = mongoDataStore.getCollection(INTERPRETATION_COLLECTION);
 
+        MongoDBCollection panelArchivedCollection = mongoDataStore.getCollection(PANEL_ARCHIVE_COLLECTION);
         MongoDBCollection interpretationArchivedCollection = mongoDataStore.getCollection(INTERPRETATION_ARCHIVE_COLLECTION);
 
         MongoDBCollection deletedUserCollection = mongoDataStore.getCollection(DELETED_USER_COLLECTION);
@@ -355,6 +358,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(CLINICAL_ANALYSIS_COLLECTION, clinicalCollection);
         collections.put(INTERPRETATION_COLLECTION, interpretationCollection);
 
+        collections.put(PANEL_ARCHIVE_COLLECTION, panelArchivedCollection);
         collections.put(INTERPRETATION_ARCHIVE_COLLECTION, interpretationArchivedCollection);
 
         collections.put(DELETED_USER_COLLECTION, deletedUserCollection);
@@ -379,7 +383,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         studyDBAdaptor = new StudyMongoDBAdaptor(studyCollection, deletedStudyCollection, catalogConfiguration, this);
         userDBAdaptor = new UserMongoDBAdaptor(userCollection, deletedUserCollection, catalogConfiguration, this);
         cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, deletedCohortCollection, catalogConfiguration, this);
-        panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, deletedPanelCollection, catalogConfiguration, this);
+        panelDBAdaptor = new PanelMongoDBAdaptor(panelCollection, panelArchivedCollection, deletedPanelCollection, catalogConfiguration,
+                this);
         familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, deletedFamilyCollection, catalogConfiguration, this);
         clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, catalogConfiguration, this);
         interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, interpretationArchivedCollection,
