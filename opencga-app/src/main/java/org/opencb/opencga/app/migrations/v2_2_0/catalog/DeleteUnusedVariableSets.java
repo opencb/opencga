@@ -64,6 +64,7 @@ public class DeleteUnusedVariableSets extends MigrationTool {
                         .append("_vsMap." + variableSet.getUid(), "")
                         .append("_ivsMap." + variableSet.getUid(), "")
                 );
+        logger.info("Removing AnnotationSets using the VariableSet '{}' from '{}' collection...", variableSet.getId(), collection);
         mongoCollection.updateMany(query, update);
     }
 
