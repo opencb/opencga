@@ -173,7 +173,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("        RestResponse queryResponse = null;\n\n");
         sb.append("        switch (subCommandString) {\n");
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
-            String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
+            String commandName = getCommandName(restCategory, restEndpoint);
             if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName)) {
                     sb.append("            case \"" + reverseCommandName(commandName) + "\":\n");
@@ -213,7 +213,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         CategoryConfig config = availableCategoryConfigs.get(key);
         sb.append(methodExecute(restCategory, config));
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
-            String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
+            String commandName = getCommandName(restCategory, restEndpoint);
             if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName)) {
                     sb.append("\n");
