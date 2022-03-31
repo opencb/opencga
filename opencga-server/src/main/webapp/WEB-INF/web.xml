@@ -36,6 +36,12 @@
         <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
 
         <init-param>
+            <param-name>jersey.config.server.provider.packages</param-name>
+            <param-value>org.opencb.opencga.server.rest;com.jersey.jaxb;com.fasterxml.jackson.jaxrs.json
+            </param-value>
+        </init-param>
+
+        <init-param>
             <param-name>OPENCGA_HOME</param-name>
             <param-value>${OPENCGA.INSTALLATION.DIR}</param-value>
         </init-param>
@@ -68,5 +74,19 @@
         <welcome-file>index.html</welcome-file>
     </welcome-file-list>
 
+<!--    &lt;!&ndash;swagger&ndash;&gt;-->
+<!--    <servlet>-->
+<!--        <servlet-name>Jersey2Config</servlet-name>-->
+<!--        <servlet-class>io.swagger.jersey.config.JerseyJaxrsConfig</servlet-class>-->
+<!--        <init-param>-->
+<!--            <param-name>api.version</param-name>-->
+<!--            <param-value>1.0.1</param-value>-->
+<!--        </init-param>-->
+<!--        <init-param>-->
+<!--            <param-name>swagger.api.basepath</param-name>-->
+<!--            <param-value>/${opencga.war.name}/webservices/rest</param-value>-->
+<!--        </init-param>-->
+<!--        <load-on-startup>2</load-on-startup>-->
+<!--    </servlet>-->
 
 </web-app>
