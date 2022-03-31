@@ -74,12 +74,13 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     public static final QueryOptions INCLUDE_INTERPRETATION_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.UID.key(),
             InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(),
+            InterpretationDBAdaptor.QueryParams.LOCKED.key(),
             InterpretationDBAdaptor.QueryParams.VERSION.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key()));
     public static final QueryOptions INCLUDE_INTERPRETATION_FINDING_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
             InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.UID.key(),
             InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(),
             InterpretationDBAdaptor.QueryParams.VERSION.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
-            InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(),
+            InterpretationDBAdaptor.QueryParams.LOCKED.key(),  InterpretationDBAdaptor.QueryParams.PRIMARY_FINDINGS_ID.key(),
             InterpretationDBAdaptor.QueryParams.SECONDARY_FINDINGS_ID.key()));
 
 
@@ -884,6 +885,11 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             } catch (JsonProcessingException e) {
                 throw new CatalogException("Could not parse InterpretationUpdateParams object: " + e.getMessage(), e);
             }
+        }
+
+        if (interpretation.isLocked() && parameters.getBoolean(InterpretationDBAdaptor.QueryParams.LOCKED.key(), true)) {
+            throw new CatalogException("Could not update the Interpretation. Interpretation '" + interpretation.getId()
+                    + " is locked. Please, unlock it first.");
         }
 
         if (updateParams != null && updateParams.getComments() != null && !updateParams.getComments().isEmpty()) {

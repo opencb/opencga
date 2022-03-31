@@ -238,11 +238,27 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         interpretationObject.put(RELEASE_FROM_VERSION, Arrays.asList(interpretation.getRelease()));
         interpretationObject.put(LAST_OF_VERSION, true);
         interpretationObject.put(LAST_OF_RELEASE, true);
-        interpretationObject.put(LOCKED.key(), false);
 
         interpretationCollection.insert(clientSession, interpretationObject, null);
 
         return interpretation;
+    }
+
+    void propagateLockedFromClinicalAnalysis(ClientSession clientSession, ClinicalAnalysis clinicalAnalysis, boolean locked)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), clinicalAnalysis.getStudyUid())
+                .append(QueryParams.CLINICAL_ANALYSIS_ID.key(), clinicalAnalysis.getId());
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key(),
+                        QueryParams.CLINICAL_ANALYSIS_ID.key()));
+        OpenCGAResult<Interpretation> result = get(clientSession, query, options);
+
+        ObjectMap parameters = new ObjectMap(LOCKED.key(), locked);
+        for (Interpretation interpretation : result.getResults()) {
+            update(clientSession, interpretation, parameters, null, null, QueryOptions.empty());
+        }
     }
 
     @Override
@@ -294,8 +310,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     public OpenCGAResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        logger.debug("Interpretation count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
-                MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Interpretation count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(interpretationCollection.count(clientSession, bson));
     }
 
