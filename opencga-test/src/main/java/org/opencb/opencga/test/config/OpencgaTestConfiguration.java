@@ -32,7 +32,6 @@ import java.util.logging.Level;
 
 public class OpencgaTestConfiguration {
 
-    private String outputDir;
 
     public static Configuration load(InputStream configurationInputStream) throws IOException {
 
@@ -74,7 +73,7 @@ public class OpencgaTestConfiguration {
 
     private static void checkDataset(Configuration configuration) {
 
-        for (Env env : configuration.getEnvs()) {
+        for (Environment env : configuration.getEnvs()) {
             String separator = "";
             if (!env.getDataset().getPath().endsWith(File.separator)) {
                 separator = File.separator;
@@ -86,7 +85,7 @@ public class OpencgaTestConfiguration {
     }
 
     private static void checkReference(Configuration configuration) {
-        for (Env env : configuration.getEnvs()) {
+        for (Environment env : configuration.getEnvs()) {
             if (!checkDirectory(env.getReference().getIndex())) {
                 System.err.println("The index must be present.");
                 System.exit(-1);

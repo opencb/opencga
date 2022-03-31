@@ -16,19 +16,19 @@
 
 package org.opencb.opencga.test.manager;
 
-import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.test.config.Configuration;
+import org.opencb.opencga.test.plan.DatasetPlanExecution;
+import org.opencb.opencga.test.plan.DockerPlanExecutor;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
-public class DatasetGenerator {
+public class DatasetPlanExecutionGenerator {
 
 
     private Configuration configuration;
 
-    public DatasetGenerator(Configuration configuration) {
+    public DatasetPlanExecutionGenerator(Configuration configuration) {
         this.configuration = configuration;
     }
 
@@ -39,7 +39,7 @@ public class DatasetGenerator {
      * @return
      * @throws IOException
      */
-    public Map<String, List<String>> generateCommandLines() throws IOException {
+    public List<DatasetPlanExecution> generateCommandLines() throws IOException {
         DatasetCommandLineGenerator datasetCommandLineGenerator = new DatasetCommandLineGenerator(configuration);
         return datasetCommandLineGenerator.generateCommandLines();
     }
@@ -50,9 +50,9 @@ public class DatasetGenerator {
      * @throws IOException
      */
     public void execute() throws IOException {
-        Map<String, List<String>> commandLinesMap = this.generateCommandLines();
-        DatasetCommandLineExecutor executor = new DatasetCommandLineExecutor(commandLinesMap, configuration);
-        executor.execute();
+        List<DatasetPlanExecution> commandLinesMap = this.generateCommandLines();
+        DockerPlanExecutor executor = new DockerPlanExecutor();
+        executor.execute(commandLinesMap);
     }
 
     /**
@@ -61,12 +61,9 @@ public class DatasetGenerator {
      * @throws IOException
      */
     public void simulate() throws IOException {
-        Map<String, List<String>> commandLinesMap = this.generateCommandLines();
-        for (String env : commandLinesMap.keySet()) {
-            PrintUtils.println(env, PrintUtils.Color.YELLOW);
-            for (String line : commandLinesMap.get(env)) {
-                PrintUtils.println("    " + line, PrintUtils.Color.GREEN);
-            }
+        List<DatasetPlanExecution> datasetPlanExecutions = this.generateCommandLines();
+        for (DatasetPlanExecution datasetPlanExecution : datasetPlanExecutions) {
+            datasetPlanExecution.simulate();
         }
     }
 

@@ -5,7 +5,7 @@ import java.util.List;
 public class Configuration {
 
     private Execution execution;
-    private List<Env> envs;
+    private List<Environment> envs;
     private Logger logger;
 
     public Configuration() {
@@ -31,11 +31,11 @@ public class Configuration {
         return this;
     }
 
-    public List<Env> getEnvs() {
+    public List<Environment> getEnvs() {
         return envs;
     }
 
-    public Configuration setEnvs(List<Env> envs) {
+    public Configuration setEnvs(List<Environment> envs) {
         this.envs = envs;
         return this;
     }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.test.manager;
+package org.opencb.opencga.test.plan;
 
 import org.opencb.opencga.test.config.Configuration;
 
@@ -22,12 +22,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-public class DatasetCommandLineExecutor {
+public class DockerPlanExecutor implements PlanExecutor {
 
     private Map<String, List<String>> commandLines;
     private Configuration configuration;
 
-    public DatasetCommandLineExecutor(Map<String, List<String>> commandLines, Configuration configuration) {
+    public DockerPlanExecutor() {
         this.commandLines = commandLines;
         this.configuration = configuration;
     }
@@ -37,7 +37,7 @@ public class DatasetCommandLineExecutor {
 
     }
 
-    public void execute() {
+    public void execute(List<DatasetPlanExecution> datasetPlanExecutionList) {
 
     }
 }

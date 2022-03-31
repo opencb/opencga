@@ -2,7 +2,7 @@ package org.opencb.opencga.test.config;
 
 import java.util.List;
 
-public class Env {
+public class Environment {
 
 
     private String id;
@@ -12,7 +12,7 @@ public class Env {
     private Aligner aligner;
     private List<Caller> callers;
 
-    public Env() {
+    public Environment() {
     }
 
     @Override
@@ -32,7 +32,7 @@ public class Env {
         return id;
     }
 
-    public Env setId(String id) {
+    public Environment setId(String id) {
         this.id = id;
         return this;
     }
@@ -41,7 +41,7 @@ public class Env {
         return description;
     }
 
-    public Env setDescription(String description) {
+    public Environment setDescription(String description) {
         this.description = description;
         return this;
     }
@@ -50,7 +50,7 @@ public class Env {
         return dataset;
     }
 
-    public Env setDatasets(Dataset dataset) {
+    public Environment setDatasets(Dataset dataset) {
         this.dataset = dataset;
         return this;
     }
@@ -59,7 +59,7 @@ public class Env {
         return reference;
     }
 
-    public Env setReference(Reference reference) {
+    public Environment setReference(Reference reference) {
         this.reference = reference;
         return this;
     }
@@ -68,7 +68,7 @@ public class Env {
         return aligner;
     }
 
-    public Env setAligner(Aligner aligner) {
+    public Environment setAligner(Aligner aligner) {
         this.aligner = aligner;
         return this;
     }
@@ -77,7 +77,7 @@ public class Env {
         return callers;
     }
 
-    public Env setCallers(List<Caller> callers) {
+    public Environment setCallers(List<Caller> callers) {
         this.callers = callers;
         return this;
     }
