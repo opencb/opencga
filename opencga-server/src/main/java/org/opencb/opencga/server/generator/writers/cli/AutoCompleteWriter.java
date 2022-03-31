@@ -106,7 +106,7 @@ public class AutoCompleteWriter extends ParentClientRestApiWriter {
             CategoryConfig config = availableCategoryConfigs.get(getIdCategory(restCategory));
             sb.append("    private List<Candidate> " + getCategoryCommandName(restCategory, config) + "List = asList( ");
             for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
-                String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
+                String commandName = getCommandName(restCategory, restEndpoint);
                 if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                     if (config.isAvailableCommand(commandName)) {
                         sb.append("\"" + commandName + "\",");
