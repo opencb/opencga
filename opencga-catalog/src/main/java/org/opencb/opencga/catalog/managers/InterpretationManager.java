@@ -429,7 +429,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                                 ? clinicalAnalysis.getPanels().stream()
                                 .map(p -> new PanelReferenceParam().setId(p.getId())).collect(Collectors.toList())
                                 : null,
-                        Collections.emptyList(), new ObjectMap(), new StatusParam());
+                        Collections.emptyList(), new StatusParam(), false, new ObjectMap());
 
                 ClinicalAudit clinicalAudit = new ClinicalAudit(userId, ClinicalAudit.Action.CLEAR_INTERPRETATION,
                         "Clear interpretation '" + interpretationId + "'", TimeUtils.getTime());

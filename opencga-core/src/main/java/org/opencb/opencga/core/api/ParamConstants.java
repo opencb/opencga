@@ -499,6 +499,7 @@ public class ParamConstants {
     public static final String INTERPRETATION_INTERNAL_STATUS_PARAM = INTERNAL_STATUS_PARAM;
     //    public static final String INTERPRETATION_VERSION_PARAM = "version";
     public static final String INTERPRETATION_RELEASE_PARAM = RELEASE_PARAM;
+    public static final String INTERPRETATION_LOCKED_PARAM = "locked";
 
     public static final String INTERPRETATION_ID_DESCRIPTION = "Comma separated list of Interpretation IDs" + UP_TO_100;
     public static final String INTERPRETATION_UUID_DESCRIPTION = "Comma separated list of Interpretation UUIDs" + UP_TO_100;
@@ -514,6 +515,8 @@ public class ParamConstants {
     public static final String INTERPRETATION_INTERNAL_STATUS_DESCRIPTION = INTERNAL_STATUS_DESCRIPTION;
     //    public static final String INTERPRETATION_VERSION_DESCRIPTION = VERSION_DESCRIPTION;
     public static final String INTERPRETATION_RELEASE_DESCRIPTION = RELEASE_DESCRIPTION;
+    public static final String INTERPRETATION_LOCKED_DESCRIPTION = "Field indicating whether the Interpretation is locked or not "
+            + "(can be altered or not)";
 
     public static final String INTERPRETATION_DESCRIPTION = "Comma separated list of clinical interpretation IDs " + UP_TO_100;
 

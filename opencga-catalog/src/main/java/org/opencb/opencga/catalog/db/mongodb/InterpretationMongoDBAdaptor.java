@@ -60,6 +60,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
+import static org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor.QueryParams.LOCKED;
 import static org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor.QueryParams.STATUS_ID;
 import static org.opencb.opencga.catalog.db.mongodb.ClinicalAnalysisMongoDBAdaptor.fixCommentsForRemoval;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -237,6 +238,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         interpretationObject.put(RELEASE_FROM_VERSION, Arrays.asList(interpretation.getRelease()));
         interpretationObject.put(LAST_OF_VERSION, true);
         interpretationObject.put(LAST_OF_RELEASE, true);
+        interpretationObject.put(LOCKED.key(), false);
 
         interpretationCollection.insert(clientSession, interpretationObject, null);
 
@@ -381,6 +383,9 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
             }
         }
+
+        String[] booleanParams = {LOCKED.key()};
+        filterBooleanParams(parameters, document.getSet(), booleanParams);
 
         String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
