@@ -113,7 +113,7 @@ public class InternalStatus extends Status {
     }
 
     protected void init(String statusId, String description) {
-        init(statusId, null, description);
+        init(statusId, statusId, description);
     }
 
     protected void init(String statusId, String statusName, String description) {
@@ -186,7 +186,7 @@ public class InternalStatus extends Status {
     }
 
     public String getName() {
-        return name;
+        return StringUtils.isNotEmpty(name) ? name : id;
     }
 
     public InternalStatus setName(String name) {
