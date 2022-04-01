@@ -3123,6 +3123,7 @@ public class FileManager extends AnnotationSetManager<File> {
                             // We need to remove the reference to the transformed files and change their status from TRANSFORMED to NONE
                             next.getInternal().getVariant().getIndex().setTransform(null);
                             next.getInternal().getVariant().getIndex().getStatus().setId(VariantIndexStatus.NONE);
+                            next.getInternal().getVariant().getIndex().getStatus().setName(VariantIndexStatus.NONE);
                             break;
                         case VariantIndexStatus.NONE:
                         case VariantIndexStatus.DELETED:
