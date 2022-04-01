@@ -26,6 +26,7 @@ import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
@@ -107,7 +108,7 @@ public class InterpretationCreateParams {
 
     public Interpretation toClinicalInterpretation() {
         return new Interpretation(null, description, clinicalAnalysisId, analyst != null ? analyst.toClinicalAnalyst() : null, method,
-                creationDate, modificationDate,  locked != null ? locked : false, primaryFindings, secondaryFindings,
+                creationDate, modificationDate,  Objects.requireNonNullElse(locked, false), primaryFindings, secondaryFindings,
                 panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
                 status != null ? status.toStatus() : null, attributes);
