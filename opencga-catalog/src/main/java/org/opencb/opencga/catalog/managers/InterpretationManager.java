@@ -864,7 +864,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         // Check if user has permissions to write clinical analysis
         QueryOptions clinicalOptions = keepFieldsInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
-                Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(),
+                Arrays.asList(ClinicalAnalysisDBAdaptor.QueryParams.PANELS.key(), ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(),
                         ClinicalAnalysisDBAdaptor.QueryParams.PANEL_LOCK.key()));
         ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
                 interpretation.getClinicalAnalysisId(), clinicalOptions, userId).first();
@@ -887,9 +887,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             }
         }
 
-        if (interpretation.isLocked() && parameters.getBoolean(InterpretationDBAdaptor.QueryParams.LOCKED.key(), true)) {
-            throw new CatalogException("Could not update the Interpretation. Interpretation '" + interpretation.getId()
-                    + " is locked. Please, unlock it first.");
+        if (interpretation.isLocked()) {
+            if (parameters.getBoolean(InterpretationDBAdaptor.QueryParams.LOCKED.key(), true)) {
+                throw new CatalogException("Could not update the Interpretation. Interpretation '" + interpretation.getId()
+                        + " is locked. Please, unlock it first.");
+            } else if (clinicalAnalysis.isLocked()) {
+                throw new CatalogException("Could not update the Interpretation. Case is locked so no further modifications can be made to"
+                        + " the Interpretation.");
+            }
         }
 
         if (updateParams != null && updateParams.getComments() != null && !updateParams.getComments().isEmpty()) {
@@ -1227,8 +1232,14 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         ClinicalAnalysis clinicalAnalysis;
         try {
-            clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), clinicalAnalysisId,
-                    ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId).first();
+            QueryOptions options = keepFieldInQueryOptions(ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS,
+                    ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key());
+            clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), clinicalAnalysisId, options, userId)
+                    .first();
+            if (clinicalAnalysis.isLocked()) {
+                throw new CatalogException("Could not delete the Interpretation. Case is locked so no further modifications can be made to"
+                        + " the Interpretation.");
+            }
             if (checkPermissions) {
                 authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(),
                         userId, ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.WRITE);
@@ -1255,6 +1266,10 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 interpretationId = interpretation.getId();
                 interpretationUuid = interpretation.getUuid();
 
+                if (interpretation.isLocked()) {
+                    throw new CatalogException("Could not delete the Interpretation. Interpretation '" + interpretation.getId()
+                            + " is locked. Please, unlock it first.");
+                }
                 if (!interpretation.getClinicalAnalysisId().equals(clinicalAnalysis.getId())) {
                     throw new CatalogException("Cannot delete interpretation '" + interpretationId + "': Interpretation does not belong"
                             + " to ClinicalAnalysis '" + clinicalAnalysis.getId() + "'.");

@@ -182,7 +182,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     events.add(new Event(Event.Type.WARNING, clinicalAnalysisId, "Clinical Analysis was already updated"));
                 }
 
-                if (parameters.containsKey(LOCKED.key())) {
+                if (parameters.getBoolean(LOCKED.key())) {
                     // Propagate locked value to Interpretations
                     dbAdaptorFactory.getInterpretationDBAdaptor().propagateLockedFromClinicalAnalysis(clientSession, clinical,
                             parameters.getBoolean(LOCKED.key()));

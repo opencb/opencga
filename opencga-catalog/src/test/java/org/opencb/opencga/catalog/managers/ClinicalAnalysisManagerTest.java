@@ -1752,14 +1752,13 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
             assertTrue(secondaryInterpretation.isLocked());
         }
 
-        // Unlock interpretation 1
-        catalogManager.getInterpretationManager().update(STUDY, ca.getId(), ca.getInterpretation().getId(),
-                new InterpretationUpdateParams().setLocked(false), null, QueryOptions.empty(), sessionIdUser);
-        ca = catalogManager.getClinicalAnalysisManager().get(STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
-        assertTrue(ca.isLocked());
-        assertFalse(ca.getInterpretation().isLocked());
-        for (Interpretation secondaryInterpretation : ca.getSecondaryInterpretations()) {
-            assertTrue(secondaryInterpretation.isLocked());
+        // Try to unlock interpretation 1
+        try {
+            catalogManager.getInterpretationManager().update(STUDY, ca.getId(), ca.getInterpretation().getId(),
+                    new InterpretationUpdateParams().setLocked(false), null, QueryOptions.empty(), sessionIdUser);
+            fail("Case is locked so it should not allow this");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("locked") && e.getMessage().toLowerCase().contains("case"));
         }
 
         // Unlock case
@@ -1767,9 +1766,18 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
                 QueryOptions.empty(), sessionIdUser);
         ca = catalogManager.getClinicalAnalysisManager().get(STUDY, ca.getId(), QueryOptions.empty(), sessionIdUser).first();
         assertFalse(ca.isLocked());
-        assertFalse(ca.getInterpretation().isLocked());
+        assertTrue(ca.getInterpretation().isLocked());
         for (Interpretation secondaryInterpretation : ca.getSecondaryInterpretations()) {
-            assertFalse(secondaryInterpretation.isLocked());
+            assertTrue(secondaryInterpretation.isLocked());
+        }
+
+        // Try to delete interpretation
+        try {
+            catalogManager.getInterpretationManager().delete(STUDY, ca.getId(), Collections.singletonList(ca.getInterpretation().getId()),
+                    sessionIdUser);
+            fail("Interpretation is locked so it should not allow this");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("locked"));
         }
     }
 
