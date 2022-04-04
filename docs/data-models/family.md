@@ -41,27 +41,11 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-15
 | **expectedSize**<br>*int* <br> | <p>Family expected size.</p> |
 | **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
 | **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/family#status)* <br><br>_since_: 2.0 | <p>Object to set a custom status.</p> |
-| **internal**<br>*[FamilyInternal](https://docs.opencga.opencb.org/data-models/family#familyinternal)* <br><br>_since_: 2.0 | <p>Internal field for manage the object.</p> |
+| **internal**<br>*[FamilyInternal](https://docs.opencga.opencb.org/data-models/family#familyinternal)* <br><br>_since_: 2.0 | <p>Internal field to manage the object.</p> |
 | **roles**<br>*Map<String,Map<String,FamiliarRelationship>* <br> | <p>Map of members ids and enum of roles (FATHER, MOTHER, IDENTICAL_TWIN, SON, UNCLE, PATERNAL_GRANDFATHER.)  .</p> |
 | **attributes**<br>*Map<String,Object>* <br><br>_since_: 1.0 | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 | **release**<br>*int* <br> | <p>An integer describing the current data release.</p> |
 | **version**<br>*int* <br> | <p>Autoincremental version assigned to the registered entry. By default, updates does not create new versions. To enable versioning, users must set the `incVersion` flag from the /update web service when updating the document.</p> |
-
-### Disorder
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Disorder.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Id to identify the object</p> |
-| **name**<br>*String* <br> | <p>Object name</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **source**<br>*String* <br> | <p>Ontology source</p> |
-| **url**<br>*String* <br> | <p>Ontology url</p> |
-| **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
-
-### Status
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
-
 
 ### Phenotype
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Phenotype.java).
@@ -94,6 +78,22 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-15
 | **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/family#status)* <br> | <p>Status of the internal object.</p> |
 | **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
+
+### Status
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
+
+
+### Disorder
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Disorder.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Id to identify the object</p> |
+| **name**<br>*String* <br> | <p>Object name</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **source**<br>*String* <br> | <p>Ontology source</p> |
+| **url**<br>*String* <br> | <p>Ontology url</p> |
+| **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 
 ### RelatednessReport
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/qc/RelatednessReport.java).
