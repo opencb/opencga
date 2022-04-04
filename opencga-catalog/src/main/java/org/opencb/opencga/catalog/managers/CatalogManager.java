@@ -138,7 +138,7 @@ public class CatalogManager implements AutoCloseable {
             configuration.getAdmin().setSecretKey(secretKey);
         } else {
             configuration.getAdmin().setAlgorithm("HS256");
-            configuration.getAdmin().setSecretKey(RandomStringUtils.randomAlphanumeric(15));
+            configuration.getAdmin().setSecretKey(RandomStringUtils.randomAlphanumeric(50));
         }
     }
 
