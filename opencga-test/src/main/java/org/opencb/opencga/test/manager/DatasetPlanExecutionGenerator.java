@@ -18,7 +18,7 @@ package org.opencb.opencga.test.manager;
 
 import org.opencb.opencga.test.config.Configuration;
 import org.opencb.opencga.test.plan.DatasetPlanExecution;
-import org.opencb.opencga.test.plan.DockerPlanExecutor;
+import org.opencb.opencga.test.plan.DockerDatasetPlanExecutor;
 
 import java.io.IOException;
 import java.util.List;
@@ -51,7 +51,7 @@ public class DatasetPlanExecutionGenerator {
      */
     public void execute() throws IOException {
         List<DatasetPlanExecution> commandLinesMap = this.generateCommandLines();
-        DockerPlanExecutor executor = new DockerPlanExecutor();
+        DockerDatasetPlanExecutor executor = new DockerDatasetPlanExecutor();
         executor.execute(commandLinesMap);
     }
 

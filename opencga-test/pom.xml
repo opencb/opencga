@@ -54,6 +54,10 @@
             <artifactId>jcommander</artifactId>
             <version>1.69</version>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-lib</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

@@ -8,7 +8,7 @@ envs:
   - id: corpasome-grch37
     description: generate vcf for corpasome-grch37
     dataset:
-      path: "/home/juanfe/training/dataset"
+      path: "/home/juanfe/training/dataset/"
       paired: true
     reference:
       path: "/home/juanfe/training/bwaindex37/Homo_sapiens.GRCh37.75.dna.chromosome.21.fa"
@@ -29,7 +29,7 @@ envs:
   - id: corpasome-grch38
     description: generate vcf for corpasome-grch38
     dataset:
-      path: "/home/juanfe/training/dataset"
+      path: "/home/juanfe/training/dataset/"
       paired: true
     reference:
       path: "/home/juanfe/training/bwaindex38/Homo_sapiens.GRCh37.75.dna.chromosome.21.fa"

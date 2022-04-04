@@ -19,6 +19,7 @@ package org.opencb.opencga.test.manager;
 import org.opencb.opencga.test.config.Caller;
 import org.opencb.opencga.test.config.Configuration;
 import org.opencb.opencga.test.config.Environment;
+import org.opencb.opencga.test.plan.CommandDataSet;
 import org.opencb.opencga.test.plan.DatasetPlanExecution;
 import org.opencb.opencga.test.utils.DatasetTestUtils;
 
@@ -57,25 +58,30 @@ public class DatasetCommandLineGenerator {
         List<DatasetPlanExecution> datasetPlanExecutions = new ArrayList<>();
         for (Environment environment : environments) {
             DatasetPlanExecution datasetPlanExecution = new DatasetPlanExecution(environment);
-            Map<String, List<String>> commands = new HashMap<>();
+            Map<String, List<CommandDataSet>> commands = new HashMap<>();
             File datasetDir = new File(environment.getDataset().getPath() + File.separator + "fastq");
             List<String> filenames = findAllFileNamesInFolder(datasetDir);
             Collections.sort(filenames);
             for (int i = 0; i < filenames.size(); i++) {
-                List<String> commandLines = new ArrayList<>();
+                List<CommandDataSet> commandLines = new LinkedList<>();
                 String filename = filenames.get(i).substring(0, filenames.get(i).indexOf('.'));
                 // Generate command line for the Aligner, WARNING!! filenames index is incremented two times if is Paired-End enabled
-                String command = getAlignerCommandLine(environment, filename).replace("${FASTQ1}", filenames.get(i));
+                String command = getAlignerCommandLine(environment, filename).replace("${FASTQ1}", environment.getDataset().getPath() + "fastq/" + filenames.get(i));
                 if (environment.getDataset().isPaired()) {
-                    command = command.replace("${FASTQ2}", filenames.get(++i));
+                    command = command.replace("${FASTQ2}", environment.getDataset().getPath() + "fastq/" + filenames.get(++i));
                 }
-                commandLines.add(command);
+
+                commandLines.add(new CommandDataSet().setCommandLine(command).setImage(environment.getAligner().getImage()));
                 // Adding samtools command lines
-                commandLines.addAll(DatasetTestUtils.getSamtoolsCommands(DatasetTestUtils.getEnvironmentOutputDir(environment) + filename));
+                List<String> samtoolsCommand = DatasetTestUtils.getSamtoolsCommands(DatasetTestUtils.getEnvironmentOutputDir(environment) + filename);
+                for (String c : samtoolsCommand) {
+                    commandLines.add(new CommandDataSet().setCommandLine(c).setImage(environment.getAligner().getImage()));
+                }
                 // Adding caller command lines
                 List<Caller> callers = environment.getCallers();
                 for (Caller caller : callers) {
-                    commandLines.add(getVariantCallerCommandLine(environment, caller.getCommand(), caller.getParams(), filename));
+                    String callerCommand = getVariantCallerCommandLine(environment, caller.getCommand(), caller.getParams(), filename);
+                    commandLines.add(new CommandDataSet().setCommandLine(callerCommand).setImage(caller.getImage()));
                 }
                 commands.put(filename, commandLines);
             }

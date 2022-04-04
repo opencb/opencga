@@ -12,7 +12,7 @@ public class DatasetTestUtils {
     private static final String FILE_REFERENCE = "{INPUT_FILE}";
     private static final String SAMTOOLS_BAM = "samtools view -bS " + FILE_REFERENCE + ".sam > " + FILE_REFERENCE + ".bam";
     private static final String SAMTOOLS_INDEX = "samtools index " + FILE_REFERENCE + ".sorted.bam";
-    private static final String SAMTOOLS_SORT = "samtools view -bS " + FILE_REFERENCE + ".sam > {FILE_OUTPUT}.bam";
+    private static final String SAMTOOLS_SORT = "samtools sort " + FILE_REFERENCE + ".bam > " + FILE_REFERENCE + "sorted.bam";
 
 
     public static String getEnvironmentOutputDir(Environment environment) {

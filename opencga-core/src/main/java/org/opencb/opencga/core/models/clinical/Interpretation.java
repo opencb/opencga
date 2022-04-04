@@ -63,7 +63,7 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
                           List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings, List<Panel> panels,
                           List<ClinicalComment> comments, Status status, Map<String, Object> attributes) {
         super(id, "", description, clinicalAnalysisId, analyst, method, primaryFindings, secondaryFindings, comments, null, status,
-                creationDate, modificationDate, 0, attributes);
+                creationDate, modificationDate, false, 0, attributes);
         this.panels = panels;
     }
 
