@@ -165,6 +165,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         JOB_ID(QueryParams.JOB_ID.key()),
         SOFTWARE(QueryParams.SOFTWARE.key()),
         STATUS_NAME(QueryParams.INTERNAL_STATUS_ID.key()),
+        INTERNAL_STATUS(QueryParams.INTERNAL_STATUS.key()),
         SAMPLE_IDS(QueryParams.SAMPLE_IDS.key()),
         URI(QueryParams.URI.key()),
         SIZE(QueryParams.SIZE.key()),

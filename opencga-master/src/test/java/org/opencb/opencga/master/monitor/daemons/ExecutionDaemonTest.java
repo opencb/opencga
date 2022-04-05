@@ -479,7 +479,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals("Job could not finish successfully. Missing execution result", getJob(jobId).getInternal().getStatus().getDescription());
     }
 
-    private void checkStatus(Job job, String status) throws CatalogException {
+    private void checkStatus(Job job, String status) {
         assertEquals(status, job.getInternal().getStatus().getId());
         assertEquals(status, job.getInternal().getStatus().getName());
     }

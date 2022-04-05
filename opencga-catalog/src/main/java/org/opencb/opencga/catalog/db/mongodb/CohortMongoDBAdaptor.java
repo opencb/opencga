@@ -486,7 +486,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             }
         }
 
-        String[] acceptedObjectParams = {QueryParams.STATUS.key()};
+        String[] acceptedObjectParams = {QueryParams.STATUS.key(), QueryParams.INTERNAL_STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -494,20 +494,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
-
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
-            document.getSet().put(QueryParams.INTERNAL_STATUS_ID.key(), parameters.get(QueryParams.INTERNAL_STATUS_ID.key()));
-            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
-        }
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_DESCRIPTION.key())) {
-            document.getSet().put(QueryParams.INTERNAL_STATUS_DESCRIPTION.key(),
-                    parameters.get(QueryParams.INTERNAL_STATUS_DESCRIPTION.key()));
-            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
-        }
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS.key())) {
-            throw new CatalogDBException("Unable to modify cohort. Use parameter '" + QueryParams.INTERNAL_STATUS_ID.key()
-                    + "' instead of '" + QueryParams.INTERNAL_STATUS.key() + "'");
-        }
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
             String time = TimeUtils.getTime();

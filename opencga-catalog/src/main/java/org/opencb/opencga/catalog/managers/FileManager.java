@@ -1053,7 +1053,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     params.put(FileDBAdaptor.QueryParams.SIZE.key(), file.getSize());
                     params.put(FileDBAdaptor.QueryParams.URI.key(), file.getUri());
                     params.put(FileDBAdaptor.QueryParams.EXTERNAL.key(), file.isExternal());
-                    params.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.READY);
+                    params.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(), new FileStatus(FileStatus.READY));
                     params.put(FileDBAdaptor.QueryParams.CHECKSUM.key(), file.getChecksum());
 
                     if (file.getSampleIds() != null && !file.getSampleIds().isEmpty()) {
