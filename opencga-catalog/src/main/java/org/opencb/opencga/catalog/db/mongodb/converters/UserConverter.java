@@ -31,7 +31,7 @@ public class UserConverter extends GenericDocumentComplexConverter<User> {
 
     @Override
     public User convertToDataModelType(Document document) {
-        // TODO: Remove this piece of code once we are sure User contains the migrated new account type from 1.4.2
+        // TODO: Remove this piece of code once we are sure User contains the migrated new account type from 1.4.3
         Document account = (Document) document.get("account");
         if (account != null && account.get("authentication") == null) {
             // We make sure type is in upper case because we are now storing the enum names

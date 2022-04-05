@@ -1,6 +1,6 @@
 !define TEST_SYSTEM {slim}
 !path target/appassembler/dependencies/*.jar
-!define OPENCGA_VERSION {opencga-1.4.2}
+!define OPENCGA_VERSION {opencga-1.4.3}
 !define TEST_HOST {qa.opencb.org}
 !define VERSION {v1}
 

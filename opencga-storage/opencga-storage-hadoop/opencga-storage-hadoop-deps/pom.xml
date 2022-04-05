@@ -50,13 +50,13 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage-hadoop</artifactId>
-        <version>1.4.2</version>
+        <version>1.4.3</version>
         <!--<relativePath>../pom.xml</relativePath>-->
     </parent>
 
     <!--<groupId>org.opencb.opencga</groupId>-->
     <artifactId>opencga-storage-hadoop-deps</artifactId>
-    <version>1.4.2</version>
+    <version>1.4.3</version>
 
     <properties>
         <checkstyle.skip>true</checkstyle.skip>
