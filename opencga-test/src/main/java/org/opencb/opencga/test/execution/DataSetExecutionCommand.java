@@ -1,18 +1,18 @@
-package org.opencb.opencga.test.plan;
+package org.opencb.opencga.test.execution;
 
-public class CommandDataSet {
+public class DataSetExecutionCommand {
 
     private String commandLine;
     private String image;
 
-    public CommandDataSet() {
+    public DataSetExecutionCommand() {
     }
 
     public String getCommandLine() {
         return commandLine;
     }
 
-    public CommandDataSet setCommandLine(String commandLine) {
+    public DataSetExecutionCommand setCommandLine(String commandLine) {
         this.commandLine = commandLine;
         return this;
     }
@@ -21,7 +21,7 @@ public class CommandDataSet {
         return image;
     }
 
-    public CommandDataSet setImage(String image) {
+    public DataSetExecutionCommand setImage(String image) {
         this.image = image;
         return this;
     }

@@ -17,8 +17,8 @@
 package org.opencb.opencga.test.manager;
 
 import org.opencb.opencga.test.config.Configuration;
-import org.opencb.opencga.test.plan.DatasetPlanExecution;
-import org.opencb.opencga.test.plan.DockerDatasetPlanExecutor;
+import org.opencb.opencga.test.execution.DatasetExecutionPlan;
+import org.opencb.opencga.test.execution.LocalDatasetExecutor;
 
 import java.io.IOException;
 import java.util.List;
@@ -39,7 +39,7 @@ public class DatasetPlanExecutionGenerator {
      * @return
      * @throws IOException
      */
-    public List<DatasetPlanExecution> generateCommandLines() throws IOException {
+    public List<DatasetExecutionPlan> generateCommandLines() throws IOException {
         DatasetCommandLineGenerator datasetCommandLineGenerator = new DatasetCommandLineGenerator(configuration);
         return datasetCommandLineGenerator.generateCommandLines();
     }
@@ -50,8 +50,8 @@ public class DatasetPlanExecutionGenerator {
      * @throws IOException
      */
     public void execute() throws IOException {
-        List<DatasetPlanExecution> commandLinesMap = this.generateCommandLines();
-        DockerDatasetPlanExecutor executor = new DockerDatasetPlanExecutor();
+        List<DatasetExecutionPlan> commandLinesMap = this.generateCommandLines();
+        LocalDatasetExecutor executor = new LocalDatasetExecutor();
         executor.execute(commandLinesMap);
     }
 
@@ -61,9 +61,9 @@ public class DatasetPlanExecutionGenerator {
      * @throws IOException
      */
     public void simulate() throws IOException {
-        List<DatasetPlanExecution> datasetPlanExecutions = this.generateCommandLines();
-        for (DatasetPlanExecution datasetPlanExecution : datasetPlanExecutions) {
-            datasetPlanExecution.simulate();
+        List<DatasetExecutionPlan> datasetPlanExecutions = this.generateCommandLines();
+        for (DatasetExecutionPlan datasetExecutionPlan : datasetPlanExecutions) {
+            datasetExecutionPlan.simulate();
         }
     }
 

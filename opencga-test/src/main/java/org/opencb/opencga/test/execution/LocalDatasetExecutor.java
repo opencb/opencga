@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.test.plan;
+package org.opencb.opencga.test.execution;
 
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.commons.utils.PrintUtils;
@@ -24,17 +24,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DockerDatasetPlanExecutor implements PlanExecutor {
+public class LocalDatasetExecutor implements DatasetExecutor {
 
-
-    public void execute(List<DatasetPlanExecution> datasetPlanExecutionList) {
-
-        for (DatasetPlanExecution datasetPlanExecution : datasetPlanExecutionList) {
+    public void execute(List<DatasetExecutionPlan> datasetPlanExecutionList) {
+        for (DatasetExecutionPlan datasetPlanExecution : datasetPlanExecutionList) {
             Map<String, List<String>> result = new HashMap<>();
             for (String filename : datasetPlanExecution.getCommands().keySet()) {
                 List<String> dockerCommands = new ArrayList<>();
-                int i = 0;
-                for (CommandDataSet command : datasetPlanExecution.getCommands().get(filename)) {
+                for (DataSetExecutionCommand command : datasetPlanExecution.getCommands().get(filename)) {
                     dockerCommands.add(DockerUtils.buildMountPathsCommandLine(command.getImage(), command.getCommandLine()));
                 }
                 result.put(filename, dockerCommands);
