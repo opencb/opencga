@@ -626,7 +626,7 @@ public class FileManager extends AnnotationSetManager<File> {
             }
             File file = new File("", createParams.getType(), createParams.getFormat(), createParams.getBioformat(), null, path, "",
                     createParams.getCreationDate(), createParams.getModificationDate(), createParams.getDescription(), false, 0,
-                    createParams.getSoftware(), null, createParams.getSampleIds(), null, "", 1, createParams.getTags(), null, null, null,
+                    createParams.getSoftware(), null, createParams.getSampleIds(), null, createParams.getJobId(), 1, createParams.getTags(), null, null, null,
                     createParams.getStatus() != null ? createParams.getStatus().toStatus() : null, null, null);
             List<Event> eventList = validateNewFile(study, file, false);
             fileId = file.getId();

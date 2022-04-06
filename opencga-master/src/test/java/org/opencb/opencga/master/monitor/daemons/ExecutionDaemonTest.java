@@ -226,7 +226,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals(1, jobOpenCGAResult.getNumResults());
         checkStatus(jobOpenCGAResult.first(), Enums.ExecutionStatus.ABORTED);
         assertTrue(jobOpenCGAResult.first().getInternal().getStatus().getDescription()
-                .contains("can only be executed by the project owners or admins"));
+                .contains("can only be executed by the project owners or members of " + ParamConstants.ADMINS_GROUP));
 
         // Job sent by user3 (admin from study1 and study2)
         jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId3, QueryOptions.empty(), token);
@@ -420,10 +420,17 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         // Check jobId is properly populated
         OpenCGAResult<org.opencb.opencga.core.models.file.File> files = catalogManager.getFileManager().search(studyFqn,
                 new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), job.getId()), FileManager.INCLUDE_FILE_URI_PATH, token);
-        assertEquals(7, files.getNumResults());
+        List<String> expectedFiles = Arrays.asList(
+                outDir,
+                outDir + "file1.txt",
+                outDir + "file2.txt",
+                outDir + "A/",
+                outDir + "A/file3.txt",
+                outDir + "" + job.getId() + ".log",
+                outDir + "" + job.getId() + ".err");
+        assertEquals(expectedFiles.size(), files.getNumResults());
         for (org.opencb.opencga.core.models.file.File file : files.getResults()) {
-            assertTrue(Arrays.asList(outDir, outDir + "file1.txt", outDir + "file2.txt", outDir + "A/", outDir + "A/file3.txt",
-                    outDir + "" + job.getId() + ".log", outDir + "" + job.getId() + ".err").contains(file.getPath()));
+            assertTrue(expectedFiles.contains(file.getPath()));
         }
 
         files = catalogManager.getFileManager().count(studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), ""), token);
