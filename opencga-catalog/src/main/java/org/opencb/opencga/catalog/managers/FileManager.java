@@ -626,8 +626,8 @@ public class FileManager extends AnnotationSetManager<File> {
             }
             File file = new File("", createParams.getType(), createParams.getFormat(), createParams.getBioformat(), null, path, "",
                     createParams.getCreationDate(), createParams.getModificationDate(), createParams.getDescription(), false, 0,
-                    createParams.getSoftware(), null, createParams.getSampleIds(), null, createParams.getJobId(), 1, createParams.getTags(), null, null, null,
-                    createParams.getStatus() != null ? createParams.getStatus().toStatus() : null, null, null);
+                    createParams.getSoftware(), null, createParams.getSampleIds(), null, createParams.getJobId(), 1, createParams.getTags(),
+                    null, null, null, createParams.getStatus() != null ? createParams.getStatus().toStatus() : null, null, null);
             List<Event> eventList = validateNewFile(study, file, false);
             fileId = file.getId();
 
@@ -3612,7 +3612,9 @@ public class FileManager extends AnnotationSetManager<File> {
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
         OpenCGAResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFile.getUid());
 
-        File subfile = new File(Paths.get(filePath).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
+        File.Type type = filePath.endsWith("/") ? File.Type.DIRECTORY : File.Type.FILE;
+
+        File subfile = new File(Paths.get(filePath).getFileName().toString(), type, File.Format.UNKNOWN,
                 File.Bioformat.NONE, fileUri, filePath, "", TimeUtils.getTime(), TimeUtils.getTime(),
                 "", isExternal(study, filePath, fileUri), size, new Software(), new FileExperiment(), Collections.emptyList(),
                 Collections.emptyList(), jobId, studyManager.getCurrentRelease(study), Collections.emptyList(), Collections.emptyList(),

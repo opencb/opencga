@@ -431,6 +431,11 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals(expectedFiles.size(), files.getNumResults());
         for (org.opencb.opencga.core.models.file.File file : files.getResults()) {
             assertTrue(expectedFiles.contains(file.getPath()));
+            if (file.getPath().endsWith("/")) {
+                assertEquals(org.opencb.opencga.core.models.file.File.Type.DIRECTORY, file.getType());
+            } else {
+                assertEquals(org.opencb.opencga.core.models.file.File.Type.FILE, file.getType());
+            }
         }
 
         files = catalogManager.getFileManager().count(studyFqn, new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), ""), token);
