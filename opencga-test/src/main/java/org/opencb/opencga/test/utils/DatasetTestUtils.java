@@ -14,9 +14,7 @@ public class DatasetTestUtils {
     private static final String SAMTOOLS_INDEX = "samtools index " + FILE_REFERENCE + ".sorted.bam";
     private static final String SAMTOOLS_SORT = "samtools sort " + FILE_REFERENCE + ".bam > " + FILE_REFERENCE + ".sorted.bam";
 
-
-    public static String getEnvironmentOutputDir(Environment environment) {
-
+    public static String getEnvironmentDir(Environment environment) {
         String output = environment.getDataset().getPath();
         String separator = "";
         if (!output.endsWith(File.separator)) {
@@ -25,6 +23,22 @@ public class DatasetTestUtils {
         return output + separator + environment.getId() + "/";
     }
 
+    public static String getEnvironmentOutputDir(Environment environment) {
+        return DatasetTestUtils.getEnvironmentDir(environment) + "output/";
+    }
+
+    public static String getBamDirPath(Environment environment) {
+
+        return DatasetTestUtils.getEnvironmentOutputDir(environment) + "bam/";
+    }
+
+    public static String getVCFDirPath(Environment environment) {
+        return DatasetTestUtils.getEnvironmentOutputDir(environment) + "vcf/";
+    }
+
+    public static String getExecutionDirPath(Environment environment) {
+        return DatasetTestUtils.getEnvironmentOutputDir(environment) + "execution/";
+    }
 
     public static List<String> getSamtoolsCommands(String filename) {
 
@@ -34,4 +48,6 @@ public class DatasetTestUtils {
         res.add(SAMTOOLS_INDEX.replace(FILE_REFERENCE, filename));
         return res;
     }
+
+
 }

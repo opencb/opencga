@@ -82,8 +82,7 @@ public class DatasetCommandLineGenerator {
 
                         commandLines.add(new DataSetExecutionCommand().setCommandLine(command).setImage(environment.getAligner().getImage()));
                         // Adding samtools command lines
-                        List<String> samtoolsCommand = DatasetTestUtils.getSamtoolsCommands(Paths.get(DatasetTestUtils.getEnvironmentOutputDir(environment), filename, "bam")
-                                + File.separator + filename);
+                        List<String> samtoolsCommand = DatasetTestUtils.getSamtoolsCommands(DatasetTestUtils.getBamDirPath(environment) + filename);
                         for (String c : samtoolsCommand) {
                             commandLines.add(new DataSetExecutionCommand().setCommandLine(c).setImage(environment.getAligner().getImage()));
                         }
@@ -91,7 +90,7 @@ public class DatasetCommandLineGenerator {
                         //If aligner are disabled input bam folder must exist
                         File bamDir = Paths.get(environment.getDataset().getPath(), "bam").toFile();
                         if (bamDir.exists()) {
-                            FileUtils.copyDirectory(bamDir, Paths.get(DatasetTestUtils.getEnvironmentOutputDir(environment), "bam").toFile());
+                            FileUtils.copyDirectory(bamDir, Paths.get(DatasetTestUtils.getBamDirPath(environment)).toFile());
                         } else {
                             PrintUtils.printError("Directory " + bamDir.getAbsolutePath() + " not exists.");
                             System.exit(0);
@@ -147,8 +146,8 @@ public class DatasetCommandLineGenerator {
         command = command.replace("${PARAMS}", param);
         command = command.replace("${INDEX}", environment.getReference().getIndex());
         String output = DatasetTestUtils.getEnvironmentOutputDir(environment);
-        command = command.replace("${OUTPUT}", output + filename + "/vcf/" + name + "/" + filename + ".vcf");
-        command = command.replace("${BAM}", output + filename + "/bam/" + filename + ".sorted.bam");
+        command = command.replace("${OUTPUT}", DatasetTestUtils.getVCFDirPath(environment) + name + "_" + filename + ".vcf");
+        command = command.replace("${BAM}", DatasetTestUtils.getBamDirPath(environment) + filename + ".sorted.bam");
         command = command.replace("${REFERENCE.PATH}", environment.getReference().getPath());
         return command;
     }
@@ -165,8 +164,7 @@ public class DatasetCommandLineGenerator {
         String command = environment.getAligner().getCommand();
         command = command.replace("${PARAMS}", param);
         command = command.replace("${INDEX}", environment.getReference().getIndex());
-        String output = DatasetTestUtils.getEnvironmentOutputDir(environment);
-        command = command.replace("${OUTPUT}", output + filename + "/bam/${FASTQNAME}.sam");
+        command = command.replace("${OUTPUT}", DatasetTestUtils.getBamDirPath(environment) + "${FASTQNAME}.sam");
         command = command.replace("${FASTQNAME}", filename);
         return command;
     }
