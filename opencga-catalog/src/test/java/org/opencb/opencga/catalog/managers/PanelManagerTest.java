@@ -23,9 +23,11 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.OntologyTerm;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.panel.Panel;
@@ -34,9 +36,12 @@ import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class PanelManagerTest extends GenericTest {
 
@@ -147,6 +152,53 @@ public class PanelManagerTest extends GenericTest {
         assertEquals((int) updatedPanel.getStats().get("numberOfRegions"), updatedPanel.getVariants().size());
         assertEquals((int) updatedPanel.getStats().get("numberOfVariants"), updatedPanel.getVariants().size());
         assertEquals((int) updatedPanel.getStats().get("numberOfGenes"), updatedPanel.getGenes().size());
+    }
+
+    private DiseasePanel.GenePanel createGenePanel(String id, String name) {
+        DiseasePanel.GenePanel gene = new DiseasePanel.GenePanel();
+        gene.setId(id);
+        gene.setName(name);
+        return gene;
+    }
+
+    @Test
+    public void geneIdAndNameQueryTest() throws CatalogException {
+        Panel panel1 = new Panel()
+                .setId("panel1")
+                .setGenes(Arrays.asList(createGenePanel("geneId1", "geneName1"), createGenePanel("geneId2", "geneName2")));
+        Panel panel2 = new Panel()
+                .setId("panel2")
+                .setGenes(Arrays.asList(createGenePanel("geneId1", "geneName1"), createGenePanel("geneId3", "geneName3")));
+
+        panelManager.create(studyFqn, panel1, QueryOptions.empty(), sessionIdUser);
+        panelManager.create(studyFqn, panel2, QueryOptions.empty(), sessionIdUser);
+
+        OpenCGAResult<Panel> result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName2"), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals("panel1", result.first().getId());
+
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId2"), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals("panel1", result.first().getId());
+
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName1"), QueryOptions.empty(), sessionIdUser);
+        assertEquals(2, result.getNumResults());
+        assertTrue(result.getResults().stream().map(Panel::getId).collect(Collectors.toList()).containsAll(Arrays.asList("panel1", "panel2")));
+
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId1"), QueryOptions.empty(), sessionIdUser);
+        assertEquals(2, result.getNumResults());
+        assertTrue(result.getResults().stream().map(Panel::getId).collect(Collectors.toList()).containsAll(Arrays.asList("panel1", "panel2")));
+
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId3"), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals("panel2", result.first().getId());
+
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneName3"), QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, result.getNumResults());
+        assertEquals("panel2", result.first().getId());
+
+        result = panelManager.search(studyFqn, new Query(PanelDBAdaptor.QueryParams.GENES.key(), "geneId4"), QueryOptions.empty(), sessionIdUser);
+        assertEquals(0, result.getNumResults());
     }
 
 }
