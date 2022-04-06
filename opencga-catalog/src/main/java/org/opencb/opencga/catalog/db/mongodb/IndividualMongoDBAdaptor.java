@@ -1385,7 +1385,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                         break;
                     case PHENOTYPES:
                     case DISORDERS:
-                        addOntologyQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
+                        addDefaultOrQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
                         break;
                     case ANNOTATION:
                         if (annotationDocument == null) {
