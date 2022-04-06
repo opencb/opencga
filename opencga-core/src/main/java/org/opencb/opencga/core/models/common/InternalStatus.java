@@ -28,7 +28,6 @@ import java.util.*;
  */
 public class InternalStatus extends Status {
 
-
     /**
      * READY name means that the object is being used.
      */

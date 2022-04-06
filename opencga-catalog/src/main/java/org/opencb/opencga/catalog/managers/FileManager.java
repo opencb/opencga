@@ -626,8 +626,8 @@ public class FileManager extends AnnotationSetManager<File> {
             }
             File file = new File("", createParams.getType(), createParams.getFormat(), createParams.getBioformat(), null, path, "",
                     createParams.getCreationDate(), createParams.getModificationDate(), createParams.getDescription(), false, 0,
-                    createParams.getSoftware(), null, createParams.getSampleIds(), null, "", 1, createParams.getTags(), null, null, null,
-                    createParams.getStatus() != null ? createParams.getStatus().toStatus() : null, null, null);
+                    createParams.getSoftware(), null, createParams.getSampleIds(), null, createParams.getJobId(), 1, createParams.getTags(),
+                    null, null, null, createParams.getStatus() != null ? createParams.getStatus().toStatus() : null, null, null);
             List<Event> eventList = validateNewFile(study, file, false);
             fileId = file.getId();
 
@@ -1053,7 +1053,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     params.put(FileDBAdaptor.QueryParams.SIZE.key(), file.getSize());
                     params.put(FileDBAdaptor.QueryParams.URI.key(), file.getUri());
                     params.put(FileDBAdaptor.QueryParams.EXTERNAL.key(), file.isExternal());
-                    params.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS_ID.key(), FileStatus.READY);
+                    params.put(FileDBAdaptor.QueryParams.INTERNAL_STATUS.key(), new FileStatus(FileStatus.READY));
                     params.put(FileDBAdaptor.QueryParams.CHECKSUM.key(), file.getChecksum());
 
                     if (file.getSampleIds() != null && !file.getSampleIds().isEmpty()) {
@@ -3123,6 +3123,7 @@ public class FileManager extends AnnotationSetManager<File> {
                             // We need to remove the reference to the transformed files and change their status from TRANSFORMED to NONE
                             next.getInternal().getVariant().getIndex().setTransform(null);
                             next.getInternal().getVariant().getIndex().getStatus().setId(VariantIndexStatus.NONE);
+                            next.getInternal().getVariant().getIndex().getStatus().setName(VariantIndexStatus.NONE);
                             break;
                         case VariantIndexStatus.NONE:
                         case VariantIndexStatus.DELETED:
@@ -3611,7 +3612,9 @@ public class FileManager extends AnnotationSetManager<File> {
         // We obtain the permissions set in the parent folder and set them to the file or folder being created
         OpenCGAResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFile.getUid());
 
-        File subfile = new File(Paths.get(filePath).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
+        File.Type type = filePath.endsWith("/") ? File.Type.DIRECTORY : File.Type.FILE;
+
+        File subfile = new File(Paths.get(filePath).getFileName().toString(), type, File.Format.UNKNOWN,
                 File.Bioformat.NONE, fileUri, filePath, "", TimeUtils.getTime(), TimeUtils.getTime(),
                 "", isExternal(study, filePath, fileUri), size, new Software(), new FileExperiment(), Collections.emptyList(),
                 Collections.emptyList(), jobId, studyManager.getCurrentRelease(study), Collections.emptyList(), Collections.emptyList(),
