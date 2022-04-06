@@ -14,6 +14,7 @@ envs:
       path: "/home/juanfe/training/bwaindex37/Homo_sapiens.GRCh37.75.dna.chromosome.21.fa"
       index: "/home/juanfe/training/bwaindex37"
     aligner:
+      skip: false
       name: "BWA 1.12"
       image: "opencb/opencga-ext-tools:2.3.0"
       command: "bwa mem ${PARAMS} ${INDEX}/Homo_sapiens.GRCh37.75.dna.chromosome.21.fa ${FASTQ1} ${FASTQ2} > ${OUTPUT}"
@@ -21,6 +22,7 @@ envs:
         - "-t 4"
     callers:
       - name: GATK v4.2.15
+        skip: false
         image: "broadinstitute/gatk:4.2.15"
         command: "gatk.sh ${PARAMS}"
         params:

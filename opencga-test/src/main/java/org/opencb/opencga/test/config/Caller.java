@@ -8,6 +8,7 @@ public class Caller {
     private String name;
     private String image;
     private String command;
+    private boolean skip;
     private List<String> params;
 
     public Caller() {
@@ -21,8 +22,18 @@ public class Caller {
         sb.append("image='").append(image).append('\'').append("\n");
         sb.append("command='").append(command).append('\'').append("\n");
         sb.append("params=").append(params).append("\n");
+        sb.append("skip=").append(skip).append("\n");
         sb.append("}\n");
         return sb.toString();
+    }
+
+    public boolean isSkip() {
+        return skip;
+    }
+
+    public Caller setSkip(boolean skip) {
+        this.skip = skip;
+        return this;
     }
 
     public String getName() {

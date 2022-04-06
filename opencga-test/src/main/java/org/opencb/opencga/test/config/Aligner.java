@@ -8,6 +8,7 @@ public class Aligner {
     private String image;
     private String command;
     private List<String> params;
+    private boolean skip;
 
     public Aligner() {
 
@@ -20,6 +21,7 @@ public class Aligner {
         sb.append("image='").append(image).append('\'').append("\n");
         sb.append("command='").append(command).append('\'').append("\n");
         sb.append("params=").append(params).append("\n");
+        sb.append("skip=").append(skip).append("\n");
         sb.append("}\n");
         return sb.toString();
     }
@@ -30,6 +32,15 @@ public class Aligner {
 
     public Aligner setName(String name) {
         this.name = name;
+        return this;
+    }
+
+    public boolean isSkip() {
+        return skip;
+    }
+
+    public Aligner setSkip(boolean skip) {
+        this.skip = skip;
         return this;
     }
 

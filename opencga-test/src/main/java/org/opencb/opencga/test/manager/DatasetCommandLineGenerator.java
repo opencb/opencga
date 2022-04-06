@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.test.manager;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FileUtils;
+import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.test.config.Caller;
 import org.opencb.opencga.test.config.Configuration;
 import org.opencb.opencga.test.config.Environment;
@@ -25,6 +28,7 @@ import org.opencb.opencga.test.utils.DatasetTestUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class DatasetCommandLineGenerator {
@@ -65,23 +69,51 @@ public class DatasetCommandLineGenerator {
             for (int i = 0; i < filenames.size(); i++) {
                 List<DataSetExecutionCommand> commandLines = new LinkedList<>();
                 String filename = filenames.get(i).substring(0, filenames.get(i).indexOf('.'));
-                // Generate command line for the Aligner, WARNING!! filenames index is incremented two times if is Paired-End enabled
-                String command = getAlignerCommandLine(environment, filename).replace("${FASTQ1}", environment.getDataset().getPath() + "fastq/" + filenames.get(i));
-                if (environment.getDataset().isPaired()) {
-                    command = command.replace("${FASTQ2}", environment.getDataset().getPath() + "fastq/" + filenames.get(++i));
+                filename = filename.replaceAll(" ", "_");
+                List<Caller> callers = environment.getCallers();
+                //If all callers are skipped should not execute the aligner
+                if (CollectionUtils.isNotEmpty(callers) && !areSkippedAllCallers(callers)) {
+                    if (environment.getAligner() != null && !environment.getAligner().isSkip()) {
+                        // Generate command line for the Aligner, WARNING!! filenames index is incremented two times if is Paired-End enabled
+                        String command = getAlignerCommandLine(environment, filename).replace("${FASTQ1}", environment.getDataset().getPath() + "fastq/" + filenames.get(i));
+                        if (environment.getDataset().isPaired()) {
+                            command = command.replace("${FASTQ2}", environment.getDataset().getPath() + "fastq/" + filenames.get(++i));
+                        }
+
+                        commandLines.add(new DataSetExecutionCommand().setCommandLine(command).setImage(environment.getAligner().getImage()));
+                        // Adding samtools command lines
+                        List<String> samtoolsCommand = DatasetTestUtils.getSamtoolsCommands(Paths.get(DatasetTestUtils.getEnvironmentOutputDir(environment), filename, "bam")
+                                + File.separator + filename);
+                        for (String c : samtoolsCommand) {
+                            commandLines.add(new DataSetExecutionCommand().setCommandLine(c).setImage(environment.getAligner().getImage()));
+                        }
+                    } else {
+                        //If aligner are disabled input bam folder must exist
+                        File bamDir = Paths.get(environment.getDataset().getPath(), "bam").toFile();
+                        if (bamDir.exists()) {
+                            FileUtils.copyDirectory(bamDir, Paths.get(DatasetTestUtils.getEnvironmentOutputDir(environment), "bam").toFile());
+                        } else {
+                            PrintUtils.printError("Directory " + bamDir.getAbsolutePath() + " not exists.");
+                            System.exit(0);
+                        }
+                    }
                 }
 
-                commandLines.add(new DataSetExecutionCommand().setCommandLine(command).setImage(environment.getAligner().getImage()));
-                // Adding samtools command lines
-                List<String> samtoolsCommand = DatasetTestUtils.getSamtoolsCommands(DatasetTestUtils.getEnvironmentOutputDir(environment) + filename);
-                for (String c : samtoolsCommand) {
-                    commandLines.add(new DataSetExecutionCommand().setCommandLine(c).setImage(environment.getAligner().getImage()));
-                }
-                // Adding caller command lines
-                List<Caller> callers = environment.getCallers();
-                for (Caller caller : callers) {
-                    String callerCommand = getVariantCallerCommandLine(environment, caller.getCommand(), caller.getParams(), filename);
-                    commandLines.add(new DataSetExecutionCommand().setCommandLine(callerCommand).setImage(caller.getImage()));
+                if (CollectionUtils.isNotEmpty(callers) && !areSkippedAllCallers(callers)) {
+                    // Adding caller command lines
+                    for (Caller caller : callers) {
+                        String callerCommand = getVariantCallerCommandLine(environment, caller.getCommand(), caller.getParams(), filename, caller.getName().replaceAll(" ", "_"));
+                        commandLines.add(new DataSetExecutionCommand().setCommandLine(callerCommand).setImage(caller.getImage()));
+                    }
+                } else {
+                    //If callers are disabled input vcf folder must exist
+                    File vcfDir = Paths.get(environment.getDataset().getPath(), "vcf").toFile();
+                    if (vcfDir.exists()) {
+                        FileUtils.copyDirectory(vcfDir, Paths.get(DatasetTestUtils.getEnvironmentOutputDir(environment), "vcf").toFile());
+                    } else {
+                        PrintUtils.printError("Directory " + vcfDir.getAbsolutePath() + " not exists.");
+                        System.exit(0);
+                    }
                 }
                 commands.put(filename, commandLines);
             }
@@ -91,6 +123,15 @@ public class DatasetCommandLineGenerator {
         return datasetPlanExecutions;
     }
 
+    private boolean areSkippedAllCallers(List<Caller> callers) {
+        for (Caller caller : callers) {
+            if (!caller.isSkip()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * Generate the command lines for Aligner adding params to command and replacing environment variables.
      *
@@ -98,15 +139,17 @@ public class DatasetCommandLineGenerator {
      * @param command
      * @param params
      * @param filename
+     * @param name
      * @return
      */
-    private String getVariantCallerCommandLine(Environment environment, String command, List<String> params, String filename) {
+    private String getVariantCallerCommandLine(Environment environment, String command, List<String> params, String filename, String name) {
         String param = String.join(" ", params);
         command = command.replace("${PARAMS}", param);
         command = command.replace("${INDEX}", environment.getReference().getIndex());
         String output = DatasetTestUtils.getEnvironmentOutputDir(environment);
-        command = command.replace("${OUTPUT}", output + "vcf/" + filename + ".vcf");
-        command = command.replace("${BAM}", output + "bam/" + filename + ".bam");
+        command = command.replace("${OUTPUT}", output + filename + "/vcf/" + name + "/" + filename + ".vcf");
+        command = command.replace("${BAM}", output + filename + "/bam/" + filename + ".sorted.bam");
+        command = command.replace("${REFERENCE.PATH}", environment.getReference().getPath());
         return command;
     }
 
@@ -123,7 +166,7 @@ public class DatasetCommandLineGenerator {
         command = command.replace("${PARAMS}", param);
         command = command.replace("${INDEX}", environment.getReference().getIndex());
         String output = DatasetTestUtils.getEnvironmentOutputDir(environment);
-        command = command.replace("${OUTPUT}", output + "bam/${FASTQNAME}.bam");
+        command = command.replace("${OUTPUT}", output + filename + "/bam/${FASTQNAME}.sam");
         command = command.replace("${FASTQNAME}", filename);
         return command;
     }
