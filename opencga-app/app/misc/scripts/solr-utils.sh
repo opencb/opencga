@@ -73,7 +73,7 @@ function solr-admin() {
   done
 
   REQUEST="${SOLR_HOST}/solr/admin/${RESOURCE}?${ARGS}"
-  if [ $DRY_RUN == "true" ]; then
+  if [ "$DRY_RUN" == "true" ]; then
     echo "${REQUEST}" 1>&2
   else
     curl "${REQUEST}" 2>/dev/null
@@ -126,8 +126,20 @@ function main() {
     esac
   done
 
-
   requiredParam "--host" "$SOLR_HOST"
+  if ! [[ "$SOLR_HOST" =~ ^http.* ]]; then
+    SOLR_HOST="http://${SOLR_HOST}"
+  fi
+  if ! [[ "$SOLR_HOST" =~ :[0-9]+$ ]]; then
+    SOLR_HOST="${SOLR_HOST}:8983"
+  fi
+
+  ## Check solr is available
+  LIVE_NODES=$(solr-admin-collections action CLUSTERSTATUS | jq '.cluster.live_nodes | length')
+  if [ -z "$LIVE_NODES" ] || [ "$LIVE_NODES" -eq 0 ]; then
+    echo "Solr host '$SOLR_HOST' not available"
+    exit 1
+  fi
 
   case "${COMMAND}" in
     list)
