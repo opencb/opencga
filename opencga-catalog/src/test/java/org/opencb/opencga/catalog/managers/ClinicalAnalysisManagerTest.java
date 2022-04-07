@@ -2676,6 +2676,15 @@ public class ClinicalAnalysisManagerTest extends GenericTest {
         assertEquals(1, result.getNumResults());
         assertEquals(1, result.first().getPanels().size());
         assertFalse(result.first().isPanelLock());
+
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+                        .setPanelLock(true),
+                updateOptions, sessionIdUser);
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("panelLock");
+        catalogManager.getClinicalAnalysisManager().update(STUDY, clinicalAnalysis.getId(), new ClinicalAnalysisUpdateParams()
+                        .setPanels(panels.stream().map(p -> new PanelReferenceParam(p.getId())).collect(Collectors.toList())),
+                updateOptions, sessionIdUser);
     }
 
     @Test

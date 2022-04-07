@@ -1288,11 +1288,9 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             Set<String> panelIds = clinicalAnalysis.getPanels().stream().map(Panel::getId).collect(Collectors.toSet());
             String exceptionMsgPrefix = "The interpretation '";
             String exceptionMsgSuffix = "' does not contain any of the case panels. 'panelLock' can only be set to true if all"
-                    + " all panels used in the Interpretations are defined by the case and all the Interpretations use at least one case"
-                    + " panels.";
+                    + " all Interpretations contains a non-empty subset of the panels used by the case.";
             String alternativeExceptionMsgSuffix = "' is using a panel not defined by the case. 'panelLock' can only be set to true if all"
-                    + " all panels used in the Interpretations are defined by the case and all the Interpretations use at least one case"
-                    + " panels.";
+                    + " all Interpretations contains a non-empty subset of the panels used by the case.";
             if (clinicalAnalysis.getInterpretation() != null) {
                 if (CollectionUtils.isEmpty(clinicalAnalysis.getInterpretation().getPanels())) {
                     throw new CatalogException(exceptionMsgPrefix + clinicalAnalysis.getInterpretation().getId() + exceptionMsgSuffix);
