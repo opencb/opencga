@@ -105,6 +105,14 @@ spec:
           source:
             emptyDir:
               sizeLimit: 1G
+        {{- if not (empty .Values.solr.deploy.backupVolume) }}
+        - name: backupvolume
+          defaultContainerMount:
+            name: backupvolume
+            mountPath: /var/solr/data/backup
+          source:
+            {{- toYaml .Values.solr.deploy.backupVolume | nindent 12 }}
+        {{- end }}
 
   # The information for the Zookeeper this SolrCloud should connect to Can be a zookeeper that is running, or one that is created by the solr operator
   zookeeperRef:
