@@ -1,11 +1,9 @@
-package org.opencb.opencga.test.execution;
+package org.opencb.opencga.test.execution.models;
 
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.test.config.Environment;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class DatasetExecutionPlan {
 
@@ -14,18 +12,19 @@ public class DatasetExecutionPlan {
     private Environment environment;
 
     /* Map with input fastq file name as key and list of commands for this filename as value */
-    private Map<String, List<DataSetExecutionCommand>> commands;
+    private List<DatasetExecutionFile> datasetExecutionFiles;
+
 
     public DatasetExecutionPlan(Environment environment) {
         this.environment = environment;
-        commands = new HashMap<>();
+
     }
 
     public void simulate() {
         PrintUtils.println(environment.getId(), PrintUtils.Color.YELLOW);
-        for (String filename : commands.keySet()) {
-            PrintUtils.println("    " + filename, PrintUtils.Color.GREEN);
-            for (DataSetExecutionCommand command : commands.get(filename)) {
+        for (DatasetExecutionFile executionFile : datasetExecutionFiles) {
+            PrintUtils.println("    " + executionFile.getInputFilename(), PrintUtils.Color.GREEN);
+            for (DataSetExecutionCommand command : executionFile.getCommands()) {
                 PrintUtils.println("    " + command.getCommandLine(), PrintUtils.Color.WHITE);
             }
         }
@@ -40,12 +39,12 @@ public class DatasetExecutionPlan {
         return this;
     }
 
-    public Map<String, List<DataSetExecutionCommand>> getCommands() {
-        return commands;
+    public List<DatasetExecutionFile> getDatasetExecutionFiles() {
+        return datasetExecutionFiles;
     }
 
-    public DatasetExecutionPlan setCommands(Map<String, List<DataSetExecutionCommand>> commands) {
-        this.commands = commands;
+    public DatasetExecutionPlan setDatasetExecutionFiles(List<DatasetExecutionFile> datasetExecutionFiles) {
+        this.datasetExecutionFiles = datasetExecutionFiles;
         return this;
     }
 }

@@ -17,8 +17,8 @@
 package org.opencb.opencga.test.manager;
 
 import org.opencb.opencga.test.config.Configuration;
-import org.opencb.opencga.test.execution.DatasetExecutionPlan;
 import org.opencb.opencga.test.execution.LocalDatasetExecutor;
+import org.opencb.opencga.test.execution.models.DatasetExecutionPlan;
 
 import java.io.IOException;
 import java.util.List;
@@ -36,12 +36,13 @@ public class DatasetPlanExecutionGenerator {
     /**
      * Process a list of given environments.
      *
+     * @param b
      * @return
      * @throws IOException
      */
-    public List<DatasetExecutionPlan> generateCommandLines() throws IOException {
+    public List<DatasetExecutionPlan> generateCommandLines(boolean resume) throws IOException {
         DatasetCommandLineGenerator datasetCommandLineGenerator = new DatasetCommandLineGenerator(configuration);
-        return datasetCommandLineGenerator.generateCommandLines();
+        return datasetCommandLineGenerator.generateCommandLines(resume);
     }
 
     /**
@@ -50,7 +51,7 @@ public class DatasetPlanExecutionGenerator {
      * @throws IOException
      */
     public void execute() throws IOException {
-        List<DatasetExecutionPlan> commandLinesMap = this.generateCommandLines();
+        List<DatasetExecutionPlan> commandLinesMap = this.generateCommandLines(false);
         LocalDatasetExecutor executor = new LocalDatasetExecutor();
         executor.execute(commandLinesMap);
     }
@@ -61,10 +62,15 @@ public class DatasetPlanExecutionGenerator {
      * @throws IOException
      */
     public void simulate() throws IOException {
-        List<DatasetExecutionPlan> datasetPlanExecutions = this.generateCommandLines();
+        List<DatasetExecutionPlan> datasetPlanExecutions = this.generateCommandLines(false);
         for (DatasetExecutionPlan datasetExecutionPlan : datasetPlanExecutions) {
             datasetExecutionPlan.simulate();
         }
     }
 
+    public void resume() throws IOException {
+        List<DatasetExecutionPlan> commandLinesMap = this.generateCommandLines(true);
+        LocalDatasetExecutor executor = new LocalDatasetExecutor();
+        executor.execute(commandLinesMap);
+    }
 }

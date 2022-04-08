@@ -1,4 +1,4 @@
-package org.opencb.opencga.test.execution;
+package org.opencb.opencga.test.execution.models;
 
 public class DataSetExecutionCommand {
 
@@ -25,4 +25,6 @@ public class DataSetExecutionCommand {
         this.image = image;
         return this;
     }
+
+
 }

@@ -18,18 +18,23 @@ package org.opencb.opencga.test.manager;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.test.config.Caller;
 import org.opencb.opencga.test.config.Configuration;
 import org.opencb.opencga.test.config.Environment;
-import org.opencb.opencga.test.execution.DataSetExecutionCommand;
-import org.opencb.opencga.test.execution.DatasetExecutionPlan;
+import org.opencb.opencga.test.execution.models.DataSetExecutionCommand;
+import org.opencb.opencga.test.execution.models.DatasetExecutionFile;
+import org.opencb.opencga.test.execution.models.DatasetExecutionPlan;
 import org.opencb.opencga.test.utils.DatasetTestUtils;
+import org.opencb.opencga.test.utils.OpencgaLogger;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.logging.Level;
 
 public class DatasetCommandLineGenerator {
 
@@ -53,20 +58,24 @@ public class DatasetCommandLineGenerator {
     /**
      * Allows to only process a list of given environments.
      *
+     * @param resume
      * @return CLIs Map as a list of command lines by environment
      * @throws IOException
      */
-    public List<DatasetExecutionPlan> generateCommandLines() throws IOException {
+    public List<DatasetExecutionPlan> generateCommandLines(boolean resume) throws IOException {
         //logger.debug("Processing the following environments: {}", environments.toString())
         List<Environment> environments = configuration.getEnvs();
-        List<DatasetExecutionPlan> datasetPlanExecutions = new ArrayList<>();
+        List<DatasetExecutionPlan> datasetPlanExecutions = new LinkedList<>();
         for (Environment environment : environments) {
             DatasetExecutionPlan datasetPlanExecution = new DatasetExecutionPlan(environment);
-            Map<String, List<DataSetExecutionCommand>> commands = new HashMap<>();
+            List<DatasetExecutionFile> commands = new LinkedList<>();
             File datasetDir = new File(environment.getDataset().getPath() + File.separator + "fastq");
             List<String> filenames = findAllFileNamesInFolder(datasetDir);
             Collections.sort(filenames);
+
             for (int i = 0; i < filenames.size(); i++) {
+                DatasetExecutionFile datasetExecutionFile = new DatasetExecutionFile();
+                List<String> outputFilenames = new ArrayList<>();
                 List<DataSetExecutionCommand> commandLines = new LinkedList<>();
                 String filename = filenames.get(i).substring(0, filenames.get(i).indexOf('.'));
                 filename = filename.replaceAll(" ", "_");
@@ -101,7 +110,10 @@ public class DatasetCommandLineGenerator {
                 if (CollectionUtils.isNotEmpty(callers) && !areSkippedAllCallers(callers)) {
                     // Adding caller command lines
                     for (Caller caller : callers) {
-                        String callerCommand = getVariantCallerCommandLine(environment, caller.getCommand(), caller.getParams(), filename, caller.getName().replaceAll(" ", "_"));
+                        String outputFilename = caller.getName().replaceAll(" ", "_") + "_" + filename + ".vcf";
+                        outputFilenames.add(outputFilename + ".idx");
+                        String callerCommand = getVariantCallerCommandLine(environment, caller.getCommand(), caller.getParams(), filename,
+                                outputFilename);
                         commandLines.add(new DataSetExecutionCommand().setCommandLine(callerCommand).setImage(caller.getImage()));
                     }
                 } else {
@@ -114,12 +126,39 @@ public class DatasetCommandLineGenerator {
                         System.exit(0);
                     }
                 }
-                commands.put(filename, commandLines);
+                datasetExecutionFile.setInputFilename(filename);
+                datasetExecutionFile.setCommands(commandLines);
+                datasetExecutionFile.setOutputFilenames(outputFilenames);
+                if (resume) {
+                    if (Files.exists(Paths.get(DatasetTestUtils.getVCFDirPath(environment)))
+                            && !isExecutedFile(Paths.get(DatasetTestUtils.getVCFDirPath(environment)).toFile().list(), outputFilenames)) {
+                        commands.add(datasetExecutionFile);
+                    }
+                } else {
+                    commands.add(datasetExecutionFile);
+                }
             }
-            datasetPlanExecution.setCommands(commands);
+
+            datasetPlanExecution.setDatasetExecutionFiles(commands);
+
             datasetPlanExecutions.add(datasetPlanExecution);
         }
         return datasetPlanExecutions;
+    }
+
+
+    private boolean isExecutedFile(String[] files, List<String> outputFilenames) {
+        OpencgaLogger.printLog(ArrayUtils.toString(files), Level.INFO);
+        OpencgaLogger.printLog("outputFilenames::: " + outputFilenames, Level.INFO);
+        boolean res = true;
+        for (String filename : outputFilenames) {
+            if (!ArrayUtils.contains(files, filename)) {
+                res = false;
+            }
+        }
+        OpencgaLogger.printLog("res::: " + res, Level.INFO);
+
+        return res;
     }
 
     private boolean areSkippedAllCallers(List<Caller> callers) {
@@ -145,8 +184,7 @@ public class DatasetCommandLineGenerator {
         String param = String.join(" ", params);
         command = command.replace("${PARAMS}", param);
         command = command.replace("${INDEX}", environment.getReference().getIndex());
-        String output = DatasetTestUtils.getEnvironmentOutputDir(environment);
-        command = command.replace("${OUTPUT}", DatasetTestUtils.getVCFDirPath(environment) + name + "_" + filename + ".vcf");
+        command = command.replace("${OUTPUT}", DatasetTestUtils.getVCFDirPath(environment) + name);
         command = command.replace("${BAM}", DatasetTestUtils.getBamDirPath(environment) + filename + ".sorted.bam");
         command = command.replace("${REFERENCE.PATH}", environment.getReference().getPath());
         return command;

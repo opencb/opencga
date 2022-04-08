@@ -16,9 +16,13 @@
 
 package org.opencb.opencga.test.execution;
 
+import org.apache.commons.io.FileUtils;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.test.config.Environment;
+import org.opencb.opencga.test.execution.models.DataSetExecutionCommand;
+import org.opencb.opencga.test.execution.models.DatasetExecutionFile;
+import org.opencb.opencga.test.execution.models.DatasetExecutionPlan;
 import org.opencb.opencga.test.utils.DatasetTestUtils;
 
 import java.io.*;
@@ -32,20 +36,26 @@ import java.util.Map;
 
 public class LocalDatasetExecutor implements DatasetExecutor {
 
+
+    @Override
     public void execute(List<DatasetExecutionPlan> datasetPlanExecutionList) {
+
+        PrintUtils.println("Executing the data set plan executions: ", PrintUtils.Color.CYAN,
+                datasetPlanExecutionList.size() + " founded plans", PrintUtils.Color.WHITE);
 
         for (DatasetExecutionPlan datasetPlanExecution : datasetPlanExecutionList) {
             Map<String, List<String>> result = new HashMap<>();
             createOutputDirs(datasetPlanExecution.getEnvironment());
-            for (String filename : datasetPlanExecution.getCommands().keySet()) {
+            PrintUtils.println("Plan execution for ", PrintUtils.Color.CYAN, datasetPlanExecution.getDatasetExecutionFiles().size() + " files", PrintUtils.Color.WHITE);
+            for (DatasetExecutionFile datasetExecutionFile : datasetPlanExecution.getDatasetExecutionFiles()) {
                 List<String> dockerCommands = new ArrayList<>();
-                for (DataSetExecutionCommand command : datasetPlanExecution.getCommands().get(filename)) {
+                for (DataSetExecutionCommand command : datasetExecutionFile.getCommands()) {
                     dockerCommands.add(DockerUtils.buildMountPathsCommandLine(command.getImage(), command.getCommandLine()));
                 }
-                result.put(filename, dockerCommands);
+                result.put(datasetExecutionFile.getInputFilename(), dockerCommands);
             }
             for (String filename : result.keySet()) {
-                PrintUtils.println(datasetPlanExecution.getEnvironment().getId(), PrintUtils.Color.GREEN, " - [" + filename + "]\n", PrintUtils.Color.YELLOW);
+                PrintUtils.println(datasetPlanExecution.getEnvironment().getId(), PrintUtils.Color.CYAN, " - [" + filename + "]\n", PrintUtils.Color.WHITE);
                 executeFileScript(datasetPlanExecution.getEnvironment(), result, filename);
             }
         }
@@ -57,6 +67,18 @@ public class LocalDatasetExecutor implements DatasetExecutor {
         createDir(DatasetTestUtils.getVCFDirPath(env));
         createDir(DatasetTestUtils.getExecutionDirPath(env));
         createDir(DatasetTestUtils.getBamDirPath(env));
+        File templatesDir = Paths.get(env.getDataset().getPath(), "templates").toFile();
+        if (templatesDir.exists()) {
+            try {
+                FileUtils.copyDirectory(templatesDir, Paths.get(DatasetTestUtils.getEnvironmentOutputDir(env), "templates").toFile());
+            } catch (IOException e) {
+                PrintUtils.printError("Error creating " + templatesDir.getAbsolutePath());
+                System.exit(0);
+            }
+        } else {
+            PrintUtils.printError("Directory " + templatesDir.getAbsolutePath() + " not exists.");
+            System.exit(0);
+        }
     }
 
     private void createDir(String dir) {

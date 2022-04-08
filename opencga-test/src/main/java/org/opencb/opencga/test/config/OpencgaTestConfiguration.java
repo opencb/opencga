@@ -34,6 +34,7 @@ public class OpencgaTestConfiguration {
 
 
     public static Configuration load(InputStream configurationInputStream) throws IOException {
+        PrintUtils.print("Loading configuration: ", PrintUtils.Color.CYAN);
 
         if (configurationInputStream == null) {
             PrintUtils.println("Configuration file not found", PrintUtils.Color.RED);
@@ -46,13 +47,13 @@ public class OpencgaTestConfiguration {
             configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
         } catch (IOException e) {
             OpencgaLogger.printLog("Configuration file could not be parsed: " + e.getMessage(), Level.SEVERE);
-
+            System.exit(-1);
         }
 
         overrideConfigurationParams(configuration);
         validateConfiguration(configuration);
         OpencgaLogger.setLogLevel(configuration.getLogger().getLogLevel());
-
+        PrintUtils.println(" Configuration load success ", PrintUtils.Color.WHITE);
         return configuration;
     }
 

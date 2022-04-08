@@ -37,6 +37,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-15
 | **release**<br>*[ProjectInternal](https://docs.opencga.opencb.org/data-models/project#projectinternal)* <br> | <p>An integer describing the current data release.</p> |
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
+### ProjectOrganism
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-153/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectOrganism.java).
+
+
 ### ProjectInternal
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-153/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectInternal.java).
 
@@ -47,10 +51,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-15
 | **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/project#status)* <br> | <p>Status of the internal object.</p> |
 | **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
-
-### ProjectOrganism
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-153/opencga-core/src/main/java/org/opencb/opencga/core/models/project/ProjectOrganism.java).
-
 
 ### Status
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
