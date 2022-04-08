@@ -341,6 +341,18 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                     DataResult result = panelCollection.update(clientSession, finalQuery, new Document("$set", panelUpdate),
                             new QueryOptions("multi", true));
 
+                    if (parameters.containsKey(QueryParams.VARIANTS.key()) || parameters.containsKey(QueryParams.GENES.key())
+                            || parameters.containsKey(QueryParams.REGIONS.key())) {
+                        // Recalculate stats
+                        QueryOptions statsOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.VARIANTS_ID.key(),
+                                QueryParams.GENES_ID.key(), QueryParams.REGIONS_ID.key()));
+
+                        Panel tmpPanel = get(clientSession, tmpQuery, statsOptions).first();
+                        Map<String, Integer> stats = fetchStats(tmpPanel);
+                        panelCollection.update(clientSession, finalQuery,
+                                new Document("$set", new Document(QueryParams.STATS.key(), stats)), QueryOptions.empty());
+                    }
+
                     if (result.getNumMatches() == 0) {
                         throw new CatalogDBException("Panel " + panel.getId() + " not found");
                     }
@@ -774,8 +786,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         // If the user doesn't look for a concrete version...
         if (!uidVersionQueryFlag && !queryCopy.getBoolean(Constants.ALL_VERSIONS) && !queryCopy.containsKey(QueryParams.VERSION.key())
                 && queryCopy.containsKey(QueryParams.SNAPSHOT.key())) {
-                // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
-                andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
+            // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
+            andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
         }
 
         if (extraQuery != null && extraQuery.size() > 0) {
