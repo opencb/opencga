@@ -16,7 +16,10 @@
 
 package org.opencb.opencga.core.models.sample;
 
+
 import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,11 +28,29 @@ import java.util.Map;
 
 public class SampleCollection {
 
+
+    @DataField(id = "from", name = "from", indexed = true,
+            description = FieldConstants.SAMPLE_COLLECTION_FROM_DESCRIPTION)
     private List<OntologyTermAnnotation> from;
+
+    @DataField(id = "type", name = "type", indexed = true,
+            description = FieldConstants.SAMPLE_COLLECTION_TYPE_DESCRIPTION)
     private String type;
+
+    @DataField(id = "quantity", name = "quantity", indexed = true,
+            description = FieldConstants.SAMPLE_COLLECTION_QUANTITY_DESCRIPTION)
     private String quantity;
+
+    @DataField(id = "method", name = "method", indexed = true,
+            description = FieldConstants.SAMPLE_COLLECTION_METHOD_DESCRIPTION)
     private String method;
+
+    @DataField(id = "date", name = "date", indexed = true,
+            description = FieldConstants.SAMPLE_COLLECTION_DATE_DESCRIPTION)
     private String date;
+
+    @DataField(id = "attributes", name = "attributes", indexed = true,
+            description = FieldConstants.SAMPLE_COLLECTION_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public SampleCollection() {

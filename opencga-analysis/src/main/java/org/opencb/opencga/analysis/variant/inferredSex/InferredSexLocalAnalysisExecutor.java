@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.analysis.variant.inferredSex;
 
-import org.apache.commons.collections4.MapUtils;
 import org.opencb.biodata.models.clinical.qc.InferredSexReport;
 import org.opencb.opencga.analysis.StorageToolExecutor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
@@ -69,6 +68,7 @@ public class InferredSexLocalAnalysisExecutor extends InferredSexAnalysisExecuto
         values.put("ratioY", ratios[1]);
 
         // Set inferred sex report (we assume sample and individual have the same ID)
-        setInferredSexReport(new InferredSexReport(getIndividualId(), "CoverageRatio", inferredKaryotypicSex, values, Collections.emptyList()));
+        setInferredSexReport(new InferredSexReport(getIndividualId(), "CoverageRatio", inferredKaryotypicSex, values,
+                Collections.emptyList()));
     }
 }

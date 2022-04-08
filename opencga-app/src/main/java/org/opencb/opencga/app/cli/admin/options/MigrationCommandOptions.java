@@ -22,14 +22,34 @@ public class MigrationCommandOptions extends GeneralCliOptions {
     private final SearchCommandOptions searchCommandOptions;
     private final RunCommandOptions runCommandOptions;
     private final RunManualCommandOptions runManualCommandOptions;
+    private final SummaryCommandOptions summaryCommandOptions;
     private final AdminCliOptionsParser.AdminCommonCommandOptions commonOptions;
 
     public MigrationCommandOptions(JCommander jCommander, AdminCliOptionsParser.AdminCommonCommandOptions commonOptions) {
         super(jCommander);
         this.commonOptions = commonOptions;
+        this.summaryCommandOptions = new SummaryCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.runCommandOptions = new RunCommandOptions();
         this.runManualCommandOptions = new RunManualCommandOptions();
+    }
+
+
+    @Parameters(commandNames = {"summary"}, commandDescription = "Obtain migrations status summary")
+    public class SummaryCommandOptions extends AdminCliOptionsParser.CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = MigrationCommandOptions.this.commonOptions;
+
+//        @Parameter(names = {"--status"}, description = "Filter migrations by status. PENDING, ERROR, DONE")
+//        public List<String> status;
+//
+//        @Parameter(names = {"--domain"}, description = "Select migration domain, either CATALOG or STORAGE")
+//        public List<Migration.MigrationDomain> domain;
+//
+//        @Parameter(names = {"--version"}, description = "Migration version")
+//        public String version;
+
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for migrations")
@@ -84,6 +104,10 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         @Parameter(names = {"--force"}, description = "Force migration run even if it's on status DONE, ON_HOLD or REDUNDANT", arity = 0)
         public boolean force;
 
+    }
+
+    public SummaryCommandOptions getSummaryCommandOptions() {
+        return summaryCommandOptions;
     }
 
     public SearchCommandOptions getSearchCommandOptions() {

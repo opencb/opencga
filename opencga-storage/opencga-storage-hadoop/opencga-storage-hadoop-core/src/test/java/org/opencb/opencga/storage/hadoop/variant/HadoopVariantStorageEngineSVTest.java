@@ -6,9 +6,11 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineSVTest;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQuery;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
@@ -34,7 +36,7 @@ public class HadoopVariantStorageEngineSVTest extends VariantStorageEngineSVTest
 
     @Test
     public void checkSampleIndex() throws Exception {
-        for (Variant variant : variantStorageEngine) {
+        for (Variant variant : variantStorageEngine.iterable(new VariantQuery().includeSample(ParamConstants.ALL), new QueryOptions())) {
             Set<String> samplesInVariant = new HashSet<>();
             for (String sample : metadataManager.getIndexedSamplesMap(studyMetadata.getId()).keySet()) {
                 QueryOptions options = new QueryOptions(VariantHadoopDBAdaptor.NATIVE, false);

@@ -19,6 +19,9 @@ package org.opencb.opencga.core.models.study;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.biodata.models.common.Status;
+import org.opencb.commons.annotations.DataClass;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
@@ -30,6 +33,7 @@ import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.net.URI;
@@ -38,6 +42,8 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
+@DataClass(id = "Study", since = "1.0",
+        description = "Study data model hosts information about any study.")
 public class Study extends PrivateFields {
 
     /**
@@ -45,6 +51,8 @@ public class Study extends PrivateFields {
      *
      * @apiNote Required, Immutable, Unique
      */
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
 
     /**
@@ -52,9 +60,17 @@ public class Study extends PrivateFields {
      *
      * @apiNote Internal, Unique, Immutable
      */
+
+    @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String uuid;
 
+    @DataField(id = "name", indexed = true,
+            description = FieldConstants.PROJECT_FQN)
     private String name;
+
+    @DataField(id = "name", indexed = true,
+            description = FieldConstants.STUDY_ALIAS)
     private String alias;
 
     /**
@@ -62,6 +78,8 @@ public class Study extends PrivateFields {
      *
      * @apiNote Internal
      */
+    @DataField(id = "creationDate", indexed = true,
+            description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
 
     /**
@@ -69,6 +87,8 @@ public class Study extends PrivateFields {
      *
      * @apiNote Internal
      */
+    @DataField(id = "modificationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
     /**
@@ -76,11 +96,21 @@ public class Study extends PrivateFields {
      *
      * @apiNote
      */
+    @DataField(id = "description", defaultValue = "No description available",
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
 
+    @DataField(id = "size", indexed = true,
+            description = FieldConstants.STUDY_SIZE)
     private long size;
+
+    @DataField(id = "fqn", indexed = true,
+            description = FieldConstants.PROJECT_FQN)
     private String fqn;
 
+
+    @DataField(id = "notification",
+            description = FieldConstants.STUDY_NOTIFICATION)
     private StudyNotification notification;
 
     /**
@@ -88,6 +118,8 @@ public class Study extends PrivateFields {
      *
      * @apiNote
      */
+    @DataField(id = "groups",
+            description = FieldConstants.STUDY_GROUPS)
     private List<Group> groups;
 
     /**
@@ -95,6 +127,9 @@ public class Study extends PrivateFields {
      *
      * @apiNote
      */
+
+    @DataField(id = "files",
+            description = FieldConstants.STUDY_FILES)
     private List<File> files;
 
     /**
@@ -102,6 +137,8 @@ public class Study extends PrivateFields {
      *
      * @apiNote
      */
+    @DataField(id = "jobs",
+            description = FieldConstants.STUDY_JOBS)
     private List<Job> jobs;
 
     /**
@@ -109,6 +146,8 @@ public class Study extends PrivateFields {
      *
      * @apiNote
      */
+    @DataField(id = "individuals",
+            description = FieldConstants.STUDY_INDIVIDUALS)
     private List<Individual> individuals;
 
     /**
@@ -116,6 +155,8 @@ public class Study extends PrivateFields {
      *
      * @apiNote
      */
+    @DataField(id = "families",
+            description = FieldConstants.STUDY_FAMILIES)
     private List<Family> families;
 
     /**
@@ -123,6 +164,8 @@ public class Study extends PrivateFields {
      *
      * @apiNote
      */
+    @DataField(id = "samples",
+            description = FieldConstants.STUDY_SAMPLES)
     private List<Sample> samples;
 
     /**
@@ -130,6 +173,8 @@ public class Study extends PrivateFields {
      *
      * @apiNote
      */
+    @DataField(id = "cohorts",
+            description = FieldConstants.STUDY_COHORTS)
     private List<Cohort> cohorts;
 
     /**
@@ -137,13 +182,17 @@ public class Study extends PrivateFields {
      *
      * @apiNote
      */
-    private List<org.opencb.opencga.core.models.panel.Panel> panels;
+    @DataField(id = "panels",
+            description = FieldConstants.STUDY_PANELS)
+    private List<Panel> panels;
 
     /**
      * A List with related clinicalAnalyses.
      *
      * @apiNote
      */
+    @DataField(id = "clinicalAnalyses",
+            description = FieldConstants.STUDY_ANALYSES)
     private List<ClinicalAnalysis> clinicalAnalyses;
 
     /**
@@ -151,14 +200,29 @@ public class Study extends PrivateFields {
      *
      * @apiNote
      */
+    @DataField(id = "variableSets",
+            description = FieldConstants.STUDY_VARIABLE_SETS)
     private List<VariableSet> variableSets;
 
+
+    @DataField(id = "permissionRules",
+            description = FieldConstants.STUDY_PERMISSION_RULES)
     private Map<Enums.Entity, List<PermissionRule>> permissionRules;
+
+    @DataField(id = "uri",
+            description = FieldConstants.STUDY_URI)
     private URI uri;
+
+    @DataField(id = "release", indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
 
+    @DataField(id = "sources", indexed = true,
+            description = FieldConstants.STUDY_EXTERNAL_SOURCES)
     private List<ExternalSource> sources;
 
+    @DataField(id = "type", indexed = true,
+            description = FieldConstants.STUDY_TYPE)
     private StudyType type;
 
     /**
@@ -166,15 +230,24 @@ public class Study extends PrivateFields {
      *
      * @apiNote
      */
+
+    @DataField(id = "status", indexed = true,
+            description = FieldConstants.GENERIC_CUSTOM_STATUS)
     private Status status;
+
 
     /**
      * An object describing the internal information of the Sample. This is managed by OpenCGA.
      *
      * @apiNote Internal
      */
+
+    @DataField(id = "internal", indexed = true,
+            description = FieldConstants.GENERIC_INTERNAL)
     private StudyInternal internal;
 
+    @DataField(id = "additionalInfo", indexed = true,
+            description = FieldConstants.GENERIC_ADDITIONAL_INFO_DESCRIPTION)
     private List<AdditionalInfo> additionalInfo;
 
     /**
@@ -182,6 +255,8 @@ public class Study extends PrivateFields {
      *
      * @apiNote
      */
+    @DataField(id = "attributes", indexed = true,
+            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     public Study() {

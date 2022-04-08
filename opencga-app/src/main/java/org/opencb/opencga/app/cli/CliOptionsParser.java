@@ -2,8 +2,12 @@ package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
+import org.opencb.commons.utils.PrintUtils;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created on 08/09/17.
@@ -20,6 +24,16 @@ public abstract class CliOptionsParser {
         this.jCommander = new JCommander(generalOptions);
     }
 
+    public static String getSubCommand(JCommander jCommander) {
+        String parsedCommand = jCommander.getParsedCommand();
+        if (jCommander.getCommands().containsKey(parsedCommand)) {
+            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
+            return subCommand != null ? subCommand : "";
+        } else {
+            return null;
+        }
+    }
+
     public void parse(String[] args) throws ParameterException {
         jCommander.parse(args);
     }
@@ -32,16 +46,6 @@ public abstract class CliOptionsParser {
         return getSubCommand(jCommander);
     }
 
-    public static String getSubCommand(JCommander jCommander) {
-        String parsedCommand = jCommander.getParsedCommand();
-        if (jCommander.getCommands().containsKey(parsedCommand)) {
-            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-            return subCommand != null ? subCommand: "";
-        } else {
-            return null;
-        }
-    }
-
     public abstract boolean isHelp();
 
     public abstract void printUsage();
@@ -51,12 +55,12 @@ public abstract class CliOptionsParser {
     }
 
     protected void printCommands(JCommander commander) {
-        int pad = commander.getCommands().keySet().stream().mapToInt(String::length).max().orElse(0);
-        // Set padding between 14 and 40
-        pad = Math.max(14, pad);
-        pad = Math.min(40, pad);
-        for (Map.Entry<String, JCommander> entry : commander.getCommands().entrySet()) {
-            System.err.printf("%" + pad + "s  %s\n", entry.getKey(), commander.getCommandDescription(entry.getKey()));
+        // Calculate the padding needed and add 10 extra spaces to get some left indentation
+        int padding = 10 + commander.getCommands().keySet().stream().mapToInt(String::length).max().orElse(0);
+
+        List<String> cmds = commander.getCommands().keySet().stream().sorted().collect(Collectors.toList());
+        for (String key : cmds) {
+            PrintUtils.printCommandHelpFormattedString(padding, key, commander.getCommandDescription(key));
         }
     }
 

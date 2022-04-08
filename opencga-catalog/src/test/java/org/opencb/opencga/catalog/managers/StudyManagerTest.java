@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
@@ -260,11 +261,11 @@ public class StudyManagerTest extends AbstractManagerTest {
         Group first = catalogManager.getStudyManager().getGroup(studyFqn, "@test", token).first();
         assertNotNull(first.getUserIds());
 
-        catalogManager.getUserManager().create("dummy", "dummy", "dummy@mail.com", "dummy", "", 0L, Account.AccountType.GUEST, token);
+        catalogManager.getUserManager().create("dummy", "dummy", "dummy@mail.com", TestParamConstants.PASSWORD, "", 0L, Account.AccountType.GUEST, token);
         catalogManager.getStudyManager().createGroup(studyFqn, "@test2", Collections.singletonList("dummy"), token);
         catalogManager.getStudyManager().updateAcl(studyFqn, "@test2", new StudyAclParams("", "view_only"), ParamUtils.AclAction.ADD, token);
 
-        String dummyToken = catalogManager.getUserManager().login("dummy", "dummy").getToken();
+        String dummyToken = catalogManager.getUserManager().login("dummy", TestParamConstants.PASSWORD).getToken();
         OpenCGAResult<File> search = catalogManager.getFileManager().search(studyFqn, new Query(), new QueryOptions(), dummyToken);
         assertTrue(search.getNumResults() > 0);
     }

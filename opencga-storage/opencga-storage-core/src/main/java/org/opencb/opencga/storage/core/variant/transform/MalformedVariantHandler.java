@@ -20,7 +20,6 @@ import org.opencb.commons.utils.FileUtils;
 
 import java.io.*;
 import java.nio.file.Path;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 /**
@@ -28,7 +27,7 @@ import java.util.function.Supplier;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MalformedVariantHandler implements BiConsumer<String, RuntimeException> {
+public class MalformedVariantHandler implements VariantTransformTask.ErrorHandler {
 
     private Supplier<OutputStream> supplier;
     private PrintStream out;
@@ -52,7 +51,7 @@ public class MalformedVariantHandler implements BiConsumer<String, RuntimeExcept
     }
 
     @Override
-    public synchronized void accept(String line, RuntimeException exception) {
+    public synchronized void accept(int lineNo, String line, RuntimeException exception) {
         counter++;
 
         if (out == null) {
@@ -60,7 +59,7 @@ public class MalformedVariantHandler implements BiConsumer<String, RuntimeExcept
             out = new PrintStream(supplier.get());
         }
 
-        out.print("ERROR >>>>\t");
+        out.print("ERROR (" + exception.getClass().getSimpleName() + ") at line #" + lineNo + " >>>>\t");
         out.println(line);
         exception.printStackTrace(out);
 

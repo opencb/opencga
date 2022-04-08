@@ -20,6 +20,8 @@ import org.junit.Test;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by imedina on 04/05/16.
@@ -28,18 +30,18 @@ public class ClientConfigurationTest {
 
     @Test
     public void testDefault() {
-        ClientConfiguration clientConfiguration = new ClientConfiguration();
 
-        clientConfiguration.setCliSessionDuration(120);
-
-        RestConfig restConfig = new RestConfig("localhost:9090/opencga", true, new QueryRestConfig(200, 2000));
+        ClientConfiguration config = new ClientConfiguration();
+        List<HostConfig> hostConfigs = new ArrayList<>();
+        hostConfigs.add(new HostConfig("opencga", "localhost:9090/opencga"));
+        RestConfig restConfig = new RestConfig(hostConfigs, true, new QueryRestConfig(200, 2000));
         GrpcConfig grpcConfig = new GrpcConfig("localhost:9091");
 
-        clientConfiguration.setRest(restConfig);
-        clientConfiguration.setGrpc(grpcConfig);
+        config.setRest(restConfig);
+        config.setGrpc(grpcConfig);
 
         try {
-            clientConfiguration.serialize(new FileOutputStream("/tmp/client-configuration-test.yml"));
+            config.serialize(new FileOutputStream("/tmp/client-configuration-test.yml"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -47,7 +49,8 @@ public class ClientConfigurationTest {
 
     @Test
     public void testLoad() throws Exception {
-        ClientConfiguration storageConfiguration = ClientConfiguration.load(getClass().getResource("/client-configuration.yml").openStream());
+        ClientConfiguration storageConfiguration =
+                ClientConfiguration.load(getClass().getResource("/client-configuration.yml").openStream());
         System.out.println("clientConfiguration = " + storageConfiguration);
     }
 }

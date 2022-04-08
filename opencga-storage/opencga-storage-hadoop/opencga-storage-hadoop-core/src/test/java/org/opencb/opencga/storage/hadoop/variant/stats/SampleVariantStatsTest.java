@@ -11,6 +11,7 @@ import org.opencb.biodata.tools.variant.stats.SampleVariantStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -59,11 +60,10 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
             mm.updateSampleMetadata(studyId, mm.getSampleId(studyId, child), sampleMetadata -> {
                 sampleMetadata.setFather(mm.getSampleId(studyId, father));
                 sampleMetadata.setMother(mm.getSampleId(studyId, mother));
-                return sampleMetadata;
             });
 
             engine.annotate(new Query(), new ObjectMap());
-            engine.aggregateFamily(study, family, new ObjectMap());
+            engine.aggregateFamily(study, new VariantAggregateFamilyParams(family, false), new ObjectMap());
 
             VariantHbaseTestUtils.printVariants(engine.getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
 

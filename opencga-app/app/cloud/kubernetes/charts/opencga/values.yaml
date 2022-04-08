@@ -7,7 +7,8 @@ mongodb:
   password: "FILL_ME"
   ssl: true
   authenticationDatabase : "admin"
-  authenticationMechanism : "SCRAM-SHA-1"
+  authenticationMechanism : "SCRAM-SHA-1" # Must use "SCRAM-SHA-256" for instances deployed with mongodb community operator
+  replicaSet : ""
 
   # MongoDB can either be deployed in the same Kubernetes instance, or be provided externally.
 
@@ -36,6 +37,11 @@ mongodb:
 
     nodeSelector:
       agentpool: mongodb
+
+    # Service account and role assignments do not need to be created if the MongoDB Community Operator is installed in the same namespace
+    serviceAccount:
+      create: true
+      name: mongodb-database
 
 solr:
   external:
@@ -68,7 +74,7 @@ solr:
       agentpool: solr
 
     zookeeper:
-      replicas: 2
+      replicas: 3
       volume:
         size: "5Gi"
       resources:
@@ -197,6 +203,7 @@ rest:
       kubernetes.io/ingress.class: nginx
       nginx.ingress.kubernetes.io/ssl-redirect: "false"
       nginx.ingress.kubernetes.io/proxy-body-size: 1024m
+      nginx.ingress.kubernetes.io/rewrite-target: /opencga/$2
 #      cert-manager.io/issuer: letsencrypt-prod
 #      cert-manager.io/cluster-issuer: letsencrypt-prod
     hosts:
@@ -204,8 +211,7 @@ rest:
       - ""              # Accept access by IP .Testing purposes only.
     # Accepts /opencga and /opencga/....
     paths:
-    - /opencga
-    - /opencga/
+    - "/opencga($|/)(.*)"
     tls: []
     #  - secretName: chart-example-tls
     #    hosts:

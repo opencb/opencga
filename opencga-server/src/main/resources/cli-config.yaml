@@ -1,0 +1,195 @@
+options:
+  outputDir: opencga-app/src/main/java/org/opencb/opencga/app/cli/main/
+  ignoreTypes:
+    - string
+    - object
+    - integer
+    - int
+    - map
+    - boolean
+    - enum
+    - long
+    - java.lang.String
+    - java.lang.Boolean
+    - java.lang.Integer
+    - java.lang.Long
+    - java.lang.Short
+    - java.lang.Double
+    - java.lang.Float
+    - java.lang.
+apiConfig:
+  shortcuts:
+    - name: user
+      shortcut: u
+    - name: uri
+      shortcut: input
+    - name: uri
+      shortcut: i
+    - name: study
+      shortcut: s
+    - name: exclude
+      shortcut: E
+    - name: include
+      shortcut: I
+    - name: project
+      shortcut: p
+    - name: creationDate
+      shortcut: cd
+    - name: modificationDate
+      shortcut: md
+    - name: name
+      shortcut: n
+  categoryConfigList:
+    - name: users
+      ignore: False
+      key: User
+      executorExtended: True
+      optionExtended: True
+      commands:
+        - name: update-filters
+          ignore: True
+        - name: login
+          executorExtended: True
+          optionExtended: True
+        - name: logout
+          executorExtended: True
+          optionExtended: True
+      addedMethods:
+        - logout
+    - name: projects
+      ignore: False
+      key: Project
+    - name: studies
+      executorExtended: True
+      optionExtended: True
+      commands:
+        - name: run-templates
+          executorExtended: True
+          optionExtended: True
+        - name: upload-templates
+          executorExtended: True
+          optionExtended: True
+      ignore: False
+      key: Study
+    - name: files
+      ignore: False
+      key: File
+      executorExtended: True
+      optionExtended: True
+      commands:
+        - name: upload
+          executorExtended: True
+          optionExtended: True
+        - name: update
+          subcommands:
+            - name: annotationSetsAction
+              ignore: True
+            - name: relatedFilesAction
+              ignore: True
+            - name: tagsAction
+              ignore: True
+    - name: jobs
+      ignore: False
+      key: Job
+      executorExtended: True
+      optionExtended: True
+      commands:
+        - name: top
+          executorExtended: True
+          optionExtended: True
+      addedMethods:
+        - log
+    - name: samples
+      ignore: False
+      key: Sample
+      commands:
+        - name: update
+          subcommands:
+            - name: phenotypesAction
+              ignore: True
+            - name: annotationSetsAction
+              ignore: True
+    - name: individuals
+      ignore: False
+      key: Individual
+      commands:
+        - name: update
+          subcommands:
+            - name: phenotypesAction
+              ignore: True
+            - name: disordersAction
+              ignore: True
+            - name: samplesAction
+              ignore: True
+            - name: annotationSetsAction
+              ignore: True
+    - name: families
+      ignore: False
+      key: Family
+      commands:
+        - name: update
+          subcommands:
+            - name: annotationSetsAction
+              ignore: True
+    - name: cohorts
+      ignore: False
+      key: Cohort
+      commands:
+        - name: update
+          subcommands:
+            - name: samplesAction
+              ignore: True
+            - name: annotationSetsAction
+              ignore: True
+    - name: panels
+      commandName: panels
+      ignore: False
+      key: DiseasePanel
+    - name: analysisAlignment
+      commandName: alignments
+      ignore: False
+      key: Alignment
+      analysis: True
+    - name: analysisVariant
+      commandName: variant
+      ignore: False
+      key: Variant
+      analysis: True
+    - name: analysisClinical
+      commandName: clinical
+      ignore: False
+      key: ClinicalAnalysis
+      analysis: True
+      commands:
+        - name: update
+          subcommands:
+            - name: commentsAction
+              ignore: True
+            - name: flagsAction
+              ignore: True
+            - name: filesAction
+              ignore: True
+            - name: panelsAction
+              ignore: True
+        - name: interpretation-update
+          subcommands:
+            - name: primaryFindingsAction
+              ignore: True
+            - name: secondaryFindingsAction
+              ignore: True
+            - name: methodsAction
+              ignore: True
+    - name: operation
+      commandName: operations
+      ignore: False
+      key: VariantOperation
+      operations: True
+    - name: meta
+      ignore: False
+      key: Meta
+    - name: ga4gh
+      ignore: True
+      key: GA4GH
+    - name: admin
+      ignore: True
+      key: Admin

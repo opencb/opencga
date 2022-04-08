@@ -28,20 +28,18 @@ import java.util.*;
  */
 public class InternalStatus extends Status {
 
-    private String version;
-    private String commit;
 
     /**
      * READY name means that the object is being used.
      */
     public static final String READY = "READY";
-
     /**
      * DELETED name means that the object is marked as removed, so it can be completely removed from the database with a clean action.
      */
     public static final String DELETED = "DELETED";
-
     public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED);
+    private String version;
+    private String commit;
 
 
     public InternalStatus() {
@@ -69,44 +67,8 @@ public class InternalStatus extends Status {
         this.commit = commit;
     }
 
-    protected void init(String statusId, String description) {
-        init(statusId, null, description);
-    }
-
-    protected void init(String statusId, String statusName, String description) {
-        super.id = statusId;
-        super.name = statusName;;
-        super.description = description;
-        super.date = TimeUtils.getTime();
-        this.version = GitRepositoryState.get().getBuildVersion();
-        this.commit = GitRepositoryState.get().getCommitId();
-    }
-
     public static boolean isValid(String statusId) {
-        if (statusId != null && (statusId.equals(READY) || statusId.equals(DELETED))) {
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof InternalStatus)) return false;
-        if (!super.equals(o)) return false;
-
-        InternalStatus that = (InternalStatus) o;
-
-        if (!Objects.equals(version, that.version)) return false;
-        return Objects.equals(commit, that.commit);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (version != null ? version.hashCode() : 0);
-        result = 31 * result + (commit != null ? commit.hashCode() : 0);
-        return result;
+        return statusId != null && (statusId.equals(READY) || statusId.equals(DELETED));
     }
 
     public static String getPositiveStatus(List<String> acceptedStatusList, String status) {
@@ -148,6 +110,39 @@ public class InternalStatus extends Status {
                 positiveStatusList.add(s);
             }
         }
+    }
+
+    protected void init(String statusId, String description) {
+        init(statusId, null, description);
+    }
+
+    protected void init(String statusId, String statusName, String description) {
+        super.id = statusId;
+        super.name = statusName;
+        super.description = description;
+        super.date = TimeUtils.getTime();
+        this.version = GitRepositoryState.get().getBuildVersion();
+        this.commit = GitRepositoryState.get().getCommitId();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof InternalStatus)) return false;
+        if (!super.equals(o)) return false;
+
+        InternalStatus that = (InternalStatus) o;
+
+        if (!Objects.equals(version, that.version)) return false;
+        return Objects.equals(commit, that.commit);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (version != null ? version.hashCode() : 0);
+        result = 31 * result + (commit != null ? commit.hashCode() : 0);
+        return result;
     }
 
     @Override
@@ -217,3 +212,4 @@ public class InternalStatus extends Status {
         return this;
     }
 }
+

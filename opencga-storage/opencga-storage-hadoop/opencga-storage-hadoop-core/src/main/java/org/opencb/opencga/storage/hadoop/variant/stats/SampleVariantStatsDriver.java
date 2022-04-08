@@ -592,8 +592,6 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
 
                         // Update all but missingCount!
                     }
-
-                    return sampleMetadata;
                 });
 
                 if (write) {

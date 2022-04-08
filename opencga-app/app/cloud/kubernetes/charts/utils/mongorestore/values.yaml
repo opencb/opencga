@@ -1,0 +1,40 @@
+
+
+## Source mongodb connection credentials
+mongodb:
+  uri: "FILL_ME" # mongodb://db1.example.net:27017,db2.example.net:2500/?replicaSet=test&connectTimeoutMS=300000
+  user: "FILL_ME"
+  password: "FILL_ME"
+  ssl: true
+  authenticationDatabase : "admin"
+  authenticationMechanism : "SCRAM-SHA-1" # Must use "SCRAM-SHA-256" for instances deployed with mongodb community operator
+
+  database: ""
+  args:
+    - "--gzip" # decompress gzipped input
+    - "--drop" # drop each collection before import
+
+  archiveFileName: "{{ .Values.mongodb.database }}.dump"
+  volume: {}
+#    emptyDir: {}
+
+job:
+  image:
+    repository: "library/mongo"
+    tag: "4.2.6"
+    imagePullSecret: ""
+  podSecurityContext:
+    runAsNonRoot: true
+    # fsGroup: 2000
+
+  securityContext:
+    readOnlyRootFilesystem: false
+    runAsUser: 1000
+    # capabilities:
+    #   drop:
+    #   - ALL
+
+  nodeSelector:
+    agentpool: default
+    kubernetes.io/os: linux
+    kubernetes.io/role: agent

@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.migration;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.WriteModel;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -183,7 +184,7 @@ public abstract class MigrationTool {
         List<WriteModel<Document>> list = new ArrayList<>(BATCH_SIZE);
 
         ProgressLogger progressLogger = new ProgressLogger("Execute bulk update").setBatchSize(BATCH_SIZE);
-        try (MongoCursor<Document> it = inputCollection.find(query).projection(projection).cursor()) {
+        try (MongoCursor<Document> it = inputCollection.find(query).noCursorTimeout(true).projection(projection).cursor()) {
             while (it.hasNext()) {
                 Document document = it.next();
                 migrateFunc.accept(document, list);
@@ -206,6 +207,34 @@ public abstract class MigrationTool {
             privateLogger.info("Nothing to do!");
         } else {
             privateLogger.info("Updated {} documents from collection {}", count, outputCollection.getNamespace().getFullName());
+        }
+    }
+
+    protected final void createIndex(String collection, Document index) {
+        createIndex(getMongoCollection(collection), index, new IndexOptions().background(true));
+    }
+
+    protected final void createIndex(String collection, Document index, IndexOptions options) {
+        createIndex(getMongoCollection(collection), index, options);
+    }
+
+    protected final void createIndex(MongoCollection<Document> collection, Document index) {
+        createIndex(collection, index, new IndexOptions().background(true));
+    }
+
+    protected final void createIndex(MongoCollection<Document> collection, Document index, IndexOptions options) {
+        collection.createIndex(index, options);
+    }
+
+    protected final void dropIndex(String collection, Document index) {
+        dropIndex(getMongoCollection(collection), index);
+    }
+
+    protected final void dropIndex(MongoCollection<Document> collection, Document index) {
+        try {
+            collection.dropIndex(index);
+        } catch (Exception e) {
+            logger.warn("Could not drop index: {}", e.getMessage());
         }
     }
 

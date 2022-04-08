@@ -64,7 +64,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
         for (int i = 0; i < annotationIndices.length; i++) {
             annotationIndices[i] = new HashMap<>();
         }
-        schema = new SampleIndexSchema(VariantMapReduceUtil.getSampleIndexConfiguration(context.getConfiguration()));
+        schema = VariantMapReduceUtil.getSampleIndexSchema(context.getConfiguration());
         converter = new AnnotationIndexConverter(schema);
     }
 

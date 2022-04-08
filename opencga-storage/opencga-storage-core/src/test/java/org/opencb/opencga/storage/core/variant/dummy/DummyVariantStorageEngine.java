@@ -23,6 +23,7 @@ import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -78,20 +79,20 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     public DataResult<List<String>> familyIndex(String study, List<List<String>> trios, ObjectMap options) throws StorageEngineException {
         logger.info("Running family index!");
         VariantStorageMetadataManager metadataManager = getMetadataManager();
-        int studyId = metadataManager.getStudyId(study);
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+        int studyId = studyMetadata.getId();
         for (int i = 0; i < trios.size(); i += 3) {
             Integer father = metadataManager.getSampleId(studyId, trios.get(i));
             Integer mother = metadataManager.getSampleId(studyId, trios.get(i + 1));
             Integer child = metadataManager.getSampleId(studyId, trios.get(i + 2));
             metadataManager.updateSampleMetadata(studyId, child, sampleMetadata -> {
-                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY);
+                sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.READY, studyMetadata.getSampleIndexConfigurationLatest().getVersion());
                 if (father != null && father > 0) {
                     sampleMetadata.setFather(father);
                 }
                 if (mother != null && mother > 0) {
                     sampleMetadata.setMother(mother);
                 }
-                return sampleMetadata;
             });
         }
         return new DataResult<List<String>>().setResults(trios);

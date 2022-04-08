@@ -6,26 +6,26 @@
 \usage{
 \S4method{fileClient}{OpencgaR}(
   OpencgaR,
-  file,
-  files,
   members,
-  annotationSet,
   folder,
+  file,
+  annotationSet,
+  files,
   endpointName,
   params = NULL,
   ...
 )
 }
 \arguments{
-\item{file}{File uuid, id, or name.}
-
-\item{files}{Comma separated list of file ids, names or paths. Paths must be separated by : instead of /.}
-
 \item{members}{Comma separated list of user or group ids.}
+
+\item{folder}{Folder id or name. Paths must be separated by : instead of /.}
+
+\item{file}{File uuid, id, or name.}
 
 \item{annotationSet}{AnnotationSet ID to be updated.}
 
-\item{folder}{Folder id, name or path. Paths must be separated by : instead of /.}
+\item{files}{Comma separated list of file ids, names or paths. Paths must be separated by : instead of /.}
 
 \item{creationYear}{Creation year.}
 
@@ -34,8 +34,6 @@
 \item{creationDay}{Creation day.}
 
 \item{creationDayOfWeek}{Creation day of week (MONDAY, TUESDAY...).}
-
-\item{external}{External.}
 
 \item{software}{Software.}
 
@@ -47,17 +45,29 @@
 
 \item{default}{Calculate default stats.}
 
-\item{field}{List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples\link{0..10}:1.}
-
 \item{variableSetId}{Variable set ID or name.}
 
 \item{annotationSetId}{Annotation set id. If not provided, variableSetId will be used.}
 
+\item{field}{Field for which to obtain the distinct values.}
+
 \item{parents}{Create the parent directories if they do not exist.}
+
+\item{jobDependsOn}{Comma separated list of existing job IDs the job will depend on.}
+
+\item{jobDescription}{Job description.}
+
+\item{jobTags}{Job tags.}
+
+\item{id}{Comma separated list of file IDs up to a maximum of 100.}
+
+\item{uuid}{Comma separated list file UUIDs up to a maximum of 100.}
 
 \item{name}{Comma separated list of file names.}
 
 \item{path}{Comma separated list of paths.}
+
+\item{uri}{Comma separated list of uris.}
 
 \item{type}{File type, either FILE or DIRECTORY.}
 
@@ -65,7 +75,15 @@
 
 \item{format}{Comma separated Format values. For existing Formats see files/formats.}
 
-\item{status}{File status.}
+\item{external}{Boolean field indicating whether to filter by external or non external files.}
+
+\item{status}{Filter by status.}
+
+\item{internalStatus}{Filter by internal status.}
+
+\item{internalVariantIndexStatus}{Filter by internal variant index status.}
+
+\item{softwareName}{Software name.}
 
 \item{directory}{Directory under which we want to look for files or folders.}
 
@@ -79,15 +97,13 @@
 
 \item{size}{File size.}
 
-\item{samples}{Comma separated list sample IDs or UUIDs up to a maximum of 100.}
+\item{sampleIds}{Comma separated list sample IDs or UUIDs up to a maximum of 100.}
 
 \item{jobId}{Job ID that created the file(s) or folder(s).}
 
 \item{annotation}{Annotation filters. Example: age>30;gender=FEMALE. For more information, please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0.}
 
 \item{acl}{Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .}
-
-\item{attributes}{Text attributes (Format: sex=male,age>20 ...).}
 
 \item{release}{Release when it was created.}
 
@@ -101,13 +117,15 @@
 
 \item{deleted}{Boolean to retrieve deleted files.}
 
-\item{samplesAction}{Action to be performed if the array of samples is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+\item{sampleIdsAction}{Action to be performed if the array of samples is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
 
 \item{annotationSetsAction}{Action to be performed if the array of annotationSets is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
 
 \item{relatedFilesAction}{Action to be performed if the array of relatedFiles is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
 
 \item{tagsAction}{Action to be performed if the array of tags is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
+
+\item{includeResult}{Flag indicating to include the created or updated document result in the response.}
 
 \item{action}{Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
 
@@ -121,7 +139,9 @@
 
 \item{offset}{Starting byte from which the file will be read.}
 
-\item{lines}{Maximum number of lines to be returned.}
+\item{lines}{Maximum number of lines to be returned up to a maximum of 1000.}
+
+\item{limit}{Number of results to be returned.}
 
 \item{skip}{Number of results to skip.}
 
@@ -130,8 +150,6 @@
 \item{include}{Fields included in the response, whole JSON path must be provided.}
 
 \item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
-
-\item{limit}{\link{PENDING} Number of results to be returned.}
 
 \item{study}{Study [\link{user@}project:]study where study and project can be either the ID or UUID.}
 
@@ -145,17 +163,20 @@ The following table summarises the available \emph{actions} for this client:\tab
    aggregationStats \tab /{apiVersion}/files/aggregationStats \tab study, name, type, format, bioformat, creationYear, creationMonth, creationDay, creationDayOfWeek, status, release, external, size, software, experiment, numSamples, numRelatedFiles, annotation, default, field \cr
    loadAnnotationSets \tab /{apiVersion}/files/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
    bioformats \tab /{apiVersion}/files/bioformats \tab  \cr
-   create \tab /{apiVersion}/files/create \tab study, body\link{*} \cr
-   fetch \tab /{apiVersion}/files/fetch \tab study, body\link{*} \cr
+   create \tab /{apiVersion}/files/create \tab study, parents, body\link{*} \cr
+   distinct \tab /{apiVersion}/files/distinct \tab study, id, uuid, name, path, uri, type, bioformat, format, external, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release, field\link{*} \cr
+   fetch \tab /{apiVersion}/files/fetch \tab jobId, jobDescription, jobDependsOn, jobTags, study, body\link{*} \cr
    formats \tab /{apiVersion}/files/formats \tab  \cr
    link \tab /{apiVersion}/files/link \tab study, parents, body\link{*} \cr
-   search \tab /{apiVersion}/files/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, name, path, type, bioformat, format, status, directory, creationDate, modificationDate, description, tags, size, samples, jobId, annotation, acl, deleted, attributes, release \cr
-   upload \tab /{apiVersion}/files/upload \tab body, body\link{*}, body\link{*}, body, body, body, body \cr
+   runLink \tab /{apiVersion}/files/link/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
+   runPostlink \tab /{apiVersion}/files/postlink/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
+   search \tab /{apiVersion}/files/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, name, path, uri, type, bioformat, format, external, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release \cr
+   upload \tab /{apiVersion}/files/upload \tab body, body, body, body, body, body, body, body \cr
    acl \tab /{apiVersion}/files/{files}/acl \tab files\link{*}, study, member, silent \cr
    delete \tab /{apiVersion}/files/{files}/delete \tab study, files, skipTrash \cr
    info \tab /{apiVersion}/files/{files}/info \tab include, exclude, flattenAnnotations, files, study, deleted \cr
    unlink \tab /{apiVersion}/files/{files}/unlink \tab study, files \cr
-   update \tab /{apiVersion}/files/{files}/update \tab files, study, samplesAction, annotationSetsAction, relatedFilesAction, tagsAction, body\link{*} \cr
+   update \tab /{apiVersion}/files/{files}/update \tab include, exclude, files, study, sampleIdsAction, annotationSetsAction, relatedFilesAction, tagsAction, includeResult, body\link{*} \cr
    updateAnnotations \tab /{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update \tab file\link{*}, study, annotationSet, action, body \cr
    download \tab /{apiVersion}/files/{file}/download \tab file, study \cr
    grep \tab /{apiVersion}/files/{file}/grep \tab file, study, pattern, ignoreCase, maxCount \cr
@@ -164,7 +185,7 @@ The following table summarises the available \emph{actions} for this client:\tab
    refresh \tab /{apiVersion}/files/{file}/refresh \tab file, study \cr
    tail \tab /{apiVersion}/files/{file}/tail \tab file, study, lines \cr
    list \tab /{apiVersion}/files/{folder}/list \tab include, exclude, limit, skip, count, folder, study \cr
-   tree \tab /{apiVersion}/files/{folder}/tree \tab include, exclude, limit, folder, study, maxDepth \cr
+   tree \tab /{apiVersion}/files/{folder}/tree \tab include, exclude, folder, study, maxDepth \cr
 }
 }
 \section{Endpoint /{apiVersion}/files/acl/{members}/update}{
@@ -192,6 +213,11 @@ List of accepted file bioformats.
 Create file or folder.
 }
 
+\section{Endpoint /{apiVersion}/files/distinct}{
+
+File distinct method.
+}
+
 \section{Endpoint /{apiVersion}/files/fetch}{
 
 Download an external file to catalog and register it.
@@ -205,6 +231,16 @@ List of accepted file formats.
 \section{Endpoint /{apiVersion}/files/link}{
 
 Link an external file into catalog.
+}
+
+\section{Endpoint /{apiVersion}/files/link/run}{
+
+Link an external file into catalog asynchronously.
+}
+
+\section{Endpoint /{apiVersion}/files/postlink/run}{
+
+Associate non-registered samples for files with high volumes of samples.
 }
 
 \section{Endpoint /{apiVersion}/files/search}{

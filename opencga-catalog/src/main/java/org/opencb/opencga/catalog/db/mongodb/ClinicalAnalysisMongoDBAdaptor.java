@@ -182,6 +182,12 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     events.add(new Event(Event.Type.WARNING, clinicalAnalysisId, "Clinical Analysis was already updated"));
                 }
 
+                if (parameters.getBoolean(LOCKED.key())) {
+                    // Propagate locked value to Interpretations
+                    dbAdaptorFactory.getInterpretationDBAdaptor().propagateLockedFromClinicalAnalysis(clientSession, clinical,
+                            parameters.getBoolean(LOCKED.key()));
+                }
+
                 logger.debug("Clinical Analysis {} successfully updated", clinicalAnalysisId);
             }
 
@@ -587,7 +593,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         result.first().put(AUDIT.key(), auditList);
 
         // Insert the document in the DELETE collection
-        deletedClinicalCollection.insert(clientSession, result.first(), null);
+        deletedClinicalCollection.insert(clientSession, replaceDotsInKeys(result.first()), null);
         logger.debug("Inserted Clinical Analysis uid '{}' in DELETE collection", clinicalUid);
 
         // Remove the document from the main Clinical collection

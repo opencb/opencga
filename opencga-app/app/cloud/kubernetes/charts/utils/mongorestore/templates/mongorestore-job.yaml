@@ -1,0 +1,67 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "mongorestore.fullname" . }}-job
+  labels:
+    {{- include "mongorestore.labels" . | nindent 4 }}
+#  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+#    "helm.sh/hook": post-upgrade
+#    "helm.sh/hook-weight": "-5"
+#    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: {{ include "mongorestore.fullname" . }}-job
+      labels:
+        {{- include "mongorestore.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      {{- with .Values.job.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.job.podSecurityContext | nindent 8 }}
+      containers:
+        - name: mongorestore
+          securityContext:
+            {{- toYaml .Values.job.securityContext | nindent 12 }}
+          image: {{ tpl .Values.job.image.repository . | quote }}
+          imagePullPolicy: {{ .Values.job.image.pullPolicy | quote }}
+          volumeMounts:
+            - name: mongodbdata
+              mountPath: /data/
+          command:
+            - "/usr/bin/mongorestore"
+          args:
+            - "--username"
+            - "{{ .Values.mongodb.user }}"
+            - "--password"
+            - "{{ .Values.mongodb.password }}"
+            - "--authenticationDatabase"
+            - "{{ .Values.mongodb.authenticationDatabase }}"
+            - "--authenticationMechanism"
+            - "{{ .Values.mongodb.authenticationMechanism }}"
+            {{- if .Values.mongodb.ssl }}
+            - "--ssl"
+            - "--sslAllowInvalidCertificates"
+            - "--sslAllowInvalidHostnames"
+            {{ end -}}
+            - "--uri"
+            - "{{ .Values.mongodb.uri}}"
+#            - "mongodb://{{ .Values.mongodb.hosts}}/?replicaSet={{ .Values.mongodb.replicaSet}}"
+            - "-d"
+            - "{{ .Values.mongodb.database }}"
+            - "--archive=/data/{{ tpl .Values.mongodb.archiveFileName . }}"
+            {{- range .Values.mongodb.args }}
+            - {{ . | quote }}
+            {{- end }}
+      {{- with .Values.job.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: mongodbdata
+          {{ toYaml .Values.mongodb.volume | nindent 10 }}

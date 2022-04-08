@@ -119,11 +119,11 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         filterList.add(Filters.eq(PRIVATE_STUDY_UID, studyUid));
 
         Bson bson = Filters.and(filterList);
-        DataResult<Long> count = panelCollection.count(bson);
-
+        DataResult<Long> count = panelCollection.count(clientSession, bson);
         if (count.getNumMatches() > 0) {
             throw CatalogDBException.alreadyExists("panel", QueryParams.ID.key(), panel.getId());
         }
+        panel.setStats(fetchStats(panel));
 
         logger.debug("Inserting new panel '" + panel.getId() + "'");
 
@@ -134,9 +134,17 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         logger.info("Panel '" + panel.getId() + "(" + panel.getUid() + ")' successfully created");
     }
 
+    private Map<String, Integer> fetchStats(Panel panel) {
+        Map<String, Integer> stats = new HashMap<>();
+        stats.put("numberOfVariants", panel.getVariants() != null ? panel.getVariants().size() : 0);
+        stats.put("numberOfGenes", panel.getGenes() != null ? panel.getGenes().size() : 0);
+        stats.put("numberOfRegions", panel.getRegions() != null ? panel.getRegions().size() : 0);
+        return stats;
+    }
+
     Document getPanelDocumentForInsertion(ClientSession clientSession, Panel panel, long studyUid) {
         //new Panel Id
-        long panelUid = getNewUid();
+        long panelUid = getNewUid(clientSession);
         panel.setUid(panelUid);
         panel.setStudyUid(studyUid);
         if (StringUtils.isEmpty(panel.getUuid())) {

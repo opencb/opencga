@@ -100,9 +100,9 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
         
         ## send batch size as limit to callrest
         real_batch_size <- min(c(real_batch_size, limit-count))
-        if(real_batch_size == 0){
-            break()
-        }
+        # if(real_batch_size == 0){
+        #     break()
+        # }
         params$limit <- real_batch_size
         
         # check expiration time
@@ -124,10 +124,12 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
         if (timeLeft > 0 & timeLeft <= 5){
             print("INFO: Your session will expire in less than 5 minutes.")
             urlNewToken <- paste0(host, version, "users/login")
-            resp <- httr::POST(urlNewToken, httr::add_headers(c("Content-Type"="application/json",
-                                                          "Accept"="application/json",
-                                                          "Authorisation"="Bearer")), 
-                               list(refreshToken=object@refreshToken), encode = "json")
+            resp <- httr::POST(url=urlNewToken, 
+                               httr::add_headers(.headers=c("Content-Type"="application/json",
+                                                            "Accept"="application/json",
+                                                            "Authorisation"="Bearer ")), 
+                               body=list(refreshToken=object@refreshToken),
+                               encode = "json")
             content <- httr::content(resp, as="text", encoding = "utf-8")
             if (length(jsonlite::fromJSON(content)$responses$results[[1]]$token) > 0){
                 token <- jsonlite::fromJSON(content)$responses$results[[1]]$token
@@ -149,15 +151,23 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
 
         response <- callREST(pathUrl=pathUrl, params=params, 
                              httpMethod=httpMethod, skip=skip, token=token,
-                             as.queryParam=as.queryParam, sid=object@showToken)
+                             as.queryParam=as.queryParam, verbose=object@verbose, 
+                             sid=object@showToken)
         
         skip <- skip+real_batch_size
-        res_list <- parseResponse(resp=response$resp, content=response$content)
+        res_list <- parseResponse(resp=response$resp, content=response$content, 
+                                  verbose=object@verbose)
         num_results <- res_list$numResults
         restResponseList <- append(x = restResponseList, values = res_list$restResponse)
         
         count <- count + num_results
-        print(paste("Number of retrieved documents:", count))
+        if (isTRUE(object@verbose)){
+            print(paste("Number of retrieved documents:", count))
+        }
+        
+        if(num_results == limit){
+          break()
+        }
     }
     
     # Merge RestResponses
@@ -179,7 +189,8 @@ get_qparams <- function(params){
 }
 
 ## Make call to server
-callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, sid=FALSE){
+callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, 
+                     verbose, sid=FALSE){
     content <- list()
     session <- paste("Bearer", token)
     skip=paste0("?skip=", as.character(skip))
@@ -199,8 +210,13 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, si
         
         # Encode the URL
         fullUrl <- httr::build_url(httr::parse_url(fullUrl))
-        print(paste("URL:",fullUrl))
-        resp <- httr::GET(fullUrl, httr::add_headers(Accept="application/json", Authorization=session), httr::timeout(30))
+        if (isTRUE(verbose)){
+            print(paste("URL:", fullUrl))
+        }
+        resp <- httr::GET(url=fullUrl,
+                          httr::add_headers(.headers=c(Accept="application/json", 
+                                                    Authorization=session)),
+                          httr::timeout(30))
         
     }else if(httpMethod == "POST"){
     # Make POST call
@@ -235,13 +251,18 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, si
         
         # Encode the URL
         fullUrl <- httr::build_url(httr::parse_url(fullUrl))
-        print(paste("URL:",fullUrl))
+        if (isTRUE(verbose)){
+            print(paste("URL:",fullUrl))
+        }
         if (exists("bodyParams")){
-            resp <- httr::POST(fullUrl, body = bodyParams, 
-                        httr::add_headers(`Authorization` = session), encode = "json")
+            resp <- httr::POST(url=fullUrl, 
+                               body=bodyParams,
+                               httr::add_headers(.headers=c(Authorization=session)), 
+                               encode = "json")
         }else{
-            resp <- httr::POST(fullUrl, httr::add_headers(`Authorization` = session), 
-                        encode = "json")
+            resp <- httr::POST(url=fullUrl, 
+                               httr::add_headers(.headers=c(Authorization=session)), 
+                               encode = "json")
         }
     }
     
@@ -250,11 +271,13 @@ callREST <- function(pathUrl, params, httpMethod, skip, token, as.queryParam, si
 }
 
 ## A function to parse the json data into R dataframes
-parseResponse <- function(resp, content){
+parseResponse <- function(resp, content, verbose){
     js <- jsonlite::fromJSON(content)
     if (resp$status_code == 200){
         if (!("warning" %in% js[[1]]) || js[[1]]$warning == ""){
-            print("Query successful!")
+            if (isTRUE(verbose)){
+                print("Query successful!")
+            }
         }else{
             print("Query successful with warnings.")
             print(paste("WARNING:", js[[1]]$warning))

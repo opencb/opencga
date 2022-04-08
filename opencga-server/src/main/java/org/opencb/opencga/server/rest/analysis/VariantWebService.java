@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
-import io.swagger.annotations.*;
+import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;

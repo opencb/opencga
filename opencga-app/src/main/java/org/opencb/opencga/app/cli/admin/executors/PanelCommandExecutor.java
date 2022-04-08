@@ -5,7 +5,6 @@ import org.opencb.biodata.tools.clinical.DiseasePanelParsers;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.JacksonUtils;
 
 import java.io.FileWriter;
@@ -22,10 +21,10 @@ import java.util.Map;
 
 public class PanelCommandExecutor extends CommandExecutor {
 
-    private AdminCliOptionsParser.PanelCommandOptions panelCommandOptions;
+    private final AdminCliOptionsParser.PanelCommandOptions panelCommandOptions;
 
     public PanelCommandExecutor(AdminCliOptionsParser.PanelCommandOptions panelCommandOptions) {
-        super(panelCommandOptions.commonOptions.commonOptions);
+        super(panelCommandOptions.commonOptions.commonOptions, true);
         this.panelCommandOptions = panelCommandOptions;
     }
 

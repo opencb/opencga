@@ -6,6 +6,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
+import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
 import org.opencb.opencga.core.api.ParamConstants;
 
 @Parameters(commandNames = {"job"}, commandDescription = "Implement several job tasks")

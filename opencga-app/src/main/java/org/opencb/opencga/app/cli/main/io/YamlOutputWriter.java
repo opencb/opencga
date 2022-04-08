@@ -24,8 +24,9 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.variant.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 
@@ -76,9 +77,8 @@ public class YamlOutputWriter extends AbstractOutputWriter {
         try {
             ps.println(objectWriter.writeValueAsString(toPrint));
         } catch (IOException e) {
-            System.err.println(ANSI_RED + "ERROR: Could not parse the queryResponse to print as "
-                    + (writerConfiguration.isPretty() ? "a beautiful" : "") + " JSON");
-            System.err.println(e.getMessage() + ANSI_RESET);
+            CommandLineUtils.printLog("Could not parse the queryResponse to print as "
+                    + (writerConfiguration.isPretty() ? "a beautiful" : "") + " JSON", e);
         }
     }
 }

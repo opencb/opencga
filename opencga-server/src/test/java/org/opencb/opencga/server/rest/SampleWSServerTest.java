@@ -19,8 +19,8 @@ package org.opencb.opencga.server.rest;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -62,7 +62,7 @@ public class SampleWSServerTest {
     public void init() throws Exception {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD).getToken();
+        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
         in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in1"), null,
                 sessionId).first().getUid();
         s1 = OpenCGAWSServer.catalogManager.getSampleManager().create(studyId, new Sample().setId("s1"), null, sessionId).first().getUid();

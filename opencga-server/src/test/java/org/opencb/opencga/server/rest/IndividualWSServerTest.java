@@ -26,13 +26,13 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManagerTest;
+import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.common.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 
@@ -88,7 +88,7 @@ public class IndividualWSServerTest {
     @Before
     public void init() throws Exception {
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD).getToken();
+        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
         in1 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in1"), null,
                 sessionId).first().getUid();
         in2 = OpenCGAWSServer.catalogManager.getIndividualManager().create(studyId, new Individual().setId("in2"), null, sessionId).first()

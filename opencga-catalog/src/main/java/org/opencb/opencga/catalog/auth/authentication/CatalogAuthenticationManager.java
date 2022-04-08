@@ -114,7 +114,7 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
     @Override
     public OpenCGAResult resetPassword(String userId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-
+        OpenCGAResult result = null;
         String newPassword = RandomStringUtils.randomAlphanumeric(12);
 
         OpenCGAResult<User> user =
@@ -126,14 +126,17 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
 
         String email = user.first().getEmail();
 
-        OpenCGAResult result = userDBAdaptor.resetPassword(userId, email, newPassword);
-
-        String mailUser = this.emailConfig.getFrom();
+        String mailUser = this.emailConfig.getUser();
         String mailPassword = this.emailConfig.getPassword();
         String mailHost = this.emailConfig.getHost();
         String mailPort = this.emailConfig.getPort();
+        try {
+            MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 
-        MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
+            result = userDBAdaptor.resetPassword(userId, email, newPassword);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return result;
     }

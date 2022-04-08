@@ -16,16 +16,32 @@
 
 package org.opencb.opencga.core.tools.result;
 
+import org.opencb.commons.annotations.DataField;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.api.FieldConstants;
 
 import java.util.Date;
 
 public class ToolStep {
 
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_ID_DESCRIPTION)
     private String id;
+
+    @DataField(id = "start", indexed = true,
+            description = FieldConstants.EXECUTION_RESULT_START)
     private Date start;
+
+    @DataField(id = "end", indexed = true,
+            description = FieldConstants.EXECUTION_RESULT_END)
     private Date end;
+
+    @DataField(id = "status", indexed = true,
+            description = FieldConstants.EXECUTION_RESULT_STATUS)
     private Status.Type status;
+
+    @DataField(id = "attributes", indexed = true,
+            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private ObjectMap attributes;
 
     public ToolStep() {

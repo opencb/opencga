@@ -18,7 +18,6 @@ package org.opencb.opencga.analysis.variant;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.hadoop.conf.Configuration;
 import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.Assume;
@@ -530,7 +529,7 @@ public class VariantAnalysisTest {
         assertEquals("22,1,5", variantExportParams.getRegion());
         variantExportParams.setCt("lof");
         variantExportParams.setOutputFileName("chr1-5-22");
-        variantExportParams.setOutputFormat(VariantWriterFactory.VariantOutputFormat.ENSEMBL_VEP.name());
+        variantExportParams.setOutputFileFormat(VariantWriterFactory.VariantOutputFormat.ENSEMBL_VEP.name());
         toolRunner.execute(VariantExportTool.class, variantExportParams.toObjectMap(), outDir, null, token);
     }
 

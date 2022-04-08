@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -42,7 +43,6 @@ import static org.junit.Assert.assertEquals;
 
 public class PanelManagerTest extends GenericTest {
 
-    public final static String PASSWORD = "asdf";
     private String studyFqn = "user@1000G:phase1";
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -63,12 +63,12 @@ public class PanelManagerTest extends GenericTest {
         catalogManager = catalogManagerResource.getCatalogManager();
         panelManager = catalogManager.getPanelManager();
         setUpCatalogManager(catalogManager);
-        adminToken = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+        adminToken = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
     }
 
     private void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
-        sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD).getToken();
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        sessionIdUser = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdUser).first().getId();
@@ -113,6 +113,9 @@ public class PanelManagerTest extends GenericTest {
         panelManager.importFromSource(studyFqn, "cancer-gene-census", null, sessionIdUser);
         Panel panel = panelManager.get(studyFqn, "gene-census", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(1, panel.getVersion());
+        assertEquals((int) panel.getStats().get("numberOfRegions"), panel.getVariants().size());
+        assertEquals((int) panel.getStats().get("numberOfVariants"), panel.getVariants().size());
+        assertEquals((int) panel.getStats().get("numberOfGenes"), panel.getGenes().size());
 
         DiseasePanel.RegionPanel regionPanel = new DiseasePanel.RegionPanel();
         regionPanel.setCoordinates(Collections.singletonList(new DiseasePanel.Coordinate("", "chr1:1-1000", "")));
@@ -144,6 +147,10 @@ public class PanelManagerTest extends GenericTest {
         assertEquals("ontologyTerm", updatedPanel.getDisorders().get(0).getId());
         assertEquals(1, updatedPanel.getVariants().size());
         assertEquals("variant1", updatedPanel.getVariants().get(0).getId());
+
+        assertEquals((int) updatedPanel.getStats().get("numberOfRegions"), updatedPanel.getVariants().size());
+        assertEquals((int) updatedPanel.getStats().get("numberOfVariants"), updatedPanel.getVariants().size());
+        assertEquals((int) updatedPanel.getStats().get("numberOfGenes"), updatedPanel.getGenes().size());
 
         Query query = new Query()
                 .append(PanelDBAdaptor.QueryParams.VERSION.key(), 1);

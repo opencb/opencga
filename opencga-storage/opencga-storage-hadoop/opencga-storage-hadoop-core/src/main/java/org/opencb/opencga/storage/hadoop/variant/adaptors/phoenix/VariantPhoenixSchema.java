@@ -60,6 +60,8 @@ public final class VariantPhoenixSchema {
     public static final String STUDY_SUFIX = "_ST";
     public static final byte[] STUDY_SUFIX_BYTES = Bytes.toBytes(STUDY_SUFIX);
 
+    public static final int COHORT_STATS_COLUMNS_PER_COHORT = 5;
+
     public static final String COHORT_STATS_PROTOBUF_SUFFIX = "_PB";
     public static final byte[] COHORT_STATS_PROTOBUF_SUFFIX_BYTES = Bytes.toBytes(COHORT_STATS_PROTOBUF_SUFFIX);
     public static final String COHORT_STATS_FREQ_SUFFIX = "_CF";

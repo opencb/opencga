@@ -41,6 +41,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
+        NAME("name", TEXT, ""),
         UID("uid", DECIMAL, ""),
         UUID("uuid", TEXT, ""),
         TYPE("type", TEXT, ""),

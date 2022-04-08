@@ -84,7 +84,7 @@
 {"collection": "sample", "fields": {"collection.method": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"collection.type": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {"background": true}}
-{"collection": "sample", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1, "_acl": 1}, "options": {"background": true}}
+{"collection": "sample", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"customAnnotationSets.as": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "sample", "fields": {"customAnnotationSets.vs": 1, "studyUid": 1}, "options": {"background": true}}
@@ -118,7 +118,7 @@
 {"collection": "individual", "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {"background": true}}
-{"collection": "individual", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1, "_acl": 1}, "options": {"background": true}}
+{"collection": "individual", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"customAnnotationSets.as": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "individual", "fields": {"customAnnotationSets.vs": 1, "studyUid": 1}, "options": {"background": true}}
@@ -132,6 +132,7 @@
 {"collection": "cohort", "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "cohort", "fields": {"uid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "cohort", "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
+{"collection": "cohort", "fields": {"name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "cohort", "fields": {"type": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "cohort", "fields": {"samples.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "cohort", "fields": {"numSamples": 1, "studyUid": 1}, "options": {"background": true}}
@@ -161,7 +162,7 @@
 {"collection": "family", "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {"background": true}}
-{"collection": "family", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1, "_acl": 1}, "options": {"background": true}}
+{"collection": "family", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"customAnnotationSets.as": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "family", "fields": {"customAnnotationSets.vs": 1, "studyUid": 1}, "options": {"background": true}}
@@ -187,7 +188,7 @@
 {"collection": "panel", "fields": {"_modificationDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "panel", "fields": {"status.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "panel", "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {"background": true}}
-{"collection": "panel", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1, "_acl": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {"background": true}}
 {"collection": "panel", "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
 
 {"collection": "clinical", "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
@@ -232,6 +233,7 @@
 {"collection": "interpretation", "fields": {"studyUid": 1, "_lastOfVersion": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"studyUid": 1, "release": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"locked": 1, "studyUid": 1}, "options": {"background": true}}
 
 {"collection": "audit", "fields": {"studyUuid": 1}, "options": {"background": true}}
 {"collection": "audit", "fields": {"userId": 1, "studyUuid": 1}, "options": {"background": true}}

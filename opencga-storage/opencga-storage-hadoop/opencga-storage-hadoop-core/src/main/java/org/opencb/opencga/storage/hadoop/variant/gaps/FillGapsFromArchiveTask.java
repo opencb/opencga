@@ -11,6 +11,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -40,9 +41,9 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
     public FillGapsFromArchiveTask(HBaseManager hBaseManager,
                                    String archiveTableName,
                                    StudyMetadata studyMetadata,
-                                   GenomeHelper helper,
-                                   Collection<Integer> samples, VariantStorageMetadataManager metadataManager) {
-        super(studyMetadata, metadataManager, helper, samples, false, false);
+                                   Configuration configuration,
+                                   Collection<Integer> samples, String gapsGenotype, VariantStorageMetadataManager metadataManager) {
+        super(studyMetadata, metadataManager, configuration, samples, false, false, gapsGenotype);
         this.archiveTableName = archiveTableName;
         this.hBaseManager = hBaseManager;
 
@@ -59,11 +60,13 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
 
     @Override
     public void pre() throws IOException {
+        super.pre();
         archiveTable = hBaseManager.getConnection().getTable(TableName.valueOf(archiveTableName));
     }
 
     @Override
-    public void post() throws IOException {
+    public void post() throws IOException, StorageEngineException {
+        super.post();
         archiveTable.close();
     }
 
@@ -105,7 +108,7 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
         }
 
         protected List<Variant> extractVariantsToFill() throws IOException {
-            // If there are files not in the main batch, make an specific get to that batch
+            // If there are files not in the main batch, make a specific get to that batch
             if (!otherFilesGroupByFilesBatch.isEmpty()) {
                 List<Get> gets = new ArrayList<>(otherFilesGroupByFilesBatch.size());
                 String chromosome = rowKeyFactory.extractChromosomeFromBlockId(Bytes.toString(rowKey));
@@ -189,7 +192,6 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
 
         Scan scan = AbstractFillFromArchiveTask.buildScan(regionStr, archiveRowKeyFactory.getFirstFileFromBatch(mainFileBatch), conf);
 
-        GenomeHelper helper = new GenomeHelper(conf);
         for (Integer fileId : fileIds) {
             // Scan files only from the main file batch
             if (mainFileBatch == archiveRowKeyFactory.getFileBatch(fileId)) {

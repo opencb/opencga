@@ -59,6 +59,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
+import static org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor.QueryParams.LOCKED;
 import static org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor.QueryParams.STATUS_ID;
 import static org.opencb.opencga.catalog.db.mongodb.ClinicalAnalysisMongoDBAdaptor.fixCommentsForRemoval;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -246,6 +247,23 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         return interpretation;
     }
 
+    void propagateLockedFromClinicalAnalysis(ClientSession clientSession, ClinicalAnalysis clinicalAnalysis, boolean locked)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), clinicalAnalysis.getStudyUid())
+                .append(QueryParams.CLINICAL_ANALYSIS_ID.key(), clinicalAnalysis.getId());
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key(),
+                        QueryParams.CLINICAL_ANALYSIS_ID.key()));
+        OpenCGAResult<Interpretation> result = get(clientSession, query, options);
+
+        ObjectMap parameters = new ObjectMap(LOCKED.key(), locked);
+        for (Interpretation interpretation : result.getResults()) {
+            update(clientSession, interpretation, parameters, null, null, QueryOptions.empty());
+        }
+    }
+
     @Override
     public OpenCGAResult<Interpretation> get(long interpretationUid, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -295,8 +313,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     public OpenCGAResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        logger.debug("Interpretation count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
-                MongoClient.getDefaultCodecRegistry()));
+        logger.debug("Interpretation count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(interpretationCollection.count(clientSession, bson));
     }
 
@@ -384,6 +401,9 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
             }
         }
+
+        String[] booleanParams = {LOCKED.key()};
+        filterBooleanParams(parameters, document.getSet(), booleanParams);
 
         String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, document.getSet(), acceptedParams);
@@ -864,47 +884,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         Bson bson = parseQuery(query);
         deleteVersionedModel(clientSession, bson, interpretationCollection, archiveInterpretationCollection,
                 deleteInterpretationCollection);
-
-//        // Obtain the native document to be deleted
-//        Query query = new Query()
-//                .append(QueryParams.ID.key(), interpretation.getId())
-//                .append(QueryParams.STUDY_UID.key(), studyUid)
-//                .append(Constants.ALL_VERSIONS, true);
-//        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, QueryOptions.empty())) {
-//            // Delete any documents that might have been already deleted with that id
-//            Bson bsonQuery = new Document()
-//                    .append(QueryParams.ID.key(), interpretation.getId())
-//                    .append(PRIVATE_STUDY_UID, studyUid);
-//            deleteInterpretationCollection.remove(clientSession, bsonQuery, new QueryOptions(MongoDBCollection.MULTI, true));
-//
-//            while (dbIterator.hasNext()) {
-//                Document interpretationDocument = dbIterator.next();
-//                int interpretationVersion = interpretationDocument.getInteger(QueryParams.VERSION.key());
-//
-//                // Set status
-//                nestedPut(QueryParams.INTERNAL_STATUS.key(),
-//                        getMongoDBDocument(new InterpretationStatus(InterpretationStatus.DELETED), "status"), interpretationDocument);
-//
-//                // Insert the document in the DELETE collection
-//                deleteInterpretationCollection.insert(clientSession, interpretationDocument, null);
-//                logger.debug("Inserted interpretation uid '{}' in DELETE collection", interpretation.getUid());
-//
-//                // Remove the document from the main INTERPRETATION collection
-//                bsonQuery = parseQuery(new Query()
-//                        .append(QueryParams.UID.key(), interpretationUid)
-//                        .append(QueryParams.VERSION.key(), interpretationVersion));
-//                DataResult remove = interpretationCollection.remove(clientSession, bsonQuery, null);
-//                if (remove.getNumMatches() == 0) {
-//                    throw new CatalogDBException("Interpretation " + interpretation.getUid() + " not found");
-//                }
-//                if (remove.getNumDeleted() == 0) {
-//                    throw new CatalogDBException("Interpretation " + interpretation.getUid() + " could not be deleted");
-//                }
-//            }
-//        }
-//
-//        logger.debug("Interpretation '{}({})' deleted from main INTERPRETATION collection", interpretation.getId(),
-//                interpretation.getUid());
 
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }

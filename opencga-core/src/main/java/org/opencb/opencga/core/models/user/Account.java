@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models.user;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Calendar;
@@ -25,16 +27,22 @@ import java.util.Calendar;
  */
 public class Account {
 
+    @DataField(id = "type", indexed = true, uncommentedClasses = {"AccountType"},
+            description = FieldConstants.ACCOUNT_TYPE)
     private AccountType type;
-    private String creationDate;
-    private String expirationDate;
-    private AuthenticationOrigin authentication;
 
-    public enum AccountType {
-        GUEST,
-        FULL,
-        ADMINISTRATOR
-    }
+    @DataField(id = "creationDate", indexed = true,
+            description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
+    private String creationDate;
+
+    @DataField(id = "expirationDate", indexed = true,
+            description = FieldConstants.ACCOUNT_EXPIRATION_DATE_DESCRIPTION)
+    private String expirationDate;
+
+
+    @DataField(id = "authentication", indexed = true, uncommentedClasses = {"AccountType"},
+            description = FieldConstants.ACCOUNT_AUTHENTICATION)
+    private AuthenticationOrigin authentication;
 
     public Account() {
         String creationDate = TimeUtils.getTime();
@@ -102,6 +110,12 @@ public class Account {
     public Account setAuthentication(AuthenticationOrigin authentication) {
         this.authentication = authentication;
         return this;
+    }
+
+    public enum AccountType {
+        GUEST,
+        FULL,
+        ADMINISTRATOR
     }
 
     public static class AuthenticationOrigin {

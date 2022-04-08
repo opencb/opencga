@@ -13,17 +13,19 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.core.result.CellBaseDataResponse;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
  * Created on 15/03/19.
@@ -124,6 +126,14 @@ public class CellBaseUtilsTest {
         // Test some missing variant
         assertEquals(Arrays.asList(new Variant("1:7797503:C:G"), new Variant("19:44934489:G:A")),
                 cellBaseUtils.getVariants(Arrays.asList("rs41278952", "rs_NON_EX", "rs2571174")));
+    }
+
+    @Test(timeout = 60000)
+    public void testGetMeta() throws IOException {
+        CellBaseDataResponse<ObjectMap> versions = cellBaseClient.getMetaClient().versions();
+        assertNotNull(versions);
+        assertNotNull(versions.allResults());
+        assertNotEquals(0, versions.allResults().size());
     }
 
 }

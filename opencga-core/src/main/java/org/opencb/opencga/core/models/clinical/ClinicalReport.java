@@ -1,14 +1,36 @@
 package org.opencb.opencga.core.models.clinical;
 
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
+
 public class ClinicalReport {
 
+    @DataField(id = "title", indexed = true,
+            description = FieldConstants.CLINICAL_REPORT_TITLE)
     private String title;
+
+    @DataField(id = "overview", indexed = true,
+            description = FieldConstants.CLINICAL_REPORT_OVERVIEW)
     private String overview;
+
+    @DataField(id = "discussion", indexed = true,
+            description = FieldConstants.CLINICAL_REPORT_DISCUSSION)
     private String discussion;
 
+    @DataField(id = "logo", indexed = true,
+            description = FieldConstants.CLINICAL_REPORT_LOGO)
     private String logo;
+
+    @DataField(id = "signedBy", indexed = true,
+            description = FieldConstants.CLINICAL_REPORT_SIGNED_BY)
     private String signedBy;
+
+    @DataField(id = "signature", indexed = true,
+            description = FieldConstants.CLINICAL_REPORT_SIGNATURE)
     private String signature;
+
+    @DataField(id = "date", indexed = true,
+            description = FieldConstants.CLINICAL_REPORT_DATE)
     private String date;
 
     public ClinicalReport() {

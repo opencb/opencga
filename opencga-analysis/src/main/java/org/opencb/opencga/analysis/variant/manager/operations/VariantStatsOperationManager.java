@@ -101,6 +101,29 @@ public class VariantStatsOperationManager extends OperationManager {
 
     }
 
+    public Collection<String> delete(String study, List<String> cohorts, ObjectMap params, String token)
+            throws CatalogException, StorageEngineException {
+
+        // Synchronize catalog with storage
+        CatalogStorageMetadataSynchronizer synchronizer =
+                new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager());
+        synchronizer.synchronizeCatalogStudyFromStorage(study, token);
+
+        try {
+            // Modify cohort status to "INVALID"
+            updateCohorts(study, cohorts, token, CohortStatus.INVALID, "Variant stats being deleted");
+
+            variantStorageEngine.deleteStats(study, cohorts, params);
+
+            // Modify cohort status to "NONE"
+            updateCohorts(study, cohorts, token, CohortStatus.NONE, "");
+        } catch (Exception e) {
+            throw new StorageEngineException("Error calculating statistics.", e);
+        }
+
+
+        return cohorts;
+    }
 
     protected void updateCohorts(String studyId, Collection<String> cohortIds, String sessionId, String status, String message)
             throws CatalogException {
@@ -240,7 +263,7 @@ public class VariantStatsOperationManager extends OperationManager {
         for (String cohortName : cohortNames) {
             if (!catalogCohorts.contains(cohortName)) {
                 DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams(cohortName,
-                        Enums.CohortType.COLLECTION, "", null, null, Collections.emptyList(), null, null, null), null, null, null,
+                                "", Enums.CohortType.COLLECTION, "", null, null, Collections.emptyList(), null, null, null), null, null, null,
                         sessionId);
                 logger.info("Creating cohort {}", cohortName);
                 cohorts.add(cohort.first().getId());

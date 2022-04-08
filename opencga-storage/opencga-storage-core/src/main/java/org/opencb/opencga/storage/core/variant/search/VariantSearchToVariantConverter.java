@@ -408,7 +408,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // consequence types
         String geneName = null;
         String ensGene = null;
-        if (ListUtils.isNotEmpty(variantSearchModel.getGenes())) {
+        if (CollectionUtils.isNotEmpty(variantSearchModel.getGenes())) {
             for (String name : variantSearchModel.getGenes()) {
                 if (!name.startsWith("ENS")) {
                     geneName = name;
@@ -829,9 +829,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     if (StringUtils.isNotEmpty(conseqType.getCodon())
                             || (conseqType.getCdnaPosition() != null && conseqType.getCdnaPosition() > 0)
                             || (conseqType.getCdsPosition() != null && conseqType.getCdsPosition() > 0)) {
-                        if (trans.length() == 0) {  // Sanity check
-                            logger.warn("Codon information found without Ensembl Transcript ID, variant: " + variant.getId());
-                        } else {
+                        if (trans.length() != 0) {
                             trans.append(FIELD_SEP)
                                     .append(conseqType.getCdnaPosition() == null ? 0 : conseqType.getCdnaPosition())
                                     .append(FIELD_SEP)
@@ -839,6 +837,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                                     .append(FIELD_SEP)
                                     .append(StringUtils.isNotEmpty(conseqType.getCodon()) ? conseqType.getCodon() : "");
                         }
+//                        else {  // Sanity check
+//                            logger.warn("Codon information found without Ensembl Transcript ID, variant: " + variant.getId());
+//                        }
                     }
 
                     if (conseqType.getProteinVariantAnnotation() != null) {

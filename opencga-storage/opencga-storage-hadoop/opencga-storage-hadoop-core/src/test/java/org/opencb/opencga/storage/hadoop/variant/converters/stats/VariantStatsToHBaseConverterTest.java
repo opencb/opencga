@@ -48,7 +48,6 @@ public class VariantStatsToHBaseConverterTest {
 
     private VariantStatsToHBaseConverter toHbase;
     private HBaseToVariantStatsConverter toJava;
-    private GenomeHelper genomeHelper;
 
     @Before
     public void setUp() {
@@ -58,7 +57,6 @@ public class VariantStatsToHBaseConverterTest {
         cohortIds.put("c1", 1);
         cohortIds.put("c2", 2);
 
-        genomeHelper = new GenomeHelper(new Configuration());
         toHbase = new VariantStatsToHBaseConverter(studyMetadata, cohortIds);
         toJava = new HBaseToVariantStatsConverter();
     }
