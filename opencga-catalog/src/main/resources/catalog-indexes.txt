@@ -202,6 +202,7 @@
 {"collection": "clinical", "fields": {"family.members.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"family.members.samples.uid": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"panels.uid": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "clinical", "fields": {"panelLock": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"locked": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"dueDate": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "clinical", "fields": {"disorder.id": 1, "studyUid": 1}, "options": {"background": true}}
