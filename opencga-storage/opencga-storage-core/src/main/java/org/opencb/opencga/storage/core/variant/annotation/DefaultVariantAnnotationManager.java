@@ -483,8 +483,17 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             throws VariantAnnotatorException, StorageEngineException, IOException {
         boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
         if (doLoad && doCreate) {
+            ProjectMetadata.VariantAnnotatorProgram newAnnotator;
+            List<ObjectMap> newSourceVersion;
+            try {
+                newAnnotator = variantAnnotator.getVariantAnnotatorProgram();
+                newSourceVersion = variantAnnotator.getVariantAnnotatorSourceVersion();
+            } catch (IOException e) {
+                throw new VariantAnnotatorException("Error reading current annotation metadata!", e);
+            }
+
             dbAdaptor.getMetadataManager().updateProjectMetadata(projectMetadata -> {
-                updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite);
+                updateCurrentAnnotation(variantAnnotator, projectMetadata, overwrite, newAnnotator, newSourceVersion);
                 return projectMetadata;
             });
         }
