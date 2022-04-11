@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.PanelManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -356,6 +357,10 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                     if (result.getNumMatches() == 0) {
                         throw new CatalogDBException("Panel " + panel.getId() + " not found");
                     }
+
+                    Panel updatedPanel = get(clientSession, tmpQuery, PanelManager.INCLUDE_PANEL_IDS).first();
+                    dbAdaptorFactory.getClinicalAnalysisDBAdaptor().updateClinicalAnalysisPanelReferences(clientSession, updatedPanel);
+
                     List<Event> events = new ArrayList<>();
                     if (result.getNumUpdated() == 0) {
                         events.add(new Event(Event.Type.WARNING, panel.getId(), "Panel was already updated"));

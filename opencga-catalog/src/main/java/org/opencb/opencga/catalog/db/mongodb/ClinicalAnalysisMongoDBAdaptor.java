@@ -32,7 +32,6 @@ import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ClinicalAnalysisConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.ClinicalAnalysisCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -50,6 +49,7 @@ import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -722,8 +722,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         } else {
             qOptions = new QueryOptions();
         }
+        qOptions = filterQueryOptions(qOptions, Arrays.asList(ID.key(), UID.key(), STUDY_UID.key()));
         qOptions = removeInnerProjections(qOptions, PROBAND.key());
         qOptions = removeInnerProjections(qOptions, FAMILY.key());
+        qOptions = removeInnerProjections(qOptions, PANELS.key());
+        qOptions = removeInnerProjections(qOptions, FILES.key());
         qOptions = removeInnerProjections(qOptions, QueryParams.INTERPRETATION.key());
         qOptions = removeInnerProjections(qOptions, QueryParams.SECONDARY_INTERPRETATIONS.key());
 
@@ -759,7 +762,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         Bson bsonQuery = parseQuery(query, user);
-        return groupBy(clinicalCollection, bsonQuery, fields, SampleDBAdaptor.QueryParams.ID.key(), options);
+        return groupBy(clinicalCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
     @Override
@@ -891,6 +894,102 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             return studyId instanceof Number ? ((Number) studyId).longValue() : Long.parseLong(studyId.toString());
         } else {
             throw CatalogDBException.uidNotFound("ClinicalAnalysis", clinicalAnalysisId);
+        }
+    }
+
+    /**
+     * Update Family references from any Clinical Analysis where it was used.
+     *
+     * @param clientSession Client session.
+     * @param family        Family object containing the version stored in the Clinical Analysis (before the version increment).
+     * @throws CatalogDBException CatalogDBException.
+     * @throws CatalogParameterException CatalogParameterException.
+     * @throws CatalogAuthorizationException CatalogAuthorizationException.
+     */
+    void updateClinicalAnalysisFamilyReferences(ClientSession clientSession, Family family)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        // We only update clinical analysis that are not locked. Locked ones will remain pointing to old references
+        Query query = new Query()
+                .append(QueryParams.STUDY_UID.key(), family.getStudyUid())
+                .append(QueryParams.FAMILY_UID.key(), family.getUid())
+                .append(QueryParams.LOCKED.key(), false);
+        DBIterator<ClinicalAnalysis> iterator = dbAdaptorFactory.getClinicalAnalysisDBAdaptor()
+                .iterator(clientSession, query, ClinicalAnalysisManager.INCLUDE_CATALOG_DATA);
+
+        while (iterator.hasNext()) {
+            ClinicalAnalysis clinicalAnalysis = iterator.next();
+
+            if (clinicalAnalysis.getFamily().getUid() == family.getUid()
+                    && clinicalAnalysis.getFamily().getVersion() == family.getVersion()) {
+
+                Family newFamily = clinicalAnalysis.getFamily();
+
+                // Increase family version
+                newFamily.setVersion(family.getVersion() + 1);
+
+                ObjectMap params = new ObjectMap(QueryParams.FAMILY.key(), newFamily);
+                OpenCGAResult result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().update(clientSession, clinicalAnalysis, params, null,
+                        QueryOptions.empty());
+                if (result.getNumUpdated() != 1) {
+                    throw new CatalogDBException("ClinicalAnalysis '" + clinicalAnalysis.getId() + "' could not be updated to the latest "
+                            + "family version of '" + family.getId() + "'");
+                }
+            }
+        }
+    }
+
+    /**
+     * Update Panel references from any Clinical Analysis where it was used.
+     *
+     * @param clientSession Client session.
+     * @param panel         Panel object containing the new version.
+     * @throws CatalogDBException CatalogDBException.
+     * @throws CatalogParameterException CatalogParameterException.
+     * @throws CatalogAuthorizationException CatalogAuthorizationException.
+     */
+    void updateClinicalAnalysisPanelReferences(ClientSession clientSession, Panel panel)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        // We only update clinical analysis that are not locked. Locked ones will remain pointing to old references
+        Query query = new Query()
+                .append(STUDY_UID.key(), panel.getStudyUid())
+                .append(PANELS_UID.key(), panel.getUid())
+                .append(PANEL_LOCK.key(), false)
+                .append(LOCKED.key(), false);
+        QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                PANELS_UID.key(),
+                PANELS.key() + "." + VERSION,
+                INTERPRETATION.key() + "." + InterpretationDBAdaptor.QueryParams.PANELS_UID.key(),
+                INTERPRETATION.key() + "." + InterpretationDBAdaptor.QueryParams.PANELS.key() + "." + VERSION,
+                INTERPRETATION.key() + "." + InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(),
+                INTERPRETATION.key() + "." + InterpretationDBAdaptor.QueryParams.LOCKED.key(),
+                INTERPRETATION.key() + "." + InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
+                SECONDARY_INTERPRETATIONS.key() + "." + InterpretationDBAdaptor.QueryParams.PANELS_UID.key(),
+                SECONDARY_INTERPRETATIONS.key() + "." + InterpretationDBAdaptor.QueryParams.PANELS.key() + "." + VERSION,
+                SECONDARY_INTERPRETATIONS.key() + "." + InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS_ID.key(),
+                SECONDARY_INTERPRETATIONS.key() + "." + InterpretationDBAdaptor.QueryParams.STUDY_UID.key()
+        ));
+        DBIterator<ClinicalAnalysis> iterator = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().iterator(clientSession, query, include);
+
+        while (iterator.hasNext()) {
+            ClinicalAnalysis clinicalAnalysis = iterator.next();
+
+            // Update panel from CA
+            List<Panel> panelList = new ArrayList<>(clinicalAnalysis.getPanels().size());
+            for (Panel caPanel : clinicalAnalysis.getPanels()) {
+                if (caPanel.getUid() == panel.getUid()) {
+                    panelList.add(panel);
+                } else {
+                    panelList.add(caPanel);
+                }
+            }
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(PANELS.key(), ParamUtils.BasicUpdateAction.SET);
+            QueryOptions updateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+            ObjectMap params = new ObjectMap(PANELS.key(), panelList);
+            update(clientSession, clinicalAnalysis, params, null, updateOptions);
+
+            // Update references from Interpretations
+            dbAdaptorFactory.getInterpretationDBAdaptor().updateInterpretationPanelReferences(clientSession, clinicalAnalysis, panel);
         }
     }
 

@@ -407,7 +407,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
 
         if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-            updateClinicalAnalysisFamilyReferences(clientSession, family);
+            dbAdaptorFactory.getClinicalAnalysisDBAdaptor().updateClinicalAnalysisFamilyReferences(clientSession, family);
         }
 
         return endWrite(tmpStartTime, 1, 1, events);
@@ -423,44 +423,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (CollectionUtils.isNotEmpty(removeIndividuals)) {
             dbAdaptorFactory.getCatalogIndividualDBAdaptor().updateFamilyReferences(clientSession, family.getStudyUid(),
                     removeIndividuals, family.getId(), ParamUtils.BasicUpdateAction.REMOVE);
-        }
-    }
-
-    /**
-     * Update Family references from any Clinical Analysis where it was used.
-     *
-     * @param clientSession Client session.
-     * @param family        Family object containing the version stored in the Clinical Analysis (before the version increment).
-     */
-    private void updateClinicalAnalysisFamilyReferences(ClientSession clientSession, Family family)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        // We only update clinical analysis that are not locked. Locked ones will remain pointing to old references
-        Query query = new Query()
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), family.getStudyUid())
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_UID.key(), family.getUid())
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), false);
-        DBIterator<ClinicalAnalysis> iterator = dbAdaptorFactory.getClinicalAnalysisDBAdaptor()
-                .iterator(clientSession, query, ClinicalAnalysisManager.INCLUDE_CATALOG_DATA);
-
-        while (iterator.hasNext()) {
-            ClinicalAnalysis clinicalAnalysis = iterator.next();
-
-            if (clinicalAnalysis.getFamily().getUid() == family.getUid()
-                    && clinicalAnalysis.getFamily().getVersion() == family.getVersion()) {
-
-                Family newFamily = clinicalAnalysis.getFamily();
-
-                // Increase family version
-                newFamily.setVersion(family.getVersion() + 1);
-
-                ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY.key(), newFamily);
-                OpenCGAResult result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().update(clientSession, clinicalAnalysis, params, null,
-                        QueryOptions.empty());
-                if (result.getNumUpdated() != 1) {
-                    throw new CatalogDBException("ClinicalAnalysis '" + clinicalAnalysis.getId() + "' could not be updated to the latest "
-                            + "family version of '" + family.getId() + "'");
-                }
-            }
         }
     }
 

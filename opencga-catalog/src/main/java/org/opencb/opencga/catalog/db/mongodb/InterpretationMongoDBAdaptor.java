@@ -20,6 +20,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
@@ -51,6 +52,7 @@ import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -670,7 +672,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         Query query = new Query(QueryParams.UID.key(), interpretationUid);
         Bson bsonQuery = parseQuery(query);
 
-
         UpdateDocument updateDocument = parseAndValidateUpdateParams(clientSession, parameters, query, queryOptions);
         Document updateOperation = updateDocument.toFinalUpdateDocument();
 
@@ -753,16 +754,16 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.ID.key(), interpretation.getClinicalAnalysisId())
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), interpretation.getStudyUid());
+        QueryOptions options = new QueryOptions(NATIVE_QUERY, true);
 
-        OpenCGAResult<ClinicalAnalysis> clinicalAnalysisOpenCGAResult = clinicalDBAdaptor.get(clientSession, query,
-                ClinicalAnalysisManager.INCLUDE_CLINICAL_INTERPRETATIONS);
+        OpenCGAResult<ClinicalAnalysis> clinicalAnalysisOpenCGAResult = clinicalDBAdaptor.get(clientSession, query, options);
         if (clinicalAnalysisOpenCGAResult.getNumResults() != 1) {
             throw new CatalogDBException("ClinicalAnalysis '" + interpretation.getClinicalAnalysisId() + "' not found.");
         }
         ClinicalAnalysis ca = clinicalAnalysisOpenCGAResult.first();
 
         ObjectMap params;
-        QueryOptions options = new QueryOptions();
+        options = new QueryOptions();
 
         if (ca.getInterpretation() != null && ca.getInterpretation().getUid() == interpretation.getUid()) {
             params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATION.key(), interpretation);
@@ -947,6 +948,57 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         MongoDBCollection collection = getQueryCollection(query, interpretationCollection, archiveInterpretationCollection,
                 deleteInterpretationCollection);
         return collection.iterator(clientSession, bson, null, null, qOptions);
+    }
+
+    /**
+     * Update Panel references from the Interpretations of the CA.
+     *
+     * @param clientSession Client session.
+     * @param clinicalAnalysis Clinical Analysis.
+     * @param panel         Panel object containing the new version.
+     * @throws CatalogDBException CatalogDBException.
+     * @throws CatalogParameterException CatalogParameterException.
+     * @throws CatalogAuthorizationException CatalogAuthorizationException.
+     */
+    void updateInterpretationPanelReferences(ClientSession clientSession, ClinicalAnalysis clinicalAnalysis, Panel panel)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        if (clinicalAnalysis.getInterpretation() != null) {
+            updateInterpretationPanelReferences(clientSession, clinicalAnalysis.getInterpretation(), panel);
+        }
+        if (CollectionUtils.isNotEmpty(clinicalAnalysis.getSecondaryInterpretations())) {
+            for (Interpretation secondaryInterpretation : clinicalAnalysis.getSecondaryInterpretations()) {
+                updateInterpretationPanelReferences(clientSession, secondaryInterpretation, panel);
+            }
+        }
+    }
+
+    private void updateInterpretationPanelReferences(ClientSession clientSession, Interpretation interpretation, Panel panel)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        if (interpretation.isLocked()) {
+            return;
+        }
+        if (CollectionUtils.isEmpty(interpretation.getPanels())) {
+            return;
+        }
+
+        boolean needsUpdate = false;
+        // Update panel from Interpretation
+        List<Panel> panelList = new ArrayList<>(interpretation.getPanels().size());
+        for (Panel caPanel : interpretation.getPanels()) {
+            if (caPanel.getUid() == panel.getUid()) {
+                panelList.add(panel);
+                needsUpdate = true;
+            } else {
+                panelList.add(caPanel);
+            }
+        }
+        if (needsUpdate) {
+            Map<String, Object> actionMap = new HashMap<>();
+            actionMap.put(InterpretationDBAdaptor.QueryParams.PANELS.key(), ParamUtils.BasicUpdateAction.SET);
+            QueryOptions updateOptions = new QueryOptions(Constants.ACTIONS, actionMap);
+            ObjectMap params = new ObjectMap(InterpretationDBAdaptor.QueryParams.PANELS.key(), panelList);
+            update(clientSession, interpretation, params, null, null, updateOptions);
+        }
     }
 
     @Override
