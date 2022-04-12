@@ -34,7 +34,7 @@
     <properties>
         <opencga-storage-hadoop-deps.artifactId>${artifactId}</opencga-storage-hadoop-deps.artifactId>
 
-        <hadoop.version>2.10.0-amzn-0</hadoop.version>
+        <hadoop.version>3.2.3</hadoop.version>
         <hbase.version>1.4.13</hbase.version>
         <phoenix.version>4.14.3-HBase-1.4</phoenix.version>
         <zookeeper.version>3.4.14</zookeeper.version>
