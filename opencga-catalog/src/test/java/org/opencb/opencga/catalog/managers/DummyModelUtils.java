@@ -81,7 +81,7 @@ public class DummyModelUtils {
                 .setFather(father)
                 .setMother(mother);
 
-        return new Family(id, id, null, Arrays.asList(disease1, disease2),
+        return new Family(id, id, null, null,
                 Arrays.asList(child1, child2, child3, father, mother), "", -1,
                 Collections.emptyList(), Collections.emptyMap());
     }
@@ -95,16 +95,13 @@ public class DummyModelUtils {
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father").setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "",
-                        null)))
+        Individual relFather = new Individual().setId("father").setDisorders(Arrays.asList(disease1))
                 .setSamples(Collections.singletonList(new Sample().setId("sample1")));
-        Individual relMother = new Individual().setId("mother").setDisorders(Arrays.asList(new Disorder("dis2", "dis2", "OT", null, "",
-                        null)))
+        Individual relMother = new Individual().setId("mother").setDisorders(Arrays.asList(disease2))
                 .setSamples(Arrays.asList(new Sample().setId("sample3")));
 
         Individual relChild1 = new Individual().setId("child1")
-                .setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null), new Disorder("dis2", "dis2", "OT", null,
-                        "", null)))
+                .setDisorders(Arrays.asList(disease1, disease2))
                 .setFather(father)
                 .setMother(mother)
                 .setSamples(Arrays.asList(
@@ -113,7 +110,7 @@ public class DummyModelUtils {
                 ))
                 .setParentalConsanguinity(true);
         Individual relChild2 = new Individual().setId("child2")
-                .setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null)))
+                .setDisorders(Arrays.asList(disease1))
                 .setFather(father)
                 .setMother(mother)
                 .setSamples(Arrays.asList(
@@ -122,7 +119,7 @@ public class DummyModelUtils {
                 ))
                 .setParentalConsanguinity(true);
         Individual relChild3 = new Individual().setId("child3")
-                .setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null)))
+                .setDisorders(Arrays.asList(disease1))
                 .setFather(father)
                 .setMother(mother)
                 .setSamples(Arrays.asList(
@@ -131,7 +128,7 @@ public class DummyModelUtils {
                 ))
                 .setParentalConsanguinity(true);
 
-        return new Family(id, id, null, Arrays.asList(disease1, disease2),
+        return new Family(id, id, null, null,
                 Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", -1,
                 Collections.emptyList(), Collections.emptyMap());
     }

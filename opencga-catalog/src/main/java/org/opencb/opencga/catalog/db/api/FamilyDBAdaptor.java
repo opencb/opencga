@@ -17,8 +17,6 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections4.map.LinkedMap;
-import org.opencb.biodata.models.clinical.Disorder;
-import org.opencb.biodata.models.clinical.Phenotype;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -28,11 +26,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
@@ -170,40 +168,4 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
      */
     OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
-    OpenCGAResult removeMembersFromFamily(Query query, List<Long> individualUids)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
-
-    default List<Phenotype> getAllPhenotypes(List<Individual> individualList) {
-        if (individualList == null || individualList.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        Map<String, Phenotype> phenotypeMap = new HashMap<>();
-        for (Individual individual : individualList) {
-            if (individual.getPhenotypes() != null && !individual.getPhenotypes().isEmpty()) {
-                for (Phenotype phenotype : individual.getPhenotypes()) {
-                    phenotypeMap.put(phenotype.getId(), phenotype);
-                }
-            }
-        }
-
-        return new ArrayList<>(phenotypeMap.values());
-    }
-
-    default List<Disorder> getAllDisorders(List<Individual> individualList) {
-        if (individualList == null || individualList.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        Map<String, Disorder> disorderMap = new HashMap<>();
-        for (Individual individual : individualList) {
-            if (individual.getDisorders() != null && !individual.getDisorders().isEmpty()) {
-                for (Disorder disorder : individual.getDisorders()) {
-                    disorderMap.put(disorder.getId(), disorder);
-                }
-            }
-        }
-
-        return new ArrayList<>(disorderMap.values());
-    }
 }

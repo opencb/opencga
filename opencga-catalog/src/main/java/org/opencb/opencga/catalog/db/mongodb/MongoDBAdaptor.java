@@ -173,11 +173,12 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
         // Fetch document containing update
         Document result = collection.find(session, query, QueryOptions.empty()).first();
-        result.remove("_id");
+        if (result != null) {
+            result.remove("_id");
 
-        // And insert in archive collection
-        archiveCollection.insert(session, result, QueryOptions.empty());
-
+            // Insert in archive collection
+            archiveCollection.insert(session, result, QueryOptions.empty());
+        }
         return executionResult;
     }
 
