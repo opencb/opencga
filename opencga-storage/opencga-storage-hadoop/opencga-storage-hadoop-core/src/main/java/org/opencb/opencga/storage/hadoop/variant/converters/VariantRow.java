@@ -75,13 +75,12 @@ public class VariantRow {
         return variant;
     }
 
-    public VariantAnnotation getVariantAnnotation() {
+    public VariantAnnotation getVariantAnnotation(HBaseToVariantAnnotationConverter converter) {
         if (variantAnnotation == null) {
-            HBaseToVariantAnnotationConverter c = new HBaseToVariantAnnotationConverter(GenomeHelper.COLUMN_FAMILY_BYTES, -1);
             if (result != null) {
-                variantAnnotation = c.convert(result);
+                variantAnnotation = converter.convert(result);
             } else {
-                variantAnnotation = c.convert(resultSet);
+                variantAnnotation = converter.convert(resultSet);
             }
         }
         return variantAnnotation;
