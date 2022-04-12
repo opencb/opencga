@@ -40,13 +40,16 @@ public class LocalDatasetExecutor implements DatasetExecutor {
     @Override
     public void execute(List<DatasetExecutionPlan> datasetPlanExecutionList) {
 
-        PrintUtils.println("Executing the data set plan executions: ", PrintUtils.Color.CYAN,
-                datasetPlanExecutionList.size() + " founded plans", PrintUtils.Color.WHITE);
+        if (!DatasetTestUtils.areSkippedAllExecutionPlans(datasetPlanExecutionList)) {
+            PrintUtils.println("Executing the data set plan executions: ", PrintUtils.Color.CYAN,
+                    datasetPlanExecutionList.size() + " found plans", PrintUtils.Color.WHITE);
+        }
 
         for (DatasetExecutionPlan datasetPlanExecution : datasetPlanExecutionList) {
             Map<String, List<String>> result = new HashMap<>();
             createOutputDirs(datasetPlanExecution.getEnvironment());
-            PrintUtils.println("Plan execution for ", PrintUtils.Color.CYAN, datasetPlanExecution.getDatasetExecutionFiles().size() + " files", PrintUtils.Color.WHITE);
+            PrintUtils.println("Plan execution for ", PrintUtils.Color.CYAN, datasetPlanExecution.getEnvironment().getId(), PrintUtils.Color.WHITE);
+            PrintUtils.println("Executing ", PrintUtils.Color.CYAN, datasetPlanExecution.getDatasetExecutionFiles().size() + " files", PrintUtils.Color.WHITE);
             for (DatasetExecutionFile datasetExecutionFile : datasetPlanExecution.getDatasetExecutionFiles()) {
                 List<String> dockerCommands = new ArrayList<>();
                 for (DataSetExecutionCommand command : datasetExecutionFile.getCommands()) {
@@ -62,15 +65,16 @@ public class LocalDatasetExecutor implements DatasetExecutor {
     }
 
     private void createOutputDirs(Environment env) {
-        createDir(DatasetTestUtils.getEnvironmentDir(env));
-        createDir(DatasetTestUtils.getEnvironmentOutputDir(env));
-        createDir(DatasetTestUtils.getVCFDirPath(env));
+        createDir(DatasetTestUtils.getEnvironmentDirPath(env));
+        createDir(DatasetTestUtils.getEnvironmentOutputDirPath(env));
+        createDir(DatasetTestUtils.getVCFOutputDirPath(env));
         createDir(DatasetTestUtils.getExecutionDirPath(env));
-        createDir(DatasetTestUtils.getBamDirPath(env));
-        File templatesDir = Paths.get(env.getDataset().getPath(), "templates").toFile();
+        createDir(DatasetTestUtils.getOutputBamDirPath(env));
+        File templatesDir = Paths.get(DatasetTestUtils.getInputTemplatesDirPath(env)).toFile();
         if (templatesDir.exists()) {
             try {
-                FileUtils.copyDirectory(templatesDir, Paths.get(DatasetTestUtils.getEnvironmentOutputDir(env), "templates").toFile());
+                FileUtils.copyDirectory(templatesDir, Paths.get(DatasetTestUtils.getOutputTemplatesDirPath(env)).toFile());
+                PrintUtils.println("Directory " + templatesDir.getAbsolutePath() + " copied to " + DatasetTestUtils.getOutputTemplatesDirPath(env), PrintUtils.Color.CYAN);
             } catch (IOException e) {
                 PrintUtils.printError("Error creating " + templatesDir.getAbsolutePath());
                 System.exit(0);

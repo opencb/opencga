@@ -4,7 +4,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 
-@Parameters(commandNames = {"dataset"}, commandDescription = "Execute commands")
+@Parameters(commandNames = {"dataset"}, commandDescription = "Execute related dataset commands")
 public class DatasetCommandOptions {
 
     @ParametersDelegate

@@ -11,6 +11,7 @@ import org.opencb.opencga.test.cli.options.DatasetCommandOptions;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 public class OptionsParser {
@@ -58,7 +59,8 @@ public class OptionsParser {
     }
 
     private static void loadCommands() {
-        jcommander.addCommand(new DatasetCommandOptions());
+        DatasetCommandOptions dataset = new DatasetCommandOptions();
+        jcommander.addCommand("dataset", dataset);
     }
 
     public static void printVersion() {
@@ -73,15 +75,47 @@ public class OptionsParser {
         PrintUtils.println();
         PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "       opencga-test.sh [--config configFile.yml] [--help] [--version]"));
         PrintUtils.println();
-        List<ParameterDescription> parameters = jcommander.getParameters();
+
+        JCommander currentCommand = jcommander.getCommands().get(jcommander.getParsedCommand());
+        if (currentCommand == null) {
+            currentCommand = jcommander;
+        }
+        printCommandsAndParameters(currentCommand);
+
+      /*  List<ParameterDescription> parameters = currentCommand.getParameters();
+        Map<String, String> parameterMap = new HashMap<>();
+        for (ParameterDescription parameter : parameters) {
+            parameterMap.put(parameter.getNames(), parameter.getDescription());
+        }*/
+
+        //  PrintUtils.printAsTable(parameterMap, PrintUtils.Color.YELLOW, PrintUtils.Color.GREEN, 4);
+        PrintUtils.println();
+
+    }
+
+    private static void printCommandsAndParameters(JCommander commander) {
+        // Calculate the padding needed and add 10 extra spaces to get some left indentation
+        int padding = 10 + commander.getCommands().keySet().stream().mapToInt(String::length).max().orElse(0);
+
+        List<String> cmds = commander.getCommands().keySet().stream().sorted().collect(Collectors.toList());
+        for (String key : cmds) {
+            PrintUtils.printCommandHelpFormattedString(padding, key, commander.getCommandDescription(key));
+        }
+
+        List<ParameterDescription> parameters = commander.getParameters();
         Map<String, String> parameterMap = new HashMap<>();
         for (ParameterDescription parameter : parameters) {
             parameterMap.put(parameter.getNames(), parameter.getDescription());
         }
-        PrintUtils.printAsTable(parameterMap, PrintUtils.Color.YELLOW, PrintUtils.Color.GREEN, 4);
         PrintUtils.println();
-
+        PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Parameters:", ""));
+        PrintUtils.println();
+        for (String key : parameterMap.keySet()) {
+            PrintUtils.printCommandHelpFormattedString(padding, key, parameterMap.get(key));
+        }
+        PrintUtils.printAsTable(parameterMap, PrintUtils.Color.YELLOW, PrintUtils.Color.GREEN, 4);
     }
+
 
     public static String getHelpVersionString() {
         String res = PrintUtils.getHelpVersionFormattedString("OpenCGA Test version: ", "\t" + GitRepositoryState.get().getBuildVersion() + "\n");
