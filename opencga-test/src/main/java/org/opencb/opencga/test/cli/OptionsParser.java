@@ -3,6 +3,7 @@ package org.opencb.opencga.test.cli;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterDescription;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.test.cli.executors.DatasetCommandExecutor;
@@ -12,6 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static org.opencb.commons.utils.PrintUtils.println;
 
 
 public class OptionsParser {
@@ -65,18 +68,35 @@ public class OptionsParser {
 
     public static void printVersion() {
 
-        PrintUtils.println(getHelpVersionString());
+        Map<String, String> versionMap = getVersionMap();
+        int padding = 20 + versionMap.keySet().stream().mapToInt(String::length).max().orElse(0);
+        for (String key : versionMap.keySet()) {
+            PrintUtils.printCommandHelpFormattedString(padding, key, versionMap.get(key));
+        }
+        PrintUtils.println();
+    }
+
+    private static Map<String, String> getVersionMap() {
+        Map<String, String> versionMap = new HashMap<>();
+        versionMap.put("OpenCGA Test version:", GitRepositoryState.get().getBuildVersion());
+        versionMap.put("Git version:", "" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
+        versionMap.put("Program:", "OpenCGA-test (OpenCB)");
+        versionMap.put("Description:", "Data generation application for the openCGA platform");
+        return versionMap;
     }
 
     public static void printUsage() {
-
-        PrintUtils.println();
-        PrintUtils.println(getHelpVersionString());
-        PrintUtils.println();
-        PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Usage:", "       opencga-test.sh [--config configFile.yml] [--help] [--version]"));
-        PrintUtils.println();
-
+        printLogo();
         JCommander currentCommand = jcommander.getCommands().get(jcommander.getParsedCommand());
+        printVersion();
+        PrintUtils.println();
+        if (currentCommand != null) {
+            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("    Usage:", "   opencga-test.sh " + currentCommand.getProgramName() + " [options] [--help] [--version]"));
+        } else {
+            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("    Usage:", "   opencga-test.sh [command] [options] [--help] [--version]"));
+        }
+        PrintUtils.println();
+
         if (currentCommand == null) {
             currentCommand = jcommander;
         }
@@ -93,37 +113,43 @@ public class OptionsParser {
 
     }
 
+    private static void printLogo() {
+        println("");
+        println("     ███████                                    █████████    █████████    █████████  ", PrintUtils.Color.GREEN);
+        println("   ███░░░░░███                                 ███░░░░░███  ███░░░░░███  ███░░░░░███ ", PrintUtils.Color.GREEN);
+        println("  ███     ░░███ ████████   ██████  ████████   ███     ░░░  ███     ░░░  ░███    ░███ ", PrintUtils.Color.GREEN);
+        println("  ███      ░███░░███░░███ ███░░███░░███░░███ ░███         ░███          ░███████████ ", PrintUtils.Color.GREEN);
+        println("  ███      ░███ ░███ ░███░███████  ░███ ░███ ░███         ░███    █████ ░███░░░░░███ ", PrintUtils.Color.GREEN);
+        println("  ░███     ███  ░███ ░███░███░░░   ░███ ░███ ░░███     ███░░███  ░░███  ░███    ░███ ", PrintUtils.Color.GREEN);
+        println("  ░░░███████░   ░███████ ░░██████  ████ █████ ░░█████████  ░░█████████  █████   █████", PrintUtils.Color.GREEN);
+        println("    ░░░░░░░     ░███░░░   ░░░░░░  ░░░░ ░░░░░   ░░░░░░░░░    ░░░░░░░░░  ░░░░░   ░░░░░ ", PrintUtils.Color.GREEN);
+        println("                ░███                                                                 ", PrintUtils.Color.GREEN);
+        println("                █████                                                                ", PrintUtils.Color.GREEN);
+        println("               ░░░░░                                                                 ", PrintUtils.Color.GREEN);
+        println("");
+
+    }
+
     private static void printCommandsAndParameters(JCommander commander) {
         // Calculate the padding needed and add 10 extra spaces to get some left indentation
-        int padding = 10 + commander.getCommands().keySet().stream().mapToInt(String::length).max().orElse(0);
+        int padding = 20 + commander.getCommands().keySet().stream().mapToInt(String::length).max().orElse(0);
 
         List<String> cmds = commander.getCommands().keySet().stream().sorted().collect(Collectors.toList());
-        for (String key : cmds) {
-            PrintUtils.printCommandHelpFormattedString(padding, key, commander.getCommandDescription(key));
-        }
 
+        if (CollectionUtils.isNotEmpty(cmds)) {
+            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("    Commands:", ""));
+            for (String key : cmds) {
+                PrintUtils.printCommandHelpFormattedString(padding, key, commander.getCommandDescription(key));
+            }
+            PrintUtils.println();
+        }
         List<ParameterDescription> parameters = commander.getParameters();
-        Map<String, String> parameterMap = new HashMap<>();
-        for (ParameterDescription parameter : parameters) {
-            parameterMap.put(parameter.getNames(), parameter.getDescription());
+        if (CollectionUtils.isNotEmpty(parameters)) {
+            PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("    Options:", ""));
+            for (ParameterDescription parameter : parameters) {
+                PrintUtils.printCommandHelpFormattedString(padding, parameter.getNames(), parameter.getDescription());
+            }
+            PrintUtils.println();
         }
-        PrintUtils.println();
-        PrintUtils.println(PrintUtils.getKeyValueAsFormattedString("Parameters:", ""));
-        PrintUtils.println();
-        for (String key : parameterMap.keySet()) {
-            PrintUtils.printCommandHelpFormattedString(padding, key, parameterMap.get(key));
-        }
-        PrintUtils.printAsTable(parameterMap, PrintUtils.Color.YELLOW, PrintUtils.Color.GREEN, 4);
     }
-
-
-    public static String getHelpVersionString() {
-        String res = PrintUtils.getHelpVersionFormattedString("OpenCGA Test version: ", "\t" + GitRepositoryState.get().getBuildVersion() + "\n");
-        res += PrintUtils.getHelpVersionFormattedString("Git version:", "\t\t" + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId() + "\n");
-        res += PrintUtils.getHelpVersionFormattedString("Program:", "\t\tOpenCGA-test (OpenCB)" + "\n");
-        res += PrintUtils.getHelpVersionFormattedString("Description: ", "\t\tData generation application for the openCGA platform" + "\n");
-        return res;
-    }
-
-
 }
