@@ -720,7 +720,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
 
     public static void printQuery(LocusQuery locusQuery) {
         if (locusQuery != null) {
-            logger.info("ChunkRegion: " + locusQuery.getChunkRegion());
+            logger.info("ChunkRegion: [ " + locusQuery.getChunkRegion() + " )");
             if (!locusQuery.getRegions().isEmpty()) {
                 logger.info("  - Regions: " + locusQuery.getRegions());
             }
