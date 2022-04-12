@@ -357,7 +357,8 @@
         "unprocessed_pseudogene",
         "vaultRNA",
         "vault_RNA",
-        "guide_RNA"
+        "guide_RNA",
+        "lncRNA"
       ],
       "rank": 13,
       "dependsOn": null,

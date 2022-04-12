@@ -226,7 +226,10 @@
         "TR_V_pseudogene",
         "unitary_pseudogene",
         "unprocessed_pseudogene",
-        "vaultRNA"
+        "vaultRNA",
+        "vault_RNA",
+        "guide_RNA",
+        "lncRNA"
       ],
       "rank": 9,
       "dependsOn": null,
