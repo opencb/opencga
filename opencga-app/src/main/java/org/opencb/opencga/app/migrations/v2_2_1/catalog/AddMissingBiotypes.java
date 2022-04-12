@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.migrations.v2_1_0.catalog.java;
+package org.opencb.opencga.app.migrations.v2_2_1.catalog;
 
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.UpdateOneModel;
@@ -27,7 +27,8 @@ public class AddMissingBiotypes extends MigrationTool {
     @Override
     protected void run() throws Exception {
         StudyConverter converter = new StudyConverter();
-        List<String> newBiotypes = Arrays.asList("vault_RNA", "guide_RNA", "lncRNA");
+        List<String> newBiotypes = Arrays.asList("vault_RNA", "guide_RNA", "lncRNA", "IG_LV_gene", "Mt_tRNA_pseudogene", "artifact",
+                "disrupted_domain");
         migrateCollection(MongoDBAdaptorFactory.STUDY_COLLECTION,
                 new Document(),
                 Projections.include("_id", "variableSets"),

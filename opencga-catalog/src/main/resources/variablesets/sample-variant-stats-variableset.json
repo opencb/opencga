@@ -358,7 +358,11 @@
         "vaultRNA",
         "vault_RNA",
         "guide_RNA",
-        "lncRNA"
+        "lncRNA",
+        "IG_LV_gene",
+        "Mt_tRNA_pseudogene",
+        "artifact",
+        "disrupted_domain"
       ],
       "rank": 13,
       "dependsOn": null,
