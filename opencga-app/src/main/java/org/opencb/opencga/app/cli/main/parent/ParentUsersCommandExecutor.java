@@ -70,10 +70,10 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                     res.getEvents().add(event);
                     return res;
                 }
-                CommandLineUtils.debug("Login token ::: " + getSessionManager().getSession().getToken());
+                logger.debug("Login token ::: " + getSessionManager().getSession().getToken());
                 if (response != null) {
                     List<String> studies = new ArrayList<>();
-                    CommandLineUtils.debug(response.toString());
+                    logger.debug(response.toString());
                     RestResponse<Project> projects = openCGAClient.getProjectClient().search(
                             new ObjectMap(ProjectDBAdaptor.QueryParams.OWNER.key(), user));
 

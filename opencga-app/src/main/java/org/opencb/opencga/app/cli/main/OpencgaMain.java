@@ -50,7 +50,6 @@ public class OpencgaMain {
         }
         checkLogLevel(args);
         checkMode(args);
-        CommandLineUtils.debug(Arrays.toString(args));
         logger.debug(Arrays.toString(args));
         try {
             if (Mode.SHELL.equals(getMode())) {
@@ -70,7 +69,6 @@ public class OpencgaMain {
         } else {
             setMode(Mode.CLI);
         }
-        CommandLineUtils.debug("Execution mode " + getMode());
         logger.debug("Execution mode " + getMode());
     }
 
@@ -120,7 +118,7 @@ public class OpencgaMain {
     }
 
     public static void executeShell(String[] args) {
-        CommandLineUtils.debug("Initializing Shell...  ");
+        logger.debug("Initializing Shell...  ");
 
         try {
             // If the shell launch command includes a host it is set to be used
@@ -130,7 +128,6 @@ public class OpencgaMain {
             }
             // Create a shell executor instance
             shell = new Shell(options);
-            CommandLineUtils.debug("Shell created ");
             logger.debug("Shell created ");
             // Launch execute command to begin the execution
             shell.execute();
@@ -154,21 +151,18 @@ public class OpencgaMain {
     }
 
     public static String[] parseCliParams(String[] args) {
-        CommandLineUtils.debug("Executing " + CommandLineUtils.argsToString(args));
+        logger.debug("Executing " + CommandLineUtils.argsToString(args));
         if (CommandLineUtils.isNotHelpCommand(args)) {
             if (ArrayUtils.contains(args, "--user-password")) {
                 normalizePasswordArgs(args, "--user-password");
             }
         }
-        CommandLineUtils.debug("CLI parsed params ::: " + CommandLineUtils.argsToString(args));
         logger.debug("CLI parsed params ::: " + CommandLineUtils.argsToString(args));
         String shortcut = CommandLineUtils.getShortcut(args);
         args = CommandLineUtils.processShortCuts(args);
         if (args != null) {
-            CommandLineUtils.debug("Process shortcut result ::: " + CommandLineUtils.argsToString(args));
             logger.debug("Process shortcut result ::: " + CommandLineUtils.argsToString(args));
         } else {
-            CommandLineUtils.debug("Is shortcut " + shortcut);
             logger.debug("Is shortcut " + shortcut);
         }
         return args;

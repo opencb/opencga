@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
 
 import static org.opencb.commons.utils.PrintUtils.*;
 
@@ -35,13 +34,6 @@ public class CommandLineUtils {
         return res;
     }
 
-    @Deprecated
-    private static void printLevel(String message, Level level) {
-        if (checkLevel(level)) {
-            printLog(message, null, level);
-        }
-    }
-
     public static boolean isNotHelpCommand(String[] args) {
         return !isHelpCommand(args);
     }
@@ -50,50 +42,16 @@ public class CommandLineUtils {
         return ArrayUtils.contains(args, "--help") || ArrayUtils.contains(args, "-h");
     }
 
-    @Deprecated
-    private static void printLevel(String message, Exception e, Level level) {
-        if (checkLevel(level)) {
-            printLog(message, e, level);
-        }
-    }
-
-    private static void printLog(String s) {
-        printLog(s, null);
-    }
-
-    private static void printLog(String message, Exception e) {
-        printLog(message, e, e == null ? Level.INFO : Level.SEVERE);
-    }
-
-    private static void printLog(String message, Exception e, Level logLevel) {
-        if (logLevel.equals(Level.FINE)) {
-            PrintUtils.printDebug(message);
-        } else if (logLevel.equals(Level.INFO)) {
-            PrintUtils.printInfo(message);
-        } else if (logLevel.equals(Level.WARNING)) {
-            printWarn(message);
-        } else if (logLevel.equals(Level.SEVERE)) {
-            PrintUtils.printError(message, e);
-        }
-    }
-
     public static boolean isValidUser(String user) {
         return user.matches("^[A-Za-z][A-Za-z0-9_\\-ñÑ]{2,29}$");
     }
 
-    @Deprecated
-    private static boolean checkLevel(Level level) {
-        return level.intValue() >= OpencgaMain.getLogLevel().intValue();
-    }
-
     public static void error(String message) {
         printError(message);
-//        CommandLineUtils.printLevel(message, null, Level.SEVERE);
     }
 
     public static void error(Exception e) {
         printError(e.getMessage());
-//        CommandLineUtils.printLevel(e.getMessage(), e, Level.SEVERE);
     }
 
     public static void error(String message, Exception e) {
@@ -102,11 +60,6 @@ public class CommandLineUtils {
         } else {
             printError(message + " : " + e.getMessage());
         }
-//        CommandLineUtils.printLevel(e.getMessage(), e, Level.SEVERE);
-    }
-
-    public static void debug(String s) {
-        logger.debug(s);
     }
 
     public static String[] processShortCuts(String[] args) {
