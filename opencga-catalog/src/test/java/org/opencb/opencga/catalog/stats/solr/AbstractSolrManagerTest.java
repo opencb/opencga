@@ -22,6 +22,7 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -42,8 +43,6 @@ import java.util.Arrays;
 import java.util.Collections;
 
 public class AbstractSolrManagerTest extends GenericTest {
-
-    public final static String PASSWORD = "password";
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -82,17 +81,17 @@ public class AbstractSolrManagerTest extends GenericTest {
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
-        catalogManager.getUserManager().create("owner", "Owner", "owner@mail.com", PASSWORD, "", null, Account.AccountType.FULL, null);
-        catalogManager.getUserManager().create("admin1", "Admin", "admin@mail.com", PASSWORD, "", null, Account.AccountType.GUEST, null);
-        catalogManager.getUserManager().create("user1", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.GUEST, null);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("owner", "Owner", "owner@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("admin1", "Admin", "admin@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("user1", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", TestParamConstants.PASSWORD, "ACME", null, Account.AccountType.GUEST, null);
 
-        sessionIdOwner = catalogManager.getUserManager().login("owner", PASSWORD).getToken();
-        sessionIdAdmin = catalogManager.getUserManager().login("admin1", PASSWORD).getToken();
-        sessionIdUser = catalogManager.getUserManager().login("user1", PASSWORD).getToken();
-        sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD).getToken();
-        sessionIdUser3 = catalogManager.getUserManager().login("user3", PASSWORD).getToken();
+        sessionIdOwner = catalogManager.getUserManager().login("owner", TestParamConstants.PASSWORD).getToken();
+        sessionIdAdmin = catalogManager.getUserManager().login("admin1", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser = catalogManager.getUserManager().login("user1", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser2 = catalogManager.getUserManager().login("user2", TestParamConstants.PASSWORD).getToken();
+        sessionIdUser3 = catalogManager.getUserManager().login("user3", TestParamConstants.PASSWORD).getToken();
 
         Project project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, sessionIdOwner).first();

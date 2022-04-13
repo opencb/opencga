@@ -24,6 +24,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
@@ -77,11 +78,11 @@ public class CatalogFileUtilsTest {
 
         CatalogManagerExternalResource.clearCatalog(configuration);
         catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "", true);
+        catalogManager.installCatalogDB("dummy", TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "", true);
 
         //Create USER
-        catalogManager.getUserManager().create("user", "name", "mi@mail.com", "asdf", "", null, Account.AccountType.FULL, null);
-        userSessionId = catalogManager.getUserManager().login("user", "asdf").getToken();
+        catalogManager.getUserManager().create("user", "name", "mi@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        userSessionId = catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResults().get(0).getString("sessionId");
         String projectId = catalogManager.getProjectManager().create("proj", "proj", "", "Homo sapiens",
                 null, "GRCh38", INCLUDE_RESULT, userSessionId).getResults().get(0).getId();

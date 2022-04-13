@@ -489,7 +489,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                             FamilyAclEntry.FamilyPermissions.DELETE);
                 }
 
-                // TODO: Check if the family is used in a clinical analysis. At this point, it can be deleted no matter what.
+                // Check family can be deleted
+                checkCanBeDeleted(study, family);
 
                 // Delete the family
                 result.append(familyDBAdaptor.delete(family));
@@ -509,6 +510,17 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
+    }
+
+    private void checkCanBeDeleted(Study study, Family family) throws CatalogException {
+        Query query = new Query()
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.FAMILY_UID.key(), family.getUid());
+        OpenCGAResult<ClinicalAnalysis> result = clinicalDBAdaptor.get(query, ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS);
+        if (result.getNumResults() > 0) {
+            String clinicalIds = result.getResults().stream().map(ClinicalAnalysis::getId).collect(Collectors.joining(", "));
+            throw new CatalogException("Family {" + family.getId() + "} in use in Clinical Analyses: {" + clinicalIds + "}");
+        }
     }
 
     @Override

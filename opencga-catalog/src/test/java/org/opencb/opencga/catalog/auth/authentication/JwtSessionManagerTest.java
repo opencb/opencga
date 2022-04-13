@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.impl.TextCodec;
+import io.jsonwebtoken.io.Decoders;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.test.GenericTest;
@@ -41,7 +41,7 @@ public class JwtSessionManagerTest extends GenericTest {
 
     @Before
     public void setUp() throws Exception  {
-        Key key = new SecretKeySpec(TextCodec.BASE64.decode("12345"), SignatureAlgorithm.HS256.getJcaName());
+        Key key = new SecretKeySpec(Decoders.BASE64.decode("12345"), SignatureAlgorithm.HS256.getJcaName());
         jwtSessionManager = new JwtManager(SignatureAlgorithm.HS256.getValue(), key, key);
         testCreateJWTToken();
     }
@@ -70,7 +70,7 @@ public class JwtSessionManagerTest extends GenericTest {
 
     @Test(expected = CatalogAuthenticationException.class)
     public void testInvalidSecretKey() throws CatalogAuthenticationException {
-        jwtSessionManager.setPublicKey(new SecretKeySpec(TextCodec.BASE64.decode("wrongKey"), SignatureAlgorithm.HS256.getJcaName()));
+        jwtSessionManager.setPublicKey(new SecretKeySpec(Decoders.BASE64.decode("wrongKey"), SignatureAlgorithm.HS256.getJcaName()));
         jwtSessionManager.validateToken(jwtToken);
     }
 

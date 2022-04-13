@@ -26,6 +26,7 @@ import org.opencb.opencga.core.models.panel.PanelReferenceParam;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
@@ -42,6 +43,7 @@ public class InterpretationCreateParams {
     private List<ClinicalVariant> secondaryFindings;
     private List<PanelReferenceParam> panels;
     private List<ClinicalCommentParam> comments;
+    private Boolean locked;
     private StatusParam status;
     private Map<String, Object> attributes;
 
@@ -51,7 +53,8 @@ public class InterpretationCreateParams {
     public InterpretationCreateParams(String description, String clinicalAnalysisId, String creationDate, String modificationDate,
                                       ClinicalAnalystParam analyst, InterpretationMethod method, List<ClinicalVariant> primaryFindings,
                                       List<ClinicalVariant> secondaryFindings, List<PanelReferenceParam> panels,
-                                      List<ClinicalCommentParam> comments, StatusParam status, Map<String, Object> attributes) {
+                                      List<ClinicalCommentParam> comments, StatusParam status, Boolean locked,
+                                      Map<String, Object> attributes) {
         this.description = description;
         this.clinicalAnalysisId = clinicalAnalysisId;
         this.creationDate = creationDate;
@@ -63,6 +66,7 @@ public class InterpretationCreateParams {
         this.panels = panels;
         this.comments = comments;
         this.status = status;
+        this.locked = locked;
         this.attributes = attributes;
     }
 
@@ -78,6 +82,7 @@ public class InterpretationCreateParams {
                         ? interpretation.getComments().stream().map(ClinicalCommentParam::of).collect(Collectors.toList())
                         : null,
                 StatusParam.of(interpretation.getStatus()),
+                interpretation.isLocked(),
                 interpretation.getAttributes());
     }
 
@@ -95,6 +100,7 @@ public class InterpretationCreateParams {
         sb.append(", panels=").append(panels);
         sb.append(", comments=").append(comments);
         sb.append(", status=").append(status);
+        sb.append(", locked=").append(locked);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -102,7 +108,7 @@ public class InterpretationCreateParams {
 
     public Interpretation toClinicalInterpretation() {
         return new Interpretation(null, description, clinicalAnalysisId, analyst != null ? analyst.toClinicalAnalyst() : null, method,
-                creationDate, modificationDate, primaryFindings, secondaryFindings,
+                creationDate, modificationDate,  Objects.requireNonNullElse(locked, false), primaryFindings, secondaryFindings,
                 panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
                 status != null ? status.toStatus() : null, attributes);
@@ -208,6 +214,15 @@ public class InterpretationCreateParams {
 
     public InterpretationCreateParams setStatus(StatusParam status) {
         this.status = status;
+        return this;
+    }
+
+    public Boolean getLocked() {
+        return locked;
+    }
+
+    public InterpretationCreateParams setLocked(Boolean locked) {
+        this.locked = locked;
         return this;
     }
 

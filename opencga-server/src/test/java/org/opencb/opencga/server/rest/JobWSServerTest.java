@@ -18,7 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
-import org.opencb.opencga.catalog.managers.CatalogManagerTest;
+import org.opencb.opencga.TestParamConstants;
 
 import javax.ws.rs.client.WebTarget;
 
@@ -51,7 +51,7 @@ public class JobWSServerTest {
     public void init() throws Exception {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", CatalogManagerTest.PASSWORD).getToken();
+        sessionId = OpenCGAWSServer.catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD).getToken();
     }
 
     @After

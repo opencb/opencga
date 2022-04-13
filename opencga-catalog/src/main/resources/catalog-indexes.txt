@@ -233,6 +233,7 @@
 {"collection": "interpretation", "fields": {"studyUid": 1, "_lastOfVersion": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {"background": true}}
 {"collection": "interpretation", "fields": {"studyUid": 1, "release": 1}, "options": {"background": true}}
+{"collection": "interpretation", "fields": {"locked": 1, "studyUid": 1}, "options": {"background": true}}
 
 {"collection": "audit", "fields": {"studyUuid": 1}, "options": {"background": true}}
 {"collection": "audit", "fields": {"userId": 1, "studyUuid": 1}, "options": {"background": true}}
