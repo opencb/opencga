@@ -14,16 +14,43 @@ public class RestParameter {
      * Param type. Either query, path or body.
      */
     private ParamType param;
+    /**
+     * Parent param name. Useful for inner params.
+     */
     private String parentParamName;
+    /**
+     * High level param type.
+     *
+     * - enum
+     * - string
+     * - boolean
+     * - object
+     * - class.getSimpleName().toLowerCase()
+     */
     private String type;
+    /**
+     * Java class of this value.
+     */
     private String typeClass;
     private boolean required;
     private String defaultValue;
     private String description;
+    /**
+     * Inner fields for object type models.
+     */
     private List<RestParameter> data;
     private String allowedValues;
     private boolean complex;
+    /**
+     * Canonical type with generics.
+     * e.g.
+     *  - java.util.List<java.lang.String>
+     *  - java.util.Map<java.lang.String,java.lang.Object>
+     */
     private String genericType;
+    /**
+     * Flattened param. This param has a parent param.
+     */
     private boolean innerParam;
 
     public boolean isStringList() {

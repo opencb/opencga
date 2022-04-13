@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import com.fasterxml.jackson.databind.ser.BeanSerializer;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.annotations.DataField;
@@ -66,6 +65,7 @@ public class RestApiParser {
 
         // Prepare Jackson to create JSON pretty string
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         String restApiJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(restApi);
 
         // Write string to file
@@ -174,73 +174,40 @@ public class RestApiParser {
                     }
 
                     // 4.3 Get type in lower case except for 'body' param
-                    List<RestParameter> bodyParams = new ArrayList<>();
-                    String type = methodParameter.getType().getName();
-                    String typeClass = type;
-                    if (typeClass.contains(".")) {
-                        String[] split = typeClass.split("\\.");
-                        type = split[split.length - 1];
-                        if (restParameter.getParam() != ParamType.BODY) {
-                            // 4.3.1 Process path and query parameters
-                            type = type.toLowerCase();
-
-                            // Complex types here can only be are enums
-                            if (type.contains("$")) {
-                                type = "enum";
-                            }
+                    Class<?> typeClass = methodParameter.getType();
+                    final String type;
+                    if (restParameter.getParam() != ParamType.BODY) {
+                        // 4.3.1 Process path and query parameters
+                        if (typeClass.isEnum()) {
+                            type = "enum";
                         } else {
-                            // 4.3.2 Process body parameters
-                            type = "object";
-                            try {
-                                // Get all body properties using Jackson
-                                Class<?> aClass = Class.forName(typeClass);
-                                List<BeanPropertyDefinition> declaredFields = getPropertyDefinitions(aClass);
-
-                                for (BeanPropertyDefinition declaredField : declaredFields) {
-                                    Stack<Class<?>> stackClasses = new Stack<>();
-                                    stackClasses.add(aClass);
-                                    RestParameter innerParam = getParameter(variablePrefix, "", declaredField, stackClasses);
-                                    // FIXME: Should we remove this artificial "flattening" ?
-                                    if (innerParam.isComplex()
-                                            && !innerParam.isList()
-                                            && !innerParam.getType().equals("enum")
-                                            && !innerParam.getTypeClass().contains("$")) {
-                                        // FIXME: Why discarding params with "$" ?  Why discarding inner classes?
-                                        // FIXME: Get more than one level here
-                                        String classAndPackageName = StringUtils.removeEnd(innerParam.getTypeClass(), ";");
-                                        Class<?> cls = Class.forName(classAndPackageName);
-                                        List<BeanPropertyDefinition> nestedProperties = getPropertyDefinitions(cls);
-                                        List<RestParameter> complexParams = new ArrayList<>();
-                                        for (BeanPropertyDefinition field : nestedProperties) {
-                                            RestParameter complexParam = getParameter(variablePrefix, declaredField.getName(), field);
-                                            // FIXME: Why? This is wrong. It's using the genericType field to specify the parent type
-                                            complexParam.setGenericType(declaredField.getRawPrimaryType().getName());
-                                            complexParam.setInnerParam(true);
-                                            complexParams.add(complexParam);
-                                        }
-                                        if (CollectionUtils.isNotEmpty(complexParams)) {
-                                            bodyParams.addAll(complexParams);
-                                        }
-                                    }
-
-                                    bodyParams.add(innerParam);
-                                }
-                            } catch (ClassNotFoundException e) {
-                                logger.error("Error processing: " + typeClass, e);
-                            }
+                            type = typeClass.getSimpleName().toLowerCase();
                         }
+                    } else {
+                        // 4.3.2 Process body parameters
+                        type = "object";
+
+                        // Get all body properties using Jackson
+                        List<BeanPropertyDefinition> declaredFields = getPropertyDefinitions(typeClass);
+                        List<RestParameter> bodyParams = new ArrayList<>(declaredFields.size());
+
+                        for (BeanPropertyDefinition declaredField : declaredFields) {
+                            RestParameter bodyParam = getRestParameter(variablePrefix, declaredField);
+                            // FIXME: Should we remove this artificial "flattening" ? It's redundant
+                            bodyParams.addAll(flattenInnerParams(variablePrefix, bodyParam));
+                            bodyParams.add(bodyParam);
+                        }
+                        restParameter.setData(bodyParams);
                     }
+
 
                     // 4.4 Set all collected vales and add REST parameter to endpoint
                     restParameter.setType(type);
-                    restParameter.setTypeClass(typeClass.endsWith(";") ? typeClass : typeClass + ";");
+                    restParameter.setTypeClass(typeClass.getName() + ";");
                     restParameter.setAllowedValues(apiParam.allowableValues());
                     restParameter.setRequired(apiParam.required() || restParameter.getParam() == ParamType.PATH);
                     restParameter.setDefaultValue(apiParam.defaultValue());
                     restParameter.setDescription(apiParam.value());
-                    if (!bodyParams.isEmpty()) {
-                        restParameter.setData(bodyParams);
-                    }
                     restParameters.add(restParameter);
                 }
             }
@@ -255,6 +222,34 @@ public class RestApiParser {
         return restCategory;
     }
 
+    private List<RestParameter> flattenInnerParams(String variablePrefix, RestParameter param) {
+        // FIXME: Should we remove this artificial "flattening" ? It's redundant
+        if (param.isComplex()
+                && !param.isList()
+                && !param.getType().equals("enum")
+                && !param.getTypeClass().contains("$")) {
+            // FIXME: Why discarding params with "$" ?  Why discarding inner classes?
+            String classAndPackageName = StringUtils.removeEnd(param.getTypeClass(), ";");
+            Class<?> cls;
+            try {
+                cls = Class.forName(classAndPackageName);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+            List<BeanPropertyDefinition> nestedProperties = getPropertyDefinitions(cls);
+            List<RestParameter> innerParams = new ArrayList<>();
+            for (BeanPropertyDefinition field : nestedProperties) {
+                RestParameter innerParam = getRestParameter(variablePrefix, field, param.getName());
+                // FIXME: Why? This is wrong. It's using the genericType field to specify the parent type
+                innerParam.setGenericType(StringUtils.removeEnd(param.getTypeClass(), ";"));
+                innerParam.setInnerParam(true);
+                innerParams.add(innerParam);
+            }
+            return innerParams;
+        }
+        return Collections.emptyList();
+    }
+
     private List<BeanPropertyDefinition> getPropertyDefinitions(Class<?> aClass) {
         JavaType javaType = objectMapper.constructType(aClass);
         BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(javaType);
@@ -266,56 +261,60 @@ public class RestApiParser {
         return properties;
     }
 
-    private RestParameter getParameter(String variablePrefix, String parentParamName, BeanPropertyDefinition property) {
-        return getParameter(variablePrefix, parentParamName, property, new Stack<>());
+    private RestParameter getRestParameter(String variablePrefix, BeanPropertyDefinition property) {
+        return getRestParameter(variablePrefix, property, "");
     }
 
-    private RestParameter getParameter(String variablePrefix, String parentParamName, BeanPropertyDefinition property,
-                                       Stack<Class<?>> stackClasses) {
+    private RestParameter getRestParameter(String variablePrefix, BeanPropertyDefinition property, String parentParamName) {
+        return getRestParameter(variablePrefix, property, parentParamName, new Stack<>());
+    }
+
+    private RestParameter getRestParameter(String variablePrefix, BeanPropertyDefinition property, String parentParamName,
+                                           Stack<Class<?>> stackClasses) {
         Class<?> propertyClass = property.getRawPrimaryType();
 
-        RestParameter innerParam = new RestParameter();
-        innerParam.setName(property.getName());
-        innerParam.setParam(ParamType.BODY);
-        innerParam.setParentParamName(parentParamName);
-        innerParam.setTypeClass(propertyClass.getName() + ";");
-        innerParam.setRequired(isRequired(property));
+        RestParameter param = new RestParameter();
+        param.setName(property.getName());
+        param.setParam(ParamType.BODY);
+        param.setParentParamName(parentParamName);
+        param.setTypeClass(propertyClass.getName() + ";");
+        param.setRequired(isRequired(property));
 //        innerParam.setDefaultValue(property.getMetadata().getDefaultValue());
-        innerParam.setDefaultValue("");
-        innerParam.setComplex(!CommandLineUtils.isPrimitiveType(propertyClass.getName()));
-        innerParam.setDescription(getDescriptionField(variablePrefix, property));
+        param.setDefaultValue("");
+        param.setComplex(!CommandLineUtils.isPrimitiveType(propertyClass.getName()));
+        param.setDescription(getDescriptionField(variablePrefix, property));
 
         if (propertyClass.isEnum()) {
             // The param is an Enum
-            innerParam.setType("enum");
-            innerParam.setAllowedValues(Arrays.stream(propertyClass.getEnumConstants())
+            param.setType("enum");
+            param.setAllowedValues(Arrays.stream(propertyClass.getEnumConstants())
                     .map(Object::toString)
                     .collect(Collectors.joining(" ")));
         } else {
-            innerParam.setType(propertyClass.getSimpleName());
-            innerParam.setAllowedValues("");
+            param.setType(propertyClass.getSimpleName());
+            param.setAllowedValues("");
 //            if (CommandLineUtils.isBasicType(propertyClass.getName())) {
 //                System.out.println("innerParam = " + innerParam);
 //            }
-            if (innerParam.isCollection()) {
+            if (param.isCollection()) {
 //                innerParam.setGenericType(property.getPrimaryType().getContentType().getRawClass().getName());
-                innerParam.setGenericType(property.getPrimaryType().toCanonical());
+                param.setGenericType(property.getPrimaryType().toCanonical());
             } else if (isBean(propertyClass)) {
 //                innerParam.setType("object");
                 // Fill nested "data"
                 if (!stackClasses.contains(propertyClass)) {
                     List<BeanPropertyDefinition> properties = getPropertyDefinitions(propertyClass);
-                    innerParam.setData(new ArrayList<>(properties.size()));
+                    param.setData(new ArrayList<>(properties.size()));
                     stackClasses.add(propertyClass);
                     for (BeanPropertyDefinition propertyDefinition : properties) {
-                        innerParam.getData().add(getParameter(variablePrefix + "." + property.getName(), property.getName(), propertyDefinition, stackClasses));
+                        param.getData().add(getRestParameter(variablePrefix + "." + property.getName(), propertyDefinition, property.getName(), stackClasses));
                     }
                     stackClasses.remove(propertyClass);
                 } // Else : This field was already seen
             }
         }
 
-        return innerParam;
+        return param;
     }
 
     /**
