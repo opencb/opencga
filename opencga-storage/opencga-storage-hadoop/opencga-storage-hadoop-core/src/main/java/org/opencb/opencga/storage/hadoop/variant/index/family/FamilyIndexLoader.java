@@ -48,8 +48,11 @@ public class FamilyIndexLoader {
         if (trios.isEmpty()) {
             throw new StorageEngineException("Undefined family trios");
         }
+
         int studyId = metadataManager.getStudyId(study);
         int version = sampleIndexDBAdaptor.getSchemaFactory().getSampleIndexConfigurationLatest(studyId, true).getVersion();
+        sampleIndexDBAdaptor.createTableIfNeeded(studyId, version, options);
+
         options.put(FamilyIndexDriver.SAMPLE_INDEX_VERSION, version);
         options.put(FamilyIndexDriver.OUTPUT, sampleIndexDBAdaptor.getSampleIndexTableName(studyId, version));
         Iterator<List<String>> iterator = trios.iterator();
