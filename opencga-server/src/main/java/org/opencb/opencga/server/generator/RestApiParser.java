@@ -296,25 +296,44 @@ public class RestApiParser {
 //            if (CommandLineUtils.isBasicType(propertyClass.getName())) {
 //                System.out.println("innerParam = " + innerParam);
 //            }
-            if (param.isCollection()) {
+            if (Collection.class.isAssignableFrom(propertyClass)) {
 //                innerParam.setGenericType(property.getPrimaryType().getContentType().getRawClass().getName());
                 param.setGenericType(property.getPrimaryType().toCanonical());
-            } else if (isBean(propertyClass)) {
-//                innerParam.setType("object");
-                // Fill nested "data"
-                if (!stackClasses.contains(propertyClass)) {
-                    List<BeanPropertyDefinition> properties = getPropertyDefinitions(propertyClass);
-                    param.setData(new ArrayList<>(properties.size()));
-                    stackClasses.add(propertyClass);
-                    for (BeanPropertyDefinition propertyDefinition : properties) {
-                        param.getData().add(getRestParameter(variablePrefix + "." + property.getName(), propertyDefinition, property.getName(), stackClasses));
-                    }
-                    stackClasses.remove(propertyClass);
-                } // Else : This field was already seen
+                JavaType contentType = property.getPrimaryType().getContentType();
+                if (isBean(contentType.getRawClass())) {
+                    param.setData(getInnerParams(variablePrefix, property, stackClasses, contentType.getRawClass()));
+                }
+            } else if (Map.class.isAssignableFrom(propertyClass)) {
+//                innerParam.setGenericType(property.getPrimaryType().getContentType().getRawClass().getName());
+                param.setGenericType(property.getPrimaryType().toCanonical());
+                JavaType contentType = property.getPrimaryType().getContentType();
+                if (isBean(contentType.getRawClass())) {
+                    param.setData(getInnerParams(variablePrefix, property, stackClasses, contentType.getRawClass()));
+                }
+            } else {
+                if (isBean(propertyClass)) {
+//                param.setType("object");
+                    param.setData(getInnerParams(variablePrefix, property, stackClasses, propertyClass));
+                }
             }
         }
 
         return param;
+    }
+
+    private List<RestParameter> getInnerParams(String variablePrefix, BeanPropertyDefinition property, Stack<Class<?>> stackClasses, Class<?> propertyClass) {
+        List<RestParameter> data = null;
+        // Fill nested "data"
+        if (!stackClasses.contains(propertyClass)) {
+            List<BeanPropertyDefinition> properties = getPropertyDefinitions(propertyClass);
+            data = new ArrayList<>(properties.size());
+            stackClasses.add(propertyClass);
+            for (BeanPropertyDefinition propertyDefinition : properties) {
+                data.add(getRestParameter(variablePrefix + "." + property.getName(), propertyDefinition, property.getName(), stackClasses));
+            }
+            stackClasses.remove(propertyClass);
+        } // Else : This field was already seen
+        return data;
     }
 
     /**
