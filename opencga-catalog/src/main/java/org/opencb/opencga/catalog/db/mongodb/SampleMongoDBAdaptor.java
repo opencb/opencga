@@ -378,6 +378,17 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return endWrite(tmpStartTime, 1, 1, events);
     }
 
+    void updateIndividualFromSampleCollection(ClientSession clientSession, long studyId, long sampleUid, String individualId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        ObjectMap params = new ObjectMap(QueryParams.INDIVIDUAL_ID.key(), individualId);
+        Document update = parseAndValidateUpdateParams(clientSession, params, null, QueryOptions.empty()).toFinalUpdateDocument();
+        Bson query = parseQuery(new Query()
+                .append(QueryParams.STUDY_UID.key(), studyId)
+                .append(QueryParams.UID.key(), sampleUid));
+
+        sampleCollection.update(clientSession, query, update, null);
+    }
+
     void updateCohortReferences(ClientSession clientSession, long studyUid, List<Long> sampleUids, String cohortId,
                                 ParamUtils.BasicUpdateAction action)
             throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {

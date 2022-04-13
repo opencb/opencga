@@ -24,6 +24,7 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -76,6 +77,8 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String INTERNAL_DELIMITER = "__";
 
     public static final String NATIVE_QUERY = "nativeQuery";
+
+    private final int BATCH_SIZE = 500;
 
     // Possible update actions
     static final String SET = "SET";
@@ -166,19 +169,31 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         // Increment version from main collection
         Bson versionInc = Updates.inc(VERSION, 1);
-        collection.update(session, query, versionInc, QueryOptions.empty());
+        QueryOptions options = new QueryOptions(MongoDBCollection.MULTI, true);
+        collection.update(session, query, versionInc, options);
 
         // Execute update
         T executionResult = body.execute();
 
         // Fetch document containing update
-        Document result = collection.find(session, query, QueryOptions.empty()).first();
-        if (result != null) {
+        options = new QueryOptions(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
+        MongoDBIterator<Document> iterator = collection.iterator(session, query, null, null, options);
+        List<Document> documentList = new ArrayList<>(BATCH_SIZE);
+        while (iterator.hasNext()) {
+            Document result = iterator.next();
             result.remove("_id");
-
-            // Insert in archive collection
-            archiveCollection.insert(session, result, QueryOptions.empty());
+            if (documentList.size() >= BATCH_SIZE) {
+                // Insert in archive collection
+                archiveCollection.insert(session, documentList, QueryOptions.empty());
+                documentList.clear();
+            }
+            documentList.add(result);
         }
+        if (!documentList.isEmpty()) {
+            // Insert remaining documents in archive collection
+            archiveCollection.insert(session, documentList, QueryOptions.empty());
+        }
+
         return executionResult;
     }
 
