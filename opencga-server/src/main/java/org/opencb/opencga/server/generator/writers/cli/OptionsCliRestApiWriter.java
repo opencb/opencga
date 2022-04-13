@@ -24,6 +24,8 @@ import org.opencb.opencga.server.generator.models.RestCategory;
 import org.opencb.opencga.server.generator.models.RestEndpoint;
 import org.opencb.opencga.server.generator.models.RestParameter;
 import org.opencb.opencga.server.generator.writers.ParentClientRestApiWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -31,6 +33,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
+
+    protected static Logger logger = LoggerFactory.getLogger(OptionsCliRestApiWriter.class);
 
     public OptionsCliRestApiWriter(RestApi restApi, CommandLineConfiguration config) {
         super(restApi, config);
@@ -46,7 +50,10 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("import com.beust.jcommander.JCommander;\n");
         sb.append("import com.beust.jcommander.Parameter;\n");
         sb.append("import com.beust.jcommander.Parameters;\n");
+        sb.append("import com.beust.jcommander.DynamicParameter;\n");
         sb.append("import com.beust.jcommander.ParametersDelegate;\n\n");
+        sb.append("import java.util.HashMap;\n");
+        sb.append("import java.util.Map;\n");
         sb.append("import java.util.List;\n\n");
         if (categoryConfig.isOptionExtended()) {
             sb.append("import org.opencb.opencga.app.cli.main.parent."
@@ -202,6 +209,20 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                             sb.append("        public " + getValidValue(bodyRestParameter.getType()) + " "
                                                     + getVariableName(bodyRestParameter) + ";\n");
                                             sb.append("    \n");
+                                        } else if (bodyRestParameter.getType().equals("Map") || bodyRestParameter.getType().equals("ObjectMap")) {
+                                            String names = getShortCuts(bodyRestParameter, config);
+                                            sb.append("        @DynamicParameter(names = {" + names + "}, " +
+                                                    "description"
+                                                    + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + ". Use: " + names.split(", ")[0].replace("\"", "") + " key=value\", required = "
+                                                    + (bodyRestParameter.isRequired() || isMandatory(commandName,
+                                                    getVariableName(bodyRestParameter))) + ")\n");
+
+                                            sb.append("        public " + getValidValue(bodyRestParameter.getType()) + " "
+                                                    + getVariableName(bodyRestParameter) + " = new HashMap<>(); //Dynamic parameters must be initialized;\n");
+                                            sb.append("    \n");
+                                        } else {
+                                            logger.warn("Skipping parameter '{}' type '{}' at command '{} {}'",
+                                                    bodyRestParameter.getName(), bodyRestParameter.getType(), config.getCommandName(), commandName);
                                         }
                                     }
                                 }
