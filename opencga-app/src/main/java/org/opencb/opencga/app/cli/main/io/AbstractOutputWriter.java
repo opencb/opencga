@@ -68,7 +68,7 @@ public abstract class AbstractOutputWriter {
         if (ListUtils.isNotEmpty(dataResponse.getEvents())) {
             for (Event event : dataResponse.getEvents()) {
                 if (event.getType() == Event.Type.ERROR) {
-                    CommandLineUtils.printLog(event.getMessage(), new Exception());
+                    CommandLineUtils.error(event.getMessage());
                     errors = true;
                 }
             }

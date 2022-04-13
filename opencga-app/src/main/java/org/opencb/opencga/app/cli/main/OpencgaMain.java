@@ -50,7 +50,7 @@ public class OpencgaMain {
         }
         checkLogLevel(args);
         checkMode(args);
-        CommandLineUtils.printLog(Arrays.toString(args));
+        CommandLineUtils.debug(Arrays.toString(args));
         logger.debug(Arrays.toString(args));
         try {
             if (Mode.SHELL.equals(getMode())) {
@@ -59,7 +59,7 @@ public class OpencgaMain {
                 executeCli(args);
             }
         } catch (Exception e) {
-            CommandLineUtils.error("Failed to initialize OpenCGA CLI " + e.getMessage(), e);
+            CommandLineUtils.error("Failed to initialize OpenCGA CLI", e);
             logger.error("Failed to initialize OpenCGA CLI " + e.getMessage(), e);
         }
     }
@@ -70,7 +70,7 @@ public class OpencgaMain {
         } else {
             setMode(Mode.CLI);
         }
-        CommandLineUtils.printLog("Execution mode " + getMode());
+        CommandLineUtils.debug("Execution mode " + getMode());
         logger.debug("Execution mode " + getMode());
     }
 
@@ -120,7 +120,7 @@ public class OpencgaMain {
     }
 
     public static void executeShell(String[] args) {
-        CommandLineUtils.printLog("Initializing Shell...  ");
+        CommandLineUtils.debug("Initializing Shell...  ");
 
         try {
             // If the shell launch command includes a host it is set to be used
@@ -135,10 +135,10 @@ public class OpencgaMain {
             // Launch execute command to begin the execution
             shell.execute();
         } catch (CatalogAuthenticationException e) {
-            CommandLineUtils.printLog("Failed to initialize shell", e);
+            CommandLineUtils.error("Failed to initialize shell", e);
             logger.error("Failed to initialize shell", e);
         } catch (Exception e) {
-            CommandLineUtils.printLog("Failed to execute shell", e);
+            CommandLineUtils.error("Failed to execute shell", e);
             logger.error("Failed to execute shell", e);
         }
     }
@@ -154,7 +154,7 @@ public class OpencgaMain {
     }
 
     public static String[] parseCliParams(String[] args) {
-        CommandLineUtils.printLog("Executing " + CommandLineUtils.argsToString(args));
+        CommandLineUtils.debug("Executing " + CommandLineUtils.argsToString(args));
         if (CommandLineUtils.isNotHelpCommand(args)) {
             if (ArrayUtils.contains(args, "--user-password")) {
                 normalizePasswordArgs(args, "--user-password");

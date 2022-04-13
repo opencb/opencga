@@ -158,9 +158,7 @@ public class Shell extends OpencgaCommandExecutor {
         println("");
         println("");
         println("");
-        if (!OpencgaMain.getLogLevel().equals(Level.OFF)) {
-            CommandLineUtils.printLog("Opencga is running in " + OpencgaMain.getLogLevel() + " mode");
-        }
+        CommandLineUtils.debug("Opencga is running in " + OpencgaMain.getLogLevel() + " mode");
         println("");
         println("");
         println("");
@@ -173,7 +171,7 @@ public class Shell extends OpencgaCommandExecutor {
 
 
     public String[] parseParams(String[] args) throws CatalogAuthenticationException {
-        CommandLineUtils.printLog("Executing " + String.join(" ", args));
+        CommandLineUtils.debug("Executing " + String.join(" ", args));
         if (ArrayUtils.contains(args, "--host")) {
             printDebug("To change host you must exit the shell and launch it again with the --host parameter.");
             return null;
@@ -211,9 +209,9 @@ public class Shell extends OpencgaCommandExecutor {
                 try {
                     RestResponse<Study> res = openCGAClient.getStudyClient().info(arg, new ObjectMap());
                     if (res.allResultsSize() > 0) {
-                        CommandLineUtils.printLog("Validated study " + arg);
+                        CommandLineUtils.debug("Validated study " + arg);
                         getSessionManager().getSession().setCurrentStudy(res.response(0).getResults().get(0).getFqn());
-                        CommandLineUtils.printLog("Validated study " + arg);
+                        CommandLineUtils.debug("Validated study " + arg);
                         getSessionManager().saveSession();
                         println(getKeyValueAsFormattedString("Current study is: ",
                                 getSessionManager().getSession().getCurrentStudy()));

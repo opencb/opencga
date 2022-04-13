@@ -60,8 +60,8 @@ public class CommandProcessor {
                                     commandExecutor.getSessionManager().saveSession();
                                     loadSessionStudies(commandExecutor);
                                 } catch (Exception ex) {
-                                    CommandLineUtils.error("Execution error: " + ex.getMessage(), ex);
-                                    logger.error("Execution error: " + ex.getMessage(), ex);
+                                    CommandLineUtils.error("Execution error", ex);
+                                    logger.error("Execution error", ex);
                                 }
                             } else {
                                 cliOptionsParser.printUsage();
