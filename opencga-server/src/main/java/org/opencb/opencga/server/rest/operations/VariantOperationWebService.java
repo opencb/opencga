@@ -85,14 +85,14 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response variantConfigure(
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = "Configuration params to update") ObjectMap params) {
+            @ApiParam(value = "Configuration params to update") VariantConfigureParams params) {
         return run(() -> {
             ObjectMap newConfiguration;
             StopWatch stopWatch = StopWatch.createStarted();
             if (StringUtils.isNotEmpty(study)) {
-                newConfiguration = variantManager.configureStudy(study, params, token);
+                newConfiguration = variantManager.configureStudy(study, params.getConfiguration(), token);
             } else {
-                newConfiguration = variantManager.configureProject(project, params, token);
+                newConfiguration = variantManager.configureProject(project, params.getConfiguration(), token);
             }
             return new DataResult<>()
                     .setResults(Collections.singletonList(newConfiguration))

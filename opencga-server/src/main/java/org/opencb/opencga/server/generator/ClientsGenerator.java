@@ -37,7 +37,7 @@ public class ClientsGenerator {
     private static CommandLineConfiguration config;
 
     public static void main(String[] args) {
-        List<Class> classes = new ArrayList<>();
+        List<Class<?>> classes = new ArrayList<>();
         classes.add(UserWSServer.class);
         classes.add(ProjectWSServer.class);
         classes.add(StudyWSServer.class);

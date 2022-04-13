@@ -112,7 +112,7 @@ public abstract class ParentClientRestApiWriter {
 
         validTypes = new HashMap<>();
         validTypes.put("String", "String");
-        validTypes.put("Map", "Map");
+        validTypes.put("Map", "Map<String, ?>");
         validTypes.put("string", "String");
         validTypes.put("object", "Object");
         validTypes.put("Object", "Object");
@@ -123,7 +123,7 @@ public abstract class ParentClientRestApiWriter {
         validTypes.put("enum", "String");
         validTypes.put("long", "Long");
         validTypes.put("Long", "Long");
-        validTypes.put("ObjectMap", "ObjectMap");
+        validTypes.put("ObjectMap", "Map<String, ?>");
         validTypes.put("java.lang.String", "String");
         validTypes.put("java.lang.Boolean", "Boolean");
         validTypes.put("java.lang.Integer", "Integer");

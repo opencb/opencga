@@ -1,14 +1,13 @@
 package org.opencb.opencga.server.generator;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
+import com.fasterxml.jackson.databind.ser.BeanSerializer;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.annotations.DataField;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.tools.annotations.*;
 import org.opencb.opencga.server.generator.models.RestApi;
@@ -22,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.*;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -32,6 +32,7 @@ public class RestApiParser {
 
     private final Logger logger;
     private final ObjectMapper objectMapper;
+    private final SerializerProvider serializerProvider;
 
     // This class might accept some configuration in the future
     public RestApiParser() {
@@ -41,13 +42,9 @@ public class RestApiParser {
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
         objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.addMixIn(ObjectMap.class, ObjectMapMixin.class);
+        serializerProvider = objectMapper.getSerializerProviderInstance();
     }
 
-    public interface ObjectMapMixin {
-        @JsonIgnore
-        boolean isEmpty();
-    }
 
     public RestApi parse(Class<?> clazz) {
         return parse(Collections.singletonList(clazz));
@@ -200,7 +197,10 @@ public class RestApiParser {
                                 List<BeanPropertyDefinition> declaredFields = getPropertyDefinitions(aClass);
 
                                 for (BeanPropertyDefinition declaredField : declaredFields) {
-                                    RestParameter innerParam = getParameter(variablePrefix, "", declaredField);
+                                    Stack<Class<?>> stackClasses = new Stack<>();
+                                    stackClasses.add(aClass);
+                                    RestParameter innerParam = getParameter(variablePrefix, "", declaredField, stackClasses);
+                                    // FIXME: Should we remove this artificial "flattening" ?
                                     if (innerParam.isComplex()
                                             && !innerParam.isList()
                                             && !innerParam.getType().equals("enum")
@@ -257,39 +257,87 @@ public class RestApiParser {
 
     private List<BeanPropertyDefinition> getPropertyDefinitions(Class<?> aClass) {
         JavaType javaType = objectMapper.constructType(aClass);
-        BeanDescription beanDescription = objectMapper.getDeserializationConfig().introspect(javaType);
-        return beanDescription.findProperties();
+        BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(javaType);
+        List<BeanPropertyDefinition> properties = beanDescription.findProperties();
+
+        // For some reason, the ObjectMapper is not using the rule "require getters for setters"
+        // I think that this only applies for the actual serialization, not for obtaining the bean descriptors.
+        properties.removeIf(property -> property.getGetter() == null || property.getSetter() == null);
+        return properties;
     }
 
     private RestParameter getParameter(String variablePrefix, String parentParamName, BeanPropertyDefinition property) {
+        return getParameter(variablePrefix, parentParamName, property, new Stack<>());
+    }
+
+    private RestParameter getParameter(String variablePrefix, String parentParamName, BeanPropertyDefinition property,
+                                       Stack<Class<?>> stackClasses) {
+        Class<?> propertyClass = property.getRawPrimaryType();
+
         RestParameter innerParam = new RestParameter();
         innerParam.setName(property.getName());
         innerParam.setParam("body");
         innerParam.setParentParamName(parentParamName);
-        if (property.getRawPrimaryType().isEnum()) {
+        innerParam.setTypeClass(propertyClass.getName() + ";");
+        innerParam.setRequired(isRequired(property));
+//        innerParam.setDefaultValue(property.getMetadata().getDefaultValue());
+        innerParam.setDefaultValue("");
+        innerParam.setComplex(!CommandLineUtils.isPrimitiveType(propertyClass.getName()));
+        innerParam.setDescription(getDescriptionField(variablePrefix, property));
+
+        if (propertyClass.isEnum()) {
             // The param is an Enum
             innerParam.setType("enum");
-            innerParam.setAllowedValues(Arrays.stream(property.getRawPrimaryType().getEnumConstants())
+            innerParam.setAllowedValues(Arrays.stream(propertyClass.getEnumConstants())
                     .map(Object::toString)
                     .collect(Collectors.joining(" ")));
         } else {
-            innerParam.setType(property.getRawPrimaryType().getSimpleName());
+            innerParam.setType(propertyClass.getSimpleName());
             innerParam.setAllowedValues("");
+//            if (CommandLineUtils.isBasicType(propertyClass.getName())) {
+//                System.out.println("innerParam = " + innerParam);
+//            }
+            if (innerParam.isCollection()) {
+//                innerParam.setGenericType(property.getPrimaryType().getContentType().getRawClass().getName());
+                innerParam.setGenericType(property.getPrimaryType().toCanonical());
+            } else if (isBean(propertyClass)) {
+//                innerParam.setType("object");
+                // Fill nested "data"
+                if (!stackClasses.contains(propertyClass)) {
+                    List<BeanPropertyDefinition> properties = getPropertyDefinitions(propertyClass);
+                    innerParam.setData(new ArrayList<>(properties.size()));
+                    stackClasses.add(propertyClass);
+                    for (BeanPropertyDefinition propertyDefinition : properties) {
+                        innerParam.getData().add(getParameter(variablePrefix + "." + property.getName(), property.getName(), propertyDefinition, stackClasses));
+                    }
+                    stackClasses.remove(propertyClass);
+                } // Else : This field was already seen
+            }
         }
 
-        innerParam.setTypeClass(property.getRawPrimaryType().getName() + ";");
-        innerParam.setRequired(isRequired(property));
-        innerParam.setDefaultValue("");
-        innerParam.setComplex(!CommandLineUtils.isPrimitiveType(property.getRawPrimaryType().getSimpleName()));
-
-
-        if (innerParam.isList()) {
-//            innerParam.setGenericType(property.getPrimaryType().getContentType().getRawClass().getName());
-            innerParam.setGenericType(property.getPrimaryType().toCanonical());
-        }
-
-        innerParam.setDescription(getDescriptionField(variablePrefix, property));
         return innerParam;
+    }
+
+    /**
+     * Check if the given class is a JavaBean depending on its serialization.
+     * Example of classes that are not a JavaBean:
+     *  - Any primitive
+     *  - Arrays
+     *  - Collections
+     *  - Maps
+     *  - Date (it's serialized as a number)
+     *  - URL (it's serialized as a String)
+     *  - URI (it's serialized as a String)
+     * @param aClass Class to test
+     * @return if it's a bean
+     */
+    private boolean isBean(Class<?> aClass) {
+        try {
+            JsonSerializer<Object> serializer = serializerProvider.findTypedValueSerializer(aClass, true, null);
+            return serializer instanceof BeanSerializer;
+        } catch (JsonMappingException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private boolean isRequired(BeanPropertyDefinition property) {

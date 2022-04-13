@@ -84,7 +84,7 @@ public class RestApiParserTest {
         Files.createDirectories(Paths.get("target/test-data/"));
         Path path = Paths.get("target/test-data/restApi.json");
         restApiParser.parseToFile(classes, path);
-        System.out.println("path.toAbsolutePath().toString() = " + path.toAbsolutePath().toString());
+        System.out.println("path.toAbsolutePath().toString() = " + path.toAbsolutePath());
     }
 
 

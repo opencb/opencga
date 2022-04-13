@@ -4,7 +4,13 @@ import java.util.List;
 
 public class RestParameter {
 
+    /**
+     * Name of the param.
+     */
     private String name;
+    /**
+     * Param type. Either query, path or body.
+     */
     private String param;
     private String parentParamName;
     private String type;
@@ -50,7 +56,7 @@ public class RestParameter {
                 ", complex=" + complex +
                 ", genericType='" + genericType + '\'' +
                 ", innerParam=" + innerParam +
-                "}\n";
+                "}";
     }
 
     public String getName() {
