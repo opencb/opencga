@@ -131,7 +131,7 @@ public class RestApiParser {
                 for (ApiImplicitParam apiImplicitParam : apiImplicitParams.value()) {
                     RestParameter restParameter = new RestParameter();
                     restParameter.setName(apiImplicitParam.name());
-                    restParameter.setParam(apiImplicitParam.paramType());
+                    restParameter.setParam(ParamType.valueOf(apiImplicitParam.paramType().toUpperCase()));
                     restParameter.setType(apiImplicitParam.dataType());
                     restParameter.setTypeClass("java.lang." + StringUtils.capitalize(apiImplicitParam.dataType()));
                     restParameter.setAllowedValues(apiImplicitParam.allowableValues());
@@ -157,18 +157,18 @@ public class RestApiParser {
                     RestParameter restParameter = new RestParameter();
                     if (methodParameter.getAnnotation(PathParam.class) != null) {
                         restParameter.setName(methodParameter.getAnnotation(PathParam.class).value());
-                        restParameter.setParam("path");
+                        restParameter.setParam(ParamType.PATH);
                     } else {
                         if (methodParameter.getAnnotation(QueryParam.class) != null) {
                             restParameter.setName(methodParameter.getAnnotation(QueryParam.class).value());
-                            restParameter.setParam("query");
+                            restParameter.setParam(ParamType.QUERY);
                         } else {
                             if (methodParameter.getAnnotation(FormDataParam.class) != null) {
                                 restParameter.setName(methodParameter.getAnnotation(FormDataParam.class).value());
-                                restParameter.setParam("query");
+                                restParameter.setParam(ParamType.QUERY);
                             } else {
                                 restParameter.setName("body");
-                                restParameter.setParam("body");
+                                restParameter.setParam(ParamType.BODY);
                             }
                         }
                     }
@@ -180,7 +180,7 @@ public class RestApiParser {
                     if (typeClass.contains(".")) {
                         String[] split = typeClass.split("\\.");
                         type = split[split.length - 1];
-                        if (!restParameter.getParam().equals("body")) {
+                        if (restParameter.getParam() != ParamType.BODY) {
                             // 4.3.1 Process path and query parameters
                             type = type.toLowerCase();
 
@@ -235,7 +235,7 @@ public class RestApiParser {
                     restParameter.setType(type);
                     restParameter.setTypeClass(typeClass.endsWith(";") ? typeClass : typeClass + ";");
                     restParameter.setAllowedValues(apiParam.allowableValues());
-                    restParameter.setRequired(apiParam.required() || "path".equals(restParameter.getParam()));
+                    restParameter.setRequired(apiParam.required() || restParameter.getParam() == ParamType.PATH);
                     restParameter.setDefaultValue(apiParam.defaultValue());
                     restParameter.setDescription(apiParam.value());
                     if (!bodyParams.isEmpty()) {
@@ -276,7 +276,7 @@ public class RestApiParser {
 
         RestParameter innerParam = new RestParameter();
         innerParam.setName(property.getName());
-        innerParam.setParam("body");
+        innerParam.setParam(ParamType.BODY);
         innerParam.setParentParamName(parentParamName);
         innerParam.setTypeClass(propertyClass.getName() + ";");
         innerParam.setRequired(isRequired(property));

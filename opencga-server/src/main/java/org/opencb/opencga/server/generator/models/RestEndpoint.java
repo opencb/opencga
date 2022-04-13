@@ -1,6 +1,7 @@
 package org.opencb.opencga.server.generator.models;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.opencga.core.tools.annotations.ParamType;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
 import org.opencb.opencga.server.generator.utils.CommandLineUtils;
 
@@ -33,7 +34,7 @@ public class RestEndpoint {
 
     public boolean hasQueryParams() {
         for (RestParameter restParameter : getParameters()) {
-            if ("query".equals(restParameter.getParam()) && !restParameter.isRequired() && (!restParameter.isComplex() || restParameter.isStringList())) {
+            if (restParameter.getParam() == ParamType.QUERY && !restParameter.isRequired() && (!restParameter.isComplex() || restParameter.isStringList())) {
                 return true;
             }
         }
@@ -71,7 +72,7 @@ public class RestEndpoint {
     public String getMandatoryQueryParams(CategoryConfig config, String commandName) {
         StringBuilder sb = new StringBuilder();
         for (RestParameter restParameter : getParameters()) {
-            if (restParameter.getParam().equals("query")) {
+            if (restParameter.getParam() == ParamType.QUERY) {
                 if (config.isAvailableSubCommand(restParameter.getName(), commandName) && (!restParameter.isComplex() || restParameter.isStringList())
                         && restParameter.isRequired()) {
                     sb.append("commandOptions.").append(CommandLineUtils.getAsVariableName(restParameter.getName())).append(", ");

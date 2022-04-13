@@ -18,6 +18,7 @@ package org.opencb.opencga.server.generator.writers.cli;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.core.tools.annotations.ParamType;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.models.RestApi;
@@ -484,7 +485,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         boolean studyPresent = false;
         for (RestParameter restParameter : restEndpoint.getParameters()) {
             if (config.isAvailableSubCommand(restParameter.getName(), commandName)) {
-                if ("query".equals(restParameter.getParam()) && !restParameter.isRequired() && restParameter.isAvailableType()) {
+                if (restParameter.getParam() == ParamType.QUERY && !restParameter.isRequired() && restParameter.isAvailableType()) {
                     enc = true;
                     if (normalizeNames(restParameter.getName()).equals("study")) {
                         studyPresent = true;

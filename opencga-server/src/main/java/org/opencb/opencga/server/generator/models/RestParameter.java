@@ -1,5 +1,7 @@
 package org.opencb.opencga.server.generator.models;
 
+import org.opencb.opencga.core.tools.annotations.ParamType;
+
 import java.util.List;
 
 public class RestParameter {
@@ -11,7 +13,7 @@ public class RestParameter {
     /**
      * Param type. Either query, path or body.
      */
-    private String param;
+    private ParamType param;
     private String parentParamName;
     private String type;
     private String typeClass;
@@ -67,11 +69,11 @@ public class RestParameter {
         this.name = name;
     }
 
-    public String getParam() {
+    public ParamType getParam() {
         return param;
     }
 
-    public void setParam(String param) {
+    public void setParam(ParamType param) {
         this.param = param;
     }
 
