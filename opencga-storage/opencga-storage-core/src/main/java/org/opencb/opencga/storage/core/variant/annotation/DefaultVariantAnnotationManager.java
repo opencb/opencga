@@ -485,6 +485,10 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                 samplesToBeAnnotated.put(studyId, samples);
                 alreadyAnnotatedFiles.put(studyId, annotatedFiles);
             }
+            logger.info("Annotating {} new files and {} new samples",
+                    filesToBeAnnotated.values().stream().mapToInt(Collection::size).sum(),
+                    samplesToBeAnnotated.values().stream().mapToInt(Collection::size).sum()
+            );
         }
     }
 
