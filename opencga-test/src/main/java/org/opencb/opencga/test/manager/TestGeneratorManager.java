@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.test.manager;
 
+import com.beust.jcommander.ParameterException;
+import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.test.cli.OptionsParser;
 import org.opencb.opencga.test.utils.OpencgaLogger;
 
@@ -24,8 +26,12 @@ public class TestGeneratorManager {
     public static void main(String[] args) {
         try {
             OptionsParser.parseArgs(args);
-        } catch (Throwable t) {
+        } catch (ParameterException p) {
+            PrintUtils.println("Parameter exception: ", PrintUtils.Color.CYAN, p.getMessage(), PrintUtils.Color.WHITE);
+        } catch (Exception t) {
+            t.printStackTrace();
             OpencgaLogger.printLog(t.getMessage(), t);
+        } finally {
             OptionsParser.printUsage();
             System.exit(-1);
         }

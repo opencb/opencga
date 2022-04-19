@@ -16,10 +16,14 @@
 
 package org.opencb.opencga.test.execution;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.opencb.commons.utils.DockerUtils;
 import org.opencb.commons.utils.PrintUtils;
+import org.opencb.opencga.test.config.Configuration;
 import org.opencb.opencga.test.config.Environment;
+import org.opencb.opencga.test.config.Mutation;
+import org.opencb.opencga.test.config.Variant;
 import org.opencb.opencga.test.execution.models.DataSetExecutionCommand;
 import org.opencb.opencga.test.execution.models.DatasetExecutionFile;
 import org.opencb.opencga.test.execution.models.DatasetExecutionPlan;
@@ -34,15 +38,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class LocalDatasetExecutor implements DatasetExecutor {
+public class LocalDatasetExecutor extends DatasetExecutor {
 
+
+    public LocalDatasetExecutor(Configuration configuration) {
+        super(configuration);
+    }
 
     @Override
     public void execute(List<DatasetExecutionPlan> datasetPlanExecutionList) {
 
         if (!DatasetTestUtils.areSkippedAllExecutionPlans(datasetPlanExecutionList)) {
             PrintUtils.println("Executing the data set plan executions: ", PrintUtils.Color.CYAN,
-                    datasetPlanExecutionList.size() + " found plans", PrintUtils.Color.WHITE);
+                    datasetPlanExecutionList.size() + " plans found.", PrintUtils.Color.WHITE);
         }
 
         for (DatasetExecutionPlan datasetPlanExecution : datasetPlanExecutionList) {
@@ -62,6 +70,41 @@ public class LocalDatasetExecutor implements DatasetExecutor {
                 executeFileScript(datasetPlanExecution.getEnvironment(), result, filename);
             }
         }
+
+        if (CollectionUtils.isNotEmpty(configuration.getMutator())) {
+            PrintUtils.println("Writing mutations: ", PrintUtils.Color.CYAN,
+                    configuration.getMutator().size() + " mutators found.", PrintUtils.Color.WHITE);
+            FilenameFilter filter = (f, name) -> name.endsWith(".vcf");
+            for (Mutation mutation : configuration.getMutator()) {
+                String filename = mutation.getFile();
+                for (Environment environment : configuration.getEnvs()) {
+                    File vcfDir = new File(DatasetTestUtils.getVCFOutputDirPath(environment));
+                    if (vcfDir.exists()) {
+                        String[] files = vcfDir.list(filter);
+                        for (int i = 0; i < files.length; i++) {
+                            String vcfFilename = files[i].substring(0, files[i].lastIndexOf('.'));
+                            if (vcfFilename.equals(filename)) {
+                                setVariantsInFile(mutation.getVariants());
+                            }
+                        }
+
+                    }
+                }
+
+            }
+        }
+    }
+
+    private void setVariantsInFile(List<Variant> variants) {
+    }
+
+    private Map<String, List<Variant>> getVariantsMap(List<Mutation> mutations) {
+        Map<String, List<Variant>> res = new HashMap<>();
+        for (Mutation mutation : mutations) {
+            res.put(mutation.getFile(), mutation.getVariants());
+        }
+        return res;
+
     }
 
     private void createOutputDirs(Environment env) {

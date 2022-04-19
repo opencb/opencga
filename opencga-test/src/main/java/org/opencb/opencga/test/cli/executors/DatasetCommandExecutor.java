@@ -55,6 +55,10 @@ public class DatasetCommandExecutor extends Executor {
             return validateExecutionConfiguration(configuration);
         } else if (DatasetCommandOptions.resume) {
             return validateExecutionConfiguration(configuration);
+        } else {
+            PrintUtils.println("Configuration validation: ", PrintUtils.Color.CYAN, "FAIL", PrintUtils.Color.RED);
+            PrintUtils.println("Execute option not found, valid options are --run --simulate --resume", PrintUtils.Color.CYAN);
+            System.exit(-1);
         }
         return false;
     }

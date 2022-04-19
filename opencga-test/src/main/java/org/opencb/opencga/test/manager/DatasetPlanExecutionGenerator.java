@@ -36,7 +36,7 @@ public class DatasetPlanExecutionGenerator {
     /**
      * Process a list of given environments.
      *
-     * @param b
+     * @param
      * @return
      * @throws IOException
      */
@@ -52,7 +52,7 @@ public class DatasetPlanExecutionGenerator {
      */
     public void execute() throws IOException {
         List<DatasetExecutionPlan> commandLinesMap = this.generateCommandLines(false);
-        LocalDatasetExecutor executor = new LocalDatasetExecutor();
+        LocalDatasetExecutor executor = new LocalDatasetExecutor(configuration);
         executor.execute(commandLinesMap);
     }
 
@@ -70,7 +70,7 @@ public class DatasetPlanExecutionGenerator {
 
     public void resume() throws IOException {
         List<DatasetExecutionPlan> commandLinesMap = this.generateCommandLines(true);
-        LocalDatasetExecutor executor = new LocalDatasetExecutor();
+        LocalDatasetExecutor executor = new LocalDatasetExecutor(configuration);
         executor.execute(commandLinesMap);
     }
 }

@@ -43,10 +43,13 @@ public class OpencgaTestConfiguration {
             objectMapper = new ObjectMapper(new YAMLFactory());
             configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
         } catch (IOException e) {
+            e.printStackTrace();
+            PrintUtils.println("Configuration file could not be parsed", PrintUtils.Color.RED);
             OpencgaLogger.printLog("Configuration file could not be parsed: " + e.getMessage(), Level.SEVERE);
             System.exit(-1);
         }
 
+        System.out.println(configuration.getMutator());
         overrideConfigurationParams(configuration);
         OpencgaLogger.setLogLevel(configuration.getLogger().getLogLevel());
         PrintUtils.println(" Configuration load success ", PrintUtils.Color.WHITE);

@@ -8,6 +8,9 @@ public class DatasetExecutionFile {
     private String inputFilename;
     private List<DataSetExecutionCommand> commands;
 
+    public DatasetExecutionFile() {
+    }
+
     public List<String> getOutputFilenames() {
         return outputFilenames;
     }
@@ -34,4 +37,6 @@ public class DatasetExecutionFile {
         this.commands = commands;
         return this;
     }
+
+
 }

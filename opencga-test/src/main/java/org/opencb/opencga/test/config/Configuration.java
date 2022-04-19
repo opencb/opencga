@@ -1,5 +1,6 @@
 package org.opencb.opencga.test.config;
 
+
 import java.util.List;
 
 public class Configuration {
@@ -7,6 +8,7 @@ public class Configuration {
     private Execution execution;
     private List<Environment> envs;
     private Logger logger;
+    private List<Mutation> mutator;
 
     public Configuration() {
 
@@ -46,6 +48,15 @@ public class Configuration {
 
     public Configuration setLogger(Logger logger) {
         this.logger = logger;
+        return this;
+    }
+
+    public List<Mutation> getMutator() {
+        return mutator;
+    }
+
+    public Configuration setMutator(List<Mutation> mutator) {
+        this.mutator = mutator;
         return this;
     }
 }

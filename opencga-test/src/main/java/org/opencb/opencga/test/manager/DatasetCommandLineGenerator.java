@@ -143,7 +143,8 @@ public class DatasetCommandLineGenerator {
                     for (Caller caller : callers) {
                         if (!caller.isSkip()) {
                             String outputFilename = caller.getName().replaceAll(" ", "_") + "_" + filename + ".vcf";
-                            outputFilenames.add(outputFilename + ".idx");
+                            outputFilenames.add(outputFilename + ".vcf");
+
                             String callerCommand = getVariantCallerCommandLine(environment, caller.getCommand(), caller.getParams(), filename,
                                     outputFilename);
                             commandLines.add(new DataSetExecutionCommand().setCommandLine(callerCommand).setImage(caller.getImage()));
@@ -170,18 +171,19 @@ public class DatasetCommandLineGenerator {
         return datasetPlanExecutions;
     }
 
+
     private boolean isExecutedFile(File dir, List<String> outputFilenames) {
         if (!dir.exists()) {
             return false;
         }
-        FilenameFilter filter = (f, name) -> name.endsWith(".idx");
+        FilenameFilter filter = (f, name) -> name.endsWith(".vcf");
         String[] files = dir.list(filter);
         if (files.length == 0) {
             return false;
         }
         File[] filesSorted = dirListByAscendingDate(dir, filter);
         String lastModifiedFilename = filesSorted[0].getName();
-        OpencgaLogger.printLog("Last modified .idx file " + lastModifiedFilename, Level.INFO);
+        OpencgaLogger.printLog("Last modified .vcf file " + lastModifiedFilename, Level.INFO);
         String[] okFiles = ArrayUtils.remove(files, ArrayUtils.indexOf(files, lastModifiedFilename));
         OpencgaLogger.printLog(ArrayUtils.toString(okFiles), Level.INFO);
         OpencgaLogger.printLog("outputFilenames::: " + outputFilenames, Level.INFO);
