@@ -76,7 +76,7 @@ public class SessionManager {
                 }
             }
         } else {
-            CommandLineUtils.error("The client configuration can not be null. Please check configuration file.", null);
+            CommandLineUtils.error("The client configuration can not be null. Please check configuration file.");
             System.exit(-1);
         }
 

@@ -87,6 +87,8 @@ public abstract class CommandExecutor {
         privateLogger = LoggerFactory.getLogger(CommandExecutor.class);
 
         try {
+            configureLogger(this.logLevel);
+
             // FIXME This is not needed for the client command line,
             //  this class needs to be refactor in next release 2.3.0
             loadConfiguration();
@@ -107,10 +109,6 @@ public abstract class CommandExecutor {
             }
             // Create the SessionManager and store current session
             sessionManager = new SessionManager(clientConfiguration, this.host);
-
-            // Do not change the order here, we can only configure logger after loading the configuration files,
-            // this still relies on general configuration file.
-            configureLogger();
 
             // Let's check the session file, maybe the session is still valid
 //            privateLogger.debug("CLI session file is: {}", CliSessionManager.getInstance().getCurrentFile());
@@ -141,16 +139,13 @@ public abstract class CommandExecutor {
 //        }));
     }
 
-    private void configureLogger() throws IOException {
-        // Command line parameters have preference over configuration file
-        // We overwrite logLevel configuration param with command line value
-        if (StringUtils.isNotEmpty(this.logLevel)) {
-            this.configuration.setLogLevel(this.logLevel);
+    private static void configureLogger(String logLevel) throws IOException {
+        // Command line parameters have preference over anything
+        if (StringUtils.isNotBlank(logLevel)) {
+            Level level = Level.toLevel(logLevel);
+            System.setProperty("opencga.log.level", level.name());
+            Configurator.reconfigure();
         }
-
-        Level level = Level.toLevel(configuration.getLogLevel(), Level.INFO);
-        System.setProperty("opencga.log.level", level.name());
-        Configurator.reconfigure();
     }
 
     public abstract void execute() throws Exception;
