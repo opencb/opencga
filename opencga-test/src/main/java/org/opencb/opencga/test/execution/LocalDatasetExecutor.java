@@ -96,6 +96,7 @@ public class LocalDatasetExecutor extends DatasetExecutor {
     }
 
     private void setVariantsInFile(List<Variant> variants) {
+        //TODO fill this method to add variants to VCF
     }
 
     private Map<String, List<Variant>> getVariantsMap(List<Mutation> mutations) {
