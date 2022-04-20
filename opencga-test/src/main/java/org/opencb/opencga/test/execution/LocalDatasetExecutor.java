@@ -96,7 +96,8 @@ public class LocalDatasetExecutor extends DatasetExecutor {
     }
 
     private void setVariantsInFile(List<Variant> variants) {
-
+            //get the variant as String
+        //insert it in temp file
     }
 
     private Map<String, List<Variant>> getVariantsMap(List<Mutation> mutations) {
