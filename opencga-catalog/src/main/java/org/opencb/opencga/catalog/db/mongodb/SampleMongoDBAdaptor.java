@@ -81,15 +81,18 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     private static final String PRIVATE_INDIVIDUAL_UID = "_individualUid";
     private final MongoDBCollection sampleCollection;
+    private final MongoDBCollection archiveSampleCollection;
     private final MongoDBCollection deletedSampleCollection;
     private SampleConverter sampleConverter;
     private IndividualMongoDBAdaptor individualDBAdaptor;
 
-    public SampleMongoDBAdaptor(MongoDBCollection sampleCollection, MongoDBCollection deletedSampleCollection, Configuration configuration,
+    public SampleMongoDBAdaptor(MongoDBCollection sampleCollection, MongoDBCollection archiveSampleCollection,
+                                MongoDBCollection deletedSampleCollection, Configuration configuration,
                                 MongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(SampleMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.sampleCollection = sampleCollection;
+        this.archiveSampleCollection = archiveSampleCollection;
         this.deletedSampleCollection = deletedSampleCollection;
         sampleConverter = new SampleConverter();
         individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
@@ -178,6 +181,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         logger.debug("Inserting sample '{}' ({})...", sample.getId(), sample.getUid());
         sampleCollection.insert(clientSession, sampleObject, null);
+        archiveSampleCollection.insert(clientSession, sampleObject, null);
         logger.debug("Sample '{}' successfully inserted", sample.getId());
 
         if (individualUid > 0) {
@@ -310,72 +314,62 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         Query tmpQuery = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyUid)
                 .append(QueryParams.UID.key(), sampleUid);
+        Bson bsonQuery = parseQuery(tmpQuery);
+        return updateVersionedModel(clientSession, bsonQuery, sampleCollection, archiveSampleCollection, () -> {
+            // Perform the update
+            DataResult result = updateAnnotationSets(clientSession, sampleUid, parameters, variableSetList, queryOptions, true);
 
-        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-            createNewVersion(clientSession, studyUid, sampleUid);
-        } else {
-            boolean internalUpdateOnly = parameters.keySet().stream().allMatch(key -> key.startsWith("internal."));
-            // Don't need to check if locked when updating only internal fields
-            if (!internalUpdateOnly) {
-                checkInUseInLockedClinicalAnalysis(clientSession, sampleDocument);
+            UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions);
+            Document sampleUpdate = updateParams.toFinalUpdateDocument();
+
+            if (sampleUpdate.isEmpty() && result.getNumUpdated() == 0) {
+                if (!parameters.isEmpty()) {
+                    logger.error("Non-processed update parameters: {}", parameters.keySet());
+                }
+                throw new CatalogDBException("Nothing to be updated");
             }
-        }
 
-        // Perform the update
-        DataResult result = updateAnnotationSets(clientSession, sampleUid, parameters, variableSetList, queryOptions, true);
+            List<Event> events = new ArrayList<>();
+            if (!sampleUpdate.isEmpty()) {
+                Bson finalQuery = parseQuery(tmpQuery);
 
-        UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions);
-        Document sampleUpdate = updateParams.toFinalUpdateDocument();
+                logger.debug("Sample update: query : {}, update: {}",
+                        finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                        sampleUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                result = sampleCollection.update(clientSession, finalQuery, sampleUpdate, new QueryOptions("multi", true));
 
-        if (sampleUpdate.isEmpty() && result.getNumUpdated() == 0) {
-            if (!parameters.isEmpty()) {
-                logger.error("Non-processed update parameters: {}", parameters.keySet());
-            }
-            throw new CatalogDBException("Nothing to be updated");
-        }
+                if (updateParams.getSet().containsKey(PRIVATE_INDIVIDUAL_UID)) {
+                    long newIndividualUid = updateParams.getSet().getLong(PRIVATE_INDIVIDUAL_UID);
 
-        List<Event> events = new ArrayList<>();
-        if (!sampleUpdate.isEmpty()) {
-            Bson finalQuery = parseQuery(tmpQuery);
+                    // If the sample has been associated a different individual
+                    if (newIndividualUid != individualUid) {
+                        Sample sample = new Sample().setUid(sampleUid).setVersion(version).setStudyUid(studyUid);
 
-            logger.debug("Sample update: query : {}, update: {}",
-                    finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    sampleUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            result = sampleCollection.update(clientSession, finalQuery, sampleUpdate, new QueryOptions("multi", true));
+                        if (newIndividualUid > 0) {
+                            // Add the sample to the list of samples of new individual
+                            updateSampleFromIndividualCollection(clientSession, sample, newIndividualUid, ParamUtils.BasicUpdateAction.ADD);
+                        }
 
-            if (updateParams.getSet().containsKey(PRIVATE_INDIVIDUAL_UID)) {
-                long newIndividualUid = updateParams.getSet().getLong(PRIVATE_INDIVIDUAL_UID);
-
-                // If the sample has been associated a different individual
-                if (newIndividualUid != individualUid) {
-                    Sample sample = new Sample().setUid(sampleUid).setVersion(version).setStudyUid(studyUid);
-
-                    if (newIndividualUid > 0) {
-                        // Add the sample to the list of samples of new individual
-                        updateSampleFromIndividualCollection(clientSession, sample, newIndividualUid, ParamUtils.BasicUpdateAction.ADD);
-                    }
-
-                    if (individualUid > 0) {
-                        // Remove the sample from the individual where it was associated
-                        updateSampleFromIndividualCollection(clientSession, sample, individualUid, ParamUtils.BasicUpdateAction.REMOVE);
+                        if (individualUid > 0) {
+                            // Remove the sample from the individual where it was associated
+                            updateSampleFromIndividualCollection(clientSession, sample, individualUid, ParamUtils.BasicUpdateAction.REMOVE);
+                        }
                     }
                 }
+
+                if (result.getNumMatches() == 0) {
+                    throw new CatalogDBException("Sample " + sampleId + " not found");
+                }
+                if (result.getNumUpdated() == 0) {
+                    events.add(new Event(Event.Type.WARNING, sampleId, "Sample was already updated"));
+                }
+                logger.debug("Sample {} successfully updated", sampleId);
             }
 
-            if (result.getNumMatches() == 0) {
-                throw new CatalogDBException("Sample " + sampleId + " not found");
-            }
-            if (result.getNumUpdated() == 0) {
-                events.add(new Event(Event.Type.WARNING, sampleId, "Sample was already updated"));
-            }
-            logger.debug("Sample {} successfully updated", sampleId);
-        }
-
-        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
             updateIndividualSampleReferences(clientSession, sampleDocument);
-        }
 
-        return endWrite(tmpStartTime, 1, 1, events);
+            return endWrite(tmpStartTime, 1, 1, events);
+        });
     }
 
     void updateIndividualFromSampleCollection(ClientSession clientSession, long studyId, long sampleUid, String individualId)
@@ -488,7 +482,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     /**
-     * Checks whether the sample that is going to be updated is in use in any locked Clinical Analysis.
+     * Checks whether the sample that is going to be altered is in use in any locked Clinical Analysis.
      *
      * @param clientSession Client session.
      * @param sample        Sample to be updated.
@@ -925,6 +919,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         long sampleUid = sampleDocument.getLong(PRIVATE_UID);
         long studyUid = sampleDocument.getLong(PRIVATE_STUDY_UID);
 
+        checkInUseInLockedClinicalAnalysis(clientSession, sampleDocument);
+
         logger.debug("Deleting sample {} ({})", sampleId, sampleUid);
 
         Sample sample = new Sample()
@@ -1194,13 +1190,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 //        }
 
         Bson bson = parseQuery(finalQuery, user);
+        MongoDBCollection collection = getQueryCollection(finalQuery, sampleCollection, archiveSampleCollection, deletedSampleCollection);
         logger.debug("Sample query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
-        if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return sampleCollection.iterator(clientSession, bson, null, null, qOptions);
-        } else {
-            return deletedSampleCollection.iterator(clientSession, bson, null, null, qOptions);
-        }
+        return collection.iterator(clientSession, bson, null, null, qOptions);
     }
 
     private boolean isQueryingIndividualFields(Query query) {
@@ -1404,14 +1396,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
 
         // If the user doesn't look for a concrete version...
-        if (!uidVersionQueryFlag && !queryCopy.getBoolean(Constants.ALL_VERSIONS) && !queryCopy.containsKey(QueryParams.VERSION.key())) {
-            if (queryCopy.containsKey(QueryParams.SNAPSHOT.key())) {
-                // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
-                andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
-            } else {
-                // Otherwise, we will always look for the latest version
-                andBsonList.add(Filters.eq(LAST_OF_VERSION, true));
-            }
+        if (!uidVersionQueryFlag && !queryCopy.getBoolean(Constants.ALL_VERSIONS) && !queryCopy.containsKey(QueryParams.VERSION.key())
+                && queryCopy.containsKey(QueryParams.SNAPSHOT.key())) {
+            // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
+            andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
         }
 
         if (annotationDocument != null && !annotationDocument.isEmpty()) {

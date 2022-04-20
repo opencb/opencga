@@ -3,6 +3,9 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.clinical.Phenotype;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.family.Family;
@@ -10,9 +13,7 @@ import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.sample.Sample;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class DummyModelUtils {
 
@@ -40,13 +41,37 @@ public class DummyModelUtils {
         return getDummyIndividual(RandomStringUtils.randomAlphabetic(10), sampleList, disorderList, phenotypeList);
     }
 
-    public static Individual getDummyIndividual(String id, List<Sample> sampleList, List<Disorder> disorderList,
-                                                List<Phenotype> phenotypeList) {
+    public static Individual getDummyIndividual(String id, List<Sample> sampleList, List<Disorder> disorderList, List<Phenotype> phenotypeList) {
         return new Individual()
                 .setId(id)
                 .setSamples(sampleList)
                 .setDisorders(disorderList)
                 .setPhenotypes(phenotypeList);
+    }
+
+    public static Family getCompleteFamily(String id) {
+        Sample fSample = getDummySample("s_father_" + id);
+        Sample mSample = getDummySample("s_mother_" + id);
+        Sample bSample = getDummySample("s_boy_" + id);
+        Sample gSample = getDummySample("s_girl_" + id);
+
+        Disorder disease1 = getDummyDisorder();
+        Disorder disease2 = getDummyDisorder();
+
+        Individual father = getDummyIndividual("father_" + id, Collections.singletonList(fSample), Collections.singletonList(disease2), null)
+                .setSex(new SexOntologyTermAnnotation().setId("MALE"));
+        Individual mother = getDummyIndividual("mother_" + id, Collections.singletonList(mSample), Collections.singletonList(disease1), null)
+                .setSex(new SexOntologyTermAnnotation().setId("FEMALE"));;
+        Individual boy = getDummyIndividual("boy_" + id, Collections.singletonList(bSample), Collections.singletonList(disease1), null)
+                .setFather(father)
+                .setMother(mother)
+                .setSex(new SexOntologyTermAnnotation().setId("MALE"));;
+        Individual girl = getDummyIndividual("girl_" + id, Collections.singletonList(gSample), Collections.singletonList(disease2), null)
+                .setFather(father)
+                .setMother(mother)
+                .setSex(new SexOntologyTermAnnotation().setId("FEMALE"));;
+
+        return getDummyFamily("family_" + id, Arrays.asList(father, mother, boy, girl));
     }
 
     public static Family getDummyFamily() {
@@ -131,6 +156,22 @@ public class DummyModelUtils {
         return new Family(id, id, null, null,
                 Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", -1,
                 Collections.emptyList(), Collections.emptyMap());
+    }
+
+    public static void createFullFamily(CatalogManager catalogManager, String study, Family family, String token) throws CatalogException {
+        Set<String> createdIndividuals = new HashSet<>();
+        while (createdIndividuals.size() < family.getMembers().size()) {
+            for (Individual member : family.getMembers()) {
+                if ((member.getFather() == null || createdIndividuals.contains(member.getFather().getId()))
+                        && (member.getMother() == null || createdIndividuals.contains(member.getMother().getId()))) {
+                    catalogManager.getIndividualManager().create(study, member, QueryOptions.empty(), token);
+                    createdIndividuals.add(member.getId());
+                }
+            }
+        }
+
+        Family tmpFamily = new Family().setId(family.getId());
+        catalogManager.getFamilyManager().create(study, tmpFamily, new ArrayList<>(createdIndividuals), QueryOptions.empty(), token);
     }
 
     public static ClinicalAnalysis getDummyClinicalAnalysis(Individual proband, Family family, List<Panel> panelList) {

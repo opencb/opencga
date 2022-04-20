@@ -74,6 +74,8 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PERMISSION_RULES_APPLIED = "_permissionRulesApplied";
     static final String INTERNAL_LAST_MODIFIED = "internal.lastModified";
 
+    static final String SKIP_INCREMENT_VERSION = "skipIncrementVersion";
+
     static final String INTERNAL_DELIMITER = "__";
 
     public static final String NATIVE_QUERY = "nativeQuery";
@@ -167,31 +169,43 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     protected <T> T updateVersionedModel(ClientSession session, Bson query, MongoDBCollection collection,
                                          MongoDBCollection archiveCollection, VersionedModelExecution<T> body)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        // Increment version from main collection
-        Bson versionInc = Updates.inc(VERSION, 1);
-        QueryOptions options = new QueryOptions(MongoDBCollection.MULTI, true);
-        collection.update(session, query, versionInc, options);
+        return updateVersionedModel(session, query, collection, archiveCollection, null, body);
+    }
+
+    protected <T> T updateVersionedModel(ClientSession session, Bson query, MongoDBCollection collection,
+                                         MongoDBCollection archiveCollection, QueryOptions options, VersionedModelExecution<T> body)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        boolean incrementVersion = options == null || !options.getBoolean(SKIP_INCREMENT_VERSION, false);
+
+        if (incrementVersion) {
+            // Increment version from main collection
+            Bson versionInc = Updates.inc(VERSION, 1);
+            QueryOptions multiOptions = new QueryOptions(MongoDBCollection.MULTI, true);
+            collection.update(session, query, versionInc, multiOptions);
+        }
 
         // Execute update
         T executionResult = body.execute();
 
-        // Fetch document containing update
-        options = new QueryOptions(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
-        MongoDBIterator<Document> iterator = collection.iterator(session, query, null, null, options);
-        List<Document> documentList = new ArrayList<>(BATCH_SIZE);
-        while (iterator.hasNext()) {
-            Document result = iterator.next();
-            result.remove("_id");
-            if (documentList.size() >= BATCH_SIZE) {
-                // Insert in archive collection
-                archiveCollection.insert(session, documentList, QueryOptions.empty());
-                documentList.clear();
+        if (incrementVersion) {
+            // Fetch document containing update
+            options = new QueryOptions(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
+            MongoDBIterator<Document> iterator = collection.iterator(session, query, null, null, options);
+            List<Document> documentList = new ArrayList<>(BATCH_SIZE);
+            while (iterator.hasNext()) {
+                Document result = iterator.next();
+                result.remove("_id");
+                if (documentList.size() >= BATCH_SIZE) {
+                    // Insert in archive collection
+                    archiveCollection.insert(session, documentList, QueryOptions.empty());
+                    documentList.clear();
+                }
+                documentList.add(result);
             }
-            documentList.add(result);
-        }
-        if (!documentList.isEmpty()) {
-            // Insert remaining documents in archive collection
-            archiveCollection.insert(session, documentList, QueryOptions.empty());
+            if (!documentList.isEmpty()) {
+                // Insert remaining documents in archive collection
+                archiveCollection.insert(session, documentList, QueryOptions.empty());
+            }
         }
 
         return executionResult;

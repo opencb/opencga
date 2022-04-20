@@ -56,6 +56,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             CLINICAL_ANALYSIS_COLLECTION,
             INTERPRETATION_COLLECTION,
 
+            SAMPLE_ARCHIVE_COLLECTION,
             INDIVIDUAL_ARCHIVE_COLLECTION,
             FAMILY_ARCHIVE_COLLECTION,
             PANEL_ARCHIVE_COLLECTION,
@@ -90,6 +91,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String INTERPRETATION_COLLECTION = "interpretation";
 
+    public static final String SAMPLE_ARCHIVE_COLLECTION = "sample_archive";
     public static final String INDIVIDUAL_ARCHIVE_COLLECTION = "individual_archive";
     public static final String FAMILY_ARCHIVE_COLLECTION = "family_archive";
     public static final String PANEL_ARCHIVE_COLLECTION = "panel_archive";
@@ -329,6 +331,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         MongoDBCollection clinicalCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION);
         MongoDBCollection interpretationCollection = mongoDataStore.getCollection(INTERPRETATION_COLLECTION);
 
+        MongoDBCollection sampleArchivedCollection = mongoDataStore.getCollection(SAMPLE_ARCHIVE_COLLECTION);
         MongoDBCollection individualArchivedCollection = mongoDataStore.getCollection(INDIVIDUAL_ARCHIVE_COLLECTION);
         MongoDBCollection familyArchivedCollection = mongoDataStore.getCollection(FAMILY_ARCHIVE_COLLECTION);
         MongoDBCollection panelArchivedCollection = mongoDataStore.getCollection(PANEL_ARCHIVE_COLLECTION);
@@ -364,6 +367,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(CLINICAL_ANALYSIS_COLLECTION, clinicalCollection);
         collections.put(INTERPRETATION_COLLECTION, interpretationCollection);
 
+        collections.put(SAMPLE_ARCHIVE_COLLECTION, sampleArchivedCollection);
         collections.put(INDIVIDUAL_ARCHIVE_COLLECTION, individualArchivedCollection);
         collections.put(FAMILY_ARCHIVE_COLLECTION, familyArchivedCollection);
         collections.put(PANEL_ARCHIVE_COLLECTION, panelArchivedCollection);
@@ -388,7 +392,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
                 catalogConfiguration, this);
         jobDBAdaptor = new JobMongoDBAdaptor(jobCollection, deletedJobCollection, catalogConfiguration, this);
         projectDBAdaptor = new ProjectMongoDBAdaptor(userCollection, deletedUserCollection, catalogConfiguration, this);
-        sampleDBAdaptor = new SampleMongoDBAdaptor(sampleCollection, deletedSampleCollection, catalogConfiguration, this);
+        sampleDBAdaptor = new SampleMongoDBAdaptor(sampleCollection, sampleArchivedCollection, deletedSampleCollection,
+                catalogConfiguration, this);
         studyDBAdaptor = new StudyMongoDBAdaptor(studyCollection, deletedStudyCollection, catalogConfiguration, this);
         userDBAdaptor = new UserMongoDBAdaptor(userCollection, deletedUserCollection, catalogConfiguration, this);
         cohortDBAdaptor = new CohortMongoDBAdaptor(cohortCollection, deletedCohortCollection, catalogConfiguration, this);
