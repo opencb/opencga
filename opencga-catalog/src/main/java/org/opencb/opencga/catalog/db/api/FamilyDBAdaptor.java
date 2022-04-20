@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -146,7 +147,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
 
     OpenCGAResult nativeInsert(Map<String, Object> family, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
+    OpenCGAResult insert(long studyId, Family family, List<Individual> members, List<VariableSet> variableSetList, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Family> get(long familyId, QueryOptions options)
