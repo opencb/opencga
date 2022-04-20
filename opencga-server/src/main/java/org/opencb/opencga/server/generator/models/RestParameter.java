@@ -1,6 +1,6 @@
 package org.opencb.opencga.server.generator.models;
 
-import org.opencb.opencga.core.tools.annotations.ParamType;
+import org.opencb.opencga.core.tools.annotations.RestParamType;
 
 import java.util.List;
 
@@ -10,14 +10,17 @@ public class RestParameter {
      * Name of the param.
      */
     private String name;
+
     /**
      * Param type. Either query, path or body.
      */
-    private ParamType param;
+    private RestParamType param;
+
     /**
      * Parent param name. Useful for inner params.
      */
     private String parentParamName;
+
     /**
      * High level param type.
      *
@@ -28,6 +31,7 @@ public class RestParameter {
      * - class.getSimpleName().toLowerCase()
      */
     private String type;
+
     /**
      * Java class of this value.
      */
@@ -35,19 +39,22 @@ public class RestParameter {
     private boolean required;
     private String defaultValue;
     private String description;
+
     /**
      * Inner fields for object type models.
      */
     private List<RestParameter> data;
     private String allowedValues;
     private boolean complex;
+
     /**
      * Canonical type with generics.
      * e.g.
      *  - java.util.List<java.lang.String>
-     *  - java.util.Map<java.lang.String,java.lang.Object>
+     *  - java.util.Map<java.lang.String, java.lang.Object>
      */
     private String genericType;
+
     /**
      * Flattened param. This param has a parent param.
      */
@@ -96,11 +103,11 @@ public class RestParameter {
         this.name = name;
     }
 
-    public ParamType getParam() {
+    public RestParamType getParam() {
         return param;
     }
 
-    public void setParam(ParamType param) {
+    public void setParam(RestParamType param) {
         this.param = param;
     }
 

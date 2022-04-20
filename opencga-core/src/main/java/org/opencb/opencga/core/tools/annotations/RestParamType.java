@@ -2,10 +2,10 @@ package org.opencb.opencga.core.tools.annotations;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum ParamType {
+public enum RestParamType {
+    PATH,
     QUERY,
-    BODY,
-    PATH;
+    BODY;
 
     // Use this to serialize in lowercase
     @JsonValue

@@ -241,8 +241,8 @@ public class MetaWSServer extends OpenCGAWSServer {
         classMap.put("clinical", ClinicalWebService.class);
         classMap.put("variantOperations", VariantOperationWebService.class);
         classMap.put("meta", MetaWSServer.class);
-        classMap.put("ga4gh", Ga4ghWSServer.class);
         classMap.put("admin", AdminWSServer.class);
+//        classMap.put("ga4gh", Ga4ghWSServer.class);
 
         List<Class<?>> classes = new ArrayList<>();
         // Check if some categories have been selected
