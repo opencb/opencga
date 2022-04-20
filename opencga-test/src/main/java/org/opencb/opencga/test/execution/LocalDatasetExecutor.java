@@ -96,7 +96,7 @@ public class LocalDatasetExecutor extends DatasetExecutor {
     }
 
     private void setVariantsInFile(List<Variant> variants) {
-            //get the variant as String
+        //get the variant as String
         //insert it in temp file
     }
 
