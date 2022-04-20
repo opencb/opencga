@@ -30,9 +30,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
@@ -521,7 +519,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         try {
             long startTime = System.currentTimeMillis();
 
-            QueryOptions queryOptions = fixOptionsForRelatives(options);
+            QueryOptions queryOptions = individualDBAdaptor.fixOptionsForRelatives(options);
 
             if (degree < 0 || degree > 2) {
                 throw new CatalogException("Unsupported degree value. Degree must be 0, 1 or 2");
@@ -529,7 +527,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
             List<Individual> individualList = new LinkedList<>();
             Individual proband = internalGet(study.getUid(), individualId, queryOptions, userId).first();
-            addRelativeToList(proband, Family.FamiliarRelationship.PROBAND, 0, individualList);
+            individualDBAdaptor.addRelativeToList(proband, Family.FamiliarRelationship.PROBAND, 0, individualList);
 
             individualId = proband.getId();
             individualUuid = proband.getUuid();
@@ -541,7 +539,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                         individualList, individualList.size());
             }
 
-            individualList.addAll(calculateRelationship(study, proband, degree, userId));
+            individualList.addAll(individualDBAdaptor.calculateRelationship(study.getUid(), proband, degree, userId));
 
             auditManager.audit(userId, Enums.Action.RELATIVES, Enums.Resource.INDIVIDUAL, individualId, individualUuid, study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -554,302 +552,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             throw e;
         }
 
-    }
-
-    void addDegreeRelatives(Map<Family.FamiliarRelationship, List<Individual>> relativeMap,
-                            Map<Family.FamiliarRelationship, Family.FamiliarRelationship> relationMap, int degree,
-                            List<Individual> individualList) {
-        for (Map.Entry<Family.FamiliarRelationship, List<Individual>> entry : relativeMap.entrySet()) {
-            switch (entry.getKey()) {
-                case MOTHER:
-                    if (relationMap.containsKey(Family.FamiliarRelationship.MOTHER)) {
-                        addRelativeToList(entry.getValue().get(0), relationMap.get(Family.FamiliarRelationship.MOTHER), degree,
-                                individualList);
-                    }
-                    break;
-                case FATHER:
-                    if (relationMap.containsKey(Family.FamiliarRelationship.FATHER)) {
-                        addRelativeToList(entry.getValue().get(0), relationMap.get(Family.FamiliarRelationship.FATHER), degree,
-                                individualList);
-                    }
-                    break;
-                case SON:
-                    if (relationMap.containsKey(Family.FamiliarRelationship.SON)) {
-                        for (Individual child : entry.getValue()) {
-                            addRelativeToList(child, relationMap.get(Family.FamiliarRelationship.SON), degree, individualList);
-                        }
-                    }
-                    break;
-                case DAUGHTER:
-                    if (relationMap.containsKey(Family.FamiliarRelationship.DAUGHTER)) {
-                        for (Individual child : entry.getValue()) {
-                            addRelativeToList(child, relationMap.get(Family.FamiliarRelationship.DAUGHTER), degree,
-                                    individualList);
-                        }
-                    }
-                    break;
-                case CHILD_OF_UNKNOWN_SEX:
-                    if (relationMap.containsKey(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX)) {
-                        for (Individual child : entry.getValue()) {
-                            addRelativeToList(child, relationMap.get(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX), degree,
-                                    individualList);
-                        }
-                    }
-                    break;
-                default:
-                    logger.warn("Unexpected relation found: " + entry.getKey());
-                    break;
-            }
-        }
-    }
-
-    List<Individual> calculateRelationship(Study study, Individual proband, int maxDegree, String userId)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        QueryOptions options = fixOptionsForRelatives(new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key()));
-
-        List<Individual> individualList = new LinkedList<>();
-        individualList.add(proband);
-
-        Map<Family.FamiliarRelationship, Family.FamiliarRelationship> relationMap = new HashMap<>();
-        // ------------------ Processing degree 1
-        relationMap.put(Family.FamiliarRelationship.MOTHER, Family.FamiliarRelationship.MOTHER);
-        relationMap.put(Family.FamiliarRelationship.FATHER, Family.FamiliarRelationship.FATHER);
-        relationMap.put(Family.FamiliarRelationship.SON, Family.FamiliarRelationship.SON);
-        relationMap.put(Family.FamiliarRelationship.DAUGHTER, Family.FamiliarRelationship.DAUGHTER);
-        relationMap.put(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
-                Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX);
-        Map<Family.FamiliarRelationship, List<Individual>> relativeMap = lookForParentsAndChildren(study, proband,
-                new HashSet<>(), options, userId);
-        addDegreeRelatives(relativeMap, relationMap, 1, individualList);
-
-        if (maxDegree == 1) {
-            // Remove proband from list
-            individualList.remove(0);
-            return individualList;
-        }
-
-        Individual mother = relativeMap.containsKey(Family.FamiliarRelationship.MOTHER)
-                ? relativeMap.get(Family.FamiliarRelationship.MOTHER).get(0) : null;
-        Individual father = relativeMap.containsKey(Family.FamiliarRelationship.FATHER)
-                ? relativeMap.get(Family.FamiliarRelationship.FATHER).get(0) : null;
-        List<Individual> children = new LinkedList<>();
-        if (relativeMap.containsKey(Family.FamiliarRelationship.SON)) {
-            children.addAll(relativeMap.get(Family.FamiliarRelationship.SON));
-        }
-        if (relativeMap.containsKey(Family.FamiliarRelationship.DAUGHTER)) {
-            children.addAll(relativeMap.get(Family.FamiliarRelationship.DAUGHTER));
-        }
-        if (relativeMap.containsKey(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX)) {
-            children.addAll(relativeMap.get(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX));
-        }
-
-        // ------------------ Processing degree 2
-        if (mother != null) {
-            relationMap.put(Family.FamiliarRelationship.MOTHER, Family.FamiliarRelationship.MATERNAL_GRANDMOTHER);
-            relationMap.put(Family.FamiliarRelationship.FATHER, Family.FamiliarRelationship.MATERNAL_GRANDFATHER);
-            relationMap.put(Family.FamiliarRelationship.SON, Family.FamiliarRelationship.BROTHER);
-            relationMap.put(Family.FamiliarRelationship.DAUGHTER, Family.FamiliarRelationship.SISTER);
-            relationMap.put(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
-                    Family.FamiliarRelationship.FULL_SIBLING);
-
-            // Update set of already obtained individuals
-            Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
-            relativeMap = lookForParentsAndChildren(study, mother, skipIndividuals, options, userId);
-            addDegreeRelatives(relativeMap, relationMap, 2, individualList);
-        }
-        if (father != null) {
-            relationMap.put(Family.FamiliarRelationship.MOTHER, Family.FamiliarRelationship.PATERNAL_GRANDMOTHER);
-            relationMap.put(Family.FamiliarRelationship.FATHER, Family.FamiliarRelationship.PATERNAL_GRANDFATHER);
-            relationMap.put(Family.FamiliarRelationship.SON, Family.FamiliarRelationship.BROTHER);
-            relationMap.put(Family.FamiliarRelationship.DAUGHTER, Family.FamiliarRelationship.SISTER);
-            relationMap.put(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX,
-                    Family.FamiliarRelationship.FULL_SIBLING);
-
-            // Update set of already obtained individuals
-            Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
-            relativeMap = lookForParentsAndChildren(study, father, skipIndividuals, options, userId);
-            addDegreeRelatives(relativeMap, relationMap, 2, individualList);
-        }
-
-        // Update set of already obtained individuals
-        Set<String> skipIndividuals = individualList.stream().map(Individual::getId).collect(Collectors.toSet());
-        for (Individual child : children) {
-            relationMap.put(Family.FamiliarRelationship.SON, Family.FamiliarRelationship.GRANDSON);
-            relationMap.put(Family.FamiliarRelationship.DAUGHTER, Family.FamiliarRelationship.GRANDDAUGHTER);
-            relationMap.put(Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX, Family.FamiliarRelationship.GRANDCHILD);
-
-            relativeMap = lookForChildren(study, child, skipIndividuals, options, userId);
-            addDegreeRelatives(relativeMap, relationMap, 2, individualList);
-        }
-
-        // Remove proband from list
-        individualList.remove(0);
-        return individualList;
-    }
-
-    private Map<Family.FamiliarRelationship, List<Individual>> lookForParentsAndChildren(Study study, Individual proband,
-                                                                                         Set<String> skipIndividuals,
-                                                                                         QueryOptions options, String userId)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Map<Family.FamiliarRelationship, List<Individual>> finalResult = new HashMap<>();
-
-        finalResult.putAll(lookForParents(study, proband, skipIndividuals, options, userId));
-        finalResult.putAll(lookForChildren(study, proband, skipIndividuals, options, userId));
-
-        return finalResult;
-    }
-
-    private Map<Family.FamiliarRelationship, List<Individual>> lookForParents(Study study, Individual proband,
-                                                                              Set<String> skipIndividuals,
-                                                                              QueryOptions options, String userId)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Map<Family.FamiliarRelationship, List<Individual>> finalResult = new HashMap<>();
-
-        // Looking for father
-        if (proband.getFather() != null && proband.getFather().getUid() > 0) {
-            Query query = new Query(IndividualDBAdaptor.QueryParams.UID.key(), proband.getFather().getUid());
-            OpenCGAResult<Individual> result = individualDBAdaptor.get(study.getUid(), query, options, userId);
-            if (result.getNumResults() == 1 && !skipIndividuals.contains(result.first().getId())) {
-                finalResult.put(Family.FamiliarRelationship.FATHER, Collections.singletonList(result.first()));
-            }
-        }
-        // Looking for mother
-        if (proband.getMother() != null && proband.getMother().getUid() > 0) {
-            Query query = new Query(IndividualDBAdaptor.QueryParams.UID.key(), proband.getMother().getUid());
-            OpenCGAResult<Individual> result = individualDBAdaptor.get(study.getUid(), query, options, userId);
-            if (result.getNumResults() == 1 && !skipIndividuals.contains(result.first().getId())) {
-                finalResult.put(Family.FamiliarRelationship.MOTHER, Collections.singletonList(result.first()));
-            }
-        }
-        return finalResult;
-    }
-
-    private Map<Family.FamiliarRelationship, List<Individual>> lookForChildren(Study study, Individual proband,
-                                                                               Set<String> skipIndividuals,
-                                                                               QueryOptions options, String userId)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Map<Family.FamiliarRelationship, List<Individual>> finalResult = new HashMap<>();
-
-        // Looking for children
-        Query query = new Query();
-        if (proband.getSex().getSex() == IndividualProperty.Sex.MALE) {
-            query.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), proband.getUid());
-        } else if (proband.getSex().getSex() == IndividualProperty.Sex.FEMALE) {
-            query.put(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), proband.getUid());
-        }
-        if (!query.isEmpty()) {
-            // Sex has been defined
-            OpenCGAResult<Individual> result = individualDBAdaptor.get(study.getUid(), query, options, userId);
-            for (Individual child : result.getResults()) {
-                if (skipIndividuals.contains(child.getId())) {
-                    // Skip current individuals
-                    continue;
-                }
-                Family.FamiliarRelationship sex = getChildSex(child);
-                if (!finalResult.containsKey(sex)) {
-                    finalResult.put(sex, new LinkedList<>());
-                }
-                finalResult.get(sex).add(child);
-            }
-        } else {
-            // Sex is undefined so we will check with both sexes
-            query.put(IndividualDBAdaptor.QueryParams.FATHER_UID.key(), proband.getUid());
-            OpenCGAResult<Individual> result = individualDBAdaptor.get(study.getUid(), query, options, userId);
-            if (result.getNumResults() > 0) {
-                for (Individual child : result.getResults()) {
-                    if (skipIndividuals.contains(child.getId())) {
-                        // Skip current individuals
-                        continue;
-                    }
-                    Family.FamiliarRelationship sex = getChildSex(child);
-                    if (!finalResult.containsKey(sex)) {
-                        finalResult.put(sex, new LinkedList<>());
-                    }
-                    finalResult.get(sex).add(child);
-                }
-            } else {
-                query = new Query(IndividualDBAdaptor.QueryParams.MOTHER_UID.key(), proband.getUid());
-                result = individualDBAdaptor.get(study.getUid(), query, options, userId);
-                for (Individual child : result.getResults()) {
-                    if (skipIndividuals.contains(child.getId())) {
-                        // Skip current individuals
-                        continue;
-                    }
-                    Family.FamiliarRelationship sex = getChildSex(child);
-                    if (!finalResult.containsKey(sex)) {
-                        finalResult.put(sex, new LinkedList<>());
-                    }
-                    finalResult.get(sex).add(child);
-                }
-            }
-        }
-
-        return finalResult;
-    }
-
-    private Family.FamiliarRelationship getChildSex(Individual individual) {
-        if (individual.getSex().getSex() == IndividualProperty.Sex.MALE) {
-            return Family.FamiliarRelationship.SON;
-        } else if (individual.getSex().getSex() == IndividualProperty.Sex.FEMALE) {
-            return Family.FamiliarRelationship.DAUGHTER;
-        } else {
-            return Family.FamiliarRelationship.CHILD_OF_UNKNOWN_SEX;
-        }
-    }
-
-    private QueryOptions fixOptionsForRelatives(QueryOptions options) {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        QueryOptions queryOptions = new QueryOptions(options);
-        if (options.containsKey(QueryOptions.INCLUDE)) {
-            Set<String> includeSet = new HashSet<>(options.getAsStringList(QueryOptions.INCLUDE));
-            includeSet.add(IndividualDBAdaptor.QueryParams.ID.key());
-            includeSet.add(IndividualDBAdaptor.QueryParams.UUID.key());
-            includeSet.add(IndividualDBAdaptor.QueryParams.SEX_ID.key());
-            includeSet.add(IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key());
-            includeSet.add(IndividualDBAdaptor.QueryParams.FATHER.key() + "." + IndividualDBAdaptor.QueryParams.UID.key());
-            includeSet.add(IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.ID.key());
-            includeSet.add(IndividualDBAdaptor.QueryParams.MOTHER.key() + "." + IndividualDBAdaptor.QueryParams.UID.key());
-
-            queryOptions.put(QueryOptions.INCLUDE, new ArrayList<>(includeSet));
-        } else if (options.containsKey(QueryOptions.EXCLUDE)) {
-            Set<String> excludeSet = new HashSet<>(options.getAsStringList(QueryOptions.EXCLUDE));
-            excludeSet.remove(IndividualDBAdaptor.QueryParams.ID.key());
-            excludeSet.remove(IndividualDBAdaptor.QueryParams.UUID.key());
-            excludeSet.remove(IndividualDBAdaptor.QueryParams.SEX_ID.key());
-            excludeSet.remove(IndividualDBAdaptor.QueryParams.FATHER.key());
-            excludeSet.remove(IndividualDBAdaptor.QueryParams.MOTHER.key());
-
-            queryOptions.put(QueryOptions.EXCLUDE, new ArrayList<>(excludeSet));
-        }
-
-        return queryOptions;
-    }
-
-    /**
-     * Assuming the individual entry contains the OPENCGA_RELATIVE attributes, it will extract the relation.
-     *
-     * @param individual Individual entry.
-     * @return The relation out of OPENCGA_RELATIVE attributes.
-     */
-    static Family.FamiliarRelationship extractIndividualRelation(Individual individual) {
-        if (individual.getAttributes() != null && individual.getAttributes().containsKey("OPENCGA_RELATIVE")) {
-            return (Family.FamiliarRelationship) ((ObjectMap) individual.getAttributes().get("OPENCGA_RELATIVE")).get("RELATION");
-        }
-        return Family.FamiliarRelationship.UNKNOWN;
-    }
-
-    private void addRelativeToList(Individual individual, Family.FamiliarRelationship relation, int degree,
-                                   List<Individual> individualList) {
-        if (individual.getAttributes() == null) {
-            individual.setAttributes(new ObjectMap());
-        }
-        ObjectMap params = new ObjectMap()
-                .append("DEGREE", degree)
-                .append("RELATION", relation);
-        individual.getAttributes().put("OPENCGA_RELATIVE", params);
-
-        individualList.add(individual);
     }
 
     @Override

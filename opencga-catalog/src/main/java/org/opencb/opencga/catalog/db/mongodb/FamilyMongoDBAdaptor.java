@@ -103,15 +103,15 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public OpenCGAResult insert(long studyId, Family family, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    public OpenCGAResult insert(long studyId, Family family, List<Individual> members, List<VariableSet> variableSetList,
+                                QueryOptions options) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> {
                 long tmpStartTime = startQuery();
                 logger.debug("Starting family insert transaction for family id '{}'", family.getId());
 
                 dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
-                insert(clientSession, studyId, family, variableSetList);
+                insert(clientSession, studyId, family, members, variableSetList);
                 return endWrite(tmpStartTime, 1, 1, 0, 0, null);
             });
         } catch (Exception e) {
@@ -120,7 +120,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
     }
 
-    Family insert(ClientSession clientSession, long studyUid, Family family, List<VariableSet> variableSetList)
+    Family insert(ClientSession clientSession, long studyUid, Family family, List<Individual> members, List<VariableSet> variableSetList)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (StringUtils.isEmpty(family.getId())) {
             throw new CatalogDBException("Missing family id");
@@ -133,18 +133,24 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             throw CatalogDBException.alreadyExists("Family", "id", family.getId());
         }
 
+        List<Individual> createIndividuals = family.getMembers();
+        List<Individual> allIndividuals = new LinkedList<>();
+        if (CollectionUtils.isNotEmpty(family.getMembers())) {
+            allIndividuals.addAll(family.getMembers());
+        }
+        if (CollectionUtils.isNotEmpty(members)) {
+            allIndividuals.addAll(members);
+        }
+        family.setMembers(allIndividuals);
+
         // First we check if we need to create any individuals
         if (CollectionUtils.isNotEmpty(family.getMembers())) {
             // In order to keep parent relations, we need to create parents before their children.
 
             // We initialise a map containing all the individuals
             Map<String, Individual> individualMap = new HashMap<>();
-            List<Individual> individualsToCreate = new ArrayList<>();
             for (Individual individual : family.getMembers()) {
                 individualMap.put(individual.getId(), individual);
-                if (individual.getUid() <= 0) {
-                    individualsToCreate.add(individual);
-                }
             }
 
             // We link father and mother to individual objects
@@ -158,14 +164,12 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             }
 
             // We start creating missing individuals
-            for (Individual individual : individualsToCreate) {
+            for (Individual individual : createIndividuals) {
                 createMissingIndividual(clientSession, studyUid, individual, individualMap, variableSetList);
             }
 
-            family.setMembers(new ArrayList<>(individualMap.values()));
-
             // Add family reference to the members
-            List<String> individualIds = individualMap.values().stream().map(Individual::getId).collect(Collectors.toList());
+            List<String> individualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
             dbAdaptorFactory.getCatalogIndividualDBAdaptor().updateFamilyReferences(clientSession, studyUid, individualIds, family.getId(),
                     ParamUtils.BasicUpdateAction.ADD);
         }
@@ -178,6 +182,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (StringUtils.isEmpty(family.getUuid())) {
             family.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FAMILY));
         }
+        calculateRoles(clientSession, studyUid, family);
 
         Document familyDocument = familyConverter.convertToStorageType(family, variableSetList);
 
@@ -353,8 +358,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         }
 
         DataResult result = updateAnnotationSets(clientSession, family.getUid(), parameters, variableSetList, queryOptions, true);
-        Document familyUpdate = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery).toFinalUpdateDocument();
+        UpdateDocument updateDocument = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery);
 
+        List<String> familyMemberIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
+        boolean updateRoles = queryOptions.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM);
         if (CollectionUtils.isNotEmpty(parameters.getAsList(QueryParams.MEMBERS.key()))) {
             List<Map> newIndividuals = parameters.getAsList(QueryParams.MEMBERS.key(), Map.class);
             Set<String> newIndividualIds = newIndividuals.stream().map(i -> (String) i.get(IndividualDBAdaptor.QueryParams.ID.key()))
@@ -379,7 +386,30 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             }
 
             updateFamilyReferenceInIndividuals(clientSession, family, missingIndividualIds, oldIndividualIds);
+
+            updateRoles = true;
+            familyMemberIds = new ArrayList<>(newIndividualIds);
         }
+
+        if (updateRoles) {
+            // CALCULATE ROLES
+            if (!familyMemberIds.isEmpty()) {
+                // Fetch individuals with relevant information to guess the relationship
+                Query individualQuery = new Query()
+                        .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), family.getStudyUid())
+                        .append(IndividualDBAdaptor.QueryParams.ID.key(), familyMemberIds);
+                QueryOptions relationshipOptions = dbAdaptorFactory.getCatalogIndividualDBAdaptor().fixOptionsForRelatives(null);
+                OpenCGAResult<Individual> memberResult = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(clientSession,
+                        individualQuery, relationshipOptions);
+                family.setMembers(memberResult.getResults());
+                calculateRoles(clientSession, family.getStudyUid(), family);
+                updateDocument.getSet().put(QueryParams.ROLES.key(), family.getRoles());
+            } else {
+                updateDocument.getSet().put(QueryParams.ROLES.key(), Collections.emptyMap());
+            }
+        }
+
+        Document familyUpdate = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery).toFinalUpdateDocument();
 
         if (familyUpdate.isEmpty() && result.getNumUpdated() == 0) {
             if (!parameters.isEmpty()) {
@@ -1024,6 +1054,45 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         QueryOptions queryOptions = new QueryOptions("multi", true);
 
         return new OpenCGAResult(familyCollection.update(bson, update, queryOptions));
+    }
+
+    private void calculateRoles(ClientSession clientSession, long studyUid, Family family)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        if (family.getMembers() == null || family.getMembers().size() <= 1) {
+            family.setRoles(Collections.emptyMap());
+            // Nothing to calculate
+            return;
+        }
+
+        Set<String> individualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toSet());
+
+        Map<String, Map<String, Family.FamiliarRelationship>> roles = new HashMap<>();
+        for (Individual member : family.getMembers()) {
+            List<Individual> individualList = dbAdaptorFactory.getCatalogIndividualDBAdaptor().calculateRelationship(clientSession,
+                    studyUid, member, 2, null);
+            Map<String, Family.FamiliarRelationship> memberRelation = new HashMap<>();
+            for (Individual individual : individualList) {
+                if (individualIds.contains(individual.getId())) {
+                    memberRelation.put(individual.getId(), extractIndividualRelation(individual));
+                }
+            }
+            roles.put(member.getId(), memberRelation);
+        }
+
+        family.setRoles(roles);
+    }
+
+    /**
+     * Assuming the individual entry contains the OPENCGA_RELATIVE attributes, it will extract the relation.
+     *
+     * @param individual Individual entry.
+     * @return The relation out of OPENCGA_RELATIVE attributes.
+     */
+    private static Family.FamiliarRelationship extractIndividualRelation(Individual individual) {
+        if (individual.getAttributes() != null && individual.getAttributes().containsKey("OPENCGA_RELATIVE")) {
+            return (Family.FamiliarRelationship) ((ObjectMap) individual.getAttributes().get("OPENCGA_RELATIVE")).get("RELATION");
+        }
+        return Family.FamiliarRelationship.UNKNOWN;
     }
 
     @Override
