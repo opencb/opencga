@@ -77,8 +77,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         queryOptions.append(QueryOptions.INCLUDE, "id");
         queryOptions.append(QueryOptions.LIMIT, "1");
 
-        VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions,
-                getToken());
+        VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions, getToken());
         Variant variant = variantQueryResult.first();
         if (variant == null) {
             // Nothing to do
@@ -86,58 +85,17 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             return;
         }
 
-        // Check if genome context is stored in the sample data
-        if (false) {
-            // Run mutational analysis taking into account that the genome context is stored in the the sample data
-            computeFromSampleData();
-        } else {
-            // Run mutational analysis taking into account that the genome context is stored in an index file
-            computeFromContextFile();
-        }
+        // Run mutational analysis taking into account that the genome context is stored in an index file,
+        // if the genome context file does not exist, it will be created !!!
+        computeFromContextFile();
     }
-
-    private void computeFromSampleData() throws ToolExecutorException {
-        // Get variant iterator
-        Query query = new Query();
-        if (getQuery() != null) {
-            query.putAll(getQuery());
-        }
-        query.append(VariantQueryParam.TYPE.key(), VariantType.SNV);
-
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.append(QueryOptions.INCLUDE, "id");
-
-        try {
-            VariantDBIterator iterator = getVariantStorageManager().iterator(query, queryOptions, getToken());
-            Map<String, Map<String, Double>> countMap = initFreqMap();
-
-            while (iterator.hasNext()) {
-                Variant variant = iterator.next();
-
-                // Update count map
-                String context = "";
-                updateCountMap(variant, context, countMap);
-            }
-
-            // Write context counts
-            writeCountMap(countMap, getOutDir().resolve(GENOME_CONTEXT_FILENAME).toFile());
-
-            // Run R script
-            if (isFitting()) {
-                executeRScript();
-            }
-
-        } catch (CatalogException | StorageEngineException | ToolException | IOException e) {
-            throw new ToolExecutorException(e);
-        }
-    }
-
+    
     private void computeFromContextFile() throws ToolExecutorException {
         // Context index filename
         File indexFile = null;
-        String name = getContextIndexFilename(getSample());
+        String indexFilename = getContextIndexFilename();
         try {
-            Query fileQuery = new Query("name", name);
+            Query fileQuery = new Query("name", indexFilename);
             QueryOptions fileQueryOptions = new QueryOptions("include", "uri");
             OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult = getVariantStorageManager()
                     .getCatalogManager()
@@ -157,7 +115,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
         if (indexFile == null) {
             // The genome context file does not exist, we have to create it !!!
-            indexFile = getOutDir().resolve(getContextIndexFilename(getSample())).toFile();
+            indexFile = getOutDir().resolve(indexFilename).toFile();
             createGenomeContextFile(indexFile);
         }
 

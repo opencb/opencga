@@ -209,4 +209,10 @@ public class Panel extends DiseasePanel implements IPrivateStudyUid {
         this.uid = uid;
         return this;
     }
+
+    @Override
+    public Panel setGenes(List<GenePanel> genes) {
+        super.setGenes(genes);
+        return this;
+    }
 }

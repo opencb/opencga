@@ -387,10 +387,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             }
         }
 
-        if (parameters.containsKey(INTERNAL_STATUS_ID.key())) {
-            projectParameters.put("projects.$." + INTERNAL_STATUS_ID.key(),
-                    parameters.get(INTERNAL_STATUS_ID.key()));
-            projectParameters.put("projects.$." + QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS.key())) {
+            projectParameters.put("projects.$." + QueryParams.INTERNAL_STATUS.key(),
+                    getMongoDBDocument(parameters.get(QueryParams.INTERNAL_STATUS.key()), "InternalStatus"));
         }
 
         if (!projectParameters.isEmpty()) {

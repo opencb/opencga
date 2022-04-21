@@ -52,9 +52,16 @@ spec:
             - "--uri"
             - "{{ .Values.mongodb.uri}}"
 #            - "mongodb://{{ .Values.mongodb.hosts}}/?replicaSet={{ .Values.mongodb.replicaSet}}"
+            {{- if empty .Values.mongodb.databaseFrom }}
             - "-d"
             - "{{ .Values.mongodb.database }}"
+            {{- else }}
+            - "--nsFrom"
+            - "{{ .Values.mongodb.databaseFrom }}.*"
+            - "--nsTo"
+            - "{{ .Values.mongodb.database }}.*"
             - "--archive=/data/{{ tpl .Values.mongodb.archiveFileName . }}"
+            {{- end}}
             {{- range .Values.mongodb.args }}
             - {{ . | quote }}
             {{- end }}

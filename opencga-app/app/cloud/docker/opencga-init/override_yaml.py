@@ -195,7 +195,10 @@ with open(args.client_config_path) as f:
     client_config = yaml.safe_load(f)
 
 # Inject grpc and rest host
-client_config["rest"]["host"] = args.rest_host.replace('"','')
+client_config["rest"]["hosts"] = [{}]
+client_config["rest"]["hosts"][0]["name"] = "default"
+client_config["rest"]["hosts"][0]["url"] = args.rest_host.replace('"','')
+client_config["rest"]["defaultHostIndex"] = 0
 client_config["grpc"]["host"] = args.grpc_host.replace('"','')
 
 # Running with --save will update the configuration files inplace.
