@@ -3,6 +3,8 @@ package org.opencb.opencga.app.cli.main.utils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,8 +14,10 @@ import static org.opencb.commons.utils.PrintUtils.*;
 
 public class LoginUtils {
 
+    private static final Logger logger = LoggerFactory.getLogger(LoginUtils.class);
+
     public static String[] parseLoginCommand(String[] args) {
-        CommandLineUtils.debug("LOGIN COMMAND: " + CommandLineUtils.argsToString(args));
+        logger.debug("LOGIN COMMAND: " + CommandLineUtils.argsToString(args));
 
         // 1. Make sure first argument is 'login'
         if (!args[0].equals("login")) {
@@ -73,7 +77,7 @@ public class LoginUtils {
 
     private static String[] loginUser(String[] args) {
         String user = System.console().readLine(format("\nEnter your user: ", PrintUtils.Color.GREEN)).trim();
-        CommandLineUtils.debug("Login user " + user);
+        logger.debug("Login user " + user);
         return loginUser(args, user);
     }
 
@@ -83,7 +87,7 @@ public class LoginUtils {
             char[] passwordArray = System.console().readPassword(format("\nEnter your password: ", PrintUtils.Color.GREEN));
             password = new String(passwordArray).trim();
         } else {
-            CommandLineUtils.debug("System.console() is null");
+            logger.debug("System.console() is null");
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
                 password = reader.readLine();
             } catch (IOException e) {
@@ -93,7 +97,7 @@ public class LoginUtils {
 
         if (CommandLineUtils.isValidUser(user)) {
             args = ArrayUtils.addAll(args, "-u", user, "--password", password);
-            CommandLineUtils.debug(ArrayUtils.toString(args));
+            logger.debug(ArrayUtils.toString(args));
         } else {
             println(PrintUtils.format("Invalid user name: ", Color.RED) + PrintUtils.format(user, Color.DEFAULT));
             printUsage(args);

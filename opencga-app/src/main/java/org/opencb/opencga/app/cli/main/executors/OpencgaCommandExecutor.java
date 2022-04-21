@@ -172,7 +172,8 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             }
 
         } catch (IOException e) {
-            CommandLineUtils.printLog("OpencgaCommandExecutorError " + e.getMessage(), e);
+            logger.error("OpencgaCommandExecutorError", e);
+            CommandLineUtils.error("OpencgaCommandExecutorError", e);
         }
     }
 
@@ -215,8 +216,8 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         String jsonInString = "Data model not found.";
         try {
             jsonInString = DataModelsUtils.dataModelToJsonString(o.getClass());
-        } catch (Throwable e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            CommandLineUtils.error(e);
         }
         return jsonInString;
     }

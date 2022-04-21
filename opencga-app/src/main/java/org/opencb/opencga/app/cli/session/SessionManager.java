@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class SessionManager {
 
@@ -69,13 +70,13 @@ public class SessionManager {
         boolean validHost = false;
         if (clientConfiguration != null) {
             for (HostConfig hostConfig : clientConfiguration.getRest().getHosts()) {
-                if (hostConfig.getName().equals(host)) {
+                if (Objects.equals(hostConfig.getName(), host)) {
                     validHost = true;
                     break;
                 }
             }
         } else {
-            CommandLineUtils.error("The client configuration can not be null. Please check configuration file.", null);
+            CommandLineUtils.error("The client configuration can not be null. Please check configuration file.");
             System.exit(-1);
         }
 

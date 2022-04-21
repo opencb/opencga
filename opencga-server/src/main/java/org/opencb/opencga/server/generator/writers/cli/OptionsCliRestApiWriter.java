@@ -109,7 +109,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             sb.append("\n");
         }
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
-            String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
+            String commandName = getCommandName(restCategory, restEndpoint);
             if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName)) {
                     sb.append("        public " + getAsClassName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions "
@@ -130,7 +130,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             sb.append("        this.commonCommandOptions = commonCommandOptions;\n");
         }
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
-            String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
+            String commandName = getCommandName(restCategory, restEndpoint);
             if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName)) {
                     sb.append("        this." + getAsVariableName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions = " +
@@ -151,7 +151,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         CategoryConfig config = availableCategoryConfigs.get(key);
         StringBuilder sb = new StringBuilder();
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
-            String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
+            String commandName = getCommandName(restCategory, restEndpoint);
             if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName) && !config.isExtendedOptionCommand(commandName)) {
                     sb.append("    @Parameters(commandNames = {\"" + reverseCommandName(commandName) + "\"}, commandDescription =\"" +

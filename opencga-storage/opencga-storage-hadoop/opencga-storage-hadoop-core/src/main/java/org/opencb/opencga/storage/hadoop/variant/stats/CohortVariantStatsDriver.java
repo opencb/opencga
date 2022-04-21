@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.hadoop.utils.AvroWritable;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.VariantTableAggregationDriver;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
@@ -294,11 +295,13 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
         private String study;
         private ExposedVariantSetStatsCalculator calculator;
         private Set<Integer> fileIds;
+        private HBaseToVariantAnnotationConverter converter;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
 
+            converter = new HBaseToVariantAnnotationConverter();
             int numSamples = context.getConfiguration().getInt(NUM_SAMPLES, 0);
             study = String.valueOf(getStudyId());
             fileIds = new HashSet<>(getFiles(context.getConfiguration()));
@@ -324,7 +327,7 @@ public class CohortVariantStatsDriver extends VariantTableAggregationDriver {
             }).walk();
 
             variant.setStudies(Collections.singletonList(studyEntry));
-            variant.setAnnotation(row.getVariantAnnotation());
+            variant.setAnnotation(row.getVariantAnnotation(converter));
 
             context.getCounter(COUNTER_GROUP_NAME, "hbase_rows").increment(1);
             if (entries.isEmpty()) {

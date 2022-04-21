@@ -599,7 +599,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         final String[] acceptedObjectParams = {QueryParams.MEMBERS.key(), QueryParams.PHENOTYPES.key(), QueryParams.DISORDERS.key(),
-                QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key(), QueryParams.ROLES.key()};
+                QueryParams.STATUS.key(), QueryParams.QUALITY_CONTROL.key(), QueryParams.ROLES.key(), QueryParams.INTERNAL_STATUS.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
         if (document.getSet().containsKey(QueryParams.STATUS.key())) {
             nestedPut(QueryParams.STATUS_DATE.key(), TimeUtils.getTime(), document.getSet());
@@ -635,11 +635,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             }
 
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
-        }
-
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
-            document.getSet().put(QueryParams.INTERNAL_STATUS_ID.key(), parameters.get(QueryParams.INTERNAL_STATUS_ID.key()));
-            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         familyConverter.validateDocumentToUpdate(document.getSet());
@@ -1101,7 +1096,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         break;
                     case PHENOTYPES:
                     case DISORDERS:
-                        addOntologyQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
+                        addDefaultOrQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
                         break;
                     case ANNOTATION:
                         if (annotationDocument == null) {

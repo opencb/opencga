@@ -27,6 +27,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
+import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
@@ -238,6 +239,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
     public static class FisherTestMapper  extends VariantRowMapper<NullWritable, Text> {
         protected HBaseVariantStatsCalculator caseCohortCalculator;
         protected HBaseVariantStatsCalculator controlCohortCalculator;
+        protected HBaseToVariantAnnotationConverter converter;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
@@ -255,6 +257,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
                     metadataManager, studyMetadata, caseCohortIds, false, "0/0");
             controlCohortCalculator = new HBaseVariantStatsCalculator(
                     metadataManager, studyMetadata, controlCohortIds, false, "0/0");
+            converter = new HBaseToVariantAnnotationConverter();
         }
 
         @Override
@@ -274,7 +277,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
                 context.getCounter(COUNTER_GROUP_NAME, "Variant").increment(1);
                 FisherTestResult fisherTestResult = new FisherExactTest().fisherTest(a, b, c, d);
 
-                VariantAnnotation variantAnnotation = result.getVariantAnnotation();
+                VariantAnnotation variantAnnotation = result.getVariantAnnotation(converter);
                 String id = null;
                 Set<String> genes = Collections.emptySet();
                 if (variantAnnotation != null) {
