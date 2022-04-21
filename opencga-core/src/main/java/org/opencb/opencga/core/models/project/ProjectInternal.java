@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.models.project;
 
-import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -78,11 +77,11 @@ public class ProjectInternal extends Internal {
         return this;
     }
 
-    public Status getStatus() {
+    public InternalStatus getStatus() {
         return status;
     }
 
-    public ProjectInternal setStatus(Status status) {
+    public ProjectInternal setStatus(InternalStatus status) {
         this.status = status;
         return this;
     }

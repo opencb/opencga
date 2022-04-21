@@ -36,22 +36,18 @@ public class CommandProcessor {
                 //2. Parse params of options files
                 cliOptionsParser.parse(args);
                 if (!ArrayUtils.isEmpty(args)) {
-                    CommandLineUtils.debug("PARSED OPTIONS ::: " + CommandLineUtils.argsToString(args));
                     logger.debug("PARSED OPTIONS ::: " + CommandLineUtils.argsToString(args));
                     try {
                         // 3. Check if a command has been provided is valid
                         String parsedCommand = cliOptionsParser.getCommand();
-                        CommandLineUtils.debug("COMMAND TO EXECUTE ::: " + CommandLineUtils.argsToString(args));
                         logger.debug("COMMAND TO EXECUTE ::: " + CommandLineUtils.argsToString(args));
                         if (cliOptionsParser.isValid(parsedCommand)) {
                             // 4. Get command executor from ExecutorProvider
-                            CommandLineUtils.debug("COMMAND AND SUBCOMMAND ARE VALID");
                             logger.debug("COMMAND AND SUBCOMMAND ARE VALID");
                             String parsedSubCommand = cliOptionsParser.getSubCommand();
 
                             OpencgaCommandExecutor commandExecutor = ExecutorProvider.getOpencgaCommandExecutor(cliOptionsParser, parsedCommand);
                             // 5. Execute parsed command with executor provided using CommandProcessor Implementation
-                            CommandLineUtils.debug("EXECUTING ::: " + CommandLineUtils.argsToString(args));
                             logger.debug("EXECUTING ::: " + CommandLineUtils.argsToString(args));
 
                             if (commandExecutor != null) {
@@ -60,8 +56,8 @@ public class CommandProcessor {
                                     commandExecutor.getSessionManager().saveSession();
                                     loadSessionStudies(commandExecutor);
                                 } catch (Exception ex) {
-                                    CommandLineUtils.error("Execution error: " + ex.getMessage(), ex);
-                                    logger.error("Execution error: " + ex.getMessage(), ex);
+                                    CommandLineUtils.error("Execution error", ex);
+                                    logger.error("Execution error", ex);
                                 }
                             } else {
                                 cliOptionsParser.printUsage();
@@ -96,8 +92,6 @@ public class CommandProcessor {
     public void loadSessionStudies(OpencgaCommandExecutor commandExecutor) {
         Session session = commandExecutor.getSessionManager().getSession();
         if (!StringUtils.isEmpty(session.getToken()) && !SessionManager.NO_TOKEN.equals(session.getToken())) {
-            CommandLineUtils.debug("Loading session studies using token: "
-                    + session.getToken());
             logger.debug("Loading session studies using token: "
                     + session.getToken());
 
@@ -117,12 +111,10 @@ public class CommandProcessor {
 
                 if (CollectionUtils.isNotEmpty(studies)) {
                     //Save all the user studies in session
-                    CommandLineUtils.debug("Retrieved studies: " + studies);
                     logger.debug("Retrieved studies: " + studies);
 
                     session.setStudies(studies);
 
-                    CommandLineUtils.debug("Session studies: " + session.getStudies());
                     logger.debug("Session studies: " + session.getStudies());
 
                     //If the List of studies retrieved doesn't contain the current study, must select the new one
@@ -138,7 +130,6 @@ public class CommandProcessor {
                                 break;
                             }
                         }
-                        CommandLineUtils.debug("Current study: " + session.getCurrentStudy());
                         logger.debug("Current study: " + session.getCurrentStudy());
 
                         // If none is found, save the first one as the current study
@@ -153,8 +144,6 @@ public class CommandProcessor {
                 CommandLineUtils.error("Failure reloading studies ", e);
                 logger.error("Failure reloading studies ", e);
             }
-            CommandLineUtils.debug("Session studies: " + commandExecutor.getSessionManager().getSession().getStudies().toString());
-            CommandLineUtils.debug("Current study: " + commandExecutor.getSessionManager().getSession().getCurrentStudy());
             logger.debug("Session studies: " + commandExecutor.getSessionManager().getSession().getStudies().toString());
             logger.debug("Current study: " + commandExecutor.getSessionManager().getSession().getCurrentStudy());
         }

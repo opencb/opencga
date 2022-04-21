@@ -48,11 +48,11 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("import org.opencb.opencga.core.response.RestResponse;\n");
         sb.append("import org.opencb.opencga.client.exceptions.ClientException;\n");
         sb.append("import org.opencb.commons.datastore.core.ObjectMap;\n\n");
-        sb.append("import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;\n\n");
+        sb.append("import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;\n");
+        sb.append("import org.opencb.opencga.core.common.JacksonUtils;\n\n");
 
         sb.append("import java.util.List;\n");
         sb.append("import org.opencb.opencga.core.response.QueryType;\n");
-        sb.append("import com.fasterxml.jackson.databind.ObjectMapper;\n\n");
         sb.append("import org.opencb.commons.utils.PrintUtils;\n\n");
 
 
@@ -173,7 +173,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("        RestResponse queryResponse = null;\n\n");
         sb.append("        switch (subCommandString) {\n");
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
-            String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
+            String commandName = getCommandName(restCategory, restEndpoint);
             if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName)) {
                     sb.append("            case \"" + reverseCommandName(commandName) + "\":\n");
@@ -213,7 +213,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         CategoryConfig config = availableCategoryConfigs.get(key);
         sb.append(methodExecute(restCategory, config));
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
-            String commandName = getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
+            String commandName = getCommandName(restCategory, restEndpoint);
             if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName)) {
                     sb.append("\n");
@@ -289,8 +289,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             sb.append("\n            PrintUtils.println(getObjectAsJSON(" + getAsVariableName(bodyClassName) + "));");
             sb.append("\n            return res;");
             sb.append("\n        } else if (commandOptions.jsonFile != null) {");
-            sb.append("\n            ObjectMapper objectMapper = new ObjectMapper();");
-            sb.append("\n            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), " + getAsVariableName(bodyClassName) + ");");
+            sb.append("\n            " + getAsVariableName(bodyClassName) + " = JacksonUtils.getDefaultObjectMapper()");
+            sb.append("\n                    .readValue(new java.io.File(commandOptions.jsonFile), " + bodyClassName + ".class);");
             sb.append("\n        } ");
             if (hasParameters(restEndpoint.getParameters(), commandName, config)) {
                 sb.append(" else {");

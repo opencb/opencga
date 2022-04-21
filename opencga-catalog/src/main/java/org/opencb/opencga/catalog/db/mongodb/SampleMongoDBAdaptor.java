@@ -598,7 +598,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
         final String[] acceptedObjectParams = {QueryParams.SOURCE.key(), QueryParams.COLLECTION.key(), QueryParams.PROCESSING.key(),
-                QueryParams.STATUS.key(),
+                QueryParams.STATUS.key(), QueryParams.INTERNAL_STATUS.key(),
                 QueryParams.QUALITY_CONTROL.key(), QueryParams.INTERNAL_VARIANT_INDEX.key(),
                 QueryParams.INTERNAL_VARIANT_GENOTYPE_INDEX.key(), QueryParams.INTERNAL_VARIANT_ANNOTATION_INDEX.key(),
                 QueryParams.INTERNAL_VARIANT_SECONDARY_INDEX.key()};
@@ -636,11 +636,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             }
 
             document.getSet().put(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()));
-        }
-
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
-            document.getSet().put(QueryParams.INTERNAL_STATUS_ID.key(), parameters.get(QueryParams.INTERNAL_STATUS_ID.key()));
-            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         if (parameters.containsKey(QueryParams.INTERNAL_RGA.key())) {
@@ -1331,7 +1326,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                         addAutoOrQuery(PRIVATE_STUDY_UID, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case PHENOTYPES:
-                        addOntologyQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
+                        addDefaultOrQueryFilter(queryParam.key(), queryParam.key(), queryCopy, andBsonList);
                         break;
                     case ANNOTATION:
                         if (annotationDocument == null) {

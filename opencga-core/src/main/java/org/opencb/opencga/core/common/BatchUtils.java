@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.utils;
+package org.opencb.opencga.core.common;
 
 import java.util.ArrayList;
 import java.util.Collections;

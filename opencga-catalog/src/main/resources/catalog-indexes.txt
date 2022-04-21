@@ -182,6 +182,7 @@
 {"collection": "panel", "fields": {"disorders.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "panel", "fields": {"variants.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "panel", "fields": {"genes.id": 1, "studyUid": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"genes.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "panel", "fields": {"regions.id": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "panel", "fields": {"categories.name": 1, "studyUid": 1}, "options": {"background": true}}
 {"collection": "panel", "fields": {"_creationDate": 1, "studyUid": 1}, "options": {"background": true}}

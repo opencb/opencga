@@ -31,7 +31,13 @@ import java.util.*;
  */
 public class Configuration {
 
+    /**
+     * Service log level. Used for the REST and MASTER services.
+     */
     private String logLevel;
+    /**
+     * Service log dir. Used for the REST and MASTER services.
+     */
     private String logDir;
 
     private boolean openRegister;

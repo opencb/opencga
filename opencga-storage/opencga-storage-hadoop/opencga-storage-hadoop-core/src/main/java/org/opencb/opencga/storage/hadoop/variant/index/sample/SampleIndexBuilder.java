@@ -22,7 +22,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
 /**
  * Created by jacobo on 04/01/19.
  */
-public class SampleIndexLoader {
+public class SampleIndexBuilder {
 
     private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
@@ -30,9 +30,9 @@ public class SampleIndexLoader {
     private final MRExecutor mrExecutor;
     private final VariantStorageMetadataManager metadataManager;
     private final SampleIndexSchema schema;
-    private Logger logger = LoggerFactory.getLogger(SampleIndexLoader.class);
+    private Logger logger = LoggerFactory.getLogger(SampleIndexBuilder.class);
 
-    public SampleIndexLoader(SampleIndexDBAdaptor sampleIndexDBAdaptor, String study, MRExecutor mrExecutor) {
+    public SampleIndexBuilder(SampleIndexDBAdaptor sampleIndexDBAdaptor, String study, MRExecutor mrExecutor) {
         this.sampleIndexDBAdaptor = sampleIndexDBAdaptor;
         this.study = study;
         this.mrExecutor = mrExecutor;
