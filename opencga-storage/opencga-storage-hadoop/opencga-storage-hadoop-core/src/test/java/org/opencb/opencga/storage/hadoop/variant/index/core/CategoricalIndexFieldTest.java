@@ -38,7 +38,7 @@ public class CategoricalIndexFieldTest {
 
     @Test
     public void testEncodeDecode() {
-        SampleIndexSchema indexSchema = new SampleIndexSchema(SampleIndexConfiguration.defaultConfiguration());
+        SampleIndexSchema indexSchema = SampleIndexSchema.defaultSampleIndexSchema();
         CategoricalMultiValuedIndexField<String> field = (CategoricalMultiValuedIndexField<String>) indexSchema.getCtIndex().getField();
 
         List<String> expected = Arrays.asList("synonymous_variant", "missense_variant");

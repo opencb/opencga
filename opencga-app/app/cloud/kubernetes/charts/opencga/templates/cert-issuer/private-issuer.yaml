@@ -11,6 +11,8 @@ kind: Issuer
 metadata:
   name: {{ .Values.tls.privateIssuer.selfSignedName }}
   namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   selfSigned: {}
 ---
@@ -20,6 +22,8 @@ kind: Certificate
 metadata:
   name: {{ .Values.tls.privateIssuer.caName }}-selfsigned-cert
   namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   isCA: true
   commonName: "*.{{ .Release.Namespace }}.svc.cluster.local"
@@ -40,6 +44,8 @@ kind: Issuer
 metadata:
   name: {{ .Values.tls.privateIssuer.caName }}
   namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   ca:
     secretName: {{ .Values.tls.privateIssuer.caCertificateSecretRef }}

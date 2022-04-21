@@ -27,12 +27,14 @@ public class VariantSampleDeleteParams extends ToolParams {
     public VariantSampleDeleteParams() {
     }
 
-    public VariantSampleDeleteParams(List<String> sample, boolean resume) {
+    public VariantSampleDeleteParams(List<String> sample, boolean force, boolean resume) {
         this.sample = sample;
+        this.force = force;
         this.resume = resume;
     }
 
     private List<String> sample;
+    private boolean force;
     private boolean resume;
 
     public List<String> getSample() {
@@ -41,6 +43,15 @@ public class VariantSampleDeleteParams extends ToolParams {
 
     public VariantSampleDeleteParams setSample(List<String> sample) {
         this.sample = sample;
+        return this;
+    }
+
+    public boolean isForce() {
+        return force;
+    }
+
+    public VariantSampleDeleteParams setForce(boolean force) {
+        this.force = force;
         return this;
     }
 

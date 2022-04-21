@@ -10,6 +10,7 @@ public class ExceptionUtils {
     public static String prettyExceptionMessage(Throwable exception) {
         return prettyExceptionMessage(exception, new StringBuilder()).toString();
     }
+
     public static String prettyExceptionMessage(Throwable exception, boolean multiline, boolean includeClassName) {
         return prettyExceptionMessage(exception, new StringBuilder(), multiline, includeClassName).toString();
     }
@@ -22,7 +23,8 @@ public class ExceptionUtils {
         return prettyExceptionMessage(exception, message, multiline, multiline);
     }
 
-    public static StringBuilder prettyExceptionMessage(Throwable exception, StringBuilder message, boolean multiline, boolean includeClassName) {
+    public static StringBuilder prettyExceptionMessage(Throwable exception, StringBuilder message, boolean multiline,
+                                                       boolean includeClassName) {
         Set<String> messages = new HashSet<>();
         do {
             if (exception.getMessage() != null && !messages.add(exception.getMessage())) {
@@ -53,4 +55,7 @@ public class ExceptionUtils {
         return message;
     }
 
+    public static String prettyExceptionStackTrace(Throwable exception) {
+        return org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(exception);
+    }
 }

@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
-import json
 import os
 import requests
 import sys
-# import pathlib
+import json
 from pathlib import Path
 
 ## Configure command-line options
@@ -95,15 +94,13 @@ def tag_latest(image):
     if server:
         print("Don't use tag latest in server " + server)
         return
-
-    latest_tag = os.popen(
-        ("curl -s https://registry.hub.docker.com/v1/repositories/" + org + "/opencga-" + image + "/tags"
-         + " | jq -r .[].name"
-         + " | grep -v latest"
-         + " | grep -v hdp"
-         + " | grep -v dev"
-         + " | sort -r -h"
-         + " | head"))
+    latest_tag = os.popen(("curl -s https://registry.hub.docker.com/v1/repositories/" + org + "/opencga-" + image + "/tags"
+                           + " | jq -r .[].name"
+                           + " | grep -v latest"
+                           + " | grep -v hdp"
+                           + " | grep -v dev"
+                           + " | sort -r -h"
+                           + " | head"))
     if tag >= latest_tag.read():
         print("*********************************************")
         print("Pushing " + org + "/opencga-" + image + ":latest")

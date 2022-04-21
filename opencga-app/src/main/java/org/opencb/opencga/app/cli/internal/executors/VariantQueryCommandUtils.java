@@ -19,20 +19,19 @@ package org.opencb.opencga.app.cli.internal.executors;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Map;
 
 import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.VCF;
 
@@ -43,19 +42,16 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
 
     private static Logger logger = LoggerFactory.getLogger(VariantQueryCommandUtils.class);
 
-    public static Query parseQuery(VariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions, Map<Long, String> studyIds, ClientConfiguration clientConfiguration)
-            throws Exception {
-        return parseQuery(queryVariantsOptions, studyIds.values(), clientConfiguration);
-    }
-
-    public static Query parseQuery(VariantCommandOptions.AbstractVariantQueryCommandOptions queryVariantsOptions, Collection<String> studies, ClientConfiguration clientConfiguration)
+    public static Query parseQuery(VariantCommandOptions.AbstractVariantQueryCommandOptions queryVariantsOptions,
+                                   Collection<String> studies)
             throws IOException {
 
         if ("TEXT".equalsIgnoreCase(queryVariantsOptions.commonOptions.outputFormat)) {
             queryVariantsOptions.commonOptions.outputFormat = VCF.name();
         }
 
-        VariantOutputFormat of = VariantWriterFactory.toOutputFormat(queryVariantsOptions.commonOptions.outputFormat, queryVariantsOptions.outputFileName);
+        VariantOutputFormat of = VariantWriterFactory.toOutputFormat(queryVariantsOptions.commonOptions.outputFormat,
+                queryVariantsOptions.outputFileName);
         Query query = parseGenericVariantQuery(
                 queryVariantsOptions.genericVariantQueryOptions, queryVariantsOptions.study, studies,
                 queryVariantsOptions.numericOptions.count, of);
@@ -74,14 +70,6 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
         addParam(query, VariantCatalogQueryUtils.PANEL_ROLE_IN_CANCER, queryVariantsOptions.panelRoleInCancer);
         addParam(query, VariantCatalogQueryUtils.PANEL_FEATURE_TYPE, queryVariantsOptions.panelFeatureType);
         addParam(query, VariantCatalogQueryUtils.SAVED_FILTER, queryVariantsOptions.savedFilter);
-
-        if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)
-                && clientConfiguration != null
-                && clientConfiguration.getVariant() != null
-                && clientConfiguration.getVariant().getUnknownGenotype() != null
-                ) {
-            query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), clientConfiguration.getVariant().getUnknownGenotype());
-        }
 
         return query;
     }
@@ -121,5 +109,4 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
 
         return queryOptions;
     }
-
 }

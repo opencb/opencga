@@ -22,10 +22,11 @@ public class VariantExportParams extends VariantQueryParams {
     public static final String DESCRIPTION = "Variant export params";
     private String outdir;
     private String outputFileName;
-    private String outputFormat;
+    private String outputFileFormat; //<<<<< CAMBIAR
     private String variantsFile;
     private String include;
     private String exclude;
+    private boolean compress;
     private Integer limit;
     private Integer skip;
     private boolean summary;
@@ -33,12 +34,12 @@ public class VariantExportParams extends VariantQueryParams {
     public VariantExportParams() {
     }
 
-    public VariantExportParams(Query query, String outdir, String outputFileName, String outputFormat,
+    public VariantExportParams(Query query, String outdir, String outputFileName, String outputFileFormat,
                                String variantsFile) {
         super(query);
         this.outdir = outdir;
         this.outputFileName = outputFileName;
-        this.outputFormat = outputFormat;
+        this.outputFileFormat = outputFileFormat;
         this.variantsFile = variantsFile;
     }
 
@@ -60,17 +61,28 @@ public class VariantExportParams extends VariantQueryParams {
         return this;
     }
 
-    public String getOutputFormat() {
-        return outputFormat;
+    public String getOutputFileFormat() {
+        return outputFileFormat;
     }
 
-    public VariantExportParams setOutputFormat(String outputFormat) {
-        this.outputFormat = outputFormat;
+    public VariantExportParams setOutputFileFormat(String outputFileFormat) {
+        this.outputFileFormat = outputFileFormat;
         return this;
     }
 
-    public void setVariantsFile(String variantsFile) {
+    public boolean isCompress() {
+        return compress;
+    }
+
+    public VariantExportParams setCompress(boolean compress) {
+        this.compress = compress;
+        return this;
+    }
+
+    public VariantExportParams setVariantsFile(String variantsFile) {
+
         this.variantsFile = variantsFile;
+        return this;
     }
 
     public String getVariantsFile() {

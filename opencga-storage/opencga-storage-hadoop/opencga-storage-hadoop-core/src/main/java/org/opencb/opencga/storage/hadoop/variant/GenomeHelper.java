@@ -51,15 +51,11 @@ public class GenomeHelper {
 
     private int studyId;
 
-    public GenomeHelper(GenomeHelper other) {
-        this(other.getConf());
-    }
-
     protected GenomeHelper(GenomeHelper other, int studyId) {
         this(other.getConf(), studyId);
     }
 
-    public GenomeHelper(Configuration conf) {
+    protected GenomeHelper(Configuration conf) {
         this(conf, conf.getInt(HadoopVariantStorageEngine.STUDY_ID, -1));
     }
 
@@ -69,7 +65,11 @@ public class GenomeHelper {
         // Phoenix local indexes fail if the default_column_family is lower case
         // TODO: Report this bug to phoenix JIRA
         this.chunkSize = conf.getInt(ARCHIVE_CHUNK_SIZE.key(), ARCHIVE_CHUNK_SIZE.defaultValue());
-        this.studyId = studyId > 0 ? studyId : conf.getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
+        this.studyId = studyId > 0 ? studyId : getStudyId(conf);
+    }
+
+    public static int getStudyId(Configuration conf) {
+        return conf.getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
     }
 
     public Configuration getConf() {

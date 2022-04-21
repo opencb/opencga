@@ -16,10 +16,9 @@
 
 package org.opencb.opencga.server.rest;
 
-
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import org.opencb.opencga.core.tools.annotations.Api;
+import org.opencb.opencga.core.tools.annotations.ApiOperation;
+import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.core.exceptions.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -35,7 +34,6 @@ public class TestWSServer extends OpenCGAWSServer {
     public TestWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
-
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -55,7 +53,6 @@ public class TestWSServer extends OpenCGAWSServer {
         }
         return buildResponse(Response.ok("Hello, it worked"));
     }
-
 
 //    @GET
 //    @Path("/{param}")

@@ -115,7 +115,7 @@ public class AdminMain {
                             commandExecutor = new MigrationCommandExecutor(cliOptionsParser.getMigrationCommandOptions());
                             break;
                         default:
-                            System.out.printf(String.format("ERROR: not valid command passed: '%s'", parsedCommand));
+                            System.out.printf("ERROR: not valid command passed: '%s'", parsedCommand);
                             break;
                     }
 
@@ -123,15 +123,11 @@ public class AdminMain {
                         try {
                             commandExecutor.loadConfiguration();
                             commandExecutor.loadStorageConfiguration();
-                        } catch (IOException ex) {
-                            if (commandExecutor.getLogger() == null) {
-                                ex.printStackTrace();
-                            } else {
-                                commandExecutor.getLogger().error("Error reading OpenCGA Storage configuration: " + ex.getMessage());
-                            }
-                        }
-                        try {
                             commandExecutor.execute();
+                        } catch (IOException e) {
+                            System.err.println("Configuration files not found: " + e);
+                            e.printStackTrace();
+                            System.exit(1);
                         } catch (Exception e) {
                             e.printStackTrace();
                             System.exit(1);

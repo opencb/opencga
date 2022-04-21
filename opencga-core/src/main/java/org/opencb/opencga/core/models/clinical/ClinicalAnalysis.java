@@ -21,6 +21,9 @@ import org.opencb.biodata.models.clinical.ClinicalAudit;
 import org.opencb.biodata.models.clinical.ClinicalComment;
 import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.common.Status;
+import org.opencb.commons.annotations.DataClass;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.models.PrivateStudyUid;
 import org.opencb.opencga.core.models.common.FlagAnnotation;
 import org.opencb.opencga.core.models.family.Family;
@@ -36,6 +39,8 @@ import java.util.Map;
 /**
  * Created by pfurio on 05/06/17.
  */
+@DataClass(id = "ClinicalAnalysis", since = "1.0",
+        description = "ClinicalAnalysis data model hosts information about any analysis.")
 public class ClinicalAnalysis extends PrivateStudyUid {
 
     /**
@@ -43,6 +48,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote Required, Immutable, Unique
      */
+    @DataField(id = "id", required = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_ID_DESCRIPTION)
     private String id;
 
     /**
@@ -51,6 +58,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote Internal, Unique, Immutable
      */
+    @DataField(id = "uuid", managed = true, indexed = true, unique = true, immutable = true,
+            description = FieldConstants.GENERIC_UUID_DESCRIPTION)
     private String uuid;
 
     /**
@@ -58,30 +67,69 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote
      */
+    @DataField(id = "description", defaultValue = "No description available",
+            description = FieldConstants.GENERIC_DESCRIPTION_DESCRIPTION)
     private String description;
+
+    @DataField(id = "type", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_TYPE)
     private Type type;
 
+    @DataField(id = "disorder", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_DISORDER)
     private Disorder disorder;
 
     // List of files (VCF, BAM and BIGWIG)
+    @DataField(id = "files", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_FILES)
     private List<File> files;
 
+    @DataField(id = "proband", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_PROBAND)
     private Individual proband;
+
+    @DataField(id = "family", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_FAMILY)
     private Family family;
 
+    @DataField(id = "panels", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_PANELS)
     private List<Panel> panels;
+
+    @DataField(id = "panelLock", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_PANEL_LOCK)
     private boolean panelLock;
 
+    @DataField(id = "locked", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_LOCKED)
     private boolean locked;
 
+    @DataField(id = "interpretation", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_INTERPRETATION)
     private Interpretation interpretation;
+
+    @DataField(id = "secondaryInterpretations", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_SECONDARY_INTERPRETATION)
     private List<Interpretation> secondaryInterpretations;
 
+    @DataField(id = "consent", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_CONSENT)
     private ClinicalConsentAnnotation consent;
 
+    @DataField(id = "analyst", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_ANALYST)
     private ClinicalAnalyst analyst;
+
+    @DataField(id = "report", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_REPORT)
     private ClinicalReport report;
+
+    @DataField(id = "priority", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_PRIORITY)
     private ClinicalPriorityAnnotation priority;
+
+    @DataField(id = "flags", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_FLAGS)
     private List<FlagAnnotation> flags;
 
     /**
@@ -89,6 +137,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote Internal
      */
+    @DataField(id = "creationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_CREATION_DATE_DESCRIPTION)
     private String creationDate;
 
     /**
@@ -96,8 +146,12 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote Internal
      */
+    @DataField(id = "modificationDate", indexed = true, since = "1.0",
+            description = FieldConstants.GENERIC_MODIFICATION_DATE_DESCRIPTION)
     private String modificationDate;
 
+    @DataField(id = "dueDate", indexed = true, since = "1.0",
+            description = FieldConstants.CLINICAL_ANALYSIS_DUE_DATE_DESCRIPTION)
     private String dueDate;
 
     /**
@@ -105,11 +159,20 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote Internal
      */
+    @DataField(id = "release", indexed = true,
+            description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
     private int release;
 
+    @DataField(id = "qualityControl", indexed = true,
+            description = FieldConstants.GENERIC_QUALITY_CONTROL)
     private ClinicalAnalysisQualityControl qualityControl;
 
+    @DataField(id = "comments", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_COMMENTS)
     private List<ClinicalComment> comments;
+
+    @DataField(id = "audit", indexed = true,
+            description = FieldConstants.CLINICAL_ANALYSIS_AUDIT)
     private List<ClinicalAudit> audit;
 
     /**
@@ -117,6 +180,9 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote Internal
      */
+
+    @DataField(id = "internal", indexed = true,
+            description = FieldConstants.GENERIC_INTERNAL)
     private ClinicalAnalysisInternal internal;
 
     /**
@@ -124,6 +190,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote
      */
+    @DataField(id = "attributes", indexed = true,
+            description = FieldConstants.GENERIC_ATTRIBUTES_DESCRIPTION)
     private Map<String, Object> attributes;
 
     /**
@@ -131,6 +199,8 @@ public class ClinicalAnalysis extends PrivateStudyUid {
      *
      * @apiNote
      */
+    @DataField(id = "status", indexed = true, uncommentedClasses = {"Status"},
+            description = FieldConstants.GENERIC_STATUS_DESCRIPTION)
     private Status status;
 
     public ClinicalAnalysis() {

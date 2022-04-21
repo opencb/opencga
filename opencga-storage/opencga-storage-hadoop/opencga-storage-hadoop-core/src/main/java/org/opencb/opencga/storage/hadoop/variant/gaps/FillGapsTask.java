@@ -15,9 +15,10 @@ import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryMultiFileToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
@@ -44,18 +45,19 @@ public class FillGapsTask {
     // fill-gaps-when-missing-gt
     private final boolean skipReferenceVariants;
     private final boolean simplifiedNewMultiAllelicVariants;
-    private final GenomeHelper helper;
+    private final Set<String> newGenotypes = new HashSet<>();
     private final VariantStorageMetadataManager metadataManager;
 
     private Logger logger = LoggerFactory.getLogger(FillGapsTask.class);
     private boolean quiet = false;
+    private final String gapsGenotype;
 
-    public FillGapsTask(StudyMetadata studyMetadata, GenomeHelper helper, boolean skipReferenceVariants,
-                        boolean simplifiedNewMultiAllelicVariants, VariantStorageMetadataManager metadataManager) {
+
+    public FillGapsTask(VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata, boolean skipReferenceVariants,
+                        boolean simplifiedNewMultiAllelicVariants, String gapsGenotype) {
         this.studyMetadata = studyMetadata;
         this.skipReferenceVariants = skipReferenceVariants;
 
-        this.helper = helper;
         this.metadataManager = metadataManager;
         studyConverter = new StudyEntryMultiFileToHBaseConverter(GenomeHelper.COLUMN_FAMILY_BYTES, studyMetadata.getId(), metadataManager,
                 true,
@@ -64,6 +66,7 @@ public class FillGapsTask {
                 false);
         variantMerger = new VariantMerger(false).configure(studyMetadata.getVariantHeader());
         this.simplifiedNewMultiAllelicVariants = simplifiedNewMultiAllelicVariants;
+        this.gapsGenotype = gapsGenotype;
     }
 
     public FillGapsTask setQuiet(boolean quiet) {
@@ -122,7 +125,7 @@ public class FillGapsTask {
                     return processVariantFileGap(variant, missingSamples, put, fileId, "0/0");
                 } else {
                     // There was a gap in the original file
-                    return processVariantFileGap(variant, missingSamples, put, fileId, GenotypeClass.UNKNOWN_GENOTYPE);
+                    return processVariantFileGap(variant, missingSamples, put, fileId, gapsGenotype);
                 }
             }
         } else if (overlappingRecords.size() > 1) {
@@ -184,7 +187,7 @@ public class FillGapsTask {
             fileEntry.setCall(new OriginalCall(archiveVariant.toString(), 0));
         }
         // SYMBOLIC reference overlap -- <*> , <NON_REF>
-        if (VariantType.NO_VARIATION.equals(archiveVariant.getType())
+        if (VariantType.NO_VARIATION == archiveVariant.getType()
                 && !archiveVariant.getAlternate().isEmpty()
                 && !archiveVariant.getAlternate().equals(Allele.NO_CALL_STRING)) {
 
@@ -285,6 +288,7 @@ public class FillGapsTask {
                             gt = genotype.toString();
                             break;
                     }
+                    newGenotypes.add(gt);
                     samplesData.add(new SampleEntry(null, null, Collections.singletonList(gt)));
                 }
             } else {
@@ -519,4 +523,15 @@ public class FillGapsTask {
         }
     }
 
+    protected void updateLoadedGenotypes() throws StorageEngineException {
+        Set<String> loadedGenotypes = new LinkedHashSet<>(studyMetadata.getAttributes()
+                .getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key()));
+        if (!loadedGenotypes.containsAll(newGenotypes)) {
+            loadedGenotypes.addAll(newGenotypes);
+
+            metadataManager.updateStudyMetadata(studyMetadata, sm -> {
+                sm.getAttributes().put(VariantStorageOptions.LOADED_GENOTYPES.key(), loadedGenotypes);
+            });
+        }
+    }
 }

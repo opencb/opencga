@@ -79,6 +79,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -204,9 +205,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         // output: JsonWriter
 
 
-        boolean failOnError = options.getBoolean(
-                VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(),
-                VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.defaultValue());
+        boolean failOnError = YesNoAuto.parse(options, VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key())
+                .booleanValue(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.defaultValue());
         String format = options.getString(
                 VariantStorageOptions.TRANSFORM_FORMAT.key(),
                 VariantStorageOptions.TRANSFORM_FORMAT.defaultValue());
@@ -301,7 +301,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             normalizer = initNormalizer(metadata);
         }
 
-        Supplier<Task<String, Variant>> task = () ->
+        Supplier<Task<Pair<Integer, List<String>>, Variant>> task = () ->
                 new VariantTransformTask(header.getKey(), header.getValue(), studyId, metadata, statsCalculator, normalizer)
                 .setFailOnError(failOnError)
                 .addMalformedErrorHandler(malformedHandler)
@@ -421,22 +421,27 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
     protected <W> ParallelTaskRunner<?, W> buildTransformPtr(boolean parallelParse,
                                                      DataReader<String> stringReader,
-                                                     Supplier<Task<String, Variant>> task,
+                                                     Supplier<Task<Pair<Integer, List<String>>, Variant>> task,
                                                      Supplier<Task<Variant, W>> encoder,
                                                      DataWriter<W> dataWriter,
                                                      ParallelTaskRunner.Config config) {
 
         logger.info("Multi thread transform... [1 reading, {} transforming, 1 writing]", config.getNumTasks());
+        AtomicInteger lineNumber = new AtomicInteger(0);
+        DataReader<Pair<Integer, List<String>>> reader = stringReader.then(list -> {
+            int i = lineNumber.getAndAdd(list.size());
+            return Collections.singletonList(Pair.of(i, list));
+        });
         if (parallelParse) {
-            return new ParallelTaskRunner<String, W>(
-                    stringReader,
+            return new ParallelTaskRunner<Pair<Integer, List<String>>, W>(
+                    reader,
                     () -> task.get().then(encoder.get()),
                     dataWriter,
                     config
             );
         } else {
             return new ParallelTaskRunner<Variant, W>(
-                    stringReader.then(task.get()),
+                    reader.then(task.get()),
                     encoder,
                     dataWriter,
                     config
@@ -456,7 +461,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
     protected ParallelTaskRunner transformProto(
             VariantFileMetadata metadata, URI outputVariantsFile,
-            DataReader<String> stringReader, Supplier<Task<String, Variant>> task)
+            DataReader<String> stringReader, Supplier<Task<Pair<Integer, List<String>>, Variant>> task)
             throws StorageEngineException {
         throw new NotImplementedException("Please request feature");
     }

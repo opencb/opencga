@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
@@ -200,6 +201,9 @@ public class UserManager extends AbstractManager {
         user.getAccount().setCreationDate(TimeUtils.getTime());
 
         try {
+            if (!PasswordUtils.isStrongPassword(password)) {
+                throw new CatalogException("Invalid password. Check password strength for user " + user.getId());
+            }
             if (user.getProjects() != null && !user.getProjects().isEmpty()) {
                 throw new CatalogException("Creating user and projects in a single transaction is forbidden");
             }
@@ -212,7 +216,7 @@ public class UserManager extends AbstractManager {
 
             return userDBAdaptor.get(user.getId(), QueryOptions.empty());
         } catch (CatalogIOException | CatalogDBException e) {
-            if (!userDBAdaptor.exists(user.getId())) {
+            if (userDBAdaptor.exists(user.getId())) {
                 logger.error("ERROR! DELETING USER! " + user.getId());
                 catalogIOManager.deleteUser(user.getId());
             }
@@ -774,7 +778,8 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "token");
         try {
-            userId = getCatalogUserId(userId, token);
+            String authenticatedUserId = getUserId(token);
+            authorizationManager.checkIsInstallationAdministrator(authenticatedUserId);
             String authOrigin = getAuthenticationOriginId(userId);
             OpenCGAResult writeResult = authenticationManagerMap.get(authOrigin).resetPassword(userId);
             auditManager.auditUser(userId, Enums.Action.RESET_USER_PASSWORD, userId,
@@ -825,7 +830,7 @@ public class UserManager extends AbstractManager {
         if (response == null) {
             auditManager.auditUser(username, Enums.Action.LOGIN, username,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", "Incorrect user or password.")));
-            throw CatalogAuthenticationException.incorrectUserOrPassword();
+             throw CatalogAuthenticationException.incorrectUserOrPassword();
         }
 
         auditManager.auditUser(username, Enums.Action.LOGIN, username, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1026,8 +1031,8 @@ public class UserManager extends AbstractManager {
      * @param name   filter name to be deleted.
      * @param token  session id of the user asking to delete the filter.
      * @return the deleted filter.
-     * @throws CatalogException when the filter cannot be removed or the name is not correct or if the user corresponding to the
-     *                          session id is not the same as the provided user id.
+     * @throws CatalogException when the filter cannot be removed or the name is not correct or if the user corresponding to the session id
+     *                          is not the same as the provided user id.
      */
     public OpenCGAResult<UserFilter> deleteFilter(String userId, String name, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
@@ -1184,8 +1189,8 @@ public class UserManager extends AbstractManager {
      * @param name   Name of the configuration to be deleted (normally, name of the application).
      * @param token  session id of the user asking to delete the configuration.
      * @return the deleted configuration.
-     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
-     *                          did not exist.
+     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration did
+     *                          not exist.
      */
     public OpenCGAResult deleteConfig(String userId, String name, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
@@ -1276,7 +1281,6 @@ public class UserManager extends AbstractManager {
         }
     }
 
-
     private UserFilter getFilter(String userId, String name) throws CatalogException {
         Query query = new Query()
                 .append(UserDBAdaptor.QueryParams.ID.key(), userId);
@@ -1314,7 +1318,6 @@ public class UserManager extends AbstractManager {
         return user.first().getAccount().getAuthentication().getId();
     }
 
-
     static void checkEmail(String email) throws CatalogParameterException {
         if (email == null || !EMAILPATTERN.matcher(email).matches()) {
             throw new CatalogParameterException("Email '" + email + "' not valid");
@@ -1322,9 +1325,9 @@ public class UserManager extends AbstractManager {
     }
 
     /**
-     * Extracts the user id from the token. If it doesn't match the userId provided and the userId provided is actually an email,
-     * it will fetch the user of the token from Catalog and check whether the email matches. If it matches, it will return the
-     * corresponding user id.
+     * Extracts the user id from the token. If it doesn't match the userId provided and the userId provided is actually an email, it will
+     * fetch the user of the token from Catalog and check whether the email matches. If it matches, it will return the corresponding user
+     * id.
      *
      * @param userId User id provided by the user.
      * @param token  Token.
@@ -1375,5 +1378,4 @@ public class UserManager extends AbstractManager {
         // We make this call again to get the original exception
         return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
     }
-
 }

@@ -48,6 +48,7 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_IMAGE_NAME = "k8s.imageName";
     public static final String K8S_IMAGE_PULL_POLICY = "k8s.imagePullPolicy";
     public static final String K8S_IMAGE_PULL_SECRETS = "k8s.imagePullSecrets";
+    public static final String K8S_TTL_SECONDS_AFTER_FINISHED = "k8s.ttlSecondsAfterFinished";
     public static final String K8S_DIND_IMAGE_NAME = "k8s.dind.imageName";
     public static final String K8S_REQUESTS = "k8s.requests";
     public static final String K8S_LIMITS = "k8s.limits";
@@ -102,6 +103,7 @@ public class K8SExecutor implements BatchExecutor {
     private final Watch jobsWatcher;
     private String imagePullPolicy;
     private List<LocalObjectReference> imagePullSecrets;
+    private int ttlSecondsAfterFinished;
 
     public K8SExecutor(Configuration configuration) {
         Execution execution = configuration.getAnalysis().getExecution();
@@ -121,6 +123,7 @@ public class K8SExecutor implements BatchExecutor {
         this.kubernetesClient = new DefaultKubernetesClient(k8sConfig).inNamespace(namespace);
         this.imagePullPolicy = execution.getOptions().getString(K8S_IMAGE_PULL_POLICY, "IfNotPresent");
         this.imagePullSecrets = buildLocalObjectReference(execution.getOptions().get(K8S_IMAGE_PULL_SECRETS));
+        this.ttlSecondsAfterFinished = execution.getOptions().getInt(K8S_TTL_SECONDS_AFTER_FINISHED, 3600);
         nodeSelector = getMap(execution, K8S_NODE_SELECTOR);
         if (execution.getOptions().containsKey(K8S_SECURITY_CONTEXT)) {
             securityContext = buildObject(execution.getOptions().get(K8S_SECURITY_CONTEXT), SecurityContext.class);
@@ -243,7 +246,7 @@ public class K8SExecutor implements BatchExecutor {
                         .withLabels(Collections.singletonMap("opencga", "job"))
                         .build())
                 .withSpec(new JobSpecBuilder()
-                        .withTtlSecondsAfterFinished(30)
+                        .withTtlSecondsAfterFinished(ttlSecondsAfterFinished)
                         .withBackoffLimit(0) // specify the number of retries before considering a Job as failed
                         .withTemplate(new PodTemplateSpecBuilder()
                                 .withMetadata(new ObjectMetaBuilder()

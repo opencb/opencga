@@ -28,6 +28,8 @@ import org.opencb.biodata.models.common.Status;
 import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -80,7 +82,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testAdminUserExists() throws Exception {
-        String token = catalogManager.getUserManager().loginAsAdmin("admin").getToken();
+        String token = catalogManager.getUserManager().loginAsAdmin(TestParamConstants.ADMIN_PASSWORD).getToken();
         assertEquals("opencga", catalogManager.getUserManager().getUserId(token));
     }
 
@@ -88,14 +90,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testCreateExistingUser() throws Exception {
         thrown.expect(CatalogException.class);
         thrown.expectMessage(containsString("already exists"));
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.AccountType.FULL, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
     }
 
     @Test
     public void testCreateAnonymousUser() throws Exception {
         thrown.expect(CatalogParameterException.class);
         thrown.expectMessage(containsString("reserved"));
-        catalogManager.getUserManager().create(ParamConstants.ANONYMOUS_USER_ID, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null,
+        catalogManager.getUserManager().create(ParamConstants.ANONYMOUS_USER_ID, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
                 Account.AccountType.FULL, null);
     }
 
@@ -103,13 +105,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testCreateRegisteredUser() throws Exception {
         thrown.expect(CatalogParameterException.class);
         thrown.expectMessage(containsString("reserved"));
-        catalogManager.getUserManager().create(ParamConstants.REGISTERED_USERS, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null,
+        catalogManager.getUserManager().create(ParamConstants.REGISTERED_USERS, "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null,
                 Account.AccountType.FULL, null);
     }
 
     @Test
     public void testLogin() throws Exception {
-        catalogManager.getUserManager().login("user", PASSWORD);
+        catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD);
 
         thrown.expect(CatalogAuthenticationException.class);
         thrown.expectMessage(allOf(containsString("Incorrect"), containsString("password")));
@@ -193,7 +195,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         catalogManager.getUserManager().update("user", params, null, token);
         catalogManager.getUserManager().update("user", new ObjectMap("email", newEmail), null, token);
-        catalogManager.getUserManager().changePassword("user", PASSWORD, newPassword);
+        catalogManager.getUserManager().changePassword("user", TestParamConstants.PASSWORD, newPassword);
 
         List<User> userList = catalogManager.getUserManager().get("user", new QueryOptions(QueryOptions
                 .INCLUDE, Arrays.asList(UserDBAdaptor.QueryParams.NAME.key(), UserDBAdaptor.QueryParams.EMAIL.key(),
@@ -208,8 +210,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
             assertEquals(userPost.getAttributes().get(entry.getKey()), entry.getValue());
         }
 
-        catalogManager.getUserManager().changePassword("user", newPassword, PASSWORD);
-        catalogManager.getUserManager().login("user", PASSWORD);
+        catalogManager.getUserManager().changePassword("user", newPassword, TestParamConstants.PASSWORD);
+        catalogManager.getUserManager().login("user", TestParamConstants.PASSWORD);
 
         try {
             params = new ObjectMap();
@@ -364,7 +366,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void createEmptyGroup() throws CatalogException {
-        catalogManager.getUserManager().create("test", "test", "test@mail.com", "test", null, 100L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, null);
         catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", null, token);
         catalogManager.getStudyManager().updateGroup("user@1000G:phase1", "group_cancer_some_thing_else", ParamUtils.BasicUpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("test")), token);
@@ -372,7 +374,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testAssignPermissions() throws CatalogException {
-        catalogManager.getUserManager().create("test", "test", "test@mail.com", "test", null, 100L, Account.AccountType.GUEST, null);
+        catalogManager.getUserManager().create("test", "test", "test@mail.com", TestParamConstants.PASSWORD, null, 100L, Account.AccountType.GUEST, null);
 
         catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else",
                 Collections.singletonList("test"), token);
@@ -381,7 +383,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 new StudyAclParams("", "view_only"), ParamUtils.AclAction.SET, token);
         assertTrue(permissions.first().containsKey("@group_cancer_some_thing_else"));
 
-        String token = catalogManager.getUserManager().login("test", "test").getToken();
+        String token = catalogManager.getUserManager().login("test", TestParamConstants.PASSWORD).getToken();
         DataResult<Study> studyDataResult = catalogManager.getStudyManager().get("user@1000G:phase1", QueryOptions.empty(), token);
         assertEquals(1, studyDataResult.getNumResults());
         assertTrue(studyDataResult.first().getAttributes().isEmpty());
@@ -956,7 +958,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
-                new StudyAclParams("", "view-only"), ParamUtils.AclAction.SET, token);
+                new StudyAclParams("", AuthorizationManager.ROLE_VIEW_ONLY), ParamUtils.AclAction.SET, token);
 
         try {
             catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), sessionIdUser3);
@@ -979,7 +981,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
-                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), "view-only"), ParamUtils.AclAction.SET, token);
+                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), AuthorizationManager.ROLE_VIEW_ONLY), ParamUtils.AclAction.SET, token);
 
         OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 sessionIdUser3);
@@ -991,7 +993,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void deleteJobTest() throws CatalogException {
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
-                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), "view-only"), ParamUtils.AclAction.SET, token);
+                new StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTE_JOBS.name(), AuthorizationManager.ROLE_VIEW_ONLY), ParamUtils.AclAction.SET, token);
 
         OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 sessionIdUser3);

@@ -21,6 +21,7 @@ import java.util.List;
 public class SampleVariantStatsHBaseMapReduceAnalysisExecutor
         extends SampleVariantStatsAnalysisExecutor implements HadoopVariantStorageToolExecutor {
 
+    private static final int DEFAULT_SAMPLES_BATCH_SIZE = 1000;
     private static final int MAX_SAMPLES_BATCH_SIZE = 4000;
     private static Logger logger = LoggerFactory.getLogger(SampleVariantStatsHBaseMapReduceAnalysisExecutor.class);
 
@@ -57,6 +58,11 @@ public class SampleVariantStatsHBaseMapReduceAnalysisExecutor
         } catch (Exception e) {
             throw new ToolExecutorException(e);
         }
+    }
+
+    @Override
+    public int getDefaultBatchSize() {
+        return DEFAULT_SAMPLES_BATCH_SIZE;
     }
 
     @Override

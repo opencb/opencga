@@ -16,11 +16,14 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.opencga.core.tools.annotations.CliParam;
+
 /**
  * Created by pfurio on 29/03/17.
  */
 public class AclParams {
 
+    @CliParam(required = true)
     protected String permissions;
 
     public AclParams() {
@@ -37,7 +40,6 @@ public class AclParams {
         sb.append('}');
         return sb.toString();
     }
-
 
     public String getPermissions() {
         return permissions;

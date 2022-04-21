@@ -3,6 +3,8 @@ apiVersion: solr.apache.org/v1beta1
 kind: SolrCloud
 metadata:
   name: {{ .Values.solr.deploy.name }}
+  labels:
+    {{- include "opencga.labels" . | nindent 4 }}
 spec:
   dataStorage:
     persistent:
@@ -72,7 +74,7 @@ spec:
               mountPath: /opencga-solr-configsets
           command: [ "/bin/bash", "-c" ]
           args:
-            - "while [ ! -f /opencga-solr-configsets/READY ] ; do echo 'Waiting for the configsets' ; sleep 1 ; done ; ls -lR /opencga-solr-configsets/; /opencga-solr-configsets/misc/solr/install.sh $ZK_HOST $SOLR_HOME /opencga-solr-configsets/"
+            - "while [ ! -f /opencga-solr-configsets/READY ] ; do echo 'Waiting for the configsets' ; sleep 1 ; done ; ls -lRd /opencga-solr-configsets/; chmod +x /opencga-solr-configsets/misc/solr/install.sh ; /opencga-solr-configsets/misc/solr/install.sh $ZK_HOST $SOLR_HOME /opencga-solr-configsets/"
 
 
       #envVars: Additional environment variables to pass to the default container.

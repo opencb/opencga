@@ -37,6 +37,8 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.config.storage.StorageEngineConfiguration;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -89,7 +91,10 @@ import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexMendelianError
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantAggregationExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.SampleIndexVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexLoader;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.*;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDeleteHBaseColumnTask;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexLoader;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
@@ -112,8 +117,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MERGE_MODE;
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.RESUME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 import static org.opencb.opencga.storage.core.variant.query.VariantQueryUtils.*;
@@ -321,17 +325,79 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
+    public void deleteStats(String study, Collection<String> cohorts, ObjectMap params) throws StorageEngineException {
+        ObjectMap options = getMergedOptions(params);
+        // Remove unneeded values that might leak into options.
+        options.remove("sample");
+        options.remove("file");
+        boolean force = options.getBoolean(FORCE.key());
+
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        final int studyId = metadataManager.getStudyId(study);
+        List<Integer> cohortIds = new ArrayList<>(cohorts.size());
+        List<String> cohortsInWrongStatus = new ArrayList<>(cohorts.size());
+        for (String cohort : cohorts) {
+            int cohortId = metadataManager.getCohortIdOrFail(studyId, cohort);
+            cohortIds.add(cohortId);
+            TaskMetadata.Status status = metadataManager.getCohortMetadata(studyId, cohortId).getStatsStatus();
+            if (status != TaskMetadata.Status.READY) {
+                if (force) {
+                    logger.warn("Delete variant stats from cohort '{}' in status '{}'", cohort, status);
+                } else {
+                    cohortsInWrongStatus.add(cohort);
+                }
+            }
+        }
+        if (!cohortsInWrongStatus.isEmpty()) {
+            throw new StorageEngineException("Unable to delete variant stats from cohorts " + cohortsInWrongStatus);
+        }
+
+        options.put(DeleteHBaseColumnDriver.TWO_PHASES_PARAM, true);
+        options.put(DeleteHBaseColumnDriver.DELETE_HBASE_COLUMN_TASK_CLASS, VariantsTableDeleteColumnTask.class.getName());
+
+        try {
+            logger.info("------------------------------------------------------");
+            logger.info("Deleting variant stats from {} cohorts", cohortIds.size());
+            logger.info("------------------------------------------------------");
+
+            StopWatch stopWatch = new StopWatch().start();
+            List<String> columns = new ArrayList<>(VariantPhoenixSchema.COHORT_STATS_COLUMNS_PER_COHORT * cohortIds.size());
+            for (Integer cohortId : cohortIds) {
+                VariantPhoenixSchema.getStatsColumns(studyId, cohortId)
+                        .stream()
+                        .map(PhoenixHelper.Column::fullColumn)
+                        .forEach(columns::add);
+            }
+
+            String[] deleteFromVariantsArgs = DeleteHBaseColumnDriver.buildArgs(getVariantTableName(), columns, options);
+            getMRExecutor().run(DeleteHBaseColumnDriver.class, deleteFromVariantsArgs, "Delete variant stats from variants table");
+
+            logger.info("Total time: {}", TimeUtils.durationToString(stopWatch.now(TimeUnit.MILLISECONDS)));
+
+            for (Integer cohortId : cohortIds) {
+                metadataManager.updateCohortMetadata(studyId, cohortId, c -> {
+                    c.setStatsStatus(TaskMetadata.Status.NONE);
+                    return c;
+                });
+            }
+        } catch (Exception e) {
+            throw new StorageEngineException("Error removing variant stats", e);
+        }
+    }
+
+    @Override
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        new SampleIndexLoader(getSampleIndexDBAdaptor(), getMRExecutor())
-                .buildSampleIndex(study, samples, options);
+        System.out.println("options.toJson() = " + options.toJson());
+        new SampleIndexLoader(getSampleIndexDBAdaptor(), study, getMRExecutor())
+                .buildSampleIndex(samples, options);
     }
 
 
     @Override
     public void sampleIndexAnnotate(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
-        new SampleIndexAnnotationLoader(hBaseManager, getTableNameGenerator(), getMetadataManager(), getMRExecutor())
+        new SampleIndexAnnotationLoader(getSampleIndexDBAdaptor(), getMRExecutor())
                 .updateSampleAnnotation(study, samples, options);
     }
 
@@ -354,15 +420,15 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         }
     }
 
-    @Override
-    public void aggregate(String study, boolean overwrite, ObjectMap options) throws StorageEngineException {
+    public void aggregate(String study, VariantAggregateParams params, ObjectMap options) throws StorageEngineException {
         logger.info("Aggregate: Study " + study);
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
 
+        options = params.toObjectMap(options);
         fillGapsOrMissing(study, studyMetadata, metadataManager.getIndexedFiles(studyMetadata.getId()), Collections.emptyList(),
-                false, overwrite, options);
+                false, params.isOverwrite(), options);
     }
 
     @Override
@@ -397,7 +463,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public void aggregateFamily(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+    public void aggregateFamily(String study, VariantAggregateFamilyParams params, ObjectMap options) throws StorageEngineException {
+        List<String> samples = params.getSamples();
         if (samples == null || samples.size() < 2) {
             throw new IllegalArgumentException("Aggregate family operation requires at least two samples.");
         } else if (samples.size() > FILL_GAPS_MAX_SAMPLES) {
@@ -420,8 +487,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         // Get files
         Set<Integer> fileIds = metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds);
 
+        options = params.toObjectMap(options);
+        if (StringUtils.isNotEmpty(params.getGapsGenotype())) {
+            options.put(FILL_GAPS_GAP_GENOTYPE.key(), params.getGapsGenotype());
+        }
         logger.info("FillGaps: Study " + study + ", samples " + samples);
-        fillGapsOrMissing(study, studyMetadata, fileIds, sampleIds, true, false, options);
+        fillGapsOrMissing(study, studyMetadata, fileIds, sampleIds, true, false, params.toObjectMap(options));
     }
 
     private void fillGapsOrMissing(String study, StudyMetadata studyMetadata, Set<Integer> fileIds, List<Integer> sampleIds,
@@ -584,8 +655,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             }
         }
         if (!samplesAlreadyDeletedOrMissing.isEmpty()) {
-            throw new StorageEngineException("Unable to delete samples from variant storage. Already deleted or never loaded."
-                    + " Samples = " + samplesAlreadyDeletedOrMissing);
+            if (getOptions().getBoolean(FORCE.key(), false)) {
+                logger.info("Force sample delete of {} samples already deleted or missing", samplesAlreadyDeletedOrMissing.size());
+            } else {
+                throw new StorageEngineException("Unable to delete samples from variant storage. Already deleted or never loaded."
+                        + " Samples = " + samplesAlreadyDeletedOrMissing);
+            }
         }
 
         // Check if any file is being completely deleted
@@ -675,7 +750,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
             String archiveTable = getArchiveTableName(studyId);
             String variantsTable = getVariantTableName();
-            String sampleIndexTable = getSampleIndexDBAdaptor().getSampleIndexTableName(studyId);
+            String sampleIndexTable = getSampleIndexDBAdaptor().getSampleIndexTableNameLatest(studyId);
 
 
             long startTime = System.currentTimeMillis();
@@ -800,9 +875,15 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
                 for (String sample : samplesToRebuildIndex) {
                     int sampleId = getMetadataManager().getSampleIdOrFail(studyId, sample);
                     getMetadataManager().updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                        SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, TaskMetadata.Status.ERROR, 0);
-                        SampleIndexDBAdaptor.setSampleIndexAnnotationStatus(sampleMetadata, TaskMetadata.Status.ERROR, 0);
-                        return sampleMetadata;
+                        for (int v : sampleMetadata.getSampleIndexVersions()) {
+                            sampleMetadata.setSampleIndexStatus(TaskMetadata.Status.ERROR, v);
+                        }
+                        for (int v : sampleMetadata.getSampleIndexAnnotationVersions()) {
+                            sampleMetadata.setSampleIndexAnnotationStatus(TaskMetadata.Status.ERROR, v);
+                        }
+                        for (int v : sampleMetadata.getFamilyIndexVersions()) {
+                            sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.ERROR, v);
+                        }
                     });
                 }
                 sampleIndex(study, samplesToRebuildIndex, options);

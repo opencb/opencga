@@ -8,6 +8,7 @@ import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.storage.core.io.bit.BitBuffer;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.util.Arrays;
@@ -43,7 +44,7 @@ public class AnnotationIndexConverterTest {
         configuration.getAnnotationIndexConfiguration().getPopulationFrequency().setThresholds(new double[]{0.001, 0.005, 0.01});
         populations.stream().map(SampleIndexConfiguration.Population::new).forEach(configuration::addPopulation);
 
-        schema = new SampleIndexSchema(configuration);
+        schema = new SampleIndexSchema(configuration, StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION);
         converter = new AnnotationIndexConverter(schema);
     }
 
@@ -173,7 +174,7 @@ public class AnnotationIndexConverterTest {
         List<String> populations = Arrays.asList("1kG_phase3:ALL", "GNOMAD_GENOMES:ALL", "1kG_phase3:ALL");
         SampleIndexConfiguration configuration = new SampleIndexConfiguration();
         populations.stream().map(SampleIndexConfiguration.Population::new).forEach(configuration::addPopulation);
-        new AnnotationIndexConverter(new SampleIndexSchema(configuration));
+        new AnnotationIndexConverter(new SampleIndexSchema(configuration, StudyMetadata.DEFAULT_SAMPLE_INDEX_VERSION));
     }
 
     @Test

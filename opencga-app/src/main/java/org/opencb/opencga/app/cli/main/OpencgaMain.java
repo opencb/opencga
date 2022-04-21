@@ -16,148 +16,194 @@
 
 package org.opencb.opencga.app.cli.main;
 
-import com.beust.jcommander.ParameterException;
 import org.apache.commons.lang3.ArrayUtils;
-import org.opencb.opencga.app.cli.CommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.analysis.AlignmentCommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.analysis.ClinicalCommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.analysis.VariantCommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.catalog.*;
-import org.opencb.opencga.app.cli.main.executors.operations.OperationsCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.OperationsCommandOptions;
-import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.app.cli.CliOptionsParser;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.main.processors.CommandProcessor;
+import org.opencb.opencga.app.cli.main.shell.Shell;
+import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.logging.Level;
+
 
 /**
  * Created by imedina on 27/05/16.
  */
 public class OpencgaMain {
 
-    public static final String VERSION = GitRepositoryState.get().getBuildVersion();
+    private static final Logger logger = LoggerFactory.getLogger(OpencgaMain.class);
+    public static Mode mode = Mode.CLI;
+    public static Shell shell;
+    public static Level logLevel = Level.OFF;
 
     public static void main(String[] args) {
 
-        if (args.length > 3 && "users".equals(args[0]) && "login".equals(args[1])) {
-            // Check there is no --help
-            boolean passwordRequired = true;
-            for (String arg : args) {
-                switch (arg) {
-                    case "--password":
-                    case "-p":
-                        Logger logger = LoggerFactory.getLogger(OpencgaMain.class);
-                        logger.warn("Argument " + arg + " no longer required. It will be forbidden in future releases.");
-                    case "--help":
-                    case "-h":
-                        passwordRequired = false;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            if (passwordRequired) {
-                args = ArrayUtils.addAll(args, "--password");
-            }
+        if (args.length == 0) {
+            CliOptionsParser parser = new OpencgaCliOptionsParser();
+            parser.printUsage();
+            System.exit(0);
         }
-
-        OpencgaCliOptionsParser cliOptionsParser = new OpencgaCliOptionsParser();
+        checkLogLevel(args);
+        checkMode(args);
+        CommandLineUtils.printLog(Arrays.toString(args));
+        logger.debug(Arrays.toString(args));
         try {
-            cliOptionsParser.parse(args);
-        } catch (ParameterException e) {
-            System.err.println(e.getMessage());
-            cliOptionsParser.printUsage();
-            System.exit(1);
-        }
-
-        String parsedCommand = cliOptionsParser.getCommand();
-        if (parsedCommand == null || parsedCommand.isEmpty()) {
-            if (cliOptionsParser.getGeneralOptions().version) {
-                System.out.println("Version " + GitRepositoryState.get().getBuildVersion());
-                System.out.println("Git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
-                System.exit(0);
-            } else if (cliOptionsParser.getGeneralOptions().help) {
-                cliOptionsParser.printUsage();
-                System.exit(0);
+            if (Mode.SHELL.equals(getMode())) {
+                executeShell(args);
             } else {
-                cliOptionsParser.printUsage();
-                System.exit(1);
+                executeCli(args);
             }
+        } catch (Exception e) {
+            CommandLineUtils.error("Failed to initialize OpenCGA CLI " + e.getMessage(), e);
+            logger.error("Failed to initialize OpenCGA CLI " + e.getMessage(), e);
+        }
+    }
+
+    private static void checkMode(String[] args) {
+        if (ArrayUtils.contains(args, "--shell")) {
+            setMode(Mode.SHELL);
         } else {
-            CommandExecutor commandExecutor = null;
-            // Check if any command -h option is present
-            if (cliOptionsParser.isHelp()) {
-                cliOptionsParser.printUsage();
-                System.exit(0);
-            } else {
-                String parsedSubCommand = cliOptionsParser.getSubCommand();
-                if (parsedSubCommand == null || parsedSubCommand.isEmpty()) {
-                    cliOptionsParser.printUsage();
-                } else {
-                    switch (parsedCommand) {
-                        case "users":
-                            commandExecutor = new UserCommandExecutor(cliOptionsParser.getUsersCommandOptions());
-                            break;
-                        case "projects":
-                            commandExecutor = new ProjectCommandExecutor(cliOptionsParser.getProjectCommandOptions());
-                            break;
-                        case "studies":
-                            commandExecutor = new StudyCommandExecutor(cliOptionsParser.getStudyCommandOptions());
-                            break;
-                        case "files":
-                            commandExecutor = new FileCommandExecutor(cliOptionsParser.getFileCommands());
-                            break;
-                        case "jobs":
-                            commandExecutor = new JobCommandExecutor(cliOptionsParser.getJobsCommands());
-                            break;
-                        case "individuals":
-                            commandExecutor = new IndividualCommandExecutor(cliOptionsParser.getIndividualsCommands());
-                            break;
-                        case "samples":
-                            commandExecutor = new SampleCommandExecutor(cliOptionsParser.getSampleCommands());
-                            break;
-                        case "cohorts":
-                            commandExecutor = new CohortCommandExecutor(cliOptionsParser.getCohortCommands());
-                            break;
-                        case "panels":
-                            commandExecutor = new PanelCommandExecutor(cliOptionsParser.getPanelCommands());
-                            break;
-                        case "families":
-                            commandExecutor = new FamilyCommandExecutor(cliOptionsParser.getFamilyCommands());
-                            break;
-                        case "alignments":
-                            commandExecutor = new AlignmentCommandExecutor(cliOptionsParser.getAlignmentCommands());
-                            break;
-                        case "variant":
-                            commandExecutor = new VariantCommandExecutor(cliOptionsParser.getVariantCommands());
-                            break;
-                        case "clinical":
-                            commandExecutor = new ClinicalCommandExecutor(cliOptionsParser.getClinicalCommandOptions());
-                            break;
-                        case OperationsCommandOptions.OPERATIONS_COMMAND:
-                            commandExecutor = new OperationsCommandExecutor(cliOptionsParser.getOperationsCommands());
-                            break;
-                        case "meta":
-                            commandExecutor = new MetaCommandExecutor(cliOptionsParser.getMetaCommandOptions());
-                            break;
-                        default:
-                            System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
-                            break;
-                    }
+            setMode(Mode.CLI);
+        }
+        CommandLineUtils.printLog("Execution mode " + getMode());
+        logger.debug("Execution mode " + getMode());
+    }
 
-                    if (commandExecutor != null) {
-                        try {
-                            commandExecutor.execute();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            System.exit(1);
-                        }
-                    } else {
-                        cliOptionsParser.printUsage();
-                        System.exit(1);
-                    }
-                }
+    private static void checkLogLevel(String[] args) {
+        if (ArrayUtils.contains(args, "--log-level")) {
+            String level = "";
+            try {
+                level = args[ArrayUtils.indexOf(args, "--log-level") + 1].toLowerCase(Locale.ROOT);
+                Level logLevel = getNormalizedLogLevel(level);
+                setLogLevel(logLevel);
+                
+                logger.debug("Console verbose mode: " + logLevel);
+            } catch (Exception e) {
+                setLogLevel(Level.SEVERE);
+                CommandLineUtils.error("Invalid log level. Valid values are INFO, WARN, DEBUG, ERROR", e);
+                logger.error("Invalid log level " + level + ": Valid values are INFO, WARN, DEBUG, ERROR", e);
+                System.exit(0);
             }
         }
+    }
+
+    private static Level getNormalizedLogLevel(String level) {
+        switch (level) {
+            case "debug":
+            case "fine":
+                return Level.FINE;
+            case "info":
+                return Level.INFO;
+            case "warning":
+            case "warn":
+                return Level.WARNING;
+            case "error":
+            case "severe":
+                return Level.SEVERE;
+            default:
+                return Level.OFF;
+        }
+    }
+
+
+    private static void executeCli(String[] args) throws CatalogAuthenticationException {
+        args = parseCliParams(args);
+        if (!ArrayUtils.isEmpty(args)) {
+            CommandProcessor processor = new CommandProcessor();
+            processor.process(args);
+        }
+    }
+
+    public static void executeShell(String[] args) {
+        CommandLineUtils.printLog("Initializing Shell...  ");
+
+        try {
+            // If the shell launch command includes a host it is set to be used
+            GeneralCliOptions.CommonCommandOptions options = new GeneralCliOptions.CommonCommandOptions();
+            if (ArrayUtils.contains(args, "--host")) {
+                options.host = args[ArrayUtils.indexOf(args, "--host") + 1];
+            }
+            // Create a shell executor instance
+            shell = new Shell(options);
+            CommandLineUtils.debug("Shell created ");
+            logger.debug("Shell created ");
+            // Launch execute command to begin the execution
+            shell.execute();
+        } catch (CatalogAuthenticationException e) {
+            CommandLineUtils.printLog("Failed to initialize shell", e);
+            logger.error("Failed to initialize shell", e);
+        } catch (Exception e) {
+            CommandLineUtils.printLog("Failed to execute shell", e);
+            logger.error("Failed to execute shell", e);
+        }
+    }
+
+    private static String[] normalizePasswordArgs(String[] args, String s) {
+        for (int i = 0; i < args.length; i++) {
+            if (s.equals(args[i])) {
+                args[i] = "--password";
+                break;
+            }
+        }
+        return args;
+    }
+
+    public static String[] parseCliParams(String[] args) {
+        CommandLineUtils.printLog("Executing " + CommandLineUtils.argsToString(args));
+        if (CommandLineUtils.isNotHelpCommand(args)) {
+            if (ArrayUtils.contains(args, "--user-password")) {
+                normalizePasswordArgs(args, "--user-password");
+            }
+        }
+        CommandLineUtils.debug("CLI parsed params ::: " + CommandLineUtils.argsToString(args));
+        logger.debug("CLI parsed params ::: " + CommandLineUtils.argsToString(args));
+        String shortcut = CommandLineUtils.getShortcut(args);
+        args = CommandLineUtils.processShortCuts(args);
+        if (args != null) {
+            CommandLineUtils.debug("Process shortcut result ::: " + CommandLineUtils.argsToString(args));
+            logger.debug("Process shortcut result ::: " + CommandLineUtils.argsToString(args));
+        } else {
+            CommandLineUtils.debug("Is shortcut " + shortcut);
+            logger.debug("Is shortcut " + shortcut);
+        }
+        return args;
+    }
+
+    public static Mode getMode() {
+        return mode;
+    }
+
+    public static void setMode(Mode mode) {
+        OpencgaMain.mode = mode;
+    }
+
+    public static boolean isShellMode() {
+        return getMode().equals(Mode.SHELL);
+    }
+
+    public static Shell getShell() {
+        return shell;
+    }
+
+    public static void setShell(Shell shell) {
+        OpencgaMain.shell = shell;
+    }
+
+    public static Level getLogLevel() {
+        return logLevel;
+    }
+
+    public static void setLogLevel(Level logLevel) {
+        OpencgaMain.logLevel = logLevel;
+    }
+
+    public enum Mode {
+        SHELL, CLI
     }
 
 }

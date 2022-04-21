@@ -4,7 +4,7 @@ kind: Job
 metadata:
   name: "{{.Release.Name}}-solr-install-configsets-job"
   labels:
-    {{- include "opencga.selectorLabels" . | nindent 4 }}
+    {{- include "opencga.labels" . | nindent 4 }}
   annotations:
     # This is what defines this resource as a hook. Without this line, the
     # job is considered part of the release.

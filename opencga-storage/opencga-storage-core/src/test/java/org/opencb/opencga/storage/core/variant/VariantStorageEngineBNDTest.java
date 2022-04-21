@@ -73,6 +73,7 @@ public abstract class VariantStorageEngineBNDTest extends VariantStorageBaseTest
         getPairs(new Query(VariantQueryParam.REGION.key(), "2,13,5"));
         getPairs(new Query(VariantQueryParam.REGION.key(), "2").append(VariantQueryParam.GENE.key(), "VPS53"));
         getPairs(new Query(VariantQueryParam.GENE.key(), "VPS53"));
+        getPairs(new Query(VariantQueryParam.GENE.key(), "BRCA2"));
     }
 
     public void getPairs(Query inputQuery) throws Exception {

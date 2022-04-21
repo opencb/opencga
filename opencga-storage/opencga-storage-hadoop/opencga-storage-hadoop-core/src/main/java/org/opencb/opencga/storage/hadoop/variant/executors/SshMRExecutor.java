@@ -24,9 +24,6 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOpti
  */
 public class SshMRExecutor extends MRExecutor {
 
-    public static final String HADOOP_SSH_BIN =  "hadoop-ssh.sh";
-    public static final String HADOOP_SCP_BIN =  "hadoop-scp.sh";
-
     private static final String HADOOP_SSH_USER_ENV = "HADOOP_SSH_USER";
     private static final String HADOOP_SSH_HOST_ENV = "HADOOP_SSH_HOST";
     private static final String HADOOP_SSH_KEY_ENV  = "HADOOP_SSH_KEY";
@@ -63,7 +60,9 @@ public class SshMRExecutor extends MRExecutor {
                     srcOutput = targetOutput;
                 }
 
-                String commandLine = getBinPath(HADOOP_SCP_BIN) + " " + srcOutput + " " + targetOutput;
+                String hadoopScpBin = getOptions()
+                        .getString(MR_EXECUTOR_SSH_HADOOP_SCP_BIN.key(), MR_EXECUTOR_SSH_HADOOP_SCP_BIN.defaultValue());
+                String commandLine = getBinPath(hadoopScpBin) + " " + srcOutput + " " + targetOutput;
 
                 Command command = new Command(commandLine, env);
                 command.run();
@@ -85,7 +84,9 @@ public class SshMRExecutor extends MRExecutor {
         redactSecureString(args, "token");
         String argsString = Commandline.toString(args);
         String remoteOpencgaHome = getOptions().getString(MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key());
-        String commandLine = getBinPath(HADOOP_SSH_BIN);
+        String hadoopSshBin = getOptions()
+                .getString(MR_EXECUTOR_SSH_HADOOP_SSH_BIN.key(), MR_EXECUTOR_SSH_HADOOP_SSH_BIN.defaultValue());
+        String commandLine = getBinPath(hadoopSshBin);
 
         if (StringUtils.isNotEmpty(remoteOpencgaHome)) {
             argsString = argsString.replaceAll(getOpencgaHome(), remoteOpencgaHome);
@@ -101,8 +102,10 @@ public class SshMRExecutor extends MRExecutor {
         String opencgaHome = getOpencgaHome();
         if (opencgaHome.isEmpty()) {
             commandLine = bin;
+        } else if (Paths.get(bin).isAbsolute()) {
+            commandLine = bin;
         } else {
-            commandLine = opencgaHome + "/conf/hadoop/" + bin;
+            commandLine = Paths.get(opencgaHome, bin).toString();
         }
         return commandLine;
     }

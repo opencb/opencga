@@ -72,6 +72,7 @@ public interface InterpretationDBAdaptor extends CoreDBAdaptor<Interpretation> {
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 
+        LOCKED("locked", BOOLEAN, ""),
         DELETED(ParamConstants.DELETED_PARAM, BOOLEAN, "");
 
         private static Map<String, QueryParams> map;

@@ -18,7 +18,6 @@ package org.opencb.opencga.analysis.variant.manager.operations;
 
 import org.junit.After;
 import org.junit.Test;
-import org.junit.internal.matchers.ThrowableCauseMatcher;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
@@ -58,7 +57,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
-import static org.junit.internal.matchers.ThrowableCauseMatcher.*;
+import static org.junit.internal.matchers.ThrowableCauseMatcher.hasCause;
 import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
@@ -85,7 +84,7 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
                     .map(s -> new SampleReferenceParam().setId(s))
                     .collect(Collectors.toList());
             Cohort cohort = catalogManager.getCohortManager().create(studyId, new CohortCreateParams("coh" + i,
-                    Enums.CohortType.CONTROL_SET, "", null, null, sampleIds, null, null, null), null, null, null, sessionId).first();
+                    "", Enums.CohortType.CONTROL_SET, "", null, null, sampleIds, null, null, null), null, null, null, sessionId).first();
             coh[i] = cohort.getId();
         }
         QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false);

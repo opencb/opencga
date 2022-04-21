@@ -841,7 +841,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new FileStatus(status), "status"), tmpFile);
 
                 // Insert the document in the DELETE collection
-                deletedFileCollection.insert(clientSession, tmpFile, null);
+                deletedFileCollection.insert(clientSession, replaceDotsInKeys(tmpFile), null);
                 logger.debug("Inserted file uid '{}' in DELETE collection", tmpFileUid);
 
                 // Remove the document from the main FILE collection

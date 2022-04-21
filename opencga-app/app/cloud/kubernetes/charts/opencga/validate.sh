@@ -3,7 +3,7 @@
 
 function printUsage() {
   echo ""
-  echo "Validates opencga templates"
+  echo "Validates opencga chart templates"
   echo ""
   echo "Usage:   $(basename $0) "
   echo ""

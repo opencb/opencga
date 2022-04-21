@@ -168,7 +168,7 @@ public class SampleIndexMain extends AbstractMain {
     private void detailedQuery(SampleIndexDBAdaptor dbAdaptor, ObjectMap argsMap) throws Exception {
         SampleIndexQuery sampleIndexQuery = dbAdaptor.parseSampleIndexQuery(new Query(argsMap));
         CloseableIterator<SampleVariantIndexEntry> iterator = dbAdaptor.rawIterator(sampleIndexQuery);
-        SampleIndexSchema schema = dbAdaptor.getSchema(sampleIndexQuery.getStudy());
+        SampleIndexSchema schema = sampleIndexQuery.getSchema();
         if (argsMap.getBoolean("quiet", false)) {
             print(Iterators.size(iterator));
         } else {

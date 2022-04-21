@@ -15,6 +15,7 @@ function printUsage() {
   echo "   * -s     --subscription            STRING      Subscription name or subscription id"
   echo "   * --af   --azure-file              FILE        Azure deploy parameters file [azuredeploy.parameters.private.json]"
   echo "   * --spf  --service-principal-file  FILE        Azure service principal deploy parameters file. Execute createsp.sh to obtain the service principal parameters"
+  echo "            --skip-k8s-deployment     FLAG        Skip k8s deployment. Skip 'setup-k8s.sh' "
   echo "     -c     --k8s-context             STRING      Kubernetes context"
   echo "            --k8s-namespace           STRING      Kubernetes namespace"
   echo "     --hf   --helm-file               FILE        Helm values file. Used when calling to 'setup-k8s.sh' "
@@ -58,8 +59,7 @@ function requiredDirectory() {
 #subscriptionName
 #azudeDeployParameters
 #spAzudeDeployParameters
-#helmDeployParameters
-#setupAksOpts
+setupAksOpts=()
 keepTmpFiles=false
 outputDir="$(pwd)"
 
@@ -86,30 +86,35 @@ while [[ $# -gt 0 ]]; do
     shift # past argument
     shift # past value
     ;;
+  --skip-k8s-deployment)
+    setupAksOpts+=("$key")
+    shift # past argument
+    ;;
   --hf | --helm-file)
-    helmDeployParameters="$value"
+    requiredFile "$key" "$value"
+    value=$(realpath "$value")
+    setupAksOpts+=("$key" "$value")
     shift # past argument
     shift # past value
     ;;
   -c | --k8s-context)
-    setupAksOpts="${setupAksOpts} $key $value "
+    setupAksOpts+=("$key" "$value")
     shift # past argument
     shift # past value
     ;;
   --k8s-namespace)
-    setupAksOpts="${setupAksOpts} $key $value "
+    setupAksOpts+=("$key" "$value")
     shift # past argument
     shift # past value
     ;;
   --keep-tmp-files)
     keepTmpFiles=true
-    setupAksOpts="${setupAksOpts} $key "
+    setupAksOpts+=("$key")
     shift # past argument
     ;;
   -o | --outdir)
     requiredDirectory "$key" "$value"
     value=$(realpath "$value")
-    setupAksOpts="${setupAksOpts} --outdir $value "
     outputDir=$value
     shift # past argument
     shift # past value
@@ -117,12 +122,12 @@ while [[ $# -gt 0 ]]; do
   --opencga-conf-dir)
     requiredDirectory "$key" "$value"
     value=$(realpath "$value")
-    setupAksOpts="${setupAksOpts} --opencga-conf-dir $value "
+    setupAksOpts+=("$key" "$value")
     shift # past argument
     shift # past value
     ;;
   --verbose)
-    setupAksOpts="${setupAksOpts} --verbose "
+    setupAksOpts+=("$key")
     set -x
     shift # past argument
     ;;
@@ -143,11 +148,6 @@ requiredFile "--service-principal-file" "${spAzudeDeployParameters}"
 
 azudeDeployParameters=$(realpath "${azudeDeployParameters}")
 spAzudeDeployParameters=$(realpath "${spAzudeDeployParameters}")
-
-if [ -n "$helmDeployParameters" ]; then
-  requiredFile "--helm-file" "${helmDeployParameters}"
-  helmDeployParameters=$(realpath "${helmDeployParameters}")
-fi
 
 # Don't move the PWD until we found out the realpath. It could be a relative path.
 cd "$(dirname "$0")"
@@ -219,7 +219,7 @@ az storage blob upload-batch \
   --destination $templateContainer \
   --connection-string "$connection" \
   --source "$artifactsBlobUpdate" \
-  --no-progress
+  --no-progress --overwrite
 
 echo "Files uploaded"
 
@@ -227,7 +227,7 @@ expiretime=$(date -u -d '30 minutes' +%Y-%m-%dT%H:%MZ)
 token=$(az storage container generate-sas --name $templateContainer --expiry $expiretime --permissions r --output tsv --connection-string $connection)
 template_url="$(az storage blob url --container-name $templateContainer --name azuredeploy.json --output tsv --connection-string $connection)?$token"
 blob_base_url="$(az storage account show -n $storageAccountName --query primaryEndpoints.blob)"
-container_base_url=${blob_base_url//\"/}$templateContainer
+container_base_url=$(tr -d '"' <<< "${blob_base_url}")$templateContainer
 
 echo "# Deploy infrastructure"
 echo "az deployment sub create -n $deployId ... > ${deploymentOut} "
@@ -237,7 +237,9 @@ az deployment sub create -n $deployId -l ${location} --template-uri $template_ur
   --parameters @"${azudeDeployParameters}" \
   --parameters @"${spAzudeDeployParameters}" \
   --parameters _artifactsLocation=$container_base_url \
-  --parameters _artifactsLocationSasToken="?$token" >${deploymentOut}
+  --parameters _artifactsLocationSasToken="?$token"
+
+az deployment sub show -n $deployId -o json > "$deploymentOut"
 
 function getOutput() {
   jq -r '.properties.outputs.'${1}'.value' ${deploymentOut}
@@ -251,9 +253,9 @@ function getParameter() {
 hdInsightClusterName=$(getParameter hdInsightClusterName)
 hdInsightResourceGroup=$(getOutput hdInsightResourceGroup)
 hdInsightMonitorEnabled=$(az hdinsight monitor show --name "$hdInsightClusterName" --resource-group "$hdInsightResourceGroup" --query clusterMonitoringEnabled)
-if [ $hdInsightMonitorEnabled != "true" ]; then
+if [ "$hdInsightMonitorEnabled" != "true" ]; then
   $(getOutput hdInsightEnableMonitor)
 fi
 
-echo "./setup-aks.sh --subscription ${subscriptionName} --azure-output-file ${deploymentOut} --helm-file ${helmDeployParameters} --outdir $outputDir ${setupAksOpts}" | tee -a "$outputDir/setup-aks-$(date "+%Y%m%d%H%M%S").sh"
-./setup-aks.sh --subscription "${subscriptionName}" --azure-output-file "${deploymentOut}" --helm-file "${helmDeployParameters}" --outdir "$outputDir" ${setupAksOpts}
+echo "${PWD}/setup-aks.sh --subscription ${subscriptionName} --azure-output-file ${deploymentOut} --outdir $outputDir ${setupAksOpts[*]}" | tee -a "$outputDir/setup-aks-$(date "+%Y%m%d%H%M%S").sh"
+./setup-aks.sh --subscription "${subscriptionName}" --azure-output-file "${deploymentOut}" --outdir "$outputDir" "${setupAksOpts[@]}"

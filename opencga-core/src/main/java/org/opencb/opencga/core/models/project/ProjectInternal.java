@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.core.models.project;
 
+import org.opencb.biodata.models.common.Status;
+import org.opencb.commons.annotations.DataField;
+import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.common.Internal;
@@ -23,7 +26,12 @@ import org.opencb.opencga.core.models.common.InternalStatus;
 
 public class ProjectInternal extends Internal {
 
+    @DataField(id = "datastores", indexed = true, uncommentedClasses = {"Datastores"},
+            description = FieldConstants.PROJECT_INTERNAL_DATA_STORES)
     private Datastores datastores;
+
+    @DataField(id = "cellbase", indexed = true, uncommentedClasses = {"CellBaseConfiguration"},
+            description = FieldConstants.PROJECT_INTERNAL_CELLBASE)
     private CellBaseConfiguration cellbase;
 
     public ProjectInternal() {
@@ -70,11 +78,11 @@ public class ProjectInternal extends Internal {
         return this;
     }
 
-    public InternalStatus getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public ProjectInternal setStatus(InternalStatus status) {
+    public ProjectInternal setStatus(Status status) {
         this.status = status;
         return this;
     }

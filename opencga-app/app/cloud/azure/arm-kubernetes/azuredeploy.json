@@ -178,6 +178,13 @@
                 "description": "HDInsight storage account name. The name must be unique across all existing storage account names in Azure. It must be 3 to 24 characters long, and can contain only lowercase letters and numbers."
             }
         },
+        "HDInsightStorageAccountBlobName": {
+            "type": "string",
+            "defaultValue": "opencga",
+            "metadata": {
+                "description": "HDInsight storage account blob name."
+            }
+        },
         "HDInsightClusterLoginPassword": {
             "type": "securestring",
             "metadata": {
@@ -189,6 +196,13 @@
             "defaultValue": null,
             "metadata": {
                 "description": "Used to login to HDInsight cluster nodes via SSH. The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "HDInsightSshPublicKey": {
+            "type": "securestring",
+            "defaultValue": "[parameters('sshAdminKeyData')]",
+            "metadata": {
+                "description": "Used to login to HDInsight cluster nodes via SSH key."
             }
         },
         "jobsAgentPoolOrVirtualNode": {
@@ -298,7 +312,9 @@
                     "nodeSize": "Standard_D2s_v3",
                     "diskSizeGB": 256,
                     "maxJobsPoolAgents": 1,
-                    "aksJobsAgentVMSize": "Standard_D8s_v3"
+                    "aksJobsAgentVMSize": "Standard_D8s_v3",
+                    "aksMongodbAgentVMSize": "Standard_D8s_v3",
+                    "aksSolrAgentVMSize": "Standard_D8s_v3"
                 },
                 "solr": {
                     "ha": false,
@@ -340,7 +356,9 @@
                     "nodeSize": "Standard_D4s_v3",
                     "diskSizeGB": 512,
                     "maxJobsPoolAgents": 5,
-                    "aksJobsAgentVMSize": "Standard_D16s_v3"
+                    "aksJobsAgentVMSize": "Standard_D16s_v3",
+                    "aksMongodbAgentVMSize": "Standard_D16s_v3",
+                    "aksSolrAgentVMSize": "Standard_D16s_v3"
                 },
                 "solr": {
                     "ha": true,
@@ -382,7 +400,9 @@
                     "nodeSize": "Standard_D4s_v3",
                     "diskSizeGB": 1028,
                     "maxJobsPoolAgents": 50,
-                    "aksJobsAgentVMSize": "Standard_D16s_v3"
+                    "aksJobsAgentVMSize": "Standard_D16s_v3",
+                    "aksMongodbAgentVMSize": "Standard_D16s_v3",
+                    "aksSolrAgentVMSize": "Standard_D16s_v3"
                 },
                 "solr": {
                     "ha": true,
@@ -577,6 +597,9 @@
                     "storageAccountName": {
                         "value": "[parameters('HDInsightStorageAccountName')]"
                     },
+                    "storageAccountBlobName": {
+                        "value": "[parameters('HDInsightStorageAccountBlobName')]"
+                    },
                     "clusterLoginUserName": {
                         "value": "[parameters('adminUsername')]"
                     },
@@ -691,6 +714,12 @@
                     },
                     "aksJobsAgentVMSize": {
                         "value": "[variables('selectedSize').aks.aksJobsAgentVMSize]"
+                    },
+                    "aksMongodbAgentVMSize": {
+                        "value": "[variables('selectedSize').aks.aksMongodbAgentVMSize]"
+                    },
+                    "aksSolrAgentVMSize": {
+                        "value": "[variables('selectedSize').aks.aksSolrAgentVMSize]"
                     },
                     "jobsAgentPoolOrVirtualNode": {
                         "value": "[parameters('jobsAgentPoolOrVirtualNode')]"

@@ -12,19 +12,16 @@ import org.opencb.opencga.core.api.ParamConstants;
 public class SampleCommandOptions {
 
     public final static String OUTDIR_PARAM_NAME = "outdir";
-
-    public SecondaryIndex secondaryIndex;
-    public TsvLoad tsvLoad;
-
     public final GeneralCliOptions.CommonCommandOptions sampleCommonOptions;
     public final InternalCliOptionsParser.JobOptions internalJobOptions;
+    public SecondaryIndex secondaryIndex;
+    public TsvLoad tsvLoad;
     public JCommander jCommander;
 
     public SampleCommandOptions(GeneralCliOptions.CommonCommandOptions sampleCommonOptions, JCommander jCommander) {
         this.sampleCommonOptions = sampleCommonOptions;
         this.internalJobOptions = new InternalCliOptionsParser.JobOptions();
         this.jCommander = jCommander;
-
         this.secondaryIndex = new SecondaryIndex();
         this.tsvLoad = new TsvLoad();
     }

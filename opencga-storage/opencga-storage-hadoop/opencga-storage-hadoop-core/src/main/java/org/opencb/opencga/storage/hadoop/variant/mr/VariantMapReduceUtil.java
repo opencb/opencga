@@ -42,6 +42,7 @@ import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverte
 import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,7 +153,6 @@ public class VariantMapReduceUtil {
     public static void initVariantMapperJob(Job job, Class<? extends VariantMapper> mapperClass, String variantTable,
                                                VariantStorageMetadataManager metadataManager, Query query, QueryOptions queryOptions,
                                                boolean skipSampleIndex) throws IOException {
-        GenomeHelper helper = new GenomeHelper(job.getConfiguration());
         query = new VariantQueryParser(null, metadataManager).preProcessQuery(query, queryOptions);
 
         setQuery(job, query);
@@ -166,7 +166,9 @@ public class VariantMapReduceUtil {
                 Object geneRegions = query.get(VariantQueryUtils.ANNOT_GENE_REGIONS.key());
                 // Remove extra fields from the query
                 SampleIndexQuery sampleIndexQuery = new SampleIndexDBAdaptor(null, null, metadataManager).parseSampleIndexQuery(query);
-                setSampleIndexConfiguration(job, sampleIndexQuery.getSchema().getConfiguration());
+                setSampleIndexConfiguration(job,
+                        sampleIndexQuery.getSchema().getConfiguration(),
+                        sampleIndexQuery.getSchema().getVersion());
 
                 // Preserve regions and gene_regions
                 query.put(VariantQueryParam.REGION.key(), regions);
@@ -174,7 +176,7 @@ public class VariantMapReduceUtil {
                 LOGGER.info("Use sample index to read from HBase");
             }
 
-            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(helper, metadataManager);
+            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(metadataManager);
             List<Scan> scans = parser.parseQueryMultiRegion(query, queryOptions);
             configureMapReduceScans(scans, job.getConfiguration());
 
@@ -186,7 +188,7 @@ public class VariantMapReduceUtil {
             }
         } else {
             LOGGER.info("Init MapReduce job reading from Phoenix");
-            String sql = new VariantSqlQueryParser(helper, variantTable, metadataManager)
+            String sql = new VariantSqlQueryParser(variantTable, metadataManager, job.getConfiguration())
                     .parse(query, queryOptions);
 
             initVariantMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
@@ -227,10 +229,9 @@ public class VariantMapReduceUtil {
     public static void initVariantMapperJobFromPhoenix(Job job, VariantHadoopDBAdaptor dbAdaptor, Query query, QueryOptions queryOptions,
                                                        Class<? extends VariantMapper> variantMapperClass)
             throws IOException {
-        GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         String variantTableName = dbAdaptor.getVariantTable();
         VariantStorageMetadataManager scm = dbAdaptor.getMetadataManager();
-        VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(genomeHelper, variantTableName, scm, false);
+        VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(variantTableName, scm, false, dbAdaptor.getConfiguration());
 
         String sql = variantSqlQueryParser.parse(query, queryOptions);
 
@@ -265,7 +266,6 @@ public class VariantMapReduceUtil {
     public static void initVariantRowMapperJob(Job job, Class<? extends VariantRowMapper> mapperClass, String variantTable,
                                                VariantStorageMetadataManager metadataManager, Query query, QueryOptions queryOptions,
                                                boolean skipSampleIndex) throws IOException {
-        GenomeHelper helper = new GenomeHelper(job.getConfiguration());
         query = new VariantQueryParser(null, metadataManager).preProcessQuery(query, queryOptions);
 
         setQuery(job, query);
@@ -277,12 +277,14 @@ public class VariantMapReduceUtil {
             if (useSampleIndex) {
                 // Remove extra fields from the query
                 SampleIndexQuery sampleIndexQuery = new SampleIndexDBAdaptor(null, null, metadataManager).parseSampleIndexQuery(query);
-                setSampleIndexConfiguration(job, sampleIndexQuery.getSchema().getConfiguration());
+                setSampleIndexConfiguration(job,
+                        sampleIndexQuery.getSchema().getConfiguration(),
+                        sampleIndexQuery.getSchema().getVersion());
 
                 LOGGER.info("Use sample index to read from HBase");
             }
 
-            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(helper, metadataManager);
+            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(metadataManager);
             List<Scan> scans = parser.parseQueryMultiRegion(query, queryOptions);
             configureMapReduceScans(scans, job.getConfiguration());
 
@@ -294,7 +296,7 @@ public class VariantMapReduceUtil {
             }
         } else {
             LOGGER.info("Init MapReduce job reading from Phoenix");
-            String sql = new VariantSqlQueryParser(helper, variantTable, metadataManager)
+            String sql = new VariantSqlQueryParser(variantTable, metadataManager, job.getConfiguration())
                     .parse(query, queryOptions);
 
             initVariantRowMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
@@ -352,10 +354,9 @@ public class VariantMapReduceUtil {
     public static void initVariantRowMapperJobFromPhoenix(Job job, VariantHadoopDBAdaptor dbAdaptor, Query query, QueryOptions queryOptions,
                                                        Class<? extends VariantRowMapper> variantMapperClass)
             throws IOException {
-        GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         String variantTableName = dbAdaptor.getVariantTable();
         VariantStorageMetadataManager mm = dbAdaptor.getMetadataManager();
-        VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(genomeHelper, variantTableName, mm, false);
+        VariantSqlQueryParser variantSqlQueryParser = new VariantSqlQueryParser(variantTableName, mm, false, dbAdaptor.getConfiguration());
 
         String sql = variantSqlQueryParser.parse(query, queryOptions);
 
@@ -495,13 +496,28 @@ public class VariantMapReduceUtil {
         }
     }
 
-    public static void setSampleIndexConfiguration(Job job, SampleIndexConfiguration configuration) {
+    public static void setSampleIndexConfiguration(Job job, SampleIndexConfiguration configuration, int version) {
         try {
             String str = JacksonUtils.getDefaultNonNullObjectMapper().writeValueAsString(configuration);
             job.getConfiguration().set(SampleIndexConfiguration.class.getName(), str);
+            job.getConfiguration().setInt(SampleIndexConfiguration.class.getName() + ".version", version);
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    public static SampleIndexSchema getSampleIndexSchema(Configuration conf) {
+        return new SampleIndexSchema(
+                VariantMapReduceUtil.getSampleIndexConfiguration(conf),
+                VariantMapReduceUtil.getSampleIndexConfigurationVersion(conf)
+        );
+    }
+    public static int getSampleIndexConfigurationVersion(Configuration conf) {
+        String version = conf.get(SampleIndexConfiguration.class.getName() + ".version");
+        if (version == null) {
+            throw new IllegalArgumentException("Missing " + SampleIndexConfiguration.class.getName() + ".version");
+        }
+        return Integer.parseInt(version);
     }
 
     public static SampleIndexConfiguration getSampleIndexConfiguration(Configuration conf) {

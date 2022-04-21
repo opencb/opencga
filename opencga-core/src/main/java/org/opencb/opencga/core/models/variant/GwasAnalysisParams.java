@@ -24,7 +24,7 @@ import java.util.List;
 public class GwasAnalysisParams extends ToolParams {
     public static final String DESCRIPTION = "Gwas analysis params";
     private String phenotype;
-    private boolean index;
+    private Boolean index;
     private String indexScoreId;
     private GwasConfiguration.Method method;
     private GwasConfiguration.FisherMode fisherMode;
@@ -67,11 +67,11 @@ public class GwasAnalysisParams extends ToolParams {
         return this;
     }
 
-    public boolean isIndex() {
+    public Boolean isIndex() {
         return index;
     }
 
-    public GwasAnalysisParams setIndex(boolean index) {
+    public GwasAnalysisParams setIndex(Boolean index) {
         this.index = index;
         return this;
     }
