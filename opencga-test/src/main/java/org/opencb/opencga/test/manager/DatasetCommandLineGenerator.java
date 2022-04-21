@@ -18,6 +18,7 @@ package org.opencb.opencga.test.manager;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.test.config.Caller;
 import org.opencb.opencga.test.config.Configuration;
@@ -143,8 +144,7 @@ public class DatasetCommandLineGenerator {
                     for (Caller caller : callers) {
                         if (!caller.isSkip()) {
                             String outputFilename = caller.getName().replaceAll(" ", "_") + "_" + filename + ".vcf";
-                            outputFilenames.add(outputFilename + ".vcf");
-
+                            outputFilenames.add(outputFilename);
                             String callerCommand = getVariantCallerCommandLine(environment, caller.getCommand(), caller.getParams(), filename,
                                     outputFilename);
                             commandLines.add(new DataSetExecutionCommand().setCommandLine(callerCommand).setImage(caller.getImage()));
@@ -174,27 +174,33 @@ public class DatasetCommandLineGenerator {
 
     private boolean isExecutedFile(File dir, List<String> outputFilenames) {
         if (!dir.exists()) {
+            PrintUtils.println("RESUME: " + dir.getAbsolutePath() + " doesn't exists, all the files have to be executed. ", PrintUtils.Color.WHITE);
             return false;
         }
         FilenameFilter filter = (f, name) -> name.endsWith(".vcf");
         String[] files = dir.list(filter);
         if (files.length == 0) {
+            PrintUtils.println("RESUME: " + dir.getAbsolutePath() + " is empty, all the files have to be executed. ", PrintUtils.Color.WHITE);
             return false;
         }
         File[] filesSorted = dirListByAscendingDate(dir, filter);
         String lastModifiedFilename = filesSorted[0].getName();
-        OpencgaLogger.printLog("Last modified .vcf file " + lastModifiedFilename, Level.INFO);
+        PrintUtils.println("Last modified .vcf file " + lastModifiedFilename);
         String[] okFiles = ArrayUtils.remove(files, ArrayUtils.indexOf(files, lastModifiedFilename));
-        OpencgaLogger.printLog(ArrayUtils.toString(okFiles), Level.INFO);
-        OpencgaLogger.printLog("outputFilenames::: " + outputFilenames, Level.INFO);
+        PrintUtils.println("The Files in the vcf output directory are: " + ArrayUtils.toString(okFiles), PrintUtils.Color.CYAN);
+        PrintUtils.println("outputFilenames::: " + outputFilenames);
+        PrintUtils.println("dirFilenames::: " + StringUtils.join(okFiles, ", "));
         boolean res = true;
         for (String filename : outputFilenames) {
             if (!ArrayUtils.contains(okFiles, filename)) {
                 res = false;
             }
         }
-        OpencgaLogger.printLog("res::: " + res, Level.INFO);
-
+        if (res) {
+            PrintUtils.println("RESUME: The files " + outputFilenames + " do not have to be executed. ", PrintUtils.Color.CYAN);
+        } else {
+            PrintUtils.println("RESUME: The files " + outputFilenames + " have to be executed. ", PrintUtils.Color.WHITE);
+        }
         return res;
     }
 

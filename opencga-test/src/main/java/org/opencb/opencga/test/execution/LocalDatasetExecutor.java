@@ -70,6 +70,7 @@ public class LocalDatasetExecutor extends DatasetExecutor {
                 executeFileScript(datasetPlanExecution.getEnvironment(), result, filename);
             }
         }
+        mutate();
     }
 
 
