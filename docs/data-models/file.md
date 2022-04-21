@@ -69,28 +69,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-15
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-153/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileQualityControl.java).
 
 
-### Software
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/interpretation/Software.java).
-
-| Field | Description |
-| :---  | :--- |
-| **name**<br>*String* <br> | <p>Software name</p> |
-| **version**<br>*String* <br> | <p>Software version</p> |
-| **repository**<br>*String* <br> | <p>Software repository</p> |
-| **commit**<br>*String* <br> | <p>Software commit</p> |
-| **website**<br>*String* <br> | <p>Software website</p> |
-| **params**<br>*Map<String,String>* <br> | <p>Software params</p> |
-
-### Status
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
-
-
 ### FileExperiment
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-153/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment.java).
-
-
-### FileRelatedFile
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-153/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileRelatedFile.java).
 
 
 ### URI
@@ -110,6 +90,26 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-15
 | **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/file#status)* <br> | <p>Status of the internal object.</p> |
 | **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
+
+### Software
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/interpretation/Software.java).
+
+| Field | Description |
+| :---  | :--- |
+| **name**<br>*String* <br> | <p>Software name</p> |
+| **version**<br>*String* <br> | <p>Software version</p> |
+| **repository**<br>*String* <br> | <p>Software repository</p> |
+| **commit**<br>*String* <br> | <p>Software commit</p> |
+| **website**<br>*String* <br> | <p>Software website</p> |
+| **params**<br>*Map<String,String>* <br> | <p>Software params</p> |
+
+### FileRelatedFile
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-153/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileRelatedFile.java).
+
+
+### Status
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
+
 
 ### MissingSamples
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-153/opencga-core/src/main/java/org/opencb/opencga/core/models/file/MissingSamples.java).

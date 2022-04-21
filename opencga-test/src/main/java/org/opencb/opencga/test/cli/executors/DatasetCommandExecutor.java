@@ -32,14 +32,17 @@ public class DatasetCommandExecutor extends Executor {
             }
             PrintUtils.println("Configuration validation: ", PrintUtils.Color.CYAN, "OK", PrintUtils.Color.WHITE);
             if (DatasetCommandOptions.simulate) {
-                PrintUtils.println("Simulate option found ", PrintUtils.Color.CYAN);
+                PrintUtils.println("Execute option found: ", PrintUtils.Color.CYAN, "simulate", PrintUtils.Color.WHITE);
                 datasetGenerator.simulate();
             } else if (DatasetCommandOptions.run) {
-                PrintUtils.println("Run option found ", PrintUtils.Color.CYAN);
+                PrintUtils.println("Execute option found: ", PrintUtils.Color.CYAN, "run", PrintUtils.Color.WHITE);
                 datasetGenerator.execute();
             } else if (DatasetCommandOptions.resume) {
-                PrintUtils.println("Execute option found ", PrintUtils.Color.CYAN);
+                PrintUtils.println("Execute option found: ", PrintUtils.Color.CYAN, "resume", PrintUtils.Color.WHITE);
                 datasetGenerator.resume();
+            } else if (DatasetCommandOptions.mutate) {
+                PrintUtils.println("Execute option found: ", PrintUtils.Color.CYAN, "mutate", PrintUtils.Color.WHITE);
+                datasetGenerator.mutate();
             }
         } catch (IOException e) {
             OpencgaLogger.printLog(e.getMessage(), e);
@@ -55,6 +58,8 @@ public class DatasetCommandExecutor extends Executor {
             return validateExecutionConfiguration(configuration);
         } else if (DatasetCommandOptions.resume) {
             return validateExecutionConfiguration(configuration);
+        } else if (DatasetCommandOptions.mutate) {
+            return true;
         } else {
             PrintUtils.println("Configuration validation: ", PrintUtils.Color.CYAN, "FAIL", PrintUtils.Color.RED);
             PrintUtils.println("Execute option not found, valid options are --run --simulate --resume", PrintUtils.Color.CYAN);
@@ -62,6 +67,7 @@ public class DatasetCommandExecutor extends Executor {
         }
         return false;
     }
+
 
     private boolean validateSimulateConfiguration(Configuration configuration) {
         boolean res = checkReference(configuration);

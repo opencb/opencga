@@ -22,6 +22,9 @@ public class DatasetCommandOptions {
     @Parameter(names = "--run", description = "Execute all the commands to generate the VCF files.")
     public static boolean run = false;
 
+    @Parameter(names = "--mutate", description = "Execute all the commands to generate the VCF files.")
+    public static boolean mutate = false;
+
     @Parameter(names = "--resume", description = "Execute all the commands to generate the VCF files. Beginning for the last executed")
     public static boolean resume = false;
 

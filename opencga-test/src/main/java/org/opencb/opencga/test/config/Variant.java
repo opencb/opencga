@@ -12,6 +12,7 @@ public class Variant {
     private String filter;
     private String info;
     private String format;
+    private String id;
     private List<String> samples;
 
     public Variant() {
@@ -25,6 +26,7 @@ public class Variant {
                 ", skip=" + skip +
                 ", position='" + position + '\'' +
                 ", reference='" + reference + '\'' +
+                ", id='" + id + '\'' +
                 ", alternate='" + alternate + '\'' +
                 ", quality='" + quality + '\'' +
                 ", filter='" + filter + '\'' +
@@ -122,6 +124,15 @@ public class Variant {
 
     public Variant setSkip(boolean skip) {
         this.skip = skip;
+        return this;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public Variant setId(String id) {
+        this.id = id;
         return this;
     }
 }

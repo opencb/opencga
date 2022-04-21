@@ -70,7 +70,10 @@ public class LocalDatasetExecutor extends DatasetExecutor {
                 executeFileScript(datasetPlanExecution.getEnvironment(), result, filename);
             }
         }
+    }
 
+
+    public void mutate() {
         if (CollectionUtils.isNotEmpty(configuration.getMutator())) {
             PrintUtils.println("Writing mutations: ", PrintUtils.Color.CYAN,
                     configuration.getMutator().size() + " mutators found.", PrintUtils.Color.WHITE);
@@ -82,10 +85,13 @@ public class LocalDatasetExecutor extends DatasetExecutor {
                     if (vcfDir.exists()) {
                         String[] files = vcfDir.list(filter);
                         for (int i = 0; i < files.length; i++) {
-                            String vcfFilename = files[i].substring(0, files[i].lastIndexOf('.'));
-                            if (vcfFilename.equals(filename)) {
-                                setVariantsInFile(mutation.getVariants());
-                            }
+                            //String vcfFilename = files[i].substring(0, files[i].lastIndexOf('.'));
+                            if (files[i].equals(filename)) {
+                                PrintUtils.println("Variants found for file: ", PrintUtils.Color.CYAN, files[i], PrintUtils.Color.WHITE);
+                                setVariantsInFile(mutation.getVariants(), new File(vcfDir.getAbsolutePath() + File.separator + filename));
+                            } /*else {
+                                PrintUtils.println("No variants found for file: ", PrintUtils.Color.CYAN, files[i], PrintUtils.Color.WHITE);
+                            }*/
                         }
 
                     }
@@ -95,9 +101,95 @@ public class LocalDatasetExecutor extends DatasetExecutor {
         }
     }
 
-    private void setVariantsInFile(List<Variant> variants) {
+    public void setVariantsInFile(List<Variant> variants, File file) {
         //get the variant as String
         //insert it in temp file
+        PrintUtils.println("Writing variants: ", PrintUtils.Color.CYAN,
+                variants.size() + " variants found.", PrintUtils.Color.WHITE);
+        for (Variant variant : variants) {
+            insertStringInFile(file, variant);
+        }
+    }
+
+
+    public void insertStringInFile(File inFile, Variant variant) {
+        String line = getVariantLine(variant);
+        //PrintUtils.println("Trying to insert: " + line + " \n", PrintUtils.Color.CYAN, inFile.getAbsolutePath(), PrintUtils.Color.WHITE);
+        try {
+            Path path = Paths.get(inFile.getAbsolutePath() + "$$$$$$$$.tmp");
+            Files.createFile(path);
+            FileWriter fw = new FileWriter(path.toAbsolutePath().toString(), true);
+            BufferedWriter bw = new BufferedWriter(fw);
+            if (inFile.exists()) {
+                //PrintUtils.println("File found: ", PrintUtils.Color.CYAN, inFile.getAbsolutePath(), PrintUtils.Color.WHITE);
+                FileInputStream fis = new FileInputStream(inFile);
+                BufferedReader in = new BufferedReader(new InputStreamReader(fis));
+                String vcfLine = "";
+                int i = 1;
+                boolean inserted = false;
+                while ((vcfLine = in.readLine()) != null) {
+                    if (!inserted && isVariantLine(vcfLine, variant)) {
+                        bw.write(line);
+                        bw.newLine();
+                        PrintUtils.println("Inserted new line: ", PrintUtils.Color.CYAN, line, PrintUtils.Color.WHITE);
+                        PrintUtils.println(inFile.getAbsolutePath(), PrintUtils.Color.CYAN, ":" + i, PrintUtils.Color.WHITE);
+                        PrintUtils.println("-----------------", PrintUtils.Color.CYAN);
+                        inserted = true;
+                    }
+                    bw.write(vcfLine);
+                    bw.newLine();
+                    i++;
+                }
+                if (!inserted) {
+                    bw.write(line);
+                    bw.newLine();
+                    PrintUtils.println("Inserted new line: ", PrintUtils.Color.CYAN, line, PrintUtils.Color.WHITE);
+                    PrintUtils.println(inFile.getAbsolutePath(), PrintUtils.Color.CYAN, ":" + i, PrintUtils.Color.WHITE);
+                    PrintUtils.println("-----------------", PrintUtils.Color.CYAN);
+                }
+                bw.flush();
+                bw.close();
+                in.close();
+                Path targetPath = Paths.get(inFile.getAbsolutePath());
+                inFile.delete();
+                Files.move(path, targetPath);
+            } else {
+                PrintUtils.printError("ERROR writing variant to file: " + inFile.getAbsolutePath() + " does not exists");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            PrintUtils.printError("ERROR writing variant to file: " + e.getLocalizedMessage());
+        }
+
+
+    }
+
+    private boolean isVariantLine(String thisLine, Variant variant) {
+        String[] split = thisLine.split("\\t");
+        if (variant.getChromosome().equals(split[0])) {
+            if (Integer.parseInt(split[1]) > Integer.parseInt(variant.getPosition())) {
+                //  PrintUtils.println("Inserting new line before: " + thisLine, PrintUtils.Color.CYAN);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String getVariantLine(Variant variant) {
+        String line = variant.getChromosome() + "\t";
+        line += variant.getPosition() + "\t";
+        line += variant.getId() + "\t";
+        line += variant.getReference() + "\t";
+        line += variant.getAlternate() + "\t";
+        line += variant.getQuality() + "\t";
+        line += variant.getFilter() + "\t";
+        line += variant.getInfo() + "\t";
+        line += variant.getFormat();
+        for (String sample : variant.getSamples()) {
+            line += "\t" + sample;
+        }
+        return line;
     }
 
     private Map<String, List<Variant>> getVariantsMap(List<Mutation> mutations) {

@@ -15,5 +15,6 @@ public abstract class DatasetExecutor {
 
     abstract void execute(List<DatasetExecutionPlan> datasetPlanExecutionList);
 
+    abstract void mutate();
 
 }

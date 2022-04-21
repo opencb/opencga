@@ -73,4 +73,10 @@ public class DatasetPlanExecutionGenerator {
         LocalDatasetExecutor executor = new LocalDatasetExecutor(configuration);
         executor.execute(commandLinesMap);
     }
+
+    public void mutate() throws IOException {
+        // List<DatasetExecutionPlan> commandLinesMap = this.generateCommandLines(true);
+        LocalDatasetExecutor executor = new LocalDatasetExecutor(configuration);
+        executor.mutate();
+    }
 }

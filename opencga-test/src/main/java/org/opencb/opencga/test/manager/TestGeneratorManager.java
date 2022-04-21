@@ -28,10 +28,11 @@ public class TestGeneratorManager {
             OptionsParser.parseArgs(args);
         } catch (ParameterException p) {
             PrintUtils.println("Parameter exception: ", PrintUtils.Color.CYAN, p.getMessage(), PrintUtils.Color.WHITE);
+            OptionsParser.printUsage();
+            System.exit(-1);
         } catch (Exception t) {
             t.printStackTrace();
             OpencgaLogger.printLog(t.getMessage(), t);
-        } finally {
             OptionsParser.printUsage();
             System.exit(-1);
         }

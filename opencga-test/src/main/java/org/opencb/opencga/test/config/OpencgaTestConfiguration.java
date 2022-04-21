@@ -49,7 +49,7 @@ public class OpencgaTestConfiguration {
             System.exit(-1);
         }
 
-        System.out.println(configuration.getMutator());
+
         overrideConfigurationParams(configuration);
         OpencgaLogger.setLogLevel(configuration.getLogger().getLogLevel());
         PrintUtils.println(" Configuration load success ", PrintUtils.Color.WHITE);
