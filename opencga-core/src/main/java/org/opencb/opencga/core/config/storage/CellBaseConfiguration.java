@@ -70,40 +70,40 @@ public class CellBaseConfiguration {
         return this;
     }
 
-    @Deprecated
-    public String getHost() {
-        return url;
-    }
+//    @Deprecated
+//    public String getHost() {
+//        return url;
+//    }
+//
+//    @Deprecated
+//    public CellBaseConfiguration setHost(String host) {
+//        if (host != null) {
+//            LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'cellbase.host'. Use 'cellbase.url'");
+//        }
+//        url = host;
+//        return this;
+//    }
 
-    @Deprecated
-    public CellBaseConfiguration setHost(String host) {
-        if (host != null) {
-            LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'cellbase.host'. Use 'cellbase.url'");
-        }
-        url = host;
-        return this;
-    }
-
-    @Deprecated
-    public List<String> getHosts() {
-        return Collections.singletonList(url);
-    }
-
-    @Deprecated
-    public CellBaseConfiguration setHosts(List<String> hosts) {
-        if (hosts != null) {
-            LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'cellbase.hosts'. Use 'cellbase.url'");
-        }
-        if (hosts == null || hosts.isEmpty()) {
-            url = null;
-        } else {
-            if (hosts.size() != 1) {
-                throw new IllegalArgumentException("Unsupported multiple cellbase hosts");
-            }
-            url = hosts.get(0);
-        }
-        return this;
-    }
+//    @Deprecated
+//    public List<String> getHosts() {
+//        return Collections.singletonList(url);
+//    }
+//
+//    @Deprecated
+//    public CellBaseConfiguration setHosts(List<String> hosts) {
+//        if (hosts != null) {
+//            LoggerFactory.getLogger(CellBaseConfiguration.class).warn("Deprecated option 'cellbase.hosts'. Use 'cellbase.url'");
+//        }
+//        if (hosts == null || hosts.isEmpty()) {
+//            url = null;
+//        } else {
+//            if (hosts.size() != 1) {
+//                throw new IllegalArgumentException("Unsupported multiple cellbase hosts");
+//            }
+//            url = hosts.get(0);
+//        }
+//        return this;
+//    }
 
     public String getVersion() {
         return version;
