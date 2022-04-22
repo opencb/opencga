@@ -12,6 +12,7 @@ import org.opencb.opencga.core.config.storage.IndexFieldConfiguration;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 
 public class VariantFileIndexConverter {
@@ -51,6 +52,23 @@ public class VariantFileIndexConverter {
      */
     public BitBuffer createFileIndexValue(VariantType type, int filePosition, Map<String, String> fileAttributes,
                                            Map<String, Integer> sampleDataKeyPositions, List<String> sampleData) {
+        return createFileIndexValue(type, filePosition, fileAttributes::get, (key) -> {
+            Integer position = sampleDataKeyPositions.get(key);
+            return position == null ? null : sampleData.get(position);
+        });
+    }
+
+    /**
+     * Create the FileIndex value for this specific sample and variant.
+     *
+     * @param type           Variant type
+     * @param filePosition   In case of having multiple files for the same sample, the cardinal value of the load order of the file.
+     * @param fileAttributes File attributes
+     * @param sampleData     Sample data values
+     * @return BitBuffer of file index.
+     */
+    public BitBuffer createFileIndexValue(VariantType type, int filePosition, Function<String, String> fileAttributes,
+                                           Function<String, String> sampleData) {
         BitBuffer bitBuffer = new BitBuffer(fileIndex.getBitsLength());
 
 //        setMultiFile(bos, false);
@@ -60,15 +78,10 @@ public class VariantFileIndexConverter {
         for (IndexField<String> fileDataIndexField : fileIndex.getCustomFields()) {
             String key = fileDataIndexField.getKey();
             String value;
-            if (fileDataIndexField.getSource().equals(IndexFieldConfiguration.Source.FILE)) {
-                value = fileAttributes.get(key);
-            } else if (fileDataIndexField.getSource().equals(IndexFieldConfiguration.Source.SAMPLE)) {
-                Integer position = sampleDataKeyPositions.get(key);
-                if (position == null) {
-                    value = null;
-                } else {
-                    value = sampleData.get(position);
-                }
+            if (fileDataIndexField.getSource() == IndexFieldConfiguration.Source.FILE) {
+                value = fileAttributes.apply(key);
+            } else if (fileDataIndexField.getSource() == IndexFieldConfiguration.Source.SAMPLE) {
+                value = sampleData.apply(key);
             } else {
                 throw new IllegalArgumentException("Unable to build file index with index source "
                         + fileDataIndexField.getSource()
