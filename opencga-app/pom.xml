@@ -89,11 +89,11 @@
 <!--            <artifactId>jcommander</artifactId>-->
 <!--            <version>1.82</version>-->
 <!--        </dependency>-->
-        <dependency>
-            <groupId>org.glassfish.jersey.containers</groupId>
-            <artifactId>jersey-container-servlet-core</artifactId>
-            <version>${jersey.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.glassfish.jersey.containers</groupId>-->
+<!--            <artifactId>jersey-container-servlet-core</artifactId>-->
+<!--            <version>${jersey.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-analysis</artifactId>
@@ -149,6 +149,14 @@
                 <filtering>true</filtering>
                 <targetPath>${project.basedir}/target/conf</targetPath>
             </resource>
+            <resource>
+                <directory>app/cloud/docker/compose</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>docker-compose.yml</include>
+                </includes>
+                <targetPath>${project.basedir}/target/docker-compose</targetPath>
+            </resource>
         </resources>
 
         <plugins>
@@ -163,13 +171,6 @@
                             <goal>assemble</goal>
                         </goals>
                     </execution>
-                    <!--<execution>-->
-                    <!--<id>daemon-1</id>-->
-                    <!--<phase>package</phase>-->
-                    <!--<goals>-->
-                    <!--<goal>generate-daemons</goal>-->
-                    <!--</goals>-->
-                    <!--</execution>-->
                 </executions>
                 <configuration>
                     <repositoryName>libs</repositoryName>
@@ -269,6 +270,18 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
+                                <echo>Copying docker-compose files</echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/target/docker-compose/docker-compose.yml"/>
+                                    <arg value="${build.dir}/cloud/docker/compose"/>
+                                </exec>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.xml"/>
+                                    <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.internal.xml"/>
+                                    <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.service.xml"/>
+                                    <arg value="${build.dir}/cloud/docker/compose/conf"/>
+                                </exec>
+
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-analysis/src/main/R/"/>
@@ -283,13 +296,6 @@
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-admin.sh"/>
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-internal.sh"/>
                                     <arg value="${build.dir}/bin"/>
-                                </exec>
-                                <echo>Copying command lines and completion scripts to ${build.dir}/bin and
-                                    ${build.dir}/completion
-                                </echo>
-                                <exec executable="cp">
-                                    <arg value="${project.basedir}/app/cloud/docker/compose/cli/Dockerfile"/>
-                                    <arg value="${build.dir}"/>
                                 </exec>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh"/>
