@@ -20,6 +20,7 @@ import org.opencb.commons.annotations.DataClass;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.study.Study;
 
@@ -97,6 +98,9 @@ public class Project extends PrivateFields {
             description = FieldConstants.PROJECT_ORGANISM)
     private ProjectOrganism organism;
 
+    @DataField(id = "cellbase", indexed = true, uncommentedClasses = {"CellBaseConfiguration"},
+            description = FieldConstants.PROJECT_INTERNAL_CELLBASE)
+    private CellBaseConfiguration cellbase;
 
     @DataField(id = "currentRelease", indexed = true,
             description = FieldConstants.GENERIC_RELEASE_DESCRIPTION)
@@ -129,19 +133,22 @@ public class Project extends PrivateFields {
     public Project() {
     }
 
+    @Deprecated
     public Project(String id, String name, String description, ProjectOrganism organism, int currentRelease, ProjectInternal internal) {
-        this(id, name, TimeUtils.getTime(), TimeUtils.getTime(), description, organism, new LinkedList<>(), currentRelease, internal,
+        this(id, name, TimeUtils.getTime(), TimeUtils.getTime(), description, organism, null, new LinkedList<>(), currentRelease, internal,
                 new HashMap<>());
     }
 
+    @Deprecated
     public Project(String id, String name, String creationDate, String modificationDate, String description, ProjectOrganism organism,
                    int currentRelease, ProjectInternal internal) {
-        this(id, name, creationDate, modificationDate, description, organism, new LinkedList<>(), currentRelease, internal,
+        this(id, name, creationDate, modificationDate, description, organism, null, new LinkedList<>(), currentRelease, internal,
                 new HashMap<>());
     }
 
     public Project(String id, String name, String creationDate, String modificationDate, String description, ProjectOrganism organism,
-                   List<Study> studies, int currentRelease, ProjectInternal internal, Map<String, Object> attributes) {
+                   CellBaseConfiguration cellbase, List<Study> studies, int currentRelease, ProjectInternal internal,
+                   Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.creationDate = creationDate;
@@ -149,6 +156,7 @@ public class Project extends PrivateFields {
         this.description = description;
         this.organism = organism;
         this.studies = studies;
+        this.cellbase = cellbase;
         this.currentRelease = currentRelease;
         this.internal = internal;
         this.attributes = attributes;
@@ -183,16 +191,17 @@ public class Project extends PrivateFields {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Project{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", name='").append(name).append('\'');
         sb.append(", fqn='").append(fqn).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", organism=").append(organism);
+        sb.append(", cellbase=").append(cellbase);
         sb.append(", currentRelease=").append(currentRelease);
-        sb.append(", internal=").append(internal);
         sb.append(", studies=").append(studies);
+        sb.append(", internal=").append(internal);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -309,6 +318,15 @@ public class Project extends PrivateFields {
 
     public Project setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
+    }
+
+    public CellBaseConfiguration getCellbase() {
+        return cellbase;
+    }
+
+    public Project setCellbase(CellBaseConfiguration cellbase) {
+        this.cellbase = cellbase;
         return this;
     }
 }
