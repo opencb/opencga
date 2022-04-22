@@ -14,8 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.opencb.commons.utils.PrintUtils.println;
-
 
 public class OptionsParser {
 
@@ -86,7 +84,6 @@ public class OptionsParser {
     }
 
     public static void printUsage() {
-        printLogo();
         JCommander currentCommand = jcommander.getCommands().get(jcommander.getParsedCommand());
         printVersion();
         PrintUtils.println();
@@ -113,22 +110,6 @@ public class OptionsParser {
 
     }
 
-    private static void printLogo() {
-        println("");
-        println("     ███████                                    █████████    █████████    █████████  ", PrintUtils.Color.GREEN);
-        println("   ███░░░░░███                                 ███░░░░░███  ███░░░░░███  ███░░░░░███ ", PrintUtils.Color.GREEN);
-        println("  ███     ░░███ ████████   ██████  ████████   ███     ░░░  ███     ░░░  ░███    ░███ ", PrintUtils.Color.GREEN);
-        println("  ███      ░███░░███░░███ ███░░███░░███░░███ ░███         ░███          ░███████████ ", PrintUtils.Color.GREEN);
-        println("  ███      ░███ ░███ ░███░███████  ░███ ░███ ░███         ░███    █████ ░███░░░░░███ ", PrintUtils.Color.GREEN);
-        println("  ░███     ███  ░███ ░███░███░░░   ░███ ░███ ░░███     ███░░███  ░░███  ░███    ░███ ", PrintUtils.Color.GREEN);
-        println("  ░░░███████░   ░███████ ░░██████  ████ █████ ░░█████████  ░░█████████  █████   █████", PrintUtils.Color.GREEN);
-        println("    ░░░░░░░     ░███░░░   ░░░░░░  ░░░░ ░░░░░   ░░░░░░░░░    ░░░░░░░░░  ░░░░░   ░░░░░ ", PrintUtils.Color.GREEN);
-        println("                ░███                                                                 ", PrintUtils.Color.GREEN);
-        println("                █████                                                                ", PrintUtils.Color.GREEN);
-        println("               ░░░░░                                                                 ", PrintUtils.Color.GREEN);
-        println("");
-
-    }
 
     private static void printCommandsAndParameters(JCommander commander) {
         // Calculate the padding needed and add 10 extra spaces to get some left indentation

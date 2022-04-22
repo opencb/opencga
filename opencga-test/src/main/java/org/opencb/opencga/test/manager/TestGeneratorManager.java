@@ -17,13 +17,18 @@
 package org.opencb.opencga.test.manager;
 
 import com.beust.jcommander.ParameterException;
+import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.test.cli.OptionsParser;
 import org.opencb.opencga.test.utils.OpencgaLogger;
 
+import java.util.Date;
+
 public class TestGeneratorManager {
 
     public static void main(String[] args) {
+        Date start = new Date();
+        PrintUtils.printShellHeader(PrintUtils.Color.BLUE);
         try {
             OptionsParser.parseArgs(args);
         } catch (ParameterException p) {
@@ -36,6 +41,11 @@ public class TestGeneratorManager {
             OptionsParser.printUsage();
             System.exit(-1);
         }
+        Date end = new Date();
+        if (!(ArrayUtils.contains(args, "--help") || ArrayUtils.contains(args, "--version"))) {
+            PrintUtils.printTimeElapsed(start, end);
+        }
+
     }
 
 }

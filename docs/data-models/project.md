@@ -48,10 +48,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-15
 | :---  | :--- |
 | **datastores**<br>*Datastores* <br> | <p>Default value is VARIANT.</p> |
 | **cellbase**<br>*CellBaseConfiguration* <br> | <p>Cellbase configuration.</p> |
-| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/project#status)* <br> | <p>Status of the internal object.</p> |
+| **status**<br>*[InternalStatus](https://docs.opencga.opencb.org/data-models/project#internalstatus)* <br> | <p>Status of the internal object.</p> |
 | **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
 
-### Status
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
+### InternalStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-153/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
 

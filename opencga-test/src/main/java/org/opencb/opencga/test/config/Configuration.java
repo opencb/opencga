@@ -8,7 +8,7 @@ public class Configuration {
     private Execution execution;
     private List<Environment> envs;
     private Logger logger;
-    private List<Mutation> mutator;
+    private Mutator mutator;
 
     public Configuration() {
 
@@ -16,12 +16,12 @@ public class Configuration {
 
     @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("Configuration{\n");
-        sb.append("execution=").append(execution).append("\n");
-        sb.append("envs=").append(envs).append("\n");
-        sb.append("logger=").append(logger).append("\n");
-        sb.append("}\n");
-        return sb.toString();
+        return "Configuration{" +
+                "execution=" + execution +
+                ", envs=" + envs +
+                ", logger=" + logger +
+                ", mutator=" + mutator +
+                '}';
     }
 
     public Execution getExecution() {
@@ -51,11 +51,11 @@ public class Configuration {
         return this;
     }
 
-    public List<Mutation> getMutator() {
+    public Mutator getMutator() {
         return mutator;
     }
 
-    public Configuration setMutator(List<Mutation> mutator) {
+    public Configuration setMutator(Mutator mutator) {
         this.mutator = mutator;
         return this;
     }

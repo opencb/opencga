@@ -70,34 +70,37 @@ public class LocalDatasetExecutor extends DatasetExecutor {
                 executeFileScript(datasetPlanExecution.getEnvironment(), result, filename);
             }
         }
-        mutate();
+
+        if (!configuration.getMutator().isSkip()) {
+            mutate();
+        }
     }
 
 
     public void mutate() {
-        if (CollectionUtils.isNotEmpty(configuration.getMutator())) {
+        if (CollectionUtils.isNotEmpty(configuration.getMutator().getMutations())) {
             PrintUtils.println("Writing mutations: ", PrintUtils.Color.CYAN,
-                    configuration.getMutator().size() + " mutators found.", PrintUtils.Color.WHITE);
+                    configuration.getMutator().getMutations().size() + " mutators found.", PrintUtils.Color.WHITE);
             FilenameFilter filter = (f, name) -> name.endsWith(".vcf");
-            for (Mutation mutation : configuration.getMutator()) {
-                String filename = mutation.getFile();
-                for (Environment environment : configuration.getEnvs()) {
-                    File vcfDir = new File(DatasetTestUtils.getVCFOutputDirPath(environment));
-                    if (vcfDir.exists()) {
-                        String[] files = vcfDir.list(filter);
-                        for (int i = 0; i < files.length; i++) {
-                            //String vcfFilename = files[i].substring(0, files[i].lastIndexOf('.'));
-                            if (files[i].equals(filename)) {
-                                PrintUtils.println("Variants found for file: ", PrintUtils.Color.CYAN, files[i], PrintUtils.Color.WHITE);
-                                setVariantsInFile(mutation.getVariants(), new File(vcfDir.getAbsolutePath() + File.separator + filename));
-                            } /*else {
+            for (Mutation mutation : configuration.getMutator().getMutations()) {
+                if (!mutation.isSkip()) {
+                    String filename = mutation.getFile();
+                    for (Environment environment : configuration.getEnvs()) {
+                        File vcfDir = new File(DatasetTestUtils.getVCFOutputDirPath(environment));
+                        if (vcfDir.exists()) {
+                            String[] files = vcfDir.list(filter);
+                            for (int i = 0; i < files.length; i++) {
+                                //String vcfFilename = files[i].substring(0, files[i].lastIndexOf('.'));
+                                if (files[i].equals(filename)) {
+                                    PrintUtils.println("Variants found for file: ", PrintUtils.Color.CYAN, files[i], PrintUtils.Color.WHITE);
+                                    setVariantsInFile(mutation.getVariants(), new File(vcfDir.getAbsolutePath() + File.separator + filename));
+                                } /*else {
                                 PrintUtils.println("No variants found for file: ", PrintUtils.Color.CYAN, files[i], PrintUtils.Color.WHITE);
                             }*/
+                            }
                         }
-
                     }
                 }
-
             }
         }
     }
@@ -108,7 +111,9 @@ public class LocalDatasetExecutor extends DatasetExecutor {
         PrintUtils.println("Writing variants: ", PrintUtils.Color.CYAN,
                 variants.size() + " variants found.", PrintUtils.Color.WHITE);
         for (Variant variant : variants) {
-            insertStringInFile(file, variant);
+            if (!variant.isSkip()) {
+                insertStringInFile(file, variant);
+            }
         }
     }
 
@@ -212,7 +217,10 @@ public class LocalDatasetExecutor extends DatasetExecutor {
         if (templatesDir.exists()) {
             try {
                 FileUtils.copyDirectory(templatesDir, Paths.get(DatasetTestUtils.getOutputTemplatesDirPath(env)).toFile());
-                PrintUtils.println("Directory " + templatesDir.getAbsolutePath() + " copied to " + DatasetTestUtils.getOutputTemplatesDirPath(env), PrintUtils.Color.CYAN);
+                PrintUtils.println(PrintUtils.format("Directory ", PrintUtils.Color.CYAN)
+                        + PrintUtils.format(templatesDir.getAbsolutePath(), PrintUtils.Color.WHITE)
+                        + PrintUtils.format(" copied to ", PrintUtils.Color.CYAN)
+                        + PrintUtils.format(DatasetTestUtils.getOutputTemplatesDirPath(env), PrintUtils.Color.WHITE));
             } catch (IOException e) {
                 PrintUtils.printError("Error creating " + templatesDir.getAbsolutePath());
                 System.exit(0);

@@ -18,7 +18,6 @@ package org.opencb.opencga.test.manager;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.test.config.Caller;
 import org.opencb.opencga.test.config.Configuration;
@@ -96,8 +95,14 @@ public class DatasetCommandLineGenerator {
                 if (vcfDir.exists()) {
                     FileUtils.copyDirectory(vcfDir, Paths.get(DatasetTestUtils.getVCFOutputDirPath(environment)).toFile());
                     FileUtils.copyDirectory(templatesDir, Paths.get(DatasetTestUtils.getOutputTemplatesDirPath(environment)).toFile());
-                    PrintUtils.println("Directory " + templatesDir.getAbsolutePath() + " copied to " + DatasetTestUtils.getOutputTemplatesDirPath(environment), PrintUtils.Color.CYAN);
-                    PrintUtils.println("Directory " + vcfDir.getAbsolutePath() + " copied to " + DatasetTestUtils.getVCFOutputDirPath(environment), PrintUtils.Color.CYAN);
+                    PrintUtils.println(PrintUtils.format("Directory ", PrintUtils.Color.CYAN)
+                            + PrintUtils.format(templatesDir.getAbsolutePath(), PrintUtils.Color.WHITE)
+                            + PrintUtils.format(" copied to ", PrintUtils.Color.CYAN)
+                            + PrintUtils.format(DatasetTestUtils.getOutputTemplatesDirPath(environment), PrintUtils.Color.WHITE));
+                    PrintUtils.println(PrintUtils.format("Directory ", PrintUtils.Color.CYAN)
+                            + PrintUtils.format(vcfDir.getAbsolutePath(), PrintUtils.Color.WHITE)
+                            + PrintUtils.format(" copied to ", PrintUtils.Color.CYAN)
+                            + PrintUtils.format(DatasetTestUtils.getVCFOutputDirPath(environment), PrintUtils.Color.WHITE));
                 } else {
                     PrintUtils.printError("Directory " + vcfDir.getAbsolutePath() + " not exists.");
                     System.exit(0);
@@ -109,7 +114,10 @@ public class DatasetCommandLineGenerator {
                     File bamDir = Paths.get(DatasetTestUtils.getInputBamDirPath(environment)).toFile();
                     if (bamDir.exists()) {
                         FileUtils.copyDirectory(bamDir, Paths.get(DatasetTestUtils.getOutputBamDirPath(environment)).toFile());
-                        PrintUtils.println("Directory " + bamDir.getAbsolutePath() + " copied to " + DatasetTestUtils.getOutputBamDirPath(environment), PrintUtils.Color.CYAN);
+                        PrintUtils.println(PrintUtils.format("Directory ", PrintUtils.Color.CYAN)
+                                + PrintUtils.format(bamDir.getAbsolutePath(), PrintUtils.Color.WHITE)
+                                + PrintUtils.format(" copied to ", PrintUtils.Color.CYAN)
+                                + PrintUtils.format(DatasetTestUtils.getOutputBamDirPath(environment), PrintUtils.Color.WHITE));
                     } else {
                         PrintUtils.printError("Directory " + bamDir.getAbsolutePath() + " not exists.");
                         System.exit(0);
@@ -174,33 +182,33 @@ public class DatasetCommandLineGenerator {
 
     private boolean isExecutedFile(File dir, List<String> outputFilenames) {
         if (!dir.exists()) {
-            PrintUtils.println("RESUME: " + dir.getAbsolutePath() + " doesn't exists, all the files have to be executed. ", PrintUtils.Color.WHITE);
+            //     PrintUtils.println("RESUME: " + dir.getAbsolutePath() + " doesn't exists, all the files have to be executed. ", PrintUtils.Color.WHITE);
             return false;
         }
         FilenameFilter filter = (f, name) -> name.endsWith(".vcf");
         String[] files = dir.list(filter);
         if (files.length == 0) {
-            PrintUtils.println("RESUME: " + dir.getAbsolutePath() + " is empty, all the files have to be executed. ", PrintUtils.Color.WHITE);
+            //      PrintUtils.println("RESUME: " + dir.getAbsolutePath() + " is empty, all the files have to be executed. ", PrintUtils.Color.WHITE);
             return false;
         }
         File[] filesSorted = dirListByAscendingDate(dir, filter);
         String lastModifiedFilename = filesSorted[0].getName();
-        PrintUtils.println("Last modified .vcf file " + lastModifiedFilename);
+        // PrintUtils.println("Last modified .vcf file " + lastModifiedFilename);
         String[] okFiles = ArrayUtils.remove(files, ArrayUtils.indexOf(files, lastModifiedFilename));
-        PrintUtils.println("The Files in the vcf output directory are: " + ArrayUtils.toString(okFiles), PrintUtils.Color.CYAN);
+    /*    PrintUtils.println("The Files in the vcf output directory are: " + ArrayUtils.toString(okFiles), PrintUtils.Color.CYAN);
         PrintUtils.println("outputFilenames::: " + outputFilenames);
-        PrintUtils.println("dirFilenames::: " + StringUtils.join(okFiles, ", "));
+        PrintUtils.println("dirFilenames::: " + StringUtils.join(okFiles, ", "));*/
         boolean res = true;
         for (String filename : outputFilenames) {
             if (!ArrayUtils.contains(okFiles, filename)) {
                 res = false;
             }
         }
-        if (res) {
+     /*   if (res) {
             PrintUtils.println("RESUME: The files " + outputFilenames + " do not have to be executed. ", PrintUtils.Color.CYAN);
         } else {
             PrintUtils.println("RESUME: The files " + outputFilenames + " have to be executed. ", PrintUtils.Color.WHITE);
-        }
+        }*/
         return res;
     }
 
