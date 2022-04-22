@@ -19,7 +19,7 @@ services:
       - ~/opencga-docker-data/solr:/var/solr/data
 
   init:
-    image: opencb/opencga-base:2.3.0-SNAPSHOT
+    image: opencb/opencga-base:${opencga.version}
     depends_on:
       - mongodb
       - solr
@@ -30,7 +30,7 @@ services:
     command: [ "/opt/opencga/bin/init.sh" ]
 
   rest:
-    image: opencb/opencga-base:2.3.0-SNAPSHOT
+    image: opencb/opencga-base:${opencga.version}
     container_name: rest-opencga
     depends_on:
       - init
@@ -42,7 +42,7 @@ services:
     command: [ "/opt/opencga/bin/rest.sh" ]
 
   daemon:
-    image: opencb/opencga-base:2.3.0-SNAPSHOT
+    image: opencb/opencga-base:${opencga.version}
     container_name: daemon-opencga
     depends_on:
       - rest
