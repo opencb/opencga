@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.List;
 
 import static org.opencb.commons.utils.PrintUtils.*;
 
@@ -98,10 +97,7 @@ public class CommandLineUtils {
             case "list":
                 if (OpencgaMain.isShellMode()) {
                     if (args.length > 1 && args[1].equals("studies")) {
-                        List<String> studies = OpencgaMain.getShell().getSessionManager().getSession().getStudies();
-                        for (String study : studies) {
-                            printGreen(study);
-                        }
+                        println(String.join(", ", OpencgaMain.getShell().getSessionManager().getSession().getStudies()), Color.GREEN);
                     } else {
                         printWarn("Opencga version " + GitRepositoryState.get().getBuildVersion() + " can only list studies");
                     }
