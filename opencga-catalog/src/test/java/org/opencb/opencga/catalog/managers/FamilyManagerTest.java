@@ -807,6 +807,7 @@ public class FamilyManagerTest extends GenericTest {
         catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(), sessionIdUser);
         DataResult<Individual> child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
         assertEquals(1, child1.first().getDisorders().size());
+        assertEquals(3, child1.first().getVersion());
 
         family = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser);
         assertEquals(1, family.first().getDisorders().size());
@@ -827,11 +828,10 @@ public class FamilyManagerTest extends GenericTest {
         disorderList = Arrays.asList(new Disorder().setId("disorder"));
         params.setDisorders(disorderList);
 
-        catalogManager.getIndividualManager().update(STUDY, "child1", params,
-                new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(), sessionIdUser);
         child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
         assertEquals(1, child1.first().getDisorders().size());
-        assertEquals(2, child1.first().getVersion());
+        assertEquals(5, child1.first().getVersion());
 
         family = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser);
         for (Individual member : family.first().getMembers()) {

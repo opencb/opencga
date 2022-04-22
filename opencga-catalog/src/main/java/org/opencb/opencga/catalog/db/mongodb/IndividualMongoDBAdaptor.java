@@ -41,7 +41,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
-import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UuidUtils;
@@ -189,16 +188,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         individualDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting individual '{}' ({})...", individual.getId(), individual.getUid());
-        individualCollection.insert(clientSession, individualDocument, null);
-        archiveIndividualCollection.insert(clientSession, individualDocument, null);
+        insertVersionedModel(clientSession, individualDocument, individualCollection, archiveIndividualCollection);
         logger.debug("Individual '{}' successfully inserted", individual.getId());
 
         if (individual.getSamples() != null && !individual.getSamples().isEmpty()) {
-            for (Sample sample : individual.getSamples()) {
-                // We associate the samples to the individual just created
-                dbAdaptorFactory.getCatalogSampleDBAdaptor().updateIndividualFromSampleCollection(clientSession, studyId, sample.getUid(),
-                        individual.getId());
-            }
+            // We associate the samples to the individual just created
+            List<Long> sampleUids = individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toList());
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().updateIndividualFromSampleCollection(clientSession, studyId, sampleUids,
+                    individual.getId());
         }
 
         return individual;
@@ -232,7 +229,16 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 throw new CatalogDBException("Could not update family references in individuals");
             }
             return null;
-        });
+        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession, studyUid, iterator));
+
+//        updateVersionedModel(clientSession, bsonQuery, individualCollection, archiveIndividualCollection, () -> {
+//            DataResult update = individualCollection.update(clientSession, bsonQuery, bsonUpdate,
+//                    new QueryOptions(MongoDBCollection.MULTI, true));
+//            if (update.getNumMatches() == 0) {
+//                throw new CatalogDBException("Could not update family references in individuals");
+//            }
+//            return null;
+//        });
     }
 
     @Override
@@ -254,7 +260,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
         Bson bson = parseQuery(query);
-        return updateVersionedModel(null, bson, individualCollection, archiveIndividualCollection, () -> {
+        return updateVersionedModelNoVersionIncrement(bson, individualCollection, archiveIndividualCollection, () -> {
             Document update = new Document()
                     .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
 
@@ -426,17 +432,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     List<Long> addedSamples = updateDocument.getAttributes().getAsLongList("ADDED_SAMPLES");
                     List<Long> removedSamples = updateDocument.getAttributes().getAsLongList("REMOVED_SAMPLES");
 
-                    for (long sampleUid : addedSamples) {
-                        // Set new individual reference
-                        dbAdaptorFactory.getCatalogSampleDBAdaptor().updateIndividualFromSampleCollection(clientSession,
-                                individual.getStudyUid(), sampleUid, individual.getId());
-                    }
+                    // Set new individual reference
+                    dbAdaptorFactory.getCatalogSampleDBAdaptor().updateIndividualFromSampleCollection(clientSession,
+                            individual.getStudyUid(), addedSamples, individual.getId());
 
-                    for (long sampleUid : removedSamples) {
-                        // Set individual reference to ""
-                        dbAdaptorFactory.getCatalogSampleDBAdaptor().updateIndividualFromSampleCollection(clientSession,
-                                individual.getStudyUid(), sampleUid, "");
-                    }
+                    // Set individual reference to ""
+                    dbAdaptorFactory.getCatalogSampleDBAdaptor().updateIndividualFromSampleCollection(clientSession,
+                            individual.getStudyUid(), removedSamples, "");
                 }
 
                 // If the list of disorders or phenotypes is altered, we will need to update the corresponding effective lists
@@ -458,15 +460,22 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 logger.debug("Individual {} successfully updated", individual.getId());
             }
 
-            // TODO: At the moment, we are not controlling the number of updates that would involve the families, so the version of
-            //  those families could be incremented by more than 1 version. We should improve this and make sure we only increment their
-            //  version once.
-
-            updateFamilyIndividualReferences(clientSession, individual);
-            updateClinicalAnalysisIndividualReferences(clientSession, individual);
-
             return endWrite(tmpStartTime, 1, 1, events);
-        });
+        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession, individual.getStudyUid(),
+                iterator));
+    }
+
+    private void updateReferencesAfterIndividualVersionIncrement(ClientSession clientSession, long studyUid,
+                                                                 MongoDBIterator<Document> iterator)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Map<Long, Individual> individualMap = new HashMap<>();
+        while (iterator.hasNext()) {
+            Individual individual = individualConverter.convertToDataModelType(iterator.next());
+            updateClinicalAnalysisIndividualReferences(clientSession, individual);
+            individualMap.put(individual.getUid(), individual);
+        }
+
+        dbAdaptorFactory.getCatalogFamilyDBAdaptor().updateIndividualReferencesInFamily(clientSession, studyUid, individualMap);
     }
 
     private void recalculateFamilyDisordersPhenotypes(ClientSession clientSession, Individual individual)
@@ -555,7 +564,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
      * Update Individual references from any Clinical Analysis where it was used.
      *
      * @param clientSession Client session.
-     * @param individual    Individual object containing the version stored in the Clinical Analysis (before the version increment).
+     * @param individual    Individual object containing the latest version.
      */
     private void updateClinicalAnalysisIndividualReferences(ClientSession clientSession, Individual individual)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -571,13 +580,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             ClinicalAnalysis clinicalAnalysis = iterator.next();
 
             if (clinicalAnalysis.getProband().getUid() == individual.getUid()
-                    && clinicalAnalysis.getProband().getVersion() == individual.getVersion()) {
-
-                Individual proband = clinicalAnalysis.getProband();
-                // Increase proband version
-                proband.setVersion(proband.getVersion() + 1);
-
-                ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), proband);
+                    && clinicalAnalysis.getProband().getVersion() < individual.getVersion()) {
+                ObjectMap params = new ObjectMap(ClinicalAnalysisDBAdaptor.QueryParams.PROBAND.key(), individual);
 
                 OpenCGAResult result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().update(clientSession, clinicalAnalysis, params, null,
                         QueryOptions.empty());
@@ -585,50 +589,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     throw new CatalogDBException("ClinicalAnalysis '" + clinicalAnalysis.getId() + "' could not be updated to the latest "
                             + "individual version of '" + individual.getId() + "'");
                 }
-            }
-        }
-    }
-
-    /**
-     * Update Individual references from any Family where it was used.
-     *
-     * @param clientSession Client session.
-     * @param individual    Individual object containing the previous version (before the version increment).
-     */
-    private void updateFamilyIndividualReferences(ClientSession clientSession, Individual individual)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Query query = new Query()
-                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), individual.getStudyUid())
-                .append(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), individual.getUid());
-
-        List<String> include = new ArrayList<>(FamilyManager.INCLUDE_FAMILY_IDS.getAsStringList(QueryOptions.INCLUDE));
-        include.add(FamilyDBAdaptor.QueryParams.MEMBERS.key());
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, include);
-
-        DBIterator<Family> iterator = dbAdaptorFactory.getCatalogFamilyDBAdaptor().iterator(clientSession, query, options);
-
-        while (iterator.hasNext()) {
-            Family family = iterator.next();
-
-            List<Map<String, Object>> members = new ArrayList<>(family.getMembers().size());
-            for (Individual member : family.getMembers()) {
-                if (member.getUid() == individual.getUid()) {
-                    member.setVersion(individual.getVersion() + 1);
-                }
-                members.add(getMongoDBDocument(member, "Individual"));
-            }
-
-
-            ObjectMap params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), members);
-
-            ObjectMap action = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), ParamUtils.BasicUpdateAction.SET);
-            options = new QueryOptions()
-                    .append(Constants.ACTIONS, action);
-
-            OpenCGAResult result = dbAdaptorFactory.getCatalogFamilyDBAdaptor().privateUpdate(clientSession, family, params, null, options);
-            if (result.getNumUpdated() != 1) {
-                throw new CatalogDBException("Family '" + family.getId() + "' could not be updated to the latest "
-                        + "member version of '" + individual.getId() + "'");
             }
         }
     }
@@ -992,19 +952,24 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         long individualUid = individualDocument.getLong(PRIVATE_UID);
         long studyUid = individualDocument.getLong(PRIVATE_STUDY_UID);
 
+        long tmpStartTime = startQuery();
+
         checkInUseInLockedClinicalAnalysis(clientSession, individualDocument);
 
-        long tmpStartTime = startQuery();
         logger.debug("Deleting individual {} ({})", individualId, individualUid);
+        // Look for all the different family versions
+        Query individualQuery = new Query()
+                .append(QueryParams.UID.key(), individualUid)
+                .append(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bson = parseQuery(individualQuery);
+        deleteVersionedModel(clientSession, bson, individualCollection, archiveIndividualCollection, deletedIndividualCollection);
 
         // Remove individual reference from the list of samples
         List<Document> sampleList = individualDocument.getList(QueryParams.SAMPLES.key(), Document.class);
         if (sampleList != null && !sampleList.isEmpty()) {
-            for (Document sample : sampleList) {
-                // We set the individual id for those samples to ""
-                dbAdaptorFactory.getCatalogSampleDBAdaptor().updateIndividualFromSampleCollection(clientSession, studyUid,
-                        sample.getLong(PRIVATE_UID), "");
-            }
+            // We set the individual id for those samples to ""
+            List<Long> sampleUids = sampleList.stream().map(s -> s.get(PRIVATE_UID, Number.class).longValue()).collect(Collectors.toList());
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().updateIndividualFromSampleCollection(clientSession, studyUid, sampleUids, "");
         }
 
         // Remove individual from any list of members it might be part of
@@ -1016,74 +981,33 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.VERSION.key(),
                         FamilyDBAdaptor.QueryParams.MEMBERS.key()));
-        DBIterator<Family> familyIterator = familyDBAdaptor.iterator(familyQuery, queryOptions);
+        try (DBIterator<Family> familyIterator = familyDBAdaptor.iterator(clientSession, familyQuery, queryOptions)) {
+            while (familyIterator.hasNext()) {
+                Family family = familyIterator.next();
 
-        while (familyIterator.hasNext()) {
-            Family family = familyIterator.next();
-
-            List<Individual> members = new ArrayList<>();
-            for (Individual member : family.getMembers()) {
-                if (member.getUid() != individualUid) {
-                    members.add(member);
+                List<Individual> members = new ArrayList<>();
+                for (Individual member : family.getMembers()) {
+                    if (member.getUid() != individualUid) {
+                        members.add(member);
+                    }
                 }
+                // Remove the member and update the list of disorders and phenotypes
+                ObjectMap params = getNewFamilyDisordersAndPhenotypesToUpdate(family, null, null, individualUid)
+                        .append(FamilyDBAdaptor.QueryParams.MEMBERS.key(), members);
+
+                Bson bsonQuery = familyDBAdaptor.parseQuery(new Query()
+                        .append(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid())
+                        .append(FamilyDBAdaptor.QueryParams.VERSION.key(), family.getVersion())
+                );
+                Document update = familyDBAdaptor.parseAndValidateUpdateParams(clientSession, params, null).toFinalUpdateDocument();
+
+                logger.debug("Remove individual references from family: Query: {}, update: {}",
+                        bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                        update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                DataResult result = familyDBAdaptor.getFamilyCollection().update(clientSession, bsonQuery, update,
+                        new QueryOptions(MongoDBCollection.MULTI, true));
+                logger.debug("Families found: {}, families updated: {}", result.getNumMatches(), result.getNumUpdated());
             }
-            // Remove the member and update the list of disorders and phenotypes
-            ObjectMap params = getNewFamilyDisordersAndPhenotypesToUpdate(family, null, null, individualUid)
-                    .append(FamilyDBAdaptor.QueryParams.MEMBERS.key(), members);
-
-            Bson bsonQuery = familyDBAdaptor.parseQuery(new Query()
-                    .append(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid())
-                    .append(FamilyDBAdaptor.QueryParams.VERSION.key(), family.getVersion())
-            );
-            Document update = familyDBAdaptor.parseAndValidateUpdateParams(clientSession, params, null).toFinalUpdateDocument();
-
-            logger.debug("Remove individual references from family: Query: {}, update: {}",
-                    bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            DataResult result = familyDBAdaptor.getFamilyCollection().update(clientSession, bsonQuery, update,
-                    new QueryOptions(MongoDBCollection.MULTI, true));
-            logger.debug("Families found: {}, families updated: {}", result.getNumMatches(), result.getNumUpdated());
-        }
-
-        // Look for all the different individual versions
-        Query individualQuery = new Query()
-                .append(QueryParams.UID.key(), individualUid)
-                .append(QueryParams.STUDY_UID.key(), studyUid)
-                .append(Constants.ALL_VERSIONS, true);
-        DBIterator<Document> individualDBIterator = nativeIterator(individualQuery, QueryOptions.empty());
-
-        // Delete any documents that might have been already deleted with that id
-        Bson query = new Document()
-                .append(QueryParams.ID.key(), individualId)
-                .append(PRIVATE_STUDY_UID, studyUid);
-        deletedIndividualCollection.remove(clientSession, query, new QueryOptions(MongoDBCollection.MULTI, true));
-
-        while (individualDBIterator.hasNext()) {
-            Document tmpIndividual = individualDBIterator.next();
-
-            // Set status to DELETED
-            nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"),
-                    tmpIndividual);
-
-            int individualVersion = tmpIndividual.getInteger(QueryParams.VERSION.key());
-
-            // Insert the document in the DELETE collection
-            deletedIndividualCollection.insert(clientSession, replaceDotsInKeys(tmpIndividual), null);
-            logger.debug("Inserted individual uid '{}' version '{}' in DELETE collection", individualUid, individualVersion);
-
-            // Remove the document from the main INDIVIDUAL collection
-            query = parseQuery(new Query()
-                    .append(QueryParams.UID.key(), individualUid)
-                    .append(QueryParams.VERSION.key(), individualVersion));
-            DataResult remove = individualCollection.remove(clientSession, query, null);
-            if (remove.getNumMatches() == 0) {
-                throw new CatalogDBException("Individual " + individualId + " not found");
-            }
-            if (remove.getNumDeleted() == 0) {
-                throw new CatalogDBException("Individual " + individualId + " could not be deleted");
-            }
-
-            logger.debug("Individual uid '{}' version '{}' deleted from main INDIVIDUAL collection", individualUid, individualVersion);
         }
 
         logger.debug("Individual {}({}) deleted", individualId, individualUid);
@@ -1739,11 +1663,15 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             logger.debug("Sample uid '" + sampleUid + "' references removed from " + updateResult.getNumUpdated() + " out of "
                     + updateResult.getNumMatches() + " individuals");
             return null;
-        });
+        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession, studyUid, iterator));
     }
 
     public MongoDBCollection getIndividualCollection() {
         return individualCollection;
+    }
+
+    public MongoDBCollection getIndividualArchiveCollection() {
+        return archiveIndividualCollection;
     }
 
 }

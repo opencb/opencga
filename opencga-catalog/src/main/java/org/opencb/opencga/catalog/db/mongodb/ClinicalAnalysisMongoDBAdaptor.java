@@ -901,7 +901,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
      * Update Family references from any Clinical Analysis where it was used.
      *
      * @param clientSession Client session.
-     * @param family        Family object containing the version stored in the Clinical Analysis (before the version increment).
+     * @param family        Family object containing the latest version.
      * @throws CatalogDBException CatalogDBException.
      * @throws CatalogParameterException CatalogParameterException.
      * @throws CatalogAuthorizationException CatalogAuthorizationException.
@@ -920,13 +920,11 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             ClinicalAnalysis clinicalAnalysis = iterator.next();
 
             if (clinicalAnalysis.getFamily().getUid() == family.getUid()
-                    && clinicalAnalysis.getFamily().getVersion() == family.getVersion()) {
-
+                    && clinicalAnalysis.getFamily().getVersion() < family.getVersion()) {
                 Family newFamily = clinicalAnalysis.getFamily();
 
                 // Increase family version
-                newFamily.setVersion(family.getVersion() + 1);
-
+                newFamily.setVersion(family.getVersion());
                 ObjectMap params = new ObjectMap(QueryParams.FAMILY.key(), newFamily);
                 OpenCGAResult result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().update(clientSession, clinicalAnalysis, params, null,
                         QueryOptions.empty());

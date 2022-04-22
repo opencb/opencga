@@ -968,7 +968,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         result = catalogManager.getFamilyManager().get(studyFqn, Arrays.asList(perez.getId(), sanchez.getId()),
                 QueryOptions.empty(), token);
         for (Family family : result.getResults()) {
-            assertEquals(family.getId().equals("sanchez") ? 2 : 1, family.getVersion());
+            assertEquals(family.getId().equals("family_sanchez") ? 2 : 1, family.getVersion());
             assertEquals(4, family.getMembers().size());
             for (Individual member : family.getMembers()) {
                 assertEquals(member.getId().equals("father_sanchez") ? 3 : 2, member.getVersion());

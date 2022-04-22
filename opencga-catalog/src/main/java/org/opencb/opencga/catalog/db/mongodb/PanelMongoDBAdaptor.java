@@ -34,7 +34,6 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.catalog.managers.PanelManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -129,9 +128,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         logger.debug("Inserting new panel '" + panel.getId() + "'");
 
         Document panelDocument = getPanelDocumentForInsertion(clientSession, panel, studyUid);
-        panelCollection.insert(clientSession, panelDocument, null);
-        panelArchiveCollection.insert(clientSession, panelDocument, null);
-
+        insertVersionedModel(clientSession, panelDocument, panelCollection, panelArchiveCollection);
         logger.info("Panel '" + panel.getId() + "(" + panel.getUid() + ")' successfully created");
     }
 
@@ -358,9 +355,6 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                         throw new CatalogDBException("Panel " + panel.getId() + " not found");
                     }
 
-                    Panel updatedPanel = get(clientSession, tmpQuery, PanelManager.INCLUDE_PANEL_IDS).first();
-                    dbAdaptorFactory.getClinicalAnalysisDBAdaptor().updateClinicalAnalysisPanelReferences(clientSession, updatedPanel);
-
                     List<Event> events = new ArrayList<>();
                     if (result.getNumUpdated() == 0) {
                         events.add(new Event(Event.Type.WARNING, panel.getId(), "Panel was already updated"));
@@ -368,8 +362,16 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                     logger.debug("Panel {} successfully updated", panel.getId());
 
                     return endWrite(tmpStartTime, 1, 1, events);
-                }
+                }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterPanelVersionIncrement(clientSession, iterator)
         );
+    }
+
+    private void updateReferencesAfterPanelVersionIncrement(ClientSession clientSession, MongoDBIterator<Document> iterator)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        while (iterator.hasNext()) {
+            Panel panel = panelConverter.convertToDataModelType(iterator.next());
+            dbAdaptorFactory.getClinicalAnalysisDBAdaptor().updateClinicalAnalysisPanelReferences(clientSession, panel);
+        }
     }
 
     private Document parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query)
@@ -658,10 +660,10 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         Document update = new Document()
                 .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
-
         QueryOptions queryOptions = new QueryOptions("multi", true);
 
-        return new OpenCGAResult(panelCollection.update(bson, update, queryOptions));
+        return updateVersionedModelNoVersionIncrement(bson, panelCollection, panelArchiveCollection,
+                () -> new OpenCGAResult(panelCollection.update(bson, update, queryOptions)));
     }
 
     @Override

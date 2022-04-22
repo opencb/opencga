@@ -81,6 +81,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     public static final String NATIVE_QUERY = "nativeQuery";
 
     private final int BATCH_SIZE = 500;
+    private static final String PRIVATE_TRANSACTION_ID = "_transactionId";
 
     // Possible update actions
     static final String SET = "SET";
@@ -115,6 +116,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                     throw new CatalogDBRuntimeException(e);
                 }
             });
+//            }, TransactionOptions.builder().maxCommitTime(2L, TimeUnit.MINUTES).build());
         } catch (CatalogDBRuntimeException e) {
             if (e.getCause() instanceof CatalogDBException) {
                 CatalogDBException cause = (CatalogDBException) e.getCause();
@@ -162,49 +164,117 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         return collection;
     }
 
+    private String getClientSessionUuid(ClientSession session) {
+        UUID sessionUUID = session.getServerSession().getIdentifier().getBinary("id").asUuid();
+        long transactionNumber = session.getServerSession().getTransactionNumber();
+
+        // Generate new UUID with sessionId + transactionNumber
+        return new UUID(sessionUUID.getMostSignificantBits(), sessionUUID.getLeastSignificantBits() + transactionNumber).toString();
+    }
+
     public interface VersionedModelExecution<T> {
         T execute() throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
     }
 
-    protected <T> T updateVersionedModel(ClientSession session, Bson query, MongoDBCollection collection,
-                                         MongoDBCollection archiveCollection, VersionedModelExecution<T> body)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return updateVersionedModel(session, query, collection, archiveCollection, null, body);
+    public interface ReferenceModelExecution {
+        void execute(MongoDBIterator<Document> iterator) throws CatalogDBException, CatalogAuthorizationException,
+                CatalogParameterException;
     }
 
-    protected <T> T updateVersionedModel(ClientSession session, Bson query, MongoDBCollection collection,
-                                         MongoDBCollection archiveCollection, QueryOptions options, VersionedModelExecution<T> body)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        boolean incrementVersion = options == null || !options.getBoolean(SKIP_INCREMENT_VERSION, false);
+    protected void insertVersionedModel(ClientSession session, Document document, MongoDBCollection collection,
+                                        MongoDBCollection archiveCollection) {
+        String uuid = getClientSessionUuid(session);
+        document.put(PRIVATE_TRANSACTION_ID, uuid);
+        collection.insert(session, document, QueryOptions.empty());
+        archiveCollection.insert(session, document, QueryOptions.empty());
+    }
 
-        if (incrementVersion) {
-            // Increment version from main collection
-            Bson versionInc = Updates.inc(VERSION, 1);
-            QueryOptions multiOptions = new QueryOptions(MongoDBCollection.MULTI, true);
-            collection.update(session, query, versionInc, multiOptions);
+    protected <T> T updateVersionedModel(ClientSession session, Bson sourceQuery, MongoDBCollection collection,
+                                         MongoDBCollection archiveCollection, VersionedModelExecution<T> update)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        return updateVersionedModel(session, sourceQuery, collection, archiveCollection, update, null);
+    }
+
+    protected <T> T updateVersionedModel(ClientSession session, Bson sourceQuery, MongoDBCollection collection,
+                                         MongoDBCollection archiveCollection, VersionedModelExecution<T> update,
+                                         ReferenceModelExecution postVersionIncrementExecution)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        String uuid = getClientSessionUuid(session);
+        String tmpUuid = uuid + "-tmp";
+
+        // Only increase version of those documents not already increased by same transaction id
+        Bson query = Filters.and(sourceQuery, Filters.ne(PRIVATE_TRANSACTION_ID, uuid), Filters.ne(PRIVATE_TRANSACTION_ID, tmpUuid));
+        QueryOptions multiOptions = new QueryOptions(MongoDBCollection.MULTI, true);
+        Bson versionInc = Updates.combine(
+                Updates.inc(VERSION, 1),
+                Updates.set(PRIVATE_TRANSACTION_ID, tmpUuid)
+        );
+
+        // Increment version from main collection
+        collection.update(session, query, versionInc, multiOptions);
+
+        // Execute main update
+        T executionResult = update.execute();
+
+        // Perform any additional reference checks/updates over those that have increased its version
+        query = Filters.and(sourceQuery, Filters.eq(PRIVATE_TRANSACTION_ID, tmpUuid));
+        if (postVersionIncrementExecution != null) {
+            QueryOptions options = new QueryOptions()
+                    .append(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_UID, PRIVATE_UUID, PRIVATE_ID, PRIVATE_STUDY_UID, VERSION))
+                    .append(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
+            try (MongoDBIterator<Document> iterator = collection.iterator(session, query, null, null, options)) {
+                postVersionIncrementExecution.execute(iterator);
+            }
         }
 
-        // Execute update
-        T executionResult = body.execute();
-
-        if (incrementVersion) {
-            // Fetch document containing update
-            options = new QueryOptions(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
-            MongoDBIterator<Document> iterator = collection.iterator(session, query, null, null, options);
-            List<Document> documentList = new ArrayList<>(BATCH_SIZE);
+        // Fetch document containing update and copy into the archive collection
+        QueryOptions options = new QueryOptions(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
+        QueryOptions upsertOptions = new QueryOptions()
+                .append(MongoDBCollection.REPLACE, true)
+                .append(MongoDBCollection.UPSERT, true);
+        try (MongoDBIterator<Document> iterator = collection.iterator(session, sourceQuery, null, null, options)) {
             while (iterator.hasNext()) {
                 Document result = iterator.next();
                 result.remove("_id");
-                if (documentList.size() >= BATCH_SIZE) {
-                    // Insert in archive collection
-                    archiveCollection.insert(session, documentList, QueryOptions.empty());
-                    documentList.clear();
-                }
-                documentList.add(result);
+                result.put(PRIVATE_TRANSACTION_ID, uuid);
+
+                // Insert/replace in archive collection
+                Bson tmpBsonQuery = Filters.and(
+                        Filters.eq(PRIVATE_UID, result.get(PRIVATE_UID)),
+                        Filters.eq(VERSION, result.get(VERSION))
+                );
+                archiveCollection.update(session, tmpBsonQuery, result, upsertOptions);
             }
-            if (!documentList.isEmpty()) {
-                // Insert remaining documents in archive collection
-                archiveCollection.insert(session, documentList, QueryOptions.empty());
+        }
+
+        Bson transactionIdUpdate = Updates.set(PRIVATE_TRANSACTION_ID, uuid);
+        collection.update(session, query, transactionIdUpdate, multiOptions);
+
+        return executionResult;
+    }
+
+    protected <T> T updateVersionedModelNoVersionIncrement(Bson sourceQuery, MongoDBCollection collection,
+                                         MongoDBCollection archiveCollection, VersionedModelExecution<T> update)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        // Execute main update
+        T executionResult = update.execute();
+
+        // Fetch document containing update and copy into the archive collection
+        QueryOptions options = new QueryOptions(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
+        QueryOptions upsertOptions = new QueryOptions()
+                .append(MongoDBCollection.REPLACE, true)
+                .append(MongoDBCollection.UPSERT, true);
+        try (MongoDBIterator<Document> iterator = collection.iterator(sourceQuery, options)) {
+            while (iterator.hasNext()) {
+                Document result = iterator.next();
+                result.remove("_id");
+
+                // Insert/replace in archive collection
+                Bson tmpBsonQuery = Filters.and(
+                        Filters.eq(PRIVATE_UID, result.get(PRIVATE_UID)),
+                        Filters.eq(VERSION, result.get(VERSION))
+                );
+                archiveCollection.update(tmpBsonQuery, result, upsertOptions);
             }
         }
 
@@ -223,7 +293,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
      * @throws CatalogDBException in case of any issue.
      */
     protected Document revertToVersion(ClientSession clientSession, long uid, int version, MongoDBCollection dbCollection,
-                                               MongoDBCollection archiveCollection) throws CatalogDBException {
+                                       MongoDBCollection archiveCollection) throws CatalogDBException {
         Bson query = Filters.and(
                 Filters.eq(PRIVATE_UID, uid),
                 Filters.eq(VERSION, version)
@@ -265,7 +335,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     }
 
     protected void deleteVersionedModel(ClientSession session, Bson query, MongoDBCollection collection,
-                                         MongoDBCollection archiveCollection, MongoDBCollection deletedCollection) {
+                                        MongoDBCollection archiveCollection, MongoDBCollection deletedCollection) {
         // Remove any old documents from the "delete" collection matching the criteria
         deletedCollection.remove(session, query, QueryOptions.empty());
 

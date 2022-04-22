@@ -243,8 +243,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         interpretationObject.put(LAST_OF_VERSION, true);
         interpretationObject.put(LAST_OF_RELEASE, true);
 
-        interpretationCollection.insert(clientSession, interpretationObject, null);
-        archiveInterpretationCollection.insert(clientSession, interpretationObject, null);
+        insertVersionedModel(clientSession, interpretationObject, interpretationCollection, archiveInterpretationCollection);
 
         return interpretation;
     }
@@ -294,18 +293,19 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException {
+    public OpenCGAResult updateProjectRelease(long studyId, int release)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
         Bson bson = parseQuery(query);
 
-        Document update = new Document()
-                .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
-
-        QueryOptions queryOptions = new QueryOptions("multi", true);
-
-        return new OpenCGAResult(interpretationCollection.update(bson, update, queryOptions));
+        return updateVersionedModelNoVersionIncrement(bson, interpretationCollection, archiveInterpretationCollection, () -> {
+            Document update = new Document()
+                    .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
+            QueryOptions queryOptions = new QueryOptions("multi", true);
+            return new OpenCGAResult(interpretationCollection.update(bson, update, queryOptions));
+        });
     }
 
     @Override
@@ -739,7 +739,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     }
 
                     return endWrite(tmpStartTime, update);
-                });
+                }, null);
             }
 
             return endWrite(tmpStartTime, 1, 1, Collections.emptyList());

@@ -169,11 +169,6 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             for (Individual individual : createIndividuals) {
                 createMissingIndividual(clientSession, studyUid, individual, individualMap, variableSetList);
             }
-
-            // Add family reference to the members
-            List<String> individualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
-            dbAdaptorFactory.getCatalogIndividualDBAdaptor().updateFamilyReferences(clientSession, studyUid, individualIds, family.getId(),
-                    ParamUtils.BasicUpdateAction.ADD);
         }
 
         long familyUid = getNewUid();
@@ -199,9 +194,15 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         familyDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting family '{}' ({})...", family.getId(), family.getUid());
-        familyCollection.insert(clientSession, familyDocument, null);
-        archiveFamilyCollection.insert(clientSession, familyDocument, null);
+        insertVersionedModel(clientSession, familyDocument, familyCollection, archiveFamilyCollection);
         logger.debug("Family '{}' successfully inserted", family.getId());
+
+        // Add family reference to the members
+        if (CollectionUtils.isNotEmpty(family.getMembers())) {
+            List<String> individualIds = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
+            dbAdaptorFactory.getCatalogIndividualDBAdaptor().updateFamilyReferences(clientSession, studyUid, individualIds, family.getId(),
+                    ParamUtils.BasicUpdateAction.ADD);
+        }
 
         return family;
     }
@@ -447,10 +448,16 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 logger.debug("Family {} successfully updated", family.getId());
             }
 
-            dbAdaptorFactory.getClinicalAnalysisDBAdaptor().updateClinicalAnalysisFamilyReferences(clientSession, family);
-
             return endWrite(tmpStartTime, 1, 1, events);
-        });
+        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, iterator));
+    }
+
+    private void updateReferencesAfterFamilyVersionIncrement(ClientSession clientSession, MongoDBIterator<Document> iterator)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        while (iterator.hasNext()) {
+            Family f = familyConverter.convertToDataModelType(iterator.next());
+            dbAdaptorFactory.getClinicalAnalysisDBAdaptor().updateClinicalAnalysisFamilyReferences(clientSession, f);
+        }
     }
 
     private void updateFamilyReferenceInIndividuals(ClientSession clientSession, Family family, List<String> newIndividuals,
@@ -463,6 +470,69 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         if (CollectionUtils.isNotEmpty(removeIndividuals)) {
             dbAdaptorFactory.getCatalogIndividualDBAdaptor().updateFamilyReferences(clientSession, family.getStudyUid(),
                     removeIndividuals, family.getId(), ParamUtils.BasicUpdateAction.REMOVE);
+        }
+    }
+
+    /**
+     * Update Individual references from any Family where they were used.
+     *
+     * @param clientSession Client session.
+     * @param studyUid      Study uid.
+     * @param individualMap Map containing all individuals that have changed containing their latest version.
+     * @throws CatalogDBException CatalogDBException.
+     * @throws CatalogParameterException CatalogParameterException.
+     * @throws CatalogAuthorizationException CatalogAuthorizationException.
+     */
+    void updateIndividualReferencesInFamily(ClientSession clientSession, long studyUid, Map<Long, Individual> individualMap)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        Query query = new Query()
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), new ArrayList<>(individualMap.keySet()));
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.UID.key(),
+                        FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
+                        FamilyDBAdaptor.QueryParams.MEMBERS.key() + "." + IndividualDBAdaptor.QueryParams.ID.key()));
+
+        DBIterator<Family> iterator = dbAdaptorFactory.getCatalogFamilyDBAdaptor().iterator(clientSession, query, options);
+
+        while (iterator.hasNext()) {
+            Family family = iterator.next();
+            boolean changed = false;
+
+            List<Map<String, Object>> members = new ArrayList<>(family.getMembers().size());
+            for (Individual member : family.getMembers()) {
+                if (individualMap.containsKey(member.getUid())) {
+                    Individual individual = individualMap.get(member.getUid());
+                    if (member.getVersion() < individual.getVersion()) {
+                        member.setVersion(individual.getVersion());
+                        changed = true;
+                    }
+                }
+                members.add(getMongoDBDocument(member, "Individual"));
+            }
+
+            if (changed) {
+                Query tmpQuery = new Query()
+                        .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                        .append(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid());
+
+                ObjectMap params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), members);
+//                ObjectMap action = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), ParamUtils.BasicUpdateAction.SET);
+//                options = new QueryOptions()
+//                        .append(Constants.ACTIONS, action);
+
+                UpdateDocument updateDocument = parseAndValidateUpdateParams(clientSession, params, tmpQuery);
+                Document bsonUpdate = updateDocument.toFinalUpdateDocument();
+                Bson bsonQuery = parseQuery(tmpQuery);
+                updateVersionedModel(clientSession, bsonQuery, familyCollection, archiveFamilyCollection, () -> {
+                    DataResult result = familyCollection.update(clientSession, bsonQuery, bsonUpdate, QueryOptions.empty());
+                    if (result.getNumUpdated() != 1) {
+                        throw new CatalogDBException("Family '" + family.getId() + "' could not be updated to the latest member versions");
+                    }
+                    return result;
+                }, (MongoDBIterator<Document> fIterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, fIterator));
+            }
         }
     }
 
@@ -481,48 +551,49 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 .append(QueryParams.MEMBER_UID.key(), memberUid);
 
         // We need to update the roles so it reflects the new individual id
-        DBIterator<Family> iterator = iterator(clientSession, query, new QueryOptions(QueryParams.UID.key(), QueryParams.ROLES.key()));
-        while (iterator.hasNext()) {
-            Family family = iterator.next();
+        try (DBIterator<Family> iterator = iterator(clientSession, query,
+                new QueryOptions(QueryParams.UID.key(), QueryParams.ROLES.key()))) {
+            while (iterator.hasNext()) {
+                Family family = iterator.next();
 
-            if (family.getRoles() != null) {
-                boolean changed = false;
-                Map<String, Map<String, Family.FamiliarRelationship>> roles = new HashMap<>();
+                if (family.getRoles() != null) {
+                    boolean changed = false;
+                    Map<String, Map<String, Family.FamiliarRelationship>> roles = new HashMap<>();
 
-                for (Map.Entry<String, Map<String, Family.FamiliarRelationship>> entry : family.getRoles().entrySet()) {
-                    if (oldIndividualId.equals(entry.getKey())) {
-                        roles.put(newIndividualId, entry.getValue());
-                        changed = true;
-                    } else {
-                        if (entry.getValue() == null) {
-                            roles.put(entry.getKey(), entry.getValue());
+                    for (Map.Entry<String, Map<String, Family.FamiliarRelationship>> entry : family.getRoles().entrySet()) {
+                        if (oldIndividualId.equals(entry.getKey())) {
+                            roles.put(newIndividualId, entry.getValue());
+                            changed = true;
                         } else {
-                            Map<String, Family.FamiliarRelationship> relationshipMap = new HashMap<>();
-                            for (Map.Entry<String, Family.FamiliarRelationship> entry2 : entry.getValue().entrySet()) {
-                                if (oldIndividualId.equals(entry2.getKey())) {
-                                    relationshipMap.put(newIndividualId, entry2.getValue());
-                                    changed = true;
-                                } else {
-                                    relationshipMap.put(entry.getKey(), entry2.getValue());
+                            if (entry.getValue() == null) {
+                                roles.put(entry.getKey(), entry.getValue());
+                            } else {
+                                Map<String, Family.FamiliarRelationship> relationshipMap = new HashMap<>();
+                                for (Map.Entry<String, Family.FamiliarRelationship> entry2 : entry.getValue().entrySet()) {
+                                    if (oldIndividualId.equals(entry2.getKey())) {
+                                        relationshipMap.put(newIndividualId, entry2.getValue());
+                                        changed = true;
+                                    } else {
+                                        relationshipMap.put(entry.getKey(), entry2.getValue());
+                                    }
                                 }
+                                roles.put(entry.getKey(), relationshipMap);
                             }
-                            roles.put(entry.getKey(), relationshipMap);
                         }
                     }
-                }
 
-                if (changed) {
-                    Bson bsonQuery = parseQuery(new Query()
-                            .append(QueryParams.STUDY_UID.key(), studyUid)
-                            .append(QueryParams.UID.key(), family.getUid())
-                    );
-                    updateVersionedModel(clientSession, bsonQuery, familyCollection, archiveFamilyCollection, () -> {
-                        Bson update = Updates.set(QueryParams.ROLES.key(), getMongoDBDocument(roles, QueryParams.ROLES.key()));
-                        return familyCollection.update(clientSession, bsonQuery, update, QueryOptions.empty());
-                    });
+                    if (changed) {
+                        Bson bsonQuery = parseQuery(new Query()
+                                .append(QueryParams.STUDY_UID.key(), studyUid)
+                                .append(QueryParams.UID.key(), family.getUid())
+                        );
+                        updateVersionedModel(clientSession, bsonQuery, familyCollection, archiveFamilyCollection, () -> {
+                            Bson update = Updates.set(QueryParams.ROLES.key(), getMongoDBDocument(roles, QueryParams.ROLES.key()));
+                            return familyCollection.update(clientSession, bsonQuery, update, QueryOptions.empty());
+                        }, (MongoDBIterator<Document> fIterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, fIterator));
+                    }
                 }
             }
-
         }
     }
 
@@ -930,7 +1001,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
         Bson bson = parseQuery(query);
 
-        return updateVersionedModel(null, bson, familyCollection, archiveFamilyCollection, () -> {
+        return updateVersionedModelNoVersionIncrement(bson, familyCollection, archiveFamilyCollection, () -> {
             Document update = new Document()
                     .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
 
