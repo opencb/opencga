@@ -143,7 +143,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
         // Max number of samples to be processed in each Scan.
         partialScanSize = Integer.valueOf(getParam(PARTIAL_SCAN_SIZE, "1000"));
-        maxColumns = Integer.valueOf(getParam(MAX_COLUMNS_PER_SCAN, "4000"));
+        maxColumns = Integer.valueOf(getParam(MAX_COLUMNS_PER_SCAN, "8000"));
 
         String samplesParam = getParam(SAMPLES);
         String sampleIdsStr = getParam(SAMPLE_IDS);
