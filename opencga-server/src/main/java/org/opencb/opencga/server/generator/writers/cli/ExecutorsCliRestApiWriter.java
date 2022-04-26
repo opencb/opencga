@@ -44,6 +44,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         CategoryConfig categoryConfig = availableCategoryConfigs.get(key);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         sb.append("package ").append(config.getOptions().getExecutorsPackage()).append(";\n\n");
+
+        sb.append("import com.fasterxml.jackson.databind.ObjectMapper;\n");
         sb.append("import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;\n");
         sb.append("import org.opencb.opencga.app.cli.main.*;\n");
         sb.append("import org.opencb.opencga.core.response.RestResponse;\n");
