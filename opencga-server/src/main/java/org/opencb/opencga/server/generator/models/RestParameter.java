@@ -19,11 +19,11 @@ public class RestParameter {
     /**
      * Parent param name. Useful for inner params.
      */
-    private String parentParamName;
+    private String parentName;
 
     /**
      * High level param type.
-     *
+     * <p>
      * - enum
      * - string
      * - boolean
@@ -50,8 +50,8 @@ public class RestParameter {
     /**
      * Canonical type with generics.
      * e.g.
-     *  - java.util.List<java.lang.String>
-     *  - java.util.Map<java.lang.String, java.lang.Object>
+     * - java.util.List<java.lang.String>
+     * - java.util.Map<java.lang.String, java.lang.Object>
      */
     private String genericType;
 
@@ -81,7 +81,7 @@ public class RestParameter {
         return "RestParameter{" +
                 "name='" + name + '\'' +
                 ", param='" + param + '\'' +
-                ", parentParamName='" + parentParamName + '\'' +
+                ", parentParamName='" + parentName + '\'' +
                 ", type='" + type + '\'' +
                 ", typeClass='" + typeClass + '\'' +
                 ", required=" + required +
@@ -111,12 +111,12 @@ public class RestParameter {
         this.param = param;
     }
 
-    public String getParentParamName() {
-        return parentParamName;
+    public String getParentName() {
+        return parentName;
     }
 
-    public void setParentParamName(String parentParamName) {
-        this.parentParamName = parentParamName;
+    public void setParentName(String parentName) {
+        this.parentName = parentName;
     }
 
     public String getType() {

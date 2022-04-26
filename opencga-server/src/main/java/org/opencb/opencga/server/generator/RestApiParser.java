@@ -276,7 +276,7 @@ public class RestApiParser {
         RestParameter param = new RestParameter();
         param.setName(property.getName());
         param.setParam(RestParamType.BODY);
-        param.setParentParamName(parentParamName);
+        param.setParentName(parentParamName);
         param.setTypeClass(propertyClass.getName() + ";");
         param.setRequired(isRequired(property));
 //        innerParam.setDefaultValue(property.getMetadata().getDefaultValue());
@@ -339,13 +339,14 @@ public class RestApiParser {
     /**
      * Check if the given class is a JavaBean depending on its serialization.
      * Example of classes that are not a JavaBean:
-     *  - Any primitive
-     *  - Arrays
-     *  - Collections
-     *  - Maps
-     *  - Date (it's serialized as a number)
-     *  - URL (it's serialized as a String)
-     *  - URI (it's serialized as a String)
+     * - Any primitive
+     * - Arrays
+     * - Collections
+     * - Maps
+     * - Date (it's serialized as a number)
+     * - URL (it's serialized as a String)
+     * - URI (it's serialized as a String)
+     *
      * @param aClass Class to test
      * @return if it's a bean
      */

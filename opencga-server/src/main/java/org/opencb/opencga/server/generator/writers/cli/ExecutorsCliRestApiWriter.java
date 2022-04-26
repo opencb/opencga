@@ -273,7 +273,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                 if (restParameter.getData() != null && !restParameter.getData().isEmpty()) {
                     sb.append(generateBeans(restParameter.getData()));
                     for (RestParameter bparameter : restParameter.getData()) {
-                        if (bparameter.getType().equals("enum") && bparameter.getParentParamName().isEmpty()) {
+                        if (bparameter.getType().equals("enum") && bparameter.getParentName().isEmpty()) {
                             sb.append("        " + getEnumName(bparameter.getTypeClass()) + " " + normalizeNames(getAsCamelCase(bparameter.getName() + "Param")) + " = null;");
                             sb.append("\n        if (commandOptions." + normalizeNames(getAsCamelCase(bparameter.getName())) + " != null) {\n ");
                             sb.append("        " + normalizeNames(getAsCamelCase(bparameter.getName() + "Param")) + " = "
@@ -330,11 +330,11 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                             // If the parameter is InnerParam (It means it's a field of inner bean) need to add to the variables Set
                             // for no duplicate set action of Bean (Parent)
                             if (bodyParam.isInnerParam() && !bodyParam.isCollection()) {
-                                if (!variables.contains(bodyParam.getParentParamName())) {
-                                    sb.append("            " + variableName + ".set" + getAsClassName(bodyParam.getParentParamName()) + "("
+                                if (!variables.contains(bodyParam.getParentName())) {
+                                    sb.append("            " + variableName + ".set" + getAsClassName(bodyParam.getParentName()) + "("
                                             + CommandLineUtils.getAsVariableName(CommandLineUtils.getClassName(bodyParam.getGenericType()))
                                             + ");\n");
-                                    variables.add(bodyParam.getParentParamName());
+                                    variables.add(bodyParam.getParentName());
                                 }
                             }
                         }
@@ -387,8 +387,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                     // If the parameter is InnerParam (It means it's a field of inner bean) need to add to the variables Set
                     // for no duplicate set action of Bean (Parent)
                     if (bodyParam.isInnerParam() && !bodyParam.isCollection()) {
-                        if (!variables.contains(bodyParam.getParentParamName())) {
-                            variables.add(bodyParam.getParentParamName());
+                        if (!variables.contains(bodyParam.getParentName())) {
+                            variables.add(bodyParam.getParentName());
                             return true;
                         }
                     }
@@ -424,8 +424,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                     // If the parameter is InnerParam (It means it's a field of inner bean) need to add to the variables Set
                     // for no duplicate set action of Bean (Parent)
                     if (bodyParam.isInnerParam() && !bodyParam.isCollection()) {
-                        if (!variables.contains(bodyParam.getParentParamName())) {
-                            variables.add(bodyParam.getParentParamName());
+                        if (!variables.contains(bodyParam.getParentName())) {
+                            variables.add(bodyParam.getParentName());
                             return true;
                         }
                     }
@@ -471,7 +471,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                 if (restParameter.getGenericType() != null && restParameter.getGenericType().equals(nameBean) && !restParameter.isComplex()) {
                     sb.append("        invokeSetter(" + CommandLineUtils.getAsVariableName(CommandLineUtils.getClassName(nameBean)) +
                             ", \"" + restParameter.getName() +
-                            "\", commandOptions." + normalizeNames(getAsCamelCase(restParameter.getParentParamName() + " " + restParameter.getName())) + ")" +
+                            "\", commandOptions." + normalizeNames(getAsCamelCase(restParameter.getParentName() + " " + restParameter.getName())) + ")" +
                             ";\n");
                 }
             }
