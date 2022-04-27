@@ -8,6 +8,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,6 +23,8 @@ import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.Variant
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public abstract class VariantTableSampleIndexOrderMapper<KEYOUT, VALOUT> extends TableMapper<KEYOUT, VALOUT> {
+
+    private final Logger logger = LoggerFactory.getLogger(VariantTableSampleIndexOrderMapper.class);
 
     @Override
     public void run(Context context) throws IOException, InterruptedException {
@@ -56,8 +60,7 @@ public abstract class VariantTableSampleIndexOrderMapper<KEYOUT, VALOUT> extends
 
                     if (!buffer.isEmpty()) {
                         // Drain buffer.
-                        context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME,
-                                "buffer_size_" + ((buffer.size() > 5) ? "X" : (buffer.size()))).increment(1);
+                        countBufferSize(context, buffer.size(), chromosome, position);
                         for (Pair<ImmutableBytesWritable, Result> pair : buffer) {
                             this.map(pair.getFirst(), pair.getSecond(), context);
                         }
@@ -78,8 +81,7 @@ public abstract class VariantTableSampleIndexOrderMapper<KEYOUT, VALOUT> extends
                     buffer.add(new Pair<>(new ImmutableBytesWritable(key), value));
                 }
             }
-            context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME,
-                    "buffer_size_" + ((buffer.size() > 5) ? "gt5" : (buffer.size()))).increment(1);
+            countBufferSize(context, buffer.size(), chromosome, position);
             for (Pair<ImmutableBytesWritable, Result> pair : buffer) {
                 this.map(pair.getFirst(), pair.getSecond(), context);
             }
@@ -89,6 +91,30 @@ public abstract class VariantTableSampleIndexOrderMapper<KEYOUT, VALOUT> extends
             this.cleanup(context);
         }
     }
+
+    private void countBufferSize(Context context, int size, String chromosome, int position) {
+        String counterName;
+        if (size < 5) {
+            counterName = "buffer_size_" + size;
+        } else if (size < 10) {
+            counterName = "buffer_size_5-10";
+        } else if (size < 20) {
+            counterName = "buffer_size_10-20";
+        } else if (size < 100) {
+            counterName = "buffer_size_20-100";
+        } else {
+            logger.warn("Super large buffer size of {} at {}:{}", size, chromosome, position);
+            if (size < 1000) {
+                counterName = "buffer_size_100-1000";
+            } else {
+                counterName = "buffer_size_gt1000";
+            }
+        }
+        context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, counterName).increment(1);
+    }
+
+    protected abstract void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException;
+
 
     public abstract void flush(Context context, String chromosome, int position) throws IOException, InterruptedException;
 

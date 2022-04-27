@@ -78,7 +78,7 @@ then
   REPO="$BASEDIR"/libs
 fi
 
-HADOOP_WITH_DEPENDENCIES="$(ls $BASEDIR/opencga-storage-hadoop-core-*.jar)"
+HADOOP_WITH_DEPENDENCIES="$(ls $BASEDIR/opencga-storage-hadoop-core-*.jar):$(ls $BASEDIR/libs/log4j-slf4j-impl-*.jar)"
 CLASSPATH=$HADOOP_WITH_DEPENDENCIES
 
 ENDORSED_DIR=

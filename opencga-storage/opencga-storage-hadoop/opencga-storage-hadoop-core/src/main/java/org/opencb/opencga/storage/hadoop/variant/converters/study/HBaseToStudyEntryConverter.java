@@ -428,6 +428,11 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     }
 
     public static HashMap<String, String> convertFileAttributes(PhoenixArray fileColumn, List<String> fixedAttributes) {
+        return convertFileAttributes(fileColumn, fixedAttributes, null);
+    }
+
+    public static HashMap<String, String> convertFileAttributes(PhoenixArray fileColumn, List<String> fixedAttributes,
+                                                                Set<String> includeAttributes) {
         HashMap<String, String> attributes = new HashMap<>(fileColumn.getDimensions() - 1);
         String qual = (String) (fileColumn.getElement(FILE_QUAL_IDX));
         if (qual != null) {
@@ -441,6 +446,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         int i = FILE_INFO_START_IDX;
         for (String attribute : fixedAttributes) {
             if (i >= fileColumn.getDimensions()) {
+                break;
+            }
+            if (includeAttributes != null && !includeAttributes.contains(attribute)) {
                 break;
             }
             String value = (String) (fileColumn.getElement(i));

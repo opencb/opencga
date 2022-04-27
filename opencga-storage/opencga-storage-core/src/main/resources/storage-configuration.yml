@@ -163,8 +163,8 @@ variant:
         storage.hadoop.variant.table.compression: "snappy"           # Allowed values: none, snappy, gz
         storage.hadoop.sampleIndex.table.preSplit.samplesPerSplit: 15
         storage.hadoop.sampleIndex.table.compression: "snappy"       # Allowed values: none, snappy, gz
-        storage.hadoop.sampleIndex.build.maxSamplesPerMR: 5000
-        storage.hadoop.sampleIndex.annotation.maxSamplesPerMR: 5000
+        storage.hadoop.sampleIndex.build.maxSamplesPerMR: 2000
+        storage.hadoop.sampleIndex.annotation.maxSamplesPerMR: 2000
         storage.hadoop.annotationIndex.table.compression: "snappy"   # Allowed values: none, snappy, gz
         storage.hadoop.pendingAnnotation.table.compression: "snappy" # Allowed values: none, snappy, gz
 
@@ -200,7 +200,7 @@ variant:
           mapreduce.map.memory.mb: 2048
         SampleIndexDriver:
           mapreduce.map.memory.mb: 4096
-          max-columns-per-scan: 4000
+          max-columns-per-scan: 8000
         SampleIndexAnnotationLoaderDriver:
           mapreduce.map.memory.mb: 4096
         VariantMigration200Driver:
