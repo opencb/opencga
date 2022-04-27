@@ -178,10 +178,10 @@ The following table summarises the available \emph{actions} for this client:\tab
    load \tab /{apiVersion}/samples/load \tab study, file\link{*}, variableSet \cr
    search \tab /{apiVersion}/samples/search \tab include, exclude, limit, skip, count, includeIndividual, flattenAnnotations, study, id, uuid, somatic, individualId, fileIds, cohortIds, creationDate, modificationDate, internalStatus, status, processingProduct, processingPreparationMethod, processingExtractionMethod, processingLabSampleId, collectionFrom, collectionType, collectionMethod, phenotypes, annotation, acl, internalRgaStatus, release, snapshot, deleted, statsId, statsVariantCount, statsChromosomeCount, statsTypeCount, statsGenotypeCount, statsTiTvRatio, statsQualityAvg, statsQualityStdDev, statsHeterozygosityRate, statsDepthCount, statsBiotypeCount, statsClinicalSignificanceCount, statsConsequenceTypeCount \cr
    acl \tab /{apiVersion}/samples/{samples}/acl \tab samples\link{*}, study, member, silent \cr
-   delete \tab /{apiVersion}/samples/{samples}/delete \tab force, emptyFilesAction, deleteEmptyCohorts, study, samples \cr
+   delete \tab /{apiVersion}/samples/{samples}/delete \tab force, emptyFilesAction, deleteEmptyCohorts, study, samples\link{*} \cr
    info \tab /{apiVersion}/samples/{samples}/info \tab include, exclude, includeIndividual, flattenAnnotations, samples\link{*}, study, version, deleted \cr
    update \tab /{apiVersion}/samples/{samples}/update \tab include, exclude, samples\link{*}, study, incVersion, annotationSetsAction, phenotypesAction, includeResult, body \cr
-   updateAnnotations \tab /{apiVersion}/samples/{sample}/annotationSets/{annotationSet}/annotations/update \tab sample\link{*}, study, annotationSet, action, incVersion, body \cr
+   updateAnnotationSetsAnnotations \tab /{apiVersion}/samples/{sample}/annotationSets/{annotationSet}/annotations/update \tab sample\link{*}, study, annotationSet\link{*}, action, incVersion, body \cr
 }
 }
 \section{Endpoint /{apiVersion}/samples/acl/{members}/update}{
