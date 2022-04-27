@@ -48,7 +48,7 @@ spec:
             - "--ssl"
             - "--sslAllowInvalidCertificates"
             - "--sslAllowInvalidHostnames"
-            {{ end -}}
+            {{- end }}
             - "--uri"
             - "{{ .Values.mongodb.uri}}"
 #            - "mongodb://{{ .Values.mongodb.hosts}}/?replicaSet={{ .Values.mongodb.replicaSet}}"
