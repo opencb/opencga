@@ -475,7 +475,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             individualMap.put(individual.getUid(), individual);
         }
 
-        dbAdaptorFactory.getCatalogFamilyDBAdaptor().updateIndividualReferencesInFamily(clientSession, studyUid, individualMap);
+        if (!individualMap.isEmpty()) {
+            dbAdaptorFactory.getCatalogFamilyDBAdaptor().updateIndividualReferencesInFamily(clientSession, studyUid, individualMap);
+        }
     }
 
     private void recalculateFamilyDisordersPhenotypes(ClientSession clientSession, Individual individual)
@@ -1098,7 +1100,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     DBIterator<Individual> iterator(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new IndividualCatalogMongoDBIterator<>(mongoCursor, individualConverter, null, dbAdaptorFactory, options);
+        return new IndividualCatalogMongoDBIterator<>(mongoCursor, clientSession, individualConverter, null, dbAdaptorFactory, options);
     }
 
     @Override
@@ -1113,7 +1115,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new IndividualCatalogMongoDBIterator(mongoCursor, null, null, dbAdaptorFactory, options);
+        return new IndividualCatalogMongoDBIterator(mongoCursor, clientSession, null, null, dbAdaptorFactory, options);
     }
 
     @Override
@@ -1131,8 +1133,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
-        return new IndividualCatalogMongoDBIterator<>(mongoCursor, individualConverter, iteratorFilter, dbAdaptorFactory, studyUid, user,
-                options);
+        return new IndividualCatalogMongoDBIterator<>(mongoCursor, clientSession, individualConverter, iteratorFilter, dbAdaptorFactory,
+                studyUid, user, options);
     }
 
     @Override
@@ -1153,7 +1155,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
-        return new IndividualCatalogMongoDBIterator(mongoCursor, null, iteratorFilter, dbAdaptorFactory, studyUid, user, options);
+        return new IndividualCatalogMongoDBIterator(mongoCursor, clientSession, null, iteratorFilter, dbAdaptorFactory, studyUid, user,
+                options);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)

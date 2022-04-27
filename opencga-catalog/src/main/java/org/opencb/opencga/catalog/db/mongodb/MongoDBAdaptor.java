@@ -17,8 +17,10 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
+import com.mongodb.TransactionOptions;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.*;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -37,6 +39,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -82,6 +85,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     private final int BATCH_SIZE = 500;
     private static final String PRIVATE_TRANSACTION_ID = "_transactionId";
+    private static final String PRIVATE_TRANSACTION_RANDOM_STRING = "_transactionRandomString";
 
     // Possible update actions
     static final String SET = "SET";
@@ -115,8 +119,8 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                 } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                     throw new CatalogDBRuntimeException(e);
                 }
-            });
-//            }, TransactionOptions.builder().maxCommitTime(2L, TimeUnit.MINUTES).build());
+//            });
+            }, TransactionOptions.builder().maxCommitTime(2L, TimeUnit.MINUTES).build());
         } catch (CatalogDBRuntimeException e) {
             if (e.getCause() instanceof CatalogDBException) {
                 CatalogDBException cause = (CatalogDBException) e.getCause();
@@ -201,33 +205,24 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         String uuid = getClientSessionUuid(session);
         String tmpUuid = uuid + "-tmp";
+        String random = RandomStringUtils.randomAlphanumeric(10);
 
-        // Only increase version of those documents not already increased by same transaction id
+        // 1. Increment version
+        // 1.1 Only increase version of those documents not already increased by same transaction id
         Bson query = Filters.and(sourceQuery, Filters.ne(PRIVATE_TRANSACTION_ID, uuid), Filters.ne(PRIVATE_TRANSACTION_ID, tmpUuid));
         QueryOptions multiOptions = new QueryOptions(MongoDBCollection.MULTI, true);
         Bson versionInc = Updates.combine(
                 Updates.inc(VERSION, 1),
-                Updates.set(PRIVATE_TRANSACTION_ID, tmpUuid)
+                Updates.set(PRIVATE_TRANSACTION_ID, tmpUuid),
+                Updates.set(PRIVATE_TRANSACTION_RANDOM_STRING, random)
         );
-
-        // Increment version from main collection
+        // 1.2 Increment version from main collection
         collection.update(session, query, versionInc, multiOptions);
 
-        // Execute main update
+        // 2. Execute main update
         T executionResult = update.execute();
 
-        // Perform any additional reference checks/updates over those that have increased its version
-        query = Filters.and(sourceQuery, Filters.eq(PRIVATE_TRANSACTION_ID, tmpUuid));
-        if (postVersionIncrementExecution != null) {
-            QueryOptions options = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_UID, PRIVATE_UUID, PRIVATE_ID, PRIVATE_STUDY_UID, VERSION))
-                    .append(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
-            try (MongoDBIterator<Document> iterator = collection.iterator(session, query, null, null, options)) {
-                postVersionIncrementExecution.execute(iterator);
-            }
-        }
-
-        // Fetch document containing update and copy into the archive collection
+        // 3. Fetch document containing update and copy into the archive collection
         QueryOptions options = new QueryOptions(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
         QueryOptions upsertOptions = new QueryOptions()
                 .append(MongoDBCollection.REPLACE, true)
@@ -238,16 +233,37 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                 result.remove("_id");
                 result.put(PRIVATE_TRANSACTION_ID, uuid);
 
+                // Some annotations have "." as part of their keys. Mongo does not support that so we call this method to replace them.
+                Document fixedResult = GenericDocumentComplexConverter.replaceDots(result);
+
                 // Insert/replace in archive collection
                 Bson tmpBsonQuery = Filters.and(
-                        Filters.eq(PRIVATE_UID, result.get(PRIVATE_UID)),
-                        Filters.eq(VERSION, result.get(VERSION))
+                        Filters.eq(PRIVATE_UID, fixedResult.get(PRIVATE_UID)),
+                        Filters.eq(VERSION, fixedResult.get(VERSION))
                 );
-                archiveCollection.update(session, tmpBsonQuery, result, upsertOptions);
+                archiveCollection.update(session, tmpBsonQuery, fixedResult, upsertOptions);
             }
         }
 
-        Bson transactionIdUpdate = Updates.set(PRIVATE_TRANSACTION_ID, uuid);
+        // 4. Perform any additional reference checks/updates over those that have increased its version in this call
+        query = Filters.and(sourceQuery,
+                Filters.eq(PRIVATE_TRANSACTION_ID, tmpUuid),
+                Filters.eq(PRIVATE_TRANSACTION_RANDOM_STRING, random)
+        );
+        if (postVersionIncrementExecution != null) {
+            options = new QueryOptions()
+                    .append(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_UID, PRIVATE_UUID, PRIVATE_ID, PRIVATE_STUDY_UID, VERSION))
+                    .append(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
+            try (MongoDBIterator<Document> iterator = collection.iterator(session, query, null, null, options)) {
+                postVersionIncrementExecution.execute(iterator);
+            }
+        }
+
+        // 5. Set final transaction ID
+        Bson transactionIdUpdate = Updates.combine(
+                Updates.set(PRIVATE_TRANSACTION_ID, uuid),
+                Updates.unset(PRIVATE_TRANSACTION_RANDOM_STRING)
+        );
         collection.update(session, query, transactionIdUpdate, multiOptions);
 
         return executionResult;

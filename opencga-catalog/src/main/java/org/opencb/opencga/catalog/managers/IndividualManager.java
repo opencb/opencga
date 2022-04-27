@@ -1023,9 +1023,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     IndividualDBAdaptor.QueryParams.MODIFICATION_DATE.key());
         }
 
-        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
-            ParamUtils.checkUpdateParametersMap(parameters);
-        }
+        ParamUtils.checkUpdateParametersMap(parameters);
 
         if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
             Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
@@ -1120,11 +1118,6 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         checkUpdateAnnotations(study, individual, parameters, options, VariableSet.AnnotableDataModels.INDIVIDUAL, individualDBAdaptor,
                 userId);
-
-        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
-            // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
-        }
 
         OpenCGAResult<Individual> update = individualDBAdaptor.update(individual.getUid(), parameters, study.getVariableSets(), options);
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {

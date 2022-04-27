@@ -915,8 +915,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
 
         // If there is nothing to update, we fail
-        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)
-                && !options.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, false)) {
+        if (parameters.isEmpty() && !options.getBoolean(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, false)) {
             ParamUtils.checkUpdateParametersMap(parameters);
         }
 
@@ -1005,11 +1004,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         checkUpdateAnnotations(study, family, parameters, options, VariableSet.AnnotableDataModels.FAMILY, familyDBAdaptor,
                 userId);
-
-        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
-            // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
-        }
 
         OpenCGAResult<Family> update = familyDBAdaptor.update(family.getUid(), parameters, study.getVariableSets(), options);
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {

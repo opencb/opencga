@@ -362,7 +362,12 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     @Override
     public OpenCGAResult<Document> nativeGet(long studyUid, Query query, QueryOptions options, String user) throws CatalogDBException {
-        return nativeGet(query, options);
+        return nativeGet(null, studyUid, query, options, user);
+    }
+
+    public OpenCGAResult<Document> nativeGet(ClientSession session, long studyUid, Query query, QueryOptions options, String user)
+            throws CatalogDBException {
+        return nativeGet(session, query, options);
     }
 
     @Override
@@ -906,7 +911,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
     public DBIterator<Interpretation> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new InterpretationCatalogMongoDBIterator<>(mongoCursor, interpretationConverter, dbAdaptorFactory, options);
+        return new InterpretationCatalogMongoDBIterator<>(mongoCursor, clientSession, interpretationConverter, dbAdaptorFactory, options);
     }
 
     @Override
@@ -917,7 +922,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     public DBIterator<Document> nativeIterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new InterpretationCatalogMongoDBIterator(mongoCursor, null, dbAdaptorFactory, queryOptions);
+        return new InterpretationCatalogMongoDBIterator(mongoCursor, clientSession, null, dbAdaptorFactory, queryOptions);
     }
 
     @Override

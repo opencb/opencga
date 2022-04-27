@@ -366,7 +366,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             }
 
             return endWrite(tmpStartTime, 1, 1, events);
-        });
+        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
     }
 
     private void updateReferencesAfterSampleVersionIncrement(ClientSession clientSession, MongoDBIterator<Document> iterator)
@@ -430,7 +430,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
      * Update Sample references from any Individual where it was used.
      *
      * @param clientSession Client session.
-     * @param sample        Sample object containing the previous version (before the version increment).
+     * @param sample        Sample object containing the latest version.
      */
     private void updateIndividualSampleReferences(ClientSession clientSession, Document sample)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -455,7 +455,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             List<Sample> samples = new ArrayList<>(individual.getSamples().size());
             for (Sample individualSample : individual.getSamples()) {
                 if (individualSample.getUid() == sampleUid) {
-                    individualSample.setVersion(version + 1);
+                    individualSample.setVersion(version);
                 }
                 samples.add(individualSample);
             }

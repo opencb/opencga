@@ -93,10 +93,10 @@ public class JobCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Job
             List<Document> fileDocuments;
             try {
                 if (user == null) {
-                    fileDocuments = fileDBAdaptor.nativeGet(query, fileQueryOptions).getResults();
+                    fileDocuments = fileDBAdaptor.nativeGet(clientSession, query, fileQueryOptions).getResults();
                 } else {
                     query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), this.studyUid);
-                    fileDocuments = fileDBAdaptor.nativeGet(this.studyUid, query, fileQueryOptions, user).getResults();
+                    fileDocuments = fileDBAdaptor.nativeGet(clientSession, this.studyUid, query, fileQueryOptions, user).getResults();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                 logger.warn("Could not obtain the files associated to the jobs: {}", e.getMessage(), e);
@@ -123,10 +123,10 @@ public class JobCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Job
                 Query query = new Query(JobDBAdaptor.QueryParams.UID.key(), new ArrayList<>(studyUidJobUidMap.get(studyUid)));
                 try {
                     if (user == null) {
-                        jobDocuments.addAll(jobDBAdaptor.nativeGet(query, jobQueryOptions).getResults());
+                        jobDocuments.addAll(jobDBAdaptor.nativeGet(clientSession, query, jobQueryOptions).getResults());
                     } else {
                         query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                        jobDocuments.addAll(jobDBAdaptor.nativeGet(studyUid, query, jobQueryOptions, user).getResults());
+                        jobDocuments.addAll(jobDBAdaptor.nativeGet(clientSession, studyUid, query, jobQueryOptions, user).getResults());
                     }
                 } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                     logger.warn("Could not obtain the jobs the original jobs depend on: {}", e.getMessage(), e);

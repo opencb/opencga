@@ -618,8 +618,7 @@ public class FamilyManagerTest extends GenericTest {
         catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
 
         // Update family not used in Clinical Analysis
-        catalogManager.getFamilyManager().update(STUDY, "family", new FamilyUpdateParams(),
-                new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
+        catalogManager.getFamilyManager().update(STUDY, "family", new FamilyUpdateParams(), new QueryOptions(), sessionIdUser);
 
         Family familyResult = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(2, familyResult.getVersion());

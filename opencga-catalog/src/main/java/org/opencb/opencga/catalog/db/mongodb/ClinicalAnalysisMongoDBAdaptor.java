@@ -666,7 +666,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     public DBIterator<ClinicalAnalysis> iterator(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, null);
-        return new ClinicalAnalysisCatalogMongoDBIterator<>(mongoCursor, clinicalConverter, dbAdaptorFactory, options);
+        return new ClinicalAnalysisCatalogMongoDBIterator<>(mongoCursor, clientSession, clinicalConverter, dbAdaptorFactory, options);
     }
 
     @Override
@@ -681,7 +681,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, dbAdaptorFactory, queryOptions);
+        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, clientSession, null, dbAdaptorFactory, queryOptions);
     }
 
     @Override
@@ -689,7 +689,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options, user);
-        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, clinicalConverter, dbAdaptorFactory, studyUid, user, options);
+        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, clinicalConverter, dbAdaptorFactory, studyUid, user, options);
     }
 
     @Override
@@ -700,7 +700,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions, user);
-        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, dbAdaptorFactory, studyUid, user, options);
+        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, null, dbAdaptorFactory, studyUid, user, options);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)

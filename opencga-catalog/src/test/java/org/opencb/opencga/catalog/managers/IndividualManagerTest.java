@@ -14,7 +14,6 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -245,8 +244,8 @@ public class IndividualManagerTest extends AbstractManagerTest {
                 .filter(s -> Arrays.asList(sample.getId(), sample2.getId()).contains(s)).count());
 
         // Increase sample2 version
-        catalogManager.getSampleManager().update(studyFqn, sample2.getId(), new SampleUpdateParams(),
-                new QueryOptions(ParamConstants.INCREMENT_VERSION_PARAM, true), token);
+        catalogManager.getSampleManager().update(studyFqn, sample2.getId(), new SampleUpdateParams().setDescription("new description"),
+                new QueryOptions(), token);
 
         // Add sample2 (with new version) and sample3
         Map<String, Object> actionMap = new HashMap<>();
@@ -263,12 +262,12 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals(3, individual.getSamples().size());
         assertEquals(3, individual.getSamples().stream().map(Sample::getId)
                 .filter(s -> Arrays.asList(sample.getId(), sample2.getId(), sample3.getId()).contains(s)).count());
-        // Sample1 and sample3 should have version 1
+        // Sample1 and sample3 should have version 2
         assertEquals(2, individual.getSamples().stream().map(Sample::getVersion)
-                .filter(s -> s == 1).count());
-        // And sample2 should be in version 2
-        assertEquals(1, individual.getSamples().stream().map(Sample::getVersion)
                 .filter(s -> s == 2).count());
+        // And sample2 should be in version 3
+        assertEquals(1, individual.getSamples().stream().map(Sample::getVersion)
+                .filter(s -> s == 3).count());
 
         // Remove Sample2
         actionMap.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.REMOVE);
@@ -446,8 +445,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         catalogManager.getClinicalAnalysisManager().create(studyFqn, clinicalAnalysis, QueryOptions.empty(), token);
 
         // Update brother not used in Clinical Analysis
-        catalogManager.getIndividualManager().update(studyFqn, "brother", new IndividualUpdateParams(),
-                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+        catalogManager.getIndividualManager().update(studyFqn, "brother", new IndividualUpdateParams(), new QueryOptions(), token);
 
         Individual individualResult = catalogManager.getIndividualManager().get(studyFqn, "brother", QueryOptions.empty(), token).first();
         assertEquals(2, individualResult.getVersion());
@@ -477,8 +475,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals(1, clinicalResult.getFamily().getMembers().get(1).getVersion());   // father version
 
         // Update father
-        catalogManager.getIndividualManager().update(studyFqn, "father", new IndividualUpdateParams(),
-                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+        catalogManager.getIndividualManager().update(studyFqn, "father", new IndividualUpdateParams(), new QueryOptions(), token);
 
         individualResult = catalogManager.getIndividualManager().get(studyFqn, "father", QueryOptions.empty(), token).first();
         assertEquals(2, individualResult.getVersion());
@@ -533,8 +530,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         }
 
         // Update proband
-        catalogManager.getIndividualManager().update(studyFqn, "proband", new IndividualUpdateParams(),
-                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+        catalogManager.getIndividualManager().update(studyFqn, "proband", new IndividualUpdateParams(), new QueryOptions(), token);
 
         individualResult = catalogManager.getIndividualManager().get(studyFqn, "proband", QueryOptions.empty(), token).first();
         assertEquals(2, individualResult.getVersion());
@@ -563,8 +559,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals(1, clinicalResult.getFamily().getMembers().get(0).getSamples().get(0).getVersion());   // proband sample2 version
 
         // Update father
-        catalogManager.getIndividualManager().update(studyFqn, "father", new IndividualUpdateParams(),
-                new QueryOptions(Constants.INCREMENT_VERSION, true), token);
+        catalogManager.getIndividualManager().update(studyFqn, "father", new IndividualUpdateParams(), new QueryOptions(), token);
 
         individualResult = catalogManager.getIndividualManager().get(studyFqn, "father", QueryOptions.empty(), token).first();
         assertEquals(3, individualResult.getVersion());

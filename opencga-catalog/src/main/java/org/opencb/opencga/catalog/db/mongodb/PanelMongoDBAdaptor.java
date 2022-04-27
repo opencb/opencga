@@ -206,7 +206,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         return nativeGet(null, query, options);
     }
 
-    OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options)
+    public OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
@@ -217,8 +217,13 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     @Override
     public OpenCGAResult nativeGet(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
+        return nativeGet(null, studyUid, query, options, user);
+    }
+
+    public OpenCGAResult nativeGet(ClientSession session, long studyUid, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        try (DBIterator<Document> dbIterator = nativeIterator(studyUid, query, options, user)) {
+        try (DBIterator<Document> dbIterator = nativeIterator(session, studyUid, query, options, user)) {
             return endQuery(startTime, dbIterator);
         }
     }
@@ -571,14 +576,18 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     @Override
     public DBIterator nativeIterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
+        return nativeIterator(null, studyUid, query, options, user);
+    }
+
+    public DBIterator nativeIterator(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
         query.put(PRIVATE_STUDY_UID, studyUid);
-        MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, queryOptions, user);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         return new CatalogMongoDBIterator<>(mongoCursor);
     }
-
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {

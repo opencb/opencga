@@ -535,9 +535,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
-            ParamUtils.checkUpdateParametersMap(parameters);
-        }
+        ParamUtils.checkUpdateParametersMap(parameters);
 
         // Check update permissions
         authorizationManager.checkPanelPermission(study.getUid(), panel.getUid(), userId, PanelAclEntry.PanelPermissions.WRITE);
@@ -545,11 +543,6 @@ public class PanelManager extends ResourceManager<Panel> {
         if (parameters.containsKey(PanelDBAdaptor.QueryParams.ID.key())) {
             ParamUtils.checkIdentifier(parameters.getString(PanelDBAdaptor.QueryParams.ID.key()),
                     PanelDBAdaptor.QueryParams.ID.key());
-        }
-
-        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
-            // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
         OpenCGAResult<Panel> update = panelDBAdaptor.update(panel.getUid(), parameters, options);
