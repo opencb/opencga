@@ -405,10 +405,10 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testGetAllProjects() throws Exception {
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
-        DataResult<Project> projects = catalogManager.getProjectManager().get(query, null, token);
+        DataResult<Project> projects = catalogManager.getProjectManager().search(query, null, token);
         assertEquals(1, projects.getNumResults());
 
-        projects = catalogManager.getProjectManager().get(query, null, sessionIdUser2);
+        projects = catalogManager.getProjectManager().search(query, null, sessionIdUser2);
         assertEquals(0, projects.getNumResults());
     }
 
@@ -503,7 +503,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void testGetAllStudies() throws CatalogException {
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
-        String projectId = catalogManager.getProjectManager().get(query, null, token).first().getId();
+        String projectId = catalogManager.getProjectManager().search(query, null, token).first().getId();
         Study study_1 = catalogManager.getStudyManager().create(projectId, new Study().setId("study_1").setCreationDate("20150101120000")
                 , null, token).first();
         assertEquals("20150101120000", study_1.getCreationDate());
@@ -962,7 +962,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         try {
             catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), sessionIdUser3);
-            fail("Sumbmission should have failed with a message saying the user does not have EXECUTION permissions");
+            fail("Submission should have failed with a message saying the user does not have EXECUTION permissions");
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("Permission denied"));
         }

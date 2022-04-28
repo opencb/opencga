@@ -622,7 +622,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         } catch (CatalogAuthorizationException e) {
             // We don't want to raise permission exceptions in methods where general lookups are done. That should only apply if you specify
             queryResult = OpenCGAResult.empty(Project.class);
-            queryResult.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, e.getMessage())));
+//            queryResult.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, e.getMessage())));
         }
 
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
