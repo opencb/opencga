@@ -69,7 +69,7 @@ public class RestParameter {
     }
 
     public boolean isAvailableType() {
-        return (!isComplex() || isStringList());
+        return ((!isComplex()) || isStringList());
     }
 
     public boolean isCollection() {
@@ -81,7 +81,7 @@ public class RestParameter {
         return "RestParameter{" +
                 "name='" + name + '\'' +
                 ", param='" + param + '\'' +
-                ", parentParamName='" + parentName + '\'' +
+                ", parentName='" + parentName + '\'' +
                 ", type='" + type + '\'' +
                 ", typeClass='" + typeClass + '\'' +
                 ", required=" + required +

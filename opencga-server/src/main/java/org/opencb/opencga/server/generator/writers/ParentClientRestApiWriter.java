@@ -168,11 +168,11 @@ public abstract class ParentClientRestApiWriter {
         return path.replace("/{apiVersion}/", "").replace("/", "_");
     }
 
-    protected static String getCommandName(RestCategory restCategory, RestEndpoint restEndpoint) {
+    public static String getCommandName(RestCategory restCategory, RestEndpoint restEndpoint) {
         return getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
     }
 
-    protected static String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
+    public static String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
         String methodName = "";
         String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
         String[] items = subpath.split("/");

@@ -1,13 +1,13 @@
 package org.opencb.opencga.server.generator.utils;
 
+import org.opencb.opencga.server.generator.models.RestEndpoint;
+import org.opencb.opencga.server.generator.models.RestParameter;
+
 import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class CommandLineUtils {
 
@@ -83,8 +83,30 @@ public class CommandLineUtils {
             Method getter = pd.getReadMethod();
             Object f = getter.invoke(obj);
             System.out.println(f);
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | IntrospectionException e) {
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException |
+                 IntrospectionException e) {
             e.printStackTrace();
         }
+    }
+
+
+    public static List<RestParameter> getAllParameters(RestEndpoint restEndpoint) {
+        List<RestParameter> res = new ArrayList<>();
+        for (RestParameter restParameter : restEndpoint.getParameters()) {
+            res = getListParameters(restParameter, res);
+        }
+        return res;
+    }
+
+    public static List<RestParameter> getListParameters(RestParameter restParameter, List<RestParameter> res) {
+        if (restParameter.getData() != null) {
+            for (RestParameter dataParameter : restParameter.getData()) {
+                res.add(dataParameter);
+                if (dataParameter.getData() != null) {
+                    getListParameters(dataParameter, res);
+                }
+            }
+        }
+        return res;
     }
 }

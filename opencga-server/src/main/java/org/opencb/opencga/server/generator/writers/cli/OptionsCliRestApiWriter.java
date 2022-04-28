@@ -16,13 +16,11 @@
 
 package org.opencb.opencga.server.generator.writers.cli;
 
+import org.opencb.opencga.core.tools.annotations.RestParamType;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.config.Shortcut;
-import org.opencb.opencga.server.generator.models.RestApi;
-import org.opencb.opencga.server.generator.models.RestCategory;
-import org.opencb.opencga.server.generator.models.RestEndpoint;
-import org.opencb.opencga.server.generator.models.RestParameter;
+import org.opencb.opencga.server.generator.models.*;
 import org.opencb.opencga.server.generator.writers.ParentClientRestApiWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,12 +146,12 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
     @Override
     protected String getClassMethods(String key) {
         RestCategory restCategory = availableCategories.get(key);
-        CategoryConfig config = availableCategoryConfigs.get(key);
+        CategoryConfig categoryConfig = availableCategoryConfigs.get(key);
         StringBuilder sb = new StringBuilder();
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
             String commandName = getCommandName(restCategory, restEndpoint);
             if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
-                if (config.isAvailableCommand(commandName) && !config.isExtendedOptionCommand(commandName)) {
+                if (categoryConfig.isAvailableCommand(commandName) && !categoryConfig.isExtendedOptionCommand(commandName)) {
                     sb.append("    @Parameters(commandNames = {\"" + reverseCommandName(commandName) + "\"}, commandDescription =\"" +
                             restEndpoint.getDescription().replaceAll("\"", "'") + "\")\n");
                     sb.append("    public class " + getAsClassName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions " +
@@ -171,7 +169,10 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                         sb.append("    \n");
                     }
 
-                    Set<String> variable_names = new HashSet<>();
+                    RestParameterManager parameterWrapper = new RestParameterManager(restEndpoint, config, categoryConfig, commandName);
+                    sb.append(parameterWrapper.getJCommanderOptions());
+
+                 /*   Set<String> variable_names = new HashSet<>();
                     for (RestParameter restParameter : restEndpoint.getParameters()) {
                         if (config.isAvailableSubCommand(restParameter.getName(), commandName)) {
                             if (!"body".equals(normalizeNames(restParameter.getName()))) {
@@ -186,49 +187,20 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                 }
                             } else {
                                 if (restParameter.getData() != null) {
+                                    // for (RestParameter bodyRestParameter : CommandLineUtils.getListParameters(restParameter, new ArrayList<>())) {
                                     for (RestParameter bodyRestParameter : restParameter.getData()) {
-                                        if (config.isAvailableSubCommand(bodyRestParameter.getName(), commandName) && bodyRestParameter.isAvailableType() && !variable_names.contains(normalizeNames(getAsCamelCase(restParameter.getName())))) {
-                                            sb.append("        @Parameter(names = {" + getShortCuts(bodyRestParameter, config) + "}, " +
-                                                    "description"
-                                                    + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + "\", required = "
-                                                    + (bodyRestParameter.isRequired() || isMandatory(commandName,
-                                                    getVariableName(bodyRestParameter))) + ", arity = 1)\n");
-
-                                            sb.append("        public " + getValidValue(bodyRestParameter.getType()) + " "
-                                                    + getVariableName(bodyRestParameter) + ";\n");
-                                            sb.append("    \n");
-                                            variable_names.add(normalizeNames(getAsCamelCase(bodyRestParameter.getName())));
-                                        } else if (bodyRestParameter.getType().equals("enum")) {
-
-                                            sb.append("        @Parameter(names = {" + getShortCuts(bodyRestParameter, config) + "}, " +
-                                                    "description"
-                                                    + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + "\", required = "
-                                                    + (bodyRestParameter.isRequired() || isMandatory(commandName,
-                                                    getVariableName(bodyRestParameter))) + ", arity = 1)\n");
-
-                                            sb.append("        public " + getValidValue(bodyRestParameter.getType()) + " "
-                                                    + getVariableName(bodyRestParameter) + ";\n");
-                                            sb.append("    \n");
-                                        } else if (bodyRestParameter.getType().equals("Map") || bodyRestParameter.getType().equals("ObjectMap")) {
-                                            String names = getShortCuts(bodyRestParameter, config);
-                                            sb.append("        @DynamicParameter(names = {" + names + "}, " +
-                                                    "description"
-                                                    + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + ". Use: " + names.split(", ")[0].replace("\"", "") + " key=value\", required = "
-                                                    + (bodyRestParameter.isRequired() || isMandatory(commandName,
-                                                    getVariableName(bodyRestParameter))) + ")\n");
-
-                                            sb.append("        public " + getValidValue(bodyRestParameter.getType()) + " "
-                                                    + getVariableName(bodyRestParameter) + " = new HashMap<>(); //Dynamic parameters must be initialized;\n");
-                                            sb.append("    \n");
+                                        if (bodyRestParameter.getData() != null) {
+                                            for (RestParameter bodyParameter : bodyRestParameter.getData()) {
+                                                manageBodyParam(config, sb, commandName, variable_names, restParameter, bodyParameter);
+                                            }
                                         } else {
-                                            logger.warn("Skipping parameter '{}' type '{}' at command '{} {}'",
-                                                    bodyRestParameter.getName(), bodyRestParameter.getType(), config.getCommandName(), commandName);
+                                            manageBodyParam(config, sb, commandName, variable_names, restParameter, bodyRestParameter);
                                         }
                                     }
                                 }
                             }
                         }
-                    }
+                    }*/
                     sb.append("  }\n");
                 }
             }
@@ -236,10 +208,50 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         return sb.toString();
     }
 
+    private void manageBodyParam(CategoryConfig config, StringBuilder sb, String commandName, Set<String> variable_names, RestParameter restParameter, RestParameter bodyRestParameter) {
+        if (config.isAvailableSubCommand(bodyRestParameter.getName(), commandName) && bodyRestParameter.isAvailableType() && !variable_names.contains(normalizeNames(getAsCamelCase(restParameter.getName())))) {
+            sb.append("        @Parameter(names = {" + getShortCuts(bodyRestParameter, config) + "}, " +
+                    "description"
+                    + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + "\", required = "
+                    + (bodyRestParameter.isRequired() || isMandatory(commandName,
+                    getVariableName(bodyRestParameter))) + ", arity = 1)\n");
+
+            sb.append("        public " + getValidValue(bodyRestParameter.getType()) + " "
+                    + getVariableName(bodyRestParameter) + ";\n");
+            sb.append("    \n");
+            variable_names.add(normalizeNames(getAsCamelCase(bodyRestParameter.getName())));
+        } else if (bodyRestParameter.getType().equals("enum")) {
+
+            sb.append("        @Parameter(names = {" + getShortCuts(bodyRestParameter, config) + "}, " +
+                    "description"
+                    + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + "\", required = "
+                    + (bodyRestParameter.isRequired() || isMandatory(commandName,
+                    getVariableName(bodyRestParameter))) + ", arity = 1)\n");
+
+            sb.append("        public " + getValidValue(bodyRestParameter.getType()) + " "
+                    + getVariableName(bodyRestParameter) + ";\n");
+            sb.append("    \n");
+        } else if (bodyRestParameter.getType().equals("Map") || bodyRestParameter.getType().equals("ObjectMap")) {
+            String names = getShortCuts(bodyRestParameter, config);
+            sb.append("        @DynamicParameter(names = {" + names + "}, " +
+                    "description"
+                    + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + ". Use: " + names.split(", ")[0].replace("\"", "") + " key=value\", required = "
+                    + (bodyRestParameter.isRequired() || isMandatory(commandName,
+                    getVariableName(bodyRestParameter))) + ")\n");
+
+            sb.append("        public " + getValidValue(bodyRestParameter.getType()) + " "
+                    + getVariableName(bodyRestParameter) + " = new HashMap<>(); //Dynamic parameters must be initialized;\n");
+            sb.append("    \n");
+        } else {
+            logger.warn("Skipping parameter '{}' type '{}' at command '{} {}'",
+                    bodyRestParameter.getName(), bodyRestParameter.getType(), config.getCommandName(), commandName);
+        }
+    }
+
 
     private String getVariableName(RestParameter restParameter) {
         String res = "";
-        if (restParameter.isInnerParam()) {
+        if (RestParamType.BODY.equals(restParameter.getParam())) {
             res = normalizeNames(getAsCamelCase(restParameter.getParentName() + " " + restParameter.getName()));
         } else {
             res = normalizeNames(getAsCamelCase(restParameter.getName()));

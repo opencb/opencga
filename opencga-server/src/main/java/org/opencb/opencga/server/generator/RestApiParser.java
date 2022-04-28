@@ -194,7 +194,7 @@ public class RestApiParser {
                         for (BeanPropertyDefinition declaredField : declaredFields) {
                             RestParameter bodyParam = getRestParameter(variablePrefix, declaredField);
                             // FIXME: Should we remove this artificial "flattening" ? It's redundant
-                            bodyParams.addAll(flattenInnerParams(variablePrefix, bodyParam));
+                            //bodyParams.addAll(flattenInnerParams(variablePrefix, bodyParam));
                             bodyParams.add(bodyParam);
                         }
                         restParameter.setData(bodyParams);
