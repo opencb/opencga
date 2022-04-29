@@ -121,12 +121,10 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         }
         panel.setStats(fetchStats(panel));
 
-        logger.debug("Inserting new panel '" + panel.getId() + "'");
+        logger.debug("Inserting panel '{}' ({})", panel.getId(), panel.getUid());
 
         Document panelDocument = getPanelDocumentForInsertion(clientSession, panel, studyUid);
         panelCollection.insert(clientSession, panelDocument, null);
-
-        logger.info("Panel '" + panel.getId() + "(" + panel.getUid() + ")' successfully created");
     }
 
     private Map<String, Integer> fetchStats(Panel panel) {

@@ -228,7 +228,7 @@ public class PanelManager extends ResourceManager<Panel> {
             // Obtain available sources from panel host
             Set<String> availableSources = new HashSet<>();
             URL url = new URL(host + "sources.txt");
-            logger.debug("Fetching available sources from '{}'", url);
+            logger.info("Fetching available sources from '{}'", url);
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -249,7 +249,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 // Obtain available panel ids from panel host
                 Set<String> availablePanelIds = new HashSet<>();
                 url = new URL(host + auxSource + "/panels.txt");
-                logger.debug("Fetching available panel ids from '{}'", url);
+                logger.info("Fetching available panel ids from '{}'", url);
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
@@ -275,7 +275,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 // First we download all the parsed panels to avoid possible issues
                 for (String panelId : panelIdList) {
                     url = new URL(host + auxSource + "/" + panelId + ".json");
-                    logger.debug("Downloading panel '{}' from '{}'", panelId, url);
+                    logger.info("Downloading panel '{}' from '{}'", panelId, url);
                     try (InputStream inputStream = url.openStream()) {
                         Panel panel = JacksonUtils.getDefaultObjectMapper().readValue(inputStream, Panel.class);
                         autoCompletePanel(study, panel);
@@ -283,7 +283,7 @@ public class PanelManager extends ResourceManager<Panel> {
                     }
                 }
 
-                logger.debug("Inserting panels in database");
+                logger.info("Inserting panels in database");
                 result.append(panelDBAdaptor.insert(study.getUid(), panelList));
             }
             result.setResults(importedPanels);
