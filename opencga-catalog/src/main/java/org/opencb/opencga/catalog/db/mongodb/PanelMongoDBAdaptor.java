@@ -61,7 +61,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBCollection deletedPanelCollection, Configuration configuration,
                                MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(configuration, LoggerFactory.getLogger(JobMongoDBAdaptor.class));
+        super(configuration, LoggerFactory.getLogger(PanelMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.panelCollection = panelCollection;
         this.deletedPanelCollection = deletedPanelCollection;

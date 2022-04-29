@@ -16,22 +16,21 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.PanelManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelAclUpdateParams;
 import org.opencb.opencga.core.models.panel.PanelCreateParams;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
+import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -65,20 +64,25 @@ public class PanelWSServer extends OpenCGAWSServer {
     })
     public Response createPanel(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.PANEL_SOURCE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SOURCE) String source,
-            @ApiParam(value = ParamConstants.PANEL_SOURCE_ID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SOURCE_ID) String id,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(name = "body", value = "Panel parameters") PanelCreateParams params) {
         try {
-            if (StringUtils.isNotEmpty(source) && (params == null || StringUtils.isEmpty(params.getId()))) {
-                // Import from source
-                return createOkResponse(panelManager.importFromSource(studyStr, source, id, token));
-            } else if (StringUtils.isEmpty(source) && params != null && StringUtils.isNotEmpty(params.getId())) {
-                // Create
-                return createOkResponse(panelManager.create(studyStr, params.toPanel(), queryOptions, token));
-            } else {
-                throw new CatalogException("Please choose whether to import panels from 'source' or create a new one.");
-            }
+            return createOkResponse(panelManager.create(studyStr, params.toPanel(), queryOptions, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/import")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Import panels", response = Job.class)
+    public Response importPanel(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.PANEL_SOURCE_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SOURCE) String source,
+            @ApiParam(value = ParamConstants.PANEL_SOURCE_ID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_SOURCE_ID) String id) {
+        try {
+            return createOkResponse(panelManager.importFromSource(studyStr, source, id, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
