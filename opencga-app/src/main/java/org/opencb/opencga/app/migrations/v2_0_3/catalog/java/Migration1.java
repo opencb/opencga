@@ -26,7 +26,7 @@ public class Migration1 extends MigrationTool {
         QueryOptions familyUpdateOptions = new QueryOptions(ParamConstants.FAMILY_UPDATE_ROLES_PARAM, true);
         QueryOptions queryOptions = new QueryOptions(FamilyManager.INCLUDE_FAMILY_IDS)
                 .append(QueryOptions.LIMIT, 1000);
-        for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), token).getResults()) {
+        for (Project project : catalogManager.getProjectManager().search(new Query(), new QueryOptions(), token).getResults()) {
             if (project.getStudies() != null) {
                 for (Study study : project.getStudies()) {
                     stopWatch.start();
