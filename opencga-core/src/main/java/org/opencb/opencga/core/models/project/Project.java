@@ -99,7 +99,7 @@ public class Project extends PrivateFields {
     private ProjectOrganism organism;
 
     @DataField(id = "cellbase", indexed = true, uncommentedClasses = {"CellBaseConfiguration"},
-            description = FieldConstants.PROJECT_INTERNAL_CELLBASE)
+            description = FieldConstants.PROJECT_CELLBASE)
     private CellBaseConfiguration cellbase;
 
     @DataField(id = "currentRelease", indexed = true,

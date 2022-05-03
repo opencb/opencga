@@ -324,7 +324,7 @@ public class FieldConstants {
 
     //ProjectInternal
     public static final String PROJECT_INTERNAL_DATA_STORES = "Default value is VARIANT.";
-    public static final String PROJECT_INTERNAL_CELLBASE = "Cellbase configuration.";
+    public static final String PROJECT_CELLBASE = "Cellbase configuration.";
 
     //StudyNotification
     public static final String STUDY_NOTIFICATION_WEBHOOK = "Url of the study notification.";
