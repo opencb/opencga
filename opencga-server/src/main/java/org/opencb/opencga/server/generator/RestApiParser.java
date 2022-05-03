@@ -33,6 +33,9 @@ public class RestApiParser {
     private final ObjectMapper objectMapper;
     private final SerializerProvider serializerProvider;
 
+    private List<RestParameter> flatternParams = new ArrayList<>();
+
+
     // This class might accept some configuration in the future
     public RestApiParser() {
         logger = LoggerFactory.getLogger(RestApiParser.class);
@@ -49,9 +52,15 @@ public class RestApiParser {
         return parse(Collections.singletonList(clazz));
     }
 
+    public RestApi getRestApiFlattenParameters(List<Class<?>> classes) {
+        RestApi restApi = new RestApi();
+        restApi.getCategories().addAll(getCategories(classes, true));
+        return restApi;
+    }
+
     public RestApi parse(List<Class<?>> classes) {
         RestApi restApi = new RestApi();
-        restApi.getCategories().addAll(getCategories(classes));
+        restApi.getCategories().addAll(getCategories(classes, false));
         return restApi;
     }
 
@@ -61,7 +70,7 @@ public class RestApiParser {
 
         // Parse REST API
         RestApi restApi = new RestApi();
-        restApi.getCategories().addAll(getCategories(classes));
+        restApi.getCategories().addAll(getCategories(classes, false));
 
         // Prepare Jackson to create JSON pretty string
         ObjectMapper objectMapper = new ObjectMapper();
@@ -74,15 +83,15 @@ public class RestApiParser {
         bufferedWriter.close();
     }
 
-    private List<RestCategory> getCategories(List<Class<?>> classes) {
+    private List<RestCategory> getCategories(List<Class<?>> classes, boolean flatten) {
         List<RestCategory> restCategories = new ArrayList<>();
         for (Class<?> clazz : classes) {
-            restCategories.add(getCategory(clazz));
+            restCategories.add(getCategory(clazz, flatten));
         }
         return restCategories;
     }
 
-    private RestCategory getCategory(Class<?> clazz) {
+    private RestCategory getCategory(Class<?> clazz, boolean flatten) {
         RestCategory restCategory = new RestCategory();
         restCategory.setName(((Api) clazz.getAnnotation(Api.class)).value());
         restCategory.setPath(((Path) clazz.getAnnotation(Path.class)).value());
@@ -193,8 +202,10 @@ public class RestApiParser {
 
                         for (BeanPropertyDefinition declaredField : declaredFields) {
                             RestParameter bodyParam = getRestParameter(variablePrefix, declaredField);
-                            // FIXME: Should we remove this artificial "flattening" ? It's redundant
-                            //bodyParams.addAll(flattenInnerParams(variablePrefix, bodyParam));
+                            // For CLI is necessary flatten parameters
+                            if (flatten) {
+                                bodyParams.addAll(flattenInnerParams(variablePrefix, bodyParam));
+                            }
                             bodyParams.add(bodyParam);
                         }
                         restParameter.setData(bodyParams);

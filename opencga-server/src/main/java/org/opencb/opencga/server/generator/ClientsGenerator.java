@@ -1,6 +1,7 @@
 package org.opencb.opencga.server.generator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.ArrayUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.config.ConfigurationManager;
@@ -33,7 +34,7 @@ import java.util.List;
 public class ClientsGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(ClientsGenerator.class);
-    private static RestApi restApi;
+    // private static RestApi restApi;
     private static CommandLineConfiguration config;
 
     public static void main(String[] args) {
@@ -57,18 +58,21 @@ public class ClientsGenerator {
         classes.add(AdminWSServer.class);
 
         try {
-            restApi = prepare(new RestApiParser().parse(classes));
+            RestApi restApi = prepare(new RestApiParser().parse(classes));
             config = ConfigurationManager.setUp();
             config.initialize();
 
-            libraries();
-            cli();
+            libraries(restApi);
+
+
+            RestApi flatRestApi = prepare(new RestApiParser().getRestApiFlattenParameters(classes));
+            cli(flatRestApi);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
     }
 
-    private static void libraries() throws IOException {
+    private static void libraries(RestApi restApi) throws IOException {
         File outDir = new File("restApi.json");
         String restApiFilePath = outDir.getAbsolutePath();
         logger.info("Writing RestApi object temporarily in {}", restApiFilePath);
@@ -109,22 +113,41 @@ public class ClientsGenerator {
         }
     }
 
-    private static void cli() {
+    private static void cli(RestApi flatRestApi) {
+
         logger.info("Creating CLI options files in folder " + new File(config.getOptions().getOptionsOutputDir()).getAbsolutePath());
-        OptionsCliRestApiWriter optionsCliRestApiWriter = new OptionsCliRestApiWriter(restApi, config);
+        OptionsCliRestApiWriter optionsCliRestApiWriter = new OptionsCliRestApiWriter(flatRestApi, config);
         optionsCliRestApiWriter.write();
 
         logger.info("Creating CLI executors files in folder " + new File(config.getOptions().getExecutorsOutputDir()).getAbsolutePath());
-        ExecutorsCliRestApiWriter executorsCliRestApiWriter = new ExecutorsCliRestApiWriter(restApi, config);
+        ExecutorsCliRestApiWriter executorsCliRestApiWriter = new ExecutorsCliRestApiWriter(flatRestApi, config);
         executorsCliRestApiWriter.write();
 
         logger.info("Creating CLI parser file in folder " + new File(config.getOptions().getOutputDir()).getAbsolutePath());
-        ParserCliRestApiWriter parserCliRestApiWriter = new ParserCliRestApiWriter(restApi, config);
+        ParserCliRestApiWriter parserCliRestApiWriter = new ParserCliRestApiWriter(flatRestApi, config);
         parserCliRestApiWriter.write();
 
         logger.info("Creating CLI parser file in folder " + new File(config.getOptions().getOutputDir()).getAbsolutePath());
-        AutoCompleteWriter autoCompleteWriter = new AutoCompleteWriter(restApi, config);
+        AutoCompleteWriter autoCompleteWriter = new AutoCompleteWriter(flatRestApi, config);
         autoCompleteWriter.write();
+    }
+
+
+    private static void addParameter(RestParameter parameter, List<RestParameter> parameters) {
+        if (!parameter.isComplex()) {
+            parameters.add(parameter);
+        } else if (isGenericCollection(parameter)) {
+            parameters.add(parameter);
+        } else if (parameter.isEnum()) {
+            parameters.add(parameter);
+        }
+    }
+
+    private static boolean isGenericCollection(RestParameter parameter) {
+        String[] collections = {"java.util.Map<java.lang.String,java.lang.String>", "java.util.List<java.lang.String>",
+                "java.util.Map<java.lang.String,java.lang.Integer>", "java.util.Map<java.lang.String,java.lang.Long>",
+                "java.util.Map<java.lang.String,java.lang.Float>"};
+        return ArrayUtils.contains(collections, parameter.getGenericType());
     }
 
     private static RestApi prepare(RestApi api) {

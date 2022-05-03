@@ -198,4 +198,8 @@ public class RestParameter {
     public void setInnerParam(boolean innerParam) {
         this.innerParam = innerParam;
     }
+
+    public boolean isEnum() {
+        return "enum".equals(getType());
+    }
 }
