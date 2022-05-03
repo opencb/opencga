@@ -43,7 +43,6 @@ import org.opencb.opencga.analysis.variant.manager.operations.*;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.analysis.variant.metadata.CatalogVariantMetadataFactory;
 import org.opencb.opencga.analysis.variant.operations.*;
-import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -132,9 +131,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
      * The input file should have, in the same directory, a metadata file, with the same name ended with
      * {@link org.opencb.opencga.storage.core.variant.io.VariantExporter#METADATA_FILE_EXTENSION}
      *
-     * @param inputUri  Variants input file in avro format.
-     * @param study     Study where to load the variants
-     * @param token User's session id
+     * @param inputUri Variants input file in avro format.
+     * @param study    Study where to load the variants
+     * @param token    User's session id
      * @throws CatalogException, StorageEngineException      if there is any error importing
      */
     public void importData(URI inputUri, String study, String token)
@@ -152,7 +151,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
      * @param outputFile   Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
      * @param outputFormat Output format.
      * @param study        Study to export
-     * @param token    User's session id
+     * @param token        User's session id
      * @throws CatalogException       if there is any error with Catalog
      * @throws IOException            If there is any IO error
      * @throws StorageEngineException If there is any error exporting variants
@@ -166,14 +165,15 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     /**
      * Exports the result of the given query and the associated metadata.
-     * @param outputFile    Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
-     * @param outputFormat  Variant Output format.
-     * @param variantsFile  Optional variants file.
-     * @param query         Query with the variants to export
-     * @param queryOptions  Query options
-     * @param token         User's session id
-     * @throws CatalogException if there is any error with Catalog
-     * @throws StorageEngineException  If there is any error exporting variants
+     *
+     * @param outputFile   Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
+     * @param outputFormat Variant Output format.
+     * @param variantsFile Optional variants file.
+     * @param query        Query with the variants to export
+     * @param queryOptions Query options
+     * @param token        User's session id
+     * @throws CatalogException       if there is any error with Catalog
+     * @throws StorageEngineException If there is any error exporting variants
      */
     public void exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
                            Query query, QueryOptions queryOptions, String token)
@@ -389,7 +389,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     }
 
     public DataResult<List<String>> familyIndexUpdate(String study,
-                                                ObjectMap params, String token)
+                                                      ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
             return engine.familyIndexUpdate(study, params);
@@ -495,12 +495,13 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     /**
      * Modify SampleIndex configuration. Automatically submit a job to rebuild the sample index.
-     * @param studyStr  Study identifier
+     *
+     * @param studyStr                 Study identifier
      * @param sampleIndexConfiguration New sample index configuration
-     * @param skipRebuild Do not launch rebuild jobs
-     * @param token User's token
+     * @param skipRebuild              Do not launch rebuild jobs
+     * @param token                    User's token
      * @return Result with VariantSampleIndexOperationTool job
-     * @throws CatalogException on catalog errors
+     * @throws CatalogException       on catalog errors
      * @throws StorageEngineException on storage engine errors
      */
     public OpenCGAResult<Job> configureSampleIndex(String studyStr, SampleIndexConfiguration sampleIndexConfiguration,
@@ -531,13 +532,14 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     /**
      * Update Cellbase configuration.
-     * @param project  Study identifier
+     *
+     * @param project               Study identifier
      * @param cellbaseConfiguration New cellbase configuration
-     * @param annotate Launch variant annotation if needed
-     * @param annotationSaveId     Save previous variant annotation before annotating
-     * @param token User's token
+     * @param annotate              Launch variant annotation if needed
+     * @param annotationSaveId      Save previous variant annotation before annotating
+     * @param token                 User's token
      * @return Result with VariantSampleIndexOperationTool job
-     * @throws CatalogException on catalog errors
+     * @throws CatalogException       on catalog errors
      * @throws StorageEngineException on storage engine errors
      */
     public OpenCGAResult<Job> setCellbaseConfiguration(String project, CellBaseConfiguration cellbaseConfiguration, boolean annotate,
@@ -726,7 +728,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
         query.put(STUDY.key(), study);
         query.put(SAMPLE.key(), sample);
 
-       return secure(query, new QueryOptions(), token, Enums.Action.FACET, engine -> {
+        return secure(query, new QueryOptions(), token, Enums.Action.FACET, engine -> {
             logger.debug("getSampleStats {}", query);
 //            logger.info("Filter transcript = {} (raw: '{}')",
 //                    options.getBoolean("filterTranscript", false), options.get("filterTranscript"));
@@ -992,7 +994,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             throws CatalogException {
         CellBaseConfiguration cellbase = catalogManager.getProjectManager()
                 .get(project, new QueryOptions(INCLUDE, ProjectDBAdaptor.QueryParams.INTERNAL.key()), token)
-                .first().getInternal().getCellbase();
+                .first().getCellbase();
         if (cellbase != null) {
             engine.getConfiguration().setCellbase(cellbase);
             engine.reloadCellbaseConfiguration();
@@ -1068,7 +1070,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public boolean synchronizeCatalogStudyFromStorage(String study, List<String> files, String token)
             throws CatalogException, StorageEngineException {
         String studySqn = getStudyFqn(study, token);
-        return secureOperation("synchronizeCatalogStudyFromStorage", studySqn, new ObjectMap() ,token, engine -> {
+        return secureOperation("synchronizeCatalogStudyFromStorage", studySqn, new ObjectMap(), token, engine -> {
             CatalogStorageMetadataSynchronizer synchronizer =
                     new CatalogStorageMetadataSynchronizer(getCatalogManager(), engine.getMetadataManager());
             if (CollectionUtils.isEmpty(files)) {
@@ -1342,7 +1344,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
                 }
             } else {
                 List<String> includeSamplesAll = new LinkedList<>();
-                for (String study: includeStudies) {
+                for (String study : includeStudies) {
                     study = getStudyFqn(study, token);
                     DBIterator<Sample> iterator = catalogManager.getSampleManager().iterator(
                             study,
