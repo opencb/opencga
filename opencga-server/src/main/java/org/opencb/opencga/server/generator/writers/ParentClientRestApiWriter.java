@@ -70,13 +70,13 @@ public abstract class ParentClientRestApiWriter {
         }
     }
 
-    protected String reverseCommandName(String commandName) {
+    protected static String reverseCommandName(String commandName) {
         if (commandName.contains("-")) {
             String[] phrase = commandName.split("-");
             if (phrase.length == 2) {
-                commandName = phrase[1] + "-" + phrase[0];
+                commandName = getKebabCase(phrase[1]) + "-" + getKebabCase(phrase[0]);
             } else if (phrase.length == 3) {
-                commandName = phrase[1] + "-" + phrase[2] + "-" + phrase[0];
+                commandName = getKebabCase(phrase[1]) + "-" + getKebabCase(phrase[2]) + "-" + getKebabCase(phrase[0]);
             }
         }
         return commandName.toLowerCase();
@@ -168,7 +168,11 @@ public abstract class ParentClientRestApiWriter {
         return path.replace("/{apiVersion}/", "").replace("/", "_");
     }
 
-    public String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
+    protected static String getCommandName(RestCategory restCategory, RestEndpoint restEndpoint) {
+        return getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
+    }
+
+    protected static String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
         String methodName = "";
         String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
         String[] items = subpath.split("/");
@@ -206,7 +210,7 @@ public abstract class ParentClientRestApiWriter {
         return methodName;
     }
 
-    private boolean notAny(String[] items) {
+    private static boolean notAny(String[] items) {
         for (String item : items) {
             if (item.contains("{")) {
                 return false;
@@ -215,7 +219,7 @@ public abstract class ParentClientRestApiWriter {
         return true;
     }
 
-    public String getAsCamelCase(String s) {
+    protected static String getAsCamelCase(String s) {
         if (s.contains("-")) {
             s = s.replaceAll("-", "_");
         }
@@ -225,12 +229,12 @@ public abstract class ParentClientRestApiWriter {
         return getAsCamelCase(s, "_");
     }
 
-    public String getKebabCase(String camelStr) {
+    protected static String getKebabCase(String camelStr) {
         String ret = camelStr.replaceAll("([A-Z]+)([A-Z][a-z])", "$1-$2").replaceAll("([a-z])([A-Z])", "$1-$2");
         return ret.toLowerCase();
     }
 
-    public String getAsCamelCase(String s, String separator) {
+    protected static String getAsCamelCase(String s, String separator) {
         String[] words = s.split(separator);
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < words.length; i++) {

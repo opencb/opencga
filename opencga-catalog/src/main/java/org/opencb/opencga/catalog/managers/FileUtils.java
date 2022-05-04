@@ -94,7 +94,8 @@ public class FileUtils {
                     logger.warn("File { id:" + file.getPath() + ", path:\"" + file.getPath() + "\" } lost tracking from file " + fileUri);
                     if (!file.getInternal().getStatus().getId().equals(FileStatus.MISSING)) {
                         logger.info("Set status to " + FileStatus.MISSING);
-                        ObjectMap params = new ObjectMap(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), FileStatus.MISSING);
+                        ObjectMap params = new ObjectMap(FileDBAdaptor.UpdateParams.INTERNAL_STATUS.key(),
+                                new FileStatus(FileStatus.MISSING));
                         catalogManager.getFileManager().update(studyStr, file.getPath(), params, null, sessionId);
                         modifiedFile = catalogManager.getFileManager().get(studyStr, file.getPath(), null, sessionId).first();
                     }
@@ -102,7 +103,8 @@ public class FileUtils {
                     logger.info("File { path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
                     logger.info("Set status to " + FileStatus.READY);
                     ObjectMap params = getModifiedFileAttributes(file, fileUri, calculateChecksum);
-                    params.put(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), FileStatus.READY);
+                    params.put(FileDBAdaptor.UpdateParams.INTERNAL_STATUS.key(),
+                            new FileStatus(FileStatus.READY));
                     catalogManager.getFileManager().update(studyStr, file.getPath(), params, QueryOptions.empty(), sessionId);
                     modifiedFile = catalogManager.getFileManager().get(studyStr, file.getPath(), null, sessionId).first();
                 }

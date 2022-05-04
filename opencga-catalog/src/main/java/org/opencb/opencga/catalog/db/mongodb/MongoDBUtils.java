@@ -477,20 +477,18 @@ public class MongoDBUtils {
 
 
     /**
-     * Parse the query values from the ontology terms to bson format.
-     * At this point, any value that we find in the query (as comma separated or as a list), will be looked for in the id and name
-     * attributes of the ontologyTerm java bean.
+     * Perform or query of queryKey .id and .name.
      * <p>
      * Example: ontologyTerms: X,Y
      * This will be transformed to something like ontologyTerms.id == X || ontologyTerms.name == X || ontologyTerms.id == Y ||
      * ontologyTerms.name == Y)
      *
-     * @param mongoKey Key corresponding to the data model to know how it is stored in mongoDB. (If not altered, ontologyTerms).
+     * @param mongoKey Key corresponding to the data model to know how it is stored in mongoDB.
      * @param queryKey Key by which the values will be retrieved from the query.
      * @param query    Query object containing all the query keys and values to parse. Only to get the ones regarding ontology terms.
      * @param bsonList List to which we will add the ontology terms search.
      */
-    public static void addOntologyQueryFilter(String mongoKey, String queryKey, Query query, List<Bson> bsonList) {
+    public static void addDefaultOrQueryFilter(String mongoKey, String queryKey, Query query, List<Bson> bsonList) {
         Bson ontologyId = MongoDBQueryUtils.createAutoFilter(mongoKey + ".id", queryKey, query, QueryParam.Type.STRING);
         Bson ontologyName = MongoDBQueryUtils.createAutoFilter(mongoKey + ".name", queryKey, query, QueryParam.Type.STRING);
         bsonList.add(Filters.or(ontologyId, ontologyName));

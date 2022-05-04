@@ -97,17 +97,40 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String PANEL_ARCHIVE_COLLECTION = "panel_archive";
     public static final String INTERPRETATION_ARCHIVE_COLLECTION = "interpretation_archive";
 
-    public static final String DELETED_USER_COLLECTION = "deleted_user";
-    public static final String DELETED_STUDY_COLLECTION = "deleted_study";
-    public static final String DELETED_FILE_COLLECTION = "deleted_file";
-    public static final String DELETED_JOB_COLLECTION = "deleted_job";
-    public static final String DELETED_SAMPLE_COLLECTION = "deleted_sample";
-    public static final String DELETED_INDIVIDUAL_COLLECTION = "deleted_individual";
-    public static final String DELETED_COHORT_COLLECTION = "deleted_cohort";
-    public static final String DELETED_FAMILY_COLLECTION = "deleted_family";
-    public static final String DELETED_PANEL_COLLECTION = "deleted_panel";
-    public static final String DELETED_CLINICAL_ANALYSIS_COLLECTION = "deleted_clinical";
-    public static final String DELETED_INTERPRETATION_COLLECTION = "deleted_interpretation";
+    @Deprecated
+    public static final String OLD_DELETED_USER_COLLECTION = "deleted_user";
+    @Deprecated
+    public static final String OLD_DELETED_STUDY_COLLECTION = "deleted_study";
+    @Deprecated
+    public static final String OLD_DELETED_FILE_COLLECTION = "deleted_file";
+    @Deprecated
+    public static final String OLD_DELETED_JOB_COLLECTION = "deleted_job";
+    @Deprecated
+    public static final String OLD_DELETED_SAMPLE_COLLECTION = "deleted_sample";
+    @Deprecated
+    public static final String OLD_DELETED_INDIVIDUAL_COLLECTION = "deleted_individual";
+    @Deprecated
+    public static final String OLD_DELETED_COHORT_COLLECTION = "deleted_cohort";
+    @Deprecated
+    public static final String OLD_DELETED_FAMILY_COLLECTION = "deleted_family";
+    @Deprecated
+    public static final String OLD_DELETED_PANEL_COLLECTION = "deleted_panel";
+    @Deprecated
+    public static final String OLD_DELETED_CLINICAL_ANALYSIS_COLLECTION = "deleted_clinical";
+    @Deprecated
+    public static final String OLD_DELETED_INTERPRETATION_COLLECTION = "deleted_interpretation";
+
+    public static final String DELETED_USER_COLLECTION = "user_deleted";
+    public static final String DELETED_STUDY_COLLECTION = "study_deleted";
+    public static final String DELETED_FILE_COLLECTION = "file_deleted";
+    public static final String DELETED_JOB_COLLECTION = "job_deleted";
+    public static final String DELETED_SAMPLE_COLLECTION = "sample_deleted";
+    public static final String DELETED_INDIVIDUAL_COLLECTION = "individual_deleted";
+    public static final String DELETED_COHORT_COLLECTION = "cohort_deleted";
+    public static final String DELETED_FAMILY_COLLECTION = "family_deleted";
+    public static final String DELETED_PANEL_COLLECTION = "panel_deleted";
+    public static final String DELETED_CLINICAL_ANALYSIS_COLLECTION = "clinical_deleted";
+    public static final String DELETED_INTERPRETATION_COLLECTION = "interpretation_deleted";
 
     public static final String METADATA_COLLECTION = "metadata";
     public static final String MIGRATION_COLLECTION = "migration";

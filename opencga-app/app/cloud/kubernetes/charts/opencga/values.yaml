@@ -57,8 +57,13 @@ solr:
       imagePullSecret: ""
 
     javaMem: "-Xms1g -Xmx3g"
-    opts: "-Dsolr.autoSoftCommit.maxTime=10000"
+    opts: '-Dsolr.autoSoftCommit.maxTime=10000 -Dsolr.max.booleanClauses=32768 -Dsolr.environment=prod,label={{ include "opencga.fullname" . }},color=blue'
     GCTune: "-XX:SurvivorRatio=4 -XX:TargetSurvivorRatio=90 -XX:MaxTenuringThreshold=8"
+
+    backupVolume: {}
+#      azureFile:
+#        shareName: solrbackup
+#        secretName: ???
 
     volume:
       size: "512Gi"

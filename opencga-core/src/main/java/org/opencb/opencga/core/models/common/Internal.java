@@ -1,6 +1,5 @@
 package org.opencb.opencga.core.models.common;
 
-import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 
@@ -8,7 +7,7 @@ public abstract class Internal {
 
     @DataField(id = "status",
             description = FieldConstants.INTERNAL_STATUS_DESCRIPTION)
-    protected Status status;
+    protected InternalStatus status;
 
     @DataField(id = "registrationDate",
             description = FieldConstants.INTERNAL_REGISTRATION_DATE_DESCRIPTION)
@@ -37,7 +36,7 @@ public abstract class Internal {
         return sb.toString();
     }
 
-    public Status getStatus() {
+    public InternalStatus getStatus() {
         return status;
     }
 

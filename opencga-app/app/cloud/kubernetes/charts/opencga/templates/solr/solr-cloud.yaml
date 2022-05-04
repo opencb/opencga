@@ -25,7 +25,7 @@ spec:
     imagePullSecret: {{ .Values.solr.deploy.image.imagePullSecret }}
 
   solrJavaMem: {{ .Values.solr.deploy.javaMem }}
-  solrOpts: {{ .Values.solr.deploy.opts }}
+  solrOpts: {{ tpl .Values.solr.deploy.opts . | quote }}
   solrGCTune: {{ .Values.solr.deploy.GCTune }}
 
 #  solrAddressability: {}
@@ -46,6 +46,22 @@ spec:
       nodeSelector:
         {{- toYaml .Values.solr.deploy.nodeSelector | nindent 8 }}
       initContainers: #Additional init containers to run in the pod. These will run along with the init container that sets up the "solr.xml"
+        - name: edit-solrxml
+          securityContext:
+            {{- toYaml .Values.init.securityContext | nindent 12 }}
+          image: {{ tpl .Values.init.image.repository . | quote }}
+          imagePullPolicy: {{ .Values.init.image.pullPolicy | quote }}
+          volumeMounts:
+            - name: data
+              mountPath: /tmp-data
+          command: [ "/bin/sh", "-c" ]
+          args:
+            - |
+              sed 's,</solr>,,g' -i /tmp-data/solr.xml ;
+              echo '  <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>' | tee -a /tmp-data/solr.xml ;
+              echo '' | tee -a /tmp-data/solr.xml
+              echo '</solr>' | tee -a /tmp-data/solr.xml
+
         - name: opencga-copy-configset
           securityContext:
             {{- toYaml .Values.init.securityContext | nindent 12 }}
@@ -89,6 +105,14 @@ spec:
           source:
             emptyDir:
               sizeLimit: 1G
+        {{- if not (empty .Values.solr.deploy.backupVolume) }}
+        - name: backupvolume
+          defaultContainerMount:
+            name: backupvolume
+            mountPath: /var/solr/data/backup
+          source:
+            {{- toYaml .Values.solr.deploy.backupVolume | nindent 12 }}
+        {{- end }}
 
   # The information for the Zookeeper this SolrCloud should connect to Can be a zookeeper that is running, or one that is created by the solr operator
   zookeeperRef:

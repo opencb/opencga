@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.models.individual;
 
-import org.opencb.biodata.models.common.Status;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.InternalStatus;
@@ -44,11 +43,11 @@ public class IndividualInternal extends Internal {
         return sb.toString();
     }
 
-    public Status getStatus() {
+    public InternalStatus getStatus() {
         return status;
     }
 
-    public IndividualInternal setStatus(Status status) {
+    public IndividualInternal setStatus(InternalStatus status) {
         this.status = status;
         return this;
     }

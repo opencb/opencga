@@ -9,10 +9,15 @@ mongodb:
   authenticationDatabase : "admin"
   authenticationMechanism : "SCRAM-SHA-1" # Must use "SCRAM-SHA-256" for instances deployed with mongodb community operator
 
+  # New database name
   database: ""
+  # Original database name.
+  # Needed in case of not matching with the new database name.
+  # This will fill the "--nsFrom" and "--nsTo"
+  databaseFrom: ""
+
   args:
     - "--gzip" # decompress gzipped input
-    - "--drop" # drop each collection before import
 
   archiveFileName: "{{ .Values.mongodb.database }}.dump"
   volume: {}

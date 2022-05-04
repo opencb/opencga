@@ -12,14 +12,24 @@ case $(basename "$PRG") in
   "opencga-admin.sh")
     export JAVA_HEAP=${JAVA_HEAP:-"8192m"}
     export OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.xml
-    export OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-$(grep "logDir" "${BASEDIR}/conf/configuration.yml" | cut -d ":" -f 2 | tr -d '" ')}
+    export OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-"${HOME}/.opencga/logs"}
+    export OPENCGA_LOG_FILE_NAME=${OPENCGA_LOG_FILE_NAME:-"opencga-admin"}
+    export OPENCGA_LOG_FILE_ENABLED=${OPENCGA_LOG_FILE_ENABLED:-"true"}
+    export OPENCGA_LOG_LEVEL=${OPENCGA_LOG_LEVEL:-"info"}
     ;;
   "opencga-internal.sh")
     export JAVA_HEAP=${JAVA_HEAP:-"12288m"}
     export OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.internal.xml
     export OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-$(grep "logDir" "${BASEDIR}/conf/configuration.yml" | cut -d ":" -f 2 | tr -d '" ')}
     ;;
-#  "opencga.sh")
+  "opencga.sh")
+    export JAVA_HEAP=${JAVA_HEAP:-"2048m"}
+    export OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.xml
+    export OPENCGA_LOG_FILE_NAME=${OPENCGA_LOG_FILE_NAME:-"opencga"}
+    export OPENCGA_LOG_DIR=${OPENCGA_LOG_DIR:-"${HOME}/.opencga/logs"}
+    export OPENCGA_LOG_FILE_ENABLED=${OPENCGA_LOG_FILE_ENABLED:-"true"}
+    export OPENCGA_LOG_LEVEL=${OPENCGA_LOG_LEVEL:-"off"}
+    ;;
   *)
     export JAVA_HEAP=${JAVA_HEAP:-"2048m"}
     export OPENCGA_LOG4J_CONFIGURATION_FILE=log4j2.xml
@@ -32,6 +42,15 @@ esac
 export JAVA_OPTS="${JAVA_OPTS} -Dlog4j2.configurationFile=file:${BASEDIR}/conf/${OPENCGA_LOG4J_CONFIGURATION_FILE}"
 if [ -n "$OPENCGA_LOG_DIR" ]; then
     export JAVA_OPTS="${JAVA_OPTS} -Dopencga.log.dir=${OPENCGA_LOG_DIR}"
+fi
+if [ -n "$OPENCGA_LOG_FILE_NAME" ]; then
+    export JAVA_OPTS="${JAVA_OPTS} -Dopencga.log.file.name=${OPENCGA_LOG_FILE_NAME}"
+fi
+if [ -n "$OPENCGA_LOG_FILE_ENABLED" ]; then
+    export JAVA_OPTS="${JAVA_OPTS} -Dopencga.log.file.enabled=${OPENCGA_LOG_FILE_ENABLED}"
+fi
+if [ -n "$OPENCGA_LOG_LEVEL" ]; then
+    export JAVA_OPTS="${JAVA_OPTS} -Dopencga.log.level=${OPENCGA_LOG_LEVEL}"
 fi
 export JAVA_OPTS="${JAVA_OPTS} -Dfile.encoding=UTF-8"
 export JAVA_OPTS="${JAVA_OPTS} -Xms256m -Xmx${JAVA_HEAP}"

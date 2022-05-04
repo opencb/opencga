@@ -161,7 +161,7 @@ public class JobsLog {
                 if (logCommandOptions.follow) {
                     // Check job status
                     Job job = secureOp(() -> openCGAClient.getJobClient().info(jobId, new ObjectMap(ParamConstants.STUDY_PARAM, logCommandOptions.study)).firstResult());
-                    if (job.getInternal().getStatus().getName().equals(RUNNING)) {
+                    if (job.getInternal().getStatus().getId().equals(RUNNING)) {
                         // The job is still running. eof=false and break
                         eof = false;
                         break;
