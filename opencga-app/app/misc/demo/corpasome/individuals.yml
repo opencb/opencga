@@ -6,8 +6,7 @@ father:
   id: ISDBM322016
 mother:
   id: ISDBM322018
-sex:
-  id: MALE
+sex: MALE
 karyotypicSex: XY
 lifeStatus: ALIVE
 phenotypes:
@@ -32,8 +31,7 @@ father:
   id: ISDBM322016
 mother:
   id: ISDBM322018
-sex:
-  id: FEMALE
+sex: FEMALE
 karyotypicSex: XX
 lifeStatus: ALIVE
 phenotypes:
@@ -54,8 +52,7 @@ id: ISDBM322016
 name: ISDBM322016
 samples:
   - id: ISDBM322016
-sex:
-  id: MALE
+sex: MALE
 karyotypicSex: XY
 lifeStatus: ALIVE
 phenotypes:
@@ -76,8 +73,7 @@ id: ISDBM322018
 name: ISDBM322018
 samples:
   - id: ISDBM322018
-sex:
-  id: FEMALE
+sex: FEMALE
 karyotypicSex: XX
 lifeStatus: ALIVE
 phenotypes:
