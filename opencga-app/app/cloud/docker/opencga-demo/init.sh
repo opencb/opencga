@@ -9,7 +9,7 @@ if [ $status -ne 0 ]; then
 fi
 sleep 10
 
-mongo /opt/scripts/mongo-cluster-init.js
+mongo /opt/opencga/demo/mongo-cluster-init.js
 sleep 20
 
 # ------------ Start SOLR ------------------
@@ -61,6 +61,7 @@ if find /opt/opencga/libs/opencga-storage-hadoop-deps-* &> /dev/null ; then
     /opt/opencga/init/setup-hadoop.sh
 fi
 
+ADMIN_PASSWORD='adminOpencga2021.'
 CONTAINER_ALREADY_STARTED="CONTAINER_ALREADY_STARTED"
 if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
 
@@ -85,7 +86,7 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
     python3 /opt/opencga/init/override_yaml.py --save
 
     echo "-- Installing Catalog --"
-    /opt/opencga/bin/opencga-admin.sh catalog install --secret-key any_string_you_want  <<< adminOpencga2021.
+    echo "$ADMIN_PASSWORD" | /opt/opencga/bin/opencga-admin.sh catalog install
     status=$?
         if [ $status -ne 0 ]; then
           echo "Failed to install Catalog : $status"
@@ -93,7 +94,8 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
         fi
     touch $CONTAINER_ALREADY_STARTED
     sleep 5
-    echo 'adminOpencga2021.' | /opt/opencga/bin/opencga-admin.sh server rest --start &
+    echo "Start rest server"
+    echo "$ADMIN_PASSWORD" | /opt/opencga/bin/opencga-admin.sh server rest --start &
     status=$?
     if [ $status -ne 0 ]; then
       echo "Failed to start REST server: $status"
@@ -107,11 +109,13 @@ if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
 
 
     if [ "$load" == "true" ]; then
-      /opt/opencga/init/load-demo.sh demo
+      /opt/opencga/demo/load-demo.sh "$ADMIN_PASSWORD"
     fi
 else
-    echo 'adminOpencga2021.' | /opt/opencga/bin/opencga-admin.sh server rest --start &
+    echo "Start rest server"
+    echo "$ADMIN_PASSWORD" | /opt/opencga/bin/opencga-admin.sh server rest --start &
 fi
 
-./opencga-admin.sh catalog daemon --start <<< adminOpencga2021.
+echo "Start master service"
+echo "$ADMIN_PASSWORD" | ./opencga-admin.sh catalog daemon --start
 

@@ -18,10 +18,10 @@ Creating a convenient alias
 alias opencga.sh='docker exec -it opencga-demo ./opencga.sh'
 ```
 
-Then you can login (user: `demo`, password: `demo`) and check the progress of the data load.
+Then you can login (user: `demo`, password: `Demo_P4ss`) and check the progress of the data load.
 ```
-opencga.sh users login -u demo
-# Password: demo
+opencga.sh users login -u demo -p
+# Password: Demo_P4ss
 
 opencga.sh jobs top
 ```
@@ -69,11 +69,11 @@ As this container will connect to an external persistent hadoop cluster, the cre
 
 ## Available hadoop flavours:
 
-| Name | Docker Tag |
-|----|-----|
+| Name                                       | Docker Tag                       |
+|--------------------------------------------|----------------------------------|
 | Hortonworks HDP 3.1 or Azure HDInsight 4.0 | REPLACEME_OPENCGA_VERSION-hdp3.1 |
 | Hortonworks HDP 2.6 or Azure HDInsight 3.6 | REPLACEME_OPENCGA_VERSION-hdp2.6 |
-| Amazon EMR 6.1 | REPLACEME_OPENCGA_VERSION-emr6.1 |
+| Amazon EMR 6.1                             | REPLACEME_OPENCGA_VERSION-emr6.1 |
 
 
 ## Example
