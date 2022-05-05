@@ -125,10 +125,18 @@ public abstract class VariantAnnotationManager {
                     + currentSourceVersion.stream().map(ObjectMap::toJson).collect(Collectors.joining(" , ", "[ ", " ]"))
                     + ", attempting to annotate with "
                     + newSourceVersion.stream().map(ObjectMap::toJson).collect(Collectors.joining(" , ", "[ ", " ]"));
+
             if (overwrite) {
                 logger.info(msg);
             } else {
-                throw new VariantAnnotatorException(msg);
+                // List of sources from cellbase 5.0.x is not reliable, and should
+                // not be taken into account to force a full annotation overwrite
+                if (newAnnotator.getName().toLowerCase().contains("cellbase") && newAnnotator.getVersion().startsWith("5.0")) {
+                    logger.warn(msg);
+                    logger.info("Ignore source version change at Cellbase v5.0.x");
+                } else {
+                    throw new VariantAnnotatorException(msg);
+                }
             }
         }
 
@@ -151,8 +159,7 @@ public abstract class VariantAnnotationManager {
         return newSourceVersionSet.containsAll(currentSourceVersion);
     }
 
-    protected final void updateCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
-                                                                     boolean overwrite)
+    protected final void updateCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata, boolean overwrite)
             throws VariantAnnotatorException {
         VariantAnnotatorProgram newAnnotator;
         List<ObjectMap> newSourceVersion;
@@ -162,6 +169,13 @@ public abstract class VariantAnnotationManager {
         } catch (IOException e) {
             throw new VariantAnnotatorException("Error reading current annotation metadata!", e);
         }
+        updateCurrentAnnotation(annotator, projectMetadata, overwrite, newAnnotator, newSourceVersion);
+    }
+
+    protected final void updateCurrentAnnotation(VariantAnnotator annotator, ProjectMetadata projectMetadata,
+                                                 boolean overwrite, VariantAnnotatorProgram newAnnotator,
+                                                 List<ObjectMap> newSourceVersion)
+            throws VariantAnnotatorException {
         if (newSourceVersion == null) {
             newSourceVersion = Collections.emptyList();
         }

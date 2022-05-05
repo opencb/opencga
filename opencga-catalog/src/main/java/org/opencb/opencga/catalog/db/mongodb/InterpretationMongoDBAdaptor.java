@@ -398,15 +398,11 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
         }
 
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_ID.key())) {
-            document.getSet().put(QueryParams.INTERNAL_STATUS_ID.key(), parameters.get(QueryParams.INTERNAL_STATUS_ID.key()));
-            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
-        }
-
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        String[] objectAcceptedParams = {QueryParams.ANALYST.key(), QueryParams.STATUS.key(), QueryParams.STATS.key()};
+        String[] objectAcceptedParams = {QueryParams.ANALYST.key(), QueryParams.STATUS.key(), QueryParams.STATS.key(),
+                QueryParams.INTERNAL_STATUS.key()};
         filterObjectParams(parameters, document.getSet(), objectAcceptedParams);
 
         objectAcceptedParams = new String[]{QueryParams.COMMENTS.key()};

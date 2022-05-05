@@ -94,7 +94,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.family.FamilyIndexLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDeleteHBaseColumnTask;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexBuilder;
 import org.opencb.opencga.storage.hadoop.variant.io.HadoopVariantExporter;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreLoader;
 import org.opencb.opencga.storage.hadoop.variant.score.HadoopVariantScoreRemover;
@@ -389,7 +389,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public void sampleIndex(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         options = getMergedOptions(options);
         System.out.println("options.toJson() = " + options.toJson());
-        new SampleIndexLoader(getSampleIndexDBAdaptor(), study, getMRExecutor())
+        new SampleIndexBuilder(getSampleIndexDBAdaptor(), study, getMRExecutor())
                 .buildSampleIndex(samples, options);
     }
 

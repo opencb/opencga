@@ -202,7 +202,8 @@ public class ProjectManager extends AbstractManager {
      * @throws CatalogException CatalogException
      */
     public OpenCGAResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
-        OpenCGAResult<Project> result = get(new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId), queryOptions, sessionId);
+        OpenCGAResult<Project> result = search(new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "!=" + userId), queryOptions,
+                sessionId);
         for (Event event : result.getEvents()) {
             if (event.getType() == Event.Type.ERROR) {
                 throw new CatalogAuthorizationException(event.getMessage());
@@ -386,7 +387,7 @@ public class ProjectManager extends AbstractManager {
      * @return All matching elements.
      * @throws CatalogException CatalogException
      */
-    public OpenCGAResult<Project> get(Query query, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Project> search(Query query, QueryOptions options, String token) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         String userId = catalogManager.getUserManager().getUserId(token);

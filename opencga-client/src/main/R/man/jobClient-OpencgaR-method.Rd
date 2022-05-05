@@ -4,14 +4,14 @@
 \alias{jobClient,OpencgaR-method}
 \title{JobClient methods}
 \usage{
-\S4method{jobClient}{OpencgaR}(OpencgaR, jobs, job, members, endpointName, params = NULL, ...)
+\S4method{jobClient}{OpencgaR}(OpencgaR, members, job, jobs, endpointName, params = NULL, ...)
 }
 \arguments{
-\item{jobs}{Comma separated list of job IDs or UUIDs up to a maximum of 100.}
+\item{members}{Comma separated list of user or group ids.}
 
 \item{job}{Job ID or UUID.}
 
-\item{members}{Comma separated list of user or group ids.}
+\item{jobs}{Comma separated list of job IDs or UUIDs up to a maximum of 100.}
 
 \item{action}{Action to be performed \link{ADD, SET, REMOVE or RESET}.}
 
@@ -117,7 +117,7 @@ The following table summarises the available \emph{actions} for this client:\tab
    search \tab /{apiVersion}/jobs/search \tab include, exclude, limit, skip, count, study, otherStudies, id, uuid, toolId, toolType, userId, priority, status, internalStatus, creationDate, modificationDate, visited, tags, input, output, acl, release, deleted \cr
    top \tab /{apiVersion}/jobs/top \tab limit, study, internalStatus, priority, userId, toolId \cr
    acl \tab /{apiVersion}/jobs/{jobs}/acl \tab jobs\link{*}, member, silent \cr
-   delete \tab /{apiVersion}/jobs/{jobs}/delete \tab study, jobs \cr
+   delete \tab /{apiVersion}/jobs/{jobs}/delete \tab study, jobs\link{*} \cr
    info \tab /{apiVersion}/jobs/{jobs}/info \tab include, exclude, jobs\link{*}, study, deleted \cr
    update \tab /{apiVersion}/jobs/{jobs}/update \tab include, exclude, jobs\link{*}, study, includeResult, body \cr
    headLog \tab /{apiVersion}/jobs/{job}/log/head \tab job\link{*}, study, offset, lines, type \cr

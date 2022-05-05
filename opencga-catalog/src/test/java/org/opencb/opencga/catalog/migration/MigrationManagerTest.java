@@ -110,7 +110,7 @@ public class MigrationManagerTest extends AbstractManagerTest {
     public static class MigrationWithJobs extends MigrationTool {
         @Override
         protected void run() throws Exception {
-            String fqn = catalogManager.getProjectManager().get(new Query(), new QueryOptions(), token).first().getFqn();
+            String fqn = catalogManager.getProjectManager().search(new Query(), new QueryOptions(), token).first().getFqn();
             getMigrationRun().getJobs().clear();
 
             getMigrationRun().addJob(catalogManager.getJobManager().submitProject(fqn, "my-tool", null, Collections.emptyMap(), null, null, null, null, token).first());

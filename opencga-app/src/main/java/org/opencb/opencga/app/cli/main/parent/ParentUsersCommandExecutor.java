@@ -70,10 +70,10 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                     res.getEvents().add(event);
                     return res;
                 }
-                CommandLineUtils.debug("Login token ::: " + getSessionManager().getSession().getToken());
+                logger.debug("Login token ::: " + getSessionManager().getSession().getToken());
                 if (response != null) {
                     List<String> studies = new ArrayList<>();
-                    CommandLineUtils.debug(response.toString());
+                    logger.debug(response.toString());
                     RestResponse<Project> projects = openCGAClient.getProjectClient().search(
                             new ObjectMap(ProjectDBAdaptor.QueryParams.OWNER.key(), user));
 
@@ -99,7 +99,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                 if (StringUtils.isNotEmpty(sessionId)) {
                     errorMsg += "Active token detected ";
                 }
-                CommandLineUtils.printLog(errorMsg, new Exception());
+                CommandLineUtils.error(errorMsg);
             }
         } catch (Exception e) {
             CommandLineUtils.error(LOGIN_ERROR, e);
@@ -117,7 +117,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
     protected RestResponse<AuthenticationResponse> logout() throws IOException {
         logger.debug("Logout");
         RestResponse<AuthenticationResponse> res = new RestResponse();
-        CommandLineUtils.printLog("Logging out: " + LOGOUT);
+        CommandLineUtils.error("Logging out: " + LOGOUT);
         try {
             sessionManager.logoutSessionFile();
             Event event = new Event();
@@ -126,7 +126,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
             res.getEvents().add(event);
             res.setType(QueryType.VOID);
         } catch (Exception e) {
-            CommandLineUtils.printLog("Logout fail", e);
+            CommandLineUtils.error("Logout fail", e);
         }
         return res;
     }

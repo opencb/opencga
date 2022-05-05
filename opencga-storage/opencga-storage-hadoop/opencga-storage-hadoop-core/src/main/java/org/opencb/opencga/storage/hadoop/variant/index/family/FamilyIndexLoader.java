@@ -3,12 +3,12 @@ package org.opencb.opencga.storage.hadoop.variant.index.family;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.BatchUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.utils.BatchUtils;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -48,8 +48,11 @@ public class FamilyIndexLoader {
         if (trios.isEmpty()) {
             throw new StorageEngineException("Undefined family trios");
         }
+
         int studyId = metadataManager.getStudyId(study);
         int version = sampleIndexDBAdaptor.getSchemaFactory().getSampleIndexConfigurationLatest(studyId, true).getVersion();
+        sampleIndexDBAdaptor.createTableIfNeeded(studyId, version, options);
+
         options.put(FamilyIndexDriver.SAMPLE_INDEX_VERSION, version);
         options.put(FamilyIndexDriver.OUTPUT, sampleIndexDBAdaptor.getSampleIndexTableName(studyId, version));
         Iterator<List<String>> iterator = trios.iterator();

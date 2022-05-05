@@ -8,11 +8,14 @@ import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaMain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public class ParentCliOptionsParser extends CliOptionsParser {
 
+    private static final Logger logger = LoggerFactory.getLogger(ParentCliOptionsParser.class);
     protected final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
     public ParentCliOptionsParser() {
@@ -37,12 +40,12 @@ public class ParentCliOptionsParser extends CliOptionsParser {
     public boolean isValid(String parsedCommand) {
         if (StringUtils.isEmpty(parsedCommand)) {
             // 1. Check if a command has been provided
-            org.opencb.opencga.app.cli.main.utils.CommandLineUtils.debug("IS EMPTY COMMAND " + parsedCommand);
+            logger.debug("IS EMPTY COMMAND " + parsedCommand);
             return false;
         } else {
             // 2. Check if a subcommand has been provided
             String parsedSubCommand = getSubCommand();
-            org.opencb.opencga.app.cli.main.utils.CommandLineUtils.debug("PARSED SUBCOMMAND " + parsedCommand);
+            logger.debug("PARSED SUBCOMMAND " + parsedCommand);
             return !StringUtils.isEmpty(parsedSubCommand);
         }
     }

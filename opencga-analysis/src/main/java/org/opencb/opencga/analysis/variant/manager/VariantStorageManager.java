@@ -43,7 +43,6 @@ import org.opencb.opencga.analysis.variant.manager.operations.*;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.analysis.variant.metadata.CatalogVariantMetadataFactory;
 import org.opencb.opencga.analysis.variant.operations.*;
-import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -1551,7 +1550,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
 
     private String getProjectFqn(String projectStr, List<String> studies, String token) throws CatalogException {
         if (CollectionUtils.isEmpty(studies) && StringUtils.isEmpty(projectStr)) {
-            List<Project> projects = catalogManager.getProjectManager().get(new Query(), new QueryOptions(), token).getResults();
+            List<Project> projects = catalogManager.getProjectManager().search(new Query(), new QueryOptions(), token).getResults();
             if (projects.size() == 1) {
                 projectStr = projects.get(0).getFqn();
             } else {

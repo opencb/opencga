@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.UuidUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.InternalStatus;
@@ -387,10 +388,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             }
         }
 
-        if (parameters.containsKey(INTERNAL_STATUS_ID.key())) {
-            projectParameters.put("projects.$." + INTERNAL_STATUS_ID.key(),
-                    parameters.get(INTERNAL_STATUS_ID.key()));
-            projectParameters.put("projects.$." + QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS.key())) {
+            projectParameters.put("projects.$." + QueryParams.INTERNAL_STATUS.key(),
+                    getMongoDBDocument(parameters.get(QueryParams.INTERNAL_STATUS.key()), "InternalStatus"));
         }
 
         if (!projectParameters.isEmpty()) {
@@ -622,7 +622,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         } catch (CatalogAuthorizationException e) {
             // We don't want to raise permission exceptions in methods where general lookups are done. That should only apply if you specify
             queryResult = OpenCGAResult.empty(Project.class);
-            queryResult.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, e.getMessage())));
+//            queryResult.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, e.getMessage())));
         }
 
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
@@ -698,7 +698,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-
         // Fetch all the studies that the user can see
         List<Long> projectUids = query.getAsLongList(QueryParams.UID.key());
         Query studyQuery = new Query();
@@ -734,6 +733,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             // It might be that the owner of the study is asking for its own projects but no studies have been created yet. Just in case,
             // we check if any study matches the query. If that's the case, the user does not have proper permissions. Otherwise, he might
             // be the owner...
+            if (!studyQuery.containsKey(StudyDBAdaptor.QueryParams.OWNER.key())) {
+                // We discard opencga study from the query
+                studyQuery.put(StudyDBAdaptor.QueryParams.OWNER.key(), "!" + ParamConstants.OPENCGA_USER_ID);
+            }
             if (dbAdaptorFactory.getCatalogStudyDBAdaptor().count(clientSession, studyQuery).getNumMatches() == 0) {
                 if (!StringUtils.isEmpty(query.getString(QueryParams.USER_ID.key()))
                         && !user.equals(query.getString(QueryParams.USER_ID.key()))) {
