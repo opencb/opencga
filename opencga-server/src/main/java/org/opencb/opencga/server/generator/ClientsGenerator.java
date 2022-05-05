@@ -2,6 +2,7 @@ package org.opencb.opencga.server.generator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.config.ConfigurationManager;
@@ -27,6 +28,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +39,11 @@ public class ClientsGenerator {
     // private static RestApi restApi;
     private static CommandLineConfiguration config;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws URISyntaxException {
+        System.setProperty("opencga.log.file.enabled", "false");
+        System.setProperty("opencga.log.level", "info");
+        Configurator.reconfigure();
+
         List<Class<?>> classes = new ArrayList<>();
         classes.add(UserWSServer.class);
         classes.add(ProjectWSServer.class);

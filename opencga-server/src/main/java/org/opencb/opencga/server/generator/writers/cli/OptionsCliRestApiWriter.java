@@ -222,7 +222,8 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                             sb.append("    \n");
                                         } else {
                                             logger.warn("Skipping parameter '{}' type '{}' at command '{} {}'",
-                                                    bodyRestParameter.getName(), bodyRestParameter.getType(), config.getCommandName(), commandName);
+                                                    bodyRestParameter.getName(), bodyRestParameter.getType(),
+                                                    getCategoryCommandName(restCategory, config), reverseCommandName(commandName));
                                         }
                                     }
                                 }
