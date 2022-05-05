@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 @Tool(id = VariantSecondaryIndexOperationTool.ID, description = VariantSecondaryIndexOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION,

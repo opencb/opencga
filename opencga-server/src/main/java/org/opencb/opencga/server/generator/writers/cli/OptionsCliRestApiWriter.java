@@ -144,11 +144,12 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         CategoryConfig config = availableCategoryConfigs.get(key);
         StringBuilder sb = new StringBuilder();
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
+            System.out.println("+" + restEndpoint.getPath());
             String commandName = getCommandName(restCategory, restEndpoint);
             if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName) && !config.isExtendedOptionCommand(commandName)) {
                     sb.append("    @Parameters(commandNames = {\"" + reverseCommandName(commandName) + "\"}, commandDescription =\"" +
-                            restEndpoint.getDescription().replaceAll("\"", "'") + "\")\n");
+                            getCLIDescription(restEndpoint.getDescription().replaceAll("\"", "'")) + "\")\n");
                     sb.append("    public class " + getAsClassName(getAsCamelCase(getMethodName(restCategory, restEndpoint))) + "CommandOptions " +
                             "{\n");
                     sb.append("    \n");
@@ -213,6 +214,23 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
             }
         }
         return sb.toString();
+    }
+
+
+    //Provisional method to change the description of the deprecated operation endpoints
+    @Deprecated
+    private String getCLIDescription(String description) {
+        if (description.contains("/") && description.contains("endpoint") && description.contains("DEPRECATED")) {
+            try {
+                String path = description.substring(description.indexOf("/") + 1, description.lastIndexOf("'"));
+                String commandName = getMethodName(path).replaceAll("_", "-");
+                description = description.replaceAll("endpoint 'operation/", "command '")
+                        .replaceAll(path, commandName);
+            } catch (Exception e) {
+                System.err.println(e.getLocalizedMessage());
+            }
+        }
+        return description;
     }
 
 

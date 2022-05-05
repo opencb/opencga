@@ -25,7 +25,7 @@ Family data model hosts information about any family.
 ## Data Model
 
 ### Family
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/family/Family.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/family/Family.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -59,6 +59,19 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **url**<br>*String* <br> | <p>Ontology url</p> |
 | **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 
+### FamilyInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
+
+| Field | Description |
+| :---  | :--- |
+| **status**<br>*[InternalStatus](https://docs.opencga.opencb.org/data-models/family#internalstatus)* <br> | <p>Status of the internal object.</p> |
+| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
+| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
+
+### Status
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
+
+
 ### Phenotype
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Phenotype.java).
 
@@ -73,12 +86,8 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **url**<br>*String* <br> | <p>Ontology url</p> |
 | **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
 
-### Status
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
-
-
 ### FamilyQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyQualityControl.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyQualityControl.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -86,14 +95,9 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-35
 | **files**<br>*List<<em>String</em>>* <br> | <p>File IDs related to the quality control.</p> |
 | **comments**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/family#clinicalcomment"><em>ClinicalComment</em></a>>* <br> | <p>Comments related to the quality control.</p> |
 
-### FamilyInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
+### InternalStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
 
-| Field | Description |
-| :---  | :--- |
-| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/family#status)* <br> | <p>Status of the internal object.</p> |
-| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
-| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
 
 ### ClinicalComment
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalComment.java).

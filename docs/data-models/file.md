@@ -34,7 +34,7 @@ File data model hosts information about any file.
 ## Data Model
 
 ### File
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/file/File.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -66,12 +66,34 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-35
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
 ### FileRelatedFile
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileRelatedFile.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileRelatedFile.java).
+
+
+### URI
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/java/net/URI.java).
 
 
 ### Status
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
 
+
+### FileQualityControl
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileQualityControl.java).
+
+
+### FileInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
+
+| Field | Description |
+| :---  | :--- |
+| **status**<br>*[FileStatus](https://docs.opencga.opencb.org/data-models/file#filestatus)* <br> | <p>File status can have the values READY, DELETED, TRASHED, STAGE, MISSING, PENDING_DELETE, DELETING, REMOVED and MISSING_SAMPLES.</p> |
+| **variant**<br>*[FileInternalVariant](https://docs.opencga.opencb.org/data-models/file#fileinternalvariant)* <br> | <p>File internal variant.</p> |
+| **alignment**<br>*[FileInternalAlignment](https://docs.opencga.opencb.org/data-models/file#fileinternalalignment)* <br> | <p>File internal alignment.</p> |
+| **sampleMap**<br>*Map<String,String>* <br> | <p>Map of samples.</p> |
+| **missingSamples**<br>*[MissingSamples](https://docs.opencga.opencb.org/data-models/file#missingsamples)* <br> | <p>Object describes missing samples.</p> |
+| **status**<br>*[InternalStatus](https://docs.opencga.opencb.org/data-models/file#internalstatus)* <br> | <p>Status of the internal object.</p> |
+| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
+| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
 
 ### Software
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/interpretation/Software.java).
@@ -85,38 +107,16 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **website**<br>*String* <br> | <p>Software website</p> |
 | **params**<br>*Map<String,String>* <br> | <p>Software params</p> |
 
-### FileInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
-
-| Field | Description |
-| :---  | :--- |
-| **status**<br>*[FileStatus](https://docs.opencga.opencb.org/data-models/file#filestatus)* <br> | <p>File status can have the values READY, DELETED, TRASHED, STAGE, MISSING, PENDING_DELETE, DELETING, REMOVED and MISSING_SAMPLES.</p> |
-| **variant**<br>*[FileInternalVariant](https://docs.opencga.opencb.org/data-models/file#fileinternalvariant)* <br> | <p>File internal variant.</p> |
-| **alignment**<br>*[FileInternalAlignment](https://docs.opencga.opencb.org/data-models/file#fileinternalalignment)* <br> | <p>File internal alignment.</p> |
-| **sampleMap**<br>*Map<String,String>* <br> | <p>Map of samples.</p> |
-| **missingSamples**<br>*[MissingSamples](https://docs.opencga.opencb.org/data-models/file#missingsamples)* <br> | <p>Object describes missing samples.</p> |
-| **status**<br>*[Status](https://docs.opencga.opencb.org/data-models/file#status)* <br> | <p>Status of the internal object.</p> |
-| **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
-| **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
-
-### URI
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/java/net/URI.java).
-
-
-### FileQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileQualityControl.java).
-
-
 ### FileExperiment
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment.java).
 
 
-### FileInternalVariant
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternalVariant.java).
+### InternalStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
 
 
 ### MissingSamples
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/file/MissingSamples.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/file/MissingSamples.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -124,9 +124,13 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-35
 | **nonExisting**<br>*List<<em>String</em>>* <br> | <p>List of non existing samples.</p> |
 
 ### FileInternalAlignment
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternalAlignment.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternalAlignment.java).
+
+
+### FileInternalVariant
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternalVariant.java).
 
 
 ### FileStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileStatus.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileStatus.java).
 

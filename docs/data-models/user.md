@@ -20,7 +20,7 @@ User data model hosts information about any user.
 ## Data Model
 
 ### User
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/user/User.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/user/User.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -38,7 +38,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-35
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
 ### Account
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/user/Account.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/user/Account.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -47,8 +47,12 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-35
 | **expirationDate**<br>*String* <br> | <p>Date the account expires.</p> |
 | **authentication**<br>*[AuthenticationOrigin](https://docs.opencga.opencb.org/data-models/user#authenticationorigin)* <br> | <p>How the account is authenticated</p> |
 
+### UserInternal
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserInternal.java).
+
+
 ### UserFilter
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserFilter.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserFilter.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -58,14 +62,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-35
 | **query**<br>*Query* <br> | <p>User filter query</p> |
 | **query**<br>*QueryOptions* <br> | <p>User filter query options</p> |
 
-### UserInternal
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserInternal.java).
-
-
 ### UserQuota
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserQuota.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/user/UserQuota.java).
 
 
 ### AuthenticationOrigin
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/user/Account/AuthenticationOrigin.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-428/opencga-core/src/main/java/org/opencb/opencga/core/models/user/Account/AuthenticationOrigin.java).
 
