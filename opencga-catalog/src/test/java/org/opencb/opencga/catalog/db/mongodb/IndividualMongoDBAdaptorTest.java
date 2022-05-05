@@ -155,17 +155,6 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void testModifyIndividualBadGender() throws Exception {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initUnknown(), null, null, null, null, "",
-                Collections.emptyList(), false, 1, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), IndividualInternal.init(), null), Collections.emptyList(), null);
-        long individualUid = getIndividual(studyId, "in1").getUid();
-
-        thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.update(individualUid, new ObjectMap("sex", "bad sex"), QueryOptions.empty());
-    }
-
-    @Test
     public void testModifyIndividualBadFatherId() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogIndividualDBAdaptor.insert(studyId, new Individual("in1", "in1", new Individual(), new Individual(), new Location(), SexOntologyTermAnnotation.initUnknown(), null, null, null, null, "",
