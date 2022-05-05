@@ -578,19 +578,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         individualDBAdaptor.getCollection().update(clientSession, bsonQuery, update, null);
     }
 
-    private void createNewVersion(ClientSession clientSession, long studyUid, long sampleUid) throws CatalogDBException {
-        Query query = new Query()
-                .append(QueryParams.STUDY_UID.key(), studyUid)
-                .append(QueryParams.UID.key(), sampleUid);
-        OpenCGAResult<Document> queryResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
-
-        if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Could not find sample '" + sampleUid + "'");
-        }
-
-        createNewVersion(clientSession, sampleCollection, queryResult.first());
-    }
-
     UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         UpdateDocument document = new UpdateDocument();

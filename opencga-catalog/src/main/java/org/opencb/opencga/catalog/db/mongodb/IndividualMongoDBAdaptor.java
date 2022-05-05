@@ -646,20 +646,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
     }
 
-    private void createNewVersion(ClientSession clientSession, long studyUid, long individualUid)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Query query = new Query()
-                .append(QueryParams.UID.key(), individualUid)
-                .append(QueryParams.STUDY_UID.key(), studyUid);
-        OpenCGAResult<Document> queryResult = nativeGet(query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
-
-        if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Could not find individual '" + individualUid + "'");
-        }
-
-        createNewVersion(clientSession, individualCollection, queryResult.first());
-    }
-
     UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query, QueryOptions queryOptions)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         UpdateDocument document = new UpdateDocument();

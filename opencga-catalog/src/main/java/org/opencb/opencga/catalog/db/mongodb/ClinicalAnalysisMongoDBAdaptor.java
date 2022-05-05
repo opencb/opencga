@@ -722,7 +722,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions = filterQueryOptions(qOptions, Arrays.asList(ID.key(), UID.key(), STUDY_UID.key()));
+        qOptions = filterQueryOptions(qOptions, Arrays.asList(ID, PRIVATE_UID, PRIVATE_STUDY_UID));
         qOptions = removeInnerProjections(qOptions, PROBAND.key());
         qOptions = removeInnerProjections(qOptions, FAMILY.key());
         qOptions = removeInnerProjections(qOptions, PANELS.key());
@@ -820,7 +820,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         if (StringUtils.isEmpty(clinicalAnalysis.getId())) {
             throw new CatalogDBException("Missing ClinicalAnalysis id");
         }
-        if (!get(clientSession, new Query(ID.key(), clinicalAnalysis.getId())
+        if (!get(clientSession, new Query(ID, clinicalAnalysis.getId())
                 .append(STUDY_UID.key(), studyId), new QueryOptions()).getResults().isEmpty()) {
             throw CatalogDBException.alreadyExists("ClinicalAnalysis", "id", clinicalAnalysis.getId());
         }

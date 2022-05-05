@@ -51,7 +51,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
     private static final String OLD_ID = "_id";
     public static final Bson METADATA_QUERY = Filters.or(
-            Filters.eq(PRIVATE_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID),
+            Filters.eq(ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID),
             Filters.eq(OLD_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID));
     private final MongoDBCollection metaCollection;
     private static final String VERSION = GitRepositoryState.get().getBuildVersion();
@@ -170,7 +170,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         Metadata metadata = new Metadata().setIdCounter(0L).setVersion(VERSION);
 
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
-        metadataObject.put(PRIVATE_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
+        metadataObject.put(ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document adminDocument = getMongoDBDocument(configuration.getAdmin(), "Admin");
         metadataObject.put("admin", adminDocument);
         metadataObject.put("_fullVersion", new Document()

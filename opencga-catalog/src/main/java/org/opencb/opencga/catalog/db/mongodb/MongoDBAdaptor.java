@@ -20,7 +20,6 @@ import com.mongodb.MongoClient;
 import com.mongodb.TransactionOptions;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.model.*;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -35,6 +34,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.common.InternalStatus;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 
@@ -52,10 +52,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
 
     public static final String PRIVATE_UID = "uid";
     public static final String PRIVATE_UUID = "uuid";
-    static final String PRIVATE_ID = "id";
+    private static final String PRIVATE_MONGO_ID = "_id";
+    static final String ID = "id";
     static final String PRIVATE_FQN = "fqn";
     static final String PRIVATE_PROJECT = "_project";
-    static final String PRIVATE_PROJECT_ID = PRIVATE_PROJECT + '.' + PRIVATE_ID;
+    static final String PRIVATE_PROJECT_ID = PRIVATE_PROJECT + '.' + ID;
     static final String PRIVATE_PROJECT_UID = PRIVATE_PROJECT + '.' + PRIVATE_UID;
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     static final String PRIVATE_OWNER_ID = "_ownerId";
@@ -93,7 +94,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     protected MongoDBAdaptorFactory dbAdaptorFactory;
     protected Configuration configuration;
 
-    protected static final QueryOptions EXCLUDE_MONGO_ID = new QueryOptions(QueryOptions.EXCLUDE, "_id");
+    protected static final QueryOptions EXCLUDE_MONGO_ID = new QueryOptions(QueryOptions.EXCLUDE, PRIVATE_MONGO_ID);
 
     public MongoDBAdaptor(Configuration configuration, Logger logger) {
         super(logger);
@@ -204,33 +205,56 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                                          ReferenceModelExecution postVersionIncrementExecution)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         String uuid = getClientSessionUuid(session);
-        String tmpUuid = uuid + "-tmp";
-        String random = RandomStringUtils.randomAlphanumeric(10);
 
         // 1. Increment version
         // 1.1 Only increase version of those documents not already increased by same transaction id
-        Bson query = Filters.and(sourceQuery, Filters.ne(PRIVATE_TRANSACTION_ID, uuid), Filters.ne(PRIVATE_TRANSACTION_ID, tmpUuid));
-        QueryOptions multiOptions = new QueryOptions(MongoDBCollection.MULTI, true);
-        Bson versionInc = Updates.combine(
-                Updates.inc(VERSION, 1),
-                Updates.set(PRIVATE_TRANSACTION_ID, tmpUuid),
-                Updates.set(PRIVATE_TRANSACTION_RANDOM_STRING, random)
-        );
-        // 1.2 Increment version from main collection
-        collection.update(session, query, versionInc, multiOptions);
+        Bson query = Filters.and(sourceQuery, Filters.ne(PRIVATE_TRANSACTION_ID, uuid));
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(PRIVATE_UID, VERSION, RELEASE_FROM_VERSION));
+        List<Long> uidsChanged = new LinkedList<>();
+        try (MongoDBIterator<Document> iterator = collection.iterator(session, query, null, null, options)) {
+            while (iterator.hasNext()) {
+                Document result = iterator.next();
+
+                Document collectionUpdate = new Document();
+                Document archiveCollectionUpdate = new Document();
+                processReleaseSnapshotChanges(result, collectionUpdate, archiveCollectionUpdate);
+
+                long uid = result.get(PRIVATE_UID, Number.class).longValue();
+                int version = result.get(VERSION, Number.class).intValue();
+                uidsChanged.add(uid);
+
+                Bson bsonQuery = Filters.and(
+                        Filters.eq(PRIVATE_UID, uid),
+                        Filters.eq(VERSION, version)
+                );
+                // Update previous version
+                logger.debug("Updating previous version: query : {}, update: {}",
+                        bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                        archiveCollectionUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                archiveCollection.update(session, bsonQuery, new Document("$set", archiveCollectionUpdate), QueryOptions.empty());
+
+                // Update current version
+                collectionUpdate.put(PRIVATE_TRANSACTION_ID, uuid);
+                logger.debug("Updating current version: query : {}, update: {}",
+                        bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                        collectionUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                collection.update(session, bsonQuery, new Document("$set", collectionUpdate), QueryOptions.empty());
+            }
+        }
 
         // 2. Execute main update
         T executionResult = update.execute();
 
         // 3. Fetch document containing update and copy into the archive collection
-        QueryOptions options = new QueryOptions(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
+        options = new QueryOptions(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
         QueryOptions upsertOptions = new QueryOptions()
                 .append(MongoDBCollection.REPLACE, true)
                 .append(MongoDBCollection.UPSERT, true);
         try (MongoDBIterator<Document> iterator = collection.iterator(session, sourceQuery, null, null, options)) {
             while (iterator.hasNext()) {
                 Document result = iterator.next();
-                result.remove("_id");
+                result.remove(PRIVATE_MONGO_ID);
                 result.put(PRIVATE_TRANSACTION_ID, uuid);
 
                 // Some annotations have "." as part of their keys. Mongo does not support that so we call this method to replace them.
@@ -241,32 +265,64 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                         Filters.eq(PRIVATE_UID, fixedResult.get(PRIVATE_UID)),
                         Filters.eq(VERSION, fixedResult.get(VERSION))
                 );
+                logger.debug("Copying current document to archive: query : {}",
+                        tmpBsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
                 archiveCollection.update(session, tmpBsonQuery, fixedResult, upsertOptions);
             }
         }
 
         // 4. Perform any additional reference checks/updates over those that have increased its version in this call
-        query = Filters.and(sourceQuery,
-                Filters.eq(PRIVATE_TRANSACTION_ID, tmpUuid),
-                Filters.eq(PRIVATE_TRANSACTION_RANDOM_STRING, random)
-        );
-        if (postVersionIncrementExecution != null) {
-            options = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_UID, PRIVATE_UUID, PRIVATE_ID, PRIVATE_STUDY_UID, VERSION))
-                    .append(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
-            try (MongoDBIterator<Document> iterator = collection.iterator(session, query, null, null, options)) {
-                postVersionIncrementExecution.execute(iterator);
+        if (!uidsChanged.isEmpty()) {
+            query = Filters.in(PRIVATE_UID, uidsChanged);
+            if (postVersionIncrementExecution != null) {
+                logger.debug("Executing react code after incrementing version: query : {}",
+                        query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                options = new QueryOptions()
+                        .append(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_UID, PRIVATE_UUID, ID, PRIVATE_STUDY_UID, VERSION))
+                        .append(MongoDBCollection.NO_CURSOR_TIMEOUT, true);
+                try (MongoDBIterator<Document> iterator = collection.iterator(session, query, null, null, options)) {
+                    postVersionIncrementExecution.execute(iterator);
+                }
             }
         }
 
-        // 5. Set final transaction ID
-        Bson transactionIdUpdate = Updates.combine(
-                Updates.set(PRIVATE_TRANSACTION_ID, uuid),
-                Updates.unset(PRIVATE_TRANSACTION_RANDOM_STRING)
-        );
-        collection.update(session, query, transactionIdUpdate, multiOptions);
-
         return executionResult;
+    }
+
+    /**
+     * Given the current document, it puts in collectionUpdate and archiveCollectionUpdate the changes that need to be applied.
+     * It takes care of the private fields that allow performing queries by snapshot:
+     * LAST_OF_VERSION, LAST_OF_RELEASE, RELEASE_FROM_VERSION
+     *
+     * @param document                Current document.
+     * @param collectionUpdate        Empty document where we will put the changes to be applied to the main collection.
+     * @param archiveCollectionUpdate Empty document where we will put the changes to be applied to the archive collection.
+     */
+    private void processReleaseSnapshotChanges(Document document, Document collectionUpdate, Document archiveCollectionUpdate) {
+        int version = document.get(VERSION, Number.class).intValue();
+        List<Integer> releaseFromVersion = document.getList(RELEASE_FROM_VERSION, Integer.class);
+
+        // Current release number
+        int release;
+        if (releaseFromVersion.size() > 1) {
+            release = releaseFromVersion.get(releaseFromVersion.size() - 1);
+
+            // If it contains several releases, it means this is the first update on the current release, so we just need to take the
+            // current release number out
+            releaseFromVersion.remove(releaseFromVersion.size() - 1);
+        } else {
+            release = releaseFromVersion.get(0);
+
+            // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
+            // last version of the release
+            archiveCollectionUpdate.put(LAST_OF_RELEASE, false);
+        }
+        archiveCollectionUpdate.put(RELEASE_FROM_VERSION, releaseFromVersion);
+        archiveCollectionUpdate.put(LAST_OF_VERSION, false);
+
+        // We update the information for the new version of the document
+        collectionUpdate.put(RELEASE_FROM_VERSION, Collections.singletonList(release));
+        collectionUpdate.put(VERSION, version + 1);
     }
 
     protected <T> T updateVersionedModelNoVersionIncrement(Bson sourceQuery, MongoDBCollection collection,
@@ -283,7 +339,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         try (MongoDBIterator<Document> iterator = collection.iterator(sourceQuery, options)) {
             while (iterator.hasNext()) {
                 Document result = iterator.next();
-                result.remove("_id");
+                result.remove(PRIVATE_MONGO_ID);
 
                 // Insert/replace in archive collection
                 Bson tmpBsonQuery = Filters.and(
@@ -359,7 +415,17 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         collection.remove(session, query, QueryOptions.empty());
 
         // Add versioned documents to "delete" collection
+        InternalStatus internalStatus = new InternalStatus(InternalStatus.DELETED);
+        Document status;
+        try {
+            status = getMongoDBDocument(internalStatus, "status");
+        } catch (CatalogDBException e) {
+            status = new Document("id", InternalStatus.DELETED);
+        }
         for (Document document : archiveCollection.find(session, query, QueryOptions.empty()).getResults()) {
+            Document internal = document.get("internal", Document.class);
+            internal.put("status", status);
+
             deletedCollection.insert(session, document, QueryOptions.empty());
         }
 
@@ -553,7 +619,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         DataResult<Document> aggregate = collection.aggregate(Arrays.asList(match, project, group), options);
         for (String s : groupByField) {
             if (s.contains(".")) {
-                aggregate.getResults().stream().map(d -> d.get("_id", Document.class)).forEach(d -> {
+                aggregate.getResults().stream().map(d -> d.get(PRIVATE_MONGO_ID, Document.class)).forEach(d -> {
                     Object o = d.remove(s.replace(".", GenericDocumentComplexConverter.TO_REPLACE_DOTS));
                     d.put(s, o);
                 });
@@ -667,11 +733,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         if (!query.containsKey(VERSION) || query.getAsIntegerList(VERSION).size() == 1) {
             return false;
         }
-        if (!query.containsKey(PRIVATE_UID) && !query.containsKey(PRIVATE_ID) && !query.containsKey(PRIVATE_UUID)) {
+        if (!query.containsKey(PRIVATE_UID) && !query.containsKey(ID) && !query.containsKey(PRIVATE_UUID)) {
             return false;
         }
         int numIds = 0;
-        numIds += query.containsKey(PRIVATE_ID) ? 1 : 0;
+        numIds += query.containsKey(ID) ? 1 : 0;
         numIds += query.containsKey(PRIVATE_UID) ? 1 : 0;
         numIds += query.containsKey(PRIVATE_UUID) ? 1 : 0;
 
@@ -684,7 +750,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         }
 
         String idQueried = PRIVATE_UID;
-        idQueried = query.containsKey(PRIVATE_ID) ? PRIVATE_ID : idQueried;
+        idQueried = query.containsKey(ID) ? ID : idQueried;
         idQueried = query.containsKey(PRIVATE_UUID) ? PRIVATE_UUID : idQueried;
 
         List idList;
@@ -790,7 +856,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                 }
             }
             if (newInclude.isEmpty()) {
-                queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(PRIVATE_ID, projectionKey));
+                queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(ID, projectionKey));
             } else {
                 if (projectionKeyExcluded) {
                     newInclude.add(projectionKey);
@@ -883,59 +949,6 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         Bson update = Updates.pull(PERMISSION_RULES_APPLIED, permissionRuleId);
 
         return new OpenCGAResult(collection.update(query, update, new QueryOptions("multi", true)));
-    }
-
-    @Deprecated
-    protected void createNewVersion(ClientSession clientSession, MongoDBCollection dbCollection, Document document)
-            throws CatalogDBException {
-        Document updateOldVersion = new Document();
-
-        // Current release number
-        int release;
-        List<Integer> supportedReleases = (List<Integer>) document.get(RELEASE_FROM_VERSION);
-        if (supportedReleases.size() > 1) {
-            release = supportedReleases.get(supportedReleases.size() - 1);
-
-            // If it contains several releases, it means this is the first update on the current release, so we just need to take the
-            // current release number out
-            supportedReleases.remove(supportedReleases.size() - 1);
-        } else {
-            release = supportedReleases.get(0);
-
-            // If it is 1, it means that the previous version being checked was made on this same release as well, so it won't be the
-            // last version of the release
-            updateOldVersion.put(LAST_OF_RELEASE, false);
-        }
-        updateOldVersion.put(RELEASE_FROM_VERSION, supportedReleases);
-        updateOldVersion.put(LAST_OF_VERSION, false);
-
-        // Perform the update on the previous version
-        Document queryDocument = new Document()
-                .append(PRIVATE_STUDY_UID, document.getLong(PRIVATE_STUDY_UID))
-                .append(VERSION, document.getInteger(VERSION))
-                .append(PRIVATE_UID, document.getLong(PRIVATE_UID));
-
-        logger.debug("Updating previous version: query : {}, update: {}",
-                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                updateOldVersion.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
-        DataResult updateResult = dbCollection.update(clientSession, queryDocument, new Document("$set", updateOldVersion), null);
-
-        if (updateResult.getNumUpdated() == 0) {
-            throw new CatalogDBException("Internal error: Could not update previous version");
-        }
-
-        // We update the information for the new version of the document
-        document.put(LAST_OF_RELEASE, true);
-        document.put(LAST_OF_VERSION, true);
-        document.put(RELEASE_FROM_VERSION, Arrays.asList(release));
-        document.put(VERSION, document.getInteger(VERSION) + 1);
-
-        logger.debug("Inserting new document version: document: {}",
-                document.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
-        // Insert the new version document
-        dbCollection.insert(clientSession, document, QueryOptions.empty());
     }
 
     protected Document getStudyDocument(ClientSession clientSession, long studyUid) throws CatalogDBException {
