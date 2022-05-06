@@ -26,7 +26,7 @@ import org.opencb.opencga.core.tools.annotations.Tool;
         resource = Enums.Resource.VARIANT)
 public class VariantSecondaryIndexOperationTool extends OperationTool {
 
-    public static final String ID = "variant-secondary-index";
+    public static final String ID = "variant-secondary-annotation-index";
     public static final String DESCRIPTION = "Creates a secondary index using a search engine. "
             + "If samples are provided, sample data will be added to the secondary index.";
     private VariantSecondaryIndexParams indexParams;

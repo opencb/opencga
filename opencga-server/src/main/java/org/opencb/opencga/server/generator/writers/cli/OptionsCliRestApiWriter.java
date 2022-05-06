@@ -144,7 +144,6 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         CategoryConfig config = availableCategoryConfigs.get(key);
         StringBuilder sb = new StringBuilder();
         for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
-            System.out.println("+" + restEndpoint.getPath());
             String commandName = getCommandName(restCategory, restEndpoint);
             if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName) && !config.isExtendedOptionCommand(commandName)) {
