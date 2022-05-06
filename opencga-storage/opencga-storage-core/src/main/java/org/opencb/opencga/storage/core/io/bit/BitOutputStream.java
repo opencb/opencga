@@ -1,7 +1,5 @@
 package org.opencb.opencga.storage.core.io.bit;
 
-import java.io.ByteArrayOutputStream;
-
 /**
  * Serialize streams of bits in a byte array.
  *
@@ -22,17 +20,6 @@ public class BitOutputStream {
     private final ExposedByteArrayOutputStream os;
     private int buffer = 0; // only one byte buffer. Use int to avoid casts.
     private byte bufferCapacity = Byte.SIZE;
-
-    private class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
-
-        ExposedByteArrayOutputStream(int size) {
-            super(size);
-        }
-
-        byte[] getBuffer() {
-            return buf;
-        }
-    }
 
     public BitOutputStream() {
         this(100);

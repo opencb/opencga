@@ -157,7 +157,7 @@ public class VariantRow {
                 } else if (score && columnName.endsWith(VARIANT_SCORE_SUFIX)) {
                         walker.score(new BytesVariantScoreColumn(cell, extractStudyId(columnName), extractScoreId(columnName)));
                 } else if (columnName.endsWith(FILL_MISSING_SUFIX)) {
-                    int studyId = Integer.valueOf(columnName.split("_")[1]);
+                    int studyId = Integer.parseInt(columnName.split("_")[1]);
                     walker.fillMissing(studyId,
                             ((Integer) PInteger.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength())));
                 } else if (annotation && columnName.equals(VariantColumn.FULL_ANNOTATION.column())) {

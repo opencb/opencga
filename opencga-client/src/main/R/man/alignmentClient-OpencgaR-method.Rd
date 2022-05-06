@@ -75,7 +75,7 @@ The following table summarises the available \emph{actions} for this client:\tab
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    runBwa \tab /{apiVersion}/analysis/alignment/bwa/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
    runCoverageIndex \tab /{apiVersion}/analysis/alignment/coverage/index/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
-   runQcGeneCoverageStats \tab /{apiVersion}/analysis/alignment/coverage/qc/geneCoverageStats/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
+   coverageQcGeneCoverageStatsRun \tab /{apiVersion}/analysis/alignment/coverage/qc/geneCoverageStats/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
    queryCoverage \tab /{apiVersion}/analysis/alignment/coverage/query \tab file\link{*}, study, region, gene, offset, onlyExons, range, windowSize, splitResults \cr
    ratioCoverage \tab /{apiVersion}/analysis/alignment/coverage/ratio \tab file1\link{*}, file2\link{*}, study, skipLog2, region, gene, offset, onlyExons, windowSize, splitResults \cr
    statsCoverage \tab /{apiVersion}/analysis/alignment/coverage/stats \tab file\link{*}, gene\link{*}, study, threshold \cr

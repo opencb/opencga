@@ -23,7 +23,7 @@ public class AddCellbaseConfigurationToProject extends MigrationTool {
 //        StorageEngineFactory engineFactory = StorageEngineFactory.get(storageConfiguration);
 //        VariantStorageManager variantStorageManager = new VariantStorageManager(catalogManager, engineFactory);
 
-        for (Project project : catalogManager.getProjectManager().get(new Query(), new QueryOptions(), token).getResults()) {
+        for (Project project : catalogManager.getProjectManager().search(new Query(), new QueryOptions(), token).getResults()) {
             if (project.getInternal() == null || project.getCellbase() == null) {
                 String userToken = catalogManager.getUserManager()
                         .getNonExpiringToken(project.getFqn().split(USER_PROJECT_SEPARATOR)[0], token);
