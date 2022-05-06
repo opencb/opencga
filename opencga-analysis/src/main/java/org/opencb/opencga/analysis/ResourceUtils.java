@@ -116,7 +116,7 @@ public class ResourceUtils {
     public static String getAssembly(CatalogManager catalogManager, String studyId, String sessionId) throws CatalogException {
         String assembly = "";
         OpenCGAResult<Project> projectQueryResult;
-        projectQueryResult = catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
+        projectQueryResult = catalogManager.getProjectManager().search(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
         if (CollectionUtils.isNotEmpty(projectQueryResult.getResults())
                 && projectQueryResult.first().getOrganism() != null

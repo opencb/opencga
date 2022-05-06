@@ -4,12 +4,12 @@
 \alias{projectClient,OpencgaR-method}
 \title{ProjectClient methods}
 \usage{
-\S4method{projectClient}{OpencgaR}(OpencgaR, project, projects, endpointName, params = NULL, ...)
+\S4method{projectClient}{OpencgaR}(OpencgaR, projects, project, endpointName, params = NULL, ...)
 }
 \arguments{
-\item{project}{Project \link{user@}project where project can be either the ID or the alias.}
-
 \item{projects}{Comma separated list of projects \link{user@}project up to a maximum of 100.}
+
+\item{project}{Project \link{user@}project where project can be either the ID or the alias.}
 
 \item{owner}{Owner of the project.}
 

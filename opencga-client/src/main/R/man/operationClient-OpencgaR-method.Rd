@@ -57,11 +57,12 @@ The following table summarises the available \emph{actions} for this client:\tab
    synchronizeVariantMetadata \tab /{apiVersion}/operation/variant/metadata/synchronize \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
    deleteVariantSample \tab /{apiVersion}/operation/variant/sample/delete \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
    indexVariantSample \tab /{apiVersion}/operation/variant/sample/index \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
-   configureSampleIndex \tab /{apiVersion}/operation/variant/sample/index/configure \tab study, skipRebuild, body \cr
+   variantSampleIndexConfigure \tab /{apiVersion}/operation/variant/sample/index/configure \tab study, skipRebuild, body \cr
    deleteVariantScore \tab /{apiVersion}/operation/variant/score/delete \tab jobId, jobDescription, jobDependsOn, jobTags, study, name, resume, force \cr
    indexVariantScore \tab /{apiVersion}/operation/variant/score/index \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
    secondaryIndexVariant \tab /{apiVersion}/operation/variant/secondaryIndex \tab jobId, jobDescription, jobDependsOn, jobTags, project, study, body \cr
    deleteVariantSecondaryIndex \tab /{apiVersion}/operation/variant/secondaryIndex/delete \tab jobId, jobDescription, jobDependsOn, jobTags, study, samples \cr
+   deleteVariantStats \tab /{apiVersion}/operation/variant/stats/delete \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    indexVariantStats \tab /{apiVersion}/operation/variant/stats/index \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    deleteVariantStudy \tab /{apiVersion}/operation/variant/study/delete \tab jobId, jobDescription, jobDependsOn, jobTags, study, body \cr
 }
@@ -169,6 +170,11 @@ Creates a secondary index using a search engine. If samples are provided, sample
 \section{Endpoint /{apiVersion}/operation/variant/secondaryIndex/delete}{
 
 Remove a secondary index from the search engine for a specific set of samples.
+}
+
+\section{Endpoint /{apiVersion}/operation/variant/stats/delete}{
+
+Deletes the VariantStats of a cohort/s from the database.
 }
 
 \section{Endpoint /{apiVersion}/operation/variant/stats/index}{

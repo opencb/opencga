@@ -80,7 +80,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void testSampleVersioning() throws CatalogException {
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
-        String projectId = catalogManager.getProjectManager().get(query, null, token).first().getId();
+        String projectId = catalogManager.getProjectManager().search(query, null, token).first().getId();
 
         catalogManager.getSampleManager().create(studyFqn,
                 new Sample().setId("testSample").setDescription("description"), null, token);
@@ -220,7 +220,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void testSampleVersioningWithWeirdId() throws CatalogException {
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
-        String projectId = catalogManager.getProjectManager().get(query, null, token).first().getId();
+        String projectId = catalogManager.getProjectManager().search(query, null, token).first().getId();
 
         String sampleId = "test__Sa..mp--le";
 
