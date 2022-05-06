@@ -79,6 +79,10 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         return panelCollection;
     }
 
+    public MongoDBCollection getPanelArchiveCollection() {
+        return panelArchiveCollection;
+    }
+
     @Override
     public OpenCGAResult insert(long studyUid, List<Panel> panelList) throws CatalogDBException, CatalogParameterException,
             CatalogAuthorizationException {

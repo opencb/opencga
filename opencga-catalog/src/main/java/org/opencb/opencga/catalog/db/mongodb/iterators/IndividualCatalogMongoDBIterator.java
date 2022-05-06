@@ -212,8 +212,8 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
             // Map each sample uid - version to the sample entry
             Map<String, Document> sampleMap = new HashMap<>(sampleList.size());
             sampleList.forEach(sample ->
-                    sampleMap.put(String.valueOf(sample.get(IndividualDBAdaptor.QueryParams.UID.key())) + "__"
-                            + String.valueOf(sample.get(IndividualDBAdaptor.QueryParams.VERSION.key())), sample)
+                    sampleMap.put(sample.get(IndividualDBAdaptor.QueryParams.UID.key()) + "__"
+                            + sample.get(IndividualDBAdaptor.QueryParams.VERSION.key()), sample)
             );
 
             // Add the samples obtained to the corresponding individuals
@@ -226,11 +226,9 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
                         String version = String.valueOf(s.get(IndividualDBAdaptor.QueryParams.VERSION.key()));
                         String key = uid + "__" + version;
 
-                        // If the samples has been returned... (it might have not been fetched due to permissions issues)
+                        // If the samples have been returned... (it might have not been fetched due to permissions issues)
                         if (sampleMap.containsKey(key)) {
                             tmpSampleList.add(sampleMap.get(key));
-                        } else {
-                            System.out.println("EEEEY");
                         }
                 });
 

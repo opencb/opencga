@@ -103,6 +103,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return sampleCollection;
     }
 
+    public MongoDBCollection getArchiveSampleCollection() {
+        return archiveSampleCollection;
+    }
+
     /*
      * Samples methods
      * ***************************

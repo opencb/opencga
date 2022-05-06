@@ -974,6 +974,10 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         return this.familyCollection;
     }
 
+    public MongoDBCollection getArchiveFamilyCollection() {
+        return archiveFamilyCollection;
+    }
+
     @Override
     public long getStudyId(long familyId) throws CatalogDBException {
         Bson query = new Document(PRIVATE_UID, familyId);
