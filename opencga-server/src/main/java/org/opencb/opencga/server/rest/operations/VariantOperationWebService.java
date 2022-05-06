@@ -333,7 +333,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     @Deprecated
     @POST
     @Path("/variant/sample/index/configure")
-    @ApiOperation(value = "DEPRECATED Instead you should use the endpoint \"operation/variant/secondary/sample/index/configure\".", response = Job.class)
+    @ApiOperation(value = "DEPRECATED You should use the new sample index configure method.", response = Job.class)
     public Response sampleIndexConfigure(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Skip sample index re-build") @QueryParam("skipRebuild") boolean skipRebuild,
@@ -343,7 +343,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/secondary/sample/index/configure")
-    @ApiOperation(value = "Update SampleIndex configuration", response = Job.class)
+    @ApiOperation(value = "Update SampleIndex configuration (New!)", response = Job.class)
     public Response variantSecondarySampleIndexConfigure(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Skip sample index re-build") @QueryParam("skipRebuild") boolean skipRebuild,
