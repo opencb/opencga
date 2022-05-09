@@ -21,7 +21,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.OntologyTerm;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.models.common.InternalStatus;
 
 import java.util.List;
 import java.util.Map;
