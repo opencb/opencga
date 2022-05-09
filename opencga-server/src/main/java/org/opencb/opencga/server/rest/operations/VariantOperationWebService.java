@@ -208,7 +208,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     @Deprecated
     @POST
     @Path("/variant/secondaryIndex")
-    @ApiOperation(value = "DEPRECATED Instead you should use the endpoint \"operation/variant/secondary/annotation/index\".", response = Job.class)
+    @ApiOperation(value = "DEPRECATED you should use the new service instead.", response = Job.class)
     public Response secondaryIndex(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -222,7 +222,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/secondary/annotation/index")
-    @ApiOperation(value = VariantSecondaryIndexOperationTool.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = "New! " + VariantSecondaryIndexOperationTool.DESCRIPTION, response = Job.class)
     public Response variantSecondaryAnnotationIndex(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -333,7 +333,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     @Deprecated
     @POST
     @Path("/variant/sample/index/configure")
-    @ApiOperation(value = "DEPRECATED Instead you should use the endpoint \"operation/variant/secondary/sample/index/configure\".", response = Job.class)
+    @ApiOperation(value = "DEPRECATED you should use the new service instead.", response = Job.class)
     public Response sampleIndexConfigure(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Skip sample index re-build") @QueryParam("skipRebuild") boolean skipRebuild,
@@ -343,7 +343,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/secondary/sample/index/configure")
-    @ApiOperation(value = "Update SampleIndex configuration", response = Job.class)
+    @ApiOperation(value = "New! Update SampleIndex configuration", response = Job.class)
     public Response variantSecondarySampleIndexConfigure(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Skip sample index re-build") @QueryParam("skipRebuild") boolean skipRebuild,
@@ -368,7 +368,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     @Deprecated
     @POST
     @Path("/variant/sample/index")
-    @ApiOperation(value = "DEPRECATED Instead you should use the endpoint \"operation/variant/secondary/sample/index\".", response = Job.class)
+    @ApiOperation(value = "DEPRECATED You should use the new service instead.", response = Job.class)
     public Response sampleIndex(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -381,7 +381,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/secondary/sample/index")
-    @ApiOperation(value = VariantSampleIndexOperationTool.DESCRIPTION, response = Job.class)
+    @ApiOperation(value = "New! " + VariantSampleIndexOperationTool.DESCRIPTION, response = Job.class)
     public Response variantSecondarySampleIndex(
             @ApiParam(value = ParamConstants.JOB_ID_CREATION_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,

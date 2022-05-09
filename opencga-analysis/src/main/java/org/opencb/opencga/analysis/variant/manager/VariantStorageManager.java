@@ -519,7 +519,7 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             } else {
                 // If changes, launch sample-index-run
                 ToolParams params =
-                        new VariantSampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, false);
+                        new VariantSampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, false, false);
                 Job job = catalogManager.getJobManager().submit(studyFqn, VariantSampleIndexOperationTool.ID, null,
                         params.toParams(STUDY_PARAM, studyFqn), token).first();
                 params = new VariantFamilyIndexParams(Collections.emptyList(), false, true, false);

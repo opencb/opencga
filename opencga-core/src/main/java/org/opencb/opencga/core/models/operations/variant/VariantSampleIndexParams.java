@@ -26,15 +26,17 @@ public class VariantSampleIndexParams extends ToolParams {
     private List<String> sample;
     private boolean buildIndex;
     private boolean annotate;
+    private boolean familyIndex;
     private boolean overwrite;
 
     public VariantSampleIndexParams() {
     }
 
-    public VariantSampleIndexParams(List<String> sample, boolean buildIndex, boolean annotate, boolean overwrite) {
+    public VariantSampleIndexParams(List<String> sample, boolean buildIndex, boolean annotate, boolean familyIndex, boolean overwrite) {
         this.sample = sample;
         this.buildIndex = buildIndex;
         this.annotate = annotate;
+        this.familyIndex = familyIndex;
         this.overwrite = overwrite;
     }
 
@@ -71,6 +73,15 @@ public class VariantSampleIndexParams extends ToolParams {
 
     public VariantSampleIndexParams setOverwrite(boolean overwrite) {
         this.overwrite = overwrite;
+        return this;
+    }
+
+    public boolean isFamilyIndex() {
+        return familyIndex;
+    }
+
+    public VariantSampleIndexParams setFamilyIndex(boolean familyIndex) {
+        this.familyIndex = familyIndex;
         return this;
     }
 }

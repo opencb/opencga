@@ -17,6 +17,8 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
@@ -31,7 +33,7 @@ import java.util.List;
 public class VariantSampleIndexOperationTool extends OperationTool {
 
     public static final String ID = "variant-secondary-sample-index";
-    public static final String DESCRIPTION = "Build and annotate the sample index";
+    public static final String DESCRIPTION = "Build and annotate the sample index.";
     protected String study;
 
     @ToolParams
@@ -61,6 +63,9 @@ public class VariantSampleIndexOperationTool extends OperationTool {
         if (sampleIndexParams.isAnnotate()) {
             steps.add("annotate");
         }
+        if (sampleIndexParams.isFamilyIndex()) {
+            steps.add("familyIndex");
+        }
         return steps;
     }
 
@@ -71,6 +76,26 @@ public class VariantSampleIndexOperationTool extends OperationTool {
         }
         if (sampleIndexParams.isAnnotate()) {
             step("annotate", () -> variantStorageManager.sampleIndexAnnotate(study, sampleIndexParams.getSample(), params, token));
+        }
+        if (sampleIndexParams.isFamilyIndex()) {
+            step(() -> {
+                DataResult<List<String>> trios;
+                if (sampleIndexParams.isUpdateIndex()) {
+                    trios = variantStorageManager.familyIndexUpdate(study, params, token);
+                } else {
+                    trios = variantStorageManager.familyIndex(
+                            study,
+                            sampleIndexParams.getFamily(),
+                            sampleIndexParams.isSkipIncompleteFamilies(),
+                            params,
+                            token);
+                }
+                if (trios.getEvents() != null) {
+                    for (Event event : trios.getEvents()) {
+                        addEvent(event.getType(), event.getMessage());
+                    }
+                }
+            });
         }
     }
 }
