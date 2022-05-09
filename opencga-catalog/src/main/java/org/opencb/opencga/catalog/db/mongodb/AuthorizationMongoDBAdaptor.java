@@ -375,7 +375,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
         /* 1. We are going to try to remove all the permissions to those members in first instance */
 
-        // We add the NONE permission by default so when a user is removed some permissions (not reset), the NONE permission remains
+        // We add the NONE permission by default so it is also taken out
         List<String> permissions = getFullPermissions(resource);
         permissions.add("NONE");
         permissions = createPermissionArray(members, permissions);
@@ -930,10 +930,11 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     private DataResult<?> update(ClientSession clientSession, Bson query, Bson update, Enums.Resource resource) {
         List<MongoDBCollection> collections = dbCollectionMap.get(resource);
+        QueryOptions options = new QueryOptions(MongoDBCollection.MULTI, true);
 
-        DataResult<?> result = collections.get(0).update(clientSession, query, update, QueryOptions.empty());
+        DataResult<?> result = collections.get(0).update(clientSession, query, update, options);
         if (collections.size() == 2) {
-            collections.get(1).update(clientSession, query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+            collections.get(1).update(clientSession, query, update, options);
         }
         return result;
     }

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -618,23 +619,25 @@ public class FamilyManagerTest extends GenericTest {
         catalogManager.getClinicalAnalysisManager().create(STUDY, clinicalAnalysis, QueryOptions.empty(), sessionIdUser);
 
         // Update family not used in Clinical Analysis
-        catalogManager.getFamilyManager().update(STUDY, "family", new FamilyUpdateParams(), new QueryOptions(), sessionIdUser);
+        catalogManager.getFamilyManager().update(STUDY, "family", new FamilyUpdateParams()
+                        .setDescription(RandomStringUtils.randomAlphanumeric(10)),
+                new QueryOptions(), sessionIdUser);
 
         Family familyResult = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(2, familyResult.getVersion());
         assertEquals(2, familyResult.getMembers().size());
-        assertEquals(1, familyResult.getMembers().get(0).getVersion());
-        assertEquals(1, familyResult.getMembers().get(1).getVersion());
+        assertEquals(2, familyResult.getMembers().get(0).getVersion());
+        assertEquals(2, familyResult.getMembers().get(1).getVersion());
 
         ClinicalAnalysis clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(), sessionIdUser).first();
-        assertEquals(1, clinicalResult.getProband().getVersion());
-        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(2, clinicalResult.getProband().getVersion());
+        assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(2, clinicalResult.getFamily().getVersion());
         assertEquals(2, clinicalResult.getFamily().getMembers().size());
 
         clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical2", QueryOptions.empty(), sessionIdUser).first();
-        assertEquals(1, clinicalResult.getProband().getVersion());
-        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(2, clinicalResult.getProband().getVersion());
+        assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(2, clinicalResult.getFamily().getVersion());
         assertEquals(2, clinicalResult.getFamily().getMembers().size());   // proband version
 
@@ -650,18 +653,18 @@ public class FamilyManagerTest extends GenericTest {
         familyResult = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser).first();
         assertEquals(3, familyResult.getVersion());
         assertEquals(2, familyResult.getMembers().size());
-        assertEquals(1, familyResult.getMembers().get(0).getVersion());
-        assertEquals(1, familyResult.getMembers().get(1).getVersion());
+        assertEquals(2, familyResult.getMembers().get(0).getVersion());
+        assertEquals(2, familyResult.getMembers().get(1).getVersion());
 
         clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical", QueryOptions.empty(), sessionIdUser).first();
-        assertEquals(1, clinicalResult.getProband().getVersion());
-        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(2, clinicalResult.getProband().getVersion());
+        assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(2, clinicalResult.getFamily().getVersion());
         assertEquals(2, clinicalResult.getFamily().getMembers().size());
 
         clinicalResult = catalogManager.getClinicalAnalysisManager().get(STUDY, "clinical2", QueryOptions.empty(), sessionIdUser).first();
-        assertEquals(1, clinicalResult.getProband().getVersion());
-        assertEquals(1, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
+        assertEquals(2, clinicalResult.getProband().getVersion());
+        assertEquals(2, clinicalResult.getProband().getSamples().get(0).getVersion());  // sample1 version
         assertEquals(3, clinicalResult.getFamily().getVersion());
         assertEquals(2, clinicalResult.getFamily().getMembers().size());
     }
@@ -1068,7 +1071,13 @@ public class FamilyManagerTest extends GenericTest {
         OpenCGAResult<Family> result = catalogManager.getFamilyManager().get(STUDY, Arrays.asList(dummyFamily1.getId(), dummyFamily2.getId()), QueryOptions.empty(), sessionIdUser);
         assertEquals(2, result.getNumResults());
         for (Family family : result.getResults()) {
-            assertEquals(1, family.getVersion());
+            if (family.getId().equals(dummyFamily1.getId())) {
+                assertEquals(2, family.getVersion());
+            } else if (family.getId().equals(dummyFamily2.getId())) {
+                assertEquals(1, family.getVersion());
+            } else {
+                fail();
+            }
         }
 
         catalogManager.getFamilyManager().update(STUDY, dummyFamily1.getId(), new FamilyUpdateParams().setName("name"), QueryOptions.empty(),
@@ -1077,7 +1086,7 @@ public class FamilyManagerTest extends GenericTest {
                 sessionIdUser);
         result = catalogManager.getFamilyManager().get(STUDY, Arrays.asList(dummyFamily1.getId(), dummyFamily2.getId()), QueryOptions.empty(), sessionIdUser);
         assertEquals(2, result.getNumResults());
-        assertEquals(3, result.first().getVersion());
+        assertEquals(4, result.first().getVersion());
         assertEquals(1, result.getResults().get(1).getVersion());
 
         Query query = new Query()
@@ -1087,9 +1096,10 @@ public class FamilyManagerTest extends GenericTest {
 
         assertEquals(1, result.getResults().get(0).getVersion());
         assertEquals(2, result.getResults().get(1).getVersion());
-        assertEquals("name", result.getResults().get(1).getName());
         assertEquals(3, result.getResults().get(2).getVersion());
-        assertEquals("name22", result.getResults().get(2).getName());
+        assertEquals("name", result.getResults().get(2).getName());
+        assertEquals(4, result.getResults().get(3).getVersion());
+        assertEquals("name22", result.getResults().get(3).getName());
     }
 
     // Test updates and relationships
