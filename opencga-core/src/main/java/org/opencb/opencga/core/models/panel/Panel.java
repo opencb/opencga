@@ -57,10 +57,13 @@ public class Panel extends DiseasePanel implements IPrivateStudyUid {
     @Deprecated
     private String author;
 
-
     @DataField(id = "status", indexed = true,
             description = FieldConstants.PANEL_STATUS_DESCRIPTION)
     private Status status;
+
+    @DataField(id = "internal", since = "2.3.0",
+            description = FieldConstants.GENERIC_INTERNAL)
+    private PanelInternal internal;
 
     // Private fields
     @DataField(id = "studyUid", indexed = true,
@@ -81,14 +84,15 @@ public class Panel extends DiseasePanel implements IPrivateStudyUid {
 
     public Panel(String id, String name, List<PanelCategory> categories, List<OntologyTerm> disorders, List<String> tags,
                  List<VariantPanel> variants, List<GenePanel> genes, List<RegionPanel> regions,
-                 List<STR> strs, Map<String, Integer> stats, int release, int version, String author, SourcePanel source, InternalStatus status,
-                 String description, Map<String, Object> attributes) {
+                 List<STR> strs, Map<String, Integer> stats, int release, int version, String author, SourcePanel source,
+                 Status status, PanelInternal internal, String description, Map<String, Object> attributes) {
         super(id, name, categories, disorders, tags, variants, genes, strs, regions, stats, source, TimeUtils.getTime(),
                 TimeUtils.getTime(), description, attributes);
         this.release = release;
         this.version = version;
         this.author = author;
         this.status = status;
+        this.internal = internal;
 
         if (StringUtils.isNotEmpty(author) && source != null && StringUtils.isEmpty(source.getAuthor())) {
             this.getSource().setAuthor(author);
@@ -128,6 +132,7 @@ public class Panel extends DiseasePanel implements IPrivateStudyUid {
         sb.append(", author='").append(author).append('\'');
         sb.append(", source=").append(getSource());
         sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", creationDate='").append(getCreationDate()).append('\'');
         sb.append(", modificationDate='").append(getModificationDate()).append('\'');
         sb.append(", description='").append(getDescription()).append('\'');
@@ -186,6 +191,14 @@ public class Panel extends DiseasePanel implements IPrivateStudyUid {
     public Panel setStatus(Status status) {
         this.status = status;
         return this;
+    }
+
+    public PanelInternal getInternal() {
+        return internal;
+    }
+
+    public void setInternal(PanelInternal internal) {
+        this.internal = internal;
     }
 
     @Override

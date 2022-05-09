@@ -76,7 +76,7 @@ public class PanelUpdateParams {
     }
 
     public Panel toPanel() {
-        return new Panel(id, name, categories, disorders, tags, variants, genes, regions, strs, stats, 1, 1, author, source, new InternalStatus(),
+        return new Panel(id, name, categories, disorders, tags, variants, genes, regions, strs, stats, 1, 1, author, source, null, null,
                 description, attributes);
     }
 
