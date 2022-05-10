@@ -61,7 +61,10 @@ public class LocalDatasetExecutor extends DatasetExecutor {
             for (DatasetExecutionFile datasetExecutionFile : datasetPlanExecution.getDatasetExecutionFiles()) {
                 List<String> dockerCommands = new ArrayList<>();
                 for (DataSetExecutionCommand command : datasetExecutionFile.getCommands()) {
-                    dockerCommands.add(DockerUtils.buildMountPathsCommandLine(command.getImage(), command.getCommandLine()));
+                    List<String> dockerOpts = new ArrayList<>();
+                    dockerOpts.add("--rm");
+                    dockerOpts.add("--log-driver none");
+                    dockerCommands.add(DockerUtils.buildMountPathsCommandLine(command.getImage(), command.getCommandLine(), dockerOpts));
                 }
                 result.put(datasetExecutionFile.getInputFilename(), dockerCommands);
             }
