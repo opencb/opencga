@@ -9,8 +9,8 @@
   members,
   interpretations,
   interpretation,
-  clinicalAnalysis,
   clinicalAnalyses,
+  clinicalAnalysis,
   endpointName,
   params = NULL,
   ...
@@ -23,9 +23,9 @@
 
 \item{interpretation}{Interpretation ID.}
 
-\item{clinicalAnalysis}{Clinical analysis ID.}
-
 \item{clinicalAnalyses}{Comma separated list of clinical analysis IDs.}
+
+\item{clinicalAnalysis}{Clinical analysis ID.}
 
 \item{action}{Action to be performed \link{ADD, SET, REMOVE or RESET}.}
 
@@ -293,7 +293,7 @@ The following table summarises the available \emph{actions} for this client:\tab
    distinct \tab /{apiVersion}/analysis/clinical/distinct \tab study, id, uuid, type, disorder, files, sample, individual, proband, probandSamples, family, familyMembers, familyMemberSamples, panels, locked, analystId, priority, flags, creationDate, modificationDate, qualityControlSummary, release, status, internalStatus, deleted, field\link{*} \cr
    distinctInterpretation \tab /{apiVersion}/analysis/clinical/interpretation/distinct \tab study, id, uuid, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release, field\link{*} \cr
    searchInterpretation \tab /{apiVersion}/analysis/clinical/interpretation/search \tab include, exclude, limit, skip, sort, study, id, uuid, clinicalAnalysisId, analystId, methodName, panels, primaryFindings, secondaryFindings, creationDate, modificationDate, status, internalStatus, release \cr
-   infoInterpretation \tab /{apiVersion}/analysis/clinical/interpretation/{interpretations}/info \tab include, exclude, interpretations, study, version, deleted \cr
+   infoInterpretation \tab /{apiVersion}/analysis/clinical/interpretation/{interpretations}/info \tab include, exclude, interpretations\link{*}, study, version, deleted \cr
    runInterpreterCancerTiering \tab /{apiVersion}/analysis/clinical/interpreter/cancerTiering/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    runInterpreterTeam \tab /{apiVersion}/analysis/clinical/interpreter/team/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
    runInterpreterTiering \tab /{apiVersion}/analysis/clinical/interpreter/tiering/run \tab study, jobId, jobDescription, jobDependsOn, jobTags, body\link{*} \cr
@@ -310,14 +310,14 @@ The following table summarises the available \emph{actions} for this client:\tab
    actionableVariant \tab /{apiVersion}/analysis/clinical/variant/actionable \tab study, sample \cr
    queryVariant \tab /{apiVersion}/analysis/clinical/variant/query \tab include, exclude, limit, skip, count, approximateCount, approximateCountSamplingSize, savedFilter, id, region, type, study, file, filter, qual, fileData, sample, sampleData, sampleAnnotation, cohort, cohortStatsRef, cohortStatsAlt, cohortStatsMaf, cohortStatsMgf, cohortStatsPass, missingAlleles, missingGenotypes, score, family, familyDisorder, familySegregation, familyMembers, familyProband, gene, ct, xref, biotype, proteinSubstitution, conservation, populationFrequencyAlt, populationFrequencyRef, populationFrequencyMaf, transcriptFlag, geneTraitId, go, expression, proteinKeyword, drug, functionalScore, clinical, clinicalSignificance, clinicalConfirmedStatus, customAnnotation, panel, panelModeOfInheritance, panelConfidence, panelRoleInCancer, panelFeatureType, panelIntersection, trait \cr
    acl \tab /{apiVersion}/analysis/clinical/{clinicalAnalyses}/acl \tab clinicalAnalyses\link{*}, study, member, silent \cr
-   delete \tab /{apiVersion}/analysis/clinical/{clinicalAnalyses}/delete \tab study, force, clinicalAnalyses \cr
-   update \tab /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update \tab include, exclude, clinicalAnalyses, study, commentsAction, flagsAction, filesAction, panelsAction, includeResult, body\link{*} \cr
-   info \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/info \tab include, exclude, clinicalAnalysis, study, deleted \cr
-   createInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/create \tab include, exclude, clinicalAnalysis, study, setAs, includeResult, body\link{*} \cr
-   clearInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/clear \tab study, interpretations, clinicalAnalysis \cr
-   deleteInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete \tab study, clinicalAnalysis, interpretations, setAsPrimary \cr
-   revertInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/revert \tab study, clinicalAnalysis, interpretation, version\link{*} \cr
-   updateInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/update \tab include, exclude, study, primaryFindingsAction, methodsAction, secondaryFindingsAction, commentsAction, panelsAction, setAs, clinicalAnalysis, interpretation, includeResult, body\link{*} \cr
+   delete \tab /{apiVersion}/analysis/clinical/{clinicalAnalyses}/delete \tab study, force, clinicalAnalyses\link{*} \cr
+   update \tab /{apiVersion}/analysis/clinical/{clinicalAnalyses}/update \tab include, exclude, clinicalAnalyses\link{*}, study, commentsAction, flagsAction, filesAction, panelsAction, includeResult, body\link{*} \cr
+   info \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/info \tab include, exclude, clinicalAnalysis\link{*}, study, deleted \cr
+   createInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/create \tab include, exclude, clinicalAnalysis\link{*}, study, setAs, includeResult, body\link{*} \cr
+   clearInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/clear \tab study, interpretations\link{*}, clinicalAnalysis\link{*} \cr
+   deleteInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete \tab study, clinicalAnalysis\link{*}, interpretations\link{*}, setAsPrimary \cr
+   revertInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/revert \tab study, clinicalAnalysis\link{*}, interpretation\link{*}, version\link{*} \cr
+   updateInterpretation \tab /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretation/{interpretation}/update \tab include, exclude, study, primaryFindingsAction, methodsAction, secondaryFindingsAction, commentsAction, panelsAction, setAs, clinicalAnalysis\link{*}, interpretation\link{*}, includeResult, body\link{*} \cr
 }
 }
 \section{Endpoint /{apiVersion}/analysis/clinical/acl/{members}/update}{

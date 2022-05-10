@@ -6,8 +6,8 @@
 \usage{
 \S4method{fileClient}{OpencgaR}(
   OpencgaR,
-  members,
   folder,
+  members,
   file,
   annotationSet,
   files,
@@ -17,9 +17,9 @@
 )
 }
 \arguments{
-\item{members}{Comma separated list of user or group ids.}
-
 \item{folder}{Folder id or name. Paths must be separated by : instead of /.}
+
+\item{members}{Comma separated list of user or group ids.}
 
 \item{file}{File uuid, id, or name.}
 
@@ -51,8 +51,6 @@
 
 \item{field}{Field for which to obtain the distinct values.}
 
-\item{parents}{Create the parent directories if they do not exist.}
-
 \item{jobDependsOn}{Comma separated list of existing job IDs the job will depend on.}
 
 \item{jobDescription}{Job description.}
@@ -70,8 +68,6 @@
 \item{uri}{Comma separated list of uris.}
 
 \item{type}{File type, either FILE or DIRECTORY.}
-
-\item{bioformat}{Comma separated Bioformat values. For existing Bioformats see files/bioformats.}
 
 \item{format}{Comma separated Format values. For existing Formats see files/formats.}
 
@@ -91,8 +87,6 @@
 
 \item{modificationDate}{Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805.}
 
-\item{description}{Description.}
-
 \item{tags}{Tags.}
 
 \item{size}{File size.}
@@ -106,6 +100,20 @@
 \item{acl}{Filter entries for which a user has the provided permissions. Format: acl={user}:{permissions}. Example: acl=john:WRITE,WRITE_ANNOTATIONS will return all entries for which user john has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators can query by this field. .}
 
 \item{release}{Release when it was created.}
+
+\item{filename}{File name to overwrite the input fileName.}
+
+\item{fileFormat}{File format.}
+
+\item{bioformat}{File bioformat.}
+
+\item{checksum}{Expected MD5 file checksum.}
+
+\item{relativeFilePath}{Path within catalog where the file will be located (default: root folder).}
+
+\item{description}{description.}
+
+\item{parents}{Create the parent directories if they do not exist.}
 
 \item{member}{User or group id.}
 
@@ -124,8 +132,6 @@
 \item{relatedFilesAction}{Action to be performed if the array of relatedFiles is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
 
 \item{tagsAction}{Action to be performed if the array of tags is being updated. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
-
-\item{includeResult}{Flag indicating to include the created or updated document result in the response.}
 
 \item{action}{Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any. Allowed values: \link{'ADD', 'SET', 'REMOVE'}}
 
@@ -171,21 +177,21 @@ The following table summarises the available \emph{actions} for this client:\tab
    runLink \tab /{apiVersion}/files/link/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
    runPostlink \tab /{apiVersion}/files/postlink/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
    search \tab /{apiVersion}/files/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, name, path, uri, type, bioformat, format, external, status, internalStatus, internalVariantIndexStatus, softwareName, directory, creationDate, modificationDate, description, tags, size, sampleIds, jobId, annotation, acl, deleted, release \cr
-   upload \tab /{apiVersion}/files/upload \tab body, body, body, body, body, body, body, body \cr
+   upload \tab /{apiVersion}/files/upload \tab file, filename, fileFormat, bioformat, checksum, study, relativeFilePath, description, parents \cr
    acl \tab /{apiVersion}/files/{files}/acl \tab files\link{*}, study, member, silent \cr
-   delete \tab /{apiVersion}/files/{files}/delete \tab study, files, skipTrash \cr
-   info \tab /{apiVersion}/files/{files}/info \tab include, exclude, flattenAnnotations, files, study, deleted \cr
-   unlink \tab /{apiVersion}/files/{files}/unlink \tab study, files \cr
-   update \tab /{apiVersion}/files/{files}/update \tab include, exclude, files, study, sampleIdsAction, annotationSetsAction, relatedFilesAction, tagsAction, includeResult, body\link{*} \cr
-   updateAnnotations \tab /{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update \tab file\link{*}, study, annotationSet, action, body \cr
-   download \tab /{apiVersion}/files/{file}/download \tab file, study \cr
-   grep \tab /{apiVersion}/files/{file}/grep \tab file, study, pattern, ignoreCase, maxCount \cr
-   head \tab /{apiVersion}/files/{file}/head \tab file, study, offset, lines \cr
-   image \tab /{apiVersion}/files/{file}/image \tab file, study \cr
-   refresh \tab /{apiVersion}/files/{file}/refresh \tab file, study \cr
-   tail \tab /{apiVersion}/files/{file}/tail \tab file, study, lines \cr
-   list \tab /{apiVersion}/files/{folder}/list \tab include, exclude, limit, skip, count, folder, study \cr
-   tree \tab /{apiVersion}/files/{folder}/tree \tab include, exclude, folder, study, maxDepth \cr
+   delete \tab /{apiVersion}/files/{files}/delete \tab study, files\link{*}, skipTrash \cr
+   info \tab /{apiVersion}/files/{files}/info \tab include, exclude, flattenAnnotations, files\link{*}, study, deleted \cr
+   unlink \tab /{apiVersion}/files/{files}/unlink \tab study, files\link{*} \cr
+   update \tab /{apiVersion}/files/{files}/update \tab include, exclude, files\link{*}, study, sampleIdsAction, annotationSetsAction, relatedFilesAction, tagsAction, body\link{*} \cr
+   updateAnnotationSetsAnnotations \tab /{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update \tab file\link{*}, study, annotationSet\link{*}, action, body \cr
+   download \tab /{apiVersion}/files/{file}/download \tab file\link{*}, study \cr
+   grep \tab /{apiVersion}/files/{file}/grep \tab file\link{*}, study, pattern, ignoreCase, maxCount \cr
+   head \tab /{apiVersion}/files/{file}/head \tab file\link{*}, study, offset, lines \cr
+   image \tab /{apiVersion}/files/{file}/image \tab file\link{*}, study \cr
+   refresh \tab /{apiVersion}/files/{file}/refresh \tab file\link{*}, study \cr
+   tail \tab /{apiVersion}/files/{file}/tail \tab file\link{*}, study, lines \cr
+   list \tab /{apiVersion}/files/{folder}/list \tab include, exclude, limit, skip, count, folder\link{*}, study \cr
+   tree \tab /{apiVersion}/files/{folder}/tree \tab include, exclude, folder\link{*}, study, maxDepth \cr
 }
 }
 \section{Endpoint /{apiVersion}/files/acl/{members}/update}{

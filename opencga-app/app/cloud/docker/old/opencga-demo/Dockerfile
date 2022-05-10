@@ -16,5 +16,6 @@ COPY ${BUILD_PATH}/cloud/docker/opencga-demo/mongo-cluster-init.js /opt/scripts/
 USER root
 RUN chmod +x /opt/scripts/init.sh
 USER opencga
+
 WORKDIR /opt/opencga/bin
-ENTRYPOINT ["/bin/bash", "-c", "/opt/scripts/init.sh"]
+ENTRYPOINT ["/bin/bash", "-c", "/opt/opencga/demo/init.sh"]

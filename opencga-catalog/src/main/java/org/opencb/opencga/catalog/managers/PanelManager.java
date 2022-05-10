@@ -47,6 +47,7 @@ import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelAclEntry;
+import org.opencb.opencga.core.models.panel.PanelInternal;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -317,6 +318,7 @@ public class PanelManager extends ResourceManager<Panel> {
         panel.setCreationDate(TimeUtils.getTime());
         panel.setModificationDate(TimeUtils.getTime());
         panel.setStatus(new Status());
+        panel.setInternal(PanelInternal.init());
         panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
         panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
         panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));

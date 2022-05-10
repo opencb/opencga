@@ -84,6 +84,7 @@ git.properties
 *.Rhistory
 *.Rapp.history
 *.Rcheck*
+opencga-client/src/main/R_packages
 opencga-client/src/main/opencgaR_*.tar.gz
 opencga-client/src/main/R/vignettes/opencgaR.html
 opencga-client/src/main/R/vignettes/opencgaR.md

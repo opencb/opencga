@@ -6,9 +6,9 @@
 \usage{
 \S4method{cohortClient}{OpencgaR}(
   OpencgaR,
-  cohorts,
   members,
   annotationSet,
+  cohorts,
   cohort,
   endpointName,
   params = NULL,
@@ -16,11 +16,11 @@
 )
 }
 \arguments{
-\item{cohorts}{Comma separated list of cohort ids.}
-
 \item{members}{Comma separated list of user or group ids.}
 
 \item{annotationSet}{AnnotationSet ID to be updated.}
+
+\item{cohorts}{Comma separated list of cohort ids.}
 
 \item{cohort}{Cohort ID.}
 
@@ -65,6 +65,8 @@
 \item{count}{Get the total number of results matching the query. Deactivated by default.}
 
 \item{id}{Comma separated list of cohort IDs up to a maximum of 100.}
+
+\item{name}{Comma separated list of cohort names up to a maximum of 100.}
 
 \item{uuid}{Comma separated list of cohort IDs up to a maximum of 100.}
 
@@ -120,14 +122,14 @@ The following table summarises the available \emph{actions} for this client:\tab
    aggregationStats \tab /{apiVersion}/cohorts/aggregationStats \tab study, type, creationYear, creationMonth, creationDay, creationDayOfWeek, numSamples, status, release, annotation, default, field \cr
    loadAnnotationSets \tab /{apiVersion}/cohorts/annotationSets/load \tab study, variableSetId\link{*}, path\link{*}, parents, annotationSetId, body \cr
    create \tab /{apiVersion}/cohorts/create \tab include, exclude, study, variableSet, variable, includeResult, body\link{*} \cr
-   distinct \tab /{apiVersion}/cohorts/distinct \tab study, id, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release, field\link{*} \cr
+   distinct \tab /{apiVersion}/cohorts/distinct \tab study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release, field\link{*} \cr
    generate \tab /{apiVersion}/cohorts/generate \tab include, exclude, study, id, somatic, individualId, fileIds, creationDate, modificationDate, internalStatus, status, phenotypes, annotation, acl, release, snapshot, includeResult, body\link{*} \cr
-   search \tab /{apiVersion}/cohorts/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, id, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release \cr
+   search \tab /{apiVersion}/cohorts/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, id, name, uuid, type, creationDate, modificationDate, deleted, status, internalStatus, annotation, acl, samples, numSamples, release \cr
    acl \tab /{apiVersion}/cohorts/{cohorts}/acl \tab cohorts\link{*}, study, member, silent \cr
-   delete \tab /{apiVersion}/cohorts/{cohorts}/delete \tab study, cohorts \cr
+   delete \tab /{apiVersion}/cohorts/{cohorts}/delete \tab study, cohorts\link{*} \cr
    info \tab /{apiVersion}/cohorts/{cohorts}/info \tab include, exclude, flattenAnnotations, cohorts\link{*}, study, deleted \cr
    update \tab /{apiVersion}/cohorts/{cohorts}/update \tab include, exclude, cohorts\link{*}, study, samplesAction, annotationSetsAction, includeResult, body \cr
-   updateAnnotations \tab /{apiVersion}/cohorts/{cohort}/annotationSets/{annotationSet}/annotations/update \tab cohort\link{*}, study, annotationSet, action, body \cr
+   updateAnnotationSetsAnnotations \tab /{apiVersion}/cohorts/{cohort}/annotationSets/{annotationSet}/annotations/update \tab cohort\link{*}, study, annotationSet\link{*}, action, body \cr
 }
 }
 \section{Endpoint /{apiVersion}/cohorts/acl/{members}/update}{
