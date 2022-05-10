@@ -120,8 +120,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
                 } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                     throw new CatalogDBRuntimeException(e);
                 }
-//            });
-            }, TransactionOptions.builder().maxCommitTime(2L, TimeUnit.MINUTES).build());
+            });
         } catch (CatalogDBRuntimeException e) {
             if (e.getCause() instanceof CatalogDBException) {
                 CatalogDBException cause = (CatalogDBException) e.getCause();
@@ -192,12 +191,6 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         document.put(PRIVATE_TRANSACTION_ID, uuid);
         collection.insert(session, document, QueryOptions.empty());
         archiveCollection.insert(session, document, QueryOptions.empty());
-    }
-
-    protected <T> T updateVersionedModel(ClientSession session, Bson sourceQuery, MongoDBCollection collection,
-                                         MongoDBCollection archiveCollection, VersionedModelExecution<T> update)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        return updateVersionedModel(session, sourceQuery, collection, archiveCollection, update, null);
     }
 
     protected <T> T updateVersionedModel(ClientSession session, Bson sourceQuery, MongoDBCollection collection,

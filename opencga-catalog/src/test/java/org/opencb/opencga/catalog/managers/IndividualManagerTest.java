@@ -15,6 +15,7 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -895,83 +896,92 @@ public class IndividualManagerTest extends AbstractManagerTest {
     // Test updates and relationships
     @Test
     public void memberReferenceTest() throws CatalogException {
-        Family perez = DummyModelUtils.getCompleteFamily("perez");
-        Family sanchez = DummyModelUtils.getCompleteFamily("sanchez");
+        // Create individual with 2 samples
+        Sample sample1 = DummyModelUtils.getDummySample();
+        Sample sample2 = DummyModelUtils.getDummySample();
+        Individual individual1 = DummyModelUtils.getDummyIndividual(Arrays.asList(sample1, sample2), null, null);
+        String individualId1 = individual1.getId();
 
-        DummyModelUtils.createFullFamily(catalogManager, studyFqn, perez, token);
-        DummyModelUtils.createFullFamily(catalogManager, studyFqn, sanchez, token);
+        // Create another individual with another 2 samples
+        Sample sample3 = DummyModelUtils.getDummySample();
+        Sample sample4 = DummyModelUtils.getDummySample();
+        Individual individual2 = DummyModelUtils.getDummyIndividual(Arrays.asList(sample3, sample4), null, null);
+        String individualId2 = individual2.getId();
 
-        OpenCGAResult<Family> result = catalogManager.getFamilyManager().get(studyFqn, Arrays.asList(perez.getId(), sanchez.getId()),
-                QueryOptions.empty(), token);
-        for (Family family : result.getResults()) {
-            assertEquals(1, family.getVersion());
-            assertEquals(4, family.getMembers().size());
-            for (Individual member : family.getMembers()) {
-                assertEquals(family.getId(), member.getFamilyIds().get(0));
+        // Create family
+        Family family = DummyModelUtils.getDummyFamily();
+        family.setMembers(null);
+
+        QueryOptions options = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+        individual1 = catalogManager.getIndividualManager().create(studyFqn, individual1, options, token).first();
+        assertEquals(1, individual1.getVersion());
+        assertEquals(2, individual1.getSamples().size());
+        assertEquals(2, individual1.getSamples().stream().map(Sample::getVersion).filter(v -> v == 1).count());
+        assertEquals(2, individual1.getSamples().stream().map(Sample::getIndividualId).filter(i -> i.equals(individualId1)).count());
+
+        individual2 = catalogManager.getIndividualManager().create(studyFqn, individual2, options, token).first();
+        assertEquals(1, individual2.getVersion());
+        assertEquals(2, individual2.getSamples().size());
+        assertEquals(2, individual2.getSamples().stream().map(Sample::getVersion).filter(v -> v == 1).count());
+        assertEquals(2, individual2.getSamples().stream().map(Sample::getIndividualId).filter(i -> i.equals(individualId2)).count());
+
+        family = catalogManager.getFamilyManager().create(studyFqn, family, Arrays.asList(individual1.getId(), individual2.getId()), options, token).first();
+        assertEquals(2, family.getMembers().size());
+        assertEquals(1, family.getVersion());
+        assertEquals(2, family.getMembers().stream().map(Individual::getVersion).filter(v -> v == 2).count());
+
+        // Update individual 2
+        individual2 = catalogManager.getIndividualManager().update(studyFqn, individual2.getId(), new IndividualUpdateParams().setName("blabla"),
+                options, token).first();
+        assertEquals(2, individual2.getSamples().size());
+        assertEquals(3, individual2.getVersion());
+        assertEquals(2, individual2.getSamples().stream().map(Sample::getVersion).filter(v -> v == 1).count());
+        assertEquals(2, individual2.getSamples().stream().map(Sample::getIndividualId).filter(i -> i.equals(individualId2)).count());
+        assertEquals(1, individual2.getFamilyIds().size());
+        assertEquals(family.getId(), individual2.getFamilyIds().get(0));
+
+        family = catalogManager.getFamilyManager().get(studyFqn, family.getId(), QueryOptions.empty(), token).first();
+        assertEquals(2, family.getMembers().size());
+        for (Individual member : family.getMembers()) {
+            if (member.getId().equals(individualId1)) {
                 assertEquals(2, member.getVersion());
+            } else if (member.getId().equals(individualId2)) {
+                assertEquals(3, member.getVersion());
+            } else {
+                fail("Family should not have any other individual");
             }
         }
 
-        // Update one individual
-        catalogManager.getIndividualManager().update(studyFqn, "father_sanchez", new IndividualUpdateParams().setName("name"),
-                QueryOptions.empty(), token);
-        result = catalogManager.getFamilyManager().get(studyFqn, Arrays.asList(perez.getId(), sanchez.getId()),
-                QueryOptions.empty(), token);
-        for (Family family : result.getResults()) {
-            assertEquals(family.getId().equals("family_sanchez") ? 2 : 1, family.getVersion());
-            assertEquals(4, family.getMembers().size());
-            for (Individual member : family.getMembers()) {
-                assertEquals(member.getId().equals("father_sanchez") ? 3 : 2, member.getVersion());
-                assertEquals(family.getId(), member.getFamilyIds().get(0));
-            }
+        // Update id from individual1
+        individual1 = catalogManager.getIndividualManager().update(studyFqn, individual1.getId(), new IndividualUpdateParams().setId("blabla"),
+                options, token).first();
+        assertEquals(2, individual1.getSamples().size());
+        assertEquals(3, individual1.getVersion());
+        assertEquals(2, individual1.getSamples().stream().map(Sample::getVersion).filter(v -> v == 2).count());
+        assertEquals(2, individual1.getSamples().stream().map(Sample::getIndividualId).filter(i -> i.equals("blabla")).count());
+        assertEquals(1, individual1.getFamilyIds().size());
+        assertEquals(family.getId(), individual1.getFamilyIds().get(0));
+
+        family = catalogManager.getFamilyManager().get(studyFqn, family.getId(), QueryOptions.empty(), token).first();
+        assertEquals(2, family.getMembers().size());
+        assertEquals(2, family.getMembers().stream().map(Individual::getVersion).filter(v -> v == 3).count());
+
+        List<Sample> samples = catalogManager.getSampleManager().get(studyFqn, Arrays.asList(sample1.getId(), sample2.getId()),
+                QueryOptions.empty(), token).getResults();
+        for (Sample sample : samples) {
+            assertEquals("blabla", sample.getIndividualId());
+            assertEquals(2, sample.getVersion());
         }
     }
 
     // Test update when use in CA
     @Test
     public void updateInUseInCATest() throws CatalogException {
-//        Family family = DummyModelUtils.getDummyCaseFamily("family1");
-//
-//        for (int i = family.getMembers().size() - 1; i >= 0; i--) {
-//            catalogManager.getIndividualManager().create(STUDY, family.getMembers().get(i), QueryOptions.empty(), sessionIdUser);
-//        }
-//
-//        List<String> members = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
-//        family.setMembers(null);
-//        catalogManager.getFamilyManager().create(STUDY, family, members, QueryOptions.empty(), sessionIdUser);
-//
-//        // Unlocked cases
-//        ClinicalAnalysis case1 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null);
-//        ClinicalAnalysis case2 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null);
-//
-//        // locked true
-//        ClinicalAnalysis case3 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null);
-//
-//        catalogManager.getClinicalAnalysisManager().create(STUDY, case1, QueryOptions.empty(), sessionIdUser);
-//        catalogManager.getClinicalAnalysisManager().create(STUDY, case2, QueryOptions.empty(), sessionIdUser);
-//        catalogManager.getClinicalAnalysisManager().create(STUDY, case3, QueryOptions.empty(), sessionIdUser);
-//        catalogManager.getClinicalAnalysisManager().update(STUDY, case3.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
-//                QueryOptions.empty(), sessionIdUser);
-//
-//        // Update family id
-//        catalogManager.getFamilyManager().update(STUDY, family.getId(), new FamilyUpdateParams().setId("newId"), QueryOptions.empty(),
-//                sessionIdUser);
-//
-//        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().get(STUDY,
-//                Arrays.asList(case1.getId(), case2.getId(), case3.getId()), QueryOptions.empty(), sessionIdUser);
-//        case1 = result.getResults().get(0);
-//        case2 = result.getResults().get(1);
-//        case3 = result.getResults().get(2);
-//
-//        assertEquals(2, case1.getFamily().getVersion());
-//        assertEquals(2, case2.getFamily().getVersion());
-//        assertEquals(1, case3.getFamily().getVersion());
     }
 
     // Test when in use in CA
     @Test
     public void updateDeleteInUseInCATest() throws CatalogException {
-
     }
 
 }
