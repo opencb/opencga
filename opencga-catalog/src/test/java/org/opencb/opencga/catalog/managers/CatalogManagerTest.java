@@ -949,7 +949,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Grant view permissions, but no EXECUTION permission
         catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
-                new StudyAclParams("", AuthorizationManager.ROLE_VIEW_ONLY), ParamUtils.AclAction.SET, token);
+                new StudyAclParams("", ""), ParamUtils.AclAction.SET, token);
 
         try {
             catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), sessionIdUser3);
