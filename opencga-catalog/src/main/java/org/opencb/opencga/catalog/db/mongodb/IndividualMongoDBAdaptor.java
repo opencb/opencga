@@ -652,11 +652,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         if (parameters.containsKey(QueryParams.ID.key())) {
             // That can only be done to one individual...
-            Individual individual = checkOnlyOneIndividualMatches(clientSession, query,
-                    new QueryOptions(QueryOptions.INCLUDE, QueryParams.UID.key()));
+            Document individual = checkOnlyOneIndividualMatches(clientSession, query,
+                    new QueryOptions(QueryOptions.INCLUDE, PRIVATE_STUDY_UID));
 
             // Check that the new individual name is still unique
-            long studyId = getStudyId(individual.getUid());
+            long studyId = individual.get(PRIVATE_STUDY_UID, Number.class).longValue();
 
             Query tmpQuery = new Query()
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
@@ -719,32 +719,10 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         if (parameters.containsKey(QueryParams.SAMPLES.key())) {
-            // That can only be done to one individual...
-            Individual individual = checkOnlyOneIndividualMatches(clientSession, query,
-                    new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.SAMPLE_UIDS.key(), QueryParams.SAMPLE_VERSION.key())));
-
             Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
             ParamUtils.BasicUpdateAction operation = ParamUtils.BasicUpdateAction.from(actionMap, QueryParams.SAMPLES.key(),
                     ParamUtils.BasicUpdateAction.ADD);
-            getSampleChanges(individual, parameters, document, operation);
-
-            acceptedObjectParams = new String[]{QueryParams.SAMPLES.key()};
-            switch (operation) {
-                case SET:
-                    filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
-                    individualConverter.validateSamplesToUpdate(document.getSet());
-                    break;
-                case REMOVE:
-                    filterObjectParams(parameters, document.getPullAll(), acceptedObjectParams);
-                    individualConverter.validateSamplesToUpdate(document.getPullAll());
-                    break;
-                case ADD:
-                    filterObjectParams(parameters, document.getAddToSet(), acceptedObjectParams);
-                    individualConverter.validateSamplesToUpdate(document.getAddToSet());
-                    break;
-                default:
-                    throw new IllegalStateException("Unknown operation " + operation);
-            }
+            processSampleChanges(clientSession, query, parameters, document, operation);
         }
 
         Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
@@ -819,50 +797,95 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         parameters.put(QueryParams.DISORDERS.key(), disorderParamList);
     }
 
-    private void getSampleChanges(Individual individual, ObjectMap parameters, UpdateDocument updateDocument,
-                                  ParamUtils.BasicUpdateAction operation) {
-        List<Sample> sampleList = parameters.getAsList(QueryParams.SAMPLES.key(), Sample.class);
+    private void processSampleChanges(ClientSession clientSession, Query query, ObjectMap parameters, UpdateDocument updateDocument,
+                                      ParamUtils.BasicUpdateAction operation)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        // That can only be done to one individual...
+        Document individualDoc = checkOnlyOneIndividualMatches(clientSession, query,
+                new QueryOptions()
+                        .append(QueryOptions.INCLUDE, Collections.singletonList(QueryParams.SAMPLES.key()))
+                        .append(NATIVE_QUERY, true)
+        );
+        Individual individual = individualConverter.convertToDataModelType(individualDoc);
 
-        Set<Long> currentSampleUidList = new HashSet<>();
-        if (individual.getSamples() != null) {
-            currentSampleUidList = individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet());
+        Map<Long, Document> currentSampleUidMap = new HashMap<>();
+        List<Document> currentSampleList = individualDoc.getList(QueryParams.SAMPLES.key(), Document.class);
+
+        if (currentSampleList != null) {
+            for (Document sample : currentSampleList) {
+                long uid = sample.get(PRIVATE_UID, Number.class).longValue();
+                currentSampleUidMap.put(uid, sample);
+            }
         }
 
+        List<Sample> sampleList = parameters.getAsList(QueryParams.SAMPLES.key(), Sample.class);
         if (operation == ParamUtils.BasicUpdateAction.SET || operation == ParamUtils.BasicUpdateAction.ADD) {
             // We will see which of the samples are actually new
-            List<Long> samplesToAdd = new ArrayList<>();
+            Map<Long, Integer> newSamplesMap = new HashMap<>();
+            Map<Long, Integer> allSamplesMap = new HashMap<>();
 
             for (Sample sample : sampleList) {
-                if (!currentSampleUidList.contains(sample.getUid())) {
-                    samplesToAdd.add(sample.getUid());
+                allSamplesMap.put(sample.getUid(), sample.getVersion());
+                if (!currentSampleUidMap.containsKey(sample.getUid())) {
+                    newSamplesMap.put(sample.getUid(), sample.getVersion());
                 }
             }
 
-            if (!samplesToAdd.isEmpty()) {
-                updateDocument.getAttributes().put("ADDED_SAMPLES", samplesToAdd);
+            if (!newSamplesMap.isEmpty()) {
+                updateDocument.getAttributes().put("ADDED_SAMPLES", new ArrayList<>(newSamplesMap.keySet()));
             }
 
-            if (operation == ParamUtils.BasicUpdateAction.SET && individual.getSamples() != null) {
-                // We also need to see which samples existed and are not currently in the new list provided by the user to take them out
-                Set<Long> newSampleUids = sampleList.stream().map(Sample::getUid).collect(Collectors.toSet());
+            if (individual.getSamples() != null) {
+                // If the individual already had some samples...
+                switch (operation) {
+                    case SET:
+                        // We also need to see which samples existed and are not currently in the new list provided by the user
+                        // to take the references to the individual out
+                        List<Long> samplesToRemove = new ArrayList<>();
+                        for (Sample sample : individual.getSamples()) {
+                            if (!allSamplesMap.containsKey(sample.getUid())) {
+                                samplesToRemove.add(sample.getUid());
+                            }
+                        }
 
-                List<Long> samplesToRemove = new ArrayList<>();
-                for (Sample sample : individual.getSamples()) {
-                    if (!newSampleUids.contains(sample.getUid())) {
-                        samplesToRemove.add(sample.getUid());
-                    }
-                }
-
-                if (!samplesToRemove.isEmpty()) {
-                    updateDocument.getAttributes().put("REMOVED_SAMPLES", samplesToRemove);
+                        if (!samplesToRemove.isEmpty()) {
+                            updateDocument.getAttributes().put("REMOVED_SAMPLES", samplesToRemove);
+                        }
+                        break;
+                    case ADD:
+                        // We need to know which are the other existing samples to keep them as well (add them to the allSamplesMap)
+                        for (Sample sample : individual.getSamples()) {
+                            // We check instead of putting the sample directly because we don't want to keep the version passed by the user
+                            if (!allSamplesMap.containsKey(sample.getUid())) {
+                                allSamplesMap.put(sample.getUid(), sample.getVersion());
+                            }
+                        }
+                        break;
+                    default:
+                        break;
                 }
             }
+
+            // Prepare the document containing the new list of samples to be added
+            List<Document> updatedSampleList = new LinkedList<>();
+            for (Map.Entry<Long, Integer> entry : allSamplesMap.entrySet()) {
+                updatedSampleList.add(new Document()
+                        .append(PRIVATE_UID, entry.getKey())
+                        .append(VERSION, entry.getValue())
+                );
+            }
+
+            // Update document operation
+            updateDocument.getSet().append(QueryParams.SAMPLES.key(), updatedSampleList);
+            individualConverter.validateSamplesToUpdate(updateDocument.getSet());
         } else if (operation == ParamUtils.BasicUpdateAction.REMOVE) {
             // We will only store the samples to be removed that are already associated to the individual
             List<Long> samplesToRemove = new ArrayList<>();
+            List<Document> samplesToRemoveDocList = new ArrayList<>();
 
             for (Sample sample : sampleList) {
-                if (currentSampleUidList.contains(sample.getUid())) {
+                if (currentSampleUidMap.containsKey(sample.getUid())) {
+                    samplesToRemoveDocList.add(currentSampleUidMap.get(sample.getUid()));
                     samplesToRemove.add(sample.getUid());
                 }
             }
@@ -870,16 +893,19 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             if (!samplesToRemove.isEmpty()) {
                 updateDocument.getAttributes().put("REMOVED_SAMPLES", samplesToRemove);
             }
+
+            // Update document operation
+            updateDocument.getPullAll().append(QueryParams.SAMPLES.key(), samplesToRemoveDocList);
         }
     }
 
-    private Individual checkOnlyOneIndividualMatches(ClientSession clientSession, Query query, QueryOptions options)
+    private Document checkOnlyOneIndividualMatches(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query tmpQuery = new Query(query);
         // We take out ALL_VERSION from query just in case we get multiple results from the same individual...
         tmpQuery.remove(Constants.ALL_VERSIONS);
 
-        OpenCGAResult<Individual> individualDataResult = get(clientSession, tmpQuery, options);
+        OpenCGAResult<Document> individualDataResult = nativeGet(clientSession, tmpQuery, options);
         if (individualDataResult.getNumResults() == 0) {
             throw new CatalogDBException("Update individual: No individual found to be updated");
         }

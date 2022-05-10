@@ -230,8 +230,11 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertTrue(individualStored.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).containsAll(Arrays.asList(
                 sample1.getUid(), sample2.getUid())));
 
+        List<Sample> sampleList = Arrays.asList(individualStored.getSamples().get(0), individualStored.getSamples().get(1),
+                individualStored.getSamples().get(0), individualStored.getSamples().get(1));
+
         // Update samples
-        ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), individual.getSamples());
+        ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
         DataResult result = catalogIndividualDBAdaptor.update(individualStored.getUid(), params, QueryOptions.empty());
         assertEquals(1, result.getNumUpdated());
 
@@ -241,6 +244,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertEquals(2, individual.getSamples().size());
         assertTrue(individual.getSamples().stream().map(Sample::getUid).collect(Collectors.toSet()).containsAll(Arrays.asList(sample1.getUid(),
                 sample2.getUid())));
+        assertEquals(2, individual.getSamples().stream().map(Sample::getVersion).filter(v -> v == 2).count());
     }
 
 //    @Test

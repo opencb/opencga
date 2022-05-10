@@ -8,10 +8,13 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.TestParamConstants;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobReferenceParam;
 
 import java.io.IOException;
@@ -245,7 +248,9 @@ public class MigrationManagerTest extends AbstractManagerTest {
 
         // Update job with ERROR. Migration gets updated to ERROR.
         Job job = catalogManager.getJobManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
-        catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(), new ObjectMap("internal.status.id", "ERROR"), new QueryOptions(), token);
+        Enums.ExecutionStatus status = new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Failed");
+        catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(),
+                new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), status), new QueryOptions(), token);
 
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
@@ -260,7 +265,9 @@ public class MigrationManagerTest extends AbstractManagerTest {
         // Update job with DONE. Migration gets updated to DONE.
         j = migrationRun.getJobs().get(0);
         job = catalogManager.getJobManager().get(j.getStudyId(), j.getId(), new QueryOptions(), token).first();
-        catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(), new ObjectMap("internal.status.id", "DONE"), new QueryOptions(), token);
+        status = new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE, "Done");
+        catalogManager.getJobManager().update(job.getStudy().getId(), job.getId(),
+                new ObjectMap(JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), status), new QueryOptions(), token);
 
         migrationRun = catalogManager.getMigrationManager().getMigrationRuns(token)
                 .stream().filter(p -> p.getKey().id().equals("test-with-jobs")).findFirst().get().getValue();
