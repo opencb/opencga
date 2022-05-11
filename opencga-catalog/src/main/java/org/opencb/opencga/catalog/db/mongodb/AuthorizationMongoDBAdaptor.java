@@ -347,7 +347,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 setToMembers(aclParam.getIds(), members, aclParam.getPermissions(), aclParam.getResource(), clientSession);
 
                 // We store that those members have internal permissions
-                setMembersHaveInternalPermissionsDefined(studyId, members, aclParam.getPermissions(), aclParam.getResource(),
+                setMembersHaveInternalPermissionsDefined(studyId, members, aclParam.getResource(),
                         clientSession);
             }
 
@@ -422,7 +422,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 addToMembers(aclParam.getIds(), members, aclParam.getPermissions(), aclParam.getResource(), clientSession);
 
                 // We store that those members have internal permissions
-                setMembersHaveInternalPermissionsDefined(studyId, members, aclParam.getPermissions(), aclParam.getResource(),
+                setMembersHaveInternalPermissionsDefined(studyId, members, aclParam.getResource(),
                         clientSession);
             }
 
@@ -595,13 +595,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
         return OpenCGAResult.empty();
     }
 
-    private void setMembersHaveInternalPermissionsDefined(long studyId, List<String> members, List<String> permissions,
-                                                          Enums.Resource resource, ClientSession clientSession) {
-        // We only store if a member has internal permissions defined if it hasn't been given VIEW permission
-//        if (permissions.contains("VIEW")) {
-//            return;
-//        }
-
+    private void setMembersHaveInternalPermissionsDefined(long studyId, List<String> members, Enums.Resource resource,
+                                                          ClientSession clientSession) {
         Document queryDocument = new Document()
                 .append(PRIVATE_UID, studyId);
 

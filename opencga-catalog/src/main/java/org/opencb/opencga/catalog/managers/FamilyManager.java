@@ -984,15 +984,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             if (parameters.containsKey(FamilyDBAdaptor.QueryParams.MEMBERS.key())) {
                 parameters.put(FamilyDBAdaptor.QueryParams.MEMBERS.key(), tmpParams.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()));
             }
-//
-//                // Recalculate roles
-//                calculateRoles(study, tmpFamily, userId);
-//                parameters.put(FamilyDBAdaptor.QueryParams.ROLES.key(), tmpFamily.getRoles());
-//            } else if (updateRoles) {
-//                // Recalculate roles
-//                calculateRoles(study, tmpFamily, userId);
-//                parameters.put(FamilyDBAdaptor.QueryParams.ROLES.key(), tmpFamily.getRoles());
-//            }
             if (parameters.containsKey(FamilyDBAdaptor.QueryParams.PHENOTYPES.key())) {
                 parameters.put(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(),
                         tmpParams.get(FamilyDBAdaptor.QueryParams.PHENOTYPES.key()));
@@ -1368,44 +1359,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         List<Member> individuals = new ArrayList<>(individualMap.values());
         return new Pedigree(family.getId(), individuals, proband, family.getPhenotypes(), family.getDisorders(), family.getAttributes());
     }
-
-//    /**
-//     * Validate the list of members provided in the members list already exists (and retrieves their information).
-//     * It also makes sure the members provided inside the family object are valid and can be successfully created.
-//     * It merges all those members inside the family object afterwards.
-//     *
-//     * @param study   study.
-//     * @param family  family object.
-//     * @param members Already existing members.
-//     * @param userId  user id.
-//     * @throws CatalogException if there is any kind of error.
-//     */
-//    private void autoCompleteFamilyMembers(Study study, Family family, List<String> members, String userId) throws CatalogException {
-//        List<Individual> memberList = new ArrayList<>();
-//
-//        if (family.getMembers() != null && !family.getMembers().isEmpty()) {
-//            // Check the user can create new individuals
-//            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
-//
-//            // Validate the individuals can be created and are valid
-//            for (Individual individual : family.getMembers()) {
-//                catalogManager.getIndividualManager().validateNewIndividual(study, individual, null, userId, false);
-//                memberList.add(individual);
-//            }
-//        }
-//
-//        if (members != null && !members.isEmpty()) {
-//            // We remove any possible duplicate
-//            ArrayList<String> deduplicatedMemberIds = new ArrayList<>(new HashSet<>(members));
-//
-//            InternalGetDataResult<Individual> individualDataResult = catalogManager.getIndividualManager().internalGet(study.getUid(),
-//                    deduplicatedMemberIds, IndividualManager.INCLUDE_INDIVIDUAL_DISORDERS_PHENOTYPES, userId, false);
-//
-//            memberList.addAll(individualDataResult.getResults());
-//        }
-//
-//        family.setMembers(memberList);
-//    }
 
     /**
      * Validate the list of members provided in the members list already exists (and retrieves their information).

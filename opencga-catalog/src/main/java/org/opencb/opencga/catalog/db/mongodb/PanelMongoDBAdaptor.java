@@ -224,7 +224,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         return nativeGet(null, studyUid, query, options, user);
     }
 
-    public OpenCGAResult nativeGet(ClientSession session, long studyUid, Query query, QueryOptions options, String user)
+    public OpenCGAResult<Document> nativeGet(ClientSession session, long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
         try (DBIterator<Document> dbIterator = nativeIterator(session, studyUid, query, options, user)) {
@@ -583,7 +583,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         return nativeIterator(null, studyUid, query, options, user);
     }
 
-    public DBIterator nativeIterator(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
+    public DBIterator<Document> nativeIterator(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
@@ -676,7 +676,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         QueryOptions queryOptions = new QueryOptions("multi", true);
 
         return updateVersionedModelNoVersionIncrement(bson, panelCollection, panelArchiveCollection,
-                () -> new OpenCGAResult(panelCollection.update(bson, update, queryOptions)));
+                () -> new OpenCGAResult<Panel>(panelCollection.update(bson, update, queryOptions)));
     }
 
     @Override

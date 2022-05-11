@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
@@ -787,7 +787,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         QueryOptions queryOptions = new QueryOptions("multi", true);
         return updateVersionedModelNoVersionIncrement(bson, sampleCollection, archiveSampleCollection,
-                () -> new OpenCGAResult(sampleCollection.update(bson, update, queryOptions)));
+                () -> new OpenCGAResult<Sample>(sampleCollection.update(bson, update, queryOptions)));
     }
 
     @Override
@@ -817,12 +817,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         UpdateDocument updateDocument = new UpdateDocument().setSet(rootDocument);
         Document bsonUpdate = updateDocument.toFinalUpdateDocument();
 
-        return runTransaction((ClientSession clientSession) -> {
-            return updateVersionedModel(clientSession, query, sampleCollection, archiveSampleCollection, () -> {
-                        return new OpenCGAResult<Sample>(sampleCollection.update(query, bsonUpdate, new QueryOptions("multi", true)));
-                    },
-                    (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
-        });
+        return runTransaction(
+                (ClientSession clientSession) -> updateVersionedModel(clientSession, query, sampleCollection, archiveSampleCollection,
+                        () -> new OpenCGAResult<>(sampleCollection.update(query, bsonUpdate, new QueryOptions("multi", true))),
+                        (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator)));
     }
 
     @Override
@@ -1075,7 +1073,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, user);
         Document studyDocument = getStudyDocument(null, studyUid);
-        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
         return new SampleCatalogMongoDBIterator<>(mongoCursor, null, sampleConverter, iteratorFilter, individualDBAdaptor, studyUid, user,
@@ -1096,7 +1094,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
         return new SampleCatalogMongoDBIterator<>(mongoCursor, clientSession, null, iteratorFilter, individualDBAdaptor, studyUid, user,

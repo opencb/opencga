@@ -64,7 +64,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
@@ -230,15 +230,6 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             }
             return null;
         }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterIndividualVersionIncrement(clientSession, studyUid, iterator));
-
-//        updateVersionedModel(clientSession, bsonQuery, individualCollection, archiveIndividualCollection, () -> {
-//            DataResult update = individualCollection.update(clientSession, bsonQuery, bsonUpdate,
-//                    new QueryOptions(MongoDBCollection.MULTI, true));
-//            if (update.getNumMatches() == 0) {
-//                throw new CatalogDBException("Could not update family references in individuals");
-//            }
-//            return null;
-//        });
     }
 
     @Override
@@ -1121,7 +1112,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new IndividualCatalogMongoDBIterator(mongoCursor, clientSession, null, null, dbAdaptorFactory, options);
+        return new IndividualCatalogMongoDBIterator<Document>(mongoCursor, clientSession, null, null, dbAdaptorFactory, options);
     }
 
     @Override
@@ -1135,7 +1126,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
@@ -1157,11 +1148,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name());
 
-        return new IndividualCatalogMongoDBIterator(mongoCursor, clientSession, null, iteratorFilter, dbAdaptorFactory, studyUid, user,
+        return new IndividualCatalogMongoDBIterator<>(mongoCursor, clientSession, null, iteratorFilter, dbAdaptorFactory, studyUid, user,
                 options);
     }
 
@@ -1405,7 +1396,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         List<Individual> individualList = new LinkedList<>();
         individualList.add(proband);
 
-        Map<Family.FamiliarRelationship, Family.FamiliarRelationship> relationMap = new HashMap<>();
+        EnumMap<Family.FamiliarRelationship, Family.FamiliarRelationship> relationMap = new EnumMap<>(Family.FamiliarRelationship.class);
         // ------------------ Processing degree 1
         relationMap.put(Family.FamiliarRelationship.MOTHER, Family.FamiliarRelationship.MOTHER);
         relationMap.put(Family.FamiliarRelationship.FATHER, Family.FamiliarRelationship.FATHER);
@@ -1486,7 +1477,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                                                                                          Individual proband, Set<String> skipIndividuals,
                                                                                          QueryOptions options, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Map<Family.FamiliarRelationship, List<Individual>> finalResult = new HashMap<>();
+        EnumMap<Family.FamiliarRelationship, List<Individual>> finalResult = new EnumMap<>(Family.FamiliarRelationship.class);
 
         finalResult.putAll(lookForParents(clientSession, studyUid, proband, skipIndividuals, options, userId));
         finalResult.putAll(lookForChildren(clientSession, studyUid, proband, skipIndividuals, options, userId));
@@ -1498,7 +1489,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                                                                               Individual proband, Set<String> skipIndividuals,
                                                                               QueryOptions options, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Map<Family.FamiliarRelationship, List<Individual>> finalResult = new HashMap<>();
+        EnumMap<Family.FamiliarRelationship, List<Individual>> finalResult = new EnumMap<>(Family.FamiliarRelationship.class);
 
         // Looking for father
         if (proband.getFather() != null && proband.getFather().getUid() > 0) {
@@ -1523,7 +1514,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                                                                                Individual proband, Set<String> skipIndividuals,
                                                                                QueryOptions options, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        Map<Family.FamiliarRelationship, List<Individual>> finalResult = new HashMap<>();
+        EnumMap<Family.FamiliarRelationship, List<Individual>> finalResult = new EnumMap<>(Family.FamiliarRelationship.class);
 
         // Looking for children
         Query query = new Query();
@@ -1541,9 +1532,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     continue;
                 }
                 Family.FamiliarRelationship sex = getChildSex(child);
-                if (!finalResult.containsKey(sex)) {
-                    finalResult.put(sex, new LinkedList<>());
-                }
+                finalResult.putIfAbsent(sex, new LinkedList<>());
                 finalResult.get(sex).add(child);
             }
         } else {
@@ -1557,9 +1546,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                         continue;
                     }
                     Family.FamiliarRelationship sex = getChildSex(child);
-                    if (!finalResult.containsKey(sex)) {
-                        finalResult.put(sex, new LinkedList<>());
-                    }
+                    finalResult.putIfAbsent(sex, new LinkedList<>());
                     finalResult.get(sex).add(child);
                 }
             } else {
@@ -1571,9 +1558,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                         continue;
                     }
                     Family.FamiliarRelationship sex = getChildSex(child);
-                    if (!finalResult.containsKey(sex)) {
-                        finalResult.put(sex, new LinkedList<>());
-                    }
+                    finalResult.putIfAbsent(sex, new LinkedList<>());
                     finalResult.get(sex).add(child);
                 }
             }
@@ -1633,7 +1618,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                     }
                     break;
                 default:
-                    logger.warn("Unexpected relation found: " + entry.getKey());
+                    logger.warn("Unexpected relation found: {}", entry.getKey());
                     break;
             }
         }

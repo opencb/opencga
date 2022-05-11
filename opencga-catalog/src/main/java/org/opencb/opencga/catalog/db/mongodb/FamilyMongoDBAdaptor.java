@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
@@ -105,7 +105,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public OpenCGAResult insert(long studyId, Family family, List<Individual> members, List<VariableSet> variableSetList,
+    public OpenCGAResult<Family> insert(long studyId, Family family, List<Individual> members, List<VariableSet> variableSetList,
                                 QueryOptions options) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> {
@@ -518,15 +518,12 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                         .append(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid());
 
                 ObjectMap params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), members);
-//                ObjectMap action = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), ParamUtils.BasicUpdateAction.SET);
-//                options = new QueryOptions()
-//                        .append(Constants.ACTIONS, action);
 
                 UpdateDocument updateDocument = parseAndValidateUpdateParams(clientSession, params, tmpQuery);
                 Document bsonUpdate = updateDocument.toFinalUpdateDocument();
                 Bson bsonQuery = parseQuery(tmpQuery);
                 updateVersionedModel(clientSession, bsonQuery, familyCollection, archiveFamilyCollection, () -> {
-                    DataResult result = familyCollection.update(clientSession, bsonQuery, bsonUpdate, QueryOptions.empty());
+                    DataResult<?> result = familyCollection.update(clientSession, bsonQuery, bsonUpdate, QueryOptions.empty());
                     if (result.getNumUpdated() != 1) {
                         throw new CatalogDBException("Family '" + family.getId() + "' could not be updated to the latest member versions");
                     }
@@ -779,12 +776,12 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     }
 
     @Override
-    public OpenCGAResult nativeGet(Query query, QueryOptions options)
+    public OpenCGAResult<Document> nativeGet(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return nativeGet(null, query, options);
     }
 
-    public OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options)
+    public OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
@@ -869,7 +866,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
 
         return new FamilyCatalogMongoDBIterator<>(mongoCursor, null, familyConverter, iteratorFilter,
@@ -890,7 +887,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
 
         return new FamilyCatalogMongoDBIterator(mongoCursor, clientSession, null, iteratorFilter,

@@ -38,7 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
 
@@ -59,13 +59,13 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
     private static final int BUFFER_SIZE = 100;
 
     public IndividualCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                            AnnotableConverter<? extends Annotable> converter, Function<Document, Document> filter,
+                                            AnnotableConverter<? extends Annotable> converter, UnaryOperator<Document> filter,
                                             MongoDBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
         this(mongoCursor, clientSession, converter, filter, dbAdaptorFactory, 0, null, options);
     }
 
     public IndividualCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                            AnnotableConverter<? extends Annotable> converter, Function<Document, Document> filter,
+                                            AnnotableConverter<? extends Annotable> converter, UnaryOperator<Document> filter,
                                             MongoDBAdaptorFactory dbAdaptorFactory, long studyUid, String user, QueryOptions options) {
         super(mongoCursor, clientSession, converter, filter, options);
 

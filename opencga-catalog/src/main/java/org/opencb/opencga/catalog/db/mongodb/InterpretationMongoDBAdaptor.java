@@ -918,7 +918,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     public DBIterator<Document> nativeIterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new InterpretationCatalogMongoDBIterator(mongoCursor, clientSession, null, dbAdaptorFactory, queryOptions);
+        return new InterpretationCatalogMongoDBIterator<>(mongoCursor, clientSession, null, dbAdaptorFactory, queryOptions);
     }
 
     @Override

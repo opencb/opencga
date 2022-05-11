@@ -59,7 +59,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -1061,7 +1061,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
         return new FileCatalogMongoDBIterator<>(mongoCursor, null, fileConverter, null, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), options);
+                options);
     }
 
     @Override
@@ -1077,7 +1077,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
         return new FileCatalogMongoDBIterator<>(mongoCursor, clientSession, null, null, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), queryOptions);
+                queryOptions);
     }
 
     @Override
@@ -1087,12 +1087,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, user);
 
         Document studyDocument = getStudyDocument(null, studyUid);
-        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
         return new FileCatalogMongoDBIterator<File>(mongoCursor, null, fileConverter, iteratorFilter, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), studyUid, user, options);
+                studyUid, user, options);
     }
 
     @Override
@@ -1110,12 +1110,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
 
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
         return new FileCatalogMongoDBIterator<>(mongoCursor, null, null, iteratorFilter, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), studyUid, user, options);
+                studyUid, user, options);
     }
 
     private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)

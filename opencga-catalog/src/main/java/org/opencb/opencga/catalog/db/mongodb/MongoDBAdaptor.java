@@ -76,18 +76,11 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PERMISSION_RULES_APPLIED = "_permissionRulesApplied";
     static final String INTERNAL_LAST_MODIFIED = "internal.lastModified";
 
-    static final String SKIP_INCREMENT_VERSION = "skipIncrementVersion";
-
     static final String INTERNAL_DELIMITER = "__";
 
     public static final String NATIVE_QUERY = "nativeQuery";
 
-    private final int BATCH_SIZE = 500;
     private static final String PRIVATE_TRANSACTION_ID = "_transactionId";
-    private static final String PRIVATE_TRANSACTION_RANDOM_STRING = "_transactionRandomString";
-
-    // Possible update actions
-    static final String SET = "SET";
 
     protected MongoDBAdaptorFactory dbAdaptorFactory;
     protected Configuration configuration;
