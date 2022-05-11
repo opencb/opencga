@@ -10,7 +10,7 @@
     <Properties>
         <Property name="name">${sys:opencga.log.file.name:-opencga}</Property>
         <Property name="logDir">${sys:opencga.log.dir:-${sys:user.home}/.opencga/logs}</Property>
-        <Property name="logLevel">${sys:opencga.log.level:-warn}</Property>
+        <Property name="logLevel">${sys:opencga.log.level:-info}</Property>
         <Property name="logFile">${name}.log</Property>
         <Property name="logFileArchive">${name}.%d{yyyy-MM-dd}.%i.log</Property>
     </Properties>
