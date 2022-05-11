@@ -90,16 +90,18 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
             try {
                 HashMap hashMap = objectMapper.readValue(s, HashMap.class);
 
-                String collection = (String) hashMap.get("collection");
-                if (!indexes.containsKey(collection)) {
-                    indexes.put(collection, new ArrayList<>());
-                }
-                Map<String, ObjectMap> myIndexes = new HashMap<>();
-                myIndexes.put("fields", new ObjectMap((Map) hashMap.get("fields")));
-                myIndexes.put("options", new ObjectMap((Map) hashMap.getOrDefault("options", Collections.emptyMap())));
+                List<String> collections = (List<String>) hashMap.get("collections");
+                for (String collection : collections) {
+                    if (!indexes.containsKey(collection)) {
+                        indexes.put(collection, new ArrayList<>());
+                    }
+                    Map<String, ObjectMap> myIndexes = new HashMap<>();
+                    myIndexes.put("fields", new ObjectMap((Map) hashMap.get("fields")));
+                    myIndexes.put("options", new ObjectMap((Map) hashMap.getOrDefault("options", Collections.emptyMap())));
 
-                if (!uniqueIndexesOnly || myIndexes.get("options").getBoolean("unique")) {
-                    indexes.get(collection).add(myIndexes);
+                    if (!uniqueIndexesOnly || myIndexes.get("options").getBoolean("unique")) {
+                        indexes.get(collection).add(myIndexes);
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -112,21 +114,31 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
             throw new UncheckedIOException(e);
         }
 
-        createIndexes(dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection(), indexes.get("user"));
-        createIndexes(dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection(), indexes.get("study"));
-        createIndexes(dbAdaptorFactory.getCatalogSampleDBAdaptor().getSampleCollection(), indexes.get("sample"));
-        createIndexes(dbAdaptorFactory.getCatalogIndividualDBAdaptor().getIndividualCollection(), indexes.get("individual"));
-        createIndexes(dbAdaptorFactory.getCatalogFileDBAdaptor().getCollection(), indexes.get("file"));
-        createIndexes(dbAdaptorFactory.getCatalogCohortDBAdaptor().getCohortCollection(), indexes.get("cohort"));
-        createIndexes(dbAdaptorFactory.getCatalogJobDBAdaptor().getJobCollection(), indexes.get("job"));
-        createIndexes(dbAdaptorFactory.getCatalogFamilyDBAdaptor().getFamilyCollection(), indexes.get("family"));
-        createIndexes(dbAdaptorFactory.getCatalogPanelDBAdaptor().getPanelCollection(), indexes.get("panel"));
-        createIndexes(dbAdaptorFactory.getClinicalAnalysisDBAdaptor().getClinicalCollection(), indexes.get("clinical"));
-        createIndexes(dbAdaptorFactory.getInterpretationDBAdaptor().getInterpretationCollection(), indexes.get("interpretation"));
-        createIndexes(dbAdaptorFactory.getCatalogAuditDbAdaptor().getAuditCollection(), indexes.get("audit"));
+        createIndexes(MongoDBAdaptorFactory.USER_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.STUDY_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.FILE_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.COHORT_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.JOB_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.CLINICAL_ANALYSIS_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.AUDIT_COLLECTION, indexes);
+
+        // Versioned collections
+        createIndexes(MongoDBAdaptorFactory.SAMPLE_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.SAMPLE_ARCHIVE_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.INDIVIDUAL_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.INDIVIDUAL_ARCHIVE_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.FAMILY_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.FAMILY_ARCHIVE_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.PANEL_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.PANEL_ARCHIVE_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.INTERPRETATION_COLLECTION, indexes);
+        createIndexes(MongoDBAdaptorFactory.INTERPRETATION_ARCHIVE_COLLECTION, indexes);
     }
 
-    private void createIndexes(MongoDBCollection mongoCollection, List<Map<String, ObjectMap>> indexes) {
+    private void createIndexes(String collection, Map<String, List<Map<String, ObjectMap>>> indexCollectionMap) {
+        MongoDBCollection mongoCollection = dbAdaptorFactory.getMongoDBCollectionMap().get(collection);
+        List<Map<String, ObjectMap>> indexes = indexCollectionMap.get(collection);
+
         DataResult<Document> index = mongoCollection.getIndex();
         // We store the existing indexes
         Set<String> existingIndexes = index.getResults()
