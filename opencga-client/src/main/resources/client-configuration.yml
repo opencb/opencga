@@ -9,11 +9,7 @@ rest:
   hosts:
     - name: "opencga"
       url: "${OPENCGA.CLIENT.REST.HOST}"
-    - name: "opencga-test"
-      url: "https://ws.opencb.org/opencga-test"
-    - name: "opencga-local"
-      url: "http://localhost:8080/opencga"
-  defaultHostIndex: 2
+  defaultHostIndex: 0
   tokenAutoRefresh: true
   tlsAllowInvalidCertificates: false
   query:

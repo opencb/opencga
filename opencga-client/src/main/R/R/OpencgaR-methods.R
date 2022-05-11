@@ -55,8 +55,14 @@ initOpencgaR <- function(host=NULL, version="v2", user=NULL, opencgaConfig=NULL)
         ocga@host <- paste0(ocga@host, "webservices/rest/")
     }
     baseurl <- paste0(ocga@host, "swagger.json")
-    swagger <- jsonlite::fromJSON(baseurl)
-    ocga@swagger <- swagger
+    # ----------
+    # TODO: Make help available by retrieving the WSs information from the new 
+    # JSON
+    # Help temporarily unavailable while swagger has been decommissioned
+    # swagger <- jsonlite::fromJSON(baseurl)
+    # ocga@swagger <- swagger
+    ocga@swagger <- list()
+    # -------------
     return(ocga)
 }
 

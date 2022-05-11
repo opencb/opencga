@@ -51,7 +51,7 @@ public abstract class ParentStudiesCommandExecutor extends OpencgaCommandExecuto
 
     protected RestResponse<Job> runTemplates() throws Exception {
         logger.debug("Run template");
-        StudiesCommandOptions.RunTemplatesCommandOptions c = studiesCommandOptions.templateRunCommandOptions;
+        StudiesCommandOptions.RunTemplatesCommandOptions c = studiesCommandOptions.runTemplatesCommandOptions;
 
         c.study = getSingleValidStudy(c.study);
         TemplateParams templateParams = new TemplateParams(c.id, c.overwrite, c.resume);

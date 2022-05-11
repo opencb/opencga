@@ -48,7 +48,7 @@ spec:
             - "--ssl"
             - "--sslAllowInvalidCertificates"
             - "--sslAllowInvalidHostnames"
-            {{ end -}}
+            {{- end }}
             - "--uri"
             - "{{ .Values.mongodb.uri}}"
 #            - "mongodb://{{ .Values.mongodb.hosts}}/?replicaSet={{ .Values.mongodb.replicaSet}}"
@@ -60,8 +60,8 @@ spec:
             - "{{ .Values.mongodb.databaseFrom }}.*"
             - "--nsTo"
             - "{{ .Values.mongodb.database }}.*"
-            - "--archive=/data/{{ tpl .Values.mongodb.archiveFileName . }}"
             {{- end}}
+            - "--archive=/data/{{ tpl .Values.mongodb.archiveFileName . }}"
             {{- range .Values.mongodb.args }}
             - {{ . | quote }}
             {{- end }}

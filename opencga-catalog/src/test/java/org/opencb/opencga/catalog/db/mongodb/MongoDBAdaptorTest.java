@@ -186,7 +186,7 @@ public class MongoDBAdaptorTest extends GenericTest {
         user3 = new User("imedina", "Nacho", "nacho@gmail", "SPAIN", null, new UserInternal(new UserStatus()), new UserQuota(-1, -1, -1, -1),
                 Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new LinkedList<>(), new HashMap<>());
         catalogUserDBAdaptor.insert(user3, "2222", null);
-        catalogProjectDBAdaptor.insert(new Project("pr1", "90 GigaGenomes", TimeUtils.getTime(), TimeUtils.getTime(), "very long description", null,
+        catalogProjectDBAdaptor.insert(new Project("pr1", "90 GigaGenomes", TimeUtils.getTime(), TimeUtils.getTime(), "very long description", null, null,
                 Collections.emptyList(), 1, ProjectInternal.init(), Collections.emptyMap()
         ), "imedina", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr1"), null).first(),
@@ -205,7 +205,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                 new HashMap<>());
 
         catalogUserDBAdaptor.insert(user4, "pfuriopass", null);
-        catalogProjectDBAdaptor.insert(new Project("pr", "lncRNAs", TimeUtils.getTime(), TimeUtils.getTime(), "My description", null,
+        catalogProjectDBAdaptor.insert(new Project("pr", "lncRNAs", TimeUtils.getTime(), TimeUtils.getTime(), "My description", null, null,
                 Collections.emptyList(), 1, ProjectInternal.init(), Collections.emptyMap()), "pfurio", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
                 new Study("spongeScan", "spongeScan", "sponges", TimeUtils.getTime(), TimeUtils.getTime(), "", null, null, null,

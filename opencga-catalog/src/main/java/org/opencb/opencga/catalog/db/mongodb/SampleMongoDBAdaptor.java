@@ -691,7 +691,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
             String time = TimeUtils.getTime();
-            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            if (StringUtils.isEmpty(parameters.getString(QueryParams.MODIFICATION_DATE.key()))) {
                 // Update modificationDate param
                 Date date = TimeUtils.toDate(time);
                 document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);

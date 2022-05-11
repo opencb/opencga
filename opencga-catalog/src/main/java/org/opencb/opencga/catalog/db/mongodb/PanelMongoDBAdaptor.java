@@ -394,7 +394,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         filterStringListParams(parameters, panelParameters, acceptedParamsList);
 
         final String[] acceptedObjectParams = {QueryParams.VARIANTS.key(), QueryParams.DISORDERS.key(), QueryParams.REGIONS.key(),
-                QueryParams.GENES.key(), QueryParams.CATEGORIES.key()};
+                QueryParams.GENES.key(), QueryParams.CATEGORIES.key(), QueryParams.INTERNAL_STATUS.key()};
         filterObjectParams(parameters, panelParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.ID.key())) {
@@ -799,6 +799,14 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                         query.put(queryParam.key(),
                                 InternalStatus.getPositiveStatus(InternalStatus.STATUS_LIST, query.getString(queryParam.key())));
                         addAutoOrQuery(QueryParams.STATUS_ID.key(), queryParam.key(), query, QueryParams.STATUS_ID.type(), andBsonList);
+                        break;
+                    case INTERNAL_STATUS:
+                    case INTERNAL_STATUS_ID:
+                        // Convert the status to a positive status
+                        query.put(queryParam.key(), InternalStatus.getPositiveStatus(InternalStatus.STATUS_LIST,
+                                query.getString(queryParam.key())));
+                        addAutoOrQuery(QueryParams.INTERNAL_STATUS_ID.key(), queryParam.key(), query,
+                                QueryParams.INTERNAL_STATUS_ID.type(), andBsonList);
                         break;
                     case ID:
                     case UUID:

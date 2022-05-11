@@ -6,12 +6,12 @@ import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.project.DataStore;
+import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.core.config.storage.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
@@ -42,7 +42,7 @@ public abstract class AbstractStorageMigrator {
 
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
 
-        List<Project> projects = catalogManager.getProjectManager().get(new Query(), new QueryOptions(
+        List<Project> projects = catalogManager.getProjectManager().search(new Query(), new QueryOptions(
                 QueryOptions.INCLUDE, Arrays.asList(
                 ProjectDBAdaptor.QueryParams.NAME.key(),
                 ProjectDBAdaptor.QueryParams.ID.key(),

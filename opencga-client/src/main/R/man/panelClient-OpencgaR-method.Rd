@@ -82,9 +82,9 @@ The following table summarises the available \emph{actions} for this client:\tab
    distinct \tab /{apiVersion}/panels/distinct \tab study, id, uuid, name, disorders, variants, genes, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot, field\link{*} \cr
    search \tab /{apiVersion}/panels/search \tab include, exclude, limit, skip, count, study, id, uuid, name, disorders, variants, genes, regions, categories, tags, deleted, status, creationDate, modificationDate, acl, release, snapshot \cr
    acl \tab /{apiVersion}/panels/{panels}/acl \tab panels\link{*}, study, member, silent \cr
-   delete \tab /{apiVersion}/panels/{panels}/delete \tab study, panels \cr
-   info \tab /{apiVersion}/panels/{panels}/info \tab include, exclude, panels, study, version, deleted \cr
-   update \tab /{apiVersion}/panels/{panels}/update \tab include, exclude, study, panels, incVersion, includeResult, body \cr
+   delete \tab /{apiVersion}/panels/{panels}/delete \tab study, panels\link{*} \cr
+   info \tab /{apiVersion}/panels/{panels}/info \tab include, exclude, panels\link{*}, study, version, deleted \cr
+   update \tab /{apiVersion}/panels/{panels}/update \tab include, exclude, study, panels\link{*}, incVersion, includeResult, body \cr
 }
 }
 \section{Endpoint /{apiVersion}/panels/acl/{members}/update}{
