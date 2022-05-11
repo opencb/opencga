@@ -941,6 +941,8 @@ public class IndividualManagerTest extends AbstractManagerTest {
         assertEquals(family.getId(), individual2.getFamilyIds().get(0));
 
         family = catalogManager.getFamilyManager().get(studyFqn, family.getId(), QueryOptions.empty(), token).first();
+        assertTrue(family.getRoles().containsKey(individualId1));
+        assertFalse(family.getRoles().containsKey("blabla"));
         assertEquals(2, family.getMembers().size());
         for (Individual member : family.getMembers()) {
             if (member.getId().equals(individualId1)) {
@@ -965,6 +967,8 @@ public class IndividualManagerTest extends AbstractManagerTest {
         family = catalogManager.getFamilyManager().get(studyFqn, family.getId(), QueryOptions.empty(), token).first();
         assertEquals(2, family.getMembers().size());
         assertEquals(2, family.getMembers().stream().map(Individual::getVersion).filter(v -> v == 3).count());
+        assertFalse(family.getRoles().containsKey(individualId1));
+        assertTrue(family.getRoles().containsKey("blabla"));
 
         List<Sample> samples = catalogManager.getSampleManager().get(studyFqn, Arrays.asList(sample1.getId(), sample2.getId()),
                 QueryOptions.empty(), token).getResults();
@@ -977,11 +981,112 @@ public class IndividualManagerTest extends AbstractManagerTest {
     // Test update when use in CA
     @Test
     public void updateInUseInCATest() throws CatalogException {
+        QueryOptions options = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
+        Family family = DummyModelUtils.getDummyCaseFamily("family1");
+        for (int i = family.getMembers().size() - 1; i >= 0; i--) {
+            catalogManager.getIndividualManager().create(studyFqn, family.getMembers().get(i), QueryOptions.empty(), token);
+        }
+
+        List<String> members = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
+        family.setMembers(null);
+        family = catalogManager.getFamilyManager().create(studyFqn, family, members, options, token).first();
+
+        // Unlocked cases
+        ClinicalAnalysis case1 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null);
+        ClinicalAnalysis case2 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null);
+
+        // locked true
+        ClinicalAnalysis case3 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null)
+                        .setLocked(true);
+
+        case1 = catalogManager.getClinicalAnalysisManager().create(studyFqn, case1, options, token).first();
+        assertFalse(case1.isLocked());
+        case2 = catalogManager.getClinicalAnalysisManager().create(studyFqn, case2, options, token).first();
+        assertFalse(case2.isLocked());
+        case3 = catalogManager.getClinicalAnalysisManager().create(studyFqn, case3, options, token).first();
+        assertTrue(case3.isLocked());
+
+        String oldProbandId = case3.getProband().getId();
+
+        // Update proband information
+        Individual proband = catalogManager.getIndividualManager().update(studyFqn, oldProbandId,
+                new IndividualUpdateParams().setId("blabla"), options, token).first();
+        assertEquals("blabla", proband.getId());
+        assertEquals(3, proband.getVersion());
+
+        family = catalogManager.getFamilyManager().get(studyFqn, family.getId(), QueryOptions.empty(), token).first();
+        assertEquals(2, family.getVersion());
+        assertTrue(family.getRoles().containsKey("blabla"));
+        assertEquals(1, family.getMembers().stream().filter(i -> i.getId().equals("blabla")).count());
+        assertEquals(1, family.getMembers().stream().filter(i -> i.getId().equals("blabla")).filter(i -> i.getVersion() == 3).count());
+
+        OpenCGAResult<ClinicalAnalysis> result = catalogManager.getClinicalAnalysisManager().get(studyFqn,
+                Arrays.asList(case1.getId(), case2.getId(), case3.getId()), QueryOptions.empty(), token);
+        case1 = result.getResults().get(0);
+        case2 = result.getResults().get(1);
+        case3 = result.getResults().get(2);
+
+        assertEquals("blabla", case1.getProband().getId());
+        assertEquals("blabla", case2.getProband().getId());
+        assertEquals(oldProbandId, case3.getProband().getId());
+
+        assertEquals(3, case1.getProband().getVersion());
+        assertEquals(3, case2.getProband().getVersion());
+        assertEquals(2, case3.getProband().getVersion());
+
+        assertEquals(2, case1.getFamily().getVersion());
+        assertEquals(2, case2.getFamily().getVersion());
+        assertEquals(1, case3.getFamily().getVersion());
     }
 
     // Test when in use in CA
     @Test
     public void updateDeleteInUseInCATest() throws CatalogException {
+        QueryOptions options = new QueryOptions(ParamConstants.INCLUDE_RESULT_PARAM, true);
+
+        Family family = DummyModelUtils.getDummyCaseFamily("family1");
+        for (int i = family.getMembers().size() - 1; i >= 0; i--) {
+            catalogManager.getIndividualManager().create(studyFqn, family.getMembers().get(i), QueryOptions.empty(), token);
+        }
+
+        List<String> members = family.getMembers().stream().map(Individual::getId).collect(Collectors.toList());
+        family.setMembers(null);
+        family = catalogManager.getFamilyManager().create(studyFqn, family, members, options, token).first();
+
+        // Unlocked cases
+        ClinicalAnalysis case1 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null);
+        ClinicalAnalysis case2 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null);
+
+        // locked true
+        ClinicalAnalysis case3 = DummyModelUtils.getDummyClinicalAnalysis(family.getMembers().get(0), family, null)
+                .setLocked(true);
+
+        case1 = catalogManager.getClinicalAnalysisManager().create(studyFqn, case1, options, token).first();
+        assertFalse(case1.isLocked());
+        case2 = catalogManager.getClinicalAnalysisManager().create(studyFqn, case2, options, token).first();
+        assertFalse(case2.isLocked());
+        case3 = catalogManager.getClinicalAnalysisManager().create(studyFqn, case3, options, token).first();
+        assertTrue(case3.isLocked());
+
+        // Delete proband
+        try {
+            catalogManager.getIndividualManager().delete(studyFqn, Collections.singletonList(case1.getProband().getId()),
+                    new QueryOptions(ParamConstants.FORCE, true), token);
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("used in the following clinical analyses"));
+        }
+
+        // unlock case3
+        catalogManager.getClinicalAnalysisManager().update(studyFqn, case3.getId(), new ClinicalAnalysisUpdateParams().setLocked(false),
+                QueryOptions.empty(), token);
+
+        try {
+            catalogManager.getIndividualManager().delete(studyFqn, Collections.singletonList(case1.getProband().getId()),
+                    new QueryOptions(ParamConstants.FORCE, true), token);
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("used in the following clinical analyses"));
+        }
     }
 
 }

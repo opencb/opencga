@@ -1209,7 +1209,7 @@ public class FamilyManagerTest extends GenericTest {
         catalogManager.getClinicalAnalysisManager().update(STUDY, case3.getId(), new ClinicalAnalysisUpdateParams().setLocked(true),
                 QueryOptions.empty(), sessionIdUser);
 
-        // Update family id
+        // Delete family
         try {
             catalogManager.getFamilyManager().delete(STUDY, Collections.singletonList(family.getId()), QueryOptions.empty(), sessionIdUser);
         } catch (CatalogException e) {

@@ -596,13 +596,13 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     }
 
     /**
-     * Checks whether the individual that is going to be altered is in use in any locked Clinical Analysis.
+     * Checks whether the individual that is going to be deleted is in use in any Clinical Analysis.
      *
      * @param clientSession Client session.
      * @param individual    Individual to be altered.
      * @throws CatalogDBException CatalogDBException if the individual is in use in any Clinical Analysis.
      */
-    private void checkInUseInLockedClinicalAnalysis(ClientSession clientSession, Document individual)
+    private void checkInUseInClinicalAnalysis(ClientSession clientSession, Document individual)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         String individualId = individual.getString(QueryParams.ID.key());
         long individualUid = individual.getLong(PRIVATE_UID);
@@ -612,8 +612,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         // We only need to focus on locked clinical analyses
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key(), individualUid)
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), true);
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key(), individualUid);
 
         OpenCGAResult<ClinicalAnalysis> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().get(clientSession, query,
                 ClinicalAnalysisManager.INCLUDE_CATALOG_DATA);
@@ -963,7 +962,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         long tmpStartTime = startQuery();
 
-        checkInUseInLockedClinicalAnalysis(clientSession, individualDocument);
+        checkInUseInClinicalAnalysis(clientSession, individualDocument);
 
         logger.debug("Deleting individual {} ({})", individualId, individualUid);
         // Look for all the different family versions
