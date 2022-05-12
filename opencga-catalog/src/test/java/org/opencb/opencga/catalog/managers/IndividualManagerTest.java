@@ -1074,7 +1074,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
             catalogManager.getIndividualManager().delete(studyFqn, Collections.singletonList(case1.getProband().getId()),
                     new QueryOptions(ParamConstants.FORCE, true), token);
         } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("used in the following clinical analyses"));
+            assertTrue(e.getMessage().contains("in use in 3 cases"));
         }
 
         // unlock case3
@@ -1085,7 +1085,7 @@ public class IndividualManagerTest extends AbstractManagerTest {
             catalogManager.getIndividualManager().delete(studyFqn, Collections.singletonList(case1.getProband().getId()),
                     new QueryOptions(ParamConstants.FORCE, true), token);
         } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("used in the following clinical analyses"));
+            assertTrue(e.getMessage().contains("in use in 3 cases"));
         }
     }
 

@@ -41,7 +41,6 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.SampleCatalogMongoDBItera
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -50,7 +49,6 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
@@ -507,58 +505,19 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
      * @param sample        Sample to be updated.
      * @throws CatalogDBException CatalogDBException if the sample is in use in any Clinical Analysis.
      */
-    private void checkInUseInLockedClinicalAnalysis(ClientSession clientSession, Document sample)
+    private void checkInUseInClinicalAnalysis(ClientSession clientSession, Document sample)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-
         String sampleId = sample.getString(QueryParams.ID.key());
         long sampleUid = sample.getLong(QueryParams.UID.key());
-        int version = sample.getInteger(QueryParams.VERSION.key());
         long studyUid = sample.getLong(QueryParams.STUDY_UID.key());
 
-        // We only need to focus on locked clinical analyses
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(), sampleUid)
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), true);
-
-        OpenCGAResult<ClinicalAnalysis> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().get(clientSession, query,
-                ClinicalAnalysisManager.INCLUDE_CATALOG_DATA);
-
-        if (result.getNumResults() == 0) {
-            // No Clinical Analyses are using the sample...
-            return;
-        }
-
-        // We need to check if the sample version is being used in any of the clinical analyses manually
-        Set<String> clinicalAnalysisIds = new HashSet<>(result.getNumResults());
-        for (ClinicalAnalysis clinicalAnalysis : result.getResults()) {
-            if (clinicalAnalysis.getProband() != null && clinicalAnalysis.getProband().getSamples() != null) {
-                for (Sample auxSample : clinicalAnalysis.getProband().getSamples()) {
-                    if (auxSample.getUid() == sampleUid && auxSample.getVersion() == version) {
-                        clinicalAnalysisIds.add(clinicalAnalysis.getId());
-                        break;
-                    }
-                }
-            }
-            if (!clinicalAnalysisIds.contains(clinicalAnalysis.getId())) {
-                if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getFamily().getMembers() != null) {
-                    for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
-                        if (member.getSamples() != null) {
-                            for (Sample auxSample : member.getSamples()) {
-                                if (auxSample.getUid() == sampleUid && auxSample.getVersion() == version) {
-                                    clinicalAnalysisIds.add(clinicalAnalysis.getId());
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!clinicalAnalysisIds.isEmpty()) {
-            throw new CatalogDBException("Sample '" + sampleId + "' is being used in the following clinical analyses: '"
-                    + String.join("', '", clinicalAnalysisIds) + "'.");
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(), sampleUid);
+        OpenCGAResult<Long> count = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().count(clientSession, query);
+        if (count.getNumMatches() > 0) {
+            throw new CatalogDBException("Could not delete sample '" + sampleId + "'. Sample is in use in "
+                    + count.getNumMatches() + " cases");
         }
     }
 
@@ -924,7 +883,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         long sampleUid = sampleDocument.getLong(PRIVATE_UID);
         long studyUid = sampleDocument.getLong(PRIVATE_STUDY_UID);
 
-        checkInUseInLockedClinicalAnalysis(clientSession, sampleDocument);
+        checkInUseInClinicalAnalysis(clientSession, sampleDocument);
 
         logger.debug("Deleting sample {} ({})", sampleId, sampleUid);
 

@@ -598,41 +598,14 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         String individualId = individual.getString(QueryParams.ID.key());
         long individualUid = individual.getLong(PRIVATE_UID);
         long studyUid = individual.getLong(PRIVATE_STUDY_UID);
-        int version = individual.getInteger(VERSION);
 
-        // We only need to focus on locked clinical analyses
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.INDIVIDUAL.key(), individualUid);
-
-        OpenCGAResult<ClinicalAnalysis> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().get(clientSession, query,
-                ClinicalAnalysisManager.INCLUDE_CATALOG_DATA);
-
-        if (result.getNumResults() == 0) {
-            // No Clinical Analyses are using the member...
-            return;
-        }
-
-        // We need to check if the member version is being used in any of the clinical analyses manually
-        Set<String> clinicalAnalysisIds = new HashSet<>(result.getNumResults());
-        for (ClinicalAnalysis clinicalAnalysis : result.getResults()) {
-            if (clinicalAnalysis.getProband() != null && clinicalAnalysis.getProband().getUid() == individualUid
-                    && clinicalAnalysis.getProband().getVersion() == version) {
-                clinicalAnalysisIds.add(clinicalAnalysis.getId());
-                continue;
-            }
-            if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getFamily().getMembers() != null) {
-                for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
-                    if (member.getUid() == individualUid && member.getVersion() == version) {
-                        clinicalAnalysisIds.add(clinicalAnalysis.getId());
-                    }
-                }
-            }
-        }
-
-        if (!clinicalAnalysisIds.isEmpty()) {
-            throw new CatalogDBException("Individual '" + individualId + "' is being used in the following clinical analyses: '"
-                    + String.join("', '", clinicalAnalysisIds) + "'.");
+        OpenCGAResult<Long> count = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().count(clientSession, query);
+        if (count.getNumMatches() > 0) {
+            throw new CatalogDBException("Could not delete individual '" + individualId + "'. Individual is in use in "
+                    + count.getNumMatches() + " cases");
         }
     }
 

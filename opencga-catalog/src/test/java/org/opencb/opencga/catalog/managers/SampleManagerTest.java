@@ -2672,7 +2672,7 @@ public class SampleManagerTest extends AbstractManagerTest {
             catalogManager.getSampleManager().delete(studyFqn, Collections.singletonList(case1.getProband().getSamples().get(0).getId()),
                     new QueryOptions(ParamConstants.FORCE, true), token);
         } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("used in the following clinical analyses"));
+            assertTrue(e.getMessage().contains("in use in 3 cases"));
         }
 
         // unlock case3
@@ -2683,7 +2683,7 @@ public class SampleManagerTest extends AbstractManagerTest {
             catalogManager.getSampleManager().delete(studyFqn, Collections.singletonList(case1.getProband().getSamples().get(0).getId()),
                     new QueryOptions(ParamConstants.FORCE, true), token);
         } catch (CatalogException e) {
-            assertTrue(e.getMessage().contains("used in the following clinical analyses"));
+            assertTrue(e.getMessage().contains("in use in 3 cases"));
         }
     }
 
