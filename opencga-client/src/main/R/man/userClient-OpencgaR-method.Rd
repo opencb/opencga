@@ -44,6 +44,7 @@ The following table summarises the available \emph{actions} for this client:\tab
    filters \tab /{apiVersion}/users/{user}/filters \tab user\link{*}, id \cr
    updateFilters \tab /{apiVersion}/users/{user}/filters/update \tab user\link{*}, action, body\link{*} \cr
    updateFilter \tab /{apiVersion}/users/{user}/filters/{filterId}/update \tab user\link{*}, filterId\link{*}, body\link{*} \cr
+   resetPassword \tab /{apiVersion}/users/{user}/password/reset \tab user\link{*} \cr
    projects \tab /{apiVersion}/users/{user}/projects \tab include, exclude, limit, skip, user\link{*} \cr
    update \tab /{apiVersion}/users/{user}/update \tab include, exclude, user\link{*}, includeResult, body\link{*} \cr
 }
@@ -91,6 +92,11 @@ Add or remove a custom user filter.
 \section{Endpoint /{apiVersion}/users/{user}/filters/{filterId}/update}{
 
 Update a custom filter.
+}
+
+\section{Endpoint /{apiVersion}/users/{user}/password/reset}{
+
+Reset password.
 }
 
 \section{Endpoint /{apiVersion}/users/{user}/projects}{

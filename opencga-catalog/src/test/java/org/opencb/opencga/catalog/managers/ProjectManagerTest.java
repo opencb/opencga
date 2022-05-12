@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by pfurio on 28/11/16.
@@ -101,10 +102,18 @@ public class ProjectManagerTest extends GenericTest {
 
     @Test
     public void getOtherUsersProject() throws CatalogException {
-        Query query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), project1);
-        DataResult<Project> projectDataResult = catalogManager.getProjectManager().get(query, null, sessionIdUser3);
-        assertEquals(0, projectDataResult.getNumResults());
-        assertEquals(1, projectDataResult.getEvents().size());
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("cannot view");
+        catalogManager.getProjectManager().get(project1, null, sessionIdUser3);
+    }
+
+    @Test
+    public void searchProjects() throws CatalogException {
+        catalogManager.getUserManager().create("userid", "User Name", "mail@ebi.ac.uk", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);
+        String token = catalogManager.getUserManager().login("userid", TestParamConstants.PASSWORD).getToken();
+        OpenCGAResult<Project> projectOpenCGAResult = catalogManager.getProjectManager().search(new Query(), QueryOptions.empty(), token);
+        assertTrue(projectOpenCGAResult.getResults().isEmpty());
+        assertEquals(0, projectOpenCGAResult.getEvents().size());
     }
 
     @Test

@@ -53,6 +53,10 @@ public interface PanelDBAdaptor extends CoreDBAdaptor<Panel> {
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
 
+        INTERNAL_STATUS("internal.status", TEXT_ARRAY, ""),
+        INTERNAL_STATUS_ID("internal.status.id", TEXT, ""),
+        INTERNAL_STATUS_DATE("internal.status.date", TEXT, ""),
+
         SOURCE("source", TEXT_ARRAY, ""),
 
         STATS("stats", TEXT_ARRAY, ""),

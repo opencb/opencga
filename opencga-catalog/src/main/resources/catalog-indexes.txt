@@ -191,6 +191,7 @@
 {"collection": "panel", "fields": {"studyUid": 1, "_lastOfVersion": 1, "_acl": 1}, "options": {"background": true}}
 {"collection": "panel", "fields": {"studyUid": 1, "_releaseFromVersion": 1, "_lastOfRelease": 1}, "options": {"background": true}}
 {"collection": "panel", "fields": {"studyUid": 1, "release": 1, "_acl": 1}, "options": {"background": true}}
+{"collection": "panel", "fields": {"internal.status.name": 1, "studyUid": 1}, "options": {"background": true}}
 
 {"collection": "clinical", "fields": {"id": 1, "studyUid": 1}, "options": {"unique": true, "background": true}}
 {"collection": "clinical", "fields": {"uuid": 1}, "options": {"unique": true, "background": true}}

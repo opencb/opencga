@@ -111,7 +111,9 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Mutati
                         merging = true;
                     }
                 } else {
-                    builder = new SampleIndexEntryPutBuilder(sampleId, indexChunk.chromosome, indexChunk.position, schema);
+                    // This loader can't ensure an ordered input data to the SampleIndexEntryPutBuilder.
+                    builder = new SampleIndexEntryPutBuilder(sampleId, indexChunk.chromosome, indexChunk.position, schema,
+                            false, multiFileIndex);
                 }
                 samples.add(builder);
             }

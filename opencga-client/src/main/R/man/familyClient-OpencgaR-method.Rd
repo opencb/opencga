@@ -6,23 +6,23 @@
 \usage{
 \S4method{familyClient}{OpencgaR}(
   OpencgaR,
-  family,
   members,
   annotationSet,
   families,
+  family,
   endpointName,
   params = NULL,
   ...
 )
 }
 \arguments{
-\item{family}{Family id.}
-
 \item{members}{Comma separated list of family members.}
 
 \item{annotationSet}{AnnotationSet ID to be updated.}
 
 \item{families}{Comma separated list of family ids.}
+
+\item{family}{Family id.}
 
 \item{propagate}{Propagate family permissions to related individuals and samples.}
 
@@ -123,10 +123,10 @@ The following table summarises the available \emph{actions} for this client:\tab
    distinct \tab /{apiVersion}/families/distinct \tab study, id, name, uuid, members, expectedSize, samples, phenotypes, disorders, creationDate, modificationDate, deleted, internalStatus, status, annotation, acl, release, snapshot, field\link{*} \cr
    search \tab /{apiVersion}/families/search \tab include, exclude, limit, skip, count, flattenAnnotations, study, id, name, uuid, members, expectedSize, samples, phenotypes, disorders, creationDate, modificationDate, deleted, internalStatus, status, annotation, acl, release, snapshot \cr
    acl \tab /{apiVersion}/families/{families}/acl \tab families\link{*}, study, member, silent \cr
-   delete \tab /{apiVersion}/families/{families}/delete \tab study, families \cr
+   delete \tab /{apiVersion}/families/{families}/delete \tab study, families\link{*} \cr
    info \tab /{apiVersion}/families/{families}/info \tab include, exclude, flattenAnnotations, families\link{*}, study, version, deleted \cr
    update \tab /{apiVersion}/families/{families}/update \tab include, exclude, families\link{*}, study, incVersion, updateRoles, annotationSetsAction, includeResult, body \cr
-   updateAnnotations \tab /{apiVersion}/families/{family}/annotationSets/{annotationSet}/annotations/update \tab family\link{*}, study, annotationSet, action, incVersion, body \cr
+   updateAnnotationSetsAnnotations \tab /{apiVersion}/families/{family}/annotationSets/{annotationSet}/annotations/update \tab family\link{*}, study, annotationSet\link{*}, action, incVersion, body \cr
 }
 }
 \section{Endpoint /{apiVersion}/families/acl/{members}/update}{

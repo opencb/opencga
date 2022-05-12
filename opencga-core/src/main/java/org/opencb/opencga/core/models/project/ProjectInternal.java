@@ -19,7 +19,6 @@ package org.opencb.opencga.core.models.project;
 import org.opencb.commons.annotations.DataField;
 import org.opencb.opencga.core.api.FieldConstants;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.models.common.Internal;
 import org.opencb.opencga.core.models.common.InternalStatus;
 
@@ -29,22 +28,17 @@ public class ProjectInternal extends Internal {
             description = FieldConstants.PROJECT_INTERNAL_DATA_STORES)
     private Datastores datastores;
 
-    @DataField(id = "cellbase", indexed = true, uncommentedClasses = {"CellBaseConfiguration"},
-            description = FieldConstants.PROJECT_INTERNAL_CELLBASE)
-    private CellBaseConfiguration cellbase;
 
     public ProjectInternal() {
     }
 
-    public ProjectInternal(InternalStatus status, String registrationDate, String modificationDate, Datastores datastores,
-                           CellBaseConfiguration cellbase) {
+    public ProjectInternal(InternalStatus status, String registrationDate, String modificationDate, Datastores datastores) {
         super(status, registrationDate, modificationDate);
         this.datastores = datastores;
-        this.cellbase = cellbase;
     }
 
     public static ProjectInternal init() {
-        return new ProjectInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), new Datastores(), new CellBaseConfiguration());
+        return new ProjectInternal(new InternalStatus(), TimeUtils.getTime(), TimeUtils.getTime(), new Datastores());
     }
 
     @Override
@@ -54,7 +48,6 @@ public class ProjectInternal extends Internal {
         sb.append(", registrationDate='").append(registrationDate).append('\'');
         sb.append(", modificationDate='").append(lastModified).append('\'');
         sb.append(", datastores=").append(datastores);
-        sb.append(", cellbase=").append(cellbase);
         sb.append('}');
         return sb.toString();
     }
@@ -68,14 +61,6 @@ public class ProjectInternal extends Internal {
         return this;
     }
 
-    public CellBaseConfiguration getCellbase() {
-        return cellbase;
-    }
-
-    public ProjectInternal setCellbase(CellBaseConfiguration cellbase) {
-        this.cellbase = cellbase;
-        return this;
-    }
 
     public InternalStatus getStatus() {
         return status;
