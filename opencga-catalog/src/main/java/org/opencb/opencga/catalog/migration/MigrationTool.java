@@ -241,7 +241,7 @@ public abstract class MigrationTool {
     protected final void queryMongo(String inputCollectionStr, Bson query, Bson projection, QueryCollectionFunc queryCollectionFunc) {
         MongoCollection<Document> inputCollection = getMongoCollection(inputCollectionStr);
 
-        try (MongoCursor<Document> it = inputCollection.find(query).projection(projection).cursor()) {
+        try (MongoCursor<Document> it = inputCollection.find(query).projection(projection).noCursorTimeout(true).cursor()) {
             while (it.hasNext()) {
                 Document document = it.next();
                 queryCollectionFunc.accept(document);
