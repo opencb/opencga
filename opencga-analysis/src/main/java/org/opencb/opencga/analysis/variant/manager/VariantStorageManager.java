@@ -57,7 +57,6 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.project.DataStore;
@@ -423,13 +422,12 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
     public DataResult<List<String>> familyIndexBySamples(String study, Collection<String> samples, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         return secureOperation(VariantFamilyIndexOperationTool.ID, study, params, token, engine -> {
+            Collection<String> thisSamples = samples;
+            if (CollectionUtils.size(thisSamples) == 1 && thisSamples.iterator().next().equals(ParamConstants.ALL)) {
+                thisSamples = getIndexedSamples(study, token);
+            }
 
-            OpenCGAResult<Individual> individualResult = getCatalogManager().getIndividualManager()
-                    .search(study,
-                            new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), samples),
-                            new QueryOptions(), token);
-
-            List<List<String>> trios = catalogUtils.getTrios(study, engine.getMetadataManager(), individualResult.getResults(), token);
+            List<List<String>> trios = catalogUtils.getTriosFromSamples(study, engine.getMetadataManager(), thisSamples, token);
 
             return engine.familyIndex(study, trios, params);
         });
@@ -519,13 +517,9 @@ public class VariantStorageManager extends StorageManager implements AutoCloseab
             } else {
                 // If changes, launch sample-index-run
                 ToolParams params =
-                        new VariantSampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, false, false);
-                Job job = catalogManager.getJobManager().submit(studyFqn, VariantSampleIndexOperationTool.ID, null,
-                        params.toParams(STUDY_PARAM, studyFqn), token).first();
-                params = new VariantFamilyIndexParams(Collections.emptyList(), false, true, false);
-                Job job2 = catalogManager.getJobManager().submit(studyFqn, VariantFamilyIndexOperationTool.ID, null,
-                        params.toParams(STUDY_PARAM, studyFqn), token).first();
-                return new OpenCGAResult<>(0, new ArrayList<>(), 2, Arrays.asList(job, job2), 0);
+                        new VariantSampleIndexParams(Collections.singletonList(ParamConstants.ALL), true, true, true, false);
+                return catalogManager.getJobManager().submit(studyFqn, VariantSampleIndexOperationTool.ID, null,
+                        params.toParams(STUDY_PARAM, studyFqn), token);
             }
         });
     }

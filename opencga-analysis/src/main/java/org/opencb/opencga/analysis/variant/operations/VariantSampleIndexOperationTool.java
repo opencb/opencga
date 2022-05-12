@@ -78,20 +78,10 @@ public class VariantSampleIndexOperationTool extends OperationTool {
             step("annotate", () -> variantStorageManager.sampleIndexAnnotate(study, sampleIndexParams.getSample(), params, token));
         }
         if (sampleIndexParams.isFamilyIndex()) {
-            step(() -> {
-                DataResult<List<String>> trios;
-                if (sampleIndexParams.isUpdateIndex()) {
-                    trios = variantStorageManager.familyIndexUpdate(study, params, token);
-                } else {
-                    trios = variantStorageManager.familyIndex(
-                            study,
-                            sampleIndexParams.getFamily(),
-                            sampleIndexParams.isSkipIncompleteFamilies(),
-                            params,
-                            token);
-                }
-                if (trios.getEvents() != null) {
-                    for (Event event : trios.getEvents()) {
+            step("familyIndex", () -> {
+                DataResult<List<String>> result = variantStorageManager.familyIndexBySamples(study, sampleIndexParams.getSample(), params, getToken());
+                if (result.getEvents() != null) {
+                    for (Event event : result.getEvents()) {
                         addEvent(event.getType(), event.getMessage());
                     }
                 }
