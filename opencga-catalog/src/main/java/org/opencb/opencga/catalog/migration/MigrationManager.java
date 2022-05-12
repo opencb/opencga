@@ -56,16 +56,19 @@ public class MigrationManager {
 
     public MigrationRun runManualMigration(String version, String id, Path appHome, ObjectMap params, String token)
             throws CatalogException {
-        return runManualMigration(version, id, appHome, false, params, token);
+        return runManualMigration(version, id, appHome, false, false, params, token);
     }
 
-    public MigrationRun runManualMigration(String version, String id, Path appHome, boolean force, ObjectMap params, String token)
-            throws CatalogException {
+    public MigrationRun runManualMigration(String version, String id, Path appHome, boolean force, boolean offline, ObjectMap params,
+                                           String token) throws CatalogException {
         token = validateAdmin(token);
         for (Class<? extends MigrationTool> c : getAvailableMigrations()) {
             Migration migration = getMigrationAnnotation(c);
             if (migration.id().equals(id) && migration.version().equals(version)) {
                 MigrationRun migrationRun = updateMigrationRun(migration, token);
+                if (!offline && migration.offline()) {
+                    throw MigrationException.offlineMigrationException(migration);
+                }
                 if (!force) {
                     switch (migrationRun.getStatus()) {
                         case DONE:
@@ -84,19 +87,15 @@ public class MigrationManager {
         throw new MigrationException("Unable to find migration '" + id + "'");
     }
 
-    public void runMigration(String version, String appHome, String token) throws CatalogException, IOException {
-        runMigration(version, Collections.emptySet(), Collections.emptySet(), appHome, new ObjectMap(), token);
-    }
-
     public void runMigration(String version, Collection<Migration.MigrationDomain> domainsFilter,
-                             Collection<Migration.MigrationLanguage> languageFilter, String appHome, String token)
+                             Collection<Migration.MigrationLanguage> languageFilter, boolean offline, String appHome, String token)
             throws CatalogException, IOException {
-        runMigration(version, domainsFilter, languageFilter, appHome, new ObjectMap(), token);
+        runMigration(version, domainsFilter, languageFilter, offline, appHome, new ObjectMap(), token);
     }
 
     public void runMigration(String version, Collection<Migration.MigrationDomain> domains,
-                             Collection<Migration.MigrationLanguage> languages, String appHome, ObjectMap params, String token)
-            throws CatalogException, IOException {
+                             Collection<Migration.MigrationLanguage> languages, boolean offline, String appHome, ObjectMap params,
+                             String token) throws CatalogException, IOException {
 
         logger.info("Run migrations");
         if (StringUtils.isNotEmpty(version)) {
@@ -136,6 +135,21 @@ public class MigrationManager {
             if (annotation.manual()) {
                 throw new MigrationException("Missing previous migration '" + annotation.id() + "' from version '" + annotation.version()
                         + "'. Please, run this migration manually using the CLI.");
+            }
+            if (!offline && annotation.offline()) {
+                throw MigrationException.offlineMigrationException(annotation);
+            }
+        }
+
+        // 2.2. Check that all target migrations can be run automatically
+        for (Class<? extends MigrationTool> migration : runnableMigrations) {
+            Migration annotation = getMigrationAnnotation(migration);
+            if (annotation.manual()) {
+                throw new MigrationException("Migration '" + annotation.id() + "' from version '" + annotation.version()
+                        + "' requires additional parameters and need to be run manually.");
+            }
+            if (!offline && annotation.offline()) {
+                throw MigrationException.offlineMigrationException(annotation);
             }
         }
 

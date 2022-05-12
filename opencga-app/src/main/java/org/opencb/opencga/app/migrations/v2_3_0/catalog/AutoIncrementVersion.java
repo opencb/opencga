@@ -15,6 +15,7 @@ import org.opencb.opencga.catalog.migration.MigrationTool;
         description = "Reorganise data in new collections (autoincrement version) #TASK-323", version = "2.3.0",
         language = Migration.MigrationLanguage.JAVA,
         domain = Migration.MigrationDomain.CATALOG,
+        offline = true,
         date = 20220512)
 public class AutoIncrementVersion extends MigrationTool {
 

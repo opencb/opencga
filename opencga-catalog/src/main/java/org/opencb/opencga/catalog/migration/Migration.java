@@ -45,6 +45,11 @@ public @interface Migration {
     int patch() default 1;
 
     /**
+     * @return whether the migration requires that the database is offline or can be accessed by users while it runs.
+     */
+    boolean offline() default false;
+
+    /**
      * @return whether the migration can be run as is or requires additional parameters that need to be passed by the administrator.
      */
     boolean manual() default false;

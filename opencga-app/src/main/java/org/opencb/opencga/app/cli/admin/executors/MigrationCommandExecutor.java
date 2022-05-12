@@ -93,6 +93,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                         .addColumn("Version", p -> p.getKey().version())
                         .addColumnEnum("Language", p -> p.getKey().language())
                         .addColumn("Manual", p -> Boolean.toString(p.getKey().manual()))
+                        .addColumn("Offline", p -> Boolean.toString(p.getKey().offline()))
                         .addColumnNumber("Patch", p -> p.getKey().patch())
                         .addColumn("Status", MigrationCommandExecutor::getMigrationStatus)
                         .addColumnNumber("RunPatch", p -> p.getValue().getPatch())
@@ -123,7 +124,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             String version = parseVersion(options.version);
 
             MigrationManager migrationManager = catalogManager.getMigrationManager();
-            migrationManager.runMigration(version, options.domain, options.language, appHome, token);
+            migrationManager.runMigration(version, options.domain, options.language, options.offline, appHome, token);
         }
     }
 
@@ -135,7 +136,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword).getToken();
 
             catalogManager.getMigrationManager().runManualMigration(parseVersion(options.version), options.id, Paths.get(appHome),
-                    options.force, new ObjectMap(options.commonOptions.commonOptions.params), token);
+                    options.force, options.offline, new ObjectMap(options.commonOptions.commonOptions.params), token);
         }
     }
 
