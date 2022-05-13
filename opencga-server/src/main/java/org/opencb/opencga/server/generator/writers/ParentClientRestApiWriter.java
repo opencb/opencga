@@ -172,9 +172,16 @@ public abstract class ParentClientRestApiWriter {
         return getMethodName(restCategory, restEndpoint).replaceAll("_", "-");
     }
 
+
     protected static String getMethodName(RestCategory restCategory, RestEndpoint restEndpoint) {
         String methodName = "";
         String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
+        return getMethodName(subpath);
+    }
+
+    protected static String getMethodName(String subpath) {
+        String methodName = "";
+        // String subpath = restEndpoint.getPath().replace(restCategory.getPath() + "/", "");
         String[] items = subpath.split("/");
         if (items.length == 1) {
             methodName = items[0];
@@ -204,6 +211,8 @@ public abstract class ParentClientRestApiWriter {
                     && (!items[4].contains("}"))) {
                 //methodName = items[4] + "_" + items[3];
                 methodName = items[4] + "_" + items[1] + "_" + items[3];
+            } else if (!subpath.contains("{") && !subpath.contains("}")) {
+                methodName = items[4] + "_" + items[0] + "_" + items[1] + "_" + items[2] + "_" + items[3];
             }
         }
 
