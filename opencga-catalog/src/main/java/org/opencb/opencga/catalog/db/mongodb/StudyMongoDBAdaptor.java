@@ -271,7 +271,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         //Set ProjectId
         studyObject.put(PRIVATE_PROJECT, new Document()
-                .append(PRIVATE_ID, project.getId())
+                .append(ID, project.getId())
                 .append(PRIVATE_UID, project.getUid())
                 .append(PRIVATE_UUID, project.getUuid())
         );
@@ -311,7 +311,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         if (families != null) {
             for (Family family : families) {
-                dbAdaptorFactory.getCatalogFamilyDBAdaptor().insert(clientSession, study.getUid(), family, Collections.emptyList());
+                dbAdaptorFactory.getCatalogFamilyDBAdaptor().insert(clientSession, study.getUid(), family, null, Collections.emptyList());
             }
         }
 
@@ -356,7 +356,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public String getProjectIdByStudyUid(long studyUid) throws CatalogDBException {
         Document privateProjet = getPrivateProject(studyUid);
-        return privateProjet.getString(PRIVATE_ID);
+        return privateProjet.getString(ID);
     }
 
     int getCurrentRelease(ClientSession clientSession, long studyUid) throws CatalogDBException {

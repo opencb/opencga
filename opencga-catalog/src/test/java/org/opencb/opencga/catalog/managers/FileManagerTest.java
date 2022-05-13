@@ -680,7 +680,7 @@ public class FileManagerTest extends AbstractManagerTest {
         executorService.shutdown();
 
         int unexecuted = executorService.shutdownNow().size();
-        System.out.println("Do not execute " + unexecuted + " tasks!");
+        System.out.println("Number of tasks non-executed " + unexecuted);
         System.out.println("numFailures = " + numFailures);
         System.out.println("numOk.get() = " + numOk.get());
 

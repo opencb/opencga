@@ -6,7 +6,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.biodata.models.clinical.Disorder;
 import org.opencb.biodata.models.common.Status;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -70,61 +69,8 @@ public class InterpretationManagerTest extends GenericTest {
     public void tearDown() throws Exception {
     }
 
-    private Family getDummyFamily() {
-        Disorder disease1 = new Disorder("dis1", "Disease 1", "HPO", null, "", null);
-        Disorder disease2 = new Disorder("dis2", "Disease 2", "HPO", null, "", null);
-
-        Individual father = new Individual().setId("father").setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "",
-                null)));
-        Individual mother = new Individual().setId("mother").setDisorders(Arrays.asList(new Disorder("dis2", "dis2", "OT", null, "",
-                null)));
-
-        // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
-        // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father").setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "",
-                        null)))
-                .setSamples(Collections.singletonList(new Sample().setId("sample1")));
-        Individual relMother = new Individual().setId("mother").setDisorders(Arrays.asList(new Disorder("dis2", "dis2", "OT", null, "",
-                        null)))
-                .setSamples(Arrays.asList(new Sample().setId("sample3")));
-
-        Individual relChild1 = new Individual().setId("child1")
-                .setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null), new Disorder("dis2", "dis2", "OT", null,
-                        "", null)))
-                .setFather(father)
-                .setMother(mother)
-                .setSamples(Arrays.asList(
-                        new Sample().setId("sample2"),
-                        new Sample().setId("sample4")
-                ))
-                .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setId("child2")
-                .setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null)))
-                .setFather(father)
-                .setMother(mother)
-                .setSamples(Arrays.asList(
-                        new Sample().setId("sample5"),
-                        new Sample().setId("sample6")
-                ))
-                .setParentalConsanguinity(true);
-        Individual relChild3 = new Individual().setId("child3")
-                .setDisorders(Arrays.asList(new Disorder("dis1", "dis1", "OT", null, "", null)))
-                .setFather(father)
-                .setMother(mother)
-                .setSamples(Arrays.asList(
-                        new Sample().setId("sample7"),
-                        new Sample().setId("sample8")
-                ))
-                .setParentalConsanguinity(true);
-
-        return new Family("family", "family", null, Arrays.asList(disease1, disease2),
-                Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother), "", -1,
-                Collections.emptyList(), Collections.emptyMap());
-    }
-
     private DataResult<Family> createDummyFamily() throws CatalogException {
-        Family family = getDummyFamily();
-
+        Family family = DummyModelUtils.getDummyFamily("family");
         return familyManager.create(STUDY, family, INCLUDE_RESULT, sessionIdUser);
     }
 
