@@ -43,7 +43,10 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortStatus;
-import org.opencb.opencga.core.models.common.*;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.ExternalSource;
+import org.opencb.opencga.core.models.common.RgaIndex;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileInternal;
@@ -1096,9 +1099,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     SampleDBAdaptor.QueryParams.MODIFICATION_DATE.key());
         }
 
-        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
-            ParamUtils.checkUpdateParametersMap(parameters);
-        }
+        ParamUtils.checkUpdateParametersMap(parameters);
 
         if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
             Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
@@ -1140,11 +1141,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         }
 
         checkUpdateAnnotations(study, sample, parameters, options, VariableSet.AnnotableDataModels.SAMPLE, sampleDBAdaptor, userId);
-
-        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
-            // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
-        }
 
         OpenCGAResult<Sample> update = sampleDBAdaptor.update(sample.getUid(), parameters, study.getVariableSets(), options);
         if (options.getBoolean(ParamConstants.INCLUDE_RESULT_PARAM)) {

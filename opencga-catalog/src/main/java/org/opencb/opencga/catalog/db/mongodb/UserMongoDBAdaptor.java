@@ -117,7 +117,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         user.setProjects(Collections.emptyList());
 
         Document userDocument = userConverter.convertToStorageType(user);
-        userDocument.append(PRIVATE_ID, user.getId());
+        userDocument.append(ID, user.getId());
         userDocument.append(PRIVATE_PASSWORD, encryptPassword(password));
 
         userCollection.insert(clientSession, userDocument, null);
@@ -133,7 +133,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     @Override
     public OpenCGAResult changePassword(String userId, String oldPassword, String newPassword)
             throws CatalogDBException, CatalogAuthenticationException {
-        Document bson = new Document(PRIVATE_ID, userId)
+        Document bson = new Document(ID, userId)
                 .append(PRIVATE_PASSWORD, encryptPassword(oldPassword));
         Bson set = Updates.set(PRIVATE_PASSWORD, encryptPassword(newPassword));
 
@@ -149,7 +149,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         Document bson;
         try {
             bson = new Document()
-                    .append(PRIVATE_ID, userId)
+                    .append(ID, userId)
                     .append(PRIVATE_PASSWORD, encryptPassword(password));
         } catch (CatalogDBException e) {
             throw new CatalogAuthenticationException("Could not encrypt password: " + e.getMessage(), e);
@@ -261,7 +261,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         }
 
         Query query = new Query()
-                .append(ID.key(), userId)
+                .append(ID, userId)
                 .append(FILTERS_ID.key(), name);
         return new OpenCGAResult(userCollection.update(parseQuery(query), new Document("$set", parameters), null));
     }
@@ -305,9 +305,9 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         Bson bson = parseQuery(query);
         QueryOptions userOptions;
         if (includeProjects(options)) {
-            userOptions = filterQueryOptions(options, Arrays.asList(ID.key(), PROJECTS_UID.key()));
+            userOptions = filterQueryOptions(options, Arrays.asList(ID, PROJECTS_UID.key()));
         } else {
-            userOptions = filterQueryOptions(options, Collections.singletonList(ID.key()));
+            userOptions = filterQueryOptions(options, Collections.singletonList(ID));
         }
         DataResult<User> userDataResult = userCollection.find(bson, null, userConverter, userOptions);
 
@@ -747,7 +747,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             try {
                 switch (queryParam) {
                     case ID:
-                        addAutoOrQuery(PRIVATE_ID, queryParam.key(), query, queryParam.type(), andBsonList);
+                        addAutoOrQuery(ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);

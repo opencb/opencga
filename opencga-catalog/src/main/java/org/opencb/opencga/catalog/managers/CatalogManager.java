@@ -187,7 +187,7 @@ public class CatalogManager implements AutoCloseable {
             throw new CatalogException("Nothing to install. There already exists a catalog database");
         }
         if (!PasswordUtils.isStrongPassword(password)) {
-            throw new CatalogException("Invalid password. Check password strength for user " + password);
+            throw new CatalogException("Invalid password. Check password strength for user ");
         }
         ParamUtils.checkParameter(secretKey, "secretKey");
         ParamUtils.checkParameter(password, "password");

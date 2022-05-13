@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
+import com.mongodb.client.ClientSession;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.DataResult;
@@ -26,6 +27,7 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.IndividualMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.mongodb.SampleMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -36,7 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
 
@@ -45,10 +47,10 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
     private long studyUid;
     private String user;
 
-    private SampleDBAdaptor sampleDBAdaptor;
+    private SampleMongoDBAdaptor sampleDBAdaptor;
     private QueryOptions sampleQueryOptions;
 
-    private IndividualDBAdaptor individualDBAdaptor;
+    private IndividualMongoDBAdaptor individualDBAdaptor;
 
     private Queue<Document> individualListBuffer;
 
@@ -56,16 +58,16 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
 
     private static final int BUFFER_SIZE = 100;
 
-    public IndividualCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, AnnotableConverter<? extends Annotable> converter,
-                                            Function<Document, Document> filter, MongoDBAdaptorFactory dbAdaptorFactory,
-                                            QueryOptions options) {
-        this(mongoCursor, converter, filter, dbAdaptorFactory, 0, null, options);
+    public IndividualCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
+                                            AnnotableConverter<? extends Annotable> converter, UnaryOperator<Document> filter,
+                                            MongoDBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
+        this(mongoCursor, clientSession, converter, filter, dbAdaptorFactory, 0, null, options);
     }
 
-    public IndividualCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, AnnotableConverter<? extends Annotable> converter,
-                                            Function<Document, Document> filter, MongoDBAdaptorFactory dbAdaptorFactory,
-                                            long studyUid, String user, QueryOptions options) {
-        super(mongoCursor, converter, filter, options);
+    public IndividualCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
+                                            AnnotableConverter<? extends Annotable> converter, UnaryOperator<Document> filter,
+                                            MongoDBAdaptorFactory dbAdaptorFactory, long studyUid, String user, QueryOptions options) {
+        super(mongoCursor, clientSession, converter, filter, options);
 
         this.user = user;
         this.studyUid = studyUid;
@@ -158,9 +160,9 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
                 DataResult<Document> individualDataResult;
                 if (user != null) {
                     query.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                    individualDataResult = individualDBAdaptor.nativeGet(studyUid, query, queryOptions, user);
+                    individualDataResult = individualDBAdaptor.nativeGet(clientSession, studyUid, query, queryOptions, user);
                 } else {
-                    individualDataResult = individualDBAdaptor.nativeGet(query, queryOptions);
+                    individualDataResult = individualDBAdaptor.nativeGet(clientSession, query, queryOptions);
                 }
 
                 for (Document individual : individualDataResult.getResults()) {
@@ -198,9 +200,9 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
             try {
                 if (user != null) {
                     query.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                    sampleList = sampleDBAdaptor.nativeGet(studyUid, query, sampleQueryOptions, user).getResults();
+                    sampleList = sampleDBAdaptor.nativeGet(clientSession, studyUid, query, sampleQueryOptions, user).getResults();
                 } else {
-                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions).getResults();
+                    sampleList = sampleDBAdaptor.nativeGet(clientSession, query, sampleQueryOptions).getResults();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                 logger.warn("Could not obtain the samples associated to the individuals: {}", e.getMessage(), e);
@@ -210,8 +212,8 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
             // Map each sample uid - version to the sample entry
             Map<String, Document> sampleMap = new HashMap<>(sampleList.size());
             sampleList.forEach(sample ->
-                    sampleMap.put(String.valueOf(sample.get(IndividualDBAdaptor.QueryParams.UID.key())) + "__"
-                            + String.valueOf(sample.get(IndividualDBAdaptor.QueryParams.VERSION.key())), sample)
+                    sampleMap.put(sample.get(IndividualDBAdaptor.QueryParams.UID.key()) + "__"
+                            + sample.get(IndividualDBAdaptor.QueryParams.VERSION.key()), sample)
             );
 
             // Add the samples obtained to the corresponding individuals
@@ -224,7 +226,7 @@ public class IndividualCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDB
                         String version = String.valueOf(s.get(IndividualDBAdaptor.QueryParams.VERSION.key()));
                         String key = uid + "__" + version;
 
-                        // If the samples has been returned... (it might have not been fetched due to permissions issues)
+                        // If the samples have been returned... (it might have not been fetched due to permissions issues)
                         if (sampleMap.containsKey(key)) {
                             tmpSampleList.add(sampleMap.get(key));
                         }

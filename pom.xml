@@ -39,7 +39,7 @@
         <module>opencga-client</module>
         <module>opencga-server</module>
         <module>opencga-clinical</module>
-        <!--        <module>opencga-test</module>-->
+        <module>opencga-test</module>
     </modules>
 
     <properties>
@@ -74,7 +74,7 @@
         <!-- This prevents findbugs plugin to check all the dependency locations -->
         <dependency.locations.enabled>false</dependency.locations.enabled>
 
-        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.source>1.8</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -204,10 +204,6 @@
                         <artifactId>protobuf-lite</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>com.google.protobuf</groupId>
-                        <artifactId>protobuf-java</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.mortbay.jetty</groupId>
                         <artifactId>servlet-api</artifactId>
                     </exclusion>
@@ -221,10 +217,6 @@
                     <exclusion>
                         <groupId>org.apache.avro</groupId>
                         <artifactId>avro-ipc</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.google.protobuf</groupId>
-                        <artifactId>protobuf-java</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -413,6 +405,11 @@
                 <version>${jersey.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.glassfish.jersey.inject</groupId>
+                <artifactId>jersey-hk2</artifactId>
+                <version>${jersey.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-api</artifactId>
                 <version>${jjwt.version}</version>
@@ -551,6 +548,7 @@
                         org/opencb/opencga/app/**,
                         org/opencb/opencga/analysis/**,
                         org/opencb/opencga/server/**,
+                        org/opencb/opencga/test/**,
                         org/opencb/opencga/storage/app/**,
                         org/opencb/opencga/client/rest/clients/**,
                         org/opencb/opencga/storage/alignment/**,

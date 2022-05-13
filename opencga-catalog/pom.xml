@@ -70,10 +70,6 @@
             <groupId>org.apache.solr</groupId>
             <artifactId>solr-test-framework</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>com.google.protobuf</groupId>-->
-<!--            <artifactId>protobuf-java</artifactId>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>io.fabric8</groupId>
             <artifactId>kubernetes-client</artifactId>
