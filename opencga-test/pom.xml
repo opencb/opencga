@@ -17,31 +17,106 @@
 <!--<?xml version="1.0" encoding="UTF-8"?>-->
 
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.opencb.opencga</groupId>
+        <artifactId>opencga</artifactId>
+        <version>2.3.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
 
-    <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga-test</artifactId>
-    <version>2.3.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
+    <version>${opencga.version}</version>
+    <packaging>jar</packaging>
 
     <dependencies>
         <dependency>
-            <groupId>smartrics.restfixture</groupId>
-            <artifactId>smartrics-RestFixture</artifactId>
-            <version>4.4</version>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.fitnesse</groupId>
-            <artifactId>fitnesse</artifactId>
-            <version>20161106</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>1.69</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-lib</artifactId>
         </dependency>
     </dependencies>
 
     <build>
+        <!--  <plugins>
+              <plugin>
+                  <groupId>org.codehaus.mojo</groupId>
+                  <artifactId>appassembler-maven-plugin</artifactId>
+                  <version>1.10</version>
+                  <executions>
+                      <execution>
+                          <phase>package</phase>
+                          <goals>
+                              <goal>assemble</goal>
+                          </goals>
+                      </execution>
+                  </executions>
+                  <configuration>
+                      <repositoryName>dependencies</repositoryName>
+                      <repositoryLayout>flat</repositoryLayout>
+                      <useWildcardClassPath>false</useWildcardClassPath>
+
+                      <configurationDirectory>conf</configurationDirectory>
+                      <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
+                      <extraJvmArguments>-Xms256m -Xmx2048m -Dfile.encoding=UTF-8</extraJvmArguments>
+                      <programs>
+                          <program>
+                              <id>opencga-fitnesse.sh</id>
+                              <mainClass>fitnesseMain.FitNesseMain</mainClass>
+                              <platforms>
+                                  <platform>unix</platform>
+                              </platforms>
+                              <commandLineArguments>
+                                  <commandLineArgument>-p 7070</commandLineArgument>
+                                  <commandLineArgument>-d fitnesse</commandLineArgument>
+                              </commandLineArguments>
+                          </program>
+                      </programs>
+                  </configuration>
+              </plugin>
+          </plugins>-->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>appassembler-maven-plugin</artifactId>
@@ -55,25 +130,21 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <repositoryName>dependencies</repositoryName>
+                    <repositoryName>libs</repositoryName>
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>false</useWildcardClassPath>
                     <!--By default, "etc".-->
                     <configurationDirectory>conf</configurationDirectory>
                     <!--Do we need to include the configuration folder in the classpath?-->
                     <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
-                    <extraJvmArguments>-Xms256m -Xmx2048m -Dfile.encoding=UTF-8</extraJvmArguments>
+                    <environmentSetupFileName>../conf/${opencga.env.file}</environmentSetupFileName>
                     <programs>
                         <program>
-                            <id>opencga-fitnesse.sh</id>
-                            <mainClass>fitnesseMain.FitNesseMain</mainClass>
+                            <id>opencga-test.sh</id>
+                            <mainClass>org.opencb.opencga.test.manager.TestGeneratorManager</mainClass>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
-                            <commandLineArguments>
-                                <commandLineArgument>-p 7070</commandLineArgument>
-                                <commandLineArgument>-d fitnesse</commandLineArgument>
-                            </commandLineArguments>
                         </program>
                     </programs>
                 </configuration>
