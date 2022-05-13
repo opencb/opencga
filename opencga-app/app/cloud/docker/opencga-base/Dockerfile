@@ -1,5 +1,5 @@
 ## Based on Debian 11 (bullseye)
-FROM openjdk:11-jre
+FROM openjdk:8-jre
 
 ARG BUILD_PATH="."
 
