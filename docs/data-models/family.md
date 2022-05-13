@@ -47,31 +47,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-52
 | **release**<br>*int* <br> | <p>An integer describing the current data release.</p> |
 | **version**<br>*int* <br> | <p>Autoincremental version assigned to the registered entry. By default, updates does not create new versions. To enable versioning, users must set the `incVersion` flag from the /update web service when updating the document.</p> |
 
-### Disorder
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Disorder.java).
-
-| Field | Description |
-| :---  | :--- |
-| **id**<br>*String* <br> | <p>Id to identify the object</p> |
-| **name**<br>*String* <br> | <p>Object name</p> |
-| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
-| **source**<br>*String* <br> | <p>Ontology source</p> |
-| **url**<br>*String* <br> | <p>Ontology url</p> |
-| **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
-
-### Status
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
-
-
-### FamilyQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyQualityControl.java).
-
-| Field | Description |
-| :---  | :--- |
-| **relatedness**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/family#relatednessreport"><em>RelatednessReport</em></a>>* <br> | <p>Reports of family relationship.</p> |
-| **files**<br>*List<<em>String</em>>* <br> | <p>File IDs related to the quality control.</p> |
-| **comments**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/family#clinicalcomment"><em>ClinicalComment</em></a>>* <br> | <p>Comments related to the quality control.</p> |
-
 ### FamilyInternal
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyInternal.java).
 
@@ -80,6 +55,10 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-52
 | **status**<br>*[InternalStatus](https://docs.opencga.opencb.org/data-models/family#internalstatus)* <br> | <p>Status of the internal object.</p> |
 | **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
+
+### Status
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
+
 
 ### Phenotype
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Phenotype.java).
@@ -94,6 +73,31 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **source**<br>*String* <br> | <p>Ontology source</p> |
 | **url**<br>*String* <br> | <p>Ontology url</p> |
 | **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
+
+### FamilyQualityControl
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/family/FamilyQualityControl.java).
+
+| Field | Description |
+| :---  | :--- |
+| **relatedness**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/family#relatednessreport"><em>RelatednessReport</em></a>>* <br> | <p>Reports of family relationship.</p> |
+| **files**<br>*List<<em>String</em>>* <br> | <p>File IDs related to the quality control.</p> |
+| **comments**<br>*List<<a href="https://docs.opencga.opencb.org/data-models/family#clinicalcomment"><em>ClinicalComment</em></a>>* <br> | <p>Comments related to the quality control.</p> |
+
+### Disorder
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/Disorder.java).
+
+| Field | Description |
+| :---  | :--- |
+| **id**<br>*String* <br> | <p>Id to identify the object</p> |
+| **name**<br>*String* <br> | <p>Object name</p> |
+| **description**<br>*String* <br> | <p>Users may provide a description for the entry.</p> |
+| **source**<br>*String* <br> | <p>Ontology source</p> |
+| **url**<br>*String* <br> | <p>Ontology url</p> |
+| **attributes**<br>*Map<String,String>* <br> | <p>Dictionary that can be customised by users to store any additional information users may require..</p> |
+
+### InternalStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
+
 
 ### ClinicalComment
 You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/clinical/ClinicalComment.java).
@@ -114,7 +118,3 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **maf**<br>*String* <br> | <p>Minor allele frequency to filter variants, e.g.: 1kg_phase3:CEU>0.35, cohort:ALL>0.05</p> |
 | **scores**<br>*List<<em>RelatednessScore</em>>* <br> | <p>Relatedness scores for pair of samples</p> |
 | **files**<br>*List<<em>String</em>>* <br> | <p>List of files of Relatedness Report</p> |
-
-### InternalStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
-

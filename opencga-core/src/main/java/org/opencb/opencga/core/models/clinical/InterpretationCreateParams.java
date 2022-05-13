@@ -108,7 +108,7 @@ public class InterpretationCreateParams {
 
     public Interpretation toClinicalInterpretation() {
         return new Interpretation(null, description, clinicalAnalysisId, analyst != null ? analyst.toClinicalAnalyst() : null, method,
-                creationDate, modificationDate,  Objects.requireNonNullElse(locked, false), primaryFindings, secondaryFindings,
+                creationDate, modificationDate,  locked != null ? locked : false, primaryFindings, secondaryFindings,
                 panels != null ? panels.stream().map(p -> new Panel().setId(p.getId())).collect(Collectors.toList()) : null,
                 comments != null ? comments.stream().map(ClinicalCommentParam::toClinicalComment).collect(Collectors.toList()) : null,
                 status != null ? status.toStatus() : null, attributes);

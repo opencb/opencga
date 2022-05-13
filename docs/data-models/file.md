@@ -65,8 +65,8 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-52
 | **internal**<br>*[FileInternal](https://docs.opencga.opencb.org/data-models/file#fileinternal)* <br> | <p>Internal field to manage the object.</p> |
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
-### URI
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/java/net/URI.java).
+### FileExperiment
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment.java).
 
 
 ### FileRelatedFile
@@ -85,6 +85,18 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 | **website**<br>*String* <br> | <p>Software website</p> |
 | **params**<br>*Map<String,String>* <br> | <p>Software params</p> |
 
+### URI
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/java/net/URI.java).
+
+
+### Status
+You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
+
+
+### FileQualityControl
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileQualityControl.java).
+
+
 ### FileInternal
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternal.java).
 
@@ -99,26 +111,6 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-52
 | **registrationDate**<br>*String* <br> | <p>Registration date of the internal object.</p> |
 | **lastModified**<br>*String* <br> | <p>Date of the last modification of the internal object.</p> |
 
-### FileQualityControl
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileQualityControl.java).
-
-
-### Status
-You can find the Java code [here](https://github.com/opencb/biodata/tree/develop/biodata-models/src/main/java/org/opencb/biodata/models/common/Status.java).
-
-
-### FileExperiment
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileExperiment.java).
-
-
-### FileInternalVariant
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternalVariant.java).
-
-
-### InternalStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
-
-
 ### MissingSamples
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/file/MissingSamples.java).
 
@@ -127,10 +119,18 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-52
 | **existing**<br>*List<<em>String</em>>* <br> | <p>List of existing samples.</p> |
 | **nonExisting**<br>*List<<em>String</em>>* <br> | <p>List of non existing samples.</p> |
 
-### FileStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileStatus.java).
+### InternalStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
 
 
 ### FileInternalAlignment
 You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternalAlignment.java).
+
+
+### FileInternalVariant
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileInternalVariant.java).
+
+
+### FileStatus
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/file/FileStatus.java).
 
