@@ -32,11 +32,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class RestApiParserTest {
 
@@ -50,7 +48,7 @@ public class RestApiParserTest {
 
     @Test
     public void parse() {
-        RestApi parse = restApiParser.parse(VariantOperationWebService.class);
+        RestApi parse = restApiParser.parse(VariantOperationWebService.class, true);
         List<RestEndpoint> create = parse.getCategories().get(0).getEndpoints().stream()
                 .filter(endpoint -> endpoint.getPath().contains("configure"))
                 .collect(Collectors.toList());

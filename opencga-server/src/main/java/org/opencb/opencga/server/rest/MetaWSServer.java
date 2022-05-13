@@ -16,22 +16,21 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.opencb.opencga.core.tools.annotations.Api;
-import org.opencb.opencga.core.tools.annotations.ApiOperation;
-import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.Api;
+import org.opencb.opencga.core.tools.annotations.ApiOperation;
+import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.generator.RestApiParser;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
 import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
 import org.opencb.opencga.server.rest.analysis.VariantWebService;
-import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
 import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 
 import javax.servlet.http.HttpServletRequest;
@@ -225,7 +224,7 @@ public class MetaWSServer extends OpenCGAWSServer {
     @GET
     @Path("/api")
     @ApiOperation(value = "API", response = List.class)
-    public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr) {
+    public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr, @QueryParam("summary") boolean summary) {
         Map<String, Class<?>> classMap = new LinkedHashMap<>();
         classMap.put("users", UserWSServer.class);
         classMap.put("projects", ProjectWSServer.class);
@@ -257,7 +256,7 @@ public class MetaWSServer extends OpenCGAWSServer {
                 classes.add(classMap.get(category));
             }
         }
-        RestApi restApi = new RestApiParser().parse(classes);
+        RestApi restApi = new RestApiParser().parse(classes, summary);
         return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(restApi.getCategories()), 1));
     }
 

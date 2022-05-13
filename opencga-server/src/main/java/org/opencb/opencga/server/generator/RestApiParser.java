@@ -48,19 +48,14 @@ public class RestApiParser {
     }
 
 
-    public RestApi parse(Class<?> clazz) {
-        return parse(Collections.singletonList(clazz));
+    public RestApi parse(Class<?> clazz, boolean summary) {
+        return parse(Collections.singletonList(clazz), summary);
     }
 
-    public RestApi getRestApiFlattenParameters(List<Class<?>> classes) {
-        RestApi restApi = new RestApi();
-        restApi.getCategories().addAll(getCategories(classes, true));
-        return restApi;
-    }
 
-    public RestApi parse(List<Class<?>> classes) {
+    public RestApi parse(List<Class<?>> classes, boolean summary) {
         RestApi restApi = new RestApi();
-        restApi.getCategories().addAll(getCategories(classes, false));
+        restApi.getCategories().addAll(getCategories(classes, summary));
         return restApi;
     }
 

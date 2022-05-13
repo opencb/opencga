@@ -64,14 +64,14 @@ public class ClientsGenerator {
         classes.add(AdminWSServer.class);
 
         try {
-            RestApi restApi = prepare(new RestApiParser().parse(classes));
+            RestApi restApi = prepare(new RestApiParser().parse(classes, true));
             config = ConfigurationManager.setUp();
             config.initialize();
 
             libraries(restApi);
 
 
-            RestApi flatRestApi = prepare(new RestApiParser().getRestApiFlattenParameters(classes));
+            RestApi flatRestApi = prepare(new RestApiParser().parse(classes, true));
             cli(flatRestApi);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
