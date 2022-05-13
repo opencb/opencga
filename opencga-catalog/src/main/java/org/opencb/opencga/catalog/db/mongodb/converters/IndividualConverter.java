@@ -63,8 +63,8 @@ public class IndividualConverter extends AnnotableConverter<Individual> {
             // We make sure we don't store duplicates
             Map<Long, Sample> sampleMap = new HashMap<>();
             for (Document sample : samples) {
-                long id = sample.getInteger("uid").longValue();
-                int version = sample.getInteger("version");
+                long id = sample.get("uid", Number.class).longValue();
+                int version = sample.get("version", Number.class).intValue();
                 if (id > 0) {
                     Sample tmpSample = new Sample()
                             .setVersion(version);

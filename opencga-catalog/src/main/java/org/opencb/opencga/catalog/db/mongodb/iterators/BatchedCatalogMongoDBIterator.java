@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Queue;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 public abstract class BatchedCatalogMongoDBIterator<T> extends CatalogMongoDBIterator<T> {
 
@@ -38,7 +38,7 @@ public abstract class BatchedCatalogMongoDBIterator<T> extends CatalogMongoDBIte
     }
 
     public BatchedCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                         GenericDocumentComplexConverter<T> converter, Function<Document, Document> filter,
+                                         GenericDocumentComplexConverter<T> converter, UnaryOperator<Document> filter,
                                          QueryOptions options) {
         super(mongoCursor, clientSession, converter, filter);
         this.options = options == null ? QueryOptions.empty() : options;

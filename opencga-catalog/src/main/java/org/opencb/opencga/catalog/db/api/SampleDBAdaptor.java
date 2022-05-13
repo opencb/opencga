@@ -86,11 +86,13 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
      */
     OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
-    default OpenCGAResult<Sample> setRgaIndexes(long studyUid, RgaIndex rgaIndex) throws CatalogDBException {
+    default OpenCGAResult<Sample> setRgaIndexes(long studyUid, RgaIndex rgaIndex)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return setRgaIndexes(studyUid, Collections.emptyList(), rgaIndex);
     }
 
-    OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex) throws CatalogDBException;
+    OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
