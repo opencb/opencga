@@ -80,7 +80,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     private final MongoDBCollection individualCollection;
     private final MongoDBCollection archiveIndividualCollection;
     private final MongoDBCollection deletedIndividualCollection;
-    private IndividualConverter individualConverter;
+    private final IndividualConverter individualConverter;
+    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public IndividualMongoDBAdaptor(MongoDBCollection individualCollection, MongoDBCollection archiveIndividualCollection,
                                     MongoDBCollection deletedIndividualCollection, Configuration configuration,
@@ -91,6 +92,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         this.archiveIndividualCollection = archiveIndividualCollection;
         this.deletedIndividualCollection = deletedIndividualCollection;
         this.individualConverter = new IndividualConverter();
+        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(individualCollection, archiveIndividualCollection,
+                deletedIndividualCollection);
     }
 
     @Override
@@ -188,7 +191,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         individualDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting individual '{}' ({})...", individual.getId(), individual.getUid());
-        insertVersionedModel(clientSession, individualDocument, individualCollection, archiveIndividualCollection);
+        versionedMongoDBAdaptor.insert(clientSession, individualDocument);
         logger.debug("Individual '{}' successfully inserted", individual.getId());
 
         if (individual.getSamples() != null && !individual.getSamples().isEmpty()) {
@@ -222,7 +225,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 .append(QueryParams.ID.key(), individualIds);
         Bson bsonQuery = parseQuery(query);
 
-        updateVersionedModel(clientSession, bsonQuery, individualCollection, archiveIndividualCollection, () -> {
+        versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
             DataResult update = individualCollection.update(clientSession, bsonQuery, bsonUpdate,
                     new QueryOptions(MongoDBCollection.MULTI, true));
             if (update.getNumMatches() == 0) {
@@ -251,10 +254,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
         Bson bson = parseQuery(query);
-        return updateVersionedModelNoVersionIncrement(bson, individualCollection, archiveIndividualCollection, () -> {
-            Document update = new Document()
-                    .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
-
+        return versionedMongoDBAdaptor.updateWithoutVersionIncrement(bson, () -> {
+            Document update = new Document("$addToSet", new Document(RELEASE_FROM_VERSION, release));
             QueryOptions queryOptions = new QueryOptions("multi", true);
 
             return new OpenCGAResult(individualCollection.update(bson, update, queryOptions));
@@ -390,7 +391,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 .append(QueryParams.STUDY_UID.key(), individual.getStudyUid())
                 .append(QueryParams.UID.key(), individual.getUid());
         Bson bson = parseQuery(tmpQuery);
-        return updateVersionedModel(clientSession, bson, individualCollection, archiveIndividualCollection, () -> {
+        return versionedMongoDBAdaptor.update(clientSession, bson, () -> {
             DataResult result = updateAnnotationSets(clientSession, individual.getUid(), parameters, variableSetList, queryOptions, true);
             UpdateDocument updateDocument = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions);
             Document individualUpdate = updateDocument.toFinalUpdateDocument();
@@ -934,7 +935,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
                 .append(QueryParams.UID.key(), individualUid)
                 .append(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(individualQuery);
-        deleteVersionedModel(clientSession, bson, individualCollection, archiveIndividualCollection, deletedIndividualCollection);
+        versionedMongoDBAdaptor.delete(clientSession, bson);
 
         // Remove individual reference from the list of samples
         List<Document> sampleList = individualDocument.getList(QueryParams.SAMPLES.key(), Document.class);
@@ -1254,7 +1255,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             queryCopy.remove(IndividualDBAdaptor.QueryParams.VERSION.key());
         }
 
-        boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
+        boolean uidVersionQueryFlag = versionedMongoDBAdaptor.generateUidVersionQuery(queryCopy, andBsonList);
 
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -1620,7 +1621,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         }
 
         Bson bsonQuery = parseQuery(query);
-        updateVersionedModel(clientSession, bsonQuery, individualCollection, archiveIndividualCollection, () -> {
+        versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
             QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
 
             logger.debug("Sample references extraction. Query: {}, update: {}",

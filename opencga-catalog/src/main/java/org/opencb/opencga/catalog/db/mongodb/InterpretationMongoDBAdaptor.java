@@ -72,7 +72,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     private final MongoDBCollection archiveInterpretationCollection;
     private final MongoDBCollection deleteInterpretationCollection;
     private final ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
-    private InterpretationConverter interpretationConverter;
+    private final InterpretationConverter interpretationConverter;
+    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public InterpretationMongoDBAdaptor(MongoDBCollection interpretationCollection, MongoDBCollection archiveInterpretationCollection,
                                         MongoDBCollection deleteInterpretationCollection, Configuration configuration,
@@ -84,6 +85,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         this.archiveInterpretationCollection = archiveInterpretationCollection;
         this.deleteInterpretationCollection = deleteInterpretationCollection;
         this.interpretationConverter = new InterpretationConverter();
+        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(interpretationCollection, archiveInterpretationCollection,
+                deleteInterpretationCollection);
     }
 
     public MongoDBCollection getInterpretationCollection() {
@@ -243,7 +246,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         interpretationObject.put(LAST_OF_VERSION, true);
         interpretationObject.put(LAST_OF_RELEASE, true);
 
-        insertVersionedModel(clientSession, interpretationObject, interpretationCollection, archiveInterpretationCollection);
+        versionedMongoDBAdaptor.insert(clientSession, interpretationObject);
 
         return interpretation;
     }
@@ -300,9 +303,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
         Bson bson = parseQuery(query);
 
-        return updateVersionedModelNoVersionIncrement(bson, interpretationCollection, archiveInterpretationCollection, () -> {
-            Document update = new Document()
-                    .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
+        return versionedMongoDBAdaptor.updateWithoutVersionIncrement(bson, () -> {
+            Document update = new Document("$addToSet", new Document(RELEASE_FROM_VERSION, release));
             QueryOptions queryOptions = new QueryOptions("multi", true);
             return new OpenCGAResult(interpretationCollection.update(bson, update, queryOptions));
         });
@@ -639,8 +641,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> {
-                Document interpretation =
-                        revertToVersion(clientSession, id, previousVersion, interpretationCollection, archiveInterpretationCollection);
+                Document interpretation = versionedMongoDBAdaptor.revertToVersion(clientSession, id, previousVersion);
 
                 // Update audit list from ClinicalAnalysis
                 updateClinicalAnalysisInterpretationReference(clientSession,
@@ -684,7 +685,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
             if (!updateOperation.isEmpty() || !updateDocument.getNestedUpdateList().isEmpty()) {
                 // Updates to Interpretation data model -> increment version
-                return updateVersionedModel(clientSession, bsonQuery, interpretationCollection, archiveInterpretationCollection, () -> {
+                return versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
                     DataResult update = DataResult.empty();
 
                     // Because it will generate a new interpretation version, we set version to +1 so the reference in clinical is also
@@ -884,8 +885,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                 .append(QueryParams.UID.key(), interpretation.getUid())
                 .append(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(query);
-        deleteVersionedModel(clientSession, bson, interpretationCollection, archiveInterpretationCollection,
-                deleteInterpretationCollection);
+        versionedMongoDBAdaptor.delete(clientSession, bson);
 
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
@@ -1054,7 +1054,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
             queryCopy.remove(QueryParams.VERSION.key());
         }
 
-        boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
+        boolean uidVersionQueryFlag = versionedMongoDBAdaptor.generateUidVersionQuery(queryCopy, andBsonList);
 
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

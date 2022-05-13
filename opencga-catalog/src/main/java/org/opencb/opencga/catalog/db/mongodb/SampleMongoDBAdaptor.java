@@ -81,8 +81,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     private final MongoDBCollection sampleCollection;
     private final MongoDBCollection archiveSampleCollection;
     private final MongoDBCollection deletedSampleCollection;
-    private SampleConverter sampleConverter;
-    private IndividualMongoDBAdaptor individualDBAdaptor;
+    private final SampleConverter sampleConverter;
+    private final IndividualMongoDBAdaptor individualDBAdaptor;
+    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public SampleMongoDBAdaptor(MongoDBCollection sampleCollection, MongoDBCollection archiveSampleCollection,
                                 MongoDBCollection deletedSampleCollection, Configuration configuration,
@@ -94,6 +95,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         this.deletedSampleCollection = deletedSampleCollection;
         sampleConverter = new SampleConverter();
         individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
+        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(sampleCollection, archiveSampleCollection, deletedSampleCollection);
     }
 
     @Override
@@ -182,7 +184,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         sampleObject.put(PRIVATE_INDIVIDUAL_UID, individualUid);
 
         logger.debug("Inserting sample '{}' ({})...", sample.getId(), sample.getUid());
-        insertVersionedModel(clientSession, sampleObject, sampleCollection, archiveSampleCollection);
+        versionedMongoDBAdaptor.insert(clientSession, sampleObject);
         logger.debug("Sample '{}' successfully inserted", sample.getId());
 
         if (individualUid > 0) {
@@ -316,7 +318,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 .append(QueryParams.STUDY_UID.key(), studyUid)
                 .append(QueryParams.UID.key(), sampleUid);
         Bson bsonQuery = parseQuery(tmpQuery);
-        return updateVersionedModel(clientSession, bsonQuery, sampleCollection, archiveSampleCollection, () -> {
+        return versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
             // Perform the update
             DataResult result = updateAnnotationSets(clientSession, sampleUid, parameters, variableSetList, queryOptions, true);
 
@@ -390,7 +392,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.UID.key(), sampleUids));
 
-        updateVersionedModel(clientSession, query, sampleCollection, archiveSampleCollection, () -> {
+        versionedMongoDBAdaptor.update(clientSession, query, () -> {
             QueryOptions options = new QueryOptions(MongoDBCollection.MULTI, true);
             return sampleCollection.update(clientSession, query, update, options);
         }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
@@ -418,7 +420,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 .append(QueryParams.UID.key(), sampleUids);
         Bson bsonQuery = parseQuery(query);
 
-        updateVersionedModel(clientSession, bsonQuery, sampleCollection, archiveSampleCollection, () -> {
+        versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
             DataResult update = sampleCollection.update(clientSession, bsonQuery, bsonUpdate,
                     new QueryOptions(MongoDBCollection.MULTI, true));
             if (update.getNumMatches() == 0) {
@@ -493,7 +495,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         Bson update = Updates.set(QueryParams.INDIVIDUAL_ID.key(), newIndividualId);
 
-        updateVersionedModel(clientSession, bsonQuery, sampleCollection, archiveSampleCollection,
+        versionedMongoDBAdaptor.update(clientSession, bsonQuery,
                 () -> sampleCollection.update(clientSession, bsonQuery, update, new QueryOptions(MongoDBCollection.MULTI, true)),
                 (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
     }
@@ -745,7 +747,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
 
         QueryOptions queryOptions = new QueryOptions("multi", true);
-        return updateVersionedModelNoVersionIncrement(bson, sampleCollection, archiveSampleCollection,
+        return versionedMongoDBAdaptor.updateWithoutVersionIncrement(bson,
                 () -> new OpenCGAResult<Sample>(sampleCollection.update(bson, update, queryOptions)));
     }
 
@@ -777,7 +779,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         Document bsonUpdate = updateDocument.toFinalUpdateDocument();
 
         return runTransaction(
-                (ClientSession clientSession) -> updateVersionedModel(clientSession, query, sampleCollection, archiveSampleCollection,
+                (ClientSession clientSession) -> versionedMongoDBAdaptor.update(clientSession, query,
                         () -> new OpenCGAResult<>(sampleCollection.update(query, bsonUpdate, new QueryOptions("multi", true))),
                         (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator)));
     }
@@ -898,7 +900,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 .append(QueryParams.UID.key(), sampleUid)
                 .append(QueryParams.STUDY_UID.key(), studyUid);
         Bson bsonQuery = parseQuery(sampleQuery);
-        deleteVersionedModel(clientSession, bsonQuery, sampleCollection, archiveSampleCollection, deletedSampleCollection);
+        versionedMongoDBAdaptor.delete(clientSession, bsonQuery);
         logger.debug("Sample {}({}) deleted", sampleId, sampleUid);
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
@@ -926,7 +928,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
-        updateVersionedModel(clientSession, bsonQuery, sampleCollection, archiveSampleCollection, () -> {
+        versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
             DataResult<?> result = sampleCollection.update(clientSession, bsonQuery, updateDocument, new QueryOptions("multi", true));
             logger.debug("File '{}' removed from {} samples", fileId, result.getNumUpdated());
             return result;
@@ -1244,7 +1246,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             queryCopy.remove(QueryParams.VERSION.key());
         }
 
-        boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
+        boolean uidVersionQueryFlag = versionedMongoDBAdaptor.generateUidVersionQuery(queryCopy, andBsonList);
 
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -1347,7 +1349,4 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
     }
 
-    public MongoDBCollection getSampleCollection() {
-        return sampleCollection;
-    }
 }

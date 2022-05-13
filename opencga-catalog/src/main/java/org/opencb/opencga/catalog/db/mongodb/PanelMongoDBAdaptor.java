@@ -59,7 +59,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     private final MongoDBCollection panelCollection;
     private final MongoDBCollection panelArchiveCollection;
     private final MongoDBCollection deletedPanelCollection;
-    private PanelConverter panelConverter;
+    private final PanelConverter panelConverter;
+    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBCollection panelArchiveCollection,
                                MongoDBCollection deletedPanelCollection, Configuration configuration,
@@ -70,6 +71,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         this.panelArchiveCollection = panelArchiveCollection;
         this.deletedPanelCollection = deletedPanelCollection;
         this.panelConverter = new PanelConverter();
+        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(panelCollection, panelArchiveCollection, deletedPanelCollection);
     }
 
     /**
@@ -132,7 +134,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         logger.debug("Inserting new panel '" + panel.getId() + "'");
 
         Document panelDocument = getPanelDocumentForInsertion(clientSession, panel, studyUid);
-        insertVersionedModel(clientSession, panelDocument, panelCollection, panelArchiveCollection);
+        versionedMongoDBAdaptor.insert(clientSession, panelDocument);
         logger.info("Panel '" + panel.getId() + "(" + panel.getUid() + ")' successfully created");
     }
 
@@ -340,7 +342,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         }
 
         Bson finalQuery = parseQuery(tmpQuery);
-        return updateVersionedModel(clientSession, finalQuery, panelCollection, panelArchiveCollection, () -> {
+        return versionedMongoDBAdaptor.update(clientSession, finalQuery, () -> {
                     logger.debug("Panel update: query : {}, update: {}",
                             finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                             panelUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
@@ -513,7 +515,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                 .append(QueryParams.UID.key(), panelUid)
                 .append(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(panelQuery);
-        deleteVersionedModel(clientSession, bson, panelCollection, panelArchiveCollection, deletedPanelCollection);
+        versionedMongoDBAdaptor.delete(clientSession, bson);
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
@@ -675,7 +677,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                 .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
         QueryOptions queryOptions = new QueryOptions("multi", true);
 
-        return updateVersionedModelNoVersionIncrement(bson, panelCollection, panelArchiveCollection,
+        return versionedMongoDBAdaptor.updateWithoutVersionIncrement(bson,
                 () -> new OpenCGAResult<Panel>(panelCollection.update(bson, update, queryOptions)));
     }
 
@@ -725,7 +727,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             queryCopy.remove(QueryParams.VERSION.key());
         }
 
-        boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
+        boolean uidVersionQueryFlag = versionedMongoDBAdaptor.generateUidVersionQuery(queryCopy, andBsonList);
 
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

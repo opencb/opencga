@@ -78,7 +78,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     private final MongoDBCollection familyCollection;
     private final MongoDBCollection archiveFamilyCollection;
     private final MongoDBCollection deletedFamilyCollection;
-    private FamilyConverter familyConverter;
+    private final FamilyConverter familyConverter;
+    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
     public FamilyMongoDBAdaptor(MongoDBCollection familyCollection, MongoDBCollection archiveFamilyCollection,
                                 MongoDBCollection deletedFamilyCollection, Configuration configuration,
@@ -89,6 +90,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         this.archiveFamilyCollection = archiveFamilyCollection;
         this.deletedFamilyCollection = deletedFamilyCollection;
         this.familyConverter = new FamilyConverter();
+        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(familyCollection, archiveFamilyCollection, deletedFamilyCollection);
     }
 
     /**
@@ -194,7 +196,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         familyDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         logger.debug("Inserting family '{}' ({})...", family.getId(), family.getUid());
-        insertVersionedModel(clientSession, familyDocument, familyCollection, archiveFamilyCollection);
+        versionedMongoDBAdaptor.insert(clientSession, familyDocument);
         logger.debug("Family '{}' successfully inserted", family.getId());
 
         // Add family reference to the members
@@ -352,7 +354,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 .append(QueryParams.UID.key(), family.getUid());
 
         Bson bsonQuery = parseQuery(tmpQuery);
-        return updateVersionedModel(clientSession, bsonQuery, familyCollection, archiveFamilyCollection, () -> {
+        return versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
             DataResult result = updateAnnotationSets(clientSession, family.getUid(), parameters, variableSetList, queryOptions, true);
             UpdateDocument updateDocument = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery);
 
@@ -522,7 +524,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 UpdateDocument updateDocument = parseAndValidateUpdateParams(clientSession, params, tmpQuery);
                 Document bsonUpdate = updateDocument.toFinalUpdateDocument();
                 Bson bsonQuery = parseQuery(tmpQuery);
-                updateVersionedModel(clientSession, bsonQuery, familyCollection, archiveFamilyCollection, () -> {
+                versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
                     DataResult<?> result = familyCollection.update(clientSession, bsonQuery, bsonUpdate, QueryOptions.empty());
                     if (result.getNumUpdated() != 1) {
                         throw new CatalogDBException("Family '" + family.getId() + "' could not be updated to the latest member versions");
@@ -584,7 +586,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                                 .append(QueryParams.STUDY_UID.key(), studyUid)
                                 .append(QueryParams.UID.key(), family.getUid())
                         );
-                        updateVersionedModel(clientSession, bsonQuery, familyCollection, archiveFamilyCollection, () -> {
+                        versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
                             Bson update = Updates.set(QueryParams.ROLES.key(), getMongoDBDocument(roles, QueryParams.ROLES.key()));
                             return familyCollection.update(clientSession, bsonQuery, update, QueryOptions.empty());
                         }, (MongoDBIterator<Document> fIterator) -> updateReferencesAfterFamilyVersionIncrement(clientSession, fIterator));
@@ -734,7 +736,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 .append(QueryParams.UID.key(), familyUid)
                 .append(QueryParams.STUDY_UID.key(), studyUid);
         Bson bson = parseQuery(familyQuery);
-        deleteVersionedModel(clientSession, bson, familyCollection, archiveFamilyCollection, deletedFamilyCollection);
+        versionedMongoDBAdaptor.delete(clientSession, bson);
         // Remove family references
         removeFamilyReferences(clientSession, familyDocument);
         logger.debug("Family {}({}) deleted", familyId, familyUid);
@@ -997,7 +999,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
         Bson bson = parseQuery(query);
 
-        return updateVersionedModelNoVersionIncrement(bson, familyCollection, archiveFamilyCollection, () -> {
+        return versionedMongoDBAdaptor.updateWithoutVersionIncrement(bson, () -> {
             Document update = new Document()
                     .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
 
@@ -1098,7 +1100,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
             queryCopy.remove(QueryParams.VERSION.key());
         }
 
-        boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
+        boolean uidVersionQueryFlag = versionedMongoDBAdaptor.generateUidVersionQuery(queryCopy, andBsonList);
 
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
