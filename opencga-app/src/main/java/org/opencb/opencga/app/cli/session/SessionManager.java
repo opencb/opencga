@@ -50,7 +50,7 @@ public class SessionManager {
     private ObjectReader objectReader;
     private Logger logger;
 
-    
+
     public SessionManager(ClientConfiguration clientConfiguration) throws ClientException {
         this(clientConfiguration, clientConfiguration.getCurrentHost().getName());
     }
@@ -125,12 +125,13 @@ public class SessionManager {
         Path sessionPath = sessionFolder.resolve(host + SESSION_FILENAME_SUFFIX);
         if (Files.exists(sessionPath)) {
             try {
+                logger.debug("Retrieving session from file " + sessionPath);
                 return objectReader.readValue(sessionPath.toFile());
             } catch (IOException e) {
                 logger.debug("Could not parse the session file properly");
             }
         }
-
+        logger.debug("Creating an empty session");
         Session session = createEmptySession();
         try {
             saveSession(session);
@@ -174,6 +175,8 @@ public class SessionManager {
         if (!Files.exists(sessionFolder)) {
             Files.createDirectory(sessionFolder);
         }
+        logger.debug("Saving '{}'", session);
+        logger.debug("Session file '{}'", host + SESSION_FILENAME_SUFFIX);
 
         Path sessionPath = sessionFolder.resolve(host + SESSION_FILENAME_SUFFIX);
         objectWriter.writeValue(sessionPath.toFile(), session);
