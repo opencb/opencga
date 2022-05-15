@@ -32,22 +32,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.StorageManager;
-import org.opencb.opencga.analysis.alignment.qc.AlignmentFlagStatsAnalysis;
-import org.opencb.opencga.analysis.alignment.qc.AlignmentStatsAnalysis;
 import org.opencb.opencga.analysis.models.FileInfo;
 import org.opencb.opencga.analysis.models.StudyInfo;
-import org.opencb.opencga.analysis.wrappers.deeptools.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.ToolException;
-import org.opencb.opencga.core.models.alignment.AlignmentFlagStatsParams;
-import org.opencb.opencga.core.models.alignment.AlignmentStatsParams;
-import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
@@ -228,7 +220,7 @@ public class AlignmentStorageManager extends StorageManager {
 //        System.out.println("file = " + file.getUri());
 
         // Get species and assembly from catalog
-        OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
+        OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().search(
                 new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyIdStr),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), token);
         if (projectQueryResult.getNumResults() != 1) {
@@ -443,7 +435,7 @@ public class AlignmentStorageManager extends StorageManager {
         }
 
         // Get species and assembly from catalog
-        OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
+        OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().search(
                 new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), study),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), token);
         if (projectQueryResult.getNumResults() != 1) {

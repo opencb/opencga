@@ -475,7 +475,8 @@ public class SampleMongoDBAdaptorTest {
     public void deleteSampleTest() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        Sample hg0097 = new Sample("HG0097", null, "A description", 1);
+        Sample hg0097 = new Sample("HG0097", null, "A description", 1)
+                .setInternal(SampleInternal.init());
         dbAdaptorFactory.getCatalogSampleDBAdaptor().insert(studyId, hg0097, Collections.emptyList(), null);
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,

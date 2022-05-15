@@ -154,30 +154,26 @@ public class UserManager extends AbstractManager {
         // Check if the users can be registered publicly or just the admin.
         ObjectMap auditParams = new ObjectMap("user", user);
 
-        String userId = user.getId();
-        // We add a condition to check if the registration is private + user (or system) is not trying to create the ADMINISTRATOR user
-        if (!authorizationManager.isPublicRegistration() && !OPENCGA.equals(user.getId())) {
-            userId = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
-            if (!OPENCGA.equals(userId)) {
-                String errorMsg = "The registration is closed to the public: Please talk to your administrator.";
-                auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
-                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
-                throw new CatalogException(errorMsg);
-            }
-        }
-
+        // Initialise fields
         ParamUtils.checkObj(user, "User");
         ParamUtils.checkValidUserId(user.getId());
         ParamUtils.checkParameter(user.getName(), "name");
+        user.setEmail(ParamUtils.defaultString(user.getEmail(), ""));
         if (StringUtils.isNotEmpty(user.getEmail())) {
             checkEmail(user.getEmail());
         }
-        ParamUtils.checkObj(user.getAccount(), "account");
-        user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
-        user.setFilters(ParamUtils.defaultObject(user.getFilters(), LinkedList::new));
-        user.setConfigs(ParamUtils.defaultObject(user.getConfigs(), HashMap::new));
-        user.setInternal(ParamUtils.defaultObject(user.getInternal(), UserInternal::new));
         user.setOrganization(ParamUtils.defaultObject(user.getOrganization(), ""));
+        ParamUtils.checkObj(user.getAccount(), "account");
+        user.getAccount().setType(ParamUtils.defaultObject(user.getAccount().getType(), Account.AccountType.GUEST));
+        user.getAccount().setCreationDate(TimeUtils.getTime());
+        user.getAccount().setExpirationDate(ParamUtils.defaultString(user.getAccount().getExpirationDate(), ""));
+        user.setInternal(new UserInternal(new UserStatus(UserStatus.READY)));
+        user.setQuota(ParamUtils.defaultObject(user.getQuota(), UserQuota::new));
+        user.setProjects(ParamUtils.defaultObject(user.getProjects(), Collections::emptyList));
+        user.setSharedProjects(ParamUtils.defaultObject(user.getSharedProjects(), Collections::emptyList));
+        user.setConfigs(ParamUtils.defaultObject(user.getConfigs(), HashMap::new));
+        user.setFilters(ParamUtils.defaultObject(user.getFilters(), LinkedList::new));
+        user.setAttributes(ParamUtils.defaultObject(user.getAttributes(), Collections::emptyMap));
 
         if (StringUtils.isEmpty(password)) {
             // The authentication origin must be different than internal
@@ -192,13 +188,19 @@ public class UserManager extends AbstractManager {
             user.getAccount().setAuthentication(new Account.AuthenticationOrigin(INTERNAL_AUTHORIZATION, false));
         }
 
-        checkUserExists(user.getId());
-        user.getInternal().setStatus(new UserStatus());
-
-        if (user.getAccount().getType() == null) {
-            user.getAccount().setType(Account.AccountType.GUEST);
+        String userId = user.getId();
+        // We add a condition to check if the registration is private + user (or system) is not trying to create the ADMINISTRATOR user
+        if (!authorizationManager.isPublicRegistration() && !OPENCGA.equals(user.getId())) {
+            userId = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
+            if (!OPENCGA.equals(userId)) {
+                String errorMsg = "The registration is closed to the public: Please talk to your administrator.";
+                auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
+                        new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
+                throw new CatalogException(errorMsg);
+            }
         }
-        user.getAccount().setCreationDate(TimeUtils.getTime());
+
+        checkUserExists(user.getId());
 
         try {
             if (!PasswordUtils.isStrongPassword(password)) {

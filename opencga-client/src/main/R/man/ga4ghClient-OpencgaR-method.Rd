@@ -34,7 +34,7 @@ This function implements the OpenCGA calls for managing GA4GH.
 The following table summarises the available \emph{actions} for this client:\tabular{llr}{
    endpointName \tab Endpoint WS \tab parameters accepted \cr
    searchReads \tab /{apiVersion}/ga4gh/reads/search \tab  \cr
-   fetchReads \tab /{apiVersion}/ga4gh/reads/{study}/{file} \tab file, study, referenceName, start, end, referenceGenome \cr
+   fetchReads \tab /{apiVersion}/ga4gh/reads/{study}/{file} \tab file\link{*}, study\link{*}, referenceName, start, end, referenceGenome \cr
    responses \tab /{apiVersion}/ga4gh/responses \tab chrom\link{*}, pos\link{*}, allele\link{*}, ref, beacon\link{*} \cr
    searchVariants \tab /{apiVersion}/ga4gh/variants/search \tab  \cr
 }

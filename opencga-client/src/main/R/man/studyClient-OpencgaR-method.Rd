@@ -8,10 +8,10 @@
   OpencgaR,
   members,
   study,
-  templateId,
   variableSet,
   group,
   studies,
+  templateId,
   endpointName,
   params = NULL,
   ...
@@ -22,13 +22,13 @@
 
 \item{study}{Study [\link{user@}project:]study where study and project can be either the ID or UUID.}
 
-\item{templateId}{Template id.}
-
 \item{variableSet}{VariableSet id of the VariableSet to be updated.}
 
 \item{group}{Group name.}
 
 \item{studies}{Comma separated list of Studies [\link{user@}project:]study where study and project can be either the ID or UUID up to a maximum of 100.}
+
+\item{templateId}{Template id.}
 
 \item{project}{Project \link{user@}project where project can be either the ID or the alias.}
 
@@ -96,6 +96,8 @@
 
 \item{jobTags}{Job tags.}
 
+\item{file}{File to upload.}
+
 \item{include}{Fields included in the response, whole JSON path must be provided.}
 
 \item{exclude}{Fields excluded in the response, whole JSON path must be provided.}
@@ -120,17 +122,17 @@ The following table summarises the available \emph{actions} for this client:\tab
    info \tab /{apiVersion}/studies/{studies}/info \tab include, exclude, studies\link{*} \cr
    searchAudit \tab /{apiVersion}/studies/{study}/audit/search \tab include, exclude, limit, skip, count, study\link{*}, operationId, userId, action, resource, resourceId, resourceUuid, status, date \cr
    groups \tab /{apiVersion}/studies/{study}/groups \tab study\link{*}, id, silent \cr
-   updateGroups \tab /{apiVersion}/studies/{study}/groups/update \tab study, action, body\link{*} \cr
-   updateUsers \tab /{apiVersion}/studies/{study}/groups/{group}/users/update \tab study, group, action, body\link{*} \cr
+   updateGroups \tab /{apiVersion}/studies/{study}/groups/update \tab study\link{*}, action, body\link{*} \cr
+   updateGroupsUsers \tab /{apiVersion}/studies/{study}/groups/{group}/users/update \tab study\link{*}, group\link{*}, action, body\link{*} \cr
    permissionRules \tab /{apiVersion}/studies/{study}/permissionRules \tab study\link{*}, entity\link{*} \cr
-   updatePermissionRules \tab /{apiVersion}/studies/{study}/permissionRules/update \tab study, entity\link{*}, action, body\link{*} \cr
-   runTemplates \tab /{apiVersion}/studies/{study}/templates/run \tab study, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
-   uploadTemplates \tab /{apiVersion}/studies/{study}/templates/upload \tab study \cr
-   deleteTemplates \tab /{apiVersion}/studies/{study}/templates/{templateId}/delete \tab study, templateId \cr
+   updatePermissionRules \tab /{apiVersion}/studies/{study}/permissionRules/update \tab study\link{*}, entity\link{*}, action, body\link{*} \cr
+   runTemplates \tab /{apiVersion}/studies/{study}/templates/run \tab study\link{*}, jobId, jobDependsOn, jobDescription, jobTags, body\link{*} \cr
+   uploadTemplates \tab /{apiVersion}/studies/{study}/templates/upload \tab file, study\link{*} \cr
+   deleteTemplates \tab /{apiVersion}/studies/{study}/templates/{templateId}/delete \tab study, templateId\link{*} \cr
    update \tab /{apiVersion}/studies/{study}/update \tab include, exclude, study\link{*}, includeResult, body\link{*} \cr
    variableSets \tab /{apiVersion}/studies/{study}/variableSets \tab study\link{*}, id \cr
-   updateVariableSets \tab /{apiVersion}/studies/{study}/variableSets/update \tab study, action, body\link{*} \cr
-   updateVariables \tab /{apiVersion}/studies/{study}/variableSets/{variableSet}/variables/update \tab study, variableSet, action, body\link{*} \cr
+   updateVariableSets \tab /{apiVersion}/studies/{study}/variableSets/update \tab study\link{*}, action, body\link{*} \cr
+   updateVariableSetsVariables \tab /{apiVersion}/studies/{study}/variableSets/{variableSet}/variables/update \tab study\link{*}, variableSet\link{*}, action, body\link{*} \cr
 }
 }
 \section{Endpoint /{apiVersion}/studies/acl/{members}/update}{

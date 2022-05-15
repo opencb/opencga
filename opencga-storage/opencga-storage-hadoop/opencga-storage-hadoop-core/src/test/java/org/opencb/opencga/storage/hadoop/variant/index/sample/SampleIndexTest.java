@@ -77,11 +77,13 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     private SampleIndexDBAdaptor sampleIndexDBAdaptor;
     private static boolean loaded = false;
     public static final String STUDY_NAME_3 = "study_3";
-    private static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2, STUDY_NAME_3);
+    public static final String STUDY_NAME_4 = "study_4";
+    private static final List<String> studies = Arrays.asList(STUDY_NAME, STUDY_NAME_2, STUDY_NAME_3, STUDY_NAME_4);
     private static final Map<String, List<String>> sampleNames = new HashMap<String, List<String>>() {{
         put(STUDY_NAME, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
         put(STUDY_NAME_2, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
         put(STUDY_NAME_3, Arrays.asList("NA12877", "NA12878"));
+        put(STUDY_NAME_4, Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"));
     }};
 //    private static List<List<String>> trios = Arrays.asList(
 //            Arrays.asList("NA19600", "NA19660", "NA19661"),
@@ -159,6 +161,14 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
         assertEquals(2, versioned.getVersion());
         // Not annotated
         assertEquals(StudyMetadata.SampleIndexConfigurationVersioned.Status.STAGING, versioned.getStatus());
+
+        // Study 4, dense
+        params = new ObjectMap()
+                .append(VariantStorageOptions.STUDY.key(), STUDY_NAME_4)
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
+        runETL(engine, getResourceUri("variant-test-dense.vcf"), outputUri, params, true, true, true);
+        engine.familyIndex(STUDY_NAME_4, trios, new ObjectMap());
 
 
         // ---------------- Annotate

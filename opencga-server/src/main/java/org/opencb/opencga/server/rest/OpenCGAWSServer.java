@@ -425,9 +425,6 @@ public class OpenCGAWSServer {
                 case QueryOptions.ORDER:
                     queryOptions.put(entry.getKey(), value);
                     break;
-                case Constants.INCREMENT_VERSION:
-                    queryOptions.put(Constants.INCREMENT_VERSION, Boolean.parseBoolean(value));
-                    break;
                 case QueryOptions.COUNT:
                     count = Boolean.parseBoolean(value);
                     queryOptions.put(entry.getKey(), count);

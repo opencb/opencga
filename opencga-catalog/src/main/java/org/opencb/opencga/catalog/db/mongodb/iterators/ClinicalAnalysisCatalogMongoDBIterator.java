@@ -16,14 +16,15 @@
 
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
+import com.mongodb.client.ClientSession;
 import org.apache.commons.collections4.CollectionUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
-import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.mongodb.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -40,11 +41,11 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
     private long studyUid;
     private String user;
 
-    private FileDBAdaptor fileDBAdaptor;
-    private FamilyDBAdaptor familyDBAdaptor;
-    private IndividualDBAdaptor individualDBAdaptor;
-    private InterpretationDBAdaptor interpretationDBAdaptor;
-    private PanelDBAdaptor panelDBAdaptor;
+    private FileMongoDBAdaptor fileDBAdaptor;
+    private FamilyMongoDBAdaptor familyDBAdaptor;
+    private IndividualMongoDBAdaptor individualDBAdaptor;
+    private InterpretationMongoDBAdaptor interpretationDBAdaptor;
+    private PanelMongoDBAdaptor panelDBAdaptor;
     private QueryOptions fileQueryOptions;
     private QueryOptions familyQueryOptions;
     private QueryOptions individualQueryOptions;
@@ -64,14 +65,16 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
 
     private static final String UID_VERSION_SEP = "___";
 
-    public ClinicalAnalysisCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, GenericDocumentComplexConverter<E> converter,
-                                                  DBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
-        this(mongoCursor, converter, dbAdaptorFactory, 0, null, options);
+    public ClinicalAnalysisCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
+                                                  GenericDocumentComplexConverter<E> converter, MongoDBAdaptorFactory dbAdaptorFactory,
+                                                  QueryOptions options) {
+        this(mongoCursor, clientSession, converter, dbAdaptorFactory, 0, null, options);
     }
 
-    public ClinicalAnalysisCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, GenericDocumentComplexConverter<E> converter,
-                                                  DBAdaptorFactory dbAdaptorFactory, long studyUid, String user, QueryOptions options) {
-        super(mongoCursor, converter);
+    public ClinicalAnalysisCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
+                                                  GenericDocumentComplexConverter<E> converter, MongoDBAdaptorFactory dbAdaptorFactory,
+                                                  long studyUid, String user, QueryOptions options) {
+        super(mongoCursor, clientSession, converter, null);
 
         this.user = user;
         this.studyUid = studyUid;
@@ -344,9 +347,9 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         try {
             if (user != null) {
                 query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                fileList = fileDBAdaptor.nativeGet(studyUid, query, fileQueryOptions, user).getResults();
+                fileList = fileDBAdaptor.nativeGet(clientSession, studyUid, query, fileQueryOptions, user).getResults();
             } else {
-                fileList = fileDBAdaptor.nativeGet(query, fileQueryOptions).getResults();
+                fileList = fileDBAdaptor.nativeGet(clientSession, query, fileQueryOptions).getResults();
             }
         } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
             logger.warn("Could not obtain the files associated to the clinical analyses: {}", e.getMessage(), e);
@@ -383,9 +386,9 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         try {
             if (user != null) {
                 query.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                familyList = familyDBAdaptor.nativeGet(studyUid, query, familyQueryOptions, user).getResults();
+                familyList = familyDBAdaptor.nativeGet(clientSession, studyUid, query, familyQueryOptions, user).getResults();
             } else {
-                familyList = familyDBAdaptor.nativeGet(query, familyQueryOptions).getResults();
+                familyList = familyDBAdaptor.nativeGet(clientSession, query, familyQueryOptions).getResults();
             }
         } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
             logger.warn("Could not obtain the families associated to the clinical analyses: {}", e.getMessage(), e);
@@ -440,9 +443,9 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         try {
             if (user != null) {
                 query.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                individualList = individualDBAdaptor.nativeGet(studyUid, query, individualQueryOptions, user).getResults();
+                individualList = individualDBAdaptor.nativeGet(clientSession, studyUid, query, individualQueryOptions, user).getResults();
             } else {
-                individualList = individualDBAdaptor.nativeGet(query, individualQueryOptions).getResults();
+                individualList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions).getResults();
             }
         } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
             logger.warn("Could not obtain the individuals associated to the clinical analyses: {}", e.getMessage(), e);
@@ -488,9 +491,9 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         try {
             if (user != null) {
                 query.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                panelList = panelDBAdaptor.nativeGet(studyUid, query, panelQueryOptions, user).getResults();
+                panelList = panelDBAdaptor.nativeGet(clientSession, studyUid, query, panelQueryOptions, user).getResults();
             } else {
-                panelList = panelDBAdaptor.nativeGet(query, panelQueryOptions).getResults();
+                panelList = panelDBAdaptor.nativeGet(clientSession, query, panelQueryOptions).getResults();
             }
         } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
             logger.warn("Could not obtain the panels associated to the clinical analyses: {}", e.getMessage(), e);
@@ -522,11 +525,12 @@ public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIte
         try {
             if (user != null) {
                 query.put(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                interpretationList = interpretationDBAdaptor.nativeGet(studyUid, query, interpretationQueryOptions, user).getResults();
+                interpretationList = interpretationDBAdaptor.nativeGet(clientSession, studyUid, query, interpretationQueryOptions, user)
+                        .getResults();
             } else {
-                interpretationList = interpretationDBAdaptor.nativeGet(query, interpretationQueryOptions).getResults();
+                interpretationList = interpretationDBAdaptor.nativeGet(clientSession, query, interpretationQueryOptions).getResults();
             }
-        } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
+        } catch (CatalogDBException e) {
             logger.warn("Could not obtain the interpretations associated to the clinical analyses: {}", e.getMessage(), e);
             return interpretationMap;
         }
