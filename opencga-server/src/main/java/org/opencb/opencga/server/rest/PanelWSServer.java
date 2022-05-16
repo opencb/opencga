@@ -130,7 +130,6 @@ public class PanelWSServer extends OpenCGAWSServer {
     public Response updatePanel(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of panel ids") @PathParam("panels") String panels,
-            @ApiParam(value = "Create a new version of panel", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = ParamConstants.INCLUDE_RESULT_DESCRIPTION, defaultValue = "false") @QueryParam(ParamConstants.INCLUDE_RESULT_PARAM) Boolean includeResult,
             @ApiParam(name = "body", value = "Panel parameters") PanelUpdateParams panelParams) {
         try {
@@ -183,6 +182,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.PANEL_ID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_ID_PARAM) String id,
             @ApiParam(value = ParamConstants.PANEL_UUID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_UUID_PARAM) String uuid,
             @ApiParam(value = ParamConstants.PANEL_NAME_DESCRIPTION) @QueryParam(ParamConstants.PANEL_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.PANEL_DISORDERS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_DISORDERS_PARAM) String disorders,
             @ApiParam(value = ParamConstants.PANEL_VARIANTS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_VARIANTS_PARAM) String variants,
             @ApiParam(value = ParamConstants.PANEL_GENES_DESCRIPTION) @QueryParam(ParamConstants.PANEL_GENES_PARAM) String genes,
@@ -212,6 +212,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.PANEL_ID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_ID_PARAM) String id,
             @ApiParam(value = ParamConstants.PANEL_UUID_DESCRIPTION) @QueryParam(ParamConstants.PANEL_UUID_PARAM) String uuid,
             @ApiParam(value = ParamConstants.PANEL_NAME_DESCRIPTION) @QueryParam(ParamConstants.PANEL_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.INTERNAL_STATUS_DESCRIPTION) @QueryParam(ParamConstants.INTERNAL_STATUS_PARAM) String internalStatus,
             @ApiParam(value = ParamConstants.PANEL_DISORDERS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_DISORDERS_PARAM) String disorders,
             @ApiParam(value = ParamConstants.PANEL_VARIANTS_DESCRIPTION) @QueryParam(ParamConstants.PANEL_VARIANTS_PARAM) String variants,
             @ApiParam(value = ParamConstants.PANEL_GENES_DESCRIPTION) @QueryParam(ParamConstants.PANEL_GENES_PARAM) String genes,

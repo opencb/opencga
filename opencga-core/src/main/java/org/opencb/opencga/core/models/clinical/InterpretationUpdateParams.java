@@ -40,8 +40,9 @@ public class InterpretationUpdateParams {
     private List<ClinicalVariant> secondaryFindings;
     private List<PanelReferenceParam> panels;
     private List<ClinicalCommentParam> comments;
-    private Map<String, Object> attributes;
     private StatusParam status;
+    private Boolean locked;
+    private Map<String, Object> attributes;
 
     public InterpretationUpdateParams() {
     }
@@ -49,7 +50,8 @@ public class InterpretationUpdateParams {
     public InterpretationUpdateParams(String description, ClinicalAnalystParam analyst, InterpretationMethod method,
                                       String creationDate, String modificationDate, List<ClinicalVariant> primaryFindings,
                                       List<ClinicalVariant> secondaryFindings, List<PanelReferenceParam> panels,
-                                      List<ClinicalCommentParam> comments, Map<String, Object> attributes, StatusParam status) {
+                                      List<ClinicalCommentParam> comments, StatusParam status, Boolean locked,
+                                      Map<String, Object> attributes) {
         this.description = description;
         this.analyst = analyst;
         this.method = method;
@@ -60,6 +62,7 @@ public class InterpretationUpdateParams {
         this.panels = panels;
         this.comments = comments;
         this.attributes = attributes;
+        this.locked = locked;
         this.status = status;
     }
 
@@ -80,8 +83,9 @@ public class InterpretationUpdateParams {
         sb.append(", secondaryFindings=").append(secondaryFindings);
         sb.append(", panels=").append(panels);
         sb.append(", comments=").append(comments);
-        sb.append(", attributes=").append(attributes);
         sb.append(", status=").append(status);
+        sb.append(", locked=").append(locked);
+        sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
     }
@@ -173,6 +177,15 @@ public class InterpretationUpdateParams {
 
     public InterpretationUpdateParams setStatus(StatusParam status) {
         this.status = status;
+        return this;
+    }
+
+    public Boolean getLocked() {
+        return locked;
+    }
+
+    public InterpretationUpdateParams setLocked(Boolean locked) {
+        this.locked = locked;
         return this;
     }
 

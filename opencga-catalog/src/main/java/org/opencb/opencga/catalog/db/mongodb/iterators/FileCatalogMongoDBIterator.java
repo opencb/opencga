@@ -23,7 +23,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.SampleMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -34,7 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
 
@@ -52,16 +51,14 @@ public class FileCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIterat
     private static final int BUFFER_SIZE = 100;
 
     public FileCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                      AnnotableConverter<? extends Annotable> converter, Function<Document, Document> filter,
-                                      FileMongoDBAdaptor fileMongoDBAdaptor, SampleMongoDBAdaptor sampleMongoDBAdaptor,
-                                      QueryOptions options) {
-        this(mongoCursor, clientSession, converter, filter, fileMongoDBAdaptor, sampleMongoDBAdaptor, 0, null, options);
+                                      AnnotableConverter<? extends Annotable> converter, UnaryOperator<Document> filter,
+                                      FileMongoDBAdaptor fileMongoDBAdaptor, QueryOptions options) {
+        this(mongoCursor, clientSession, converter, filter, fileMongoDBAdaptor, 0, null, options);
     }
 
     public FileCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                      AnnotableConverter<? extends Annotable> converter, Function<Document, Document> filter,
-                                      FileMongoDBAdaptor fileMongoDBAdaptor, SampleMongoDBAdaptor sampleMongoDBAdaptor, long studyUid,
-                                      String user, QueryOptions options) {
+                                      AnnotableConverter<? extends Annotable> converter, UnaryOperator<Document> filter,
+                                      FileMongoDBAdaptor fileMongoDBAdaptor, long studyUid, String user, QueryOptions options) {
         super(mongoCursor, clientSession, converter, filter, options);
 
         this.user = user;

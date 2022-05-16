@@ -24,7 +24,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.common.Annotable;
 
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 public class AnnotableCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
 
@@ -33,14 +33,14 @@ public class AnnotableCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E
 
     @Deprecated
     public AnnotableCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, AnnotableConverter<? extends Annotable> converter,
-                                           Function<Document, Document> filter, QueryOptions options) {
+                                           UnaryOperator<Document> filter, QueryOptions options) {
         super(mongoCursor, null, null, filter);
         this.options = ParamUtils.defaultObject(options, QueryOptions::new);
         this.converter = converter;
     }
 
     public AnnotableCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                           AnnotableConverter<? extends Annotable> converter, Function<Document, Document> filter,
+                                           AnnotableConverter<? extends Annotable> converter, UnaryOperator<Document> filter,
                                            QueryOptions options) {
         super(mongoCursor, clientSession, null, filter);
         this.options = ParamUtils.defaultObject(options, QueryOptions::new);

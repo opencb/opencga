@@ -1215,6 +1215,23 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         return trios;
     }
 
+    public List<List<String>> getTriosFromSamples(
+            String studyFqn, VariantStorageMetadataManager metadataManager, Collection<String> sampleIds, String token)
+            throws CatalogException {
+        OpenCGAResult<Individual> individualResult = catalogManager.getIndividualManager()
+                .search(studyFqn,
+                        new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleIds),
+                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                                IndividualDBAdaptor.QueryParams.ID.key(),
+                                IndividualDBAdaptor.QueryParams.NAME.key(),
+                                IndividualDBAdaptor.QueryParams.UID.key(),
+                                IndividualDBAdaptor.QueryParams.FATHER_UID.key(),
+                                IndividualDBAdaptor.QueryParams.MOTHER_UID.key(),
+                                IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key()
+                        )), token);
+        return getTrios(studyFqn, metadataManager, individualResult.getResults(), token);
+    }
+
     public List<List<String>> getTrios(
             String studyFqn, VariantStorageMetadataManager metadataManager, List<Individual> membersList, String sessionId)
             throws CatalogException {

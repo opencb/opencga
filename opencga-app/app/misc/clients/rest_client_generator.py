@@ -201,6 +201,10 @@ class RestClientGenerator(ABC):
             # e.g. /{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update
             if self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3], items[4]]):
                 method_name = '_'.join([items[4], items[1], items[3]])
+            elif not self.any_arg(items):
+                # e.g. /{apiVersion}/operation/variant/secondary/sample/index/configure
+                method_name = '_'.join(
+                    [items[4], items[0], items[1], items[2], items[3]])  # configure-variant-secondary-sample-index
         if not method_name:
             raise NotImplementedError('Case not implemented for PATH: "{}"'.format(self.get_endpoint_path(endpoint)))
         return re.sub(r'(?<!^)(?=[A-Z])', '_', method_name).lower()

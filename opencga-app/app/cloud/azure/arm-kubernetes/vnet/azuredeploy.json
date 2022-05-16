@@ -120,8 +120,13 @@
                             "serviceEndpoints": [
                                 {
                                     "service": "Microsoft.Storage"
+                                },
+                                {
+                                    "service": "Microsoft.Sql"
                                 }
                             ],
+                            "privateEndpointNetworkPolicies": "Disabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled",
                             "networkSecurityGroup": {
                                 "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('config').subnets.hdinsight.nsg.name)]"
                             }

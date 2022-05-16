@@ -47,6 +47,7 @@ import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelAclEntry;
+import org.opencb.opencga.core.models.panel.PanelInternal;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -321,6 +322,7 @@ public class PanelManager extends ResourceManager<Panel> {
         panel.setCreationDate(TimeUtils.getTime());
         panel.setModificationDate(TimeUtils.getTime());
         panel.setStatus(new Status());
+        panel.setInternal(PanelInternal.init());
         panel.setCategories(ParamUtils.defaultObject(panel.getCategories(), Collections.emptyList()));
         panel.setTags(ParamUtils.defaultObject(panel.getTags(), Collections.emptyList()));
         panel.setDescription(ParamUtils.defaultString(panel.getDescription(), ""));
@@ -539,9 +541,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
-            ParamUtils.checkUpdateParametersMap(parameters);
-        }
+        ParamUtils.checkUpdateParametersMap(parameters);
 
         // Check update permissions
         authorizationManager.checkPanelPermission(study.getUid(), panel.getUid(), userId, PanelAclEntry.PanelPermissions.WRITE);
@@ -549,11 +549,6 @@ public class PanelManager extends ResourceManager<Panel> {
         if (parameters.containsKey(PanelDBAdaptor.QueryParams.ID.key())) {
             ParamUtils.checkIdentifier(parameters.getString(PanelDBAdaptor.QueryParams.ID.key()),
                     PanelDBAdaptor.QueryParams.ID.key());
-        }
-
-        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
-            // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
         OpenCGAResult<Panel> update = panelDBAdaptor.update(panel.getUid(), parameters, options);

@@ -173,7 +173,8 @@ public class MetaWSServer extends OpenCGAWSServer {
 
         StopWatch storageTime = StopWatch.createStarted();
         try {
-            storageEngineFactory.getVariantStorageEngine().testConnection();
+            storageEngineFactory.getVariantStorageEngine(null, configuration.getDatabasePrefix() + "_test_connection", "test_connection")
+                    .testConnection();
             newHealthCheckResults.put("VariantStorageId", storageEngineFactory.getVariantStorageEngine().getStorageEngineId());
             newHealthCheckResults.put(VARIANT_STORAGE, OKAY);
         } catch (Exception e) {

@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.models.study.configuration;
 
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
 import org.opencb.opencga.core.models.study.StudyVariantEngineConfiguration;
 
 public class StudyConfiguration {
@@ -16,7 +18,8 @@ public class StudyConfiguration {
     }
 
     public static StudyConfiguration init() {
-        return new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration(), null);
+        return new StudyConfiguration(ClinicalAnalysisStudyConfiguration.defaultConfiguration(),
+                new StudyVariantEngineConfiguration(new ObjectMap(), SampleIndexConfiguration.defaultConfiguration()));
     }
 
     @Override
