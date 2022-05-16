@@ -164,6 +164,17 @@ public class CategoryConfig {
         return true;
     }
 
+    public Command getCommand(String commandName) {
+        if (commands != null) {
+            for (Command cmd : commands) {
+                if (cmd.getName().equals(commandName)) {
+                    return cmd;
+                }
+            }
+        }
+        return null;
+    }
+
     public boolean isExtendedOptionCommand(String commandName) {
         if (commands != null) {
             for (Command cmd : commands) {
