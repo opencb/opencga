@@ -37,7 +37,7 @@ public class JwtManager {
 
     private final Logger logger;
 
-    // 32 characters to ensure it is at least 256 bytes long
+    // 32 characters to ensure it is at least 256 bits long
     public static final int SECRET_KEY_MIN_LENGTH = 32;
 
     JwtManager(String algorithm) {
