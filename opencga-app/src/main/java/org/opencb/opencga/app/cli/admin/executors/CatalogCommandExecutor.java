@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -169,9 +170,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         this.configuration.getAdmin().setSecretKey(commandOptions.secretKey);
         if (StringUtils.isEmpty(configuration.getAdmin().getSecretKey())) {
-            configuration.getAdmin().setSecretKey(PasswordUtils.getStrongRandomPassword(30));
+            configuration.getAdmin().setSecretKey(PasswordUtils.getStrongRandomPassword(JwtManager.SECRET_KEY_MIN_LENGTH));
         } else {
-            if (!PasswordUtils.isStrongPassword(configuration.getAdmin().getSecretKey(), 30)) {
+            if (!PasswordUtils.isStrongPassword(configuration.getAdmin().getSecretKey(), JwtManager.SECRET_KEY_MIN_LENGTH)) {
                 throw CatalogDBException.jwtSecretKeyException();
             }
         }
