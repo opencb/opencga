@@ -31,7 +31,8 @@ class RestClientGenerator(ABC):
             'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretationId}/update': {
                 'method_name': 'update_interpretation'},
             'analysis/clinical/{clinicalAnalysis}/interpretation/{interpretations}/delete': {
-                'method_name': 'delete_interpretation'}
+                'method_name': 'delete_interpretation'},
+            'panels/import': {'method_name': 'import_panels'}
         }
         self.categories = {
             'Users': 'User',
