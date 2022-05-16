@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Metadata;
@@ -181,6 +182,15 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     public void initializeMetaCollection(Configuration configuration) throws CatalogException {
         Metadata metadata = new Metadata().setIdCounter(0L).setVersion(VERSION);
 
+        // Ensure JWT secret key is long and secure
+        String secretKey = configuration.getAdmin().getSecretKey();
+        if (StringUtils.isEmpty(secretKey)) {
+            throw new CatalogDBException("Missing JWT secret key");
+        } else if (!PasswordUtils.isStrongPassword(secretKey)) {
+            throw new CatalogDBException("JWT secret key should be at least 30 characters long and contain at least 1 upper case, " +
+                    "1 lower case, 1 digit and 1 special character ");
+        }
+
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
         metadataObject.put(ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document adminDocument = getMongoDBDocument(configuration.getAdmin(), "Admin");
@@ -221,19 +231,13 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
 
         Document adminDocument = new Document();
         if (StringUtils.isNotEmpty(params.getString(SECRET_KEY))) {
+            // Ensure JWT secret key is long and secure
+            String secretKey = params.getString(SECRET_KEY);
+            if (!PasswordUtils.isStrongPassword(secretKey, 30)) {
+                throw CatalogDBException.jwtSecretKeyException();
+            }
             adminDocument.append("admin.secretKey", params.getString(SECRET_KEY));
         }
-
-//        if (StringUtils.isNotEmpty(params.getString(ALGORITHM))) {
-//            String signature = params.getString(ALGORITHM);
-//            try {
-//                SignatureAlgorithm.valueOf(signature);
-//            } catch (Exception e) {
-//                logger.error("{}", e.getMessage(), e);
-//                throw new CatalogDBException("Unknown signature algorithm " + signature);
-//            }
-//            adminDocument.append("admin.algorithm", params.getString(ALGORITHM));
-//        }
 
         if (adminDocument.size() > 0) {
             Bson update = new Document("$set", adminDocument);

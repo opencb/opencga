@@ -133,4 +133,9 @@ public class CatalogDBException extends CatalogException {
         return new CatalogDBException("Update " + entry + ": Cannot update '" + field + "' parameter for multiple entries");
     }
 
+    public static CatalogDBException jwtSecretKeyException() {
+        return new CatalogDBException("JWT secret key should be at least 30 characters long and contain at least 1 upper case, 1 lower "
+                + "case, 1 digit and 1 special character ");
+    }
+
 }

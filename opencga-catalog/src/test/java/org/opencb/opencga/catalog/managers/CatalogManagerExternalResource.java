@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.TestParamConstants;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.PasswordUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -73,6 +74,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
             deleteFolderTree(opencgaHome.toFile());
             Files.createDirectory(opencgaHome);
         }
+        configuration.getAdmin().setSecretKey(PasswordUtils.getStrongRandomPassword(30));
         catalogManager = new CatalogManager(configuration);
         catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "", true);
         catalogManager.close();
