@@ -187,8 +187,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         if (StringUtils.isEmpty(secretKey)) {
             throw new CatalogDBException("Missing JWT secret key");
         } else if (!PasswordUtils.isStrongPassword(secretKey)) {
-            throw new CatalogDBException("JWT secret key should be at least 30 characters long and contain at least 1 upper case, " +
-                    "1 lower case, 1 digit and 1 special character ");
+            throw CatalogDBException.jwtSecretKeyException();
         }
 
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
