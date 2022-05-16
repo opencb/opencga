@@ -61,10 +61,14 @@
             </DefaultRolloverStrategy>
         </RollingFile>
 
-        <Routing name="RollingFileOrNull">
+        <Routing name="RollingFileJsonOrNull">
+            <Routes pattern="${upper:${sys:opencga.log.file.enabled}}">
+                <Route ref="RollingFileJson" key="TRUE" />
+            </Routes>
+        </Routing>
+        <Routing name="RollingFileTxtOrNull">
             <Routes pattern="${upper:${sys:opencga.log.file.enabled}}">
                 <Route ref="RollingFileTxt" key="TRUE" />
-                <Route ref="RollingFileJson" key="TRUE" />
             </Routes>
         </Routing>
 
@@ -72,7 +76,8 @@
     <Loggers>
         <Root level="DEBUG">
             <AppenderRef ref="Console"/>
-            <AppenderRef ref="RollingFileOrNull"/>
+            <AppenderRef ref="RollingFileJsonOrNull"/>
+            <AppenderRef ref="RollingFileTxtOrNull"/>
         </Root>
 
         <Logger name="org.mongodb.driver.cluster" level="WARN"/>
