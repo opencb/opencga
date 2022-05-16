@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.exceptions;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.catalog.auth.authentication.JwtManager;
 
 /**
  * Created by imedina on 11/09/14.
@@ -134,8 +135,8 @@ public class CatalogDBException extends CatalogException {
     }
 
     public static CatalogDBException jwtSecretKeyException() {
-        return new CatalogDBException("JWT secret key should be at least 30 characters long and contain at least 1 upper case, 1 lower "
-                + "case, 1 digit and 1 special character ");
+        return new CatalogDBException("JWT secret key should be at least " + JwtManager.SECRET_KEY_MIN_LENGTH + " characters long and "
+                + "contain at least 1 upper case, 1 lower case, 1 digit and 1 special character ");
     }
 
 }
