@@ -285,7 +285,8 @@ public class PhoenixHelper {
         if (connection != null) {
             logger.info("Close Phoenix connection {} called from {}", connection, ExceptionUtils.getOpencbStackTrace());
             connection.close();
-            logger.info("Global Phoenix Connections opened: #{}", GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getTotalSum());
+            logger.info("Global Phoenix Connections opened: #{}",
+                    GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getTotalSum());
         }
     }
 
