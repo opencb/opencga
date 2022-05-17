@@ -92,7 +92,6 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
     protected RestResponse<AuthenticationResponse> logout() throws IOException {
         logger.debug("Logout");
         RestResponse<AuthenticationResponse> res = new RestResponse();
-        CommandLineUtils.error("Logging out: " + LOGOUT);
         try {
             sessionManager.logoutSessionFile();
             Event event = new Event();

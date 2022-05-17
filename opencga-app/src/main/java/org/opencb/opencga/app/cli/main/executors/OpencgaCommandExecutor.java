@@ -246,12 +246,17 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                     studies.add(study.getFqn());
                 }
             }
-            // write CLI session file
-
-//                    CliSessionManager.getInstance().initUserSession(response.getToken(), user, response.getRefreshToken(), studies, this);
             this.sessionManager.saveSession(user, response.getToken(), response.getRefreshToken(), studies, this.host);
             res.setType(QueryType.VOID);
+        }
+        return res;
+    }
 
+    public RestResponse<AuthenticationResponse> refreshToken(AuthenticationResponse response) throws ClientException, IOException {
+        RestResponse<AuthenticationResponse> res = new RestResponse<>();
+        if (response != null) {
+            this.sessionManager.refreshSession(response.getRefreshToken(), this.host);
+            res.setType(QueryType.VOID);
         }
         return res;
     }
