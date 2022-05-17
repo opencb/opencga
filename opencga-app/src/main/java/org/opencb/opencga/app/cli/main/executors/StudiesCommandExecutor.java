@@ -11,6 +11,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
@@ -18,39 +19,40 @@ import org.opencb.opencga.app.cli.main.options.StudiesCommandOptions;
 
 import org.opencb.opencga.app.cli.main.parent.ParentStudiesCommandExecutor;
 
-import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
-import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.opencga.core.models.audit.AuditRecord;
-import org.opencb.opencga.core.models.common.StatusParams;
-import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.study.GroupUpdateParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import java.io.InputStream;
 import java.lang.Object;
-import org.opencb.opencga.core.models.study.Variable;
-import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.core.models.study.StudyType;
 import java.net.URL;
+import java.util.Map;
+import java.util.Set;
+import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveForceRemoveAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import org.opencb.opencga.core.models.audit.AuditRecord.Status.Result;
+import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums.Entity;
 import org.opencb.opencga.core.models.common.Enums.PermissionRuleAction;
-import org.opencb.opencga.core.models.study.StudyAclUpdateParams;
-import org.opencb.opencga.core.models.study.CustomGroup;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.study.VariableSet;
-import org.opencb.opencga.core.models.study.GroupCreateParams;
-import java.io.InputStream;
-import org.opencb.opencga.core.models.study.VariableSetCreateParams;
-import org.opencb.opencga.core.models.study.PermissionRule;
-import org.opencb.opencga.catalog.utils.ParamUtils.AddRemoveForceRemoveAction;
-import org.opencb.opencga.core.models.study.StudyCreateParams;
-import java.util.Map;
-import org.opencb.opencga.core.models.study.StudyUpdateParams;
-import org.opencb.opencga.core.models.audit.AuditRecord.Status.Result;
-import java.util.Set;
-import org.opencb.opencga.core.models.study.Group;
-import org.opencb.opencga.core.models.study.TemplateParams;
-import org.opencb.opencga.core.models.study.StudyNotification;
 import org.opencb.opencga.core.models.common.Enums.Resource;
+import org.opencb.opencga.core.models.common.StatusParams;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.study.CustomGroup;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.GroupCreateParams;
+import org.opencb.opencga.core.models.study.GroupUpdateParams;
+import org.opencb.opencga.core.models.study.PermissionRule;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclUpdateParams;
+import org.opencb.opencga.core.models.study.StudyCreateParams;
+import org.opencb.opencga.core.models.study.StudyNotification;
+import org.opencb.opencga.core.models.study.StudyType;
+import org.opencb.opencga.core.models.study.StudyUpdateParams;
+import org.opencb.opencga.core.models.study.TemplateParams;
+import org.opencb.opencga.core.models.study.Variable.VariableType;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.study.VariableSetCreateParams;
 
 
 /*
@@ -191,17 +193,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        StudyType studyType= new StudyType();
-        invokeSetter(studyType, "id", commandOptions.typeId);
-        invokeSetter(studyType, "description", commandOptions.typeDescription);
-
-        StatusParams statusParams= new StatusParams();
-        invokeSetter(statusParams, "id", commandOptions.statusId);
-        invokeSetter(statusParams, "name", commandOptions.statusName);
-        invokeSetter(statusParams, "description", commandOptions.statusDescription);
-
-        StudyNotification studyNotification= new StudyNotification();
-
         StudyCreateParams studyCreateParams = new StudyCreateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Study> res = new RestResponse<>();
@@ -212,15 +203,32 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), studyCreateParams);
         }  else {
+            // Generate beans for nested objects
+            StudyType typeParam = new StudyType();
+            typeParam.setId(commandOptions.typeId);
+            typeParam.setDescription(commandOptions.typeDescription);
+
+            StudyNotification notificationParam = new StudyNotification();
+            //notificationParam.setWebhook(commandOptions.notificationWebhook);  // Unsupported param. FIXME
+
+            StatusParams statusParam = new StatusParams();
+            statusParam.setId(commandOptions.statusId);
+            statusParam.setName(commandOptions.statusName);
+            statusParam.setDescription(commandOptions.statusDescription);
+
+            //Set main body params
             studyCreateParams.setId(commandOptions.id);
             studyCreateParams.setName(commandOptions.name);
             studyCreateParams.setAlias(commandOptions.alias);
-            studyCreateParams.setType(studyType);
+            studyCreateParams.setType(typeParam);
+            //studyCreateParams.setSources(commandOptions.sources); // Unsupported param. FIXME 
             studyCreateParams.setDescription(commandOptions.description);
             studyCreateParams.setCreationDate(commandOptions.creationDate);
             studyCreateParams.setModificationDate(commandOptions.modificationDate);
-            studyCreateParams.setNotification(studyNotification);
-            studyCreateParams.setStatus(statusParams);
+            studyCreateParams.setNotification(notificationParam);
+            studyCreateParams.setStatus(statusParam);
+            //studyCreateParams.setAdditionalInfo(commandOptions.additionalInfo); // Unsupported param. FIXME 
+            studyCreateParams.setAttributes(new HashMap<>(commandOptions.attributes));
 
         }
         return openCGAClient.getStudyClient().create(studyCreateParams, queryParams);
@@ -415,6 +423,7 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), permissionRule);
         }  else {
             permissionRule.setId(commandOptions.id);
+            permissionRule.setQuery(new Query(commandOptions.query));
             permissionRule.setMembers(splitWithTrim(commandOptions.members));
             permissionRule.setPermissions(splitWithTrim(commandOptions.permissions));
 
@@ -465,17 +474,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        StudyType studyType= new StudyType();
-        invokeSetter(studyType, "id", commandOptions.typeId);
-        invokeSetter(studyType, "description", commandOptions.typeDescription);
-
-        StatusParams statusParams= new StatusParams();
-        invokeSetter(statusParams, "id", commandOptions.statusId);
-        invokeSetter(statusParams, "name", commandOptions.statusName);
-        invokeSetter(statusParams, "description", commandOptions.statusDescription);
-
-        StudyNotification studyNotification= new StudyNotification();
-
         StudyUpdateParams studyUpdateParams = new StudyUpdateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Study> res = new RestResponse<>();
@@ -486,14 +484,31 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), studyUpdateParams);
         }  else {
+            // Generate beans for nested objects
+            StudyType typeParam = new StudyType();
+            typeParam.setId(commandOptions.typeId);
+            typeParam.setDescription(commandOptions.typeDescription);
+
+            StudyNotification notificationParam = new StudyNotification();
+            //notificationParam.setWebhook(commandOptions.notificationWebhook);  // Unsupported param. FIXME
+
+            StatusParams statusParam = new StatusParams();
+            statusParam.setId(commandOptions.statusId);
+            statusParam.setName(commandOptions.statusName);
+            statusParam.setDescription(commandOptions.statusDescription);
+
+            //Set main body params
             studyUpdateParams.setName(commandOptions.name);
             studyUpdateParams.setAlias(commandOptions.alias);
-            studyUpdateParams.setType(studyType);
+            studyUpdateParams.setType(typeParam);
+            //studyUpdateParams.setSources(commandOptions.sources); // Unsupported param. FIXME 
             studyUpdateParams.setDescription(commandOptions.description);
             studyUpdateParams.setCreationDate(commandOptions.creationDate);
             studyUpdateParams.setModificationDate(commandOptions.modificationDate);
-            studyUpdateParams.setNotification(studyNotification);
-            studyUpdateParams.setStatus(statusParams);
+            studyUpdateParams.setNotification(notificationParam);
+            studyUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
+            studyUpdateParams.setStatus(statusParam);
+            //studyUpdateParams.setAdditionalInfo(commandOptions.additionalInfo); // Unsupported param. FIXME 
 
         }
         return openCGAClient.getStudyClient().update(commandOptions.study, studyUpdateParams, queryParams);
@@ -534,13 +549,15 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             variableSetCreateParams.setId(commandOptions.id);
             variableSetCreateParams.setName(commandOptions.name);
             variableSetCreateParams.setDescription(commandOptions.description);
+            //variableSetCreateParams.setEntities(commandOptions.entities); // Unsupported param. FIXME 
+            //variableSetCreateParams.setVariables(commandOptions.variables); // Unsupported param. FIXME 
 
-            if (commandOptions.unique != null){
-                ((VariableSetCreateParams)variableSetCreateParams).setUnique(commandOptions.unique);
+            if (commandOptions.unique != null) {
+                variableSetCreateParams.setUnique(commandOptions.unique);
              }
 
-            if (commandOptions.confidential != null){
-                ((VariableSetCreateParams)variableSetCreateParams).setConfidential(commandOptions.confidential);
+            if (commandOptions.confidential != null) {
+                variableSetCreateParams.setConfidential(commandOptions.confidential);
              }
 
         }
@@ -556,11 +573,6 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("action", commandOptions.action);
 
-        Variable.VariableType typeParam = null;
-        if (commandOptions.type != null) {
-         typeParam = Variable.VariableType.valueOf(commandOptions.type);
-
-        } 
 
         Variable variable = new Variable();
         if (commandOptions.jsonDataModel) {
@@ -572,22 +584,26 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variable);
         }  else {
-            variable.setId(commandOptions.id);
-            variable.setName(commandOptions.name);
-            variable.setCategory(commandOptions.category);
-            variable.setType(typeParam);
-            variable.setAllowedValues(splitWithTrim(commandOptions.allowedValues));
-            variable.setAllowedKeys(splitWithTrim(commandOptions.allowedKeys));
-            variable.setRank(commandOptions.rank);
-            variable.setDependsOn(commandOptions.dependsOn);
-            variable.setDescription(commandOptions.description);
+            variable.setId(commandOptions.bodyId);
+            variable.setName(commandOptions.bodyName);
+            variable.setCategory(commandOptions.bodyCategory);
+            variable.setType(commandOptions.bodyType == null ? null : Variable.VariableType.valueOf(commandOptions.bodyType));
+            //variable.setDefaultValue(commandOptions.bodyDefaultValue); // Unsupported param. FIXME 
+            variable.setAllowedValues(splitWithTrim(commandOptions.bodyAllowedValues));
+            variable.setAllowedKeys(splitWithTrim(commandOptions.bodyAllowedKeys));
+            variable.setRank(commandOptions.bodyRank);
+            variable.setDependsOn(commandOptions.bodyDependsOn);
+            variable.setDescription(commandOptions.bodyDescription);
+            //variable.setVariableSet(commandOptions.bodyVariableSet); // Unsupported param. FIXME 
+            //variable.setVariables(commandOptions.bodyVariables); // Unsupported param. FIXME 
+            variable.setAttributes(new HashMap<>(commandOptions.bodyAttributes));
 
-            if (commandOptions.required != null){
-                ((Variable)variable).setRequired(commandOptions.required);
+            if (commandOptions.bodyRequired != null) {
+                variable.setRequired(commandOptions.bodyRequired);
              }
 
-            if (commandOptions.multiValue != null){
-                ((Variable)variable).setMultiValue(commandOptions.multiValue);
+            if (commandOptions.bodyMultiValue != null) {
+                variable.setMultiValue(commandOptions.bodyMultiValue);
              }
 
         }

@@ -1,5 +1,6 @@
 package org.opencb.opencga.server.generator.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.opencga.core.tools.annotations.RestParamType;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
@@ -153,6 +154,18 @@ public class RestEndpoint {
 
     public List<RestParameter> getParameters() {
         return parameters;
+    }
+
+    @JsonIgnore
+    public RestParameter getParameterBody() {
+        if (parameters != null) {
+            for (RestParameter parameter : parameters) {
+                if (parameter.getParam() == RestParamType.BODY) {
+                    return parameter;
+                }
+            }
+        }
+        return null;
     }
 
     public RestEndpoint setParameters(List<RestParameter> restParameters) {

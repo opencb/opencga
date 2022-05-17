@@ -185,6 +185,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
     }
 
+    @Deprecated
     protected void invokeSetter(Object obj, String propertyName, Object variableValue) {
         if (obj != null && variableValue != null) {
             try {

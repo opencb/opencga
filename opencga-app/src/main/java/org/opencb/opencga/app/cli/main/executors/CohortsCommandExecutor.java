@@ -11,26 +11,27 @@ import org.opencb.opencga.core.common.JacksonUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.CohortsCommandOptions;
 
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import java.util.Map;
 import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
 import org.opencb.opencga.core.models.cohort.Cohort;
-import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.cohort.CohortAclUpdateParams;
+import org.opencb.opencga.core.models.cohort.CohortCreateParams;
+import org.opencb.opencga.core.models.cohort.CohortGenerateParams;
+import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
+import org.opencb.opencga.core.models.common.Enums.CohortType;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
-import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
-import org.opencb.opencga.core.models.cohort.CohortGenerateParams;
-import java.util.Map;
-import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
-import org.opencb.opencga.core.models.common.Enums.CohortType;
+import org.opencb.opencga.core.models.job.Job;
 
 
 /*
@@ -218,16 +219,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        StatusParams statusParams= new StatusParams();
-        invokeSetter(statusParams, "id", commandOptions.statusId);
-        invokeSetter(statusParams, "name", commandOptions.statusName);
-        invokeSetter(statusParams, "description", commandOptions.statusDescription);
-        Enums.CohortType typeParam = null;
-        if (commandOptions.type != null) {
-         typeParam = Enums.CohortType.valueOf(commandOptions.type);
-
-        } 
-
         CohortCreateParams cohortCreateParams = new CohortCreateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Cohort> res = new RestResponse<>();
@@ -238,13 +229,23 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), cohortCreateParams);
         }  else {
+            // Generate beans for nested objects
+            StatusParams statusParam = new StatusParams();
+            statusParam.setId(commandOptions.statusId);
+            statusParam.setName(commandOptions.statusName);
+            statusParam.setDescription(commandOptions.statusDescription);
+
+            //Set main body params
             cohortCreateParams.setId(commandOptions.id);
             cohortCreateParams.setName(commandOptions.name);
-            cohortCreateParams.setType(typeParam);
+            cohortCreateParams.setType(commandOptions.type == null ? null : Enums.CohortType.valueOf(commandOptions.type));
             cohortCreateParams.setDescription(commandOptions.description);
             cohortCreateParams.setCreationDate(commandOptions.creationDate);
             cohortCreateParams.setModificationDate(commandOptions.modificationDate);
-            cohortCreateParams.setStatus(statusParams);
+            //cohortCreateParams.setSamples(commandOptions.samples); // Unsupported param. FIXME 
+            //cohortCreateParams.setAnnotationSets(commandOptions.annotationSets); // Unsupported param. FIXME 
+            cohortCreateParams.setAttributes(new HashMap<>(commandOptions.attributes));
+            cohortCreateParams.setStatus(statusParam);
 
         }
         return openCGAClient.getCohortClient().create(cohortCreateParams, queryParams);
@@ -308,16 +309,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        StatusParams statusParams= new StatusParams();
-        invokeSetter(statusParams, "body_id", commandOptions.statusBodyId);
-        invokeSetter(statusParams, "name", commandOptions.statusName);
-        invokeSetter(statusParams, "description", commandOptions.statusDescription);
-        Enums.CohortType typeParam = null;
-        if (commandOptions.type != null) {
-         typeParam = Enums.CohortType.valueOf(commandOptions.type);
-
-        } 
-
         CohortGenerateParams cohortGenerateParams = new CohortGenerateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Cohort> res = new RestResponse<>();
@@ -328,13 +319,22 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), cohortGenerateParams);
         }  else {
+            // Generate beans for nested objects
+            StatusParams bodyStatusParam = new StatusParams();
+            bodyStatusParam.setId(commandOptions.statusId);
+            bodyStatusParam.setName(commandOptions.statusName);
+            bodyStatusParam.setDescription(commandOptions.statusDescription);
+
+            //Set main body params
             cohortGenerateParams.setId(commandOptions.bodyId);
-            cohortGenerateParams.setName(commandOptions.name);
-            cohortGenerateParams.setType(typeParam);
-            cohortGenerateParams.setDescription(commandOptions.description);
+            cohortGenerateParams.setName(commandOptions.bodyName);
+            cohortGenerateParams.setType(commandOptions.bodyType == null ? null : Enums.CohortType.valueOf(commandOptions.bodyType));
+            cohortGenerateParams.setDescription(commandOptions.bodyDescription);
             cohortGenerateParams.setCreationDate(commandOptions.bodyCreationDate);
             cohortGenerateParams.setModificationDate(commandOptions.bodyModificationDate);
-            cohortGenerateParams.setStatus(statusParams);
+            //cohortGenerateParams.setAnnotationSets(commandOptions.bodyAnnotationSets); // Unsupported param. FIXME 
+            cohortGenerateParams.setStatus(bodyStatusParam);
+            cohortGenerateParams.setAttributes(new HashMap<>(commandOptions.bodyAttributes));
 
         }
         return openCGAClient.getCohortClient().generate(cohortGenerateParams, queryParams);
@@ -442,16 +442,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        StatusParams statusParams= new StatusParams();
-        invokeSetter(statusParams, "id", commandOptions.statusId);
-        invokeSetter(statusParams, "name", commandOptions.statusName);
-        invokeSetter(statusParams, "description", commandOptions.statusDescription);
-        Enums.CohortType typeParam = null;
-        if (commandOptions.type != null) {
-         typeParam = Enums.CohortType.valueOf(commandOptions.type);
-
-        } 
-
         CohortUpdateParams cohortUpdateParams = new CohortUpdateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Cohort> res = new RestResponse<>();
@@ -462,13 +452,23 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), cohortUpdateParams);
         }  else {
+            // Generate beans for nested objects
+            StatusParams statusParam = new StatusParams();
+            statusParam.setId(commandOptions.statusId);
+            statusParam.setName(commandOptions.statusName);
+            statusParam.setDescription(commandOptions.statusDescription);
+
+            //Set main body params
             cohortUpdateParams.setId(commandOptions.id);
             cohortUpdateParams.setName(commandOptions.name);
-            cohortUpdateParams.setType(typeParam);
+            cohortUpdateParams.setType(commandOptions.type == null ? null : Enums.CohortType.valueOf(commandOptions.type));
             cohortUpdateParams.setDescription(commandOptions.description);
             cohortUpdateParams.setCreationDate(commandOptions.creationDate);
             cohortUpdateParams.setModificationDate(commandOptions.modificationDate);
-            cohortUpdateParams.setStatus(statusParams);
+            //cohortUpdateParams.setSamples(commandOptions.samples); // Unsupported param. FIXME 
+            //cohortUpdateParams.setAnnotationSets(commandOptions.annotationSets); // Unsupported param. FIXME 
+            cohortUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
+            cohortUpdateParams.setStatus(statusParam);
 
         }
         return openCGAClient.getCohortClient().update(commandOptions.cohorts, cohortUpdateParams, queryParams);
@@ -497,6 +497,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), objectMap);
-        }         return openCGAClient.getCohortClient().updateAnnotationSetsAnnotations(commandOptions.cohort, commandOptions.annotationSet, objectMap, queryParams);
+        } 
+        return openCGAClient.getCohortClient().updateAnnotationSetsAnnotations(commandOptions.cohort, commandOptions.annotationSet, objectMap, queryParams);
     }
 }

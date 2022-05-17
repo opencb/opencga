@@ -11,19 +11,20 @@ import org.opencb.opencga.core.common.JacksonUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.ProjectsCommandOptions;
 
-import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
-import org.opencb.opencga.core.models.project.ProjectOrganism;
-import org.opencb.opencga.core.models.study.Study;
 import java.lang.Object;
+import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.project.ProjectOrganism;
 import org.opencb.opencga.core.models.project.ProjectUpdateParams;
+import org.opencb.opencga.core.models.study.Study;
 
 
 /*
@@ -103,16 +104,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        CellBaseConfiguration cellBaseConfiguration= new CellBaseConfiguration();
-        invokeSetter(cellBaseConfiguration, "url", commandOptions.cellbaseUrl);
-        invokeSetter(cellBaseConfiguration, "version", commandOptions.cellbaseVersion);
-        invokeSetter(cellBaseConfiguration, "preferred", commandOptions.cellbasePreferred);
-
-        ProjectOrganism projectOrganism= new ProjectOrganism();
-        invokeSetter(projectOrganism, "scientificName", commandOptions.organismScientificName);
-        invokeSetter(projectOrganism, "commonName", commandOptions.organismCommonName);
-        invokeSetter(projectOrganism, "assembly", commandOptions.organismAssembly);
-
         ProjectCreateParams projectCreateParams = new ProjectCreateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Project> res = new RestResponse<>();
@@ -123,13 +114,27 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), projectCreateParams);
         }  else {
+            // Generate beans for nested objects
+            ProjectOrganism organismParam = new ProjectOrganism();
+            organismParam.setScientificName(commandOptions.organismScientificName);
+            organismParam.setCommonName(commandOptions.organismCommonName);
+            organismParam.setAssembly(commandOptions.organismAssembly);
+
+            CellBaseConfiguration cellbaseParam = new CellBaseConfiguration();
+            cellbaseParam.setUrl(commandOptions.cellbaseUrl);
+            cellbaseParam.setVersion(commandOptions.cellbaseVersion);
+            //cellbaseParam.setDatabase(commandOptions.cellbaseDatabase);  // Unsupported param. FIXME
+            cellbaseParam.setPreferred(commandOptions.cellbasePreferred);
+
+            //Set main body params
             projectCreateParams.setId(commandOptions.id);
             projectCreateParams.setName(commandOptions.name);
             projectCreateParams.setDescription(commandOptions.description);
             projectCreateParams.setCreationDate(commandOptions.creationDate);
             projectCreateParams.setModificationDate(commandOptions.modificationDate);
-            projectCreateParams.setOrganism(projectOrganism);
-            projectCreateParams.setCellbase(cellBaseConfiguration);
+            projectCreateParams.setOrganism(organismParam);
+            projectCreateParams.setCellbase(cellbaseParam);
+            projectCreateParams.setAttributes(new HashMap<>(commandOptions.attributes));
 
         }
         return openCGAClient.getProjectClient().create(projectCreateParams, queryParams);
@@ -230,16 +235,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         queryParams.putIfNotNull("includeResult", commandOptions.includeResult);
 
 
-        CellBaseConfiguration cellBaseConfiguration= new CellBaseConfiguration();
-        invokeSetter(cellBaseConfiguration, "url", commandOptions.cellbaseUrl);
-        invokeSetter(cellBaseConfiguration, "version", commandOptions.cellbaseVersion);
-        invokeSetter(cellBaseConfiguration, "preferred", commandOptions.cellbasePreferred);
-
-        ProjectOrganism projectOrganism= new ProjectOrganism();
-        invokeSetter(projectOrganism, "scientificName", commandOptions.organismScientificName);
-        invokeSetter(projectOrganism, "commonName", commandOptions.organismCommonName);
-        invokeSetter(projectOrganism, "assembly", commandOptions.organismAssembly);
-
         ProjectUpdateParams projectUpdateParams = new ProjectUpdateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Project> res = new RestResponse<>();
@@ -250,12 +245,26 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), projectUpdateParams);
         }  else {
+            // Generate beans for nested objects
+            ProjectOrganism organismParam = new ProjectOrganism();
+            organismParam.setScientificName(commandOptions.organismScientificName);
+            organismParam.setCommonName(commandOptions.organismCommonName);
+            organismParam.setAssembly(commandOptions.organismAssembly);
+
+            CellBaseConfiguration cellbaseParam = new CellBaseConfiguration();
+            cellbaseParam.setUrl(commandOptions.cellbaseUrl);
+            cellbaseParam.setVersion(commandOptions.cellbaseVersion);
+            //cellbaseParam.setDatabase(commandOptions.cellbaseDatabase);  // Unsupported param. FIXME
+            cellbaseParam.setPreferred(commandOptions.cellbasePreferred);
+
+            //Set main body params
             projectUpdateParams.setName(commandOptions.name);
             projectUpdateParams.setDescription(commandOptions.description);
             projectUpdateParams.setCreationDate(commandOptions.creationDate);
             projectUpdateParams.setModificationDate(commandOptions.modificationDate);
-            projectUpdateParams.setOrganism(projectOrganism);
-            projectUpdateParams.setCellbase(cellBaseConfiguration);
+            projectUpdateParams.setOrganism(organismParam);
+            projectUpdateParams.setCellbase(cellbaseParam);
+            projectUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
 
         }
         return openCGAClient.getProjectClient().update(commandOptions.project, projectUpdateParams, queryParams);

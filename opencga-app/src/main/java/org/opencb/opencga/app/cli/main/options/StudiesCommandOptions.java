@@ -108,7 +108,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--template"}, description = "The body web service template parameter", required = false, arity = 1)
         public String template;
     
-  }
+    }
+
     @Parameters(commandNames = {"create"}, commandDescription ="Create a new study")
     public class CreateCommandOptions {
     
@@ -167,9 +168,10 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         public String statusDescription;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"search"}, commandDescription ="Search studies")
     public class SearchCommandOptions {
     
@@ -224,7 +226,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--release"}, description = "Release value", required = false, arity = 1)
         public String release; 
     
-  }
+    }
+
     @Parameters(commandNames = {"acl"}, commandDescription ="Return the acl of the study. If member is provided, it will only return the acl for the member.")
     public class AclCommandOptions {
     
@@ -240,7 +243,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
         public Boolean silent; 
     
-  }
+    }
+
     @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog study stats")
     public class AggregationStatsCommandOptions {
     
@@ -271,7 +275,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--job-fields"}, description = "List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
         public String jobFields; 
     
-  }
+    }
+
     @Parameters(commandNames = {"info"}, commandDescription ="Fetch study information")
     public class InfoCommandOptions {
     
@@ -287,7 +292,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--studies"}, description = "Comma separated list of Studies [[user@]project:]study where study and project can be either the ID or UUID up to a maximum of 100", required = true, arity = 1)
         public String studies; 
     
-  }
+    }
+
     @Parameters(commandNames = {"audit-search"}, commandDescription ="Search audit collection")
     public class SearchAuditCommandOptions {
     
@@ -336,7 +342,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--date"}, description = "Date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805", required = false, arity = 1)
         public String date; 
     
-  }
+    }
+
     @Parameters(commandNames = {"groups"}, commandDescription ="Return the groups present in the study. For owners and administrators only.")
     public class GroupsCommandOptions {
     
@@ -352,7 +359,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
         public Boolean silent; 
     
-  }
+    }
+
     @Parameters(commandNames = {"groups-update"}, commandDescription ="Add or remove a group")
     public class UpdateGroupsCommandOptions {
     
@@ -377,7 +385,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--users"}, description = "The body web service users parameter", required = false, arity = 1)
         public String users;
     
-  }
+    }
+
     @Parameters(commandNames = {"groups-users-update"}, commandDescription ="Add, set or remove users from an existing group")
     public class UpdateGroupsUsersCommandOptions {
     
@@ -402,7 +411,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--users"}, description = "The body web service users parameter", required = false, arity = 1)
         public String users;
     
-  }
+    }
+
     @Parameters(commandNames = {"permissionrules"}, commandDescription ="Fetch permission rules")
     public class PermissionRulesCommandOptions {
     
@@ -415,7 +425,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--entity"}, description = "Entity where the permission rules should be applied to", required = true, arity = 1)
         public String entity; 
     
-  }
+    }
+
     @Parameters(commandNames = {"permission-rules-update"}, commandDescription ="Add or remove a permission rule")
     public class UpdatePermissionRulesCommandOptions {
     
@@ -440,13 +451,17 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--id"}, description = "Object ID is a mandatory parameter when creating a new one, this ID cannot be changed at the moment.", required = false, arity = 1)
         public String id;
     
+        @DynamicParameter(names = {"--query"}, description = "PermissionRule query.. Use: --query key=value", required = false)
+        public Map<String, Object> query = new HashMap<>(); //Dynamic parameters must be initialized;
+    
         @Parameter(names = {"--members"}, description = "List of members of the permission rule.", required = false, arity = 1)
         public String members;
     
         @Parameter(names = {"--permissions"}, description = "List of permissions of the permission rule.", required = false, arity = 1)
         public String permissions;
     
-  }
+    }
+
     @Parameters(commandNames = {"templates-delete"}, commandDescription ="Delete template")
     public class DeleteTemplatesCommandOptions {
     
@@ -459,7 +474,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--template-id"}, description = "Template id", required = true, arity = 1)
         public String templateId; 
     
-  }
+    }
+
     @Parameters(commandNames = {"update"}, commandDescription ="Update some study attributes")
     public class UpdateCommandOptions {
     
@@ -506,7 +522,7 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         public String modificationDate;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
@@ -517,7 +533,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
     
-  }
+    }
+
     @Parameters(commandNames = {"variablesets"}, commandDescription ="Fetch variableSets from a study")
     public class VariableSetsCommandOptions {
     
@@ -530,7 +547,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--id"}, description = "Id of the variableSet to be retrieved. If no id is passed, it will show all the variableSets of the study", required = false, arity = 1)
         public String id; 
     
-  }
+    }
+
     @Parameters(commandNames = {"variable-sets-update"}, commandDescription ="Add or remove a variableSet")
     public class UpdateVariableSetsCommandOptions {
     
@@ -564,7 +582,8 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String description;
     
-  }
+    }
+
     @Parameters(commandNames = {"variable-sets-variables-update"}, commandDescription ="Add or remove variables to a VariableSet")
     public class UpdateVariableSetsVariablesCommandOptions {
     
@@ -586,41 +605,42 @@ public class StudiesCommandOptions extends ParentStudiesCommandOptions {
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD or REMOVE a variable", required = false, arity = 1)
         public String action; 
     
-        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
-        public String id;
+        @Parameter(names = {"--body_id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String bodyId;
     
-        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
-        public String name;
+        @Parameter(names = {"--body_name"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String bodyName;
     
-        @Parameter(names = {"--category"}, description = "The body web service category parameter", required = false, arity = 1)
-        public String category;
+        @Parameter(names = {"--body_category"}, description = "The body web service category parameter", required = false, arity = 1)
+        public String bodyCategory;
     
-        @Parameter(names = {"--type"}, description = "Enum param allowed values: BOOLEAN, CATEGORICAL, INTEGER, DOUBLE, TEXT, STRING, OBJECT, MAP_BOOLEAN, MAP_INTEGER, MAP_DOUBLE, MAP_STRING", required = false, arity = 1)
-        public String type;
+        @Parameter(names = {"--body_type"}, description = "Enum param allowed values: BOOLEAN, CATEGORICAL, INTEGER, DOUBLE, TEXT, STRING, OBJECT, MAP_BOOLEAN, MAP_INTEGER, MAP_DOUBLE, MAP_STRING", required = false, arity = 1)
+        public String bodyType;
     
-        @Parameter(names = {"--required"}, description = "The body web service required parameter", required = false, arity = 1)
-        public Boolean required;
+        @Parameter(names = {"--body_required"}, description = "The body web service required parameter", required = false, arity = 1)
+        public Boolean bodyRequired;
     
-        @Parameter(names = {"--multi-value"}, description = "The body web service multiValue parameter", required = false, arity = 1)
-        public Boolean multiValue;
+        @Parameter(names = {"--body_multi-value"}, description = "The body web service multiValue parameter", required = false, arity = 1)
+        public Boolean bodyMultiValue;
     
-        @Parameter(names = {"--allowed-values"}, description = "The body web service allowedValues parameter", required = false, arity = 1)
-        public String allowedValues;
+        @Parameter(names = {"--body_allowed-values"}, description = "The body web service allowedValues parameter", required = false, arity = 1)
+        public String bodyAllowedValues;
     
-        @Parameter(names = {"--allowed-keys"}, description = "The body web service allowedKeys parameter", required = false, arity = 1)
-        public String allowedKeys;
+        @Parameter(names = {"--body_allowed-keys"}, description = "The body web service allowedKeys parameter", required = false, arity = 1)
+        public String bodyAllowedKeys;
     
-        @Parameter(names = {"--rank"}, description = "The body web service rank parameter", required = false, arity = 1)
-        public Long rank;
+        @Parameter(names = {"--body_rank"}, description = "The body web service rank parameter", required = false, arity = 1)
+        public Long bodyRank;
     
-        @Parameter(names = {"--depends-on"}, description = "The body web service dependsOn parameter", required = false, arity = 1)
-        public String dependsOn;
+        @Parameter(names = {"--body_depends-on"}, description = "The body web service dependsOn parameter", required = false, arity = 1)
+        public String bodyDependsOn;
     
-        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
-        public String description;
+        @Parameter(names = {"--body_description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String bodyDescription;
     
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        @DynamicParameter(names = {"--body_attributes"}, description = "The body web service attributes parameter. Use: --body_attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> bodyAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
 }

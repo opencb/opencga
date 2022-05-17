@@ -107,7 +107,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--cohort"}, description = "The body web service cohort parameter", required = false, arity = 1)
         public String cohort;
     
-  }
+    }
+
     @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog sample stats")
     public class AggregationStatsCommandOptions {
     
@@ -159,7 +160,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"annotation-sets-load"}, commandDescription ="Load annotation sets from a TSV file")
     public class LoadAnnotationSetsCommandOptions {
     
@@ -190,7 +192,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--content"}, description = "The body web service content parameter", required = false, arity = 1)
         public String content;
     
-  }
+    }
+
     @Parameters(commandNames = {"create"}, commandDescription ="Create sample")
     public class CreateCommandOptions {
     
@@ -261,7 +264,7 @@ public class SamplesCommandOptions {
         public String processingDate;
     
         @DynamicParameter(names = {"--processing-attributes"}, description = "Attributes of the processing.. Use: --processing-attributes key=value", required = false)
-        public Map<String, ?> processingAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> processingAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--collection-type"}, description = "Type of the sample collection.", required = false, arity = 1)
         public String collectionType;
@@ -276,7 +279,7 @@ public class SamplesCommandOptions {
         public String collectionDate;
     
         @DynamicParameter(names = {"--collection-attributes"}, description = "Attributes of the sample collection.. Use: --collection-attributes key=value", required = false)
-        public Map<String, ?> collectionAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> collectionAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--somatic"}, description = "The body web service somatic parameter", required = false, arity = 1)
         public Boolean somatic;
@@ -291,9 +294,10 @@ public class SamplesCommandOptions {
         public String statusDescription;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"distinct"}, commandDescription ="Sample distinct method")
     public class DistinctCommandOptions {
     
@@ -417,7 +421,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"load"}, commandDescription ="Load samples from a ped file [EXPERIMENTAL]")
     public class LoadCommandOptions {
     
@@ -433,7 +438,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--variable-set"}, description = "variableSet", required = false, arity = 1)
         public String variableSet; 
     
-  }
+    }
+
     @Parameters(commandNames = {"search"}, commandDescription ="Sample search method")
     public class SearchCommandOptions {
     
@@ -575,7 +581,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--stats-consequence-type-count"}, description = "Sample variant stats ConsequenceTypeCount", required = false, arity = 1)
         public String statsConsequenceTypeCount; 
     
-  }
+    }
+
     @Parameters(commandNames = {"acl"}, commandDescription ="Returns the acl of the samples. If member is provided, it will only return the acl for the member.")
     public class AclCommandOptions {
     
@@ -594,7 +601,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
         public Boolean silent; 
     
-  }
+    }
+
     @Parameters(commandNames = {"delete"}, commandDescription ="Delete samples")
     public class DeleteCommandOptions {
     
@@ -616,7 +624,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--samples"}, description = "Comma separated list sample IDs or UUIDs up to a maximum of 100", required = true, arity = 1)
         public String samples; 
     
-  }
+    }
+
     @Parameters(commandNames = {"info"}, commandDescription ="Get sample information")
     public class InfoCommandOptions {
     
@@ -647,7 +656,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
         public Boolean deleted; 
     
-  }
+    }
+
     @Parameters(commandNames = {"update"}, commandDescription ="Update some sample attributes")
     public class UpdateCommandOptions {
     
@@ -721,7 +731,7 @@ public class SamplesCommandOptions {
         public String processingDate;
     
         @DynamicParameter(names = {"--processing-attributes"}, description = "Attributes of the processing.. Use: --processing-attributes key=value", required = false)
-        public Map<String, ?> processingAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> processingAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--collection-type"}, description = "Type of the sample collection.", required = false, arity = 1)
         public String collectionType;
@@ -736,13 +746,16 @@ public class SamplesCommandOptions {
         public String collectionDate;
     
         @DynamicParameter(names = {"--collection-attributes"}, description = "Attributes of the sample collection.. Use: --collection-attributes key=value", required = false)
-        public Map<String, ?> collectionAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> collectionAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+        @Parameter(names = {"--quality-control-files"}, description = "Files used for the quality control of the sample.", required = false, arity = 1)
+        public String qualityControlFiles;
     
         @Parameter(names = {"--somatic"}, description = "The body web service somatic parameter", required = false, arity = 1)
         public Boolean somatic;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
@@ -753,7 +766,8 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
     
-  }
+    }
+
     @Parameters(commandNames = {"annotation-sets-annotations-update"}, commandDescription ="Update annotations from an annotationSet")
     public class UpdateAnnotationSetsAnnotationsCommandOptions {
     
@@ -778,5 +792,6 @@ public class SamplesCommandOptions {
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any.", required = false, arity = 1)
         public String action; 
     
-  }
+    }
+
 }

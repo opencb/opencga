@@ -11,37 +11,38 @@ import org.opencb.opencga.core.common.JacksonUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.OperationsVariantStorageCommandOptions;
 
-import org.opencb.opencga.core.models.operations.variant.VariantStatsIndexParams;
-import org.opencb.opencga.core.models.variant.VariantConfigureParams;
-import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
-import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexParams;
 import java.lang.Object;
-import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
-import org.opencb.opencga.core.models.operations.variant.VariantStatsDeleteParams;
-import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
-import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
-import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
-import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
-import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
-import org.opencb.opencga.core.common.YesNoAuto;
-import org.opencb.opencga.core.models.operations.variant.JulieParams;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataRepairToolParams;
-import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
-import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
-import org.opencb.opencga.core.models.variant.VariantSampleDeleteParams;
-import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.common.YesNoAuto;
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
 import org.opencb.opencga.core.config.storage.SampleIndexConfiguration;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.operations.variant.JulieParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
+import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantStatsDeleteParams;
+import org.opencb.opencga.core.models.operations.variant.VariantStatsIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantStorageMetadataRepairToolParams;
+import org.opencb.opencga.core.models.variant.VariantConfigureParams;
+import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
+import org.opencb.opencga.core.models.variant.VariantFileIndexJobLauncherParams;
+import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.variant.VariantSampleDeleteParams;
+import org.opencb.opencga.core.models.variant.VariantStorageMetadataSynchronizeParams;
+import org.opencb.opencga.core.models.variant.VariantStudyDeleteParams;
 
 
 /*
@@ -193,6 +194,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }  else {
             cellBaseConfiguration.setUrl(commandOptions.url);
             cellBaseConfiguration.setVersion(commandOptions.version);
+            //cellBaseConfiguration.setDatabase(commandOptions.database); // Unsupported param. FIXME 
             cellBaseConfiguration.setPreferred(commandOptions.preferred);
 
         }
@@ -227,12 +229,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantAggregateParams);
         }  else {
 
-            if (commandOptions.overwrite != null){
-                ((VariantAggregateParams)variantAggregateParams).setOverwrite(commandOptions.overwrite);
+            if (commandOptions.overwrite != null) {
+                variantAggregateParams.setOverwrite(commandOptions.overwrite);
              }
 
-            if (commandOptions.resume != null){
-                ((VariantAggregateParams)variantAggregateParams).setResume(commandOptions.resume);
+            if (commandOptions.resume != null) {
+                variantAggregateParams.setResume(commandOptions.resume);
              }
 
         }
@@ -273,11 +275,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        YesNoAuto sampleIndexAnnotationParam = null;
-        if (commandOptions.sampleIndexAnnotation != null) {
-         sampleIndexAnnotationParam = YesNoAuto.valueOf(commandOptions.sampleIndexAnnotation);
-
-        } 
 
         VariantAnnotationIndexParams variantAnnotationIndexParams = new VariantAnnotationIndexParams();
         if (commandOptions.jsonDataModel) {
@@ -295,14 +292,14 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantAnnotationIndexParams.setRegion(commandOptions.region);
             variantAnnotationIndexParams.setLoad(commandOptions.load);
             variantAnnotationIndexParams.setCustomName(commandOptions.customName);
-            variantAnnotationIndexParams.setSampleIndexAnnotation(sampleIndexAnnotationParam);
+            variantAnnotationIndexParams.setSampleIndexAnnotation(commandOptions.sampleIndexAnnotation == null ? null : YesNoAuto.valueOf(commandOptions.sampleIndexAnnotation));
 
-            if (commandOptions.overwriteAnnotations != null){
-                ((VariantAnnotationIndexParams)variantAnnotationIndexParams).setOverwriteAnnotations(commandOptions.overwriteAnnotations);
+            if (commandOptions.overwriteAnnotations != null) {
+                variantAnnotationIndexParams.setOverwriteAnnotations(commandOptions.overwriteAnnotations);
              }
 
-            if (commandOptions.create != null){
-                ((VariantAnnotationIndexParams)variantAnnotationIndexParams).setCreate(commandOptions.create);
+            if (commandOptions.create != null) {
+                variantAnnotationIndexParams.setCreate(commandOptions.create);
              }
 
         }
@@ -362,7 +359,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantConfigureParams);
-        }         return openCGAClient.getVariantOperationClient().configureVariant(variantConfigureParams, queryParams);
+        } 
+        return openCGAClient.getVariantOperationClient().configureVariant(variantConfigureParams, queryParams);
     }
 
     private RestResponse<Job> deleteVariant() throws Exception {
@@ -394,8 +392,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }  else {
             variantFileDeleteParams.setFile(splitWithTrim(commandOptions.file));
 
-            if (commandOptions.resume != null){
-                ((VariantFileDeleteParams)variantFileDeleteParams).setResume(commandOptions.resume);
+            if (commandOptions.resume != null) {
+                variantFileDeleteParams.setResume(commandOptions.resume);
              }
 
         }
@@ -432,8 +430,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantAggregateFamilyParams.setSamples(splitWithTrim(commandOptions.samples));
             variantAggregateFamilyParams.setGapsGenotype(commandOptions.gapsGenotype);
 
-            if (commandOptions.resume != null){
-                ((VariantAggregateFamilyParams)variantAggregateFamilyParams).setResume(commandOptions.resume);
+            if (commandOptions.resume != null) {
+                variantAggregateFamilyParams.setResume(commandOptions.resume);
              }
 
         }
@@ -469,16 +467,16 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }  else {
             variantFamilyIndexParams.setFamily(splitWithTrim(commandOptions.family));
 
-            if (commandOptions.overwrite != null){
-                ((VariantFamilyIndexParams)variantFamilyIndexParams).setOverwrite(commandOptions.overwrite);
+            if (commandOptions.overwrite != null) {
+                variantFamilyIndexParams.setOverwrite(commandOptions.overwrite);
              }
 
-            if (commandOptions.updateIndex != null){
-                ((VariantFamilyIndexParams)variantFamilyIndexParams).setUpdateIndex(commandOptions.updateIndex);
+            if (commandOptions.updateIndex != null) {
+                variantFamilyIndexParams.setUpdateIndex(commandOptions.updateIndex);
              }
 
-            if (commandOptions.skipIncompleteFamilies != null){
-                ((VariantFamilyIndexParams)variantFamilyIndexParams).setSkipIncompleteFamilies(commandOptions.skipIncompleteFamilies);
+            if (commandOptions.skipIncompleteFamilies != null) {
+                variantFamilyIndexParams.setSkipIncompleteFamilies(commandOptions.skipIncompleteFamilies);
              }
 
         }
@@ -501,11 +499,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        Aggregation aggregatedParam = null;
-        if (commandOptions.aggregated != null) {
-         aggregatedParam = Aggregation.valueOf(commandOptions.aggregated);
-
-        } 
 
         VariantIndexParams variantIndexParams = new VariantIndexParams();
         if (commandOptions.jsonDataModel) {
@@ -530,60 +523,60 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantIndexParams.setIncludeSampleData(commandOptions.includeSampleData);
             variantIndexParams.setMerge(commandOptions.merge);
             variantIndexParams.setDeduplicationPolicy(commandOptions.deduplicationPolicy);
-            variantIndexParams.setAggregated(aggregatedParam);
+            variantIndexParams.setAggregated(commandOptions.aggregated == null ? null : Aggregation.valueOf(commandOptions.aggregated));
             variantIndexParams.setAggregationMappingFile(commandOptions.aggregationMappingFile);
             variantIndexParams.setAnnotator(commandOptions.annotator);
 
-            if (commandOptions.resume != null){
-                ((VariantIndexParams)variantIndexParams).setResume(commandOptions.resume);
+            if (commandOptions.resume != null) {
+                variantIndexParams.setResume(commandOptions.resume);
              }
 
-            if (commandOptions.transform != null){
-                ((VariantIndexParams)variantIndexParams).setTransform(commandOptions.transform);
+            if (commandOptions.transform != null) {
+                variantIndexParams.setTransform(commandOptions.transform);
              }
 
-            if (commandOptions.gvcf != null){
-                ((VariantIndexParams)variantIndexParams).setGvcf(commandOptions.gvcf);
+            if (commandOptions.gvcf != null) {
+                variantIndexParams.setGvcf(commandOptions.gvcf);
              }
 
-            if (commandOptions.normalizationSkip != null){
-                ((VariantIndexParams)variantIndexParams).setNormalizationSkip(commandOptions.normalizationSkip);
+            if (commandOptions.normalizationSkip != null) {
+                variantIndexParams.setNormalizationSkip(commandOptions.normalizationSkip);
              }
 
-            if (commandOptions.family != null){
-                ((VariantIndexParams)variantIndexParams).setFamily(commandOptions.family);
+            if (commandOptions.family != null) {
+                variantIndexParams.setFamily(commandOptions.family);
              }
 
-            if (commandOptions.somatic != null){
-                ((VariantIndexParams)variantIndexParams).setSomatic(commandOptions.somatic);
+            if (commandOptions.somatic != null) {
+                variantIndexParams.setSomatic(commandOptions.somatic);
              }
 
-            if (commandOptions.load != null){
-                ((VariantIndexParams)variantIndexParams).setLoad(commandOptions.load);
+            if (commandOptions.load != null) {
+                variantIndexParams.setLoad(commandOptions.load);
              }
 
-            if (commandOptions.loadMultiFileData != null){
-                ((VariantIndexParams)variantIndexParams).setLoadMultiFileData(commandOptions.loadMultiFileData);
+            if (commandOptions.loadMultiFileData != null) {
+                variantIndexParams.setLoadMultiFileData(commandOptions.loadMultiFileData);
              }
 
-            if (commandOptions.calculateStats != null){
-                ((VariantIndexParams)variantIndexParams).setCalculateStats(commandOptions.calculateStats);
+            if (commandOptions.calculateStats != null) {
+                variantIndexParams.setCalculateStats(commandOptions.calculateStats);
              }
 
-            if (commandOptions.annotate != null){
-                ((VariantIndexParams)variantIndexParams).setAnnotate(commandOptions.annotate);
+            if (commandOptions.annotate != null) {
+                variantIndexParams.setAnnotate(commandOptions.annotate);
              }
 
-            if (commandOptions.overwriteAnnotations != null){
-                ((VariantIndexParams)variantIndexParams).setOverwriteAnnotations(commandOptions.overwriteAnnotations);
+            if (commandOptions.overwriteAnnotations != null) {
+                variantIndexParams.setOverwriteAnnotations(commandOptions.overwriteAnnotations);
              }
 
-            if (commandOptions.indexSearch != null){
-                ((VariantIndexParams)variantIndexParams).setIndexSearch(commandOptions.indexSearch);
+            if (commandOptions.indexSearch != null) {
+                variantIndexParams.setIndexSearch(commandOptions.indexSearch);
              }
 
-            if (commandOptions.skipIndexedFiles != null){
-                ((VariantIndexParams)variantIndexParams).setSkipIndexedFiles(commandOptions.skipIndexedFiles);
+            if (commandOptions.skipIndexedFiles != null) {
+                variantIndexParams.setSkipIndexedFiles(commandOptions.skipIndexedFiles);
              }
 
         }
@@ -607,36 +600,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }
 
 
-        VariantIndexParams variantIndexParams= new VariantIndexParams();
-        invokeSetter(variantIndexParams, "file", commandOptions.indexParamsFile);
-        invokeSetter(variantIndexParams, "resume", commandOptions.indexParamsResume);
-        invokeSetter(variantIndexParams, "outdir", commandOptions.indexParamsOutdir);
-        invokeSetter(variantIndexParams, "transform", commandOptions.indexParamsTransform);
-        invokeSetter(variantIndexParams, "gvcf", commandOptions.indexParamsGvcf);
-        invokeSetter(variantIndexParams, "normalizationSkip", commandOptions.indexParamsNormalizationSkip);
-        invokeSetter(variantIndexParams, "referenceGenome", commandOptions.indexParamsReferenceGenome);
-        invokeSetter(variantIndexParams, "failOnMalformedLines", commandOptions.indexParamsFailOnMalformedLines);
-        invokeSetter(variantIndexParams, "family", commandOptions.indexParamsFamily);
-        invokeSetter(variantIndexParams, "somatic", commandOptions.indexParamsSomatic);
-        invokeSetter(variantIndexParams, "load", commandOptions.indexParamsLoad);
-        invokeSetter(variantIndexParams, "loadSplitData", commandOptions.indexParamsLoadSplitData);
-        invokeSetter(variantIndexParams, "loadMultiFileData", commandOptions.indexParamsLoadMultiFileData);
-        invokeSetter(variantIndexParams, "loadSampleIndex", commandOptions.indexParamsLoadSampleIndex);
-        invokeSetter(variantIndexParams, "loadArchive", commandOptions.indexParamsLoadArchive);
-        invokeSetter(variantIndexParams, "loadHomRef", commandOptions.indexParamsLoadHomRef);
-        invokeSetter(variantIndexParams, "postLoadCheck", commandOptions.indexParamsPostLoadCheck);
-        invokeSetter(variantIndexParams, "includeGenotypes", commandOptions.indexParamsIncludeGenotypes);
-        invokeSetter(variantIndexParams, "includeSampleData", commandOptions.indexParamsIncludeSampleData);
-        invokeSetter(variantIndexParams, "merge", commandOptions.indexParamsMerge);
-        invokeSetter(variantIndexParams, "deduplicationPolicy", commandOptions.indexParamsDeduplicationPolicy);
-        invokeSetter(variantIndexParams, "calculateStats", commandOptions.indexParamsCalculateStats);
-        invokeSetter(variantIndexParams, "aggregationMappingFile", commandOptions.indexParamsAggregationMappingFile);
-        invokeSetter(variantIndexParams, "annotate", commandOptions.indexParamsAnnotate);
-        invokeSetter(variantIndexParams, "annotator", commandOptions.indexParamsAnnotator);
-        invokeSetter(variantIndexParams, "overwriteAnnotations", commandOptions.indexParamsOverwriteAnnotations);
-        invokeSetter(variantIndexParams, "indexSearch", commandOptions.indexParamsIndexSearch);
-        invokeSetter(variantIndexParams, "skipIndexedFiles", commandOptions.indexParamsSkipIndexedFiles);
-
         VariantFileIndexJobLauncherParams variantFileIndexJobLauncherParams = new VariantFileIndexJobLauncherParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
@@ -647,17 +610,50 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantFileIndexJobLauncherParams);
         }  else {
+            // Generate beans for nested objects
+            VariantIndexParams indexParamsParam = new VariantIndexParams();
+            indexParamsParam.setFile(commandOptions.indexParamsFile);
+            indexParamsParam.setResume(commandOptions.indexParamsResume);
+            indexParamsParam.setOutdir(commandOptions.indexParamsOutdir);
+            indexParamsParam.setTransform(commandOptions.indexParamsTransform);
+            indexParamsParam.setGvcf(commandOptions.indexParamsGvcf);
+            indexParamsParam.setNormalizationSkip(commandOptions.indexParamsNormalizationSkip);
+            indexParamsParam.setReferenceGenome(commandOptions.indexParamsReferenceGenome);
+            indexParamsParam.setFailOnMalformedLines(commandOptions.indexParamsFailOnMalformedLines);
+            indexParamsParam.setFamily(commandOptions.indexParamsFamily);
+            indexParamsParam.setSomatic(commandOptions.indexParamsSomatic);
+            indexParamsParam.setLoad(commandOptions.indexParamsLoad);
+            indexParamsParam.setLoadSplitData(commandOptions.indexParamsLoadSplitData);
+            indexParamsParam.setLoadMultiFileData(commandOptions.indexParamsLoadMultiFileData);
+            indexParamsParam.setLoadSampleIndex(commandOptions.indexParamsLoadSampleIndex);
+            indexParamsParam.setLoadArchive(commandOptions.indexParamsLoadArchive);
+            indexParamsParam.setLoadHomRef(commandOptions.indexParamsLoadHomRef);
+            indexParamsParam.setPostLoadCheck(commandOptions.indexParamsPostLoadCheck);
+            indexParamsParam.setIncludeGenotypes(commandOptions.indexParamsIncludeGenotypes);
+            indexParamsParam.setIncludeSampleData(commandOptions.indexParamsIncludeSampleData);
+            indexParamsParam.setMerge(commandOptions.indexParamsMerge);
+            indexParamsParam.setDeduplicationPolicy(commandOptions.indexParamsDeduplicationPolicy);
+            indexParamsParam.setCalculateStats(commandOptions.indexParamsCalculateStats);
+            indexParamsParam.setAggregated(commandOptions.indexParamsAggregated == null ? null : Aggregation.valueOf(commandOptions.indexParamsAggregated));
+            indexParamsParam.setAggregationMappingFile(commandOptions.indexParamsAggregationMappingFile);
+            indexParamsParam.setAnnotate(commandOptions.indexParamsAnnotate);
+            indexParamsParam.setAnnotator(commandOptions.indexParamsAnnotator);
+            indexParamsParam.setOverwriteAnnotations(commandOptions.indexParamsOverwriteAnnotations);
+            indexParamsParam.setIndexSearch(commandOptions.indexParamsIndexSearch);
+            indexParamsParam.setSkipIndexedFiles(commandOptions.indexParamsSkipIndexedFiles);
+
+            //Set main body params
             variantFileIndexJobLauncherParams.setName(commandOptions.name);
             variantFileIndexJobLauncherParams.setDirectory(commandOptions.directory);
             variantFileIndexJobLauncherParams.setMaxJobs(commandOptions.maxJobs);
-            variantFileIndexJobLauncherParams.setIndexParams(variantIndexParams);
+            variantFileIndexJobLauncherParams.setIndexParams(indexParamsParam);
 
-            if (commandOptions.resumeFailed != null){
-                ((VariantFileIndexJobLauncherParams)variantFileIndexJobLauncherParams).setResumeFailed(commandOptions.resumeFailed);
+            if (commandOptions.resumeFailed != null) {
+                variantFileIndexJobLauncherParams.setResumeFailed(commandOptions.resumeFailed);
              }
 
-            if (commandOptions.ignoreFailed != null){
-                ((VariantFileIndexJobLauncherParams)variantFileIndexJobLauncherParams).setIgnoreFailed(commandOptions.ignoreFailed);
+            if (commandOptions.ignoreFailed != null) {
+                variantFileIndexJobLauncherParams.setIgnoreFailed(commandOptions.ignoreFailed);
              }
 
         }
@@ -691,8 +687,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             julieParams.setCohorts(splitWithTrim(commandOptions.cohorts));
             julieParams.setRegion(commandOptions.region);
 
-            if (commandOptions.overwrite != null){
-                ((JulieParams)julieParams).setOverwrite(commandOptions.overwrite);
+            if (commandOptions.overwrite != null) {
+                julieParams.setOverwrite(commandOptions.overwrite);
              }
 
         }
@@ -724,6 +720,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }  else {
             variantStorageMetadataRepairToolParams.setStudies(splitWithTrim(commandOptions.studies));
             variantStorageMetadataRepairToolParams.setSamplesBatchSize(commandOptions.samplesBatchSize);
+            //variantStorageMetadataRepairToolParams.setWhat(commandOptions.what); // Unsupported param. FIXME 
 
         }
         return openCGAClient.getVariantOperationClient().repairVariantMetadata(variantStorageMetadataRepairToolParams, queryParams);
@@ -757,7 +754,7 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantStorageMetadataSynchronizeParams);
         }  else {
             variantStorageMetadataSynchronizeParams.setStudy(commandOptions.bodyStudy);
-            variantStorageMetadataSynchronizeParams.setFiles(splitWithTrim(commandOptions.files));
+            variantStorageMetadataSynchronizeParams.setFiles(splitWithTrim(commandOptions.bodyFiles));
 
         }
         return openCGAClient.getVariantOperationClient().synchronizeVariantMetadata(variantStorageMetadataSynchronizeParams, queryParams);
@@ -792,12 +789,12 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }  else {
             variantSampleDeleteParams.setSample(splitWithTrim(commandOptions.sample));
 
-            if (commandOptions.force != null){
-                ((VariantSampleDeleteParams)variantSampleDeleteParams).setForce(commandOptions.force);
+            if (commandOptions.force != null) {
+                variantSampleDeleteParams.setForce(commandOptions.force);
              }
 
-            if (commandOptions.resume != null){
-                ((VariantSampleDeleteParams)variantSampleDeleteParams).setResume(commandOptions.resume);
+            if (commandOptions.resume != null) {
+                variantSampleDeleteParams.setResume(commandOptions.resume);
              }
 
         }
@@ -833,20 +830,20 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }  else {
             variantSampleIndexParams.setSample(splitWithTrim(commandOptions.sample));
 
-            if (commandOptions.buildIndex != null){
-                ((VariantSampleIndexParams)variantSampleIndexParams).setBuildIndex(commandOptions.buildIndex);
+            if (commandOptions.buildIndex != null) {
+                variantSampleIndexParams.setBuildIndex(commandOptions.buildIndex);
              }
 
-            if (commandOptions.annotate != null){
-                ((VariantSampleIndexParams)variantSampleIndexParams).setAnnotate(commandOptions.annotate);
+            if (commandOptions.annotate != null) {
+                variantSampleIndexParams.setAnnotate(commandOptions.annotate);
              }
 
-            if (commandOptions.familyIndex != null){
-                ((VariantSampleIndexParams)variantSampleIndexParams).setFamilyIndex(commandOptions.familyIndex);
+            if (commandOptions.familyIndex != null) {
+                variantSampleIndexParams.setFamilyIndex(commandOptions.familyIndex);
              }
 
-            if (commandOptions.overwrite != null){
-                ((VariantSampleIndexParams)variantSampleIndexParams).setOverwrite(commandOptions.overwrite);
+            if (commandOptions.overwrite != null) {
+                variantSampleIndexParams.setOverwrite(commandOptions.overwrite);
              }
 
         }
@@ -876,7 +873,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleIndexConfiguration);
-        }         return openCGAClient.getVariantOperationClient().variantSampleIndexConfigure(sampleIndexConfiguration, queryParams);
+        } 
+        return openCGAClient.getVariantOperationClient().variantSampleIndexConfigure(sampleIndexConfiguration, queryParams);
     }
 
     private RestResponse<Job> deleteVariantScore() throws Exception {
@@ -934,8 +932,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantScoreIndexParams.setInput(commandOptions.input);
             variantScoreIndexParams.setInputColumns(commandOptions.inputColumns);
 
-            if (commandOptions.resume != null){
-                ((VariantScoreIndexParams)variantScoreIndexParams).setResume(commandOptions.resume);
+            if (commandOptions.resume != null) {
+                variantScoreIndexParams.setResume(commandOptions.resume);
              }
 
         }
@@ -973,8 +971,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantSecondaryIndexParams.setRegion(commandOptions.region);
             variantSecondaryIndexParams.setSample(splitWithTrim(commandOptions.sample));
 
-            if (commandOptions.overwrite != null){
-                ((VariantSecondaryIndexParams)variantSecondaryIndexParams).setOverwrite(commandOptions.overwrite);
+            if (commandOptions.overwrite != null) {
+                variantSecondaryIndexParams.setOverwrite(commandOptions.overwrite);
              }
 
         }
@@ -1010,20 +1008,20 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }  else {
             variantSampleIndexParams.setSample(splitWithTrim(commandOptions.sample));
 
-            if (commandOptions.buildIndex != null){
-                ((VariantSampleIndexParams)variantSampleIndexParams).setBuildIndex(commandOptions.buildIndex);
+            if (commandOptions.buildIndex != null) {
+                variantSampleIndexParams.setBuildIndex(commandOptions.buildIndex);
              }
 
-            if (commandOptions.annotate != null){
-                ((VariantSampleIndexParams)variantSampleIndexParams).setAnnotate(commandOptions.annotate);
+            if (commandOptions.annotate != null) {
+                variantSampleIndexParams.setAnnotate(commandOptions.annotate);
              }
 
-            if (commandOptions.familyIndex != null){
-                ((VariantSampleIndexParams)variantSampleIndexParams).setFamilyIndex(commandOptions.familyIndex);
+            if (commandOptions.familyIndex != null) {
+                variantSampleIndexParams.setFamilyIndex(commandOptions.familyIndex);
              }
 
-            if (commandOptions.overwrite != null){
-                ((VariantSampleIndexParams)variantSampleIndexParams).setOverwrite(commandOptions.overwrite);
+            if (commandOptions.overwrite != null) {
+                variantSampleIndexParams.setOverwrite(commandOptions.overwrite);
              }
 
         }
@@ -1053,7 +1051,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleIndexConfiguration);
-        }         return openCGAClient.getVariantOperationClient().configureVariantSecondarySampleIndex(sampleIndexConfiguration, queryParams);
+        } 
+        return openCGAClient.getVariantOperationClient().configureVariantSecondarySampleIndex(sampleIndexConfiguration, queryParams);
     }
 
     private RestResponse<Job> secondaryIndexVariant() throws Exception {
@@ -1087,8 +1086,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             variantSecondaryIndexParams.setRegion(commandOptions.region);
             variantSecondaryIndexParams.setSample(splitWithTrim(commandOptions.sample));
 
-            if (commandOptions.overwrite != null){
-                ((VariantSecondaryIndexParams)variantSecondaryIndexParams).setOverwrite(commandOptions.overwrite);
+            if (commandOptions.overwrite != null) {
+                variantSecondaryIndexParams.setOverwrite(commandOptions.overwrite);
              }
 
         }
@@ -1144,8 +1143,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }  else {
             variantStatsDeleteParams.setCohort(splitWithTrim(commandOptions.cohort));
 
-            if (commandOptions.force != null){
-                ((VariantStatsDeleteParams)variantStatsDeleteParams).setForce(commandOptions.force);
+            if (commandOptions.force != null) {
+                variantStatsDeleteParams.setForce(commandOptions.force);
              }
 
         }
@@ -1168,11 +1167,6 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             queryParams.putIfNotEmpty("study", sessionManager.getSession().getCurrentStudy());
         }
 
-        Aggregation aggregatedParam = null;
-        if (commandOptions.aggregated != null) {
-         aggregatedParam = Aggregation.valueOf(commandOptions.aggregated);
-
-        } 
 
         VariantStatsIndexParams variantStatsIndexParams = new VariantStatsIndexParams();
         if (commandOptions.jsonDataModel) {
@@ -1186,15 +1180,15 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
         }  else {
             variantStatsIndexParams.setCohort(splitWithTrim(commandOptions.cohort));
             variantStatsIndexParams.setRegion(commandOptions.region);
-            variantStatsIndexParams.setAggregated(aggregatedParam);
+            variantStatsIndexParams.setAggregated(commandOptions.aggregated == null ? null : Aggregation.valueOf(commandOptions.aggregated));
             variantStatsIndexParams.setAggregationMappingFile(commandOptions.aggregationMappingFile);
 
-            if (commandOptions.overwriteStats != null){
-                ((VariantStatsIndexParams)variantStatsIndexParams).setOverwriteStats(commandOptions.overwriteStats);
+            if (commandOptions.overwriteStats != null) {
+                variantStatsIndexParams.setOverwriteStats(commandOptions.overwriteStats);
              }
 
-            if (commandOptions.resume != null){
-                ((VariantStatsIndexParams)variantStatsIndexParams).setResume(commandOptions.resume);
+            if (commandOptions.resume != null) {
+                variantStatsIndexParams.setResume(commandOptions.resume);
              }
 
         }
@@ -1229,8 +1223,8 @@ public class OperationsVariantStorageCommandExecutor extends OpencgaCommandExecu
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantStudyDeleteParams);
         }  else {
 
-            if (commandOptions.resume != null){
-                ((VariantStudyDeleteParams)variantStudyDeleteParams).setResume(commandOptions.resume);
+            if (commandOptions.resume != null) {
+                variantStudyDeleteParams.setResume(commandOptions.resume);
              }
 
         }

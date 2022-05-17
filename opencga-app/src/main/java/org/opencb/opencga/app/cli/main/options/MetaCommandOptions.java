@@ -55,5 +55,6 @@ public class MetaCommandOptions {
         @Parameter(names = {"--category"}, description = "List of categories to get API from", required = false, arity = 1)
         public String category; 
     
-  }
+    }
+
 }

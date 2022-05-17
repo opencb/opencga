@@ -233,7 +233,7 @@ public class RestApiParser {
         if (param.isComplex()
                 && !param.isList()
                 && !param.getType().equals("enum")
-                && !param.getTypeClass().contains("$")) {
+                /*&& !param.getTypeClass().contains("$")*/) {
             // FIXME: Why discarding params with "$" ?  Why discarding inner classes?
             String classAndPackageName = StringUtils.removeEnd(param.getTypeClass(), ";");
             Class<?> cls;
@@ -247,7 +247,7 @@ public class RestApiParser {
             for (BeanPropertyDefinition field : nestedProperties) {
                 RestParameter innerParam = getRestParameter(variablePrefix, field, param.getName());
                 // FIXME: Why? This is wrong. It's using the genericType field to specify the parent type
-                innerParam.setGenericType(StringUtils.removeEnd(param.getTypeClass(), ";"));
+//                innerParam.setGenericType(StringUtils.removeEnd(param.getTypeClass(), ";"));
                 innerParam.setInnerParam(true);
                 innerParams.add(innerParam);
             }
@@ -313,7 +313,7 @@ public class RestApiParser {
 //                innerParam.setGenericType(property.getPrimaryType().getContentType().getRawClass().getName());
                 param.setGenericType(property.getPrimaryType().toCanonical());
                 JavaType contentType = property.getPrimaryType().getContentType();
-                if (isBean(contentType.getRawClass())) {
+                if (isBean(contentType.getRawClass()) || Collection.class.isAssignableFrom(contentType.getRawClass())) {
                     param.setData(getInnerParams(variablePrefix, property, stackClasses, contentType.getRawClass()));
                 }
             } else {

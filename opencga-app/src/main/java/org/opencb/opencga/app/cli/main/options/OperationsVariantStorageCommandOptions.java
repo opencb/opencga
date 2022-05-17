@@ -128,7 +128,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--preferred"}, description = "The body web service preferred parameter", required = false, arity = 1)
         public String preferred;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-aggregate"}, commandDescription ="Find variants where not all the samples are present, and fill the empty values, excluding HOM-REF (0/0) values.")
     public class AggregateVariantCommandOptions {
     
@@ -162,7 +163,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, arity = 1)
         public Boolean resume;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-annotation-delete"}, commandDescription ="Deletes a saved copy of variant annotation")
     public class DeleteVariantAnnotationCommandOptions {
     
@@ -187,7 +189,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--annotation-id"}, description = "Annotation identifier", required = false, arity = 1)
         public String annotationId; 
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-annotation-index"}, commandDescription ="Create and load variant annotations into the database")
     public class IndexVariantAnnotationCommandOptions {
     
@@ -245,7 +248,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--sample-index-annotation"}, description = "The body web service sampleIndexAnnotation parameter", required = false, arity = 1)
         public String sampleIndexAnnotation;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-annotation-save"}, commandDescription ="Save a copy of the current variant annotation at the database")
     public class SaveVariantAnnotationCommandOptions {
     
@@ -276,7 +280,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--annotation-id"}, description = "The body web service annotationId parameter", required = false, arity = 1)
         public String annotationId;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-configure"}, commandDescription ="Update Variant Storage Engine configuration. Can be updated at Project or Study level")
     public class ConfigureVariantCommandOptions {
     
@@ -298,7 +303,8 @@ public class OperationsVariantStorageCommandOptions {
         @DynamicParameter(names = {"--configuration"}, description = "The body web service configuration parameter. Use: --configuration key=value", required = false)
         public Map<String, ?> configuration = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-delete"}, commandDescription ="Remove variant files from the variant storage")
     public class DeleteVariantCommandOptions {
     
@@ -332,7 +338,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, arity = 1)
         public Boolean resume;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-family-aggregate"}, commandDescription ="Find variants where not all the samples are present, and fill the empty values.")
     public class AggregateVariantFamilyCommandOptions {
     
@@ -369,7 +376,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, arity = 1)
         public Boolean resume;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-family-index"}, commandDescription ="DEPRECATED: integrated in index (DEPRECATED Build the family index)")
     public class IndexVariantFamilyCommandOptions {
     
@@ -409,7 +417,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--skip-incomplete-families"}, description = "The body web service skipIncompleteFamilies parameter", required = false, arity = 1)
         public Boolean skipIncompleteFamilies;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-index"}, commandDescription ="Index variant files into the variant storage")
     public class IndexVariantCommandOptions {
     
@@ -524,7 +533,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--skip-indexed-files"}, description = "The body web service skipIndexedFiles parameter", required = false, arity = 1)
         public Boolean skipIndexedFiles;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-index-launcher"}, commandDescription ="Detect non-indexed VCF files in the study, and submit a job for indexing them.")
     public class LauncherVariantIndexCommandOptions {
     
@@ -654,7 +664,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--index-params-skip-indexed-files"}, description = "The body web service skipIndexedFiles parameter", required = false, arity = 1)
         public Boolean indexParamsSkipIndexedFiles;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-julie-run"}, commandDescription ="Transform VariantStats into PopulationFrequency values and updates the VariantAnnotation.")
     public class RunVariantJulieCommandOptions {
     
@@ -691,7 +702,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, arity = 1)
         public Boolean overwrite;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-metadata-repair"}, commandDescription ="Execute some repairs on Variant Storage Metadata. Advanced users only.")
     public class RepairVariantMetadataCommandOptions {
     
@@ -722,7 +734,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--samples-batch-size"}, description = "The body web service samplesBatchSize parameter", required = false, arity = 1)
         public Integer samplesBatchSize;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-metadata-synchronize"}, commandDescription ="Synchronize catalog with variant storage metadata")
     public class SynchronizeVariantMetadataCommandOptions {
     
@@ -753,10 +766,11 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--body_study"}, description = "The body web service study parameter", required = false, arity = 1)
         public String bodyStudy;
     
-        @Parameter(names = {"--files"}, description = "The body web service files parameter", required = false, arity = 1)
-        public String files;
+        @Parameter(names = {"--body_files"}, description = "The body web service files parameter", required = false, arity = 1)
+        public String bodyFiles;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-sample-delete"}, commandDescription ="Remove variant samples from the variant storage")
     public class DeleteVariantSampleCommandOptions {
     
@@ -793,7 +807,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, arity = 1)
         public Boolean resume;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-sample-index"}, commandDescription ="DEPRECATED You should use the new sample index method instead.")
     public class IndexVariantSampleCommandOptions {
     
@@ -836,7 +851,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, arity = 1)
         public Boolean overwrite;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-sample-index-configure"}, commandDescription ="DEPRECATED You should use the new sample index configure method.")
     public class VariantSampleIndexConfigureCommandOptions {
     
@@ -855,7 +871,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--skip-rebuild"}, description = "Skip sample index re-build", required = false, arity = 1)
         public Boolean skipRebuild; 
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-score-delete"}, commandDescription ="Remove a variant score in the database")
     public class DeleteVariantScoreCommandOptions {
     
@@ -886,7 +903,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--force"}, description = "Force remove of partially indexed scores", required = false, arity = 1)
         public Boolean force; 
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-score-index"}, commandDescription ="Index a variant score in the database.")
     public class IndexVariantScoreCommandOptions {
     
@@ -932,7 +950,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, arity = 1)
         public Boolean resume;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-secondary-annotation-index"}, commandDescription ="Creates a secondary index using a search engine. If samples are provided, sample data will be added to the secondary index. (New!)")
     public class VariantSecondaryAnnotationIndexCommandOptions {
     
@@ -972,7 +991,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, arity = 1)
         public Boolean overwrite;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-secondary-sample-index"}, commandDescription ="Build and annotate the sample index. (New!) ")
     public class VariantSecondarySampleIndexCommandOptions {
     
@@ -1015,7 +1035,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, arity = 1)
         public Boolean overwrite;
     
-  }
+    }
+
     @Parameters(commandNames = {"configure-variant-secondary-sample-index"}, commandDescription ="Update SampleIndex configuration (New!)")
     public class ConfigureVariantSecondarySampleIndexCommandOptions {
     
@@ -1034,7 +1055,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--skip-rebuild"}, description = "Skip sample index re-build", required = false, arity = 1)
         public Boolean skipRebuild; 
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-secondary-index"}, commandDescription ="DEPRECATED you should use the new annotation index method instead.")
     public class SecondaryIndexVariantCommandOptions {
     
@@ -1074,7 +1096,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, arity = 1)
         public Boolean overwrite;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-secondary-index-delete"}, commandDescription ="Remove a secondary index from the search engine for a specific set of samples.")
     public class DeleteVariantSecondaryIndexCommandOptions {
     
@@ -1099,7 +1122,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--samples"}, description = "Samples to remove. Needs to provide all the samples in the secondary index.", required = false, arity = 1)
         public String samples; 
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-stats-delete"}, commandDescription ="Deletes the VariantStats of a cohort/s from the database")
     public class DeleteVariantStatsCommandOptions {
     
@@ -1133,7 +1157,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--force"}, description = "The body web service force parameter", required = false, arity = 1)
         public Boolean force;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-stats-index"}, commandDescription ="Compute variant stats for any cohort and any set of variants and index the result in the variant storage database.")
     public class IndexVariantStatsCommandOptions {
     
@@ -1179,7 +1204,8 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--aggregation-mapping-file"}, description = "The body web service aggregationMappingFile parameter", required = false, arity = 1)
         public String aggregationMappingFile;
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-study-delete"}, commandDescription ="Remove whole study from the variant storage")
     public class DeleteVariantStudyCommandOptions {
     
@@ -1210,5 +1236,6 @@ public class OperationsVariantStorageCommandOptions {
         @Parameter(names = {"--resume"}, description = "The body web service resume parameter", required = false, arity = 1)
         public Boolean resume;
     
-  }
+    }
+
 }

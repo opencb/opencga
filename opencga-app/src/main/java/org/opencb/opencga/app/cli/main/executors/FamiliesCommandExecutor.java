@@ -11,25 +11,26 @@ import org.opencb.opencga.core.common.JacksonUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.FamiliesCommandOptions;
 
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import java.util.Map;
 import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
-import org.opencb.opencga.core.models.family.FamilyAclParams.Propagate;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyAclParams.Propagate;
 import org.opencb.opencga.core.models.family.FamilyAclUpdateParams;
-import java.util.Map;
-import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
-import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.core.models.family.FamilyCreateParams;
 import org.opencb.opencga.core.models.family.FamilyQualityControl;
+import org.opencb.opencga.core.models.family.FamilyUpdateParams;
+import org.opencb.opencga.core.models.job.Job;
 
 
 /*
@@ -218,11 +219,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        StatusParams statusParams= new StatusParams();
-        invokeSetter(statusParams, "id", commandOptions.statusId);
-        invokeSetter(statusParams, "name", commandOptions.statusName);
-        invokeSetter(statusParams, "description", commandOptions.statusDescription);
-
         FamilyCreateParams familyCreateParams = new FamilyCreateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Family> res = new RestResponse<>();
@@ -233,13 +229,23 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), familyCreateParams);
         }  else {
-            familyCreateParams.setId(commandOptions.id);
-            familyCreateParams.setName(commandOptions.name);
-            familyCreateParams.setDescription(commandOptions.description);
-            familyCreateParams.setCreationDate(commandOptions.creationDate);
-            familyCreateParams.setModificationDate(commandOptions.modificationDate);
-            familyCreateParams.setExpectedSize(commandOptions.expectedSize);
-            familyCreateParams.setStatus(statusParams);
+            // Generate beans for nested objects
+            StatusParams bodyStatusParam = new StatusParams();
+            bodyStatusParam.setId(commandOptions.statusId);
+            bodyStatusParam.setName(commandOptions.statusName);
+            bodyStatusParam.setDescription(commandOptions.statusDescription);
+
+            //Set main body params
+            familyCreateParams.setId(commandOptions.bodyId);
+            familyCreateParams.setName(commandOptions.bodyName);
+            familyCreateParams.setDescription(commandOptions.bodyDescription);
+            familyCreateParams.setCreationDate(commandOptions.bodyCreationDate);
+            familyCreateParams.setModificationDate(commandOptions.bodyModificationDate);
+            //familyCreateParams.setMembers(commandOptions.bodyMembers); // Unsupported param. FIXME 
+            familyCreateParams.setExpectedSize(commandOptions.bodyExpectedSize);
+            familyCreateParams.setStatus(bodyStatusParam);
+            familyCreateParams.setAttributes(new HashMap<>(commandOptions.bodyAttributes));
+            //familyCreateParams.setAnnotationSets(commandOptions.bodyAnnotationSets); // Unsupported param. FIXME 
 
         }
         return openCGAClient.getFamilyClient().create(familyCreateParams, queryParams);
@@ -384,11 +390,6 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        StatusParams statusParams= new StatusParams();
-        invokeSetter(statusParams, "id", commandOptions.statusId);
-        invokeSetter(statusParams, "name", commandOptions.statusName);
-        invokeSetter(statusParams, "description", commandOptions.statusDescription);
-
         FamilyUpdateParams familyUpdateParams = new FamilyUpdateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Family> res = new RestResponse<>();
@@ -399,13 +400,29 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), familyUpdateParams);
         }  else {
+            // Generate beans for nested objects
+            FamilyQualityControl qualityControlParam = new FamilyQualityControl();
+            //qualityControlParam.setRelatedness(commandOptions.qualityControlRelatedness);  // Unsupported param. FIXME
+            qualityControlParam.setFiles(splitWithTrim(commandOptions.qualityControlFiles));
+            //qualityControlParam.setComments(commandOptions.qualityControlComments);  // Unsupported param. FIXME
+
+            StatusParams statusParam = new StatusParams();
+            statusParam.setId(commandOptions.statusId);
+            statusParam.setName(commandOptions.statusName);
+            statusParam.setDescription(commandOptions.statusDescription);
+
+            //Set main body params
             familyUpdateParams.setId(commandOptions.id);
             familyUpdateParams.setName(commandOptions.name);
             familyUpdateParams.setDescription(commandOptions.description);
             familyUpdateParams.setCreationDate(commandOptions.creationDate);
             familyUpdateParams.setModificationDate(commandOptions.modificationDate);
+            //familyUpdateParams.setMembers(commandOptions.members); // Unsupported param. FIXME 
             familyUpdateParams.setExpectedSize(commandOptions.expectedSize);
-            familyUpdateParams.setStatus(statusParams);
+            familyUpdateParams.setQualityControl(qualityControlParam);
+            familyUpdateParams.setStatus(statusParam);
+            //familyUpdateParams.setAnnotationSets(commandOptions.annotationSets); // Unsupported param. FIXME 
+            familyUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
 
         }
         return openCGAClient.getFamilyClient().update(commandOptions.families, familyUpdateParams, queryParams);
@@ -434,6 +451,7 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), objectMap);
-        }         return openCGAClient.getFamilyClient().updateAnnotationSetsAnnotations(commandOptions.family, commandOptions.annotationSet, objectMap, queryParams);
+        } 
+        return openCGAClient.getFamilyClient().updateAnnotationSetsAnnotations(commandOptions.family, commandOptions.annotationSet, objectMap, queryParams);
     }
 }

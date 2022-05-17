@@ -11,17 +11,20 @@ import org.opencb.opencga.core.common.JacksonUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.DiseasePanelsCommandOptions;
 
-import org.opencb.opencga.core.models.job.Job;
 import java.util.Map;
-import org.opencb.opencga.core.models.panel.PanelCreateParams;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel.SourcePanel;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.models.panel.PanelAclUpdateParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.core.models.panel.PanelCreateParams;
 import org.opencb.opencga.core.models.panel.PanelImportParams;
 import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 
@@ -153,11 +156,29 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), panelCreateParams);
         }  else {
+            // Generate beans for nested objects
+            DiseasePanel.SourcePanel sourceParam = new DiseasePanel.SourcePanel();
+            sourceParam.setId(commandOptions.sourceId);
+            sourceParam.setName(commandOptions.sourceName);
+            sourceParam.setVersion(commandOptions.sourceVersion);
+            sourceParam.setAuthor(commandOptions.sourceAuthor);
+            sourceParam.setProject(commandOptions.sourceProject);
+
+            //Set main body params
             panelCreateParams.setId(commandOptions.id);
             panelCreateParams.setName(commandOptions.name);
             panelCreateParams.setDescription(commandOptions.description);
             panelCreateParams.setAuthor(commandOptions.author);
+            panelCreateParams.setSource(sourceParam);
+            //panelCreateParams.setCategories(commandOptions.categories); // Unsupported param. FIXME 
             panelCreateParams.setTags(splitWithTrim(commandOptions.tags));
+            //panelCreateParams.setDisorders(commandOptions.disorders); // Unsupported param. FIXME 
+            //panelCreateParams.setVariants(commandOptions.variants); // Unsupported param. FIXME 
+            //panelCreateParams.setGenes(commandOptions.genes); // Unsupported param. FIXME 
+            //panelCreateParams.setRegions(commandOptions.regions); // Unsupported param. FIXME 
+            //panelCreateParams.setStrs(commandOptions.strs); // Unsupported param. FIXME 
+            panelCreateParams.setStats(new HashMap<>(commandOptions.stats));
+            panelCreateParams.setAttributes(new HashMap<>(commandOptions.attributes));
 
         }
         return openCGAClient.getDiseasePanelClient().create(panelCreateParams, queryParams);
@@ -343,11 +364,29 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), panelUpdateParams);
         }  else {
+            // Generate beans for nested objects
+            DiseasePanel.SourcePanel sourceParam = new DiseasePanel.SourcePanel();
+            sourceParam.setId(commandOptions.sourceId);
+            sourceParam.setName(commandOptions.sourceName);
+            sourceParam.setVersion(commandOptions.sourceVersion);
+            sourceParam.setAuthor(commandOptions.sourceAuthor);
+            sourceParam.setProject(commandOptions.sourceProject);
+
+            //Set main body params
             panelUpdateParams.setId(commandOptions.id);
             panelUpdateParams.setName(commandOptions.name);
             panelUpdateParams.setDescription(commandOptions.description);
             panelUpdateParams.setAuthor(commandOptions.author);
+            panelUpdateParams.setSource(sourceParam);
+            //panelUpdateParams.setCategories(commandOptions.categories); // Unsupported param. FIXME 
             panelUpdateParams.setTags(splitWithTrim(commandOptions.tags));
+            //panelUpdateParams.setDisorders(commandOptions.disorders); // Unsupported param. FIXME 
+            //panelUpdateParams.setVariants(commandOptions.variants); // Unsupported param. FIXME 
+            //panelUpdateParams.setGenes(commandOptions.genes); // Unsupported param. FIXME 
+            //panelUpdateParams.setRegions(commandOptions.regions); // Unsupported param. FIXME 
+            //panelUpdateParams.setStrs(commandOptions.strs); // Unsupported param. FIXME 
+            panelUpdateParams.setStats(new HashMap<>(commandOptions.stats));
+            panelUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
 
         }
         return openCGAClient.getDiseasePanelClient().update(commandOptions.panels, panelUpdateParams, queryParams);

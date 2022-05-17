@@ -11,6 +11,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
@@ -18,24 +19,31 @@ import org.opencb.opencga.app.cli.main.options.JobsCommandOptions;
 
 import org.opencb.opencga.app.cli.main.parent.ParentJobsCommandExecutor;
 
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobRetryParams;
-import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.commons.datastore.core.ObjectMap;
 import java.util.Date;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
+import java.util.Map;
+import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.core.models.common.Enums.ExecutionStatus;
+import org.opencb.opencga.core.models.common.Enums.Priority;
+import org.opencb.opencga.core.models.common.Enums.Resource;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.FileContent;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
-import org.opencb.opencga.core.models.job.ToolInfo;
-import org.opencb.opencga.core.tools.result.ExecutorInfo;
-import org.opencb.opencga.core.models.job.JobTop;
-import java.util.Map;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobAclUpdateParams;
+import org.opencb.opencga.core.models.job.JobCreateParams.JobInternal;
+import org.opencb.opencga.core.models.job.JobCreateParams.TinyFile;
 import org.opencb.opencga.core.models.job.JobCreateParams;
-import org.opencb.opencga.core.tools.result.Status;
+import org.opencb.opencga.core.models.job.JobRetryParams;
+import org.opencb.opencga.core.models.job.JobTop;
 import org.opencb.opencga.core.models.job.JobUpdateParams;
+import org.opencb.opencga.core.models.job.ToolInfo;
+import org.opencb.opencga.core.tools.annotations.Tool.Scope;
+import org.opencb.opencga.core.tools.annotations.Tool.Type;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.ExecutorInfo;
+import org.opencb.opencga.core.tools.result.Status;
 
 
 /*
@@ -192,18 +200,6 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         }
 
 
-        ToolInfo toolInfo= new ToolInfo();
-        invokeSetter(toolInfo, "id", commandOptions.toolId);
-        invokeSetter(toolInfo, "description", commandOptions.toolDescription);
-
-        ExecutionResult executionResult= new ExecutionResult();
-        invokeSetter(executionResult, "id", commandOptions.resultId);
-        Enums.Priority priorityParam = null;
-        if (commandOptions.priority != null) {
-         priorityParam = Enums.Priority.valueOf(commandOptions.priority);
-
-        } 
-
         JobCreateParams jobCreateParams = new JobCreateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Job> res = new RestResponse<>();
@@ -214,15 +210,55 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), jobCreateParams);
         }  else {
+            // Generate beans for nested objects
+            ToolInfo toolParam = new ToolInfo();
+            toolParam.setId(commandOptions.toolId);
+            toolParam.setDescription(commandOptions.toolDescription);
+            toolParam.setScope(commandOptions.toolScope == null ? null : Tool.Scope.valueOf(commandOptions.toolScope));
+            toolParam.setType(commandOptions.toolType == null ? null : Tool.Type.valueOf(commandOptions.toolType));
+            toolParam.setResource(commandOptions.toolResource == null ? null : Enums.Resource.valueOf(commandOptions.toolResource));
+
+            JobCreateParams.JobInternal internalParam = new JobCreateParams.JobInternal();
+            //internalParam.setStatus(commandOptions.internalStatus);  // Unsupported param. FIXME
+
+            JobCreateParams.TinyFile outDirParam = new JobCreateParams.TinyFile();
+            outDirParam.setPath(commandOptions.outDirPath);
+
+            ExecutionResult resultParam = new ExecutionResult();
+            resultParam.setId(commandOptions.resultId);
+            //resultParam.setExecutor(commandOptions.resultExecutor);  // Unsupported param. FIXME
+            //resultParam.setStart(commandOptions.resultStart);  // Unsupported param. FIXME
+            //resultParam.setEnd(commandOptions.resultEnd);  // Unsupported param. FIXME
+            //resultParam.setStatus(commandOptions.resultStatus);  // Unsupported param. FIXME
+            //resultParam.setExternalFiles(commandOptions.resultExternalFiles);  // Unsupported param. FIXME
+            //resultParam.setSteps(commandOptions.resultSteps);  // Unsupported param. FIXME
+            //resultParam.setEvents(commandOptions.resultEvents);  // Unsupported param. FIXME
+            resultParam.setAttributes(new ObjectMap(commandOptions.resultAttributes));
+
+            JobCreateParams.TinyFile stdoutParam = new JobCreateParams.TinyFile();
+            stdoutParam.setPath(commandOptions.stdoutPath);
+
+            JobCreateParams.TinyFile stderrParam = new JobCreateParams.TinyFile();
+            stderrParam.setPath(commandOptions.stderrPath);
+
+            //Set main body params
             jobCreateParams.setId(commandOptions.id);
             jobCreateParams.setDescription(commandOptions.description);
-            jobCreateParams.setTool(toolInfo);
-            jobCreateParams.setPriority(priorityParam);
+            jobCreateParams.setTool(toolParam);
+            jobCreateParams.setPriority(commandOptions.priority == null ? null : Enums.Priority.valueOf(commandOptions.priority));
             jobCreateParams.setCommandLine(commandOptions.commandLine);
+            jobCreateParams.setParams(new HashMap<>(commandOptions.params));
             jobCreateParams.setCreationDate(commandOptions.creationDate);
             jobCreateParams.setModificationDate(commandOptions.modificationDate);
+            jobCreateParams.setInternal(internalParam);
+            jobCreateParams.setOutDir(outDirParam);
+            //jobCreateParams.setInput(commandOptions.input); // Unsupported param. FIXME 
+            //jobCreateParams.setOutput(commandOptions.output); // Unsupported param. FIXME 
             jobCreateParams.setTags(splitWithTrim(commandOptions.tags));
-            jobCreateParams.setResult(executionResult);
+            jobCreateParams.setResult(resultParam);
+            jobCreateParams.setStdout(stdoutParam);
+            jobCreateParams.setStderr(stderrParam);
+            jobCreateParams.setAttributes(new HashMap<>(commandOptions.attributes));
 
         }
         return openCGAClient.getJobClient().create(jobCreateParams, queryParams);
@@ -289,9 +325,10 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), jobRetryParams);
         }  else {
             jobRetryParams.setJob(commandOptions.job);
+            jobRetryParams.setParams(new ObjectMap(commandOptions.params));
 
-            if (commandOptions.force != null){
-                ((JobRetryParams)jobRetryParams).setForce(commandOptions.force);
+            if (commandOptions.force != null) {
+                jobRetryParams.setForce(commandOptions.force);
              }
 
         }
@@ -418,9 +455,10 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
         }  else {
             jobUpdateParams.setDescription(commandOptions.description);
             jobUpdateParams.setTags(splitWithTrim(commandOptions.tags));
+            jobUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
 
-            if (commandOptions.visited != null){
-                ((JobUpdateParams)jobUpdateParams).setVisited(commandOptions.visited);
+            if (commandOptions.visited != null) {
+                jobUpdateParams.setVisited(commandOptions.visited);
              }
 
         }

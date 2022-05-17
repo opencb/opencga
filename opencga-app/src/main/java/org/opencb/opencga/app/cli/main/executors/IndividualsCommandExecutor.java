@@ -11,31 +11,34 @@ import org.opencb.opencga.core.common.JacksonUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.IndividualsCommandOptions;
 
-import org.opencb.opencga.core.models.job.Job;
+import java.util.Map;
+import org.opencb.biodata.models.clinical.qc.SampleRelatednessReport;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
+import org.opencb.biodata.models.pedigree.IndividualProperty.KaryotypicSex;
+import org.opencb.biodata.models.pedigree.IndividualProperty.LifeStatus;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
-import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
-import org.opencb.opencga.core.models.individual.IndividualQualityControl;
-import org.opencb.biodata.models.clinical.qc.SampleRelatednessReport;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
-import org.opencb.opencga.core.models.individual.IndividualCreateParams;
-import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
-import org.opencb.opencga.core.models.individual.IndividualAclUpdateParams;
 import org.opencb.opencga.core.models.individual.Individual;
-import java.util.Map;
-import org.opencb.opencga.core.models.individual.Location;
-import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.opencga.core.models.individual.IndividualAclUpdateParams;
+import org.opencb.opencga.core.models.individual.IndividualCreateParams;
 import org.opencb.opencga.core.models.individual.IndividualPopulation;
-import org.opencb.biodata.models.core.SexOntologyTermAnnotation;
-import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.opencga.core.models.individual.IndividualQualityControl;
+import org.opencb.opencga.core.models.individual.IndividualReferenceParam;
+import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
+import org.opencb.opencga.core.models.individual.Location;
+import org.opencb.opencga.core.models.job.Job;
 
 
 /*
@@ -233,53 +236,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SexOntologyTermAnnotation sexOntologyTermAnnotation= new SexOntologyTermAnnotation();
-        invokeSetter(sexOntologyTermAnnotation, "id", commandOptions.sexId);
-        invokeSetter(sexOntologyTermAnnotation, "name", commandOptions.sexName);
-        invokeSetter(sexOntologyTermAnnotation, "description", commandOptions.sexDescription);
-        invokeSetter(sexOntologyTermAnnotation, "source", commandOptions.sexSource);
-        invokeSetter(sexOntologyTermAnnotation, "url", commandOptions.sexUrl);
-
-        IndividualPopulation individualPopulation= new IndividualPopulation();
-        invokeSetter(individualPopulation, "name", commandOptions.populationName);
-        invokeSetter(individualPopulation, "subpopulation", commandOptions.populationSubpopulation);
-        invokeSetter(individualPopulation, "description", commandOptions.populationDescription);
-
-        IndividualReferenceParam individualReferenceParam= new IndividualReferenceParam();
-        invokeSetter(individualReferenceParam, "id", commandOptions.fatherId);
-        invokeSetter(individualReferenceParam, "uuid", commandOptions.fatherUuid);
-        invokeSetter(individualReferenceParam, "id", commandOptions.motherId);
-        invokeSetter(individualReferenceParam, "uuid", commandOptions.motherUuid);
-
-        Location location= new Location();
-        invokeSetter(location, "address", commandOptions.locationAddress);
-        invokeSetter(location, "postalCode", commandOptions.locationPostalCode);
-        invokeSetter(location, "city", commandOptions.locationCity);
-        invokeSetter(location, "state", commandOptions.locationState);
-        invokeSetter(location, "country", commandOptions.locationCountry);
-
-        StatusParams statusParams= new StatusParams();
-        invokeSetter(statusParams, "id", commandOptions.statusId);
-        invokeSetter(statusParams, "name", commandOptions.statusName);
-        invokeSetter(statusParams, "description", commandOptions.statusDescription);
-
-        OntologyTermAnnotation ontologyTermAnnotation= new OntologyTermAnnotation();
-        invokeSetter(ontologyTermAnnotation, "id", commandOptions.ethnicityId);
-        invokeSetter(ontologyTermAnnotation, "name", commandOptions.ethnicityName);
-        invokeSetter(ontologyTermAnnotation, "description", commandOptions.ethnicityDescription);
-        invokeSetter(ontologyTermAnnotation, "source", commandOptions.ethnicitySource);
-        invokeSetter(ontologyTermAnnotation, "url", commandOptions.ethnicityUrl);
-        IndividualProperty.KaryotypicSex karyotypicSexParam = null;
-        if (commandOptions.karyotypicSex != null) {
-         karyotypicSexParam = IndividualProperty.KaryotypicSex.valueOf(commandOptions.karyotypicSex);
-
-        } 
-        IndividualProperty.LifeStatus lifeStatusParam = null;
-        if (commandOptions.lifeStatus != null) {
-         lifeStatusParam = IndividualProperty.LifeStatus.valueOf(commandOptions.lifeStatus);
-
-        } 
-
         IndividualCreateParams individualCreateParams = new IndividualCreateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Individual> res = new RestResponse<>();
@@ -290,23 +246,71 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), individualCreateParams);
         }  else {
-            individualCreateParams.setId(commandOptions.id);
-            individualCreateParams.setName(commandOptions.name);
-            individualCreateParams.setFather(individualReferenceParam);
-            individualCreateParams.setMother(individualReferenceParam);
-            individualCreateParams.setCreationDate(commandOptions.creationDate);
-            individualCreateParams.setModificationDate(commandOptions.modificationDate);
-            individualCreateParams.setLocation(location);
-            individualCreateParams.setSex(sexOntologyTermAnnotation);
-            individualCreateParams.setEthnicity(ontologyTermAnnotation);
-            individualCreateParams.setPopulation(individualPopulation);
-            individualCreateParams.setDateOfBirth(commandOptions.dateOfBirth);
-            individualCreateParams.setKaryotypicSex(karyotypicSexParam);
-            individualCreateParams.setLifeStatus(lifeStatusParam);
-            individualCreateParams.setStatus(statusParams);
+            // Generate beans for nested objects
+            IndividualReferenceParam bodyFatherParam = new IndividualReferenceParam();
+            bodyFatherParam.setId(commandOptions.fatherId);
+            bodyFatherParam.setUuid(commandOptions.fatherUuid);
 
-            if (commandOptions.parentalConsanguinity != null){
-                ((IndividualCreateParams)individualCreateParams).setParentalConsanguinity(commandOptions.parentalConsanguinity);
+            IndividualReferenceParam bodyMotherParam = new IndividualReferenceParam();
+            bodyMotherParam.setId(commandOptions.motherId);
+            bodyMotherParam.setUuid(commandOptions.motherUuid);
+
+            Location bodyLocationParam = new Location();
+            bodyLocationParam.setAddress(commandOptions.locationAddress);
+            bodyLocationParam.setPostalCode(commandOptions.locationPostalCode);
+            bodyLocationParam.setCity(commandOptions.locationCity);
+            bodyLocationParam.setState(commandOptions.locationState);
+            bodyLocationParam.setCountry(commandOptions.locationCountry);
+
+            SexOntologyTermAnnotation bodySexParam = new SexOntologyTermAnnotation();
+            bodySexParam.setId(commandOptions.sexId);
+            bodySexParam.setName(commandOptions.sexName);
+            bodySexParam.setDescription(commandOptions.sexDescription);
+            bodySexParam.setSource(commandOptions.sexSource);
+            bodySexParam.setUrl(commandOptions.sexUrl);
+            bodySexParam.setAttributes(new HashMap<>(commandOptions.sexAttributes));
+
+            OntologyTermAnnotation bodyEthnicityParam = new OntologyTermAnnotation();
+            bodyEthnicityParam.setId(commandOptions.ethnicityId);
+            bodyEthnicityParam.setName(commandOptions.ethnicityName);
+            bodyEthnicityParam.setDescription(commandOptions.ethnicityDescription);
+            bodyEthnicityParam.setSource(commandOptions.ethnicitySource);
+            bodyEthnicityParam.setUrl(commandOptions.ethnicityUrl);
+            bodyEthnicityParam.setAttributes(new HashMap<>(commandOptions.ethnicityAttributes));
+
+            IndividualPopulation bodyPopulationParam = new IndividualPopulation();
+            bodyPopulationParam.setName(commandOptions.populationName);
+            bodyPopulationParam.setSubpopulation(commandOptions.populationSubpopulation);
+            bodyPopulationParam.setDescription(commandOptions.populationDescription);
+
+            StatusParams bodyStatusParam = new StatusParams();
+            bodyStatusParam.setId(commandOptions.statusId);
+            bodyStatusParam.setName(commandOptions.statusName);
+            bodyStatusParam.setDescription(commandOptions.statusDescription);
+
+            //Set main body params
+            individualCreateParams.setId(commandOptions.bodyId);
+            individualCreateParams.setName(commandOptions.bodyName);
+            individualCreateParams.setFather(bodyFatherParam);
+            individualCreateParams.setMother(bodyMotherParam);
+            individualCreateParams.setCreationDate(commandOptions.bodyCreationDate);
+            individualCreateParams.setModificationDate(commandOptions.bodyModificationDate);
+            individualCreateParams.setLocation(bodyLocationParam);
+            //individualCreateParams.setSamples(commandOptions.bodySamples); // Unsupported param. FIXME 
+            individualCreateParams.setSex(bodySexParam);
+            individualCreateParams.setEthnicity(bodyEthnicityParam);
+            individualCreateParams.setPopulation(bodyPopulationParam);
+            individualCreateParams.setDateOfBirth(commandOptions.bodyDateOfBirth);
+            individualCreateParams.setKaryotypicSex(commandOptions.bodyKaryotypicSex == null ? null : IndividualProperty.KaryotypicSex.valueOf(commandOptions.bodyKaryotypicSex));
+            individualCreateParams.setLifeStatus(commandOptions.bodyLifeStatus == null ? null : IndividualProperty.LifeStatus.valueOf(commandOptions.bodyLifeStatus));
+            //individualCreateParams.setAnnotationSets(commandOptions.bodyAnnotationSets); // Unsupported param. FIXME 
+            //individualCreateParams.setPhenotypes(commandOptions.bodyPhenotypes); // Unsupported param. FIXME 
+            //individualCreateParams.setDisorders(commandOptions.bodyDisorders); // Unsupported param. FIXME 
+            individualCreateParams.setStatus(bodyStatusParam);
+            individualCreateParams.setAttributes(new HashMap<>(commandOptions.bodyAttributes));
+
+            if (commandOptions.bodyParentalConsanguinity != null) {
+                individualCreateParams.setParentalConsanguinity(commandOptions.bodyParentalConsanguinity);
              }
 
         }
@@ -468,55 +472,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SexOntologyTermAnnotation sexOntologyTermAnnotation= new SexOntologyTermAnnotation();
-        invokeSetter(sexOntologyTermAnnotation, "id", commandOptions.sexId);
-        invokeSetter(sexOntologyTermAnnotation, "name", commandOptions.sexName);
-        invokeSetter(sexOntologyTermAnnotation, "description", commandOptions.sexDescription);
-        invokeSetter(sexOntologyTermAnnotation, "source", commandOptions.sexSource);
-        invokeSetter(sexOntologyTermAnnotation, "url", commandOptions.sexUrl);
-
-        IndividualPopulation individualPopulation= new IndividualPopulation();
-        invokeSetter(individualPopulation, "name", commandOptions.populationName);
-        invokeSetter(individualPopulation, "subpopulation", commandOptions.populationSubpopulation);
-        invokeSetter(individualPopulation, "description", commandOptions.populationDescription);
-
-        IndividualReferenceParam individualReferenceParam= new IndividualReferenceParam();
-        invokeSetter(individualReferenceParam, "id", commandOptions.fatherId);
-        invokeSetter(individualReferenceParam, "uuid", commandOptions.fatherUuid);
-        invokeSetter(individualReferenceParam, "id", commandOptions.motherId);
-        invokeSetter(individualReferenceParam, "uuid", commandOptions.motherUuid);
-
-        Location location= new Location();
-        invokeSetter(location, "address", commandOptions.locationAddress);
-        invokeSetter(location, "postalCode", commandOptions.locationPostalCode);
-        invokeSetter(location, "city", commandOptions.locationCity);
-        invokeSetter(location, "state", commandOptions.locationState);
-        invokeSetter(location, "country", commandOptions.locationCountry);
-
-        StatusParams statusParams= new StatusParams();
-        invokeSetter(statusParams, "id", commandOptions.statusId);
-        invokeSetter(statusParams, "name", commandOptions.statusName);
-        invokeSetter(statusParams, "description", commandOptions.statusDescription);
-
-        OntologyTermAnnotation ontologyTermAnnotation= new OntologyTermAnnotation();
-        invokeSetter(ontologyTermAnnotation, "id", commandOptions.ethnicityId);
-        invokeSetter(ontologyTermAnnotation, "name", commandOptions.ethnicityName);
-        invokeSetter(ontologyTermAnnotation, "description", commandOptions.ethnicityDescription);
-        invokeSetter(ontologyTermAnnotation, "source", commandOptions.ethnicitySource);
-        invokeSetter(ontologyTermAnnotation, "url", commandOptions.ethnicityUrl);
-
-        IndividualQualityControl individualQualityControl= new IndividualQualityControl();
-        IndividualProperty.KaryotypicSex karyotypicSexParam = null;
-        if (commandOptions.karyotypicSex != null) {
-         karyotypicSexParam = IndividualProperty.KaryotypicSex.valueOf(commandOptions.karyotypicSex);
-
-        } 
-        IndividualProperty.LifeStatus lifeStatusParam = null;
-        if (commandOptions.lifeStatus != null) {
-         lifeStatusParam = IndividualProperty.LifeStatus.valueOf(commandOptions.lifeStatus);
-
-        } 
-
         IndividualUpdateParams individualUpdateParams = new IndividualUpdateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Individual> res = new RestResponse<>();
@@ -527,24 +482,79 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), individualUpdateParams);
         }  else {
+            // Generate beans for nested objects
+            IndividualReferenceParam fatherParam = new IndividualReferenceParam();
+            fatherParam.setId(commandOptions.fatherId);
+            fatherParam.setUuid(commandOptions.fatherUuid);
+
+            IndividualReferenceParam motherParam = new IndividualReferenceParam();
+            motherParam.setId(commandOptions.motherId);
+            motherParam.setUuid(commandOptions.motherUuid);
+
+            Location locationParam = new Location();
+            locationParam.setAddress(commandOptions.locationAddress);
+            locationParam.setPostalCode(commandOptions.locationPostalCode);
+            locationParam.setCity(commandOptions.locationCity);
+            locationParam.setState(commandOptions.locationState);
+            locationParam.setCountry(commandOptions.locationCountry);
+
+            SexOntologyTermAnnotation sexParam = new SexOntologyTermAnnotation();
+            sexParam.setId(commandOptions.sexId);
+            sexParam.setName(commandOptions.sexName);
+            sexParam.setDescription(commandOptions.sexDescription);
+            sexParam.setSource(commandOptions.sexSource);
+            sexParam.setUrl(commandOptions.sexUrl);
+            sexParam.setAttributes(new HashMap<>(commandOptions.sexAttributes));
+
+            OntologyTermAnnotation ethnicityParam = new OntologyTermAnnotation();
+            ethnicityParam.setId(commandOptions.ethnicityId);
+            ethnicityParam.setName(commandOptions.ethnicityName);
+            ethnicityParam.setDescription(commandOptions.ethnicityDescription);
+            ethnicityParam.setSource(commandOptions.ethnicitySource);
+            ethnicityParam.setUrl(commandOptions.ethnicityUrl);
+            ethnicityParam.setAttributes(new HashMap<>(commandOptions.ethnicityAttributes));
+
+            IndividualPopulation populationParam = new IndividualPopulation();
+            populationParam.setName(commandOptions.populationName);
+            populationParam.setSubpopulation(commandOptions.populationSubpopulation);
+            populationParam.setDescription(commandOptions.populationDescription);
+
+            StatusParams statusParam = new StatusParams();
+            statusParam.setId(commandOptions.statusId);
+            statusParam.setName(commandOptions.statusName);
+            statusParam.setDescription(commandOptions.statusDescription);
+
+            IndividualQualityControl qualityControlParam = new IndividualQualityControl();
+            //qualityControlParam.setInferredSexReports(commandOptions.qualityControlInferredSexReports);  // Unsupported param. FIXME
+            //qualityControlParam.setSampleRelatednessReport(commandOptions.qualityControlSampleRelatednessReport);  // Unsupported param. FIXME
+            //qualityControlParam.setMendelianErrorReports(commandOptions.qualityControlMendelianErrorReports);  // Unsupported param. FIXME
+            qualityControlParam.setFiles(splitWithTrim(commandOptions.qualityControlFiles));
+            //qualityControlParam.setComments(commandOptions.qualityControlComments);  // Unsupported param. FIXME
+
+            //Set main body params
             individualUpdateParams.setId(commandOptions.id);
             individualUpdateParams.setName(commandOptions.name);
-            individualUpdateParams.setFather(individualReferenceParam);
-            individualUpdateParams.setMother(individualReferenceParam);
+            individualUpdateParams.setFather(fatherParam);
+            individualUpdateParams.setMother(motherParam);
             individualUpdateParams.setCreationDate(commandOptions.creationDate);
             individualUpdateParams.setModificationDate(commandOptions.modificationDate);
-            individualUpdateParams.setLocation(location);
-            individualUpdateParams.setSex(sexOntologyTermAnnotation);
-            individualUpdateParams.setEthnicity(ontologyTermAnnotation);
-            individualUpdateParams.setPopulation(individualPopulation);
+            individualUpdateParams.setLocation(locationParam);
+            individualUpdateParams.setSex(sexParam);
+            individualUpdateParams.setEthnicity(ethnicityParam);
+            individualUpdateParams.setPopulation(populationParam);
             individualUpdateParams.setDateOfBirth(commandOptions.dateOfBirth);
-            individualUpdateParams.setKaryotypicSex(karyotypicSexParam);
-            individualUpdateParams.setLifeStatus(lifeStatusParam);
-            individualUpdateParams.setStatus(statusParams);
-            individualUpdateParams.setQualityControl(individualQualityControl);
+            individualUpdateParams.setKaryotypicSex(commandOptions.karyotypicSex == null ? null : IndividualProperty.KaryotypicSex.valueOf(commandOptions.karyotypicSex));
+            individualUpdateParams.setLifeStatus(commandOptions.lifeStatus == null ? null : IndividualProperty.LifeStatus.valueOf(commandOptions.lifeStatus));
+            //individualUpdateParams.setSamples(commandOptions.samples); // Unsupported param. FIXME 
+            //individualUpdateParams.setAnnotationSets(commandOptions.annotationSets); // Unsupported param. FIXME 
+            //individualUpdateParams.setPhenotypes(commandOptions.phenotypes); // Unsupported param. FIXME 
+            //individualUpdateParams.setDisorders(commandOptions.disorders); // Unsupported param. FIXME 
+            individualUpdateParams.setStatus(statusParam);
+            individualUpdateParams.setQualityControl(qualityControlParam);
+            individualUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
 
-            if (commandOptions.parentalConsanguinity != null){
-                ((IndividualUpdateParams)individualUpdateParams).setParentalConsanguinity(commandOptions.parentalConsanguinity);
+            if (commandOptions.parentalConsanguinity != null) {
+                individualUpdateParams.setParentalConsanguinity(commandOptions.parentalConsanguinity);
              }
 
         }
@@ -574,7 +584,8 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), objectMap);
-        }         return openCGAClient.getIndividualClient().updateAnnotationSetsAnnotations(commandOptions.individual, commandOptions.annotationSet, objectMap, queryParams);
+        } 
+        return openCGAClient.getIndividualClient().updateAnnotationSetsAnnotations(commandOptions.individual, commandOptions.annotationSet, objectMap, queryParams);
     }
 
     private RestResponse<Individual> relatives() throws Exception {

@@ -95,7 +95,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--cohort"}, description = "The body web service cohort parameter", required = false, arity = 1)
         public String cohort;
     
-  }
+    }
+
     @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog cohort stats")
     public class AggregationStatsCommandOptions {
     
@@ -138,7 +139,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"annotation-sets-load"}, commandDescription ="Load annotation sets from a TSV file")
     public class LoadAnnotationSetsCommandOptions {
     
@@ -169,7 +171,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--content"}, description = "The body web service content parameter", required = false, arity = 1)
         public String content;
     
-  }
+    }
+
     @Parameters(commandNames = {"create"}, commandDescription ="Create a cohort")
     public class CreateCommandOptions {
     
@@ -219,7 +222,7 @@ public class CohortsCommandOptions {
         public String modificationDate;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
@@ -230,7 +233,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
     
-  }
+    }
+
     @Parameters(commandNames = {"distinct"}, commandDescription ="Cohort distinct method")
     public class DistinctCommandOptions {
     
@@ -285,7 +289,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"generate"}, commandDescription ="Create a cohort based on a sample query")
     public class GenerateCommandOptions {
     
@@ -352,14 +357,14 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--body_id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String bodyId;
     
-        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
-        public String name;
+        @Parameter(names = {"--body_name"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String bodyName;
     
-        @Parameter(names = {"--type"}, description = "Enum param allowed values: CASE_CONTROL, CASE_SET, CONTROL_SET, PAIRED, PAIRED_TUMOR, AGGREGATE, TIME_SERIES, FAMILY, TRIO, COLLECTION", required = false, arity = 1)
-        public String type;
+        @Parameter(names = {"--body_type"}, description = "Enum param allowed values: CASE_CONTROL, CASE_SET, CONTROL_SET, PAIRED, PAIRED_TUMOR, AGGREGATE, TIME_SERIES, FAMILY, TRIO, COLLECTION", required = false, arity = 1)
+        public String bodyType;
     
-        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
-        public String description;
+        @Parameter(names = {"--body_description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String bodyDescription;
     
         @Parameter(names = {"--body_creation-date"}, description = "The body web service creationDate parameter", required = false, arity = 1)
         public String bodyCreationDate;
@@ -367,8 +372,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--body_modification-date"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String bodyModificationDate;
     
-        @Parameter(names = {"--status-body_id"}, description = "The body web service id parameter", required = false, arity = 1)
-        public String statusBodyId;
+        @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String statusId;
     
         @Parameter(names = {"--status-name"}, description = "The body web service name parameter", required = false, arity = 1)
         public String statusName;
@@ -376,10 +381,11 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
     
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        @DynamicParameter(names = {"--body_attributes"}, description = "The body web service attributes parameter. Use: --body_attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> bodyAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"search"}, commandDescription ="Search cohorts")
     public class SearchCommandOptions {
     
@@ -449,7 +455,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--release"}, description = "release", required = false, arity = 1)
         public String release; 
     
-  }
+    }
+
     @Parameters(commandNames = {"acl"}, commandDescription ="Return the acl of the cohort. If member is provided, it will only return the acl for the member.")
     public class AclCommandOptions {
     
@@ -468,7 +475,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
         public Boolean silent; 
     
-  }
+    }
+
     @Parameters(commandNames = {"delete"}, commandDescription ="Delete cohorts")
     public class DeleteCommandOptions {
     
@@ -481,7 +489,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--cohorts"}, description = "Comma separated list of cohort ids", required = true, arity = 1)
         public String cohorts; 
     
-  }
+    }
+
     @Parameters(commandNames = {"info"}, commandDescription ="Get cohort information")
     public class InfoCommandOptions {
     
@@ -506,7 +515,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted cohorts", required = false, arity = 1)
         public Boolean deleted; 
     
-  }
+    }
+
     @Parameters(commandNames = {"update"}, commandDescription ="Update some cohort attributes")
     public class UpdateCommandOptions {
     
@@ -553,7 +563,7 @@ public class CohortsCommandOptions {
         public String modificationDate;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
@@ -564,7 +574,8 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
     
-  }
+    }
+
     @Parameters(commandNames = {"annotation-sets-annotations-update"}, commandDescription ="Update annotations from an annotationSet")
     public class UpdateAnnotationSetsAnnotationsCommandOptions {
     
@@ -589,5 +600,6 @@ public class CohortsCommandOptions {
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any.", required = false, arity = 1)
         public String action; 
     
-  }
+    }
+
 }

@@ -53,7 +53,6 @@ public class CommandLineUtils {
         return (Character.toLowerCase(path.charAt(0)) + path.substring(1)).replace(" ", "").replace("-", "");
     }
 
-
     public static String getSetterVariableName(String variableName) {
         variableName = variableName.replace("body_", "");
         return "set" + (Character.toUpperCase(variableName.charAt(0)) + variableName.substring(1));
@@ -77,11 +76,6 @@ public class CommandLineUtils {
         } catch (IntrospectionException e) {
             e.printStackTrace();
         }
-    }
-
-    public static String getClassName(String classAndPackageName) {
-
-        return classAndPackageName.substring(classAndPackageName.lastIndexOf(".") + 1).replaceAll(";", "").replace('$', '.');
     }
 
     public static void invokeGetter(Object obj, String variableName) {

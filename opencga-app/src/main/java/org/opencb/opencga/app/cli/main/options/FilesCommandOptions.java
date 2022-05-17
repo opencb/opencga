@@ -123,7 +123,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--sample"}, description = "The body web service sample parameter", required = false, arity = 1)
         public String sample;
     
-  }
+    }
+
     @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog file stats")
     public class AggregationStatsCommandOptions {
     
@@ -190,7 +191,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"annotation-sets-load"}, commandDescription ="Load annotation sets from a TSV file")
     public class LoadAnnotationSetsCommandOptions {
     
@@ -221,7 +223,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--content"}, description = "The body web service content parameter", required = false, arity = 1)
         public String content;
     
-  }
+    }
+
     @Parameters(commandNames = {"create"}, commandDescription ="Create file or folder")
     public class CreateCommandOptions {
     
@@ -277,7 +280,7 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         public String softwareWebsite;
     
         @DynamicParameter(names = {"--software-params"}, description = "Software params. Use: --software-params key=value", required = false)
-        public Map<String, ?> softwareParams = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.String> softwareParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
@@ -301,9 +304,10 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         public String statusDescription;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"distinct"}, commandDescription ="File distinct method")
     public class DistinctCommandOptions {
     
@@ -391,7 +395,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"fetch"}, commandDescription ="Download an external file to catalog and register it")
     public class FetchCommandOptions {
     
@@ -425,7 +430,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--path"}, description = "The body web service path parameter", required = false, arity = 1)
         public String path;
     
-  }
+    }
+
     @Parameters(commandNames = {"link"}, commandDescription ="Link an external file into catalog.")
     public class LinkCommandOptions {
     
@@ -469,9 +475,10 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         public String statusDescription;
     
         @DynamicParameter(names = {"--internal-sample-map"}, description = "The body web service sampleMap parameter. Use: --internal-sample-map key=value", required = false)
-        public Map<String, ?> internalSampleMap = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.String> internalSampleMap = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"link-run"}, commandDescription ="Link an external file into catalog asynchronously.")
     public class RunLinkCommandOptions {
     
@@ -511,7 +518,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--parents"}, description = "The body web service parents parameter", required = false, arity = 1)
         public Boolean parents;
     
-  }
+    }
+
     @Parameters(commandNames = {"postlink-run"}, commandDescription ="Associate non-registered samples for files with high volumes of samples.")
     public class RunPostlinkCommandOptions {
     
@@ -545,7 +553,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--batch-size"}, description = "The body web service batchSize parameter", required = false, arity = 1)
         public Integer batchSize;
     
-  }
+    }
+
     @Parameters(commandNames = {"search"}, commandDescription ="File search method.")
     public class SearchCommandOptions {
     
@@ -648,7 +657,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
         public String release; 
     
-  }
+    }
+
     @Parameters(commandNames = {"acl"}, commandDescription ="Return the acl defined for the file or folder. If member is provided, it will only return the acl for the member.")
     public class AclCommandOptions {
     
@@ -667,7 +677,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
         public Boolean silent; 
     
-  }
+    }
+
     @Parameters(commandNames = {"delete"}, commandDescription ="Delete existing files and folders")
     public class DeleteCommandOptions {
     
@@ -683,7 +694,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--skip-trash"}, description = "Skip trash and delete the files/folders from disk directly (CANNOT BE RECOVERED)", required = false, arity = 1)
         public Boolean skipTrash; 
     
-  }
+    }
+
     @Parameters(commandNames = {"info"}, commandDescription ="File info")
     public class InfoCommandOptions {
     
@@ -708,7 +720,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted files", required = false, arity = 1)
         public Boolean deleted; 
     
-  }
+    }
+
     @Parameters(commandNames = {"unlink"}, commandDescription ="Unlink linked files and folders")
     public class UnlinkCommandOptions {
     
@@ -721,7 +734,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--files"}, description = "Comma separated list of file ids, names or paths.", required = true, arity = 1)
         public String files; 
     
-  }
+    }
+
     @Parameters(commandNames = {"update"}, commandDescription ="Update some file attributes")
     public class UpdateCommandOptions {
     
@@ -789,7 +803,7 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         public String softwareWebsite;
     
         @DynamicParameter(names = {"--software-params"}, description = "Software params. Use: --software-params key=value", required = false)
-        public Map<String, ?> softwareParams = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.String> softwareParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--experiment-technology"}, description = "Enum param allowed values: SEQUENCING, MICROARRAY", required = false, arity = 1)
         public String experimentTechnology;
@@ -825,7 +839,7 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         public String experimentDescription;
     
         @DynamicParameter(names = {"--experiment-attributes"}, description = "The body web service attributes parameter. Use: --experiment-attributes key=value", required = false)
-        public Map<String, ?> experimentAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> experimentAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
@@ -842,13 +856,17 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
     
+        @Parameter(names = {"--quality-control-files"}, description = "The body web service files parameter", required = false, arity = 1)
+        public String qualityControlFiles;
+    
         @DynamicParameter(names = {"--stats"}, description = "The body web service stats parameter. Use: --stats key=value", required = false)
-        public Map<String, ?> stats = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> stats = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"annotation-sets-annotations-update"}, commandDescription ="Update annotations from an annotationSet")
     public class UpdateAnnotationSetsAnnotationsCommandOptions {
     
@@ -873,7 +891,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any.", required = false, arity = 1)
         public String action; 
     
-  }
+    }
+
     @Parameters(commandNames = {"download"}, commandDescription ="Download file")
     public class DownloadCommandOptions {
     
@@ -886,7 +905,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-  }
+    }
+
     @Parameters(commandNames = {"grep"}, commandDescription ="Filter lines of the file containing the pattern")
     public class GrepCommandOptions {
     
@@ -908,7 +928,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--max-count"}, description = "Stop reading a file after 'n' matching lines. 0 means no limit.", required = false, arity = 1)
         public Integer maxCount; 
     
-  }
+    }
+
     @Parameters(commandNames = {"head"}, commandDescription ="Show the first lines of a file (up to a limit)")
     public class HeadCommandOptions {
     
@@ -927,7 +948,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned up to a maximum of 1000", required = false, arity = 1)
         public Integer lines; 
     
-  }
+    }
+
     @Parameters(commandNames = {"image"}, commandDescription ="Obtain the base64 content of an image")
     public class ImageCommandOptions {
     
@@ -940,7 +962,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-  }
+    }
+
     @Parameters(commandNames = {"refresh"}, commandDescription ="Refresh metadata from the selected file or folder. Return updated files.")
     public class RefreshCommandOptions {
     
@@ -953,7 +976,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-  }
+    }
+
     @Parameters(commandNames = {"tail"}, commandDescription ="Show the last lines of a file (up to a limit)")
     public class TailCommandOptions {
     
@@ -969,7 +993,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--lines"}, description = "Maximum number of lines to be returned up to a maximum of 1000", required = false, arity = 1)
         public Integer lines; 
     
-  }
+    }
+
     @Parameters(commandNames = {"list"}, commandDescription ="List all the files inside the folder")
     public class ListCommandOptions {
     
@@ -997,7 +1022,8 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-  }
+    }
+
     @Parameters(commandNames = {"tree"}, commandDescription ="Obtain a tree view of the files and folders within a folder")
     public class TreeCommandOptions {
     
@@ -1019,5 +1045,6 @@ public class FilesCommandOptions extends ParentFilesCommandOptions {
         @Parameter(names = {"--max-depth"}, description = "Maximum depth to get files from", required = false, arity = 1)
         public Integer maxDepth; 
     
-  }
+    }
+
 }

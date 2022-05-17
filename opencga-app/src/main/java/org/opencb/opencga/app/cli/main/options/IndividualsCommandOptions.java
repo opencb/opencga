@@ -101,7 +101,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--sample"}, description = "The body web service sample parameter", required = false, arity = 1)
         public String sample;
     
-  }
+    }
+
     @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog individual stats")
     public class AggregationStatsCommandOptions {
     
@@ -171,7 +172,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"annotation-sets-load"}, commandDescription ="Load annotation sets from a TSV file")
     public class LoadAnnotationSetsCommandOptions {
     
@@ -202,7 +204,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--content"}, description = "The body web service content parameter", required = false, arity = 1)
         public String content;
     
-  }
+    }
+
     @Parameters(commandNames = {"create"}, commandDescription ="Create individual")
     public class CreateCommandOptions {
     
@@ -230,11 +233,11 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1)
         public Boolean includeResult; 
     
-        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
-        public String id;
+        @Parameter(names = {"--body_id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String bodyId;
     
-        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
-        public String name;
+        @Parameter(names = {"--body_name"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String bodyName;
     
         @Parameter(names = {"--father-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String fatherId;
@@ -248,11 +251,11 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--mother-uuid"}, description = "The body web service uuid parameter", required = false, arity = 1)
         public String motherUuid;
     
-        @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
-        public String creationDate;
+        @Parameter(names = {"--body_creation-date"}, description = "The body web service creationDate parameter", required = false, arity = 1)
+        public String bodyCreationDate;
     
-        @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
-        public String modificationDate;
+        @Parameter(names = {"--body_modification-date"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
+        public String bodyModificationDate;
     
         @Parameter(names = {"--location-address"}, description = "Location address.", required = false, arity = 1)
         public String locationAddress;
@@ -285,7 +288,7 @@ public class IndividualsCommandOptions {
         public String sexUrl;
     
         @DynamicParameter(names = {"--sex-attributes"}, description = "Dictionary that can be customised by users to store any additional information users may require... Use: --sex-attributes key=value", required = false)
-        public Map<String, ?> sexAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.String> sexAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--ethnicity-id"}, description = "Id to identify the object", required = false, arity = 1)
         public String ethnicityId;
@@ -303,10 +306,10 @@ public class IndividualsCommandOptions {
         public String ethnicityUrl;
     
         @DynamicParameter(names = {"--ethnicity-attributes"}, description = "Dictionary that can be customised by users to store any additional information users may require... Use: --ethnicity-attributes key=value", required = false)
-        public Map<String, ?> ethnicityAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.String> ethnicityAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-        @Parameter(names = {"--parental-consanguinity"}, description = "The body web service parentalConsanguinity parameter", required = false, arity = 1)
-        public Boolean parentalConsanguinity;
+        @Parameter(names = {"--body_parental-consanguinity"}, description = "The body web service parentalConsanguinity parameter", required = false, arity = 1)
+        public Boolean bodyParentalConsanguinity;
     
         @Parameter(names = {"--population-name"}, description = "Name of the individual population.", required = false, arity = 1)
         public String populationName;
@@ -317,14 +320,14 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--population-description"}, description = "Description of the individual population.", required = false, arity = 1)
         public String populationDescription;
     
-        @Parameter(names = {"--date-of-birth"}, description = "The body web service dateOfBirth parameter", required = false, arity = 1)
-        public String dateOfBirth;
+        @Parameter(names = {"--body_date-of-birth"}, description = "The body web service dateOfBirth parameter", required = false, arity = 1)
+        public String bodyDateOfBirth;
     
-        @Parameter(names = {"--karyotypic-sex"}, description = "The body web service karyotypicSex parameter", required = false, arity = 1)
-        public String karyotypicSex;
+        @Parameter(names = {"--body_karyotypic-sex"}, description = "The body web service karyotypicSex parameter", required = false, arity = 1)
+        public String bodyKaryotypicSex;
     
-        @Parameter(names = {"--life-status"}, description = "The body web service lifeStatus parameter", required = false, arity = 1)
-        public String lifeStatus;
+        @Parameter(names = {"--body_life-status"}, description = "The body web service lifeStatus parameter", required = false, arity = 1)
+        public String bodyLifeStatus;
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
@@ -335,10 +338,11 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
     
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        @DynamicParameter(names = {"--body_attributes"}, description = "The body web service attributes parameter. Use: --body_attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> bodyAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"distinct"}, commandDescription ="Individual distinct method")
     public class DistinctCommandOptions {
     
@@ -426,7 +430,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"search"}, commandDescription ="Search for individuals")
     public class SearchCommandOptions {
     
@@ -529,7 +534,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
         public Integer snapshot; 
     
-  }
+    }
+
     @Parameters(commandNames = {"acl"}, commandDescription ="Return the acl of the individual. If member is provided, it will only return the acl for the member.")
     public class AclCommandOptions {
     
@@ -548,7 +554,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
         public Boolean silent; 
     
-  }
+    }
+
     @Parameters(commandNames = {"delete"}, commandDescription ="Delete existing individuals")
     public class DeleteCommandOptions {
     
@@ -564,7 +571,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--individuals"}, description = "Comma separated list of individual ids", required = true, arity = 1)
         public String individuals; 
     
-  }
+    }
+
     @Parameters(commandNames = {"info"}, commandDescription ="Get individual information")
     public class InfoCommandOptions {
     
@@ -592,7 +600,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted individuals", required = false, arity = 1)
         public Boolean deleted; 
     
-  }
+    }
+
     @Parameters(commandNames = {"update"}, commandDescription ="Update some individual attributes")
     public class UpdateCommandOptions {
     
@@ -678,7 +687,7 @@ public class IndividualsCommandOptions {
         public String sexUrl;
     
         @DynamicParameter(names = {"--sex-attributes"}, description = "Dictionary that can be customised by users to store any additional information users may require... Use: --sex-attributes key=value", required = false)
-        public Map<String, ?> sexAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.String> sexAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--ethnicity-id"}, description = "Id to identify the object", required = false, arity = 1)
         public String ethnicityId;
@@ -696,7 +705,7 @@ public class IndividualsCommandOptions {
         public String ethnicityUrl;
     
         @DynamicParameter(names = {"--ethnicity-attributes"}, description = "Dictionary that can be customised by users to store any additional information users may require... Use: --ethnicity-attributes key=value", required = false)
-        public Map<String, ?> ethnicityAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.String> ethnicityAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--population-name"}, description = "Name of the individual population.", required = false, arity = 1)
         public String populationName;
@@ -725,10 +734,14 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
     
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        @Parameter(names = {"--quality-control-files"}, description = "File IDs related to the quality control.", required = false, arity = 1)
+        public String qualityControlFiles;
     
-  }
+        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+    }
+
     @Parameters(commandNames = {"annotation-sets-annotations-update"}, commandDescription ="Update annotations from an annotationSet")
     public class UpdateAnnotationSetsAnnotationsCommandOptions {
     
@@ -753,7 +766,8 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any.", required = false, arity = 1)
         public String action; 
     
-  }
+    }
+
     @Parameters(commandNames = {"relatives"}, commandDescription ="Get individual relatives")
     public class RelativesCommandOptions {
     
@@ -778,5 +792,6 @@ public class IndividualsCommandOptions {
         @Parameter(names = {"--degree"}, description = "Pedigree degree", required = false, arity = 1)
         public Integer degree; 
     
-  }
+    }
+
 }

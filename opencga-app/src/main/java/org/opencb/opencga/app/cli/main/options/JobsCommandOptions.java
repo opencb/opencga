@@ -93,7 +93,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--job"}, description = "The body web service job parameter", required = false, arity = 1)
         public String job;
     
-  }
+    }
+
     @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog job stats")
     public class AggregationStatsCommandOptions {
     
@@ -154,7 +155,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"create"}, commandDescription ="Register an executed job with POST method")
     public class CreateCommandOptions {
     
@@ -198,13 +200,16 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         public String commandLine;
     
         @DynamicParameter(names = {"--params"}, description = "The body web service params parameter. Use: --params key=value", required = false)
-        public Map<String, ?> params = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> params = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
         public String creationDate;
     
         @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
         public String modificationDate;
+    
+        @Parameter(names = {"--out-dir-path"}, description = "The body web service path parameter", required = false, arity = 1)
+        public String outDirPath;
     
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
@@ -215,10 +220,17 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @DynamicParameter(names = {"--result-attributes"}, description = "You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.. Use: --result-attributes key=value", required = false)
         public Map<String, ?> resultAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        @Parameter(names = {"--stdout-path"}, description = "The body web service path parameter", required = false, arity = 1)
+        public String stdoutPath;
     
-  }
+        @Parameter(names = {"--stderr-path"}, description = "The body web service path parameter", required = false, arity = 1)
+        public String stderrPath;
+    
+        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+    
+    }
+
     @Parameters(commandNames = {"distinct"}, commandDescription ="Job distinct method")
     public class DistinctCommandOptions {
     
@@ -285,7 +297,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"retry"}, commandDescription ="Relaunch a failed job")
     public class RetryCommandOptions {
     
@@ -322,7 +335,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @DynamicParameter(names = {"--params"}, description = "The body web service params parameter. Use: --params key=value", required = false)
         public Map<String, ?> params = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"search"}, commandDescription ="Job search method")
     public class SearchCommandOptions {
     
@@ -401,7 +415,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
         public Boolean deleted; 
     
-  }
+    }
+
     @Parameters(commandNames = {"acl"}, commandDescription ="Return the acl of the job. If member is provided, it will only return the acl for the member.")
     public class AclCommandOptions {
     
@@ -417,7 +432,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
         public Boolean silent; 
     
-  }
+    }
+
     @Parameters(commandNames = {"delete"}, commandDescription ="Delete existing jobs")
     public class DeleteCommandOptions {
     
@@ -430,7 +446,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--jobs"}, description = "Comma separated list of job ids", required = true, arity = 1)
         public String jobs; 
     
-  }
+    }
+
     @Parameters(commandNames = {"info"}, commandDescription ="Get job information")
     public class InfoCommandOptions {
     
@@ -452,7 +469,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted jobs", required = false, arity = 1)
         public Boolean deleted; 
     
-  }
+    }
+
     @Parameters(commandNames = {"update"}, commandDescription ="Update some job attributes")
     public class UpdateCommandOptions {
     
@@ -490,9 +508,10 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         public Boolean visited;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"log-head"}, commandDescription ="Show the first lines of a log file (up to a limit)")
     public class HeadLogCommandOptions {
     
@@ -514,7 +533,8 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--type"}, description = "Log file to be shown (stdout or stderr)", required = false, arity = 1)
         public String type; 
     
-  }
+    }
+
     @Parameters(commandNames = {"log-tail"}, commandDescription ="Show the last lines of a log file (up to a limit)")
     public class TailLogCommandOptions {
     
@@ -533,5 +553,6 @@ public class JobsCommandOptions extends ParentJobsCommandOptions {
         @Parameter(names = {"--type"}, description = "Log file to be shown (stdout or stderr)", required = false, arity = 1)
         public String type; 
     
-  }
+    }
+
 }

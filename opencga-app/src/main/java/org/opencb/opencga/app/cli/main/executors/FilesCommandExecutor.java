@@ -11,6 +11,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
@@ -18,38 +19,42 @@ import org.opencb.opencga.app.cli.main.options.FilesCommandOptions;
 
 import org.opencb.opencga.app.cli.main.parent.ParentFilesCommandExecutor;
 
-import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import java.io.DataInputStream;
+import java.io.InputStream;
+import java.util.Map;
+import org.opencb.biodata.models.clinical.interpretation.Software;
 import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.opencga.core.models.file.FileAclUpdateParams;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.opencga.core.models.alignment.AlignmentFileQualityControl;
+import org.opencb.opencga.core.models.alignment.CoverageFileQualityControl;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
-import org.opencb.opencga.core.models.file.FileLinkInternalParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
-import org.opencb.opencga.core.models.alignment.CoverageFileQualityControl;
-import java.io.DataInputStream;
+import org.opencb.opencga.core.models.file.File.Bioformat;
+import org.opencb.opencga.core.models.file.File.Format;
+import org.opencb.opencga.core.models.file.File.Type;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileAclUpdateParams;
+import org.opencb.opencga.core.models.file.FileContent;
+import org.opencb.opencga.core.models.file.FileCreateParams;
+import org.opencb.opencga.core.models.file.FileExperiment.Method;
+import org.opencb.opencga.core.models.file.FileExperiment.NucleicAcidType;
+import org.opencb.opencga.core.models.file.FileExperiment.Technology;
 import org.opencb.opencga.core.models.file.FileExperiment;
+import org.opencb.opencga.core.models.file.FileFetch;
+import org.opencb.opencga.core.models.file.FileLinkInternalParams;
+import org.opencb.opencga.core.models.file.FileLinkParams;
+import org.opencb.opencga.core.models.file.FileLinkToolParams;
+import org.opencb.opencga.core.models.file.FileQualityControl;
 import org.opencb.opencga.core.models.file.FileStatus;
 import org.opencb.opencga.core.models.file.FileTree;
-import org.opencb.opencga.core.models.file.FileCreateParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
-import org.opencb.biodata.models.clinical.interpretation.Software;
-import org.opencb.opencga.core.models.file.SmallFileInternal;
-import org.opencb.opencga.core.models.file.FileLinkParams;
-import org.opencb.opencga.core.models.file.FileQualityControl;
-import org.opencb.opencga.core.models.file.File.Bioformat;
-import org.opencb.opencga.core.models.file.FileFetch;
-import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.file.MissingSamples;
-import org.opencb.opencga.core.models.file.File.Format;
-import org.opencb.opencga.core.models.file.FileContent;
-import org.opencb.opencga.core.models.file.FileLinkToolParams;
 import org.opencb.opencga.core.models.file.PostLinkToolParams;
-import java.io.InputStream;
-import org.opencb.opencga.core.models.alignment.AlignmentFileQualityControl;
-import java.util.Map;
+import org.opencb.opencga.core.models.file.SmallFileInternal;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.variant.VariantFileQualityControl;
-import org.opencb.opencga.core.models.file.File;
 
 
 /*
@@ -281,33 +286,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         }
 
 
-        StatusParams statusParams= new StatusParams();
-        invokeSetter(statusParams, "id", commandOptions.statusId);
-        invokeSetter(statusParams, "name", commandOptions.statusName);
-        invokeSetter(statusParams, "description", commandOptions.statusDescription);
-
-        Software software= new Software();
-        invokeSetter(software, "name", commandOptions.softwareName);
-        invokeSetter(software, "version", commandOptions.softwareVersion);
-        invokeSetter(software, "repository", commandOptions.softwareRepository);
-        invokeSetter(software, "commit", commandOptions.softwareCommit);
-        invokeSetter(software, "website", commandOptions.softwareWebsite);
-        File.Type typeParam = null;
-        if (commandOptions.type != null) {
-         typeParam = File.Type.valueOf(commandOptions.type);
-
-        } 
-        File.Format formatParam = null;
-        if (commandOptions.format != null) {
-         formatParam = File.Format.valueOf(commandOptions.format);
-
-        } 
-        File.Bioformat bioformatParam = null;
-        if (commandOptions.bioformat != null) {
-         bioformatParam = File.Bioformat.valueOf(commandOptions.bioformat);
-
-        } 
-
         FileCreateParams fileCreateParams = new FileCreateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<File> res = new RestResponse<>();
@@ -318,19 +296,35 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileCreateParams);
         }  else {
+            // Generate beans for nested objects
+            Software softwareParam = new Software();
+            softwareParam.setName(commandOptions.softwareName);
+            softwareParam.setVersion(commandOptions.softwareVersion);
+            softwareParam.setRepository(commandOptions.softwareRepository);
+            softwareParam.setCommit(commandOptions.softwareCommit);
+            softwareParam.setWebsite(commandOptions.softwareWebsite);
+            softwareParam.setParams(new HashMap<>(commandOptions.softwareParams));
+
+            StatusParams statusParam = new StatusParams();
+            statusParam.setId(commandOptions.statusId);
+            statusParam.setName(commandOptions.statusName);
+            statusParam.setDescription(commandOptions.statusDescription);
+
+            //Set main body params
             fileCreateParams.setContent(commandOptions.content);
             fileCreateParams.setPath(commandOptions.path);
             fileCreateParams.setDescription(commandOptions.description);
-            fileCreateParams.setType(typeParam);
-            fileCreateParams.setFormat(formatParam);
-            fileCreateParams.setBioformat(bioformatParam);
+            fileCreateParams.setType(commandOptions.type == null ? null : File.Type.valueOf(commandOptions.type));
+            fileCreateParams.setFormat(commandOptions.format == null ? null : File.Format.valueOf(commandOptions.format));
+            fileCreateParams.setBioformat(commandOptions.bioformat == null ? null : File.Bioformat.valueOf(commandOptions.bioformat));
             fileCreateParams.setSampleIds(splitWithTrim(commandOptions.sampleIds));
-            fileCreateParams.setSoftware(software);
+            fileCreateParams.setSoftware(softwareParam);
             fileCreateParams.setTags(splitWithTrim(commandOptions.tags));
             fileCreateParams.setJobId(commandOptions.jobId);
             fileCreateParams.setCreationDate(commandOptions.creationDate);
             fileCreateParams.setModificationDate(commandOptions.modificationDate);
-            fileCreateParams.setStatus(statusParams);
+            fileCreateParams.setStatus(statusParam);
+            fileCreateParams.setAttributes(new HashMap<>(commandOptions.attributes));
 
         }
         return openCGAClient.getFileClient().create(fileCreateParams, queryParams);
@@ -424,11 +418,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         }
 
 
-        StatusParams statusParams= new StatusParams();
-        invokeSetter(statusParams, "id", commandOptions.statusId);
-        invokeSetter(statusParams, "name", commandOptions.statusName);
-        invokeSetter(statusParams, "description", commandOptions.statusDescription);
-
         FileLinkParams fileLinkParams = new FileLinkParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<File> res = new RestResponse<>();
@@ -439,12 +428,24 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileLinkParams);
         }  else {
+            // Generate beans for nested objects
+            StatusParams statusParam = new StatusParams();
+            statusParam.setId(commandOptions.statusId);
+            statusParam.setName(commandOptions.statusName);
+            statusParam.setDescription(commandOptions.statusDescription);
+
+            FileLinkInternalParams internalParam = new FileLinkInternalParams();
+            internalParam.setSampleMap(new HashMap<>(commandOptions.internalSampleMap));
+
+            //Set main body params
             fileLinkParams.setUri(commandOptions.uri);
             fileLinkParams.setPath(commandOptions.path);
             fileLinkParams.setDescription(commandOptions.description);
             fileLinkParams.setCreationDate(commandOptions.creationDate);
             fileLinkParams.setModificationDate(commandOptions.modificationDate);
-            fileLinkParams.setStatus(statusParams);
+            //fileLinkParams.setRelatedFiles(commandOptions.relatedFiles); // Unsupported param. FIXME 
+            fileLinkParams.setStatus(statusParam);
+            fileLinkParams.setInternal(internalParam);
 
         }
         return openCGAClient.getFileClient().link(fileLinkParams, queryParams);
@@ -481,8 +482,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             fileLinkToolParams.setPath(commandOptions.path);
             fileLinkToolParams.setDescription(commandOptions.description);
 
-            if (commandOptions.parents != null){
-                ((FileLinkToolParams)fileLinkToolParams).setParents(commandOptions.parents);
+            if (commandOptions.parents != null) {
+                fileLinkToolParams.setParents(commandOptions.parents);
              }
 
         }
@@ -660,42 +661,6 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         }
 
 
-        SmallFileInternal smallFileInternal= new SmallFileInternal();
-
-        FileQualityControl fileQualityControl= new FileQualityControl();
-
-        StatusParams statusParams= new StatusParams();
-        invokeSetter(statusParams, "id", commandOptions.statusId);
-        invokeSetter(statusParams, "name", commandOptions.statusName);
-        invokeSetter(statusParams, "description", commandOptions.statusDescription);
-
-        FileExperiment fileExperiment= new FileExperiment();
-        invokeSetter(fileExperiment, "manufacturer", commandOptions.experimentManufacturer);
-        invokeSetter(fileExperiment, "platform", commandOptions.experimentPlatform);
-        invokeSetter(fileExperiment, "library", commandOptions.experimentLibrary);
-        invokeSetter(fileExperiment, "date", commandOptions.experimentDate);
-        invokeSetter(fileExperiment, "center", commandOptions.experimentCenter);
-        invokeSetter(fileExperiment, "lab", commandOptions.experimentLab);
-        invokeSetter(fileExperiment, "responsible", commandOptions.experimentResponsible);
-        invokeSetter(fileExperiment, "description", commandOptions.experimentDescription);
-
-        Software software= new Software();
-        invokeSetter(software, "name", commandOptions.softwareName);
-        invokeSetter(software, "version", commandOptions.softwareVersion);
-        invokeSetter(software, "repository", commandOptions.softwareRepository);
-        invokeSetter(software, "commit", commandOptions.softwareCommit);
-        invokeSetter(software, "website", commandOptions.softwareWebsite);
-        File.Format formatParam = null;
-        if (commandOptions.format != null) {
-         formatParam = File.Format.valueOf(commandOptions.format);
-
-        } 
-        File.Bioformat bioformatParam = null;
-        if (commandOptions.bioformat != null) {
-         bioformatParam = File.Bioformat.valueOf(commandOptions.bioformat);
-
-        } 
-
         FileUpdateParams fileUpdateParams = new FileUpdateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<File> res = new RestResponse<>();
@@ -706,21 +671,65 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileUpdateParams);
         }  else {
+            // Generate beans for nested objects
+            Software softwareParam = new Software();
+            softwareParam.setName(commandOptions.softwareName);
+            softwareParam.setVersion(commandOptions.softwareVersion);
+            softwareParam.setRepository(commandOptions.softwareRepository);
+            softwareParam.setCommit(commandOptions.softwareCommit);
+            softwareParam.setWebsite(commandOptions.softwareWebsite);
+            softwareParam.setParams(new HashMap<>(commandOptions.softwareParams));
+
+            FileExperiment experimentParam = new FileExperiment();
+            experimentParam.setTechnology(commandOptions.experimentTechnology == null ? null : FileExperiment.Technology.valueOf(commandOptions.experimentTechnology));
+            experimentParam.setMethod(commandOptions.experimentMethod == null ? null : FileExperiment.Method.valueOf(commandOptions.experimentMethod));
+            experimentParam.setNucleicAcidType(commandOptions.experimentNucleicAcidType == null ? null : FileExperiment.NucleicAcidType.valueOf(commandOptions.experimentNucleicAcidType));
+            experimentParam.setManufacturer(commandOptions.experimentManufacturer);
+            experimentParam.setPlatform(commandOptions.experimentPlatform);
+            experimentParam.setLibrary(commandOptions.experimentLibrary);
+            experimentParam.setDate(commandOptions.experimentDate);
+            experimentParam.setCenter(commandOptions.experimentCenter);
+            experimentParam.setLab(commandOptions.experimentLab);
+            experimentParam.setResponsible(commandOptions.experimentResponsible);
+            experimentParam.setDescription(commandOptions.experimentDescription);
+            experimentParam.setAttributes(new HashMap<>(commandOptions.experimentAttributes));
+
+            SmallFileInternal internalParam = new SmallFileInternal();
+            //internalParam.setStatus(commandOptions.internalStatus);  // Unsupported param. FIXME
+            //internalParam.setMissingSamples(commandOptions.internalMissingSamples);  // Unsupported param. FIXME
+
+            StatusParams statusParam = new StatusParams();
+            statusParam.setId(commandOptions.statusId);
+            statusParam.setName(commandOptions.statusName);
+            statusParam.setDescription(commandOptions.statusDescription);
+
+            FileQualityControl qualityControlParam = new FileQualityControl();
+            //qualityControlParam.setVariant(commandOptions.qualityControlVariant);  // Unsupported param. FIXME
+            //qualityControlParam.setAlignment(commandOptions.qualityControlAlignment);  // Unsupported param. FIXME
+            //qualityControlParam.setCoverage(commandOptions.qualityControlCoverage);  // Unsupported param. FIXME
+            //qualityControlParam.setComments(commandOptions.qualityControlComments);  // Unsupported param. FIXME
+            qualityControlParam.setFiles(splitWithTrim(commandOptions.qualityControlFiles));
+
+            //Set main body params
             fileUpdateParams.setName(commandOptions.name);
             fileUpdateParams.setDescription(commandOptions.description);
             fileUpdateParams.setCreationDate(commandOptions.creationDate);
             fileUpdateParams.setModificationDate(commandOptions.modificationDate);
             fileUpdateParams.setSampleIds(splitWithTrim(commandOptions.sampleIds));
             fileUpdateParams.setChecksum(commandOptions.checksum);
-            fileUpdateParams.setFormat(formatParam);
-            fileUpdateParams.setBioformat(bioformatParam);
-            fileUpdateParams.setSoftware(software);
-            fileUpdateParams.setExperiment(fileExperiment);
+            fileUpdateParams.setFormat(commandOptions.format == null ? null : File.Format.valueOf(commandOptions.format));
+            fileUpdateParams.setBioformat(commandOptions.bioformat == null ? null : File.Bioformat.valueOf(commandOptions.bioformat));
+            fileUpdateParams.setSoftware(softwareParam);
+            fileUpdateParams.setExperiment(experimentParam);
             fileUpdateParams.setTags(splitWithTrim(commandOptions.tags));
-            fileUpdateParams.setInternal(smallFileInternal);
+            fileUpdateParams.setInternal(internalParam);
+            //fileUpdateParams.setRelatedFiles(commandOptions.relatedFiles); // Unsupported param. FIXME 
             fileUpdateParams.setSize(commandOptions.size);
-            fileUpdateParams.setStatus(statusParams);
-            fileUpdateParams.setQualityControl(fileQualityControl);
+            fileUpdateParams.setStatus(statusParam);
+            //fileUpdateParams.setAnnotationSets(commandOptions.annotationSets); // Unsupported param. FIXME 
+            fileUpdateParams.setQualityControl(qualityControlParam);
+            fileUpdateParams.setStats(new HashMap<>(commandOptions.stats));
+            fileUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
 
         }
         return openCGAClient.getFileClient().update(commandOptions.files, fileUpdateParams, queryParams);
@@ -749,7 +758,8 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), objectMap);
-        }         return openCGAClient.getFileClient().updateAnnotationSetsAnnotations(commandOptions.file, commandOptions.annotationSet, objectMap, queryParams);
+        } 
+        return openCGAClient.getFileClient().updateAnnotationSetsAnnotations(commandOptions.file, commandOptions.annotationSet, objectMap, queryParams);
     }
 
     private RestResponse<DataInputStream> download() throws Exception {

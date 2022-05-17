@@ -89,7 +89,8 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--panel"}, description = "The body web service panel parameter", required = false, arity = 1)
         public String panel;
     
-  }
+    }
+
     @Parameters(commandNames = {"create"}, commandDescription ="Create a panel")
     public class CreateCommandOptions {
     
@@ -126,16 +127,32 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--author"}, description = "The body web service author parameter", required = false, arity = 1)
         public String author;
     
+        @Parameter(names = {"--source-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String sourceId;
+    
+        @Parameter(names = {"--source-name"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String sourceName;
+    
+        @Parameter(names = {"--source-version"}, description = "The body web service version parameter", required = false, arity = 1)
+        public String sourceVersion;
+    
+        @Parameter(names = {"--source-author"}, description = "The body web service author parameter", required = false, arity = 1)
+        public String sourceAuthor;
+    
+        @Parameter(names = {"--source-project"}, description = "The body web service project parameter", required = false, arity = 1)
+        public String sourceProject;
+    
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
     
         @DynamicParameter(names = {"--stats"}, description = "The body web service stats parameter. Use: --stats key=value", required = false)
-        public Map<String, ?> stats = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Integer> stats = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"distinct"}, commandDescription ="Panel distinct method")
     public class DistinctCommandOptions {
     
@@ -199,7 +216,8 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"import"}, commandDescription ="Import panels")
     public class ImportCommandOptions {
     
@@ -233,7 +251,8 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--id"}, description = "Comma separated list of panel IDs to be imported from the defined source.If 'source' is provided and 'id' is empty, it will import all the panels from the source. When 'id' is provided, only one 'source' will be allowed.", required = false, arity = 1)
         public String id;
     
-  }
+    }
+
     @Parameters(commandNames = {"search"}, commandDescription ="Panel search")
     public class SearchCommandOptions {
     
@@ -309,7 +328,8 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
         public Integer snapshot; 
     
-  }
+    }
+
     @Parameters(commandNames = {"acl"}, commandDescription ="Returns the acl of the panels. If member is provided, it will only return the acl for the member.")
     public class AclCommandOptions {
     
@@ -328,7 +348,8 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
         public Boolean silent; 
     
-  }
+    }
+
     @Parameters(commandNames = {"delete"}, commandDescription ="Delete existing panels")
     public class DeleteCommandOptions {
     
@@ -341,7 +362,8 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--panels"}, description = "Comma separated list of panel ids", required = true, arity = 1)
         public String panels; 
     
-  }
+    }
+
     @Parameters(commandNames = {"info"}, commandDescription ="Panel info")
     public class InfoCommandOptions {
     
@@ -366,7 +388,8 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted panels", required = false, arity = 1)
         public Boolean deleted; 
     
-  }
+    }
+
     @Parameters(commandNames = {"update"}, commandDescription ="Update panel attributes")
     public class UpdateCommandOptions {
     
@@ -406,14 +429,30 @@ public class DiseasePanelsCommandOptions {
         @Parameter(names = {"--author"}, description = "The body web service author parameter", required = false, arity = 1)
         public String author;
     
+        @Parameter(names = {"--source-id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String sourceId;
+    
+        @Parameter(names = {"--source-name"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String sourceName;
+    
+        @Parameter(names = {"--source-version"}, description = "The body web service version parameter", required = false, arity = 1)
+        public String sourceVersion;
+    
+        @Parameter(names = {"--source-author"}, description = "The body web service author parameter", required = false, arity = 1)
+        public String sourceAuthor;
+    
+        @Parameter(names = {"--source-project"}, description = "The body web service project parameter", required = false, arity = 1)
+        public String sourceProject;
+    
         @Parameter(names = {"--tags"}, description = "The body web service tags parameter", required = false, arity = 1)
         public String tags;
     
         @DynamicParameter(names = {"--stats"}, description = "The body web service stats parameter. Use: --stats key=value", required = false)
-        public Map<String, ?> stats = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Integer> stats = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
 }

@@ -11,24 +11,25 @@ import org.opencb.opencga.core.common.JacksonUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.AnalysisAlignmentCommandOptions;
 
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.alignment.PicardWrapperParams;
-import org.opencb.opencga.core.models.alignment.SamtoolsWrapperParams;
+import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.models.alignment.GeneCoverageStats;
 import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams;
+import org.opencb.opencga.core.models.alignment.AlignmentIndexParams;
+import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
+import org.opencb.opencga.core.models.alignment.BwaWrapperParams;
 import org.opencb.opencga.core.models.alignment.CoverageIndexParams;
 import org.opencb.opencga.core.models.alignment.DeeptoolsWrapperParams;
 import org.opencb.opencga.core.models.alignment.FastqcWrapperParams;
-import org.opencb.opencga.core.models.alignment.AlignmentGeneCoverageStatsParams;
-import org.opencb.biodata.models.alignment.GeneCoverageStats;
-import org.opencb.opencga.core.models.alignment.BwaWrapperParams;
-import org.opencb.opencga.core.models.alignment.AlignmentQcParams;
-import org.opencb.opencga.core.models.alignment.AlignmentIndexParams;
-import org.ga4gh.models.ReadAlignment;
+import org.opencb.opencga.core.models.alignment.PicardWrapperParams;
+import org.opencb.opencga.core.models.alignment.SamtoolsWrapperParams;
+import org.opencb.opencga.core.models.job.Job;
 
 
 /*
@@ -146,6 +147,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             bwaWrapperParams.setFastq1File(commandOptions.fastq1File);
             bwaWrapperParams.setFastq2File(commandOptions.fastq2File);
             bwaWrapperParams.setOutdir(commandOptions.outdir);
+            bwaWrapperParams.setBwaParams(new HashMap<>(commandOptions.bwaParams));
 
         }
         return openCGAClient.getAlignmentClient().runBwa(bwaWrapperParams, queryParams);
@@ -181,8 +183,8 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             coverageIndexParams.setFile(commandOptions.file);
             coverageIndexParams.setWindowSize(commandOptions.windowSize);
 
-            if (commandOptions.overwrite != null){
-                ((CoverageIndexParams)coverageIndexParams).setOverwrite(commandOptions.overwrite);
+            if (commandOptions.overwrite != null) {
+                coverageIndexParams.setOverwrite(commandOptions.overwrite);
              }
 
         }
@@ -313,6 +315,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         }  else {
             deeptoolsWrapperParams.setCommand(commandOptions.command);
             deeptoolsWrapperParams.setOutdir(commandOptions.outdir);
+            deeptoolsWrapperParams.setDeeptoolsParams(new HashMap<>(commandOptions.deeptoolsParams));
 
         }
         return openCGAClient.getAlignmentClient().runDeeptools(deeptoolsWrapperParams, queryParams);
@@ -347,6 +350,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         }  else {
             fastqcWrapperParams.setInputFile(commandOptions.inputFile);
             fastqcWrapperParams.setOutdir(commandOptions.outdir);
+            fastqcWrapperParams.setFastqcParams(new HashMap<>(commandOptions.fastqcParams));
 
         }
         return openCGAClient.getAlignmentClient().runFastqc(fastqcWrapperParams, queryParams);
@@ -381,8 +385,8 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         }  else {
             alignmentIndexParams.setFile(commandOptions.file);
 
-            if (commandOptions.overwrite != null){
-                ((AlignmentIndexParams)alignmentIndexParams).setOverwrite(commandOptions.overwrite);
+            if (commandOptions.overwrite != null) {
+                alignmentIndexParams.setOverwrite(commandOptions.overwrite);
              }
 
         }
@@ -418,6 +422,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
         }  else {
             picardWrapperParams.setCommand(commandOptions.command);
             picardWrapperParams.setOutdir(commandOptions.outdir);
+            picardWrapperParams.setPicardParams(new HashMap<>(commandOptions.picardParams));
 
         }
         return openCGAClient.getAlignmentClient().runPicard(picardWrapperParams, queryParams);
@@ -456,8 +461,8 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             alignmentQcParams.setSkip(commandOptions.skip);
             alignmentQcParams.setOutdir(commandOptions.outdir);
 
-            if (commandOptions.overwrite != null){
-                ((AlignmentQcParams)alignmentQcParams).setOverwrite(commandOptions.overwrite);
+            if (commandOptions.overwrite != null) {
+                alignmentQcParams.setOverwrite(commandOptions.overwrite);
              }
 
         }
@@ -527,6 +532,7 @@ public class AnalysisAlignmentCommandExecutor extends OpencgaCommandExecutor {
             samtoolsWrapperParams.setCommand(commandOptions.command);
             samtoolsWrapperParams.setInputFile(commandOptions.inputFile);
             samtoolsWrapperParams.setOutdir(commandOptions.outdir);
+            samtoolsWrapperParams.setSamtoolsParams(new HashMap<>(commandOptions.samtoolsParams));
 
         }
         return openCGAClient.getAlignmentClient().runSamtools(samtoolsWrapperParams, queryParams);

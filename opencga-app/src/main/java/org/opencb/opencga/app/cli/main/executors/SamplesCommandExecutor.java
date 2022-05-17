@@ -11,30 +11,31 @@ import org.opencb.opencga.core.common.JacksonUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.SamplesCommandOptions;
 
-import org.opencb.opencga.core.models.sample.SampleCollection;
-import org.opencb.opencga.core.models.sample.SampleAclUpdateParams;
-import org.opencb.opencga.core.models.common.ExternalSource;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
-import org.opencb.opencga.core.models.sample.SampleVariantQualityControlMetrics;
+import java.util.Map;
+import org.opencb.biodata.models.core.OntologyTermAnnotation;
 import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.opencga.core.models.sample.SampleCreateParams;
+import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.BasicUpdateAction;
+import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
+import org.opencb.opencga.core.models.common.ExternalSource;
+import org.opencb.opencga.core.models.common.RgaIndex.Status;
 import org.opencb.opencga.core.models.common.StatusParams;
 import org.opencb.opencga.core.models.common.TsvAnnotationParams;
-import org.opencb.opencga.core.models.sample.SampleQualityControl;
-import org.opencb.opencga.catalog.utils.ParamUtils.AclAction;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.common.RgaIndex.Status;
-import java.util.Map;
+import org.opencb.opencga.core.models.sample.SampleAclUpdateParams;
+import org.opencb.opencga.core.models.sample.SampleCollection;
+import org.opencb.opencga.core.models.sample.SampleCreateParams;
 import org.opencb.opencga.core.models.sample.SampleProcessing;
+import org.opencb.opencga.core.models.sample.SampleQualityControl;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
-import org.opencb.opencga.catalog.utils.ParamUtils.CompleteUpdateAction;
-import org.opencb.biodata.models.core.OntologyTermAnnotation;
+import org.opencb.opencga.core.models.sample.SampleVariantQualityControlMetrics;
 
 
 /*
@@ -227,31 +228,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SampleProcessing sampleProcessing= new SampleProcessing();
-        invokeSetter(sampleProcessing, "preparationMethod", commandOptions.processingPreparationMethod);
-        invokeSetter(sampleProcessing, "extractionMethod", commandOptions.processingExtractionMethod);
-        invokeSetter(sampleProcessing, "labSampleId", commandOptions.processingLabSampleId);
-        invokeSetter(sampleProcessing, "quantity", commandOptions.processingQuantity);
-        invokeSetter(sampleProcessing, "date", commandOptions.processingDate);
-
-        SampleCollection sampleCollection= new SampleCollection();
-        invokeSetter(sampleCollection, "type", commandOptions.collectionType);
-        invokeSetter(sampleCollection, "quantity", commandOptions.collectionQuantity);
-        invokeSetter(sampleCollection, "method", commandOptions.collectionMethod);
-        invokeSetter(sampleCollection, "date", commandOptions.collectionDate);
-
-        StatusParams statusParams= new StatusParams();
-        invokeSetter(statusParams, "id", commandOptions.statusId);
-        invokeSetter(statusParams, "name", commandOptions.statusName);
-        invokeSetter(statusParams, "description", commandOptions.statusDescription);
-
-        ExternalSource externalSource= new ExternalSource();
-        invokeSetter(externalSource, "id", commandOptions.sourceId);
-        invokeSetter(externalSource, "name", commandOptions.sourceName);
-        invokeSetter(externalSource, "description", commandOptions.sourceDescription);
-        invokeSetter(externalSource, "source", commandOptions.sourceSource);
-        invokeSetter(externalSource, "url", commandOptions.sourceUrl);
-
         SampleCreateParams sampleCreateParams = new SampleCreateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Sample> res = new RestResponse<>();
@@ -262,18 +238,52 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleCreateParams);
         }  else {
+            // Generate beans for nested objects
+            ExternalSource sourceParam = new ExternalSource();
+            sourceParam.setId(commandOptions.sourceId);
+            sourceParam.setName(commandOptions.sourceName);
+            sourceParam.setDescription(commandOptions.sourceDescription);
+            sourceParam.setSource(commandOptions.sourceSource);
+            sourceParam.setUrl(commandOptions.sourceUrl);
+
+            SampleProcessing processingParam = new SampleProcessing();
+            //processingParam.setProduct(commandOptions.processingProduct);  // Unsupported param. FIXME
+            processingParam.setPreparationMethod(commandOptions.processingPreparationMethod);
+            processingParam.setExtractionMethod(commandOptions.processingExtractionMethod);
+            processingParam.setLabSampleId(commandOptions.processingLabSampleId);
+            processingParam.setQuantity(commandOptions.processingQuantity);
+            processingParam.setDate(commandOptions.processingDate);
+            processingParam.setAttributes(new HashMap<>(commandOptions.processingAttributes));
+
+            SampleCollection collectionParam = new SampleCollection();
+            //collectionParam.setFrom(commandOptions.collectionFrom);  // Unsupported param. FIXME
+            collectionParam.setType(commandOptions.collectionType);
+            collectionParam.setQuantity(commandOptions.collectionQuantity);
+            collectionParam.setMethod(commandOptions.collectionMethod);
+            collectionParam.setDate(commandOptions.collectionDate);
+            collectionParam.setAttributes(new HashMap<>(commandOptions.collectionAttributes));
+
+            StatusParams statusParam = new StatusParams();
+            statusParam.setId(commandOptions.statusId);
+            statusParam.setName(commandOptions.statusName);
+            statusParam.setDescription(commandOptions.statusDescription);
+
+            //Set main body params
             sampleCreateParams.setId(commandOptions.id);
             sampleCreateParams.setDescription(commandOptions.description);
             sampleCreateParams.setCreationDate(commandOptions.creationDate);
             sampleCreateParams.setModificationDate(commandOptions.modificationDate);
             sampleCreateParams.setIndividualId(commandOptions.individualId);
-            sampleCreateParams.setSource(externalSource);
-            sampleCreateParams.setProcessing(sampleProcessing);
-            sampleCreateParams.setCollection(sampleCollection);
-            sampleCreateParams.setStatus(statusParams);
+            sampleCreateParams.setSource(sourceParam);
+            sampleCreateParams.setProcessing(processingParam);
+            sampleCreateParams.setCollection(collectionParam);
+            //sampleCreateParams.setPhenotypes(commandOptions.phenotypes); // Unsupported param. FIXME 
+            sampleCreateParams.setStatus(statusParam);
+            //sampleCreateParams.setAnnotationSets(commandOptions.annotationSets); // Unsupported param. FIXME 
+            sampleCreateParams.setAttributes(new HashMap<>(commandOptions.attributes));
 
-            if (commandOptions.somatic != null){
-                ((SampleCreateParams)sampleCreateParams).setSomatic(commandOptions.somatic);
+            if (commandOptions.somatic != null) {
+                sampleCreateParams.setSomatic(commandOptions.somatic);
              }
 
         }
@@ -479,33 +489,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        SampleProcessing sampleProcessing= new SampleProcessing();
-        invokeSetter(sampleProcessing, "preparationMethod", commandOptions.processingPreparationMethod);
-        invokeSetter(sampleProcessing, "extractionMethod", commandOptions.processingExtractionMethod);
-        invokeSetter(sampleProcessing, "labSampleId", commandOptions.processingLabSampleId);
-        invokeSetter(sampleProcessing, "quantity", commandOptions.processingQuantity);
-        invokeSetter(sampleProcessing, "date", commandOptions.processingDate);
-
-        SampleCollection sampleCollection= new SampleCollection();
-        invokeSetter(sampleCollection, "type", commandOptions.collectionType);
-        invokeSetter(sampleCollection, "quantity", commandOptions.collectionQuantity);
-        invokeSetter(sampleCollection, "method", commandOptions.collectionMethod);
-        invokeSetter(sampleCollection, "date", commandOptions.collectionDate);
-
-        SampleQualityControl sampleQualityControl= new SampleQualityControl();
-
-        StatusParams statusParams= new StatusParams();
-        invokeSetter(statusParams, "id", commandOptions.statusId);
-        invokeSetter(statusParams, "name", commandOptions.statusName);
-        invokeSetter(statusParams, "description", commandOptions.statusDescription);
-
-        ExternalSource externalSource= new ExternalSource();
-        invokeSetter(externalSource, "id", commandOptions.sourceId);
-        invokeSetter(externalSource, "name", commandOptions.sourceName);
-        invokeSetter(externalSource, "description", commandOptions.sourceDescription);
-        invokeSetter(externalSource, "source", commandOptions.sourceSource);
-        invokeSetter(externalSource, "url", commandOptions.sourceUrl);
-
         SampleUpdateParams sampleUpdateParams = new SampleUpdateParams();
         if (commandOptions.jsonDataModel) {
             RestResponse<Sample> res = new RestResponse<>();
@@ -516,19 +499,58 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleUpdateParams);
         }  else {
+            // Generate beans for nested objects
+            ExternalSource sourceParam = new ExternalSource();
+            sourceParam.setId(commandOptions.sourceId);
+            sourceParam.setName(commandOptions.sourceName);
+            sourceParam.setDescription(commandOptions.sourceDescription);
+            sourceParam.setSource(commandOptions.sourceSource);
+            sourceParam.setUrl(commandOptions.sourceUrl);
+
+            SampleProcessing processingParam = new SampleProcessing();
+            //processingParam.setProduct(commandOptions.processingProduct);  // Unsupported param. FIXME
+            processingParam.setPreparationMethod(commandOptions.processingPreparationMethod);
+            processingParam.setExtractionMethod(commandOptions.processingExtractionMethod);
+            processingParam.setLabSampleId(commandOptions.processingLabSampleId);
+            processingParam.setQuantity(commandOptions.processingQuantity);
+            processingParam.setDate(commandOptions.processingDate);
+            processingParam.setAttributes(new HashMap<>(commandOptions.processingAttributes));
+
+            SampleCollection collectionParam = new SampleCollection();
+            //collectionParam.setFrom(commandOptions.collectionFrom);  // Unsupported param. FIXME
+            collectionParam.setType(commandOptions.collectionType);
+            collectionParam.setQuantity(commandOptions.collectionQuantity);
+            collectionParam.setMethod(commandOptions.collectionMethod);
+            collectionParam.setDate(commandOptions.collectionDate);
+            collectionParam.setAttributes(new HashMap<>(commandOptions.collectionAttributes));
+
+            SampleQualityControl qualityControlParam = new SampleQualityControl();
+            qualityControlParam.setFiles(splitWithTrim(commandOptions.qualityControlFiles));
+            //qualityControlParam.setComments(commandOptions.qualityControlComments);  // Unsupported param. FIXME
+            //qualityControlParam.setVariant(commandOptions.qualityControlVariant);  // Unsupported param. FIXME
+
+            StatusParams statusParam = new StatusParams();
+            statusParam.setId(commandOptions.statusId);
+            statusParam.setName(commandOptions.statusName);
+            statusParam.setDescription(commandOptions.statusDescription);
+
+            //Set main body params
             sampleUpdateParams.setId(commandOptions.id);
             sampleUpdateParams.setDescription(commandOptions.description);
             sampleUpdateParams.setCreationDate(commandOptions.creationDate);
             sampleUpdateParams.setModificationDate(commandOptions.modificationDate);
             sampleUpdateParams.setIndividualId(commandOptions.individualId);
-            sampleUpdateParams.setSource(externalSource);
-            sampleUpdateParams.setProcessing(sampleProcessing);
-            sampleUpdateParams.setCollection(sampleCollection);
-            sampleUpdateParams.setQualityControl(sampleQualityControl);
-            sampleUpdateParams.setStatus(statusParams);
+            sampleUpdateParams.setSource(sourceParam);
+            sampleUpdateParams.setProcessing(processingParam);
+            sampleUpdateParams.setCollection(collectionParam);
+            sampleUpdateParams.setQualityControl(qualityControlParam);
+            //sampleUpdateParams.setPhenotypes(commandOptions.phenotypes); // Unsupported param. FIXME 
+            //sampleUpdateParams.setAnnotationSets(commandOptions.annotationSets); // Unsupported param. FIXME 
+            sampleUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
+            sampleUpdateParams.setStatus(statusParam);
 
-            if (commandOptions.somatic != null){
-                ((SampleUpdateParams)sampleUpdateParams).setSomatic(commandOptions.somatic);
+            if (commandOptions.somatic != null) {
+                sampleUpdateParams.setSomatic(commandOptions.somatic);
              }
 
         }
@@ -558,6 +580,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         } else if (commandOptions.jsonFile != null) {
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), objectMap);
-        }         return openCGAClient.getSampleClient().updateAnnotationSetsAnnotations(commandOptions.sample, commandOptions.annotationSet, objectMap, queryParams);
+        } 
+        return openCGAClient.getSampleClient().updateAnnotationSetsAnnotations(commandOptions.sample, commandOptions.annotationSet, objectMap, queryParams);
     }
 }

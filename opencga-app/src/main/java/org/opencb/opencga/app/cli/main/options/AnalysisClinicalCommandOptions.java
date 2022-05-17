@@ -136,7 +136,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
         public String clinicalAnalysis;
     
-  }
+    }
+
     @Parameters(commandNames = {"clinical-configuration-update"}, commandDescription ="Update Clinical Analysis configuration.")
     public class UpdateClinicalConfigurationCommandOptions {
     
@@ -152,16 +153,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-        @DynamicParameter(names = {"--status"}, description = "The body web service status parameter. Use: --status key=value", required = false)
-        public Map<String, ?> status = new HashMap<>(); //Dynamic parameters must be initialized;
-    
-        @DynamicParameter(names = {"--interpretation-status"}, description = "The body web service status parameter. Use: --interpretation-status key=value", required = false)
-        public Map<String, ?> interpretationStatus = new HashMap<>(); //Dynamic parameters must be initialized;
-    
-        @DynamicParameter(names = {"--flags"}, description = "The body web service flags parameter. Use: --flags key=value", required = false)
-        public Map<String, ?> flags = new HashMap<>(); //Dynamic parameters must be initialized;
-    
-  }
+    }
+
     @Parameters(commandNames = {"create"}, commandDescription ="Create a new clinical analysis")
     public class CreateCommandOptions {
     
@@ -250,7 +243,7 @@ public class AnalysisClinicalCommandOptions {
         public Boolean interpretationLocked;
     
         @DynamicParameter(names = {"--interpretation-attributes"}, description = "The body web service attributes parameter. Use: --interpretation-attributes key=value", required = false)
-        public Map<String, ?> interpretationAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> interpretationAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--quality-control-summary"}, description = "Enum param allowed values: HIGH, MEDIUM, LOW, DISCARD, NEEDS_REVIEW, UNKNOWN", required = false, arity = 1)
         public String qualityControlSummary;
@@ -268,12 +261,13 @@ public class AnalysisClinicalCommandOptions {
         public String priorityId;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
     
-  }
+    }
+
     @Parameters(commandNames = {"distinct"}, commandDescription ="Clinical Analysis distinct method")
     public class DistinctCommandOptions {
     
@@ -358,7 +352,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"interpretation-distinct"}, commandDescription ="Interpretation distinct method")
     public class DistinctInterpretationCommandOptions {
     
@@ -410,7 +405,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"interpretation-search"}, commandDescription ="Search clinical interpretations")
     public class SearchInterpretationCommandOptions {
     
@@ -474,7 +470,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--release"}, description = "Release when it was created", required = false, arity = 1)
         public String release; 
     
-  }
+    }
+
     @Parameters(commandNames = {"interpretation-info"}, commandDescription ="Clinical interpretation information")
     public class InfoInterpretationCommandOptions {
     
@@ -499,7 +496,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
         public Boolean deleted; 
     
-  }
+    }
+
     @Parameters(commandNames = {"interpreter-cancer-tiering-run"}, commandDescription ="Run cancer tiering interpretation analysis")
     public class RunInterpreterCancerTieringCommandOptions {
     
@@ -536,7 +534,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--primary"}, description = "The body web service primary parameter", required = false, arity = 1)
         public Boolean primary;
     
-  }
+    }
+
     @Parameters(commandNames = {"interpreter-team-run"}, commandDescription ="Run TEAM interpretation analysis")
     public class RunInterpreterTeamCommandOptions {
     
@@ -576,7 +575,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--primary"}, description = "The body web service primary parameter", required = false, arity = 1)
         public Boolean primary;
     
-  }
+    }
+
     @Parameters(commandNames = {"interpreter-tiering-run"}, commandDescription ="Run tiering interpretation analysis")
     public class RunInterpreterTieringCommandOptions {
     
@@ -616,7 +616,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--primary"}, description = "The body web service primary parameter", required = false, arity = 1)
         public Boolean primary;
     
-  }
+    }
+
     @Parameters(commandNames = {"interpreter-zetta-run"}, commandDescription ="Run Zetta interpretation analysis")
     public class RunInterpreterZettaCommandOptions {
     
@@ -644,160 +645,161 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--job-tags"}, description = "Job tags", required = false, arity = 1)
         public String jobTags; 
     
-        @Parameter(names = {"--clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
-        public String clinicalAnalysis;
+        @Parameter(names = {"--body_clinical-analysis"}, description = "The body web service clinicalAnalysis parameter", required = false, arity = 1)
+        public String bodyClinicalAnalysis;
     
-        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = false, arity = 1)
-        public String id;
+        @Parameter(names = {"--body_id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String bodyId;
     
-        @Parameter(names = {"--region"}, description = "The body web service region parameter", required = false, arity = 1)
-        public String region;
+        @Parameter(names = {"--body_region"}, description = "The body web service region parameter", required = false, arity = 1)
+        public String bodyRegion;
     
-        @Parameter(names = {"--type"}, description = "The body web service type parameter", required = false, arity = 1)
-        public String type;
+        @Parameter(names = {"--body_type"}, description = "The body web service type parameter", required = false, arity = 1)
+        public String bodyType;
     
         @Parameter(names = {"--body_study"}, description = "The body web service study parameter", required = false, arity = 1)
         public String bodyStudy;
     
-        @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
-        public String file;
+        @Parameter(names = {"--body_file"}, description = "The body web service file parameter", required = false, arity = 1)
+        public String bodyFile;
     
-        @Parameter(names = {"--filter"}, description = "The body web service filter parameter", required = false, arity = 1)
-        public String filter;
+        @Parameter(names = {"--body_filter"}, description = "The body web service filter parameter", required = false, arity = 1)
+        public String bodyFilter;
     
-        @Parameter(names = {"--qual"}, description = "The body web service qual parameter", required = false, arity = 1)
-        public String qual;
+        @Parameter(names = {"--body_qual"}, description = "The body web service qual parameter", required = false, arity = 1)
+        public String bodyQual;
     
-        @Parameter(names = {"--file-data"}, description = "The body web service fileData parameter", required = false, arity = 1)
-        public String fileData;
+        @Parameter(names = {"--body_file-data"}, description = "The body web service fileData parameter", required = false, arity = 1)
+        public String bodyFileData;
     
-        @Parameter(names = {"--sample"}, description = "The body web service sample parameter", required = false, arity = 1)
-        public String sample;
+        @Parameter(names = {"--body_sample"}, description = "The body web service sample parameter", required = false, arity = 1)
+        public String bodySample;
     
-        @Parameter(names = {"--sample-data"}, description = "The body web service sampleData parameter", required = false, arity = 1)
-        public String sampleData;
+        @Parameter(names = {"--body_sample-data"}, description = "The body web service sampleData parameter", required = false, arity = 1)
+        public String bodySampleData;
     
-        @Parameter(names = {"--sample-annotation"}, description = "The body web service sampleAnnotation parameter", required = false, arity = 1)
-        public String sampleAnnotation;
+        @Parameter(names = {"--body_sample-annotation"}, description = "The body web service sampleAnnotation parameter", required = false, arity = 1)
+        public String bodySampleAnnotation;
     
-        @Parameter(names = {"--sample-metadata"}, description = "The body web service sampleMetadata parameter", required = false, arity = 1)
-        public String sampleMetadata;
+        @Parameter(names = {"--body_sample-metadata"}, description = "The body web service sampleMetadata parameter", required = false, arity = 1)
+        public String bodySampleMetadata;
     
-        @Parameter(names = {"--cohort"}, description = "The body web service cohort parameter", required = false, arity = 1)
-        public String cohort;
+        @Parameter(names = {"--body_cohort"}, description = "The body web service cohort parameter", required = false, arity = 1)
+        public String bodyCohort;
     
-        @Parameter(names = {"--cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
-        public String cohortStatsRef;
+        @Parameter(names = {"--body_cohort-stats-ref"}, description = "The body web service cohortStatsRef parameter", required = false, arity = 1)
+        public String bodyCohortStatsRef;
     
-        @Parameter(names = {"--cohort-stats-alt"}, description = "The body web service cohortStatsAlt parameter", required = false, arity = 1)
-        public String cohortStatsAlt;
+        @Parameter(names = {"--body_cohort-stats-alt"}, description = "The body web service cohortStatsAlt parameter", required = false, arity = 1)
+        public String bodyCohortStatsAlt;
     
-        @Parameter(names = {"--cohort-stats-maf"}, description = "The body web service cohortStatsMaf parameter", required = false, arity = 1)
-        public String cohortStatsMaf;
+        @Parameter(names = {"--body_cohort-stats-maf"}, description = "The body web service cohortStatsMaf parameter", required = false, arity = 1)
+        public String bodyCohortStatsMaf;
     
-        @Parameter(names = {"--cohort-stats-mgf"}, description = "The body web service cohortStatsMgf parameter", required = false, arity = 1)
-        public String cohortStatsMgf;
+        @Parameter(names = {"--body_cohort-stats-mgf"}, description = "The body web service cohortStatsMgf parameter", required = false, arity = 1)
+        public String bodyCohortStatsMgf;
     
-        @Parameter(names = {"--cohort-stats-pass"}, description = "The body web service cohortStatsPass parameter", required = false, arity = 1)
-        public String cohortStatsPass;
+        @Parameter(names = {"--body_cohort-stats-pass"}, description = "The body web service cohortStatsPass parameter", required = false, arity = 1)
+        public String bodyCohortStatsPass;
     
-        @Parameter(names = {"--score"}, description = "The body web service score parameter", required = false, arity = 1)
-        public String score;
+        @Parameter(names = {"--body_score"}, description = "The body web service score parameter", required = false, arity = 1)
+        public String bodyScore;
     
-        @Parameter(names = {"--family"}, description = "The body web service family parameter", required = false, arity = 1)
-        public String family;
+        @Parameter(names = {"--body_family"}, description = "The body web service family parameter", required = false, arity = 1)
+        public String bodyFamily;
     
-        @Parameter(names = {"--family-disorder"}, description = "The body web service familyDisorder parameter", required = false, arity = 1)
-        public String familyDisorder;
+        @Parameter(names = {"--body_family-disorder"}, description = "The body web service familyDisorder parameter", required = false, arity = 1)
+        public String bodyFamilyDisorder;
     
-        @Parameter(names = {"--family-segregation"}, description = "The body web service familySegregation parameter", required = false, arity = 1)
-        public String familySegregation;
+        @Parameter(names = {"--body_family-segregation"}, description = "The body web service familySegregation parameter", required = false, arity = 1)
+        public String bodyFamilySegregation;
     
-        @Parameter(names = {"--family-members"}, description = "The body web service familyMembers parameter", required = false, arity = 1)
-        public String familyMembers;
+        @Parameter(names = {"--body_family-members"}, description = "The body web service familyMembers parameter", required = false, arity = 1)
+        public String bodyFamilyMembers;
     
-        @Parameter(names = {"--family-proband"}, description = "The body web service familyProband parameter", required = false, arity = 1)
-        public String familyProband;
+        @Parameter(names = {"--body_family-proband"}, description = "The body web service familyProband parameter", required = false, arity = 1)
+        public String bodyFamilyProband;
     
-        @Parameter(names = {"--gene"}, description = "The body web service gene parameter", required = false, arity = 1)
-        public String gene;
+        @Parameter(names = {"--body_gene"}, description = "The body web service gene parameter", required = false, arity = 1)
+        public String bodyGene;
     
-        @Parameter(names = {"--ct"}, description = "The body web service ct parameter", required = false, arity = 1)
-        public String ct;
+        @Parameter(names = {"--body_ct"}, description = "The body web service ct parameter", required = false, arity = 1)
+        public String bodyCt;
     
-        @Parameter(names = {"--xref"}, description = "The body web service xref parameter", required = false, arity = 1)
-        public String xref;
+        @Parameter(names = {"--body_xref"}, description = "The body web service xref parameter", required = false, arity = 1)
+        public String bodyXref;
     
-        @Parameter(names = {"--biotype"}, description = "The body web service biotype parameter", required = false, arity = 1)
-        public String biotype;
+        @Parameter(names = {"--body_biotype"}, description = "The body web service biotype parameter", required = false, arity = 1)
+        public String bodyBiotype;
     
-        @Parameter(names = {"--protein-substitution"}, description = "The body web service proteinSubstitution parameter", required = false, arity = 1)
-        public String proteinSubstitution;
+        @Parameter(names = {"--body_protein-substitution"}, description = "The body web service proteinSubstitution parameter", required = false, arity = 1)
+        public String bodyProteinSubstitution;
     
-        @Parameter(names = {"--conservation"}, description = "The body web service conservation parameter", required = false, arity = 1)
-        public String conservation;
+        @Parameter(names = {"--body_conservation"}, description = "The body web service conservation parameter", required = false, arity = 1)
+        public String bodyConservation;
     
-        @Parameter(names = {"--population-frequency-alt"}, description = "The body web service populationFrequencyAlt parameter", required = false, arity = 1)
-        public String populationFrequencyAlt;
+        @Parameter(names = {"--body_population-frequency-alt"}, description = "The body web service populationFrequencyAlt parameter", required = false, arity = 1)
+        public String bodyPopulationFrequencyAlt;
     
-        @Parameter(names = {"--population-frequency-ref"}, description = "The body web service populationFrequencyRef parameter", required = false, arity = 1)
-        public String populationFrequencyRef;
+        @Parameter(names = {"--body_population-frequency-ref"}, description = "The body web service populationFrequencyRef parameter", required = false, arity = 1)
+        public String bodyPopulationFrequencyRef;
     
-        @Parameter(names = {"--population-frequency-maf"}, description = "The body web service populationFrequencyMaf parameter", required = false, arity = 1)
-        public String populationFrequencyMaf;
+        @Parameter(names = {"--body_population-frequency-maf"}, description = "The body web service populationFrequencyMaf parameter", required = false, arity = 1)
+        public String bodyPopulationFrequencyMaf;
     
-        @Parameter(names = {"--transcript-flag"}, description = "The body web service transcriptFlag parameter", required = false, arity = 1)
-        public String transcriptFlag;
+        @Parameter(names = {"--body_transcript-flag"}, description = "The body web service transcriptFlag parameter", required = false, arity = 1)
+        public String bodyTranscriptFlag;
     
-        @Parameter(names = {"--gene-trait-id"}, description = "The body web service geneTraitId parameter", required = false, arity = 1)
-        public String geneTraitId;
+        @Parameter(names = {"--body_gene-trait-id"}, description = "The body web service geneTraitId parameter", required = false, arity = 1)
+        public String bodyGeneTraitId;
     
-        @Parameter(names = {"--go"}, description = "The body web service go parameter", required = false, arity = 1)
-        public String go;
+        @Parameter(names = {"--body_go"}, description = "The body web service go parameter", required = false, arity = 1)
+        public String bodyGo;
     
-        @Parameter(names = {"--expression"}, description = "The body web service expression parameter", required = false, arity = 1)
-        public String expression;
+        @Parameter(names = {"--body_expression"}, description = "The body web service expression parameter", required = false, arity = 1)
+        public String bodyExpression;
     
-        @Parameter(names = {"--protein-keyword"}, description = "The body web service proteinKeyword parameter", required = false, arity = 1)
-        public String proteinKeyword;
+        @Parameter(names = {"--body_protein-keyword"}, description = "The body web service proteinKeyword parameter", required = false, arity = 1)
+        public String bodyProteinKeyword;
     
-        @Parameter(names = {"--drug"}, description = "The body web service drug parameter", required = false, arity = 1)
-        public String drug;
+        @Parameter(names = {"--body_drug"}, description = "The body web service drug parameter", required = false, arity = 1)
+        public String bodyDrug;
     
-        @Parameter(names = {"--functional-score"}, description = "The body web service functionalScore parameter", required = false, arity = 1)
-        public String functionalScore;
+        @Parameter(names = {"--body_functional-score"}, description = "The body web service functionalScore parameter", required = false, arity = 1)
+        public String bodyFunctionalScore;
     
-        @Parameter(names = {"--clinical"}, description = "The body web service clinical parameter", required = false, arity = 1)
-        public String clinical;
+        @Parameter(names = {"--body_clinical"}, description = "The body web service clinical parameter", required = false, arity = 1)
+        public String bodyClinical;
     
-        @Parameter(names = {"--clinical-significance"}, description = "The body web service clinicalSignificance parameter", required = false, arity = 1)
-        public String clinicalSignificance;
+        @Parameter(names = {"--body_clinical-significance"}, description = "The body web service clinicalSignificance parameter", required = false, arity = 1)
+        public String bodyClinicalSignificance;
     
-        @Parameter(names = {"--clinical-confirmed-status"}, description = "The body web service clinicalConfirmedStatus parameter", required = false, arity = 1)
-        public Boolean clinicalConfirmedStatus;
+        @Parameter(names = {"--body_clinical-confirmed-status"}, description = "The body web service clinicalConfirmedStatus parameter", required = false, arity = 1)
+        public Boolean bodyClinicalConfirmedStatus;
     
-        @Parameter(names = {"--custom-annotation"}, description = "The body web service customAnnotation parameter", required = false, arity = 1)
-        public String customAnnotation;
+        @Parameter(names = {"--body_custom-annotation"}, description = "The body web service customAnnotation parameter", required = false, arity = 1)
+        public String bodyCustomAnnotation;
     
-        @Parameter(names = {"--panel"}, description = "The body web service panel parameter", required = false, arity = 1)
-        public String panel;
+        @Parameter(names = {"--body_panel"}, description = "The body web service panel parameter", required = false, arity = 1)
+        public String bodyPanel;
     
-        @Parameter(names = {"--panel-mode-of-inheritance"}, description = "The body web service panelModeOfInheritance parameter", required = false, arity = 1)
-        public String panelModeOfInheritance;
+        @Parameter(names = {"--body_panel-mode-of-inheritance"}, description = "The body web service panelModeOfInheritance parameter", required = false, arity = 1)
+        public String bodyPanelModeOfInheritance;
     
-        @Parameter(names = {"--panel-confidence"}, description = "The body web service panelConfidence parameter", required = false, arity = 1)
-        public String panelConfidence;
+        @Parameter(names = {"--body_panel-confidence"}, description = "The body web service panelConfidence parameter", required = false, arity = 1)
+        public String bodyPanelConfidence;
     
-        @Parameter(names = {"--panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
-        public String panelRoleInCancer;
+        @Parameter(names = {"--body_panel-role-in-cancer"}, description = "The body web service panelRoleInCancer parameter", required = false, arity = 1)
+        public String bodyPanelRoleInCancer;
     
-        @Parameter(names = {"--trait"}, description = "The body web service trait parameter", required = false, arity = 1)
-        public String trait;
+        @Parameter(names = {"--body_trait"}, description = "The body web service trait parameter", required = false, arity = 1)
+        public String bodyTrait;
     
-        @Parameter(names = {"--primary"}, description = "The body web service primary parameter", required = false, arity = 1)
-        public Boolean primary;
+        @Parameter(names = {"--body_primary"}, description = "The body web service primary parameter", required = false, arity = 1)
+        public Boolean bodyPrimary;
     
-  }
+    }
+
     @Parameters(commandNames = {"rga-aggregation-stats"}, commandDescription ="RGA aggregation stats")
     public class AggregationStatsRgaCommandOptions {
     
@@ -876,7 +878,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: clinicalSignificances;type. For nested fields use >>, e.g.: type>>clinicalSignificances;knockoutType", required = true, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"rga-gene-query"}, commandDescription ="Query gene RGA")
     public class QueryRgaGeneCommandOptions {
     
@@ -970,7 +973,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-  }
+    }
+
     @Parameters(commandNames = {"rga-gene-summary"}, commandDescription ="RGA gene summary stats")
     public class SummaryRgaGeneCommandOptions {
     
@@ -1049,7 +1053,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-  }
+    }
+
     @Parameters(commandNames = {"rga-index-run"}, commandDescription ="Generate Recessive Gene Analysis secondary index")
     public class RunRgaIndexCommandOptions {
     
@@ -1083,7 +1088,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--file"}, description = "The body web service file parameter", required = false, arity = 1)
         public String file;
     
-  }
+    }
+
     @Parameters(commandNames = {"rga-individual-query"}, commandDescription ="Query individual RGA")
     public class QueryRgaIndividualCommandOptions {
     
@@ -1168,7 +1174,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-  }
+    }
+
     @Parameters(commandNames = {"rga-individual-summary"}, commandDescription ="RGA individual summary stats")
     public class SummaryRgaIndividualCommandOptions {
     
@@ -1247,7 +1254,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-  }
+    }
+
     @Parameters(commandNames = {"rga-variant-query"}, commandDescription ="Query variant RGA")
     public class QueryRgaVariantCommandOptions {
     
@@ -1341,7 +1349,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-  }
+    }
+
     @Parameters(commandNames = {"rga-variant-summary"}, commandDescription ="RGA variant summary stats")
     public class SummaryRgaVariantCommandOptions {
     
@@ -1420,7 +1429,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--study", "-s"}, description = "Study [[user@]project:]study where study and project can be either the ID or UUID", required = false, arity = 1)
         public String study; 
     
-  }
+    }
+
     @Parameters(commandNames = {"search"}, commandDescription ="Clinical analysis search.")
     public class SearchCommandOptions {
     
@@ -1517,7 +1527,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
         public Boolean deleted; 
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-actionable"}, commandDescription ="Fetch actionable clinical variants")
     public class ActionableVariantCommandOptions {
     
@@ -1530,7 +1541,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--sample"}, description = "Sample ID", required = false, arity = 1)
         public String sample; 
     
-  }
+    }
+
     @Parameters(commandNames = {"variant-query"}, commandDescription ="Fetch clinical variants")
     public class QueryVariantCommandOptions {
     
@@ -1717,7 +1729,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--trait"}, description = "List of traits, based on ClinVar, HPO, COSMIC, i.e.: IDs, histologies, descriptions,...", required = false, arity = 1)
         public String trait; 
     
-  }
+    }
+
     @Parameters(commandNames = {"acl"}, commandDescription ="Returns the acl of the clinical analyses. If member is provided, it will only return the acl for the member.")
     public class AclCommandOptions {
     
@@ -1736,7 +1749,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
         public Boolean silent; 
     
-  }
+    }
+
     @Parameters(commandNames = {"delete"}, commandDescription ="Delete clinical analyses")
     public class DeleteCommandOptions {
     
@@ -1752,7 +1766,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--clinical-analyses"}, description = "Comma separated list of clinical analysis IDs or names up to a maximum of 100", required = true, arity = 1)
         public String clinicalAnalyses; 
     
-  }
+    }
+
     @Parameters(commandNames = {"update"}, commandDescription ="Update clinical analysis attributes")
     public class UpdateCommandOptions {
     
@@ -1844,12 +1859,13 @@ public class AnalysisClinicalCommandOptions {
         public String priorityId;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
     
-  }
+    }
+
     @Parameters(commandNames = {"info"}, commandDescription ="Clinical analysis info")
     public class InfoCommandOptions {
     
@@ -1871,7 +1887,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted entries", required = false, arity = 1)
         public Boolean deleted; 
     
-  }
+    }
+
     @Parameters(commandNames = {"interpretation-create"}, commandDescription ="Create a new Interpretation")
     public class CreateInterpretationCommandOptions {
     
@@ -1933,9 +1950,10 @@ public class AnalysisClinicalCommandOptions {
         public String statusId;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"interpretation-clear"}, commandDescription ="Clear the fields of the main interpretation of the Clinical Analysis")
     public class ClearInterpretationCommandOptions {
     
@@ -1957,7 +1975,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--clinical-analysis"}, description = "Clinical analysis ID", required = true, arity = 1)
         public String clinicalAnalysis; 
     
-  }
+    }
+
     @Parameters(commandNames = {"interpretation-delete"}, commandDescription ="Delete interpretation")
     public class DeleteInterpretationCommandOptions {
     
@@ -1976,7 +1995,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--set-as-primary"}, description = "Interpretation id to set as primary from the list of secondaries in case of deleting the actual primary one", required = false, arity = 1)
         public String setAsPrimary; 
     
-  }
+    }
+
     @Parameters(commandNames = {"interpretation-revert"}, commandDescription ="Revert to a previous interpretation version")
     public class RevertInterpretationCommandOptions {
     
@@ -2001,7 +2021,8 @@ public class AnalysisClinicalCommandOptions {
         @Parameter(names = {"--version"}, description = "Version to revert to", required = true, arity = 1)
         public Integer version; 
     
-  }
+    }
+
     @Parameters(commandNames = {"interpretation-update"}, commandDescription ="Update interpretation fields")
     public class UpdateInterpretationCommandOptions {
     
@@ -2063,7 +2084,8 @@ public class AnalysisClinicalCommandOptions {
         public Boolean locked;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
 }

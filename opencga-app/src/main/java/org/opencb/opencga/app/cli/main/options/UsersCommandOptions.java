@@ -90,7 +90,8 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
         @Parameter(names = {"--organization"}, description = "The body web service organization parameter", required = false, arity = 1)
         public String organization;
     
-  }
+    }
+
     @Parameters(commandNames = {"password"}, commandDescription ="Change the password of a user")
     public class PasswordCommandOptions {
     
@@ -115,7 +116,8 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
         @Parameter(names = {"--reset"}, description = "The body web service reset parameter", required = false, arity = 1)
         public String reset;
     
-  }
+    }
+
     @Parameters(commandNames = {"info"}, commandDescription ="Return the user information including its projects and studies")
     public class InfoCommandOptions {
     
@@ -131,7 +133,8 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
         @Parameter(names = {"--users"}, description = "Comma separated list of user IDs", required = true, arity = 1)
         public String users; 
     
-  }
+    }
+
     @Parameters(commandNames = {"configs"}, commandDescription ="Fetch a user configuration")
     public class ConfigsCommandOptions {
     
@@ -144,7 +147,8 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
         @Parameter(names = {"--name", "-n"}, description = "Unique name (typically the name of the application).", required = false, arity = 1)
         public String name; 
     
-  }
+    }
+
     @Parameters(commandNames = {"configs-update"}, commandDescription ="Add or remove a custom user configuration")
     public class UpdateConfigsCommandOptions {
     
@@ -167,9 +171,10 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
         public String id;
     
         @DynamicParameter(names = {"--configuration"}, description = "The body web service configuration parameter. Use: --configuration key=value", required = false)
-        public Map<String, ?> configuration = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> configuration = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"filters"}, commandDescription ="Fetch user filters")
     public class FiltersCommandOptions {
     
@@ -182,7 +187,8 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
         @Parameter(names = {"--id"}, description = "Filter id. If provided, it will only fetch the specified filter", required = false, arity = 1)
         public String id; 
     
-  }
+    }
+
     @Parameters(commandNames = {"password-reset"}, commandDescription ="Reset password")
     public class ResetPasswordCommandOptions {
     
@@ -192,7 +198,8 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
         @Parameter(names = {"--user", "-u"}, description = "User ID", required = true, arity = 1)
         public String user; 
     
-  }
+    }
+
     @Parameters(commandNames = {"projects"}, commandDescription ="Retrieve the projects of the user")
     public class ProjectsCommandOptions {
     
@@ -214,7 +221,8 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
         @Parameter(names = {"--user", "-u"}, description = "User ID", required = true, arity = 1)
         public String user; 
     
-  }
+    }
+
     @Parameters(commandNames = {"update"}, commandDescription ="Update some user attributes")
     public class UpdateCommandOptions {
     
@@ -249,7 +257,8 @@ public class UsersCommandOptions extends ParentUsersCommandOptions {
         public String organization;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
 }

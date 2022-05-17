@@ -113,9 +113,10 @@ public class AnalysisAlignmentCommandOptions {
         public String outdir;
     
         @DynamicParameter(names = {"--bwa-params"}, description = "The body web service bwaParams parameter. Use: --bwa-params key=value", required = false)
-        public Map<String, ?> bwaParams = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.String> bwaParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"coverage-index-run"}, commandDescription ="Compute coverage for a list of alignment files")
     public class RunCoverageIndexCommandOptions {
     
@@ -152,7 +153,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, arity = 1)
         public Boolean overwrite;
     
-  }
+    }
+
     @Parameters(commandNames = {"coverage-qc-genecoveragestats-run"}, commandDescription ="Compute gene coverage stats for a given alignment file and a list of genes")
     public class CoverageQcGeneCoverageStatsRunCommandOptions {
     
@@ -189,7 +191,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
         public String outdir;
     
-  }
+    }
+
     @Parameters(commandNames = {"coverage-query"}, commandDescription ="Query the coverage of an alignment file for regions or genes")
     public class QueryCoverageCommandOptions {
     
@@ -223,7 +226,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--split-results"}, description = "Split results into regions (or gene/exon regions)", required = false, arity = 1)
         public Boolean splitResults; 
     
-  }
+    }
+
     @Parameters(commandNames = {"coverage-ratio"}, commandDescription ="Compute coverage ratio from file #1 vs file #2, (e.g. somatic vs germline)")
     public class RatioCoverageCommandOptions {
     
@@ -260,7 +264,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--split-results"}, description = "Split results into regions (or gene/exon regions)", required = false, arity = 1)
         public Boolean splitResults; 
     
-  }
+    }
+
     @Parameters(commandNames = {"coverage-stats"}, commandDescription ="Compute coverage stats per transcript for a list of genes.")
     public class StatsCoverageCommandOptions {
     
@@ -279,7 +284,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--threshold"}, description = "Only regions whose coverage depth is under this threshold will be reported.", required = false, arity = 1)
         public Integer threshold; 
     
-  }
+    }
+
     @Parameters(commandNames = {"deeptools-run"}, commandDescription ="Deeptools is a suite of python tools particularly developed for the efficient analysis of high-throughput sequencing data, such as ChIP-seq, RNA-seq or MNase-seq.")
     public class RunDeeptoolsCommandOptions {
     
@@ -314,9 +320,10 @@ public class AnalysisAlignmentCommandOptions {
         public String outdir;
     
         @DynamicParameter(names = {"--deeptools-params"}, description = "The body web service deeptoolsParams parameter. Use: --deeptools-params key=value", required = false)
-        public Map<String, ?> deeptoolsParams = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.String> deeptoolsParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"fastqc-run"}, commandDescription ="A high throughput sequence QC analysis tool")
     public class RunFastqcCommandOptions {
     
@@ -351,9 +358,10 @@ public class AnalysisAlignmentCommandOptions {
         public String outdir;
     
         @DynamicParameter(names = {"--fastqc-params"}, description = "The body web service fastqcParams parameter. Use: --fastqc-params key=value", required = false)
-        public Map<String, ?> fastqcParams = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.String> fastqcParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"index-run"}, commandDescription ="Index alignment file")
     public class RunIndexCommandOptions {
     
@@ -387,7 +395,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--overwrite"}, description = "The body web service overwrite parameter", required = false, arity = 1)
         public Boolean overwrite;
     
-  }
+    }
+
     @Parameters(commandNames = {"picard-run"}, commandDescription ="Picard is a set of command line tools (in Java) for manipulating high-throughput sequencing (HTS) data and formats such as SAM/BAM/CRAM and VCF. Supported Picard commands: CollectHsMetrics, CollectWgsMetrics, BedToIntervalList")
     public class RunPicardCommandOptions {
     
@@ -422,9 +431,10 @@ public class AnalysisAlignmentCommandOptions {
         public String outdir;
     
         @DynamicParameter(names = {"--picard-params"}, description = "The body web service picardParams parameter. Use: --picard-params key=value", required = false)
-        public Map<String, ?> picardParams = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.String> picardParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"qc-run"}, commandDescription ="Compute quality control (QC) metrics for a given alignment file (including samtools stats, samtools flag stats, FastQC and HS metrics)")
     public class RunQcCommandOptions {
     
@@ -470,7 +480,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--outdir"}, description = "The body web service outdir parameter", required = false, arity = 1)
         public String outdir;
     
-  }
+    }
+
     @Parameters(commandNames = {"query"}, commandDescription ="Search over indexed alignments")
     public class QueryCommandOptions {
     
@@ -537,7 +548,8 @@ public class AnalysisAlignmentCommandOptions {
         @Parameter(names = {"--split-results"}, description = "Split results into regions (or gene/exon regions)", required = false, arity = 1)
         public Boolean splitResults; 
     
-  }
+    }
+
     @Parameters(commandNames = {"samtools-run"}, commandDescription ="Samtools is a program for interacting with high-throughput sequencing data in SAM, BAM and CRAM formats. Supported Samtools commands: sort, index, view, stats, flagstat, dict, faidx, depth, plot-bamstats")
     public class RunSamtoolsCommandOptions {
     
@@ -575,7 +587,8 @@ public class AnalysisAlignmentCommandOptions {
         public String outdir;
     
         @DynamicParameter(names = {"--samtools-params"}, description = "The body web service samtoolsParams parameter. Use: --samtools-params key=value", required = false)
-        public Map<String, ?> samtoolsParams = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.String> samtoolsParams = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
 }

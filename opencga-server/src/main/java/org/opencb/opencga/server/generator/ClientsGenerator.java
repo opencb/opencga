@@ -31,7 +31,9 @@ import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ClientsGenerator {
 
@@ -161,15 +163,32 @@ public class ClientsGenerator {
         //Sometimes body parameter has the same name of a query parameter
         for (RestCategory restCategory : api.getCategories()) {
             for (RestEndpoint restEndpoint : restCategory.getEndpoints()) {
-                List<String> aux = new ArrayList<>();
+                Set<String> aux = new HashSet<>();
                 for (RestParameter restParameter : restEndpoint.getParameters()) {
-                    aux.add(restParameter.getName());
+                    if (!restParameter.isInnerParam()) {
+                        aux.add(restParameter.getName());
+                    }
                 }
-                for (RestParameter restParameter : restEndpoint.getParameters()) {
-                    if (restParameter.getData() != null) {
-                        for (RestParameter body_Rest_parameter : restParameter.getData()) {
-                            if (aux.contains(body_Rest_parameter.getName())) {
-                                body_Rest_parameter.setName("body_" + body_Rest_parameter.getName());
+                RestParameter body = restEndpoint.getParameterBody();
+                if (body != null && body.getData() != null) {
+                    boolean overlappingParamNames = false;
+//                    for (RestParameter bodyParam : body.getData()) {
+//                        if (!bodyParam.isInnerParam() && aux.contains(bodyParam.getName())) {
+//                            bodyParam.setName("body_" + bodyParam.getName());
+//                            anyMatch = true;
+//                        }
+//                    }
+                    for (RestParameter bodyParam : body.getData()) {
+                        if (!bodyParam.isInnerParam() && aux.contains(bodyParam.getName())) {
+                            overlappingParamNames = true;
+                        }
+                    }
+                    if (overlappingParamNames) {
+                        logger.info("Overlapping param names at " + restEndpoint.getPath());
+                        // To avoid confusion, add "body_" to all params
+                        for (RestParameter bodyParam : body.getData()) {
+                            if (!bodyParam.isInnerParam()) {
+                                bodyParam.setName("body_" + bodyParam.getName());
                             }
                         }
                     }

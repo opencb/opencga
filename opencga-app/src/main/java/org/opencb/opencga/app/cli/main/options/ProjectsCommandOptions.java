@@ -113,9 +113,10 @@ public class ProjectsCommandOptions {
         public String cellbasePreferred;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"search"}, commandDescription ="Search projects")
     public class SearchCommandOptions {
     
@@ -167,7 +168,8 @@ public class ProjectsCommandOptions {
         @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
         public String attributes; 
     
-  }
+    }
+
     @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog project stats")
     public class AggregationStatsCommandOptions {
     
@@ -198,7 +200,8 @@ public class ProjectsCommandOptions {
         @Parameter(names = {"--job-fields"}, description = "List of job fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type", required = false, arity = 1)
         public String jobFields; 
     
-  }
+    }
+
     @Parameters(commandNames = {"info"}, commandDescription ="Fetch project information")
     public class InfoCommandOptions {
     
@@ -214,7 +217,8 @@ public class ProjectsCommandOptions {
         @Parameter(names = {"--projects"}, description = "Comma separated list of projects [user@]project up to a maximum of 100", required = true, arity = 1)
         public String projects; 
     
-  }
+    }
+
     @Parameters(commandNames = {"increlease"}, commandDescription ="Increment current release number in the project")
     public class IncReleaseCommandOptions {
     
@@ -230,7 +234,8 @@ public class ProjectsCommandOptions {
         @Parameter(names = {"--project", "-p"}, description = "Project [user@]project where project can be either the ID or the alias", required = true, arity = 1)
         public String project; 
     
-  }
+    }
+
     @Parameters(commandNames = {"studies"}, commandDescription ="Fetch all the studies contained in the project")
     public class StudiesCommandOptions {
     
@@ -252,7 +257,8 @@ public class ProjectsCommandOptions {
         @Parameter(names = {"--project", "-p"}, description = "Project [user@]project where project can be either the ID or the alias", required = true, arity = 1)
         public String project; 
     
-  }
+    }
+
     @Parameters(commandNames = {"update"}, commandDescription ="Update some project attributes")
     public class UpdateCommandOptions {
     
@@ -308,7 +314,8 @@ public class ProjectsCommandOptions {
         public String cellbasePreferred;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
 }

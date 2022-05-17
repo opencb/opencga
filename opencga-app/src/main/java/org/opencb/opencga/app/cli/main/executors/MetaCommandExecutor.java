@@ -11,13 +11,14 @@ import org.opencb.opencga.core.common.JacksonUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.HashMap;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.commons.utils.PrintUtils;
 
 import org.opencb.opencga.app.cli.main.options.MetaCommandOptions;
 
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
 
 /*

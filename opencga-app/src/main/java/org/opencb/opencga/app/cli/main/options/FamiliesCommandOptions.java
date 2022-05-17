@@ -102,7 +102,8 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--sample"}, description = "The body web service sample parameter", required = false, arity = 1)
         public String sample;
     
-  }
+    }
+
     @Parameters(commandNames = {"aggregationstats"}, commandDescription ="Fetch catalog family stats")
     public class AggregationStatsCommandOptions {
     
@@ -151,7 +152,8 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--field"}, description = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1", required = false, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"annotation-sets-load"}, commandDescription ="Load annotation sets from a TSV file")
     public class LoadAnnotationSetsCommandOptions {
     
@@ -182,7 +184,8 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--content"}, description = "The body web service content parameter", required = false, arity = 1)
         public String content;
     
-  }
+    }
+
     @Parameters(commandNames = {"create"}, commandDescription ="Create family and the individual objects if they do not exist")
     public class CreateCommandOptions {
     
@@ -210,23 +213,23 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--include-result"}, description = "Flag indicating to include the created or updated document result in the response", required = false, arity = 1)
         public Boolean includeResult; 
     
-        @Parameter(names = {"--id"}, description = "The body web service id parameter", required = true, arity = 1)
-        public String id;
+        @Parameter(names = {"--body_id"}, description = "The body web service id parameter", required = false, arity = 1)
+        public String bodyId;
     
-        @Parameter(names = {"--name", "-n"}, description = "The body web service name parameter", required = false, arity = 1)
-        public String name;
+        @Parameter(names = {"--body_name"}, description = "The body web service name parameter", required = false, arity = 1)
+        public String bodyName;
     
-        @Parameter(names = {"--description"}, description = "The body web service description parameter", required = false, arity = 1)
-        public String description;
+        @Parameter(names = {"--body_description"}, description = "The body web service description parameter", required = false, arity = 1)
+        public String bodyDescription;
     
-        @Parameter(names = {"--creation-date", "--cd"}, description = "The body web service creationDate parameter", required = false, arity = 1)
-        public String creationDate;
+        @Parameter(names = {"--body_creation-date"}, description = "The body web service creationDate parameter", required = false, arity = 1)
+        public String bodyCreationDate;
     
-        @Parameter(names = {"--modification-date", "--md"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
-        public String modificationDate;
+        @Parameter(names = {"--body_modification-date"}, description = "The body web service modificationDate parameter", required = false, arity = 1)
+        public String bodyModificationDate;
     
-        @Parameter(names = {"--expected-size"}, description = "The body web service expectedSize parameter", required = false, arity = 1)
-        public Integer expectedSize;
+        @Parameter(names = {"--body_expected-size"}, description = "The body web service expectedSize parameter", required = false, arity = 1)
+        public Integer bodyExpectedSize;
     
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
@@ -237,10 +240,11 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--status-description"}, description = "The body web service description parameter", required = false, arity = 1)
         public String statusDescription;
     
-        @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        @DynamicParameter(names = {"--body_attributes"}, description = "The body web service attributes parameter. Use: --body_attributes key=value", required = false)
+        public java.util.Map<java.lang.String,java.lang.Object> bodyAttributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"distinct"}, commandDescription ="Family distinct method")
     public class DistinctCommandOptions {
     
@@ -304,7 +308,8 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--field"}, description = "Field for which to obtain the distinct values", required = true, arity = 1)
         public String field; 
     
-  }
+    }
+
     @Parameters(commandNames = {"search"}, commandDescription ="Search families")
     public class SearchCommandOptions {
     
@@ -383,7 +388,8 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--snapshot"}, description = "Snapshot value (Latest version of the entry in the specified release)", required = false, arity = 1)
         public Integer snapshot; 
     
-  }
+    }
+
     @Parameters(commandNames = {"acl"}, commandDescription ="Returns the acl of the families. If member is provided, it will only return the acl for the member.")
     public class AclCommandOptions {
     
@@ -402,7 +408,8 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--silent"}, description = "Boolean to retrieve all possible entries that are queried for, false to raise an exception whenever one of the entries looked for cannot be shown for whichever reason", required = false, arity = 1)
         public Boolean silent; 
     
-  }
+    }
+
     @Parameters(commandNames = {"delete"}, commandDescription ="Delete existing families")
     public class DeleteCommandOptions {
     
@@ -415,7 +422,8 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--families"}, description = "Comma separated list of family ids", required = true, arity = 1)
         public String families; 
     
-  }
+    }
+
     @Parameters(commandNames = {"info"}, commandDescription ="Get family information")
     public class InfoCommandOptions {
     
@@ -443,7 +451,8 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--deleted"}, description = "Boolean to retrieve deleted families", required = false, arity = 1)
         public Boolean deleted; 
     
-  }
+    }
+
     @Parameters(commandNames = {"update"}, commandDescription ="Update some family attributes")
     public class UpdateCommandOptions {
     
@@ -492,6 +501,9 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--expected-size"}, description = "The body web service expectedSize parameter", required = false, arity = 1)
         public Integer expectedSize;
     
+        @Parameter(names = {"--quality-control-files"}, description = "File IDs related to the quality control.", required = false, arity = 1)
+        public String qualityControlFiles;
+    
         @Parameter(names = {"--status-id"}, description = "The body web service id parameter", required = false, arity = 1)
         public String statusId;
     
@@ -502,9 +514,10 @@ public class FamiliesCommandOptions {
         public String statusDescription;
     
         @DynamicParameter(names = {"--attributes"}, description = "The body web service attributes parameter. Use: --attributes key=value", required = false)
-        public Map<String, ?> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
+        public java.util.Map<java.lang.String,java.lang.Object> attributes = new HashMap<>(); //Dynamic parameters must be initialized;
     
-  }
+    }
+
     @Parameters(commandNames = {"annotation-sets-annotations-update"}, commandDescription ="Update annotations from an annotationSet")
     public class UpdateAnnotationSetsAnnotationsCommandOptions {
     
@@ -529,5 +542,6 @@ public class FamiliesCommandOptions {
         @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add new annotations; REPLACE to replace the value of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE to remove some annotations; RESET to set some annotations to the default value configured in the corresponding variables of the VariableSet if any.", required = false, arity = 1)
         public String action; 
     
-  }
+    }
+
 }
