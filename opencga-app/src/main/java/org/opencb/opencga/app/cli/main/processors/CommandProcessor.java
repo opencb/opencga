@@ -12,14 +12,17 @@ import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.session.Session;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,8 +56,10 @@ public class CommandProcessor {
                             if (commandExecutor != null) {
                                 try {
                                     if (checkAutoRefresh(commandExecutor)) {
-                                        commandExecutor.getOpenCGAClient().
-                                                refresh(commandExecutor.getSessionManager().getSession().getRefreshToken());
+                                        logger.debug("Refreshing token..." + commandExecutor.getSessionManager().getSession().getRefreshToken());
+                                        refreshToken(commandExecutor);
+                                        logger.debug("New refresh token..." + commandExecutor.getSessionManager().getSession().getRefreshToken());
+
                                     }
                                     commandExecutor.execute();
                                     commandExecutor.getSessionManager().saveSession();
@@ -92,8 +97,18 @@ public class CommandProcessor {
 
     }
 
-    private boolean checkAutoRefresh(OpencgaCommandExecutor commandExecutor) {
+    private void refreshToken(OpencgaCommandExecutor commandExecutor) throws ClientException, IOException {
 
+        AuthenticationResponse response = commandExecutor.getOpenCGAClient().
+                refresh(commandExecutor.getSessionManager().getSession().getRefreshToken());
+        commandExecutor.saveSession(commandExecutor.getSessionManager().getSession().getUser(), response);
+
+    }
+
+    private boolean checkAutoRefresh(OpencgaCommandExecutor commandExecutor) {
+        if (StringUtils.isEmpty(commandExecutor.getSessionManager().getSession().getRefreshToken())) {
+            return false;
+        }
         //  if (commandExecutor.getSessionManager().getSession().getRefreshToken())
  /*       JwtManager manager = new JwtManager(SignatureAlgorithm.HS256.getValue());
         if(manager.getExpiration(commandExecutor.getSessionManager().getSession().getRefreshToken())){

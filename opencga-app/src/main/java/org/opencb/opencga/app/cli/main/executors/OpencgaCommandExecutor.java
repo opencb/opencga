@@ -26,9 +26,14 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.session.SessionManager;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
+import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +55,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     protected OpenCGAClient openCGAClient;
     protected AbstractOutputWriter writer;
+
 
     private Logger privateLogger;
 
@@ -220,5 +226,33 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             CommandLineUtils.error(e);
         }
         return jsonInString;
+    }
+
+    public RestResponse<AuthenticationResponse> saveSession(String user, AuthenticationResponse response) throws ClientException, IOException {
+        RestResponse<AuthenticationResponse> res = new RestResponse<>();
+        if (response != null) {
+            List<String> studies = new ArrayList<>();
+            logger.debug(response.toString());
+            RestResponse<Project> projects = openCGAClient.getProjectClient().search(
+                    new ObjectMap(ProjectDBAdaptor.QueryParams.OWNER.key(), user));
+
+            if (projects.getResponses().get(0).getNumResults() == 0) {
+                // We try to fetch shared projects and studies instead when the user does not own any project or study
+                projects = openCGAClient.getProjectClient().search(new ObjectMap());
+            }
+
+            for (Project project : projects.getResponses().get(0).getResults()) {
+                for (Study study : project.getStudies()) {
+                    studies.add(study.getFqn());
+                }
+            }
+            // write CLI session file
+
+//                    CliSessionManager.getInstance().initUserSession(response.getToken(), user, response.getRefreshToken(), studies, this);
+            this.sessionManager.saveSession(user, response.getToken(), response.getRefreshToken(), studies, this.host);
+            res.setType(QueryType.VOID);
+
+        }
+        return res;
     }
 }

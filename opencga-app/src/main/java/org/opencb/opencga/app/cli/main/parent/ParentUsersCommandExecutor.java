@@ -17,22 +17,16 @@ package org.opencb.opencga.app.cli.main.parent;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.UsersCommandOptions;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.QueryType;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.opencb.commons.utils.PrintUtils.getKeyValueAsFormattedString;
 import static org.opencb.commons.utils.PrintUtils.println;
@@ -71,29 +65,8 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                     return res;
                 }
                 logger.debug("Login token ::: " + getSessionManager().getSession().getToken());
-                if (response != null) {
-                    List<String> studies = new ArrayList<>();
-                    logger.debug(response.toString());
-                    RestResponse<Project> projects = openCGAClient.getProjectClient().search(
-                            new ObjectMap(ProjectDBAdaptor.QueryParams.OWNER.key(), user));
-
-                    if (projects.getResponses().get(0).getNumResults() == 0) {
-                        // We try to fetch shared projects and studies instead when the user does not own any project or study
-                        projects = openCGAClient.getProjectClient().search(new ObjectMap());
-                    }
-
-                    for (Project project : projects.getResponses().get(0).getResults()) {
-                        for (Study study : project.getStudies()) {
-                            studies.add(study.getFqn());
-                        }
-                    }
-                    // write CLI session file
-
-//                    CliSessionManager.getInstance().initUserSession(response.getToken(), user, response.getRefreshToken(), studies, this);
-                    this.sessionManager.saveSession(user, response.getToken(), response.getRefreshToken(), studies, this.host);
-                    res.setType(QueryType.VOID);
-                    println(getKeyValueAsFormattedString(LOGIN_OK, user));
-                }
+                res = saveSession(user, response);
+                println(getKeyValueAsFormattedString(LOGIN_OK, user));
             } else {
                 String sessionId = usersCommandOptions.commonCommandOptions.token;
                 String errorMsg = "Missing password. ";
@@ -114,6 +87,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
         }
         return res;
     }
+
 
     protected RestResponse<AuthenticationResponse> logout() throws IOException {
         logger.debug("Logout");
