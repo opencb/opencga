@@ -80,6 +80,9 @@ public class MigrationCommandOptions extends GeneralCliOptions {
         @Parameter(names = {"--language"}, description = "Run migrations of the chosen language only [JAVA, JAVASCRIPT]")
         public List<Migration.MigrationLanguage> language;
 
+        @Parameter(names = {"--offline"}, description = "Safely run migrations that requires OpenCGA to be offline", arity = 0)
+        public boolean offline;
+
         @Parameter(names = {"--version"}, description = "Run all pending migrations up to this version number")
         public String version;
 
@@ -100,6 +103,9 @@ public class MigrationCommandOptions extends GeneralCliOptions {
 
         @Parameter(names = {"--version"}, description = "Migration version")
         public String version = MigrationCommandExecutor.getDefaultVersion();
+
+        @Parameter(names = {"--offline"}, description = "Safely run migrations that requires OpenCGA to be offline", arity = 0)
+        public boolean offline;
 
         @Parameter(names = {"--force"}, description = "Force migration run even if it's on status DONE, ON_HOLD or REDUNDANT", arity = 0)
         public boolean force;

@@ -39,7 +39,7 @@
         <module>opencga-client</module>
         <module>opencga-server</module>
         <module>opencga-clinical</module>
-        <!--        <module>opencga-test</module>-->
+        <module>opencga-test</module>
     </modules>
 
     <properties>
@@ -60,7 +60,7 @@
         <slf4j.version>1.7.32</slf4j.version>
         <log4j2.version>2.17.2</log4j2.version>
         <solr.version>8.8.2</solr.version>
-        <jjwt.version>0.11.2</jjwt.version>
+        <jjwt.version>0.9.1</jjwt.version>
         <jetty.version>9.4.17.v20190418</jetty.version>
         <junit.version>4.13.2</junit.version>
 
@@ -74,7 +74,7 @@
         <!-- This prevents findbugs plugin to check all the dependency locations -->
         <dependency.locations.enabled>false</dependency.locations.enabled>
 
-        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.source>1.8</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -405,21 +405,14 @@
                 <version>${jersey.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-api</artifactId>
-                <version>${jjwt.version}</version>
+                <groupId>org.glassfish.jersey.inject</groupId>
+                <artifactId>jersey-hk2</artifactId>
+                <version>${jersey.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-impl</artifactId>
+                <artifactId>jjwt</artifactId>
                 <version>${jjwt.version}</version>
-                <scope>runtime</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-jackson</artifactId>
-                <version>${jjwt.version}</version>
-                <scope>runtime</scope>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
@@ -543,6 +536,7 @@
                         org/opencb/opencga/app/**,
                         org/opencb/opencga/analysis/**,
                         org/opencb/opencga/server/**,
+                        org/opencb/opencga/test/**,
                         org/opencb/opencga/storage/app/**,
                         org/opencb/opencga/client/rest/clients/**,
                         org/opencb/opencga/storage/alignment/**,

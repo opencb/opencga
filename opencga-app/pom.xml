@@ -365,18 +365,14 @@
                                 <!--                                </exec>-->
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/bin"/>
-                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/dependencies"/>
-                                    <arg value="${project.basedir}/../opencga-test/README.md"/>
-                                    <arg value="${project.basedir}/../opencga-test/fitnesse"/>
-                                    <arg value="${build.dir}/test"/>
+                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/bin/opencga-test.sh"/>
+                                    <arg value="${build.dir}/bin"/>
                                 </exec>
-                                <exec executable="sed">
-                                    <arg value="-i"/>
-                                    <arg value="s/target\/appassembler\/dependencies/dependencies/"/>
-                                    <arg value="${build.dir}/test/fitnesse/FitNesseRoot/OpenCga/TestsSuits/SuiteSetUp/content.txt"/>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/libs"/>
+                                    <arg value="${build.dir}"/>
                                 </exec>
-
                                 <exec executable="sed">
                                     <arg value="-i"/>
                                     <arg value="s/REPLACEME_OPENCGA_VERSION/${opencga.version}/"/>

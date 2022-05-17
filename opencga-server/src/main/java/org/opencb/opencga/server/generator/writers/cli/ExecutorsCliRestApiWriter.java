@@ -19,6 +19,7 @@ package org.opencb.opencga.server.generator.writers.cli;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
+import org.opencb.opencga.server.generator.config.Command;
 import org.opencb.opencga.server.generator.config.CommandLineConfiguration;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.models.RestCategory;
@@ -177,7 +178,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             if ("POST".equals(restEndpoint.getMethod()) || restEndpoint.hasParameters()) {
                 if (config.isAvailableCommand(commandName)) {
                     sb.append("            case \"" + reverseCommandName(commandName) + "\":\n");
-                    sb.append("                queryResponse = " + getAsCamelCase(commandName) + "();\n");
+                    sb.append("                queryResponse = " + getJavaMethodName(config, commandName) + "();\n");
                     sb.append("                break;\n");
                 }
             }
@@ -219,7 +220,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                     sb.append("\n");
                     sb.append("    " + (config.isExecutorExtendedCommand(commandName) ? "protected" :
                             "private") + " RestResponse<" + getValidResponseNames(restEndpoint.getResponse()) + "> "
-                            + getAsCamelCase(commandName) + "() throws Exception {\n\n");
+                            + getJavaMethodName(config, commandName) + "() throws Exception {\n\n");
                     sb.append("        logger.debug(\"Executing " + getAsCamelCase(commandName) + " in "
                             + restCategory.getName() + " command line\");\n\n");
                     if (config.isExecutorExtendedCommand(commandName)) {
@@ -229,7 +230,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                                 + "CommandOptions commandOptions = " + getAsVariableName(getAsCamelCase(restCategory.getName())) +
                                 "CommandOptions."
                                 + getAsCamelCase(commandName) + "CommandOptions;\n");
-                        sb.append(getQueryParams(restEndpoint, config, getAsCamelCase(commandName)));
+                        sb.append(getQueryParams(restEndpoint, config, commandName));
                         sb.append(getBodyParams(restEndpoint, config, commandName));
                         sb.append(getReturn(restCategory, restEndpoint, config, commandName));
                     }
@@ -242,9 +243,8 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
     }
 
     private String getReturn(RestCategory restCategory, RestEndpoint restEndpoint, CategoryConfig config, String commandName) {
-        String res =
-                "        return openCGAClient.get" + getAsClassName(config.getKey()) + "Client()."
-                        + getAsCamelCase(commandName) + "(";
+        String res = "        return openCGAClient.get" + getAsClassName(config.getKey()) + "Client()."
+                + getJavaMethodName(config, commandName) + "(";
         res += restEndpoint.getPathParams();
         res += restEndpoint.getMandatoryQueryParams(config, commandName);
 
@@ -260,6 +260,15 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
         }
         res += ");\n";
         return res;
+    }
+
+    private String getJavaMethodName(CategoryConfig config, String commandName) {
+        Command command = config.getCommand(commandName);
+        String commandMethod = getAsCamelCase(commandName);
+        if (command != null && StringUtils.isNotEmpty(command.getRename())) {
+            commandMethod = command.getRename();
+        }
+        return commandMethod;
     }
 
     private String getBodyParams(RestEndpoint restEndpoint, CategoryConfig config, String commandName) {

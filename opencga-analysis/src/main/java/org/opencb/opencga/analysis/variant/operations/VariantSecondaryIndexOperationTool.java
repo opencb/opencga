@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.opencb.opencga.core.tools.annotations.Tool;
-import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
 
 @Tool(id = VariantSecondaryIndexOperationTool.ID, description = VariantSecondaryIndexOperationTool.DESCRIPTION,
         type = Tool.Type.OPERATION,
@@ -26,7 +26,7 @@ import org.opencb.opencga.core.models.common.Enums;
         resource = Enums.Resource.VARIANT)
 public class VariantSecondaryIndexOperationTool extends OperationTool {
 
-    public static final String ID = "variant-secondary-index";
+    public static final String ID = "variant-secondary-annotation-index";
     public static final String DESCRIPTION = "Creates a secondary index using a search engine. "
             + "If samples are provided, sample data will be added to the secondary index.";
     private VariantSecondaryIndexParams indexParams;

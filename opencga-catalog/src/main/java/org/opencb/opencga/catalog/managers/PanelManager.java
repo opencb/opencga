@@ -229,6 +229,7 @@ public class PanelManager extends ResourceManager<Panel> {
             // Obtain available sources from panel host
             Set<String> availableSources = new HashSet<>();
             URL url = new URL(host + "sources.txt");
+            logger.info("Fetching available sources from '{}'", url);
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -249,6 +250,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 // Obtain available panel ids from panel host
                 Set<String> availablePanelIds = new HashSet<>();
                 url = new URL(host + auxSource + "/panels.txt");
+                logger.info("Fetching available panel ids from '{}'", url);
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
@@ -274,6 +276,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 // First we download all the parsed panels to avoid possible issues
                 for (String panelId : panelIdList) {
                     url = new URL(host + auxSource + "/" + panelId + ".json");
+                    logger.info("Downloading panel '{}' from '{}'", panelId, url);
                     try (InputStream inputStream = url.openStream()) {
                         Panel panel = JacksonUtils.getDefaultObjectMapper().readValue(inputStream, Panel.class);
                         autoCompletePanel(study, panel);
@@ -281,6 +284,7 @@ public class PanelManager extends ResourceManager<Panel> {
                     }
                 }
 
+                logger.info("Inserting panels in database");
                 result.append(panelDBAdaptor.insert(study.getUid(), panelList));
             }
             result.setResults(importedPanels);
@@ -537,9 +541,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {
-            ParamUtils.checkUpdateParametersMap(parameters);
-        }
+        ParamUtils.checkUpdateParametersMap(parameters);
 
         // Check update permissions
         authorizationManager.checkPanelPermission(study.getUid(), panel.getUid(), userId, PanelAclEntry.PanelPermissions.WRITE);
@@ -547,11 +549,6 @@ public class PanelManager extends ResourceManager<Panel> {
         if (parameters.containsKey(PanelDBAdaptor.QueryParams.ID.key())) {
             ParamUtils.checkIdentifier(parameters.getString(PanelDBAdaptor.QueryParams.ID.key()),
                     PanelDBAdaptor.QueryParams.ID.key());
-        }
-
-        if (options.getBoolean(Constants.INCREMENT_VERSION)) {
-            // We do need to get the current release to properly create a new version
-            options.put(Constants.CURRENT_RELEASE, studyManager.getCurrentRelease(study));
         }
 
         OpenCGAResult<Panel> update = panelDBAdaptor.update(panel.getUid(), parameters, options);

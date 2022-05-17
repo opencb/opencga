@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
 
@@ -41,7 +41,7 @@ public class CatalogMongoDBIterator<E> implements DBIterator<E> {
     protected MongoDBIterator<Document> mongoCursor;
     protected ClientSession clientSession;
     protected GenericDocumentComplexConverter<E> converter;
-    protected Function<Document, Document> filter;
+    protected UnaryOperator<Document> filter;
 
     protected static final String PRIVATE_STUDY_UID = MongoDBAdaptor.PRIVATE_STUDY_UID;
     protected static final String UID = MongoDBAdaptor.PRIVATE_UID;
@@ -58,7 +58,7 @@ public class CatalogMongoDBIterator<E> implements DBIterator<E> {
     }
 
     public CatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
-                                  GenericDocumentComplexConverter<E> converter, Function<Document, Document> filter) {
+                                  GenericDocumentComplexConverter<E> converter, UnaryOperator<Document> filter) {
         //Package protected
         this.mongoCursor = mongoCursor;
         this.clientSession = clientSession;
