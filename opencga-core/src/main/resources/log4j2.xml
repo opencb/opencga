@@ -61,8 +61,9 @@
             </DefaultRolloverStrategy>
         </RollingFile>
 
-        <Routing name="RollingFileOrNull">
+        <Routing name="RollingFileJsonOrNull">
             <Routes pattern="${upper:${sys:opencga.log.file.enabled}}">
+<<<<<<< HEAD
                 <Route ref="RollingFileJson" key="TRUE"/>
             </Routes>
         </Routing>
@@ -71,11 +72,23 @@
                 <Route ref="RollingFileTxt" key="TRUE"/>
             </Routes>
         </Routing>
+=======
+                <Route ref="RollingFileJson" key="TRUE" />
+            </Routes>
+        </Routing>
+        <Routing name="RollingFileTxtOrNull">
+            <Routes pattern="${upper:${sys:opencga.log.file.enabled}}">
+                <Route ref="RollingFileTxt" key="TRUE" />
+            </Routes>
+        </Routing>
+
+>>>>>>> develop
     </Appenders>
     <Loggers>
         <Root level="DEBUG">
             <AppenderRef ref="Console"/>
-            <AppenderRef ref="RollingFileOrNull"/>
+            <AppenderRef ref="RollingFileJsonOrNull"/>
+            <AppenderRef ref="RollingFileTxtOrNull"/>
         </Root>
         <Logger level="ALL" name="org.opencb.opencga">
             <AppenderRef ref="RollingFile"/>

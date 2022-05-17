@@ -65,7 +65,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     public PanelMongoDBAdaptor(MongoDBCollection panelCollection, MongoDBCollection panelArchiveCollection,
                                MongoDBCollection deletedPanelCollection, Configuration configuration,
                                MongoDBAdaptorFactory dbAdaptorFactory) {
-        super(configuration, LoggerFactory.getLogger(JobMongoDBAdaptor.class));
+        super(configuration, LoggerFactory.getLogger(PanelMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.panelCollection = panelCollection;
         this.panelArchiveCollection = panelArchiveCollection;
@@ -131,7 +131,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         }
         panel.setStats(fetchStats(panel));
 
-        logger.debug("Inserting new panel '" + panel.getId() + "'");
+        logger.debug("Inserting panel '{}' ({})", panel.getId(), panel.getUid());
 
         Document panelDocument = getPanelDocumentForInsertion(clientSession, panel, studyUid);
         versionedMongoDBAdaptor.insert(clientSession, panelDocument);

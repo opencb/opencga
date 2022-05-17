@@ -21,7 +21,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.TestParamConstants;
@@ -65,20 +64,15 @@ public class CatalogFileUtilsTest {
     public void before() throws CatalogException, IOException, URISyntaxException {
         Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
                 .openStream());
-        configuration.getAdmin().setAlgorithm("HS256");
-        configuration.getAdmin().setSecretKey("dummy");
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
                 .add("username", configuration.getCatalog().getDatabase().getUser())
                 .add("password", configuration.getCatalog().getDatabase().getPassword())
                 .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
-        String[] split = configuration.getCatalog().getDatabase().getHosts().get(0).split(":");
-        DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(split[0], Integer.parseInt(split[1]));
-
         CatalogManagerExternalResource.clearCatalog(configuration);
         catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB("dummy", TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "", true);
+        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), TestParamConstants.ADMIN_PASSWORD, "opencga@admin.com", "", true);
 
         //Create USER
         catalogManager.getUserManager().create("user", "name", "mi@mail.com", TestParamConstants.PASSWORD, "", null, Account.AccountType.FULL, null);

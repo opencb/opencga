@@ -60,7 +60,7 @@
         <slf4j.version>1.7.32</slf4j.version>
         <log4j2.version>2.17.2</log4j2.version>
         <solr.version>8.8.2</solr.version>
-        <jjwt.version>0.11.2</jjwt.version>
+        <jjwt.version>0.9.1</jjwt.version>
         <jetty.version>9.4.17.v20190418</jetty.version>
         <junit.version>4.13.2</junit.version>
 
@@ -411,20 +411,8 @@
             </dependency>
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-api</artifactId>
+                <artifactId>jjwt</artifactId>
                 <version>${jjwt.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-impl</artifactId>
-                <version>${jjwt.version}</version>
-                <scope>runtime</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-jackson</artifactId>
-                <version>${jjwt.version}</version>
-                <scope>runtime</scope>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
