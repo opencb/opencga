@@ -162,6 +162,13 @@ public class SessionManager {
         saveSession(session, host);
     }
 
+    public void refreshSession(String refreshToken, String host)
+            throws IOException {
+        Session session = getSession().setRefreshToken(refreshToken);
+
+        saveSession(session, host);
+    }
+
     public void saveSession() throws IOException {
         saveSession(getSession(), host);
     }

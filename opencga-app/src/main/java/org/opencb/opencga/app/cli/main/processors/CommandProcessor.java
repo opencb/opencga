@@ -12,15 +12,22 @@ import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.session.Session;
 import org.opencb.opencga.app.cli.session.SessionManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
+import org.opencb.opencga.catalog.utils.JwtUtils;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import static org.opencb.commons.utils.PrintUtils.printWarn;
@@ -52,9 +59,17 @@ public class CommandProcessor {
 
                             if (commandExecutor != null) {
                                 try {
+                                    if (StringUtils.isNotEmpty(commandExecutor.getSessionManager().getSession().getRefreshToken())) {
+                                        Date expirationDate = JwtUtils.getExpirationDate(commandExecutor.getSessionManager().getSession().getRefreshToken());
+                                        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+                                        logger.debug("Token expiration date -> " + sdf.format(expirationDate));
+                                    }
+
                                     if (checkAutoRefresh(commandExecutor)) {
-                                        commandExecutor.getOpenCGAClient().
-                                                refresh(commandExecutor.getSessionManager().getSession().getRefreshToken());
+                                        logger.debug("Refreshing token..." + commandExecutor.getSessionManager().getSession().getRefreshToken());
+                                        refreshToken(commandExecutor);
+                                        logger.debug("New refresh token..." + commandExecutor.getSessionManager().getSession().getRefreshToken());
+
                                     }
                                     commandExecutor.execute();
                                     commandExecutor.getSessionManager().saveSession();
@@ -92,16 +107,28 @@ public class CommandProcessor {
 
     }
 
-    private boolean checkAutoRefresh(OpencgaCommandExecutor commandExecutor) {
+    private void refreshToken(OpencgaCommandExecutor commandExecutor) throws ClientException, IOException {
+        AuthenticationResponse response = commandExecutor.getOpenCGAClient().
+                refresh(commandExecutor.getSessionManager().getSession().getRefreshToken());
+        commandExecutor.refreshToken(response);
 
-        //  if (commandExecutor.getSessionManager().getSession().getRefreshToken())
- /*       JwtManager manager = new JwtManager(SignatureAlgorithm.HS256.getValue());
-        if(manager.getExpiration(commandExecutor.getSessionManager().getSession().getRefreshToken())){
-
-        }*/
-        return commandExecutor.getClientConfiguration().getRest().isTokenAutoRefresh();
     }
 
+    private boolean checkAutoRefresh(OpencgaCommandExecutor commandExecutor) {
+        if (StringUtils.isEmpty(commandExecutor.getSessionManager().getSession().getRefreshToken())) {
+            return false;
+        }
+        if (commandExecutor.getClientConfiguration().getRest().isTokenAutoRefresh()) {
+            Date expirationDate = JwtUtils.getExpirationDate(commandExecutor.getSessionManager().getSession().getRefreshToken());
+            Date now = new Date();
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(now);
+            cal.add(Calendar.MINUTE, 10);
+            Date refreshDate = cal.getTime();
+            return expirationDate.getTime() >= now.getTime() && expirationDate.getTime() <= refreshDate.getTime();
+        }
+        return false;
+    }
 
     public void loadSessionStudies(OpencgaCommandExecutor commandExecutor) {
         Session session = commandExecutor.getSessionManager().getSession();
