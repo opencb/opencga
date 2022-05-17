@@ -52,6 +52,10 @@ public class CommandProcessor {
 
                             if (commandExecutor != null) {
                                 try {
+                                    if (checkAutoRefresh(commandExecutor)) {
+                                        commandExecutor.getOpenCGAClient().
+                                                refresh(commandExecutor.getSessionManager().getSession().getRefreshToken());
+                                    }
                                     commandExecutor.execute();
                                     commandExecutor.getSessionManager().saveSession();
                                     loadSessionStudies(commandExecutor);
@@ -86,6 +90,16 @@ public class CommandProcessor {
 
         }
 
+    }
+
+    private boolean checkAutoRefresh(OpencgaCommandExecutor commandExecutor) {
+
+        //  if (commandExecutor.getSessionManager().getSession().getRefreshToken())
+ /*       JwtManager manager = new JwtManager(SignatureAlgorithm.HS256.getValue());
+        if(manager.getExpiration(commandExecutor.getSessionManager().getSession().getRefreshToken())){
+
+        }*/
+        return commandExecutor.getClientConfiguration().getRest().isTokenAutoRefresh();
     }
 
 

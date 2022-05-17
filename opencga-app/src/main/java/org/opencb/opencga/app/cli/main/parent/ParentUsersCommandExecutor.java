@@ -81,6 +81,7 @@ public abstract class ParentUsersCommandExecutor extends OpencgaCommandExecutor 
                         // We try to fetch shared projects and studies instead when the user does not own any project or study
                         projects = openCGAClient.getProjectClient().search(new ObjectMap());
                     }
+
                     for (Project project : projects.getResponses().get(0).getResults()) {
                         for (Study study : project.getStudies()) {
                             studies.add(study.getFqn());
