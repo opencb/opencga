@@ -1096,6 +1096,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
 
     @Test
+    @Ignore
     public void testExpressionQuery() throws StorageEngineException {
         Collection<String> genes;
         Query query = new Query(ANNOT_EXPRESSION.key(), "non_existing_tissue");
@@ -1628,8 +1629,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_fileNotFound() {
-//        VariantQueryException e = VariantQueryException.missingStudyForFile("-1", Collections.singletonList(studyMetadata.getName()));
-        VariantQueryException e = VariantQueryException.fileNotFound("-1", studyMetadata.getName());
+        VariantQueryException e = VariantQueryException.missingStudyForFile("-1", Collections.singletonList(studyMetadata.getName()));
+//        VariantQueryException e = VariantQueryException.fileNotFound("-1", studyMetadata.getName());
         thrown.expectMessage(e.getMessage());
         thrown.expect(e.getClass());
         count(new Query(FILE.key(), -1));
