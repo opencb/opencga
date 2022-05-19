@@ -203,7 +203,7 @@ public class UserManager extends AbstractManager {
         checkUserExists(user.getId());
 
         try {
-            if (!PasswordUtils.isStrongPassword(password)) {
+            if (StringUtils.isNotEmpty(password) && !PasswordUtils.isStrongPassword(password)) {
                 throw new CatalogException("Invalid password. Check password strength for user " + user.getId());
             }
             if (user.getProjects() != null && !user.getProjects().isEmpty()) {
