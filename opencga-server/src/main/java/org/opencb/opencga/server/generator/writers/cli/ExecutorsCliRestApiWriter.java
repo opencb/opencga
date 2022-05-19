@@ -83,8 +83,9 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
                             if (bodyParam.getTypeClass() != null) {
                                 if (bodyParam.getTypeClass().contains("$")) {
                                     imports.add(bodyParam.getTypeClass().substring(0, bodyParam.getTypeClass().lastIndexOf("$")) + ";");
+                                } else {
+                                    imports.add(bodyParam.getTypeClass().replaceAll("\\$", "\\."));
                                 }
-                                imports.add(bodyParam.getTypeClass().replaceAll("\\$", "\\."));
                             }
                         }
                         if (bodyParam.getType().equals("enum")) {
