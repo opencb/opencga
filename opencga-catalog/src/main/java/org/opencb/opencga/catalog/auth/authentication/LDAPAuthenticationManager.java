@@ -230,26 +230,31 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
     /* Private methods */
     private DirContext getDirContext(String host) throws NamingException {
+        final int maxAttempts = 3;
         int count = 0;
         Hashtable<String, Object> env = getDefaultEnv();
         DirContext dctx = null;
-        while (dctx == null) {
+        do {
             try {
                 dctx = LdapCtxFactory.getLdapCtxInstance(host, env);
             } catch (NamingException e) {
-                if (count == 3) {
-                    // After 3 attempts, we will raise an error.
+                count++;
+                logger.info("Error opening DirContext connection. Attempt " + count + "/" + maxAttempts, e);
+                if (count == maxAttempts) {
+                    // After 'maxAttempts' attempts, we will raise an error.
                     throw e;
                 }
-                count++;
                 try {
                     // Sleep 0.5 seconds
                     Thread.sleep(500);
                 } catch (InterruptedException e1) {
-                    e1.printStackTrace();
+                    logger.warn("Catch interrupted exception!", e1);
+                    Thread.currentThread().interrupt();
+                    // Stop retrying. Leave now propagating original exception
+                    throw e;
                 }
             }
-        }
+        } while (dctx == null);
 
         return dctx;
     }
@@ -285,16 +290,14 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
                             // Get uid
                             List<Attributes> cn = getUserInfoFromLDAP(host, Collections.singletonList(commonName), baseDn, "cn");
-                            System.out.println(commonName);
                             users.add(getUID(cn.get(0)));
                         }
                     }
 
                 }
             }
-        } catch (NamingException | CatalogException e) {
+        } finally {
             dirContext.close();
-            throw e;
         }
 
         return new ArrayList<>(users);
@@ -324,9 +327,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             while (search.hasMore()) {
                 resultList.add(search.next().getAttributes());
             }
-        } catch (NamingException e) {
+        } finally {
             dirContext.close();
-            throw e;
         }
 
         return resultList;
@@ -375,9 +377,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             while (search.hasMore()) {
                 resultList.add((String) search.next().getAttributes().get("cn").get(0));
             }
-        } catch (NamingException e) {
+        } finally {
             dirContext.close();
-            throw e;
         }
         return resultList;
     }
