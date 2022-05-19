@@ -168,9 +168,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(studyAclUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), studyAclUpdateParams);
-        }  else {
+            studyAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), StudyAclUpdateParams.class);
+        } else {
             studyAclUpdateParams.setPermissions(commandOptions.permissions);
             studyAclUpdateParams.setStudy(commandOptions.study);
             studyAclUpdateParams.setTemplate(commandOptions.template);
@@ -199,9 +199,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(studyCreateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), studyCreateParams);
-        }  else {
+            studyCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), StudyCreateParams.class);
+        } else {
             // Generate beans for nested objects
             StudyType typeParam = new StudyType();
             typeParam.setId(commandOptions.typeId);
@@ -357,9 +357,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(groupCreateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), groupCreateParams);
-        }  else {
+            groupCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), GroupCreateParams.class);
+        } else {
             groupCreateParams.setId(commandOptions.id);
             groupCreateParams.setUsers(splitWithTrim(commandOptions.users));
 
@@ -384,9 +384,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(groupUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), groupUpdateParams);
-        }  else {
+            groupUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), GroupUpdateParams.class);
+        } else {
             groupUpdateParams.setUsers(splitWithTrim(commandOptions.users));
 
         }
@@ -418,9 +418,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(permissionRule));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), permissionRule);
-        }  else {
+            permissionRule = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), PermissionRule.class);
+        } else {
             permissionRule.setId(commandOptions.id);
             permissionRule.setQuery(new Query(commandOptions.query));
             permissionRule.setMembers(splitWithTrim(commandOptions.members));
@@ -480,9 +480,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(studyUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), studyUpdateParams);
-        }  else {
+            studyUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), StudyUpdateParams.class);
+        } else {
             // Generate beans for nested objects
             StudyType typeParam = new StudyType();
             typeParam.setId(commandOptions.typeId);
@@ -542,9 +542,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(variableSetCreateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variableSetCreateParams);
-        }  else {
+            variableSetCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), VariableSetCreateParams.class);
+        } else {
             variableSetCreateParams.setId(commandOptions.id);
             variableSetCreateParams.setName(commandOptions.name);
             variableSetCreateParams.setDescription(commandOptions.description);
@@ -553,12 +553,10 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
 
             if (commandOptions.unique != null) {
                 variableSetCreateParams.setUnique(commandOptions.unique);
-             }
-
+            }
             if (commandOptions.confidential != null) {
                 variableSetCreateParams.setConfidential(commandOptions.confidential);
-             }
-
+            }
         }
         return openCGAClient.getStudyClient().updateVariableSets(commandOptions.study, variableSetCreateParams, queryParams);
     }
@@ -580,9 +578,9 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(variable));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variable);
-        }  else {
+            variable = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), Variable.class);
+        } else {
             variable.setId(commandOptions.bodyId);
             variable.setName(commandOptions.bodyName);
             variable.setCategory(commandOptions.bodyCategory);
@@ -599,12 +597,10 @@ public class StudiesCommandExecutor extends ParentStudiesCommandExecutor {
 
             if (commandOptions.bodyRequired != null) {
                 variable.setRequired(commandOptions.bodyRequired);
-             }
-
+            }
             if (commandOptions.bodyMultiValue != null) {
                 variable.setMultiValue(commandOptions.bodyMultiValue);
-             }
-
+            }
         }
         return openCGAClient.getStudyClient().updateVariableSetsVariables(commandOptions.study, commandOptions.variableSet, variable, queryParams);
     }

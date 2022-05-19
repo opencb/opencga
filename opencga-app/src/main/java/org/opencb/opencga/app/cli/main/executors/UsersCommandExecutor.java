@@ -126,9 +126,9 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             PrintUtils.println(getObjectAsJSON(userCreateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), userCreateParams);
-        }  else {
+            userCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), UserCreateParams.class);
+        } else {
             userCreateParams.setId(commandOptions.id);
             userCreateParams.setName(commandOptions.name);
             userCreateParams.setEmail(commandOptions.email);
@@ -160,9 +160,9 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             PrintUtils.println(getObjectAsJSON(passwordChangeParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), passwordChangeParams);
-        }  else {
+            passwordChangeParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), PasswordChangeParams.class);
+        } else {
             passwordChangeParams.setUser(commandOptions.user);
             passwordChangeParams.setPassword(commandOptions.password);
             passwordChangeParams.setNewPassword(commandOptions.newPassword);
@@ -214,9 +214,9 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             PrintUtils.println(getObjectAsJSON(configUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), configUpdateParams);
-        }  else {
+            configUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ConfigUpdateParams.class);
+        } else {
             configUpdateParams.setId(commandOptions.id);
             configUpdateParams.setConfiguration(new HashMap<>(commandOptions.configuration));
 
@@ -278,9 +278,9 @@ public class UsersCommandExecutor extends ParentUsersCommandExecutor {
             PrintUtils.println(getObjectAsJSON(userUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), userUpdateParams);
-        }  else {
+            userUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), UserUpdateParams.class);
+        } else {
             userUpdateParams.setName(commandOptions.name);
             userUpdateParams.setEmail(commandOptions.email);
             userUpdateParams.setOrganization(commandOptions.organization);

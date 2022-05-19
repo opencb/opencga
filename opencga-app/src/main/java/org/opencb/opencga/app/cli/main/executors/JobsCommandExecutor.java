@@ -138,9 +138,9 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
             PrintUtils.println(getObjectAsJSON(jobAclUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), jobAclUpdateParams);
-        }  else {
+            jobAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), JobAclUpdateParams.class);
+        } else {
             jobAclUpdateParams.setPermissions(commandOptions.permissions);
             jobAclUpdateParams.setJob(commandOptions.job);
 
@@ -200,9 +200,9 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
             PrintUtils.println(getObjectAsJSON(jobCreateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), jobCreateParams);
-        }  else {
+            jobCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), JobCreateParams.class);
+        } else {
             // Generate beans for nested objects
             ToolInfo toolParam = new ToolInfo();
             toolParam.setId(commandOptions.toolId);
@@ -314,16 +314,15 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
             PrintUtils.println(getObjectAsJSON(jobRetryParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), jobRetryParams);
-        }  else {
+            jobRetryParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), JobRetryParams.class);
+        } else {
             jobRetryParams.setJob(commandOptions.job);
             jobRetryParams.setParams(new ObjectMap(commandOptions.params));
 
             if (commandOptions.force != null) {
                 jobRetryParams.setForce(commandOptions.force);
-             }
-
+            }
         }
         return openCGAClient.getJobClient().retry(jobRetryParams, queryParams);
     }
@@ -443,17 +442,16 @@ public class JobsCommandExecutor extends ParentJobsCommandExecutor {
             PrintUtils.println(getObjectAsJSON(jobUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), jobUpdateParams);
-        }  else {
+            jobUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), JobUpdateParams.class);
+        } else {
             jobUpdateParams.setDescription(commandOptions.description);
             jobUpdateParams.setTags(splitWithTrim(commandOptions.tags));
             jobUpdateParams.setAttributes(new HashMap<>(commandOptions.attributes));
 
             if (commandOptions.visited != null) {
                 jobUpdateParams.setVisited(commandOptions.visited);
-             }
-
+            }
         }
         return openCGAClient.getJobClient().update(commandOptions.jobs, jobUpdateParams, queryParams);
     }

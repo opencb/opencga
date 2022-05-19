@@ -119,9 +119,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(panelAclUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), panelAclUpdateParams);
-        }  else {
+            panelAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), PanelAclUpdateParams.class);
+        } else {
             panelAclUpdateParams.setPermissions(commandOptions.permissions);
             panelAclUpdateParams.setPanel(commandOptions.panel);
 
@@ -152,9 +152,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(panelCreateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), panelCreateParams);
-        }  else {
+            panelCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), PanelCreateParams.class);
+        } else {
             // Generate beans for nested objects
             DiseasePanel.SourcePanel sourceParam = new DiseasePanel.SourcePanel();
             sourceParam.setId(commandOptions.sourceId);
@@ -239,9 +239,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(panelImportParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), panelImportParams);
-        }  else {
+            panelImportParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), PanelImportParams.class);
+        } else {
             panelImportParams.setSource(commandOptions.source);
             panelImportParams.setId(commandOptions.id);
 
@@ -360,9 +360,9 @@ public class DiseasePanelsCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(panelUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), panelUpdateParams);
-        }  else {
+            panelUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), PanelUpdateParams.class);
+        } else {
             // Generate beans for nested objects
             DiseasePanel.SourcePanel sourceParam = new DiseasePanel.SourcePanel();
             sourceParam.setId(commandOptions.sourceId);

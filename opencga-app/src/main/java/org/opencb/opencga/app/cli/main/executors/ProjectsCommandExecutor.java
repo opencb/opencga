@@ -111,9 +111,9 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(projectCreateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), projectCreateParams);
-        }  else {
+            projectCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ProjectCreateParams.class);
+        } else {
             // Generate beans for nested objects
             ProjectOrganism organismParam = new ProjectOrganism();
             organismParam.setScientificName(commandOptions.organismScientificName);
@@ -242,9 +242,9 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(projectUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), projectUpdateParams);
-        }  else {
+            projectUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ProjectUpdateParams.class);
+        } else {
             // Generate beans for nested objects
             ProjectOrganism organismParam = new ProjectOrganism();
             organismParam.setScientificName(commandOptions.organismScientificName);

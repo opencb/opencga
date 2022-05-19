@@ -138,9 +138,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(sampleAclUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleAclUpdateParams);
-        }  else {
+            sampleAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), SampleAclUpdateParams.class);
+        } else {
             sampleAclUpdateParams.setPermissions(commandOptions.permissions);
             sampleAclUpdateParams.setSample(commandOptions.sample);
             sampleAclUpdateParams.setIndividual(commandOptions.individual);
@@ -203,9 +203,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), tsvAnnotationParams);
-        }  else {
+            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), TsvAnnotationParams.class);
+        } else {
             tsvAnnotationParams.setContent(commandOptions.content);
 
         }
@@ -235,9 +235,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(sampleCreateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleCreateParams);
-        }  else {
+            sampleCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), SampleCreateParams.class);
+        } else {
             // Generate beans for nested objects
             ExternalSource sourceParam = new ExternalSource();
             sourceParam.setId(commandOptions.sourceId);
@@ -284,8 +284,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.somatic != null) {
                 sampleCreateParams.setSomatic(commandOptions.somatic);
-             }
-
+            }
         }
         return openCGAClient.getSampleClient().create(sampleCreateParams, queryParams);
     }
@@ -496,9 +495,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(sampleUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleUpdateParams);
-        }  else {
+            sampleUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), SampleUpdateParams.class);
+        } else {
             // Generate beans for nested objects
             ExternalSource sourceParam = new ExternalSource();
             sourceParam.setId(commandOptions.sourceId);
@@ -551,8 +550,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.somatic != null) {
                 sampleUpdateParams.setSomatic(commandOptions.somatic);
-             }
-
+            }
         }
         return openCGAClient.getSampleClient().update(commandOptions.samples, sampleUpdateParams, queryParams);
     }
@@ -578,9 +576,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(objectMap));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), objectMap);
-        } 
+            objectMap = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
+        }
         return openCGAClient.getSampleClient().updateAnnotationSetsAnnotations(commandOptions.sample, commandOptions.annotationSet, objectMap, queryParams);
     }
 }

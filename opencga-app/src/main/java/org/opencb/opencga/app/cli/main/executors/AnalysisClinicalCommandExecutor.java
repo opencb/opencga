@@ -220,9 +220,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(clinicalAnalysisAclUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), clinicalAnalysisAclUpdateParams);
-        }  else {
+            clinicalAnalysisAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ClinicalAnalysisAclUpdateParams.class);
+        } else {
             clinicalAnalysisAclUpdateParams.setPermissions(commandOptions.permissions);
             clinicalAnalysisAclUpdateParams.setClinicalAnalysis(commandOptions.clinicalAnalysis);
 
@@ -250,9 +250,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(clinicalAnalysisStudyConfiguration));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), clinicalAnalysisStudyConfiguration);
-        } 
+            clinicalAnalysisStudyConfiguration = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ClinicalAnalysisStudyConfiguration.class);
+        }
         return openCGAClient.getClinicalAnalysisClient().updateClinicalConfiguration(clinicalAnalysisStudyConfiguration, queryParams);
     }
 
@@ -280,9 +280,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(clinicalAnalysisCreateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), clinicalAnalysisCreateParams);
-        }  else {
+            clinicalAnalysisCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ClinicalAnalysisCreateParams.class);
+        } else {
             // Generate beans for nested objects
             DisorderReferenceParam disorderParam = new DisorderReferenceParam();
             disorderParam.setId(commandOptions.disorderId);
@@ -359,8 +359,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.panelLock != null) {
                 clinicalAnalysisCreateParams.setPanelLock(commandOptions.panelLock);
-             }
-
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().create(clinicalAnalysisCreateParams, queryParams);
     }
@@ -508,16 +507,15 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(cancerTieringInterpretationAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), cancerTieringInterpretationAnalysisParams);
-        }  else {
+            cancerTieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), CancerTieringInterpretationAnalysisParams.class);
+        } else {
             cancerTieringInterpretationAnalysisParams.setClinicalAnalysis(commandOptions.clinicalAnalysis);
             cancerTieringInterpretationAnalysisParams.setDiscardedVariants(splitWithTrim(commandOptions.discardedVariants));
 
             if (commandOptions.primary != null) {
                 cancerTieringInterpretationAnalysisParams.setPrimary(commandOptions.primary);
-             }
-
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterCancerTiering(cancerTieringInterpretationAnalysisParams, queryParams);
     }
@@ -546,17 +544,16 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(teamInterpretationAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), teamInterpretationAnalysisParams);
-        }  else {
+            teamInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), TeamInterpretationAnalysisParams.class);
+        } else {
             teamInterpretationAnalysisParams.setClinicalAnalysis(commandOptions.clinicalAnalysis);
             teamInterpretationAnalysisParams.setPanels(splitWithTrim(commandOptions.panels));
             teamInterpretationAnalysisParams.setFamilySegregation(commandOptions.familySegregation);
 
             if (commandOptions.primary != null) {
                 teamInterpretationAnalysisParams.setPrimary(commandOptions.primary);
-             }
-
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterTeam(teamInterpretationAnalysisParams, queryParams);
     }
@@ -585,17 +582,16 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(tieringInterpretationAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), tieringInterpretationAnalysisParams);
-        }  else {
+            tieringInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), TieringInterpretationAnalysisParams.class);
+        } else {
             tieringInterpretationAnalysisParams.setClinicalAnalysis(commandOptions.clinicalAnalysis);
             tieringInterpretationAnalysisParams.setPanels(splitWithTrim(commandOptions.panels));
             tieringInterpretationAnalysisParams.setPenetrance(commandOptions.penetrance == null ? null : ClinicalProperty.Penetrance.valueOf(commandOptions.penetrance));
 
             if (commandOptions.primary != null) {
                 tieringInterpretationAnalysisParams.setPrimary(commandOptions.primary);
-             }
-
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterTiering(tieringInterpretationAnalysisParams, queryParams);
     }
@@ -624,9 +620,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(zettaInterpretationAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), zettaInterpretationAnalysisParams);
-        }  else {
+            zettaInterpretationAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ZettaInterpretationAnalysisParams.class);
+        } else {
             zettaInterpretationAnalysisParams.setClinicalAnalysis(commandOptions.bodyClinicalAnalysis);
             zettaInterpretationAnalysisParams.setId(splitWithTrim(commandOptions.bodyId));
             zettaInterpretationAnalysisParams.setRegion(commandOptions.bodyRegion);
@@ -679,12 +675,10 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.bodyClinicalConfirmedStatus != null) {
                 zettaInterpretationAnalysisParams.setClinicalConfirmedStatus(commandOptions.bodyClinicalConfirmedStatus);
-             }
-
+            }
             if (commandOptions.bodyPrimary != null) {
                 zettaInterpretationAnalysisParams.setPrimary(commandOptions.bodyPrimary);
-             }
-
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().runInterpreterZetta(zettaInterpretationAnalysisParams, queryParams);
     }
@@ -832,9 +826,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(rgaAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), rgaAnalysisParams);
-        }  else {
+            rgaAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), RgaAnalysisParams.class);
+        } else {
             rgaAnalysisParams.setFile(commandOptions.file);
 
         }
@@ -1190,9 +1184,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(clinicalAnalysisUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), clinicalAnalysisUpdateParams);
-        }  else {
+            clinicalAnalysisUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ClinicalAnalysisUpdateParams.class);
+        } else {
             // Generate beans for nested objects
             DisorderReferenceParam disorderParam = new DisorderReferenceParam();
             disorderParam.setId(commandOptions.disorderId);
@@ -1253,12 +1247,10 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.panelLock != null) {
                 clinicalAnalysisUpdateParams.setPanelLock(commandOptions.panelLock);
-             }
-
+            }
             if (commandOptions.locked != null) {
                 clinicalAnalysisUpdateParams.setLocked(commandOptions.locked);
-             }
-
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().update(commandOptions.clinicalAnalyses, clinicalAnalysisUpdateParams, queryParams);
     }
@@ -1305,9 +1297,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(interpretationCreateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), interpretationCreateParams);
-        }  else {
+            interpretationCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), InterpretationCreateParams.class);
+        } else {
             // Generate beans for nested objects
             ClinicalAnalystParam analystParam = new ClinicalAnalystParam();
             analystParam.setId(commandOptions.analystId);
@@ -1337,8 +1329,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.locked != null) {
                 interpretationCreateParams.setLocked(commandOptions.locked);
-             }
-
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().createInterpretation(commandOptions.clinicalAnalysis, interpretationCreateParams, queryParams);
     }
@@ -1413,9 +1404,9 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(interpretationUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), interpretationUpdateParams);
-        }  else {
+            interpretationUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), InterpretationUpdateParams.class);
+        } else {
             // Generate beans for nested objects
             ClinicalAnalystParam analystParam = new ClinicalAnalystParam();
             analystParam.setId(commandOptions.analystId);
@@ -1444,8 +1435,7 @@ public class AnalysisClinicalCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.locked != null) {
                 interpretationUpdateParams.setLocked(commandOptions.locked);
-             }
-
+            }
         }
         return openCGAClient.getClinicalAnalysisClient().updateInterpretation(commandOptions.clinicalAnalysis, commandOptions.interpretation, interpretationUpdateParams, queryParams);
     }

@@ -316,9 +316,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(circosAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), circosAnalysisParams);
-        }  else {
+            circosAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), CircosAnalysisParams.class);
+        } else {
             circosAnalysisParams.setTitle(commandOptions.title);
             circosAnalysisParams.setDensity(commandOptions.density);
             circosAnalysisParams.setQuery(new HashMap<>(commandOptions.query));
@@ -384,9 +384,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(cohortVariantStatsAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), cohortVariantStatsAnalysisParams);
-        }  else {
+            cohortVariantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), CohortVariantStatsAnalysisParams.class);
+        } else {
             cohortVariantStatsAnalysisParams.setCohort(commandOptions.cohort);
             cohortVariantStatsAnalysisParams.setSamples(splitWithTrim(commandOptions.samples));
             cohortVariantStatsAnalysisParams.setSampleAnnotation(commandOptions.sampleAnnotation);
@@ -394,8 +394,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.index != null) {
                 cohortVariantStatsAnalysisParams.setIndex(commandOptions.index);
-             }
-
+            }
         }
         return openCGAClient.getVariantClient().runCohortStats(cohortVariantStatsAnalysisParams, queryParams);
     }
@@ -427,9 +426,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(variantExportParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantExportParams);
-        }  else {
+            variantExportParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), VariantExportParams.class);
+        } else {
             variantExportParams.setId(commandOptions.bodyId);
             variantExportParams.setRegion(commandOptions.bodyRegion);
             variantExportParams.setGene(commandOptions.bodyGene);
@@ -513,28 +512,22 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.bodyPanelIntersection != null) {
                 variantExportParams.setPanelIntersection(commandOptions.bodyPanelIntersection);
-             }
-
+            }
             if (commandOptions.bodyAnnotationExists != null) {
                 variantExportParams.setAnnotationExists(commandOptions.bodyAnnotationExists);
-             }
-
+            }
             if (commandOptions.bodySampleMetadata != null) {
                 variantExportParams.setSampleMetadata(commandOptions.bodySampleMetadata);
-             }
-
+            }
             if (commandOptions.bodySort != null) {
                 variantExportParams.setSort(commandOptions.bodySort);
-             }
-
+            }
             if (commandOptions.bodyCompress != null) {
                 variantExportParams.setCompress(commandOptions.bodyCompress);
-             }
-
+            }
             if (commandOptions.bodySummary != null) {
                 variantExportParams.setSummary(commandOptions.bodySummary);
-             }
-
+            }
         }
         return openCGAClient.getVariantClient().runExport(variantExportParams, queryParams);
     }
@@ -582,9 +575,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(familyQcAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), familyQcAnalysisParams);
-        }  else {
+            familyQcAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FamilyQcAnalysisParams.class);
+        } else {
             familyQcAnalysisParams.setFamily(commandOptions.family);
             familyQcAnalysisParams.setRelatednessMethod(commandOptions.relatednessMethod);
             familyQcAnalysisParams.setRelatednessMaf(commandOptions.relatednessMaf);
@@ -639,9 +632,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(gatkWrapperParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), gatkWrapperParams);
-        }  else {
+            gatkWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), GatkWrapperParams.class);
+        } else {
             gatkWrapperParams.setCommand(commandOptions.command);
             gatkWrapperParams.setOutdir(commandOptions.outdir);
             gatkWrapperParams.setGatkParams(new HashMap<>(commandOptions.gatkParams));
@@ -674,9 +667,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(genomePlotAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), genomePlotAnalysisParams);
-        }  else {
+            genomePlotAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), GenomePlotAnalysisParams.class);
+        } else {
             genomePlotAnalysisParams.setSample(commandOptions.sample);
             genomePlotAnalysisParams.setId(commandOptions.id);
             genomePlotAnalysisParams.setDescription(commandOptions.description);
@@ -711,9 +704,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(gwasAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), gwasAnalysisParams);
-        }  else {
+            gwasAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), GwasAnalysisParams.class);
+        } else {
             gwasAnalysisParams.setPhenotype(commandOptions.phenotype);
             gwasAnalysisParams.setIndexScoreId(commandOptions.indexScoreId);
             gwasAnalysisParams.setMethod(commandOptions.method == null ? null : GwasConfiguration.Method.valueOf(commandOptions.method));
@@ -728,8 +721,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.index != null) {
                 gwasAnalysisParams.setIndex(commandOptions.index);
-             }
-
+            }
         }
         return openCGAClient.getVariantClient().runGwas(gwasAnalysisParams, queryParams);
     }
@@ -758,9 +750,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(variantIndexParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantIndexParams);
-        }  else {
+            variantIndexParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), VariantIndexParams.class);
+        } else {
             variantIndexParams.setFile(commandOptions.file);
             variantIndexParams.setOutdir(commandOptions.outdir);
             variantIndexParams.setReferenceGenome(commandOptions.referenceGenome);
@@ -780,56 +772,43 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.resume != null) {
                 variantIndexParams.setResume(commandOptions.resume);
-             }
-
+            }
             if (commandOptions.transform != null) {
                 variantIndexParams.setTransform(commandOptions.transform);
-             }
-
+            }
             if (commandOptions.gvcf != null) {
                 variantIndexParams.setGvcf(commandOptions.gvcf);
-             }
-
+            }
             if (commandOptions.normalizationSkip != null) {
                 variantIndexParams.setNormalizationSkip(commandOptions.normalizationSkip);
-             }
-
+            }
             if (commandOptions.family != null) {
                 variantIndexParams.setFamily(commandOptions.family);
-             }
-
+            }
             if (commandOptions.somatic != null) {
                 variantIndexParams.setSomatic(commandOptions.somatic);
-             }
-
+            }
             if (commandOptions.load != null) {
                 variantIndexParams.setLoad(commandOptions.load);
-             }
-
+            }
             if (commandOptions.loadMultiFileData != null) {
                 variantIndexParams.setLoadMultiFileData(commandOptions.loadMultiFileData);
-             }
-
+            }
             if (commandOptions.calculateStats != null) {
                 variantIndexParams.setCalculateStats(commandOptions.calculateStats);
-             }
-
+            }
             if (commandOptions.annotate != null) {
                 variantIndexParams.setAnnotate(commandOptions.annotate);
-             }
-
+            }
             if (commandOptions.overwriteAnnotations != null) {
                 variantIndexParams.setOverwriteAnnotations(commandOptions.overwriteAnnotations);
-             }
-
+            }
             if (commandOptions.indexSearch != null) {
                 variantIndexParams.setIndexSearch(commandOptions.indexSearch);
-             }
-
+            }
             if (commandOptions.skipIndexedFiles != null) {
                 variantIndexParams.setSkipIndexedFiles(commandOptions.skipIndexedFiles);
-             }
-
+            }
         }
         return openCGAClient.getVariantClient().runIndex(variantIndexParams, queryParams);
     }
@@ -858,9 +837,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(individualQcAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), individualQcAnalysisParams);
-        }  else {
+            individualQcAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), IndividualQcAnalysisParams.class);
+        } else {
             individualQcAnalysisParams.setIndividual(commandOptions.individual);
             individualQcAnalysisParams.setSample(commandOptions.sample);
             individualQcAnalysisParams.setInferredSexMethod(commandOptions.inferredSexMethod);
@@ -894,9 +873,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(inferredSexAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), inferredSexAnalysisParams);
-        }  else {
+            inferredSexAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), InferredSexAnalysisParams.class);
+        } else {
             inferredSexAnalysisParams.setIndividual(commandOptions.individual);
             inferredSexAnalysisParams.setSample(commandOptions.sample);
             inferredSexAnalysisParams.setOutdir(commandOptions.outdir);
@@ -965,9 +944,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(knockoutAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), knockoutAnalysisParams);
-        }  else {
+            knockoutAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), KnockoutAnalysisParams.class);
+        } else {
             knockoutAnalysisParams.setSample(splitWithTrim(commandOptions.sample));
             knockoutAnalysisParams.setGene(splitWithTrim(commandOptions.gene));
             knockoutAnalysisParams.setPanel(splitWithTrim(commandOptions.panel));
@@ -979,12 +958,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.skipGenesFile != null) {
                 knockoutAnalysisParams.setSkipGenesFile(commandOptions.skipGenesFile);
-             }
-
+            }
             if (commandOptions.index != null) {
                 knockoutAnalysisParams.setIndex(commandOptions.index);
-             }
-
+            }
         }
         return openCGAClient.getVariantClient().runKnockout(knockoutAnalysisParams, queryParams);
     }
@@ -1013,9 +990,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(mendelianErrorAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), mendelianErrorAnalysisParams);
-        }  else {
+            mendelianErrorAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), MendelianErrorAnalysisParams.class);
+        } else {
             mendelianErrorAnalysisParams.setFamily(commandOptions.family);
             mendelianErrorAnalysisParams.setIndividual(commandOptions.individual);
             mendelianErrorAnalysisParams.setSample(commandOptions.sample);
@@ -1102,9 +1079,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(mutationalSignatureAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), mutationalSignatureAnalysisParams);
-        }  else {
+            mutationalSignatureAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), MutationalSignatureAnalysisParams.class);
+        } else {
             mutationalSignatureAnalysisParams.setSample(commandOptions.sample);
             mutationalSignatureAnalysisParams.setId(commandOptions.id);
             mutationalSignatureAnalysisParams.setDescription(commandOptions.description);
@@ -1114,8 +1091,7 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.fitting != null) {
                 mutationalSignatureAnalysisParams.setFitting(commandOptions.fitting);
-             }
-
+            }
         }
         return openCGAClient.getVariantClient().runMutationalSignature(mutationalSignatureAnalysisParams, queryParams);
     }
@@ -1144,9 +1120,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(plinkWrapperParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), plinkWrapperParams);
-        }  else {
+            plinkWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), PlinkWrapperParams.class);
+        } else {
             plinkWrapperParams.setOutdir(commandOptions.outdir);
             plinkWrapperParams.setPlinkParams(new HashMap<>(commandOptions.plinkParams));
 
@@ -1269,9 +1245,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(relatednessAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), relatednessAnalysisParams);
-        }  else {
+            relatednessAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), RelatednessAnalysisParams.class);
+        } else {
             relatednessAnalysisParams.setIndividuals(splitWithTrim(commandOptions.individuals));
             relatednessAnalysisParams.setSamples(splitWithTrim(commandOptions.samples));
             relatednessAnalysisParams.setMinorAlleleFreq(commandOptions.minorAlleleFreq);
@@ -1306,9 +1282,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(rvtestsWrapperParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), rvtestsWrapperParams);
-        }  else {
+            rvtestsWrapperParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), RvtestsWrapperParams.class);
+        } else {
             rvtestsWrapperParams.setCommand(commandOptions.command);
             rvtestsWrapperParams.setOutdir(commandOptions.outdir);
             rvtestsWrapperParams.setRvtestsParams(new HashMap<>(commandOptions.rvtestsParams));
@@ -1377,16 +1353,15 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(sampleEligibilityAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleEligibilityAnalysisParams);
-        }  else {
+            sampleEligibilityAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), SampleEligibilityAnalysisParams.class);
+        } else {
             sampleEligibilityAnalysisParams.setQuery(commandOptions.query);
             sampleEligibilityAnalysisParams.setCohortId(commandOptions.cohortId);
 
             if (commandOptions.index != null) {
                 sampleEligibilityAnalysisParams.setIndex(commandOptions.index);
-             }
-
+            }
         }
         return openCGAClient.getVariantClient().runSampleEligibility(sampleEligibilityAnalysisParams, queryParams);
     }
@@ -1415,9 +1390,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(sampleQcAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleQcAnalysisParams);
-        }  else {
+            sampleQcAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), SampleQcAnalysisParams.class);
+        } else {
             // Generate beans for nested objects
             AnnotationVariantQueryParams variantStatsQueryParam = new AnnotationVariantQueryParams();
             variantStatsQueryParam.setId(commandOptions.variantStatsQueryId);
@@ -1507,9 +1482,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(sampleVariantFilterParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleVariantFilterParams);
-        }  else {
+            sampleVariantFilterParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), SampleVariantFilterParams.class);
+        } else {
             sampleVariantFilterParams.setId(commandOptions.id);
             sampleVariantFilterParams.setRegion(commandOptions.region);
             sampleVariantFilterParams.setGene(commandOptions.gene);
@@ -1540,12 +1515,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.panelIntersection != null) {
                 sampleVariantFilterParams.setPanelIntersection(commandOptions.panelIntersection);
-             }
-
+            }
             if (commandOptions.samplesInAllVariants != null) {
                 sampleVariantFilterParams.setSamplesInAllVariants(commandOptions.samplesInAllVariants);
-             }
-
+            }
         }
         return openCGAClient.getVariantClient().runSample(sampleVariantFilterParams, queryParams);
     }
@@ -1603,9 +1576,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(sampleVariantStatsAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), sampleVariantStatsAnalysisParams);
-        }  else {
+            sampleVariantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), SampleVariantStatsAnalysisParams.class);
+        } else {
             // Generate beans for nested objects
             SampleVariantStatsAnalysisParams.VariantQueryParams variantQueryParam = new SampleVariantStatsAnalysisParams.VariantQueryParams();
             variantQueryParam.setId(commandOptions.variantQueryId);
@@ -1647,12 +1620,10 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.index != null) {
                 sampleVariantStatsAnalysisParams.setIndex(commandOptions.index);
-             }
-
+            }
             if (commandOptions.indexOverwrite != null) {
                 sampleVariantStatsAnalysisParams.setIndexOverwrite(commandOptions.indexOverwrite);
-             }
-
+            }
         }
         return openCGAClient.getVariantClient().runSampleStats(sampleVariantStatsAnalysisParams, queryParams);
     }
@@ -1682,9 +1653,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(variantStatsExportParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantStatsExportParams);
-        }  else {
+            variantStatsExportParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), VariantStatsExportParams.class);
+        } else {
             variantStatsExportParams.setCohorts(splitWithTrim(commandOptions.cohorts));
             variantStatsExportParams.setOutput(commandOptions.output);
             variantStatsExportParams.setRegion(commandOptions.region);
@@ -1719,9 +1690,9 @@ public class AnalysisVariantCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(variantStatsAnalysisParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), variantStatsAnalysisParams);
-        }  else {
+            variantStatsAnalysisParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), VariantStatsAnalysisParams.class);
+        } else {
             variantStatsAnalysisParams.setCohort(splitWithTrim(commandOptions.cohort));
             variantStatsAnalysisParams.setSamples(splitWithTrim(commandOptions.samples));
             variantStatsAnalysisParams.setRegion(commandOptions.region);

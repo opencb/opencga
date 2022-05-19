@@ -192,9 +192,9 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(fileAclUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileAclUpdateParams);
-        }  else {
+            fileAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FileAclUpdateParams.class);
+        } else {
             fileAclUpdateParams.setPermissions(commandOptions.permissions);
             fileAclUpdateParams.setFile(commandOptions.file);
             fileAclUpdateParams.setSample(commandOptions.sample);
@@ -259,9 +259,9 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), tsvAnnotationParams);
-        }  else {
+            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), TsvAnnotationParams.class);
+        } else {
             tsvAnnotationParams.setContent(commandOptions.content);
 
         }
@@ -289,9 +289,9 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(fileCreateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileCreateParams);
-        }  else {
+            fileCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FileCreateParams.class);
+        } else {
             // Generate beans for nested objects
             Software softwareParam = new Software();
             softwareParam.setName(commandOptions.softwareName);
@@ -390,9 +390,9 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(fileFetch));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileFetch);
-        }  else {
+            fileFetch = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FileFetch.class);
+        } else {
             fileFetch.setUrl(commandOptions.url);
             fileFetch.setPath(commandOptions.path);
 
@@ -421,9 +421,9 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(fileLinkParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileLinkParams);
-        }  else {
+            fileLinkParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FileLinkParams.class);
+        } else {
             // Generate beans for nested objects
             StatusParams statusParam = new StatusParams();
             statusParam.setId(commandOptions.statusId);
@@ -471,17 +471,16 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(fileLinkToolParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileLinkToolParams);
-        }  else {
+            fileLinkToolParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FileLinkToolParams.class);
+        } else {
             fileLinkToolParams.setUri(splitWithTrim(commandOptions.uri));
             fileLinkToolParams.setPath(commandOptions.path);
             fileLinkToolParams.setDescription(commandOptions.description);
 
             if (commandOptions.parents != null) {
                 fileLinkToolParams.setParents(commandOptions.parents);
-             }
-
+            }
         }
         return openCGAClient.getFileClient().runLink(fileLinkToolParams, queryParams);
     }
@@ -510,9 +509,9 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(postLinkToolParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), postLinkToolParams);
-        }  else {
+            postLinkToolParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), PostLinkToolParams.class);
+        } else {
             postLinkToolParams.setFiles(splitWithTrim(commandOptions.files));
             postLinkToolParams.setBatchSize(commandOptions.batchSize);
 
@@ -664,9 +663,9 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(fileUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), fileUpdateParams);
-        }  else {
+            fileUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FileUpdateParams.class);
+        } else {
             // Generate beans for nested objects
             Software softwareParam = new Software();
             softwareParam.setName(commandOptions.softwareName);
@@ -752,9 +751,9 @@ public class FilesCommandExecutor extends ParentFilesCommandExecutor {
             PrintUtils.println(getObjectAsJSON(objectMap));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), objectMap);
-        } 
+            objectMap = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
+        }
         return openCGAClient.getFileClient().updateAnnotationSetsAnnotations(commandOptions.file, commandOptions.annotationSet, objectMap, queryParams);
     }
 

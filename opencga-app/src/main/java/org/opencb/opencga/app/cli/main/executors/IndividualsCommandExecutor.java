@@ -140,9 +140,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(individualAclUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), individualAclUpdateParams);
-        }  else {
+            individualAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), IndividualAclUpdateParams.class);
+        } else {
             individualAclUpdateParams.setPermissions(commandOptions.permissions);
             individualAclUpdateParams.setIndividual(commandOptions.individual);
             individualAclUpdateParams.setSample(commandOptions.sample);
@@ -208,9 +208,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), tsvAnnotationParams);
-        }  else {
+            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), TsvAnnotationParams.class);
+        } else {
             tsvAnnotationParams.setContent(commandOptions.content);
 
         }
@@ -241,9 +241,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(individualCreateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), individualCreateParams);
-        }  else {
+            individualCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), IndividualCreateParams.class);
+        } else {
             // Generate beans for nested objects
             IndividualReferenceParam bodyFatherParam = new IndividualReferenceParam();
             bodyFatherParam.setId(commandOptions.fatherId);
@@ -309,8 +309,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.bodyParentalConsanguinity != null) {
                 individualCreateParams.setParentalConsanguinity(commandOptions.bodyParentalConsanguinity);
-             }
-
+            }
         }
         return openCGAClient.getIndividualClient().create(individualCreateParams, queryParams);
     }
@@ -477,9 +476,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(individualUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), individualUpdateParams);
-        }  else {
+            individualUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), IndividualUpdateParams.class);
+        } else {
             // Generate beans for nested objects
             IndividualReferenceParam fatherParam = new IndividualReferenceParam();
             fatherParam.setId(commandOptions.fatherId);
@@ -553,8 +552,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
             if (commandOptions.parentalConsanguinity != null) {
                 individualUpdateParams.setParentalConsanguinity(commandOptions.parentalConsanguinity);
-             }
-
+            }
         }
         return openCGAClient.getIndividualClient().update(commandOptions.individuals, individualUpdateParams, queryParams);
     }
@@ -580,9 +578,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(objectMap));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), objectMap);
-        } 
+            objectMap = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
+        }
         return openCGAClient.getIndividualClient().updateAnnotationSetsAnnotations(commandOptions.individual, commandOptions.annotationSet, objectMap, queryParams);
     }
 

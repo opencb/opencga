@@ -131,9 +131,9 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(familyAclUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), familyAclUpdateParams);
-        }  else {
+            familyAclUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FamilyAclUpdateParams.class);
+        } else {
             familyAclUpdateParams.setPermissions(commandOptions.permissions);
             familyAclUpdateParams.setFamily(commandOptions.family);
             familyAclUpdateParams.setIndividual(commandOptions.individual);
@@ -193,9 +193,9 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(tsvAnnotationParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), tsvAnnotationParams);
-        }  else {
+            tsvAnnotationParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), TsvAnnotationParams.class);
+        } else {
             tsvAnnotationParams.setContent(commandOptions.content);
 
         }
@@ -226,9 +226,9 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(familyCreateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), familyCreateParams);
-        }  else {
+            familyCreateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FamilyCreateParams.class);
+        } else {
             // Generate beans for nested objects
             StatusParams bodyStatusParam = new StatusParams();
             bodyStatusParam.setId(commandOptions.statusId);
@@ -397,9 +397,9 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(familyUpdateParams));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), familyUpdateParams);
-        }  else {
+            familyUpdateParams = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), FamilyUpdateParams.class);
+        } else {
             // Generate beans for nested objects
             FamilyQualityControl qualityControlParam = new FamilyQualityControl();
             //qualityControlParam.setRelatedness(commandOptions.qualityControlRelatedness);  // Unsupported param. FIXME
@@ -449,9 +449,9 @@ public class FamiliesCommandExecutor extends OpencgaCommandExecutor {
             PrintUtils.println(getObjectAsJSON(objectMap));
             return res;
         } else if (commandOptions.jsonFile != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), objectMap);
-        } 
+            objectMap = JacksonUtils.getDefaultObjectMapper()
+                    .readValue(new java.io.File(commandOptions.jsonFile), ObjectMap.class);
+        }
         return openCGAClient.getFamilyClient().updateAnnotationSetsAnnotations(commandOptions.family, commandOptions.annotationSet, objectMap, queryParams);
     }
 }
