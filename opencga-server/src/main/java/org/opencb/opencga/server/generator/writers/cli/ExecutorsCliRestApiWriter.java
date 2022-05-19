@@ -296,9 +296,9 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             sb.append("\n            PrintUtils.println(getObjectAsJSON(" + variableName + "));");
             sb.append("\n            return res;");
             sb.append("\n        } else if (commandOptions.jsonFile != null) {");
-            sb.append("\n            ObjectMapper objectMapper = new ObjectMapper();");
-            sb.append("\n            objectMapper.writeValue(new java.io.File(commandOptions.jsonFile), " + variableName + ");");
-            sb.append("\n        } ");
+            sb.append("\n            " + getAsVariableName(bodyClassName) + " = JacksonUtils.getDefaultObjectMapper()");
+            sb.append("\n                    .readValue(new java.io.File(commandOptions.jsonFile), " + bodyClassName + ".class);");
+            sb.append("\n        }");
             if (hasParameters(restEndpoint.getParameters(), commandName, config)) {
                 sb.append(" else {\n");
 
@@ -408,8 +408,7 @@ public class ExecutorsCliRestApiWriter extends ParentClientRestApiWriter {
             sb.append("\n            if (commandOptions." + normalizeNames(getAsCamelCase(bodyParam.getName())) + " != null) {");
             sb.append("\n                " + variableName + ".set" + getAsClassName(bodyParam.getName().replaceAll("body_", "")) +
                     "(commandOptions." + normalizeNames(getAsCamelCase(bodyParam.getName())) + ");");
-            sb.append("\n             }\n");
-
+            sb.append("\n            }");
         }
         return sb;
     }
