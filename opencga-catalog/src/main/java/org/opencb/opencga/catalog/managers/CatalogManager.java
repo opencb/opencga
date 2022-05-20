@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -138,7 +137,6 @@ public class CatalogManager implements AutoCloseable {
             configuration.getAdmin().setSecretKey(secretKey);
         } else {
             configuration.getAdmin().setAlgorithm("HS256");
-            configuration.getAdmin().setSecretKey(RandomStringUtils.randomAlphanumeric(50));
         }
     }
 
