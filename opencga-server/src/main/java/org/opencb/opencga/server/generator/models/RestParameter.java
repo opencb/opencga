@@ -1,21 +1,63 @@
 package org.opencb.opencga.server.generator.models;
 
+import org.opencb.opencga.core.tools.annotations.RestParamType;
+
 import java.util.List;
 
 public class RestParameter {
 
+    /**
+     * Name of the param.
+     */
     private String name;
-    private String param;
-    private String parentParamName;
+
+    /**
+     * Param type. Either query, path or body.
+     */
+    private RestParamType param;
+
+    /**
+     * Parent param name. Useful for inner params.
+     */
+    private String parentName;
+
+    /**
+     * High level param type.
+     * <p>
+     * - enum
+     * - string
+     * - boolean
+     * - object
+     * - class.getSimpleName().toLowerCase()
+     */
     private String type;
+
+    /**
+     * Java class of this value.
+     */
     private String typeClass;
     private boolean required;
     private String defaultValue;
     private String description;
+
+    /**
+     * Inner fields for object type models.
+     */
     private List<RestParameter> data;
     private String allowedValues;
     private boolean complex;
+
+    /**
+     * Canonical type with generics.
+     * e.g.
+     * - java.util.List<java.lang.String>
+     * - java.util.Map<java.lang.String, java.lang.Object>
+     */
     private String genericType;
+
+    /**
+     * Flattened param. This param has a parent param.
+     */
     private boolean innerParam;
 
     public boolean isStringList() {
@@ -27,7 +69,7 @@ public class RestParameter {
     }
 
     public boolean isAvailableType() {
-        return (!isComplex() || isStringList());
+        return ((!isComplex()) || isStringList());
     }
 
     public boolean isCollection() {
@@ -39,7 +81,7 @@ public class RestParameter {
         return "RestParameter{" +
                 "name='" + name + '\'' +
                 ", param='" + param + '\'' +
-                ", parentParamName='" + parentParamName + '\'' +
+                ", parentName='" + parentName + '\'' +
                 ", type='" + type + '\'' +
                 ", typeClass='" + typeClass + '\'' +
                 ", required=" + required +
@@ -50,7 +92,7 @@ public class RestParameter {
                 ", complex=" + complex +
                 ", genericType='" + genericType + '\'' +
                 ", innerParam=" + innerParam +
-                "}\n";
+                "}";
     }
 
     public String getName() {
@@ -61,20 +103,20 @@ public class RestParameter {
         this.name = name;
     }
 
-    public String getParam() {
+    public RestParamType getParam() {
         return param;
     }
 
-    public void setParam(String param) {
+    public void setParam(RestParamType param) {
         this.param = param;
     }
 
-    public String getParentParamName() {
-        return parentParamName;
+    public String getParentName() {
+        return parentName;
     }
 
-    public void setParentParamName(String parentParamName) {
-        this.parentParamName = parentParamName;
+    public void setParentName(String parentName) {
+        this.parentName = parentName;
     }
 
     public String getType() {
@@ -155,5 +197,9 @@ public class RestParameter {
 
     public void setInnerParam(boolean innerParam) {
         this.innerParam = innerParam;
+    }
+
+    public boolean isEnum() {
+        return "enum".equals(getType());
     }
 }

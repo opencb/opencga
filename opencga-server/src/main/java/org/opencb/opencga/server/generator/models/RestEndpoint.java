@@ -1,6 +1,8 @@
 package org.opencb.opencga.server.generator.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.collections4.CollectionUtils;
+import org.opencb.opencga.core.tools.annotations.RestParamType;
 import org.opencb.opencga.server.generator.config.CategoryConfig;
 import org.opencb.opencga.server.generator.utils.CommandLineUtils;
 
@@ -20,8 +22,6 @@ public class RestEndpoint {
         for (RestParameter restParameter : getParameters()) {
             if (CollectionUtils.isNotEmpty(restParameter.getData())) {
                 for (RestParameter bodyParam : restParameter.getData()) {
-                    //     if ((config.isAvailableSubCommand(bodyParam.getName()) && !bodyParam.isComplex()) || (bodyParam.isStringList()
-                    //     )) {
                     if (config.isAvailableSubCommand(bodyParam.getName(), commandName)) {
                         return true;
                     }
@@ -33,7 +33,8 @@ public class RestEndpoint {
 
     public boolean hasQueryParams() {
         for (RestParameter restParameter : getParameters()) {
-            if ("query".equals(restParameter.getParam()) && !restParameter.isRequired() && (!restParameter.isComplex() || restParameter.isStringList())) {
+            if (restParameter.getParam() == RestParamType.QUERY
+                    && !restParameter.isRequired() && (!restParameter.isComplex() || restParameter.isStringList())) {
                 return true;
             }
         }
@@ -42,9 +43,10 @@ public class RestEndpoint {
 
     public String getBodyClassName() {
         for (RestParameter restParameter : getParameters()) {
-            if (restParameter.getName().equals("body")) {
+            if (restParameter.getParam() == RestParamType.BODY) {
                 String className = restParameter.getTypeClass()
-                        .substring(restParameter.getTypeClass().lastIndexOf('.') + 1).replaceAll(";", "").trim();
+                        .substring(restParameter.getTypeClass().lastIndexOf('.') + 1)
+                        .replaceAll(";", "").trim();
 
                 // We cannot instantiate an interface, we always use ObjectMap in these cases.
                 if (className.equalsIgnoreCase("Map")) {
@@ -62,7 +64,7 @@ public class RestEndpoint {
         String[] saux = endpointPath.split("\\{");
         for (String aux : saux) {
             if (aux.contains("}") && !aux.contains("apiVersion")) {
-                sb.append("commandOptions." + aux.substring(0, aux.lastIndexOf("}")) + ", ");
+                sb.append("commandOptions.").append(aux, 0, aux.lastIndexOf("}")).append(", ");
             }
         }
         return sb.toString();
@@ -71,8 +73,9 @@ public class RestEndpoint {
     public String getMandatoryQueryParams(CategoryConfig config, String commandName) {
         StringBuilder sb = new StringBuilder();
         for (RestParameter restParameter : getParameters()) {
-            if (restParameter.getParam().equals("query")) {
-                if (config.isAvailableSubCommand(restParameter.getName(), commandName) && (!restParameter.isComplex() || restParameter.isStringList())
+            if (restParameter.getParam() == RestParamType.QUERY) {
+                if (config.isAvailableSubCommand(restParameter.getName(), commandName)
+                        && (!restParameter.isComplex() || restParameter.isStringList())
                         && restParameter.isRequired()) {
                     sb.append("commandOptions.").append(CommandLineUtils.getAsVariableName(restParameter.getName())).append(", ");
                 }
@@ -151,6 +154,18 @@ public class RestEndpoint {
 
     public List<RestParameter> getParameters() {
         return parameters;
+    }
+
+    @JsonIgnore
+    public RestParameter getParameterBody() {
+        if (parameters != null) {
+            for (RestParameter parameter : parameters) {
+                if (parameter.getParam() == RestParamType.BODY) {
+                    return parameter;
+                }
+            }
+        }
+        return null;
     }
 
     public RestEndpoint setParameters(List<RestParameter> restParameters) {
