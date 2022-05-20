@@ -24,6 +24,8 @@ import org.opencb.opencga.server.generator.models.RestCategory;
 import org.opencb.opencga.server.generator.models.RestEndpoint;
 import org.opencb.opencga.server.generator.models.RestParameter;
 import org.opencb.opencga.server.generator.writers.ParentClientRestApiWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -31,6 +33,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
+
+    protected static Logger logger = LoggerFactory.getLogger(OptionsCliRestApiWriter.class);
 
     public OptionsCliRestApiWriter(RestApi restApi, CommandLineConfiguration config) {
         super(restApi, config);
@@ -46,7 +50,10 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
         sb.append("import com.beust.jcommander.JCommander;\n");
         sb.append("import com.beust.jcommander.Parameter;\n");
         sb.append("import com.beust.jcommander.Parameters;\n");
+        sb.append("import com.beust.jcommander.DynamicParameter;\n");
         sb.append("import com.beust.jcommander.ParametersDelegate;\n\n");
+        sb.append("import java.util.HashMap;\n");
+        sb.append("import java.util.Map;\n");
         sb.append("import java.util.List;\n\n");
         if (categoryConfig.isOptionExtended()) {
             sb.append("import org.opencb.opencga.app.cli.main.parent."
@@ -171,7 +178,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                 if (restParameter.isAvailableType() && !variable_names.contains(normalizeNames(getAsCamelCase(restParameter.getName())))) {
                                     sb.append("        @Parameter(names = {" + getShortCuts(restParameter, config) + "}, description = " +
                                             "\"" + restParameter.getDescription().replaceAll("\"", "'") + "\", required = " + restParameter.isRequired() + ", arity = 1)\n");
-                                    sb.append("        public " + getValidValue(restParameter.getType()) + " " + getVariableName(restParameter) + ";" +
+                                    sb.append("        public " + getValidValue(restParameter) + " " + getVariableName(restParameter) + ";" +
                                             " " +
                                             "\n");
                                     sb.append("    \n");
@@ -187,7 +194,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                                     + (bodyRestParameter.isRequired() || isMandatory(commandName,
                                                     getVariableName(bodyRestParameter))) + ", arity = 1)\n");
 
-                                            sb.append("        public " + getValidValue(bodyRestParameter.getType()) + " "
+                                            sb.append("        public " + getValidValue(bodyRestParameter) + " "
                                                     + getVariableName(bodyRestParameter) + ";\n");
                                             sb.append("    \n");
                                             variable_names.add(normalizeNames(getAsCamelCase(bodyRestParameter.getName())));
@@ -199,16 +206,33 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
                                                     + (bodyRestParameter.isRequired() || isMandatory(commandName,
                                                     getVariableName(bodyRestParameter))) + ", arity = 1)\n");
 
-                                            sb.append("        public " + getValidValue(bodyRestParameter.getType()) + " "
+                                            sb.append("        public " + getValidValue(bodyRestParameter) + " "
                                                     + getVariableName(bodyRestParameter) + ";\n");
                                             sb.append("    \n");
+                                        } else if ((bodyRestParameter.getType().equals("Map") && bodyRestParameter.getData() == null)
+                                                || bodyRestParameter.getType().equals("ObjectMap")
+                                                || bodyRestParameter.getType().equals("Query")) {
+                                            String names = getShortCuts(bodyRestParameter, config);
+                                            sb.append("        @DynamicParameter(names = {" + names + "}, " +
+                                                    "description"
+                                                    + " = \"" + bodyRestParameter.getDescription().replaceAll("\"", "'") + ". Use: " + names.split(", ")[0].replace("\"", "") + " key=value\", required = "
+                                                    + (bodyRestParameter.isRequired() || isMandatory(commandName,
+                                                    getVariableName(bodyRestParameter))) + ")\n");
+
+                                            sb.append("        public " + getValidValue(bodyRestParameter) + " "
+                                                    + getVariableName(bodyRestParameter) + " = new HashMap<>(); //Dynamic parameters must be initialized;\n");
+                                            sb.append("    \n");
+                                        } else {
+                                            logger.warn("Skipping parameter '{}' type '{}' at command '{} {}'",
+                                                    bodyRestParameter.getName(), bodyRestParameter.getType(),
+                                                    getCategoryCommandName(restCategory, config), reverseCommandName(commandName));
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                    sb.append("  }\n");
+                    sb.append("    }\n\n");
                 }
             }
         }
@@ -219,7 +243,7 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
     private String getVariableName(RestParameter restParameter) {
         String res = "";
         if (restParameter.isInnerParam()) {
-            res = normalizeNames(getAsCamelCase(restParameter.getParentParamName() + " " + restParameter.getName()));
+            res = normalizeNames(getAsCamelCase(restParameter.getParentName() + " " + restParameter.getName()));
         } else {
             res = normalizeNames(getAsCamelCase(restParameter.getName()));
         }
@@ -240,8 +264,8 @@ public class OptionsCliRestApiWriter extends ParentClientRestApiWriter {
 
     private String getShortCuts(RestParameter restParameter, CategoryConfig config) {
         if (restParameter.isInnerParam()) {
-            return "\"--" + getKebabCase(restParameter.getParentParamName()) + "-" + getKebabCase(restParameter.getName()) + "\""
-                    + getStringShortcuts(getKebabCase(restParameter.getParentParamName()) + "-" + getKebabCase(restParameter.getName()), config);
+            return "\"--" + getKebabCase(restParameter.getParentName()) + "-" + getKebabCase(restParameter.getName()) + "\""
+                    + getStringShortcuts(getKebabCase(restParameter.getParentName()) + "-" + getKebabCase(restParameter.getName()), config);
         } else {
             return "\"--" + getKebabCase(restParameter.getName()) + "\"" + getStringShortcuts(restParameter.getName(), config);
         }

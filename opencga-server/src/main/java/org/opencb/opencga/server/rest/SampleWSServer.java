@@ -310,8 +310,6 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response updateByPost(
             @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @PathParam("samples") String sampleStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Create a new version of sample", defaultValue = "false")
-            @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET," +
                     "REMOVE", defaultValue = "ADD")
             @QueryParam("annotationSetsAction") ParamUtils.BasicUpdateAction annotationSetsAction,
@@ -373,8 +371,6 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE,RESET,REPLACE",
                     defaultValue = "ADD")
             @QueryParam("action") ParamUtils.CompleteUpdateAction action,
-            @ApiParam(value = "Create a new version of sample", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION)
-                    boolean incVersion,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION) Map<String, Object> updateParams) {
         try {
             if (action == null) {

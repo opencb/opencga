@@ -48,8 +48,7 @@ public class HadoopVariantScoreRemover extends VariantScoreRemover {
     @Override
     protected void postRemove(VariantScoreMetadata scoreMetadata, boolean success) throws StorageEngineException {
         if (success) {
-            VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor);
-            try {
+            try (VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor)) {
                 schemaManager.dropScore(scoreMetadata.getStudyId(), Collections.singletonList(scoreMetadata.getId()));
             } catch (SQLException e) {
                 throw Throwables.propagate(e);

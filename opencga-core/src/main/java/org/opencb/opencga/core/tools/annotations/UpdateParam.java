@@ -13,7 +13,7 @@ public @interface UpdateParam {
     /**
      * @return enum values QUERY, BODY, PATH.
      */
-    ParamType type() default ParamType.QUERY;
+    RestParamType type() default RestParamType.QUERY;
 
     /**
      * @return default value of the field.

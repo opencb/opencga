@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>2.2.1</version>
+        <version>2.3.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -83,11 +83,17 @@
             <version>${opencga.version}</version>
             <!--<type>war</type>-->
         </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.containers</groupId>
-            <artifactId>jersey-container-servlet-core</artifactId>
-            <version>${jersey.version}</version>
-        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>com.beust</groupId>-->
+<!--            <artifactId>jcommander</artifactId>-->
+<!--            <version>1.82</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.glassfish.jersey.containers</groupId>-->
+<!--            <artifactId>jersey-container-servlet-core</artifactId>-->
+<!--            <version>${jersey.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-analysis</artifactId>
@@ -109,25 +115,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        <!--Uncomment if hadoop dependencies are provided-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.hadoop</groupId>-->
-        <!--<artifactId>hadoop-common</artifactId>-->
-        <!--<version>${hadoop.version}</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.hadoop</groupId>-->
-        <!--<artifactId>hadoop-client</artifactId>-->
-        <!--<version>${hadoop.version}</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-        <!--<groupId>org.apache.hbase</groupId>-->
-        <!--<artifactId>hbase-server</artifactId>-->
-        <!--<version>${hbase.version}</version>-->
-        <!--<scope>test</scope>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -144,7 +131,6 @@
             <artifactId>jline-terminal</artifactId>
             <version>${dep.jline.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.jline</groupId>
             <artifactId>jline-terminal-jna</artifactId>
@@ -163,6 +149,14 @@
                 <filtering>true</filtering>
                 <targetPath>${project.basedir}/target/conf</targetPath>
             </resource>
+            <resource>
+                <directory>app/cloud/docker/compose</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>docker-compose.yml</include>
+                </includes>
+                <targetPath>${project.basedir}/target/docker-compose</targetPath>
+            </resource>
         </resources>
 
         <plugins>
@@ -177,13 +171,6 @@
                             <goal>assemble</goal>
                         </goals>
                     </execution>
-                    <!--<execution>-->
-                    <!--<id>daemon-1</id>-->
-                    <!--<phase>package</phase>-->
-                    <!--<goals>-->
-                    <!--<goal>generate-daemons</goal>-->
-                    <!--</goals>-->
-                    <!--</execution>-->
                 </executions>
                 <configuration>
                     <repositoryName>libs</repositoryName>
@@ -283,6 +270,18 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
+                                <echo>Copying docker-compose files</echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/target/docker-compose/docker-compose.yml"/>
+                                    <arg value="${build.dir}/cloud/docker/compose"/>
+                                </exec>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.xml"/>
+                                    <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.internal.xml"/>
+                                    <arg value="${project.basedir}/../opencga-core/src/main/resources/log4j2.service.xml"/>
+                                    <arg value="${build.dir}/cloud/docker/compose/conf"/>
+                                </exec>
+
                                 <exec executable="cp">
                                     <arg value="-r"/>
                                     <arg value="${project.basedir}/../opencga-analysis/src/main/R/"/>
@@ -298,7 +297,6 @@
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-internal.sh"/>
                                     <arg value="${build.dir}/bin"/>
                                 </exec>
-
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh"/>
                                     <arg value="${build.dir}/bin/utils"/>
@@ -367,18 +365,14 @@
                                 <!--                                </exec>-->
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/bin"/>
-                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/dependencies"/>
-                                    <arg value="${project.basedir}/../opencga-test/README.md"/>
-                                    <arg value="${project.basedir}/../opencga-test/fitnesse"/>
-                                    <arg value="${build.dir}/test"/>
+                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/bin/opencga-test.sh"/>
+                                    <arg value="${build.dir}/bin"/>
                                 </exec>
-                                <exec executable="sed">
-                                    <arg value="-i"/>
-                                    <arg value="s/target\/appassembler\/dependencies/dependencies/"/>
-                                    <arg value="${build.dir}/test/fitnesse/FitNesseRoot/OpenCga/TestsSuits/SuiteSetUp/content.txt"/>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/libs"/>
+                                    <arg value="${build.dir}"/>
                                 </exec>
-
                                 <exec executable="sed">
                                     <arg value="-i"/>
                                     <arg value="s/REPLACEME_OPENCGA_VERSION/${opencga.version}/"/>

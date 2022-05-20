@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.hadoop.variant.converters.HBaseVariantConverte
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -35,6 +36,7 @@ import java.sql.Statement;
  */
 public class VariantHBaseResultSetIterator extends VariantDBIterator {
 
+    private final Connection jdbcConnection;
     private final Statement statement;
     private final ResultSet resultSet;
     private final HBaseToVariantConverter<ResultSet> converter;
@@ -44,8 +46,10 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
     private int count = 0;
 
     public VariantHBaseResultSetIterator(
-            Statement statement, ResultSet resultSet, VariantStorageMetadataManager mm, HBaseVariantConverterConfiguration configuraiton)
+            Connection jdbcConnection, Statement statement, ResultSet resultSet, VariantStorageMetadataManager mm,
+            HBaseVariantConverterConfiguration configuraiton)
             throws SQLException {
+        this.jdbcConnection = jdbcConnection;
         this.statement = statement;
         this.resultSet = resultSet;
         converter = HBaseToVariantConverter.fromResultSet(mm).configure(configuraiton);
@@ -67,6 +71,7 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
                 getTimeFetching() / 1000000.0, getTimeConverting() / 1000000.0);
         resultSet.close();
         statement.close();
+        jdbcConnection.close();
     }
 
     @Override

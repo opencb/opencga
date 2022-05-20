@@ -1,14 +1,16 @@
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
+import com.mongodb.client.ClientSession;
 import org.apache.commons.collections4.CollectionUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBIterator;
-import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.mongodb.PanelMongoDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -25,7 +27,7 @@ public class InterpretationCatalogMongoDBIterator<E> extends CatalogMongoDBItera
     private long studyUid;
     private String user;
 
-    private PanelDBAdaptor panelDBAdaptor;
+    private PanelMongoDBAdaptor panelDBAdaptor;
     private QueryOptions panelQueryOptions;
 
     private QueryOptions options;
@@ -37,14 +39,16 @@ public class InterpretationCatalogMongoDBIterator<E> extends CatalogMongoDBItera
     private static final int BUFFER_SIZE = 100;
     private static final String UID_VERSION_SEP = "___";
 
-    public InterpretationCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, GenericDocumentComplexConverter<E> converter,
-                                                DBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
-        this(mongoCursor, converter, dbAdaptorFactory, 0, null, options);
+    public InterpretationCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
+                                                GenericDocumentComplexConverter<E> converter, MongoDBAdaptorFactory dbAdaptorFactory,
+                                                QueryOptions options) {
+        this(mongoCursor, clientSession, converter, dbAdaptorFactory, 0, null, options);
     }
 
-    public InterpretationCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, GenericDocumentComplexConverter<E> converter,
-                                                DBAdaptorFactory dbAdaptorFactory, long studyUid, String user, QueryOptions options) {
-        super(mongoCursor, converter);
+    public InterpretationCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
+                                                GenericDocumentComplexConverter<E> converter, MongoDBAdaptorFactory dbAdaptorFactory,
+                                                long studyUid, String user, QueryOptions options) {
+        super(mongoCursor, clientSession, converter, null);
 
         this.user = user;
         this.studyUid = studyUid;
@@ -157,9 +161,9 @@ public class InterpretationCatalogMongoDBIterator<E> extends CatalogMongoDBItera
         try {
             if (user != null) {
                 query.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                panelList = panelDBAdaptor.nativeGet(studyUid, query, panelQueryOptions, user).getResults();
+                panelList = panelDBAdaptor.nativeGet(clientSession, studyUid, query, panelQueryOptions, user).getResults();
             } else {
-                panelList = panelDBAdaptor.nativeGet(query, panelQueryOptions).getResults();
+                panelList = panelDBAdaptor.nativeGet(clientSession, query, panelQueryOptions).getResults();
             }
         } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
             logger.warn("Could not obtain the panels associated to the clinical analyses: {}", e.getMessage(), e);

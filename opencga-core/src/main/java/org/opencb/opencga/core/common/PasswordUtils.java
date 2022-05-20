@@ -7,27 +7,29 @@ import java.util.List;
 
 public class PasswordUtils {
 
-    public static void main(String[] args) {
-
-        System.out.println("Las passwords random cumplen con todos los requisitos " + isStrongPassword(getStrongRandomPassword()));
+    public static String getStrongRandomPassword() {
+        return getStrongRandomPassword(10);
     }
 
-    public static String getStrongRandomPassword() {
+    public static String getStrongRandomPassword(int length) {
         CharacterRule upper = new CharacterRule(EnglishCharacterData.UpperCase);
         CharacterRule lower = new CharacterRule(EnglishCharacterData.LowerCase);
         CharacterRule digits = new CharacterRule(EnglishCharacterData.Digit);
         CharacterRule special = new CharacterRule(EnglishCharacterData.Special);
 
         PasswordGenerator passwordGenerator = new PasswordGenerator();
-        String password = passwordGenerator.generatePassword(10, upper, lower, digits, special);
-        return password;
+        return passwordGenerator.generatePassword(length, upper, lower, digits, special);
     }
 
     public static boolean isStrongPassword(String password) {
+        return isStrongPassword(password, 8);
+    }
+
+    public static boolean isStrongPassword(String password, int minLength) {
         List<Rule> rules = new ArrayList<>();
         //Rule 1: Password length should be in between
-        //8 and 16 characters
-        rules.add(new LengthRule(8, 100));
+        //8 and 100 characters
+        rules.add(new LengthRule(minLength, 100));
         //Rule 2: No whitespace allowed
         rules.add(new WhitespaceRule());
         //Rule 3.a: At least one Upper-case character
@@ -43,9 +45,6 @@ public class PasswordUtils {
         PasswordData passwordData = new PasswordData(password);
         RuleResult result = validator.validate(passwordData);
 
-        if (!result.isValid()) {
-            return false;
-        }
-        return true;
+        return result.isValid();
     }
 }

@@ -25,7 +25,6 @@ import com.mongodb.ErrorCategory;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
-import com.mongodb.util.JSON;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -46,7 +45,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_ID;
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.ID;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_UID;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
@@ -80,7 +79,7 @@ public class MongoDBUtils {
     @Deprecated
     static long getNewAutoIncrementId(String field, MongoDBCollection metaCollection) {
 
-        Bson query = Filters.eq(PRIVATE_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
+        Bson query = Filters.eq(ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
@@ -141,21 +140,6 @@ public class MongoDBUtils {
             jsonReaderMap.put(tClass, jsonObjectMapper.reader(tClass));
         }
         return jsonReaderMap.get(tClass);
-    }
-
-    @Deprecated
-    static DBObject getDbObject(Object object, String objectName) throws CatalogDBException {
-        DBObject dbObject;
-        String jsonString = null;
-        try {
-            jsonString = jsonObjectWriter.writeValueAsString(object);
-            dbObject = (DBObject) JSON.parse(jsonString);
-            dbObject = replaceDotsInKeys(dbObject);
-        } catch (Exception e) {
-            throw new CatalogDBException("Error while writing to Json : " + objectName + (jsonString == null ? "" : (" -> " + jsonString)
-            ), e);
-        }
-        return dbObject;
     }
 
     public static Document getMongoDBDocument(Object object, String objectName) throws CatalogDBException {

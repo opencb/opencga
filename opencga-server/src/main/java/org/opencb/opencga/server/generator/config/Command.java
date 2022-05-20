@@ -6,6 +6,7 @@ public class Command {
 
     private boolean ignore;
     private String name;
+    private String rename;
     private boolean executorExtended;
     private boolean optionExtended;
     private List<Subcommand> subcommands;
@@ -13,9 +14,11 @@ public class Command {
     public Command() {
     }
 
-    public Command(boolean ignore, String name, boolean executorExtended, boolean optionExtended, List<Subcommand> subcommands) {
+    public Command(boolean ignore, String name, String rename, boolean executorExtended, boolean optionExtended,
+                   List<Subcommand> subcommands) {
         this.ignore = ignore;
         this.name = name;
+        this.rename = rename;
         this.executorExtended = executorExtended;
         this.optionExtended = optionExtended;
         this.subcommands = subcommands;
@@ -36,6 +39,15 @@ public class Command {
 
     public Command setName(String name) {
         this.name = name;
+        return this;
+    }
+
+    public String getRename() {
+        return rename;
+    }
+
+    public Command setRename(String rename) {
+        this.rename = rename;
         return this;
     }
 

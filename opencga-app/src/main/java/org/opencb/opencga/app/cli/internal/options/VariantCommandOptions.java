@@ -82,7 +82,8 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CLINICAL_DESCR;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE_DESCR;
 
 /**
  * Created by pfurio on 23/11/16.
@@ -513,6 +514,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--annotate"}, description = "Annotate sample index", arity = 0)
         public boolean annotate;
+
+        @Parameter(names = {"--family-index"}, description = "Annotate sample index", arity = 0)
+        public boolean familyIndex;
 
         @Parameter(names = {"--overwrite"}, description = "Overwrite existing values", arity = 0)
         public boolean overwrite;

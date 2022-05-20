@@ -41,7 +41,6 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.SampleCatalogMongoDBItera
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.IndividualManager;
 import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -50,7 +49,6 @@ import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.InternalStatus;
@@ -66,7 +64,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor.QueryParams.MODIFICATION_DATE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.filterAnnotationSets;
@@ -81,23 +79,32 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     private static final String PRIVATE_INDIVIDUAL_UID = "_individualUid";
     private final MongoDBCollection sampleCollection;
+    private final MongoDBCollection archiveSampleCollection;
     private final MongoDBCollection deletedSampleCollection;
-    private SampleConverter sampleConverter;
-    private IndividualMongoDBAdaptor individualDBAdaptor;
+    private final SampleConverter sampleConverter;
+    private final IndividualMongoDBAdaptor individualDBAdaptor;
+    private final VersionedMongoDBAdaptor versionedMongoDBAdaptor;
 
-    public SampleMongoDBAdaptor(MongoDBCollection sampleCollection, MongoDBCollection deletedSampleCollection, Configuration configuration,
+    public SampleMongoDBAdaptor(MongoDBCollection sampleCollection, MongoDBCollection archiveSampleCollection,
+                                MongoDBCollection deletedSampleCollection, Configuration configuration,
                                 MongoDBAdaptorFactory dbAdaptorFactory) {
         super(configuration, LoggerFactory.getLogger(SampleMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.sampleCollection = sampleCollection;
+        this.archiveSampleCollection = archiveSampleCollection;
         this.deletedSampleCollection = deletedSampleCollection;
         sampleConverter = new SampleConverter();
         individualDBAdaptor = dbAdaptorFactory.getCatalogIndividualDBAdaptor();
+        this.versionedMongoDBAdaptor = new VersionedMongoDBAdaptor(sampleCollection, archiveSampleCollection, deletedSampleCollection);
     }
 
     @Override
     protected MongoDBCollection getCollection() {
         return sampleCollection;
+    }
+
+    public MongoDBCollection getArchiveSampleCollection() {
+        return archiveSampleCollection;
     }
 
     /*
@@ -177,7 +184,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         sampleObject.put(PRIVATE_INDIVIDUAL_UID, individualUid);
 
         logger.debug("Inserting sample '{}' ({})...", sample.getId(), sample.getUid());
-        sampleCollection.insert(clientSession, sampleObject, null);
+        versionedMongoDBAdaptor.insert(clientSession, sampleObject);
         logger.debug("Sample '{}' successfully inserted", sample.getId());
 
         if (individualUid > 0) {
@@ -310,72 +317,85 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         Query tmpQuery = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyUid)
                 .append(QueryParams.UID.key(), sampleUid);
+        Bson bsonQuery = parseQuery(tmpQuery);
+        return versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
+            // Perform the update
+            DataResult result = updateAnnotationSets(clientSession, sampleUid, parameters, variableSetList, queryOptions, true);
 
-        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-            createNewVersion(clientSession, studyUid, sampleUid);
-        } else {
-            boolean internalUpdateOnly = parameters.keySet().stream().allMatch(key -> key.startsWith("internal."));
-            // Don't need to check if locked when updating only internal fields
-            if (!internalUpdateOnly) {
-                checkInUseInLockedClinicalAnalysis(clientSession, sampleDocument);
+            UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions);
+            Document sampleUpdate = updateParams.toFinalUpdateDocument();
+
+            if (sampleUpdate.isEmpty() && result.getNumUpdated() == 0) {
+                if (!parameters.isEmpty()) {
+                    logger.error("Non-processed update parameters: {}", parameters.keySet());
+                }
+                throw new CatalogDBException("Nothing to be updated");
             }
-        }
 
-        // Perform the update
-        DataResult result = updateAnnotationSets(clientSession, sampleUid, parameters, variableSetList, queryOptions, true);
+            List<Event> events = new ArrayList<>();
+            if (!sampleUpdate.isEmpty()) {
+                Bson finalQuery = parseQuery(tmpQuery);
 
-        UpdateDocument updateParams = parseAndValidateUpdateParams(clientSession, parameters, tmpQuery, queryOptions);
-        Document sampleUpdate = updateParams.toFinalUpdateDocument();
+                logger.debug("Sample update: query : {}, update: {}",
+                        finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                        sampleUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+                result = sampleCollection.update(clientSession, finalQuery, sampleUpdate, new QueryOptions("multi", true));
 
-        if (sampleUpdate.isEmpty() && result.getNumUpdated() == 0) {
-            if (!parameters.isEmpty()) {
-                logger.error("Non-processed update parameters: {}", parameters.keySet());
-            }
-            throw new CatalogDBException("Nothing to be updated");
-        }
+                if (updateParams.getSet().containsKey(PRIVATE_INDIVIDUAL_UID)) {
+                    long newIndividualUid = updateParams.getSet().getLong(PRIVATE_INDIVIDUAL_UID);
 
-        List<Event> events = new ArrayList<>();
-        if (!sampleUpdate.isEmpty()) {
-            Bson finalQuery = parseQuery(tmpQuery);
+                    // If the sample has been associated a different individual
+                    if (newIndividualUid != individualUid) {
+                        Sample sample = new Sample().setUid(sampleUid).setVersion(version).setStudyUid(studyUid);
 
-            logger.debug("Sample update: query : {}, update: {}",
-                    finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    sampleUpdate.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-            result = sampleCollection.update(clientSession, finalQuery, sampleUpdate, new QueryOptions("multi", true));
+                        if (newIndividualUid > 0) {
+                            // Add the sample to the list of samples of new individual
+                            updateSampleFromIndividualCollection(clientSession, sample, newIndividualUid, ParamUtils.BasicUpdateAction.ADD);
+                        }
 
-            if (updateParams.getSet().containsKey(PRIVATE_INDIVIDUAL_UID)) {
-                long newIndividualUid = updateParams.getSet().getLong(PRIVATE_INDIVIDUAL_UID);
-
-                // If the sample has been associated a different individual
-                if (newIndividualUid != individualUid) {
-                    Sample sample = new Sample().setUid(sampleUid).setVersion(version).setStudyUid(studyUid);
-
-                    if (newIndividualUid > 0) {
-                        // Add the sample to the list of samples of new individual
-                        updateSampleFromIndividualCollection(clientSession, sample, newIndividualUid, ParamUtils.BasicUpdateAction.ADD);
-                    }
-
-                    if (individualUid > 0) {
-                        // Remove the sample from the individual where it was associated
-                        updateSampleFromIndividualCollection(clientSession, sample, individualUid, ParamUtils.BasicUpdateAction.REMOVE);
+                        if (individualUid > 0) {
+                            // Remove the sample from the individual where it was associated
+                            updateSampleFromIndividualCollection(clientSession, sample, individualUid, ParamUtils.BasicUpdateAction.REMOVE);
+                        }
                     }
                 }
+
+                if (result.getNumMatches() == 0) {
+                    throw new CatalogDBException("Sample " + sampleId + " not found");
+                }
+                if (result.getNumUpdated() == 0) {
+                    events.add(new Event(Event.Type.WARNING, sampleId, "Sample was already updated"));
+                }
+                logger.debug("Sample {} successfully updated", sampleId);
             }
 
-            if (result.getNumMatches() == 0) {
-                throw new CatalogDBException("Sample " + sampleId + " not found");
-            }
-            if (result.getNumUpdated() == 0) {
-                events.add(new Event(Event.Type.WARNING, sampleId, "Sample was already updated"));
-            }
-            logger.debug("Sample {} successfully updated", sampleId);
+            return endWrite(tmpStartTime, 1, 1, events);
+        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
+    }
+
+    private void updateReferencesAfterSampleVersionIncrement(ClientSession clientSession, MongoDBIterator<Document> iterator)
+            throws CatalogParameterException, CatalogDBException, CatalogAuthorizationException {
+        while (iterator.hasNext()) {
+            updateIndividualSampleReferences(clientSession, iterator.next());
+        }
+    }
+
+    void updateIndividualFromSampleCollection(ClientSession clientSession, long studyId, List<Long> sampleUids, String individualId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+        if (CollectionUtils.isEmpty(sampleUids)) {
+            return;
         }
 
-        if (queryOptions.getBoolean(Constants.INCREMENT_VERSION)) {
-            updateIndividualSampleReferences(clientSession, sampleDocument);
-        }
+        ObjectMap params = new ObjectMap(QueryParams.INDIVIDUAL_ID.key(), individualId);
+        Document update = parseAndValidateUpdateParams(clientSession, params, null, QueryOptions.empty()).toFinalUpdateDocument();
+        Bson query = parseQuery(new Query()
+                .append(QueryParams.STUDY_UID.key(), studyId)
+                .append(QueryParams.UID.key(), sampleUids));
 
-        return endWrite(tmpStartTime, 1, 1, events);
+        versionedMongoDBAdaptor.update(clientSession, query, () -> {
+            QueryOptions options = new QueryOptions(MongoDBCollection.MULTI, true);
+            return sampleCollection.update(clientSession, query, update, options);
+        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
     }
 
     void updateCohortReferences(ClientSession clientSession, long studyUid, List<Long> sampleUids, String cohortId,
@@ -400,18 +420,21 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 .append(QueryParams.UID.key(), sampleUids);
         Bson bsonQuery = parseQuery(query);
 
-        DataResult update = sampleCollection.update(clientSession, bsonQuery, bsonUpdate,
-                new QueryOptions(MongoDBCollection.MULTI, true));
-        if (update.getNumMatches() == 0) {
-            throw new CatalogDBException("Could not update cohort references in samples");
-        }
+        versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
+            DataResult update = sampleCollection.update(clientSession, bsonQuery, bsonUpdate,
+                    new QueryOptions(MongoDBCollection.MULTI, true));
+            if (update.getNumMatches() == 0) {
+                throw new CatalogDBException("Could not update cohort references in samples");
+            }
+            return update;
+        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
     }
 
     /**
      * Update Sample references from any Individual where it was used.
      *
      * @param clientSession Client session.
-     * @param sample        Sample object containing the previous version (before the version increment).
+     * @param sample        Sample object containing the latest version.
      */
     private void updateIndividualSampleReferences(ClientSession clientSession, Document sample)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -436,7 +459,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             List<Sample> samples = new ArrayList<>(individual.getSamples().size());
             for (Sample individualSample : individual.getSamples()) {
                 if (individualSample.getUid() == sampleUid) {
-                    individualSample.setVersion(version + 1);
+                    individualSample.setVersion(version);
                 }
                 samples.add(individualSample);
             }
@@ -445,7 +468,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
             ObjectMap action = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), ParamUtils.BasicUpdateAction.SET);
             options = new QueryOptions()
-                    .append(Constants.INCREMENT_VERSION, true)
                     .append(Constants.ACTIONS, action);
 
             OpenCGAResult result = dbAdaptorFactory.getCatalogIndividualDBAdaptor().privateUpdate(clientSession, individual, params, null,
@@ -473,68 +495,31 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         Bson update = Updates.set(QueryParams.INDIVIDUAL_ID.key(), newIndividualId);
 
-        sampleCollection.update(clientSession, bsonQuery, update, new QueryOptions(MongoDBCollection.MULTI, true));
+        versionedMongoDBAdaptor.update(clientSession, bsonQuery,
+                () -> sampleCollection.update(clientSession, bsonQuery, update, new QueryOptions(MongoDBCollection.MULTI, true)),
+                (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
     }
 
     /**
-     * Checks whether the sample that is going to be updated is in use in any locked Clinical Analysis.
+     * Checks whether the sample that is going to be altered is in use in any locked Clinical Analysis.
      *
      * @param clientSession Client session.
      * @param sample        Sample to be updated.
      * @throws CatalogDBException CatalogDBException if the sample is in use in any Clinical Analysis.
      */
-    private void checkInUseInLockedClinicalAnalysis(ClientSession clientSession, Document sample)
+    private void checkInUseInClinicalAnalysis(ClientSession clientSession, Document sample)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-
         String sampleId = sample.getString(QueryParams.ID.key());
         long sampleUid = sample.getLong(QueryParams.UID.key());
-        int version = sample.getInteger(QueryParams.VERSION.key());
         long studyUid = sample.getLong(QueryParams.STUDY_UID.key());
 
-        // We only need to focus on locked clinical analyses
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(), sampleUid)
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.LOCKED.key(), true);
-
-        OpenCGAResult<ClinicalAnalysis> result = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().get(clientSession, query,
-                ClinicalAnalysisManager.INCLUDE_CATALOG_DATA);
-
-        if (result.getNumResults() == 0) {
-            // No Clinical Analyses are using the sample...
-            return;
-        }
-
-        // We need to check if the sample version is being used in any of the clinical analyses manually
-        Set<String> clinicalAnalysisIds = new HashSet<>(result.getNumResults());
-        for (ClinicalAnalysis clinicalAnalysis : result.getResults()) {
-            if (clinicalAnalysis.getProband() != null && clinicalAnalysis.getProband().getSamples() != null) {
-                for (Sample auxSample : clinicalAnalysis.getProband().getSamples()) {
-                    if (auxSample.getUid() == sampleUid && auxSample.getVersion() == version) {
-                        clinicalAnalysisIds.add(clinicalAnalysis.getId());
-                        break;
-                    }
-                }
-            }
-            if (!clinicalAnalysisIds.contains(clinicalAnalysis.getId())) {
-                if (clinicalAnalysis.getFamily() != null && clinicalAnalysis.getFamily().getMembers() != null) {
-                    for (Individual member : clinicalAnalysis.getFamily().getMembers()) {
-                        if (member.getSamples() != null) {
-                            for (Sample auxSample : member.getSamples()) {
-                                if (auxSample.getUid() == sampleUid && auxSample.getVersion() == version) {
-                                    clinicalAnalysisIds.add(clinicalAnalysis.getId());
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!clinicalAnalysisIds.isEmpty()) {
-            throw new CatalogDBException("Sample '" + sampleId + "' is being used in the following clinical analyses: '"
-                    + String.join("', '", clinicalAnalysisIds) + "'.");
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.SAMPLE.key(), sampleUid);
+        OpenCGAResult<Long> count = dbAdaptorFactory.getClinicalAnalysisDBAdaptor().count(clientSession, query);
+        if (count.getNumMatches() > 0) {
+            throw new CatalogDBException("Could not delete sample '" + sampleId + "'. Sample is in use in "
+                    + count.getNumMatches() + " cases");
         }
     }
 
@@ -556,19 +541,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), sample.getStudyUid()), null);
 
         individualDBAdaptor.getCollection().update(clientSession, bsonQuery, update, null);
-    }
-
-    private void createNewVersion(ClientSession clientSession, long studyUid, long sampleUid) throws CatalogDBException {
-        Query query = new Query()
-                .append(QueryParams.STUDY_UID.key(), studyUid)
-                .append(QueryParams.UID.key(), sampleUid);
-        OpenCGAResult<Document> queryResult = nativeGet(clientSession, query, new QueryOptions(QueryOptions.EXCLUDE, "_id"));
-
-        if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Could not find sample '" + sampleUid + "'");
-        }
-
-        createNewVersion(clientSession, sampleCollection, queryResult.first());
     }
 
     UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, ObjectMap parameters, Query query, QueryOptions queryOptions)
@@ -691,7 +663,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
             String time = TimeUtils.getTime();
-            if (StringUtils.isEmpty(parameters.getString(MODIFICATION_DATE.key()))) {
+            if (StringUtils.isEmpty(parameters.getString(QueryParams.MODIFICATION_DATE.key()))) {
                 // Update modificationDate param
                 Date date = TimeUtils.toDate(time);
                 document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
@@ -775,8 +747,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 .append("$addToSet", new Document(RELEASE_FROM_VERSION, release));
 
         QueryOptions queryOptions = new QueryOptions("multi", true);
-
-        return new OpenCGAResult(sampleCollection.update(bson, update, queryOptions));
+        return versionedMongoDBAdaptor.updateWithoutVersionIncrement(bson,
+                () -> new OpenCGAResult<Sample>(sampleCollection.update(bson, update, queryOptions)));
     }
 
     @Override
@@ -785,7 +757,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex) throws CatalogDBException {
+    public OpenCGAResult<Sample> setRgaIndexes(long studyUid, List<Long> sampleUids, RgaIndex rgaIndex)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         ObjectMap params;
         try {
             params = new ObjectMap(getDefaultObjectMapper().writeValueAsString(rgaIndex));
@@ -803,9 +776,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         Bson query = Filters.and(filters);
 
         UpdateDocument updateDocument = new UpdateDocument().setSet(rootDocument);
+        Document bsonUpdate = updateDocument.toFinalUpdateDocument();
 
-        DataResult<Sample> multi = sampleCollection.update(query, updateDocument.toFinalUpdateDocument(), new QueryOptions("multi", true));
-        return new OpenCGAResult<>(multi);
+        return runTransaction(
+                (ClientSession clientSession) -> versionedMongoDBAdaptor.update(clientSession, query,
+                        () -> new OpenCGAResult<>(sampleCollection.update(query, bsonUpdate, new QueryOptions("multi", true))),
+                        (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator)));
     }
 
     @Override
@@ -909,6 +885,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         long sampleUid = sampleDocument.getLong(PRIVATE_UID);
         long studyUid = sampleDocument.getLong(PRIVATE_STUDY_UID);
 
+        checkInUseInClinicalAnalysis(clientSession, sampleDocument);
+
         logger.debug("Deleting sample {} ({})", sampleId, sampleUid);
 
         Sample sample = new Sample()
@@ -917,48 +895,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 .setId(sampleId);
         removeSampleReferences(clientSession, studyUid, sample);
 
-        // Look for all the different sample versions
+        // Delete sample
         Query sampleQuery = new Query()
                 .append(QueryParams.UID.key(), sampleUid)
-                .append(QueryParams.STUDY_UID.key(), studyUid)
-                .append(Constants.ALL_VERSIONS, true);
-        try (DBIterator<Document> sampleDBIterator = nativeIterator(sampleQuery, QueryOptions.empty())) {
-
-            // Delete any documents that might have been already deleted with that id
-            Bson query = new Document()
-                    .append(QueryParams.ID.key(), sampleId)
-                    .append(PRIVATE_STUDY_UID, studyUid);
-            deletedSampleCollection.remove(clientSession, query, new QueryOptions(MongoDBCollection.MULTI, true));
-
-            while (sampleDBIterator.hasNext()) {
-                Document tmpSample = sampleDBIterator.next();
-
-                // Set status to DELETED
-                nestedPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new InternalStatus(InternalStatus.DELETED), "status"),
-                        tmpSample);
-
-                int sampleVersion = tmpSample.getInteger(QueryParams.VERSION.key());
-
-                // Insert the document in the DELETE collection
-                deletedSampleCollection.insert(clientSession, replaceDotsInKeys(tmpSample), null);
-                logger.debug("Inserted sample uid '{}' version '{}' in DELETE collection", sampleUid, sampleVersion);
-
-                // Remove the document from the main SAMPLE collection
-                query = parseQuery(new Query()
-                        .append(QueryParams.UID.key(), sampleUid)
-                        .append(QueryParams.VERSION.key(), sampleVersion));
-                DataResult remove = sampleCollection.remove(clientSession, query, null);
-                if (remove.getNumMatches() == 0) {
-                    throw new CatalogDBException("Sample " + sampleId + " not found");
-                }
-                if (remove.getNumDeleted() == 0) {
-                    throw new CatalogDBException("Sample " + sampleId + " could not be deleted");
-                }
-
-                logger.debug("Sample uid '{}' version '{}' deleted from main SAMPLE collection", sampleUid, sampleVersion);
-            }
-        }
-
+                .append(QueryParams.STUDY_UID.key(), studyUid);
+        Bson bsonQuery = parseQuery(sampleQuery);
+        versionedMongoDBAdaptor.delete(clientSession, bsonQuery);
         logger.debug("Sample {}({}) deleted", sampleId, sampleUid);
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
@@ -985,8 +927,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         logger.debug("Removing file from sample '{}' field. Query: {}, Update: {}", QueryParams.FILE_IDS.key(),
                 bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 updateDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        DataResult result = sampleCollection.update(clientSession, bsonQuery, updateDocument, new QueryOptions("multi", true));
-        logger.debug("File '{}' removed from {} samples", fileId, result.getNumUpdated());
+
+        versionedMongoDBAdaptor.update(clientSession, bsonQuery, () -> {
+            DataResult<?> result = sampleCollection.update(clientSession, bsonQuery, updateDocument, new QueryOptions("multi", true));
+            logger.debug("File '{}' removed from {} samples", fileId, result.getNumUpdated());
+            return result;
+        }, (MongoDBIterator<Document> iterator) -> updateReferencesAfterSampleVersionIncrement(clientSession, iterator));
     }
 
     // TODO: Check clean
@@ -1088,7 +1034,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options, user);
         Document studyDocument = getStudyDocument(null, studyUid);
-        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
         return new SampleCatalogMongoDBIterator<>(mongoCursor, null, sampleConverter, iteratorFilter, individualDBAdaptor, studyUid, user,
@@ -1109,7 +1055,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         query.put(PRIVATE_STUDY_UID, studyUid);
         MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
-        Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
+        UnaryOperator<Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
         return new SampleCatalogMongoDBIterator<>(mongoCursor, clientSession, null, iteratorFilter, individualDBAdaptor, studyUid, user,
@@ -1178,13 +1124,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 //        }
 
         Bson bson = parseQuery(finalQuery, user);
+        MongoDBCollection collection = getQueryCollection(finalQuery, sampleCollection, archiveSampleCollection, deletedSampleCollection);
         logger.debug("Sample query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
-        if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return sampleCollection.iterator(clientSession, bson, null, null, qOptions);
-        } else {
-            return deletedSampleCollection.iterator(clientSession, bson, null, null, qOptions);
-        }
+        return collection.iterator(clientSession, bson, null, null, qOptions);
     }
 
     private boolean isQueryingIndividualFields(Query query) {
@@ -1304,7 +1246,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             queryCopy.remove(QueryParams.VERSION.key());
         }
 
-        boolean uidVersionQueryFlag = generateUidVersionQuery(queryCopy, andBsonList);
+        boolean uidVersionQueryFlag = versionedMongoDBAdaptor.generateUidVersionQuery(queryCopy, andBsonList);
 
         for (Map.Entry<String, Object> entry : queryCopy.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -1388,14 +1330,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
 
         // If the user doesn't look for a concrete version...
-        if (!uidVersionQueryFlag && !queryCopy.getBoolean(Constants.ALL_VERSIONS) && !queryCopy.containsKey(QueryParams.VERSION.key())) {
-            if (queryCopy.containsKey(QueryParams.SNAPSHOT.key())) {
-                // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
-                andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
-            } else {
-                // Otherwise, we will always look for the latest version
-                andBsonList.add(Filters.eq(LAST_OF_VERSION, true));
-            }
+        if (!uidVersionQueryFlag && !queryCopy.getBoolean(Constants.ALL_VERSIONS) && !queryCopy.containsKey(QueryParams.VERSION.key())
+                && queryCopy.containsKey(QueryParams.SNAPSHOT.key())) {
+            // If the user looks for anything from some release, we will try to find the latest from the release (snapshot)
+            andBsonList.add(Filters.eq(LAST_OF_RELEASE, true));
         }
 
         if (annotationDocument != null && !annotationDocument.isEmpty()) {
@@ -1411,7 +1349,4 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
     }
 
-    public MongoDBCollection getSampleCollection() {
-        return sampleCollection;
-    }
 }
