@@ -30,6 +30,7 @@ import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
+import javax.naming.AuthenticationException;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.*;
@@ -240,6 +241,13 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
                 });
                 dctx = future.get(readTimeout + connectTimeout, TimeUnit.MILLISECONDS);
             } catch (ExecutionException | TimeoutException e) {
+                if (e instanceof ExecutionException) {
+                    // Check cause
+                    if (e.getCause() instanceof AuthenticationException) {
+                        throw wrapException(e);
+                    }
+                }
+
                 count++;
                 logger.warn("Error opening DirContext connection. Attempt " + count + "/" + maxAttempts
                         + ((count == maxAttempts) ? ". Do not retry" : ". Ignore exception and retry"), e);
@@ -465,6 +473,9 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
                 if (e.getCause() == null) {
                     msg = e.getMessage();
                 } else {
+                    if (e.getCause() instanceof AuthenticationException) {
+                        return CatalogAuthenticationException.incorrectUserOrPassword("LDAP", e);
+                    }
                     msg = e.getCause().getMessage();
                 }
             } else {
