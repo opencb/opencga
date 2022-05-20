@@ -107,5 +107,6 @@ public class VariantAnnotationPhoenixDBWriter extends VariantAnnotationDBWriter 
             logger.info("Close Phoenix connection " + connection);
             connection.close();
         }
+        schemaManager.close();
     }
 }

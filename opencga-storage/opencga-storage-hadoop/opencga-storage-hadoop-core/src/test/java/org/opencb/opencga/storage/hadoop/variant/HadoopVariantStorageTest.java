@@ -453,7 +453,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     default void deleteTable(String tableName) throws Exception {
         LoggerFactory.getLogger(HadoopVariantStorageTest.class).info("Drop table " + tableName);
         PhoenixHelper phoenixHelper = new PhoenixHelper(configuration.get());
-        try (java.sql.Connection con = phoenixHelper.newJdbcConnection()) {
+        try (java.sql.Connection con = phoenixHelper.openJdbcConnection()) {
             if (phoenixHelper.tableExists(con, tableName)) {
                 phoenixHelper.dropTable(con, tableName, VariantPhoenixSchema.DEFAULT_TABLE_TYPE, true, true);
             }

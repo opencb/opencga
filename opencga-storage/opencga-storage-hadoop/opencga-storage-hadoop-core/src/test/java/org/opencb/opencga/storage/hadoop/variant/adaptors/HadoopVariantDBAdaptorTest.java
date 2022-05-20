@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
+import org.apache.phoenix.monitoring.GlobalClientMetrics;
 import org.junit.*;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.RunWith;
@@ -35,6 +36,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,6 +65,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
     public static ObjectMap previousIndexParams = null;
     protected CellBaseUtils cellBaseUtils;
+    private long expectedConnections;
 
     @Parameters
     public static List<Object[]> data() {
@@ -116,8 +119,16 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
             }
         }
         cellBaseUtils = variantStorageEngine.getCellBaseUtils();
+        expectedConnections = GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getTotalSum();
     }
-//
+
+    @After
+    public void after() throws IOException {
+        assertEquals(expectedConnections, GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getTotalSum());
+        super.after();
+    }
+
+    //
     //    @Override
 //    public Map<String, ?> getOtherStorageConfigurationOptions() {
 //        return new ObjectMap(AbstractHadoopVariantStoragePipeline.SKIP_CREATE_PHOENIX_INDEXES, true);
