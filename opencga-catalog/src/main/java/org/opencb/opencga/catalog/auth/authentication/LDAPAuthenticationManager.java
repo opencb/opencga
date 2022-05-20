@@ -20,8 +20,10 @@ import com.sun.jndi.ldap.LdapCtxFactory;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -56,6 +58,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     private final String uidFormat;
     private final int readTimeout;
     private final int connectTimeout;
+    private final Hashtable<String, Object> env;
 
     private final long expiration;
 
@@ -65,7 +68,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
     public LDAPAuthenticationManager(AuthenticationOrigin authenticationOrigin, String secretKeyString, long expiration) {
         super();
-
+        this.logger = LoggerFactory.getLogger(LDAPAuthenticationManager.class);
         this.host = authenticationOrigin.getHost();
 
         if (this.host.startsWith("ldaps://")) {  // use LDAPS if specified explicitly
@@ -76,29 +79,33 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
         this.originId = authenticationOrigin.getId();
 
-        Map<String, Object> authOptions = authenticationOrigin.getOptions();
-        this.authUserId = String.valueOf(authOptions.getOrDefault(LDAP_AUTHENTICATION_USER, ""));
-        this.authPassword = String.valueOf(authOptions.getOrDefault(LDAP_AUTHENTICATION_PASSWORD, ""));
-        this.groupsSearch = String.valueOf(authOptions.getOrDefault(LDAP_GROUPS_SEARCH, ""));
-        this.usersSearch = String.valueOf(authOptions.getOrDefault(LDAP_USERS_SEARCH, ""));
-        this.fullNameKey = String.valueOf(authOptions.getOrDefault(LDAP_FULLNAME_KEY, "displayname"));
-        this.memberKey = String.valueOf(authOptions.getOrDefault(LDAP_MEMBER_KEY, "member"));
-        this.dnKey = String.valueOf(authOptions.getOrDefault(LDAP_DN_KEY, "dn"));
-        this.dnFormat = String.valueOf(authOptions.getOrDefault(LDAP_DN_FORMAT, "%s"));
-        this.uidKey = String.valueOf(authOptions.getOrDefault(LDAP_UID_KEY, "uid"));
-        this.uidFormat = String.valueOf(authOptions.getOrDefault(LDAP_UID_FORMAT, "%s"));  // no formatting by default
-        this.readTimeout = Integer.parseInt(String.valueOf(authOptions.getOrDefault(READ_TIMEOUT, DEFAULT_READ_TIMEOUT)));
-        this.connectTimeout = Integer.parseInt(String.valueOf(authOptions.getOrDefault(CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)));
-        this.sslInvalidCertificatesAllowed = Boolean.parseBoolean(
-                String.valueOf(authOptions.getOrDefault(LDAP_SSL_INVALID_CERTIFICATES_ALLOWED, false))
-        );
+        ObjectMap authOptions = new ObjectMap(authenticationOrigin.getOptions());
+        this.authUserId = takeString(authOptions, LDAP_AUTHENTICATION_USER, "");
+        this.authPassword = takeString(authOptions, LDAP_AUTHENTICATION_PASSWORD, "");
+        this.groupsSearch = takeString(authOptions, LDAP_GROUPS_SEARCH, "");
+        this.usersSearch = takeString(authOptions, LDAP_USERS_SEARCH, "");
+        this.fullNameKey = takeString(authOptions, LDAP_FULLNAME_KEY, "displayname");
+        this.memberKey = takeString(authOptions, LDAP_MEMBER_KEY, "member");
+        this.dnKey = takeString(authOptions, LDAP_DN_KEY, "dn");
+        this.dnFormat = takeString(authOptions, LDAP_DN_FORMAT, "%s");
+        this.uidKey = takeString(authOptions, LDAP_UID_KEY, "uid");
+        this.uidFormat = takeString(authOptions, LDAP_UID_FORMAT, "%s");  // no formatting by default
+        this.readTimeout = Integer.parseInt(takeString(authOptions, READ_TIMEOUT, String.valueOf(DEFAULT_READ_TIMEOUT)));
+        this.connectTimeout = Integer.parseInt(takeString(authOptions, CONNECTION_TIMEOUT, String.valueOf(DEFAULT_CONNECTION_TIMEOUT)));
+        this.sslInvalidCertificatesAllowed = Boolean.parseBoolean(takeString(authOptions, LDAP_SSL_INVALID_CERTIFICATES_ALLOWED, "false"));
+
+        // Every other key that is not recognized goes to the default ENV
+        this.env = new Hashtable<>();
+        for (String key : authOptions.keySet()) {
+            // Ensure all values are strings
+            env.put(key, authOptions.getString(key));
+        }
+
+        logger.info("Init LDAP AuthenticationManager. Host: {}, env:{}", host, envToStringRedacted(getDefaultEnv()));
 
         this.expiration = expiration;
-
         Key secretKey = this.converStringToKeyObject(secretKeyString, SignatureAlgorithm.HS256.getJcaName());
         this.jwtManager = new JwtManager(SignatureAlgorithm.HS256.getValue(), secretKey);
-
-        this.logger = LoggerFactory.getLogger(LDAPAuthenticationManager.class);
     }
 
     @Override
@@ -227,21 +234,28 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
     /* Private methods */
     private DirContext getDirContext() throws NamingException {
-        Hashtable<String, Object> env = getDefaultEnv();
-        return getDirContext(env);
+        return getDirContext(getDefaultEnv());
     }
 
     private DirContext getDirContext(Hashtable<String, Object> env) throws NamingException {
-        StopWatch stopWatch = StopWatch.createStarted();
-        final int maxAttempts = 3;
+        return getDirContext(env, 3);
+    }
+
+    private DirContext getDirContext(Hashtable<String, Object> env, int maxAttempts) throws NamingException {
         int count = 0;
         DirContext dctx = null;
         do {
             try {
+                StopWatch stopWatch = StopWatch.createStarted();
                 dctx = LdapCtxFactory.getLdapCtxInstance(this.host, env);
+                long time = stopWatch.getTime(TimeUnit.MILLISECONDS);
+                if (time > 1000) {
+                    logger.warn("Getting the LDAP DirContext took {}", TimeUtils.durationToString(time));
+                }
             } catch (NamingException e) {
                 count++;
-                logger.info("Error opening DirContext connection. Attempt " + count + "/" + maxAttempts, e);
+                logger.warn("Error opening DirContext connection. Attempt " + count + "/" + maxAttempts
+                        + ((count == maxAttempts) ? ". Do not retry" : ". Ignore exception and retry"), e);
                 if (count == maxAttempts) {
                     // After 'maxAttempts' attempts, we will raise an error.
                     throw e;
@@ -257,11 +271,6 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
                 }
             }
         } while (dctx == null);
-
-        long time = stopWatch.getTime(TimeUnit.MILLISECONDS);
-        if (time > 1000) {
-            logger.warn("Getting the DirContext took {} milliseconds", time);
-        }
 
         return dctx;
     }
@@ -395,7 +404,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     private Hashtable<String, Object> getEnv(String user, String password) {
-        Hashtable<String, Object> env = new Hashtable<>();
+        Hashtable<String, Object> env = new Hashtable<>(this.env);
 //        env.put(DirContext.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
         env.put("com.sun.jndi.ldap.connect.timeout", String.valueOf(connectTimeout));
         env.put("com.sun.jndi.ldap.read.timeout", String.valueOf(readTimeout));
@@ -416,4 +425,28 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         return env;
     }
 
+    protected static String envToStringRedacted(Hashtable<String, Object> env) {
+        // Replace credentials only if exists
+        Object remove = env.replace(DirContext.SECURITY_CREDENTIALS, "*********");
+
+        String string = env.toString();
+
+        // Restore credentials, if any
+        env.replace(DirContext.SECURITY_CREDENTIALS, remove);
+
+        return string;
+    }
+
+    /**
+     * Get String from objectMap and remove.
+     * @param objectMap         ObjectMap
+     * @param key               key
+     * @param defaultValue      default value
+     * @return  taken value, or the default value.
+     */
+    private String takeString(ObjectMap objectMap, String key, String defaultValue) {
+        String value = objectMap.getString(key, defaultValue);
+        objectMap.remove(key);
+        return value;
+    }
 }
