@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.auth.authentication;
 import com.sun.jndi.ldap.LdapCtxFactory;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
@@ -34,7 +35,7 @@ import javax.naming.NamingException;
 import javax.naming.directory.*;
 import java.security.Key;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static org.opencb.opencga.core.config.AuthenticationOrigin.*;
 
@@ -44,6 +45,7 @@ import static org.opencb.opencga.core.config.AuthenticationOrigin.*;
 public class LDAPAuthenticationManager extends AuthenticationManager {
 
     private final String originId;
+    private final ExecutorService executorService;
     private String host;
 
     private final String authUserId;
@@ -101,6 +103,10 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             env.put(key, authOptions.getString(key));
         }
 
+        executorService = Executors.newCachedThreadPool(new BasicThreadFactory.Builder()
+                .namingPattern("ldap-authentication-request-pool-%s")
+                .build());
+
         logger.info("Init LDAP AuthenticationManager. Host: {}, env:{}", host, envToStringRedacted(getDefaultEnv()));
 
         this.expiration = expiration;
@@ -112,21 +118,20 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     public AuthenticationResponse authenticate(String userId, String password) throws CatalogAuthenticationException {
         Map<String, Object> claims = new HashMap<>();
 
+        List<Attributes> userInfoFromLDAP = getUserInfoFromLDAP(Arrays.asList(userId), usersSearch);
+        if (userInfoFromLDAP.isEmpty()) {
+            throw new CatalogAuthenticationException("LDAP: The user id " + userId + " could not be found.");
+        }
+
+        String rdn = getDN(userInfoFromLDAP.get(0));
+        claims.put(OPENCGA_DISTINGUISHED_NAME, rdn);
+
+        // Attempt to authenticate
+        Hashtable<String, Object> env = getEnv(rdn, password);
         try {
-            List<Attributes> userInfoFromLDAP = getUserInfoFromLDAP(Arrays.asList(userId), usersSearch);
-            if (userInfoFromLDAP.isEmpty()) {
-                throw new CatalogAuthenticationException("LDAP: The user id " + userId + " could not be found.");
-            }
-
-            String rdn = getDN(userInfoFromLDAP.get(0));
-            claims.put(OPENCGA_DISTINGUISHED_NAME, rdn);
-
-            // Attempt to authenticate
-            Hashtable<String, Object> env = getEnv(rdn, password);
             getDirContext(env).close();
         } catch (NamingException e) {
-            logger.error("{}", e.getMessage(), e);
-            throw new CatalogAuthenticationException("LDAP: " + e.getMessage(), e);
+            throw wrapException(e);
         }
 
         return new AuthenticationResponse(jwtManager.createJWTToken(userId, claims, expiration));
@@ -144,14 +149,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
     @Override
     public List<User> getUsersFromRemoteGroup(String group) throws CatalogException {
-        List<String> usersFromLDAP;
-        try {
-            usersFromLDAP = getUsersFromLDAPGroup(group, groupsSearch);
-        } catch (NamingException e) {
-            logger.error("Could not retrieve users of the group {}\n{}", group, e.getMessage(), e);
-            throw new CatalogException("Could not retrieve users of the group " + group + "\n" + e.getMessage(), e);
-        }
-
+        List<String> usersFromLDAP = getUsersFromLDAPGroup(group, groupsSearch);
         return getRemoteUserInformation(usersFromLDAP);
     }
 
@@ -159,13 +157,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     public List<User> getRemoteUserInformation(List<String> userStringList) throws CatalogException {
         List<User> userList = new ArrayList<>(userStringList.size());
 
-        List<Attributes> userAttrList;
-        try {
-            userAttrList = getUserInfoFromLDAP(userStringList, usersSearch);
-        } catch (NamingException e) {
-            logger.error("Could not retrieve user information {}\n{}", e.getMessage(), e);
-            throw new CatalogException("Could not retrieve user information\n" + e.getMessage(), e);
-        }
+        List<Attributes> userAttrList = getUserInfoFromLDAP(userStringList, usersSearch);
 
         if (userAttrList.isEmpty()) {
             logger.warn("No users were found. Nothing to do.");
@@ -178,15 +170,10 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
         String uid;
         String rdn;
         for (Attributes attrs : userAttrList) {
-            try {
-                displayName = getFullName(attrs, fullNameKey);
-                mail = getMail(attrs);
-                uid = getUID(attrs);
-                rdn = getDN(attrs);
-            } catch (NamingException e) {
-                logger.error("Could not retrieve user information\n{}", e.getMessage(), e);
-                throw new CatalogException("Could not retrieve user information\n" + e.getMessage(), e);
-            }
+            displayName = getFullName(attrs);
+            mail = getMail(attrs);
+            uid = getUID(attrs);
+            rdn = getDN(attrs);
 
             Map<String, Object> attributes = new HashMap<>();
             attributes.put("LDAP_RDN", rdn);
@@ -204,12 +191,8 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     public List<String> getRemoteGroups(String token) throws CatalogException {
         // Get LDAP_RDN of the user from the token we generate
         String userRdn = (String) jwtManager.getClaim(token, OPENCGA_DISTINGUISHED_NAME);
-        try {
-            return getGroupsFromLdapUser(userRdn, usersSearch);
-        } catch (NamingException e) {
-            String user = jwtManager.getUser(token);
-            throw new CatalogException("Could not retrieve groups of user " + user + "\n" + e.getMessage(), e);
-        }
+        String opencgaUser = jwtManager.getUser(token);
+        return getGroupsFromLdapUser(opencgaUser, userRdn, usersSearch);
     }
 
     @Override
@@ -233,32 +216,36 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
     }
 
     /* Private methods */
-    private DirContext getDirContext() throws NamingException {
+    private DirContext getDirContext() throws CatalogAuthenticationException {
         return getDirContext(getDefaultEnv());
     }
 
-    private DirContext getDirContext(Hashtable<String, Object> env) throws NamingException {
+    private DirContext getDirContext(Hashtable<String, Object> env) throws CatalogAuthenticationException {
         return getDirContext(env, 3);
     }
 
-    private DirContext getDirContext(Hashtable<String, Object> env, int maxAttempts) throws NamingException {
+    private DirContext getDirContext(Hashtable<String, Object> env, int maxAttempts) throws CatalogAuthenticationException {
         int count = 0;
         DirContext dctx = null;
         do {
             try {
-                StopWatch stopWatch = StopWatch.createStarted();
-                dctx = LdapCtxFactory.getLdapCtxInstance(this.host, env);
-                long time = stopWatch.getTime(TimeUnit.MILLISECONDS);
-                if (time > 1000) {
-                    logger.warn("Getting the LDAP DirContext took {}", TimeUtils.durationToString(time));
-                }
-            } catch (NamingException e) {
+                Future<DirContext> future = executorService.submit(() -> {
+                    StopWatch stopWatch = StopWatch.createStarted();
+                    DirContext thisDctx = LdapCtxFactory.getLdapCtxInstance(host, env);
+                    long time = stopWatch.getTime(TimeUnit.MILLISECONDS);
+                    if (time > 1000) {
+                        logger.warn("Slow response from LDAP DirContext. Took {}", TimeUtils.durationToString(time));
+                    }
+                    return thisDctx;
+                });
+                dctx = future.get(readTimeout + connectTimeout, TimeUnit.MILLISECONDS);
+            } catch (ExecutionException | TimeoutException e) {
                 count++;
                 logger.warn("Error opening DirContext connection. Attempt " + count + "/" + maxAttempts
                         + ((count == maxAttempts) ? ". Do not retry" : ". Ignore exception and retry"), e);
                 if (count == maxAttempts) {
                     // After 'maxAttempts' attempts, we will raise an error.
-                    throw e;
+                    throw wrapException(e);
                 }
                 try {
                     // Sleep 0.5 seconds
@@ -267,15 +254,19 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
                     logger.warn("Catch interrupted exception!", e1);
                     Thread.currentThread().interrupt();
                     // Stop retrying. Leave now propagating original exception
-                    throw e;
+                    throw wrapException(e);
                 }
+            } catch (InterruptedException e) {
+                // Interrupt and propagate
+                Thread.currentThread().interrupt();
+                throw wrapException(e);
             }
         } while (dctx == null);
 
         return dctx;
     }
 
-    private List<String> getUsersFromLDAPGroup(String groupName, String groupBase) throws NamingException, CatalogException {
+    private List<String> getUsersFromLDAPGroup(String groupName, String groupBase) throws CatalogException {
         Set<String> users = new HashSet<>();
         DirContext dirContext = getDirContext();
 
@@ -312,18 +303,20 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
 
                 }
             }
-        } finally {
             dirContext.close();
+        } catch (NamingException | RuntimeException e) {
+            closeDirContextAndSuppress(dirContext, e);
+            throw wrapException(e, "Could not retrieve users of the group" + groupName);
         }
 
         return new ArrayList<>(users);
     }
 
-    private List<Attributes> getUserInfoFromLDAP(List<String> userList, String userBase) throws NamingException {
+    private List<Attributes> getUserInfoFromLDAP(List<String> userList, String userBase) throws CatalogAuthenticationException {
         return getUserInfoFromLDAP(userList, userBase, this.uidKey);
     }
 
-    private List<Attributes> getUserInfoFromLDAP(List<String> userList, String userBase, String key) throws NamingException {
+    private List<Attributes> getUserInfoFromLDAP(List<String> userList, String userBase, String key) throws CatalogAuthenticationException {
         List<Attributes> resultList = new ArrayList<>();
         DirContext dirContext = getDirContext();
 
@@ -343,42 +336,66 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             while (search.hasMore()) {
                 resultList.add(search.next().getAttributes());
             }
-        } finally {
             dirContext.close();
+        } catch (NamingException | RuntimeException e) {
+            closeDirContextAndSuppress(dirContext, e);
+            throw wrapException(e, "Could not retrieve user information");
         }
 
         return resultList;
     }
 
-    private String getMail(Attributes attributes) throws NamingException {
-        return attributes.get("mail") != null ? (String) attributes.get("mail").get(0) : "";
+    private String getMail(Attributes attributes) throws CatalogAuthenticationException {
+        return getAttribute(attributes, "mail", "");
     }
 
-    private String getUID(Attributes attributes) throws NamingException {
-        if (attributes.get(uidKey) != null) {
-            String fullUid = (String) attributes.get(uidKey).get(0);
+    private String getUID(Attributes attributes) throws CatalogAuthenticationException {
+        String fullUid = getAttribute(attributes, uidKey);
+        if (fullUid != null) {
             return String.format(uidFormat, fullUid);
         } else {
-            throw new NamingException("UID under '" + uidKey + "' key not found. Please, configure the proper '" + LDAP_UID_KEY
-                    + "' and possibly an '" + LDAP_UID_FORMAT + "' format for your LDAP installation");
+            throw new CatalogAuthenticationException("UID under '" + uidKey + "' key not found. Please, configure the proper '"
+                    + LDAP_UID_KEY + "' and possibly an '" + LDAP_UID_FORMAT + "' format for your LDAP installation");
         }
     }
 
-    private String getDN(Attributes attributes) throws NamingException {
-        if (attributes.get(dnKey) != null) {
-            String fullDn = (String) attributes.get(dnKey).get(0);
+    private String getDN(Attributes attributes) throws CatalogAuthenticationException {
+        String fullDn = getAttribute(attributes, dnKey);
+        if (fullDn != null) {
             return String.format(dnFormat, fullDn);
         } else {
-            throw new NamingException("DN id under '" + dnKey + "' key not found. Please, configure the proper '" + LDAP_DN_KEY
-                    + "' and possibly an '" + LDAP_DN_FORMAT + "' format for your LDAP installation");
+            throw new CatalogAuthenticationException("DN id under '" + dnKey + "' key not found. Please, configure the proper '"
+                    + LDAP_DN_KEY + "' and possibly an '" + LDAP_DN_FORMAT + "' format for your LDAP installation");
         }
     }
 
-    private String getFullName(Attributes attributes, String fullNameKey) throws NamingException {
-        return (String) attributes.get(fullNameKey).get(0);
+    private String getFullName(Attributes attributes) throws CatalogAuthenticationException {
+        return getAttribute(attributes, fullNameKey);
     }
 
-    private List<String> getGroupsFromLdapUser(String user, String base) throws NamingException {
+    private String getAttribute(Attributes attributes, String key) throws CatalogAuthenticationException {
+        return getAttribute(attributes, key, null);
+    }
+
+    private String getAttribute(Attributes attributes, String key, String defaultValue) throws CatalogAuthenticationException {
+        try {
+            if (attributes.get(key) == null) {
+                return defaultValue;
+            } else {
+                String value = (String) attributes.get(key).get(0);
+                if (value == null) {
+                    return defaultValue;
+                } else {
+                    return value;
+                }
+            }
+        } catch (NamingException e) {
+            // This is actually impossible
+            throw wrapException(e);
+        }
+    }
+
+    private List<String> getGroupsFromLdapUser(String opencgaUser, String user, String base) throws CatalogAuthenticationException {
         List<String> resultList = new ArrayList<>();
         DirContext dirContext = getDirContext();
 
@@ -393,8 +410,10 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             while (search.hasMore()) {
                 resultList.add((String) search.next().getAttributes().get("cn").get(0));
             }
-        } finally {
             dirContext.close();
+        } catch (NamingException | RuntimeException e) {
+            closeDirContextAndSuppress(dirContext, e);
+            throw wrapException(e, "Could not retrieve groups of user " + opencgaUser);
         }
         return resultList;
     }
@@ -423,6 +442,36 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             }
         }
         return env;
+    }
+
+    private void closeDirContextAndSuppress(DirContext dirContext, Exception e) {
+        try {
+            dirContext.close();
+        } catch (Exception ex) {
+            e.addSuppressed(ex);
+        }
+    }
+
+    private CatalogAuthenticationException wrapException(Exception e) {
+        return wrapException(e, null);
+    }
+
+    private CatalogAuthenticationException wrapException(Exception e, String msg) {
+        if (e instanceof CatalogAuthenticationException) {
+            return ((CatalogAuthenticationException) e);
+        }
+        if (msg == null) {
+            if (e instanceof ExecutionException) {
+                if (e.getCause() == null) {
+                    msg = e.getMessage();
+                } else {
+                    msg = e.getCause().getMessage();
+                }
+            } else {
+                msg = e.getMessage();
+            }
+        }
+        return new CatalogAuthenticationException("LDAP: " + msg, e);
     }
 
     protected static String envToStringRedacted(Hashtable<String, Object> env) {
