@@ -41,17 +41,17 @@ public abstract class MigrationTool {
     protected final Logger logger;
     private final Logger privateLogger;
     private GenericDocumentComplexConverter<Object> converter;
-    private final int BATCH_SIZE;
+    private int batchSize;
 
     public MigrationTool() {
-        this(1000);
+        this(500);
     }
 
     public MigrationTool(int batchSize) {
         this.logger = LoggerFactory.getLogger(this.getClass());
         // Internal logger
         this.privateLogger = LoggerFactory.getLogger(MigrationTool.class);
-        this.BATCH_SIZE = batchSize;
+        this.batchSize = batchSize;
         this.converter = new GenericDocumentComplexConverter<>(Object.class, JacksonUtils.getDefaultObjectMapper());
     }
 
@@ -181,15 +181,20 @@ public abstract class MigrationTool {
                                            Bson query, Bson projection,
                                            MigrateCollectionFunc migrateFunc) {
         int count = 0;
-        List<WriteModel<Document>> list = new ArrayList<>(BATCH_SIZE);
+        List<WriteModel<Document>> list = new ArrayList<>(batchSize);
 
-        ProgressLogger progressLogger = new ProgressLogger("Execute bulk update").setBatchSize(BATCH_SIZE);
-        try (MongoCursor<Document> it = inputCollection.find(query).noCursorTimeout(true).projection(projection).cursor()) {
+        ProgressLogger progressLogger = new ProgressLogger("Execute bulk update").setBatchSize(batchSize);
+        try (MongoCursor<Document> it = inputCollection
+                .find(query)
+                .batchSize(batchSize)
+                .noCursorTimeout(true)
+                .projection(projection)
+                .cursor()) {
             while (it.hasNext()) {
                 Document document = it.next();
                 migrateFunc.accept(document, list);
 
-                if (list.size() >= BATCH_SIZE) {
+                if (list.size() >= batchSize) {
                     count += list.size();
                     progressLogger.increment(list.size());
                     outputCollection.bulkWrite(list);
@@ -241,7 +246,12 @@ public abstract class MigrationTool {
     protected final void queryMongo(String inputCollectionStr, Bson query, Bson projection, QueryCollectionFunc queryCollectionFunc) {
         MongoCollection<Document> inputCollection = getMongoCollection(inputCollectionStr);
 
-        try (MongoCursor<Document> it = inputCollection.find(query).projection(projection).cursor()) {
+        try (MongoCursor<Document> it = inputCollection
+                .find(query)
+                .batchSize(batchSize)
+                .projection(projection)
+                .noCursorTimeout(true)
+                .cursor()) {
             while (it.hasNext()) {
                 Document document = it.next();
                 queryCollectionFunc.accept(document);
@@ -265,4 +275,8 @@ public abstract class MigrationTool {
         return documentList;
     }
 
+    public MigrationTool setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
+        return this;
+    }
 }

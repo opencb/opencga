@@ -138,7 +138,7 @@ public class GrpcCommandExecutor {// extends CommandExecutor {
 
         // We create the gRPC channel to the specified server host and port
         ManagedChannel channel = ManagedChannelBuilder.forAddress(grpcServerHost, grpcServerPort)
-                .usePlaintext(true)
+                .usePlaintext()
                 .build();
 
 

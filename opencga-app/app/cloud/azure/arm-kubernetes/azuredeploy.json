@@ -205,6 +205,26 @@
                 "description": "Used to login to HDInsight cluster nodes via SSH key."
             }
         },
+        "HDInsightConfigurations": {
+            "type": "object",
+            "defaultValue": {},
+            "metadata": {
+                "description": "Extra cluster configurations to be merged with 'base' configurations"
+            }
+        },
+        "HDInsightSqlServerName": {
+            "type": "string",
+            "defaultValue": "hadoopmysql",
+            "metadata": {
+                "description": "SQL Server name"
+            }
+        },
+        "HDInsightSqlPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "SQL Server administrator login password"
+            }
+        },
         "jobsAgentPoolOrVirtualNode": {
             "type": "string",
             "defaultValue": "AgentPool",
@@ -623,6 +643,15 @@
                     },
                     "clusterWorkerNodeSize": {
                         "value": "[variables('selectedSize').hdInsight.worker.nodeSize]"
+                    },
+                    "clusterConfigurations": {
+                        "value": "[parameters('HDInsightConfigurations')]"
+                    },
+                    "sqlServerName":{
+                        "value": "[parameters('HDInsightSqlServerName')]"
+                    },
+                    "sqlAdministratorLoginPassword": {
+                        "value": "[parameters('HDInsightSqlPassword')]"
                     },
                     "yarnSiteMemoryInMb": {
                         "value": "[variables('selectedSize').hdInsight.yarnSiteMemoryInMb]"

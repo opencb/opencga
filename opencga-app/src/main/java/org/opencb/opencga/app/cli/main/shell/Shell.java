@@ -15,17 +15,18 @@ import org.opencb.opencga.app.cli.main.OpencgaMain;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.processors.CommandProcessor;
 import org.opencb.opencga.app.cli.main.utils.CommandLineUtils;
+import org.opencb.opencga.app.cli.session.Session;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.AuthenticationResponse;
 import org.opencb.opencga.core.response.RestResponse;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.logging.Level;
 
 import static org.opencb.commons.utils.PrintUtils.*;
-import static org.opencb.commons.utils.PrintUtils.println;
 
 public class Shell extends OpencgaCommandExecutor {
 
@@ -33,6 +34,9 @@ public class Shell extends OpencgaCommandExecutor {
     private LineReader lineReader = null;
     private Terminal terminal = null;
     private String host = null;
+
+    // Create a command processor to process all the shell commands
+    private final CommandProcessor processor = new CommandProcessor();
 
     public Shell(GeneralCliOptions.CommonCommandOptions options) throws CatalogAuthenticationException {
         super(options);
@@ -43,6 +47,7 @@ public class Shell extends OpencgaCommandExecutor {
 
     private LineReader getTerminal() {
         LineReader reader = null;
+        logger = LoggerFactory.getLogger(Shell.class);
         try {
             if (terminal == null) {
                 terminal = TerminalBuilder.builder()
@@ -84,8 +89,6 @@ public class Shell extends OpencgaCommandExecutor {
                 lineReader = getTerminal();
             }
             String PROMPT;
-            // Create a command processor to process all the shell commands
-            CommandProcessor processor = new CommandProcessor();
             while (true) {
                 // Read and sanitize the input
                 String line;
@@ -110,6 +113,8 @@ public class Shell extends OpencgaCommandExecutor {
                 // Send the line read to the processor for process
                 if (!line.equals("")) {
                     String[] args = line.split(" ");
+                    logger.debug("Command: " + line);
+
                     args = parseParams(args);
                     if (!ArrayUtils.isEmpty(args)) {
                         ArrayUtils.addAll(args, "--host", this.host);
@@ -182,6 +187,8 @@ public class Shell extends OpencgaCommandExecutor {
         }
 
         if (args.length == 3 && "use".equals(args[0]) && "study".equals(args[1])) {
+            logger.debug("Validated study " + StringUtils.join(args, " "));
+
             setValidatedCurrentStudy(args[2]);
             return null;
         }
@@ -201,19 +208,24 @@ public class Shell extends OpencgaCommandExecutor {
 
 
     public void setValidatedCurrentStudy(String arg) {
-        if (!StringUtils.isEmpty(getSessionManager().getSession().getToken())) {
+        Session session = getSessionManager().getSession();
+        if (!StringUtils.isEmpty(session.getToken())) {
             logger.debug("Check study " + arg);
-            OpenCGAClient openCGAClient = getOpenCGAClient();
+            OpenCGAClient openCGAClient = new OpenCGAClient(new AuthenticationResponse(session.getToken())
+                    , clientConfiguration);
             if (openCGAClient != null) {
                 try {
                     RestResponse<Study> res = openCGAClient.getStudyClient().info(arg, new ObjectMap());
                     if (res.allResultsSize() > 0) {
+                        session.setCurrentStudy(res.response(0).getResults().get(0).getFqn());
+                        logger.debug("Info study results: " + res.response(0).getResults().get(0).getFqn());
                         logger.debug("Validated study " + arg);
-                        getSessionManager().getSession().setCurrentStudy(res.response(0).getResults().get(0).getFqn());
-                        logger.debug("Validated study " + arg);
-                        getSessionManager().saveSession();
+                        getSessionManager().saveSession(session);
+
+                        logger.debug("Current study is: " +
+                                session.getCurrentStudy());
                         println(getKeyValueAsFormattedString("Current study is: ",
-                                getSessionManager().getSession().getCurrentStudy()));
+                                session.getCurrentStudy()));
                     } else {
                         printWarn("Invalid study");
                     }

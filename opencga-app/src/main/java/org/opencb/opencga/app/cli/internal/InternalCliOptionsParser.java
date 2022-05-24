@@ -101,6 +101,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     private CohortCommandOptions cohortCommandOptions;
     private IndividualCommandOptions individualCommandOptions;
     private JobCommandOptions jobCommandOptions;
+    private DiseasePanelInternalCommandOptions panelInternalCommandOptions;
     private StudyCommandOptions studyCommandOptions;
 
     public InternalCliOptionsParser() {
@@ -254,6 +255,11 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         jCommander.addCommand("jobs", jobCommandOptions);
         JCommander jobSubCommands = jCommander.getCommands().get("jobs");
         jobSubCommands.addCommand("secondary-index", jobCommandOptions.secondaryIndex);
+
+        panelInternalCommandOptions = new DiseasePanelInternalCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("panels", panelInternalCommandOptions);
+        JCommander panelSubCommands = jCommander.getCommands().get("panels");
+        panelSubCommands.addCommand("import", panelInternalCommandOptions.panelImportCommandOptions);
 
         studyCommandOptions = new StudyCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("studies", studyCommandOptions);
@@ -531,6 +537,10 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
     public JobCommandOptions getJobCommandOptions() {
         return jobCommandOptions;
+    }
+
+    public DiseasePanelInternalCommandOptions getPanelInternalCommandOptions() {
+        return panelInternalCommandOptions;
     }
 
     public StudyCommandOptions getStudyCommandOptions() {

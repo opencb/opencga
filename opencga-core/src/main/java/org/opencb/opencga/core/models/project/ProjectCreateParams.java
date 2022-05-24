@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models.project;
 
+import org.opencb.opencga.core.config.storage.CellBaseConfiguration;
+
 import java.util.Collections;
 import java.util.Map;
 
@@ -27,30 +29,29 @@ public class ProjectCreateParams {
     private String creationDate;
     private String modificationDate;
     private ProjectOrganism organism;
+
+    private CellBaseConfiguration cellbase;
     private Map<String, Object> attributes;
 
     public ProjectCreateParams() {
     }
 
+
     public ProjectCreateParams(String id, String name, String description, String creationDate, String modificationDate,
-                               ProjectOrganism organism, Map<String, Object> attributes) {
+                               ProjectOrganism organism, CellBaseConfiguration cellbase, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.organism = organism;
+        this.cellbase = cellbase;
         this.attributes = attributes;
     }
 
     public static ProjectCreateParams of(Project project) {
         return new ProjectCreateParams(project.getId(), project.getName(), project.getCreationDate(), project.getModificationDate(),
-                project.getDescription(), project.getOrganism(), project.getAttributes());
-    }
-
-    public Project toProject() {
-        return new Project(id, name, creationDate, modificationDate, description, organism, Collections.emptyList(), 1,
-                ProjectInternal.init(), attributes);
+                project.getDescription(), project.getOrganism(), project.getCellbase(), project.getAttributes());
     }
 
     @Override
@@ -62,9 +63,15 @@ public class ProjectCreateParams {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", organism=").append(organism);
+        sb.append(", cellbase=").append(cellbase);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
+    }
+
+    public Project toProject() {
+        return new Project(id, name, creationDate, modificationDate, description, organism, cellbase, Collections.emptyList(), 1,
+                ProjectInternal.init(), attributes);
     }
 
     public String getId() {
@@ -127,6 +134,15 @@ public class ProjectCreateParams {
 
     public ProjectCreateParams setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
+    }
+
+    public CellBaseConfiguration getCellbase() {
+        return cellbase;
+    }
+
+    public ProjectCreateParams setCellbase(CellBaseConfiguration cellbase) {
+        this.cellbase = cellbase;
         return this;
     }
 }

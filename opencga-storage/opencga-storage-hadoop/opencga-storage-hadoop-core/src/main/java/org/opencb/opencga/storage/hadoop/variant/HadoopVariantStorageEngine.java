@@ -927,11 +927,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         // First, if the operation finished without errors, remove the phoenix columns.
         if (!error) {
             VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
-            VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor);
-
             StudyMetadata sm = getMetadataManager().getStudyMetadata(study);
 
-            try {
+            try (VariantPhoenixSchemaManager schemaManager = new VariantPhoenixSchemaManager(dbAdaptor)) {
                 schemaManager.dropFiles(sm.getId(), fileIds);
                 schemaManager.dropSamples(sm.getId(), sampleIds);
             } catch (SQLException e) {
@@ -1238,6 +1236,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 //                HBaseAdmin.checkHBaseAvailable(conf);
                 HBaseAdmin.class.getMethod("checkHBaseAvailable", Configuration.class).invoke(null, conf);
             }
+//            new PhoenixHelper(conf).newJdbcConnection().getMetaData().getTables(null, null, null, null);
         } catch (Exception e) {
             logger.error("Connection to database '" + dbName + "' failed", e);
             throw new StorageEngineException("HBase Database connection test failed", e);

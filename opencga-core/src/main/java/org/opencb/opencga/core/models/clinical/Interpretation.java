@@ -59,19 +59,20 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
     }
 
     public Interpretation(String id, String description, String clinicalAnalysisId, ClinicalAnalyst analyst,
-                          InterpretationMethod method, String creationDate, String modificationDate,
+                          InterpretationMethod method, String creationDate, String modificationDate, boolean locked,
                           List<ClinicalVariant> primaryFindings, List<ClinicalVariant> secondaryFindings, List<Panel> panels,
                           List<ClinicalComment> comments, Status status, Map<String, Object> attributes) {
         super(id, "", description, clinicalAnalysisId, analyst, method, primaryFindings, secondaryFindings, comments, null, status,
-                creationDate, modificationDate, 0, attributes);
+                creationDate, modificationDate, locked, 0, attributes);
+
         this.panels = panels;
     }
 
     public Interpretation(org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation) {
         this(interpretation.getId(), interpretation.getDescription(), interpretation.getClinicalAnalysisId(), interpretation.getAnalyst(),
                 interpretation.getMethod(), interpretation.getCreationDate(), interpretation.getModificationDate(),
-                interpretation.getPrimaryFindings(), interpretation.getSecondaryFindings(), Collections.emptyList(),
-                interpretation.getComments(), interpretation.getStatus(), interpretation.getAttributes());
+                interpretation.isLocked(), interpretation.getPrimaryFindings(), interpretation.getSecondaryFindings(),
+                Collections.emptyList(), interpretation.getComments(), interpretation.getStatus(), interpretation.getAttributes());
     }
 
     @Override
@@ -183,4 +184,9 @@ public class Interpretation extends org.opencb.biodata.models.clinical.interpret
         return this;
     }
 
+    @Override
+    public Interpretation setLocked(boolean locked) {
+        super.setLocked(locked);
+        return this;
+    }
 }

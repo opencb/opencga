@@ -43,6 +43,7 @@ import org.opencb.opencga.analysis.individual.IndividualIndexTask;
 import org.opencb.opencga.analysis.individual.IndividualTsvAnnotationLoader;
 import org.opencb.opencga.analysis.individual.qc.IndividualQcAnalysis;
 import org.opencb.opencga.analysis.job.JobIndexTask;
+import org.opencb.opencga.analysis.panel.PanelImportTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.sample.SampleTsvAnnotationLoader;
 import org.opencb.opencga.analysis.sample.qc.SampleQcAnalysis;
@@ -184,6 +185,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
             put(FamilyIndexTask.ID, "families secondary-index");
             put(FamilyTsvAnnotationLoader.ID, "families tsv-load");
+
+            put(PanelImportTask.ID, "panels import");
 
             put(JobIndexTask.ID, "jobs secondary-index");
 
