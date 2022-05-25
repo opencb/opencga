@@ -3,6 +3,7 @@ package org.opencb.opencga.test.config;
 
 import java.util.List;
 
+
 public class Configuration {
 
     private Execution execution;
@@ -20,7 +21,7 @@ public class Configuration {
                 "execution=" + execution +
                 ", envs=" + envs +
                 ", logger=" + logger +
-                ", mutator=" + mutator +
+                //       ", mutator=" + mutator +
                 '}';
     }
 
@@ -59,4 +60,6 @@ public class Configuration {
         this.mutator = mutator;
         return this;
     }
+
+
 }

@@ -18,13 +18,19 @@ package org.opencb.opencga.test.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.commons.collections4.CollectionUtils;
 import org.opencb.commons.utils.PrintUtils;
 import org.opencb.opencga.test.cli.options.CommonCommandOptions;
 import org.opencb.opencga.test.cli.options.DatasetCommandOptions;
+import org.opencb.opencga.test.utils.DatasetTestUtils;
 import org.opencb.opencga.test.utils.OpencgaLogger;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 
 public class OpencgaTestConfiguration {
@@ -42,6 +48,10 @@ public class OpencgaTestConfiguration {
         try {
             objectMapper = new ObjectMapper(new YAMLFactory());
             configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
+            loadMutators(configuration);
+            if (CollectionUtils.isNotEmpty(DatasetCommandOptions.envs)) {
+                disableUnselectedEnvs(configuration);
+            }
         } catch (IOException e) {
             e.printStackTrace();
             PrintUtils.println("Configuration file could not be parsed", PrintUtils.Color.RED);
@@ -56,9 +66,54 @@ public class OpencgaTestConfiguration {
         return configuration;
     }
 
+    private static void disableUnselectedEnvs(Configuration configuration) {
+        List<Environment> envs = new ArrayList<>();
+        for (Environment environment : configuration.getEnvs()) {
+            for (String envId : DatasetCommandOptions.envs) {
+                if (envId.equals(environment.getId())) {
+                    envs.add(environment);
+                }
+            }
+        }
+        if (CollectionUtils.isNotEmpty(envs)) {
+            configuration.setEnvs(envs);
+        } else {
+            PrintUtils.printError("Envs are not present in config file.");
+
+        }
+    }
+
+    private static void loadMutators(Configuration configuration) {
+        for (Environment env : configuration.getEnvs()) {
+            File envDir = Paths.get(DatasetTestUtils.getInputEnvironmentDirPath(env)).toFile();
+            if (envDir.exists()) {
+                File mutationsFile = Paths.get(DatasetTestUtils.getInputEnvironmentDirPath(env) + "mutations.yml").toFile();
+                if (mutationsFile.exists()) {
+                    ObjectMapper objectMapper;
+                    Mutator mutator;
+                    try {
+                        objectMapper = new ObjectMapper(new YAMLFactory());
+                        mutator = objectMapper.readValue(mutationsFile, Mutator.class);
+                        configuration.setMutator(mutator);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        PrintUtils.println("Mutations file could not be parsed", PrintUtils.Color.RED);
+                        OpencgaLogger.printLog("Mutations file could not be parsed: " + e.getMessage(), Level.SEVERE);
+                        System.exit(-1);
+                    }
+                }
+            } else {
+                PrintUtils.printError("Directory " + envDir.getAbsolutePath() + " not exists.");
+                System.exit(0);
+            }
+        }
+    }
+
     private static void overrideConfigurationParams(Configuration configuration) {
-        if (!DatasetCommandOptions.commonCommandOptions.logLevel.equals(CommonCommandOptions.logLevel_DEFAULT_VALUE)) {
+        if (DatasetCommandOptions.commonCommandOptions.logLevel != null && !DatasetCommandOptions.commonCommandOptions.logLevel.equals(CommonCommandOptions.logLevel_DEFAULT_VALUE)) {
             configuration.getLogger().setLogLevel(DatasetCommandOptions.commonCommandOptions.logLevel);
+        } else {
+            configuration.getLogger().setLogLevel(CommonCommandOptions.logLevel_DEFAULT_VALUE);
         }
     }
 

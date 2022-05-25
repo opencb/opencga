@@ -7,6 +7,7 @@ public class Environment {
 
     private String id;
     private String description;
+    private Data data;
     private Dataset dataset;
     private Reference reference;
     private Aligner aligner;
@@ -79,6 +80,20 @@ public class Environment {
 
     public Environment setCallers(List<Caller> callers) {
         this.callers = callers;
+        return this;
+    }
+
+    public Data getData() {
+        return data;
+    }
+
+    public Environment setData(Data data) {
+        this.data = data;
+        return this;
+    }
+
+    public Environment setDataset(Dataset dataset) {
+        this.dataset = dataset;
         return this;
     }
 }
