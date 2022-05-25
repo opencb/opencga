@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.opencb.opencga.core.tools.annotations.Api;
-import org.opencb.opencga.core.tools.annotations.ApiOperation;
-import org.opencb.opencga.core.tools.annotations.ApiParam;
+import org.opencb.commons.annotations.Api;
+import org.opencb.commons.annotations.ApiOperation;
+import org.opencb.commons.annotations.ApiParam;
 import org.opencb.opencga.core.exceptions.VersionException;
 
 import javax.servlet.http.HttpServletRequest;

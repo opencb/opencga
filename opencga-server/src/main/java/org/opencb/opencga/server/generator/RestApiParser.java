@@ -6,9 +6,10 @@ import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import com.fasterxml.jackson.databind.ser.BeanSerializer;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.opencb.commons.annotations.DataField;
+import org.opencb.commons.annotations.*;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.core.tools.annotations.*;
+import org.opencb.opencga.core.tools.annotations.CliParam;
+import org.opencb.opencga.core.tools.annotations.RestParamType;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.generator.models.RestCategory;
 import org.opencb.opencga.server.generator.models.RestEndpoint;
@@ -233,7 +234,7 @@ public class RestApiParser {
         if (param.isComplex()
                 && !param.isList()
                 && !param.getType().equals("enum")
-                /*&& !param.getTypeClass().contains("$")*/) {
+            /*&& !param.getTypeClass().contains("$")*/) {
             // FIXME: Why discarding params with "$" ?  Why discarding inner classes?
             String classAndPackageName = StringUtils.removeEnd(param.getTypeClass(), ";");
             Class<?> cls;

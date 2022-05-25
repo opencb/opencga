@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.server.rest.admin;
 
-import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.annotations.*;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;

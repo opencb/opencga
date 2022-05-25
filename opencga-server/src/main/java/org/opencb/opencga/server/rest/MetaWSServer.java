@@ -18,13 +18,13 @@ package org.opencb.opencga.server.rest;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.commons.annotations.Api;
+import org.opencb.commons.annotations.ApiOperation;
+import org.opencb.commons.annotations.ApiParam;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.tools.annotations.Api;
-import org.opencb.opencga.core.tools.annotations.ApiOperation;
-import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.generator.RestApiParser;
 import org.opencb.opencga.server.generator.models.RestApi;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;

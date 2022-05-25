@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.annotations.*;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,7 +30,6 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.user.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -206,7 +206,7 @@ public class UserWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
- 
+
     @GET
     @Path("/{user}/projects")
     @ApiOperation(value = "Retrieve the projects of the user", notes = "Retrieve the list of projects and studies belonging to the user"

@@ -18,6 +18,9 @@ package org.opencb.opencga.server.rest.operations;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.commons.annotations.Api;
+import org.opencb.commons.annotations.ApiOperation;
+import org.opencb.commons.annotations.ApiParam;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.variant.julie.JulieTool;
@@ -31,9 +34,6 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.tools.ToolParams;
-import org.opencb.opencga.core.tools.annotations.Api;
-import org.opencb.opencga.core.tools.annotations.ApiOperation;
-import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
 import javax.servlet.http.HttpServletRequest;

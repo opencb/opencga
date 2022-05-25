@@ -16,9 +16,6 @@
 
 package org.opencb.opencga.server.rest.ga4gh;
 
-import org.opencb.opencga.core.tools.annotations.Api;
-import org.opencb.opencga.core.tools.annotations.ApiOperation;
-import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.apache.solr.common.StringUtils;
 import org.ga4gh.methods.SearchReadsRequest;
 import org.ga4gh.methods.SearchReadsResponse;
@@ -28,11 +25,16 @@ import org.ga4gh.models.ReadAlignment;
 import org.ga4gh.models.Variant;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.BamManager;
+import org.opencb.commons.annotations.Api;
+import org.opencb.commons.annotations.ApiOperation;
+import org.opencb.commons.annotations.ApiParam;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
@@ -42,8 +44,6 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileRelatedFile;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 
 import javax.servlet.http.HttpServletRequest;
@@ -83,10 +83,10 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
                     + "the existing beacons, an arbitrary prefix is accepted as well (e.g. chr1 is equivalent to chrom1 and 1).",
                     required = true) @QueryParam("chrom") String chrom,
             @ApiParam(value = "Coordinate within a chromosome. Position is a number and is 0-based.", required = true) @QueryParam("pos")
-                    int pos,
+            int pos,
             @ApiParam(value = "Any string of nucleotides A,C,T,G or D, I for deletion and insertion, respectively. Note: For compatibility"
                     + " with conventions set by some of the existing beacons, DEL and INS identifiers are also accepted.", required = true)
-                @QueryParam("allele") String allele,
+            @QueryParam("allele") String allele,
             @ApiParam(value = "Genome ID. If not specified, all the genomes supported by the given beacons are queried. Note: For "
                     + "compatibility with conventions set by some of the existing beacons, both GRC or HG notation are accepted, case "
                     + "insensitive.") @QueryParam("ref") String ref,
@@ -271,11 +271,11 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
                 return createErrorResponse(method, "Required reference id");
             }
 
-            if (request.getStart() == null || request.getStart() <= 0)  {
+            if (request.getStart() == null || request.getStart() <= 0) {
                 return createErrorResponse(method, "Required start position");
             }
 
-            if (request.getEnd() == null || request.getEnd() <= 0)  {
+            if (request.getEnd() == null || request.getEnd() <= 0) {
                 return createErrorResponse(method, "Required end position");
             }
 

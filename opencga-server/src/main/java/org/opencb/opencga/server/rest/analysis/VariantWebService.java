@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
-import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -28,6 +27,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
+import org.opencb.commons.annotations.*;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.AnalysisUtils;
 import org.opencb.opencga.analysis.family.qc.FamilyQcAnalysis;
@@ -1073,7 +1073,7 @@ public class VariantWebService extends AnalysisWebService {
             List<Sample> childGermlineSamples = IndividualQcUtils.getValidGermlineSamplesByIndividualId(study, individual.getId(),
                     catalogManager, token);
             if (CollectionUtils.isEmpty(childGermlineSamples)) {
-                throw new ToolException("Germline sample not found for individual '" +  params.getIndividual() + "'");
+                throw new ToolException("Germline sample not found for individual '" + params.getIndividual() + "'");
             }
 
             Sample sample = null;

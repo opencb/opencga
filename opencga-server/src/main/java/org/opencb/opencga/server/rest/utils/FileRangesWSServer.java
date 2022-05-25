@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.server.rest.utils;
 
-import org.opencb.opencga.core.tools.annotations.ApiOperation;
-import org.opencb.opencga.core.tools.annotations.ApiParam;
 import org.apache.commons.lang3.time.StopWatch;
+import org.opencb.commons.annotations.ApiOperation;
+import org.opencb.commons.annotations.ApiParam;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;

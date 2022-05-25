@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import org.apache.commons.lang3.ObjectUtils;
+import org.opencb.commons.annotations.*;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.panel.PanelImportTask;
@@ -28,7 +29,6 @@ import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.*;
-import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -254,7 +254,7 @@ public class PanelWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Returns the acl of the panels. If member is provided, it will only return the acl for the member.", response = Map.class)
     public Response getAcls(
             @ApiParam(value = ParamConstants.PANELS_DESCRIPTION, required = true) @PathParam("panels")
-                    String sampleIdsStr,
+            String sampleIdsStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
             @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false")
