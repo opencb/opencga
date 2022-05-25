@@ -184,6 +184,20 @@ public class OpenCGAClient {
         return login.firstResult();
     }
 
+
+    /**
+     * Logs in the user.
+     *
+     * @param refreshToken userId.
+     * @return AuthenticationResponse object.
+     * @throws ClientException when it is not possible logging in.
+     */
+    public AuthenticationResponse refresh(String refreshToken) throws ClientException {
+        RestResponse<AuthenticationResponse> login = getUserClient().login(new LoginParams(refreshToken), null);
+        updateTokenFromClients(login);
+        return login.firstResult();
+    }
+
     public void updateTokenFromClients(RestResponse<AuthenticationResponse> loginResponse) throws ClientException {
         if (loginResponse.allResultsSize() == 1) {
             setToken(loginResponse.firstResult().getToken());

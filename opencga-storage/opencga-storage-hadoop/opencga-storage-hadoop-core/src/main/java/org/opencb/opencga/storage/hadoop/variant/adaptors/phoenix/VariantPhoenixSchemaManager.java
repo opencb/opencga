@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.PHOENIX_INDEX_LOCK_COLUMN;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixSchema.*;
 
-public class VariantPhoenixSchemaManager {
+public class VariantPhoenixSchemaManager implements AutoCloseable {
 
     private static final String PENDING_PHOENIX_COLUMNS = "pending_phoenix_columns";
     private static final String PHOENIX_COLUMNS_ALTER_COUNTER = "phoenix_columns_alter_counter";
@@ -56,16 +56,16 @@ public class VariantPhoenixSchemaManager {
 
     public VariantPhoenixSchemaManager(VariantHadoopDBAdaptor dbAdaptor) {
         this(dbAdaptor.getConfiguration(), dbAdaptor.getVariantTable(), dbAdaptor.getMetadataManager(),
-                dbAdaptor.getHBaseManager(), dbAdaptor.getJdbcConnection());
+                dbAdaptor.getHBaseManager(), dbAdaptor.openJdbcConnection());
     }
 
     public VariantPhoenixSchemaManager(Configuration conf, String variantsTableName, VariantStorageMetadataManager metadataManager,
                                        HBaseManager hBaseManager)
             throws SQLException, ClassNotFoundException {
-        this(conf, variantsTableName, metadataManager, hBaseManager, new PhoenixHelper(conf).newJdbcConnection());
+        this(conf, variantsTableName, metadataManager, hBaseManager, new PhoenixHelper(conf).openJdbcConnection());
     }
 
-    public VariantPhoenixSchemaManager(Configuration conf, String variantsTableName, VariantStorageMetadataManager metadataManager,
+    private VariantPhoenixSchemaManager(Configuration conf, String variantsTableName, VariantStorageMetadataManager metadataManager,
                                        HBaseManager hBaseManager, Connection con) {
         HBaseVariantTableNameGenerator.checkValidVariantsTableName(variantsTableName);
         this.hBaseManager = hBaseManager;
@@ -582,4 +582,8 @@ public class VariantPhoenixSchemaManager {
         }
     }
 
+    @Override
+    public void close() throws SQLException {
+        con.close();
+    }
 }

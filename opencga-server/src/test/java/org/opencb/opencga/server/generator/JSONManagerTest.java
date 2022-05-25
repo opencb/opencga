@@ -6,6 +6,6 @@ import org.opencb.opencga.server.rest.SampleWSServer;
 public class JSONManagerTest extends TestCase {
 
     public void testGetHelp() {
-        new RestApiParser().parse(SampleWSServer.class);
+        new RestApiParser().parse(SampleWSServer.class, true);
     }
 }

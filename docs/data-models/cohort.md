@@ -20,11 +20,7 @@ Cohort data model hosts information about any cohort.
 ## Data Model
 
 ### Cohort
-<<<<<<< HEAD
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-665/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/Cohort.java).
-=======
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/Cohort.java).
->>>>>>> develop
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/Cohort.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -42,11 +38,7 @@ You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-35
 | **attributes**<br>*Map<String,Object>* <br> | <p>You can use this field to store any other information, keep in mind this is not indexed so you cannot search by attributes.</p> |
 
 ### CohortInternal
-<<<<<<< HEAD
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-665/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/CohortInternal.java).
-=======
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-354/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/CohortInternal.java).
->>>>>>> develop
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/cohort/CohortInternal.java).
 
 | Field | Description |
 | :---  | :--- |
@@ -59,5 +51,5 @@ You can find the Java code [here](https://github.com/opencb/biodata/tree/develop
 
 
 ### InternalStatus
-You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-665/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
+You can find the Java code [here](https://github.com/opencb/opencga/tree/TASK-521/opencga-core/src/main/java/org/opencb/opencga/core/models/common/InternalStatus.java).
 

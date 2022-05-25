@@ -28,6 +28,7 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.jdbc.PhoenixDatabaseMetaData;
 import org.apache.phoenix.jdbc.PhoenixDriver;
+import org.apache.phoenix.monitoring.GlobalClientMetrics;
 import org.apache.phoenix.schema.ConcurrentTableMutationException;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
@@ -37,6 +38,7 @@ import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.schema.types.PInteger;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.apache.phoenix.util.*;
+import org.opencb.opencga.core.common.ExceptionUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -265,20 +267,27 @@ public class PhoenixHelper {
         execute(con, sql);
     }
 
-    public Connection newJdbcConnection() throws SQLException, ClassNotFoundException {
-        return newJdbcConnection(conf);
-    }
-
-    public Connection newJdbcConnection(Configuration conf) throws SQLException, ClassNotFoundException {
+    public Connection openJdbcConnection() throws SQLException, ClassNotFoundException {
         // Ensure PhoenixDriver is registered
         if (PhoenixDriver.INSTANCE == null) {
             throw new SQLException("Error registering PhoenixDriver");
         }
-        logger.info("Opening connection to PhoenixDriver " + PhoenixDriver.INSTANCE);
+//        logger.info("Opening connection to PhoenixDriver");
         Connection connection = QueryUtil.getConnection(conf);
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        logger.info("Opened Phoenix DB connection {} called from {}", connection, Arrays.toString(stackTrace));
+        List<StackTraceElement> stackTrace = ExceptionUtils.getOpencbStackTrace();
+        logger.info("Open Phoenix DB connection #{} {} called from {}",
+                GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getTotalSum(),
+                connection, stackTrace);
         return connection;
+    }
+
+    private void closeJdbcConnection(Connection connection) throws SQLException {
+        if (connection != null) {
+            logger.info("Close Phoenix connection {} called from {}", connection, ExceptionUtils.getOpencbStackTrace());
+            connection.close();
+            logger.info("Global Phoenix Connections opened: #{}",
+                    GlobalClientMetrics.GLOBAL_OPEN_PHOENIX_CONNECTIONS.getMetric().getTotalSum());
+        }
     }
 
     public static byte[] toBytes(Collection<?> collection, PArrayDataType arrayType) {

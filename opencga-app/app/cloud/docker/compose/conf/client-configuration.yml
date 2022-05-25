@@ -6,7 +6,7 @@ cliSessionDuration: 600
 
 ## REST client configuration options
 rest:
-  host: "http://rest:9090/opencga-2.3.0-SNAPSHOT"
+  host: "http://rest:9090/opencga-2.4.0-SNAPSHOT"
   tokenAutoRefresh: true
   tlsAllowInvalidCertificates: false
   timeout: 90000
