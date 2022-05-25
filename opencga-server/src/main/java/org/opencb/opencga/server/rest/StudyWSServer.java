@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.rest;
 
-import org.opencb.opencga.core.tools.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -37,8 +36,10 @@ import org.opencb.opencga.core.models.audit.AuditRecord;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.Pipeline;
+import org.opencb.opencga.core.models.job.PipelineCreateParams;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.tools.annotations.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -271,14 +272,14 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
             @QueryParam("action") ParamUtils.AddRemoveAction action,
-            @ApiParam(value = "JSON containing the parameters", required = true) Pipeline pipeline) {
+            @ApiParam(value = "JSON containing the parameters", required = true) PipelineCreateParams pipeline) {
         try {
             if (action == null) {
                 action = ParamUtils.AddRemoveAction.ADD;
             }
             OpenCGAResult<Pipeline> pipelineResult;
             if (action == ParamUtils.AddRemoveAction.ADD) {
-                pipelineResult = catalogManager.getPipelineManager().create(studyStr, pipeline, QueryOptions.empty(), token);
+                pipelineResult = catalogManager.getPipelineManager().create(studyStr, pipeline.toPipeline(), QueryOptions.empty(), token);
             } else {
                 pipelineResult = catalogManager.getPipelineManager().delete(studyStr, Collections.singletonList(pipeline.getId()), QueryOptions.empty(), token);
             }
@@ -288,21 +289,21 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @POST
-    @Path("/{study}/pipelines/{pipeline}/update")
-    @ApiOperation(value = "Update a specific pipeline", response = Pipeline.class)
-    public Response updatePipeline(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Pipeline id") @PathParam("pipeline") String pipelineId,
-            @ApiParam(value = "JSON containing the parameters", required = true) Pipeline pipeline) {
-        try {
-            OpenCGAResult<Pipeline> pipelineResult = null;
-//                pipelineResult = catalogManager.getStudyManager().createPipeline(studyStr, pipeline, token);
-            return createOkResponse(pipelineResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @POST
+//    @Path("/{study}/pipelines/{pipeline}/update")
+//    @ApiOperation(value = "Update a specific pipeline", response = Pipeline.class)
+//    public Response updatePipeline(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "Pipeline id") @PathParam("pipeline") String pipelineId,
+//            @ApiParam(value = "JSON containing the parameters", required = true) Pipeline pipeline) {
+//        try {
+//            OpenCGAResult<Pipeline> pipelineResult = null;
+////                pipelineResult = catalogManager.getStudyManager().createPipeline(studyStr, pipeline, token);
+//            return createOkResponse(pipelineResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @GET
     @Path("/{study}/permissionRules")
